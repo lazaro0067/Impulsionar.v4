@@ -977,12 +977,21 @@ function inicializarBase() {
             }
         });
 
-        db.get(`SELECT * FROM users WHERE email = ?`, ['admin@impulsionar.com'], async (err, row) => {
+        // Conta Master padrão. Se o banco ainda não tiver nenhum admin, cria com
+        // esse login; se já existir a conta antiga (admin@impulsionar.com, com a
+        // senha padrão de fábrica), ela é atualizada automaticamente para o novo
+        // e-mail/senha definidos aqui — assim não fica duas contas Master soltas.
+        const EMAIL_MASTER_PADRAO = 'master@impulsionarv4.com.br';
+        const SENHA_MASTER_PADRAO = 'Impulsionar@v4';
+        db.get(`SELECT * FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1`, [], async (err, row) => {
             if (!row) {
-                const hashedPassword = await bcrypt.hash('123456', 10);
+                const hashedPassword = await bcrypt.hash(SENHA_MASTER_PADRAO, 10);
                 db.run(`INSERT INTO users (name, email, password, company_id, role) VALUES (?, ?, ?, NULL, ?)`,
-                    ['Board Executivo Master', 'admin@impulsionar.com', hashedPassword, 'admin']
+                    ['Board Executivo Master', EMAIL_MASTER_PADRAO, hashedPassword, 'admin']
                 );
+            } else if (row.email === 'admin@impulsionar.com') {
+                const hashedPassword = await bcrypt.hash(SENHA_MASTER_PADRAO, 10);
+                db.run(`UPDATE users SET email = ?, password = ? WHERE id = ?`, [EMAIL_MASTER_PADRAO, hashedPassword, row.id]);
             }
         });
     });
