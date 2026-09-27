@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redefinir Senha — Impulsionar V4</title>
+<style>
+  :root { --azul-corp: #0b1329; --azul-corp-2: #16213f; --cinza-200: #e2e8f0; --cinza-700: #334155; --vermelho: #dc2626; --verde: #16a34a; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(160deg, var(--azul-corp), var(--azul-corp-2));
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  .card { background: #fff; border-radius: 16px; padding: 40px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+  img.logo { display: block; max-width: 160px; max-height: 90px; object-fit: contain; margin: 0 auto 24px; }
+  .logo-fallback { text-align: center; font-weight: 800; font-size: 20px; color: var(--azul-corp); margin-bottom: 24px; letter-spacing: .5px; }
+  h1 { text-align: center; color: var(--azul-corp); font-size: 22px; margin-bottom: 24px; }
+  label { font-size: 13px; font-weight: 600; color: var(--cinza-700); display: block; margin-bottom: 6px; }
+  input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--cinza-200); border-radius: 8px;
+    font-size: 14px; margin-bottom: 16px; font-family: inherit;
+  }
+  button {
+    cursor: pointer; border: none; border-radius: 8px; font-weight: 600; font-size: 14px;
+    padding: 11px 18px; background: var(--azul-corp); color: #fff; width: 100%;
+  }
+  button:hover { opacity: .9; }
+  #msg { text-align: center; font-size: 13px; margin-top: 12px; min-height: 18px; }
+  a { color: var(--azul-corp); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img src="/assets/logo-impulsionar.jpg" alt="Impulsionar V4" class="logo" onerror="this.outerHTML='&lt;div class=&quot;logo-fallback&quot;&gt;IMPULSIONAR V4&lt;/div&gt;'">
+    <h1>Redefinir Senha</h1>
+    <form id="form-redefinir">
+      <label>Nova Senha</label>
+      <input type="password" id="nova-senha" minlength="6" required>
+      <label>Confirme a Nova Senha</label>
+      <input type="password" id="confirma-senha" minlength="6" required>
+      <button type="submit">Redefinir Senha</button>
+      <div id="msg"></div>
+    </form>
+    <p style="text-align:center; margin-top:16px;"><a href="/">Voltar ao login</a></p>
+  </div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const token = params.get('token');
+const msgEl = document.getElementById('msg');
+
+if (!token) {
+  msgEl.style.color = 'var(--vermelho)';
+  msgEl.textContent = 'Link inválido — falta o token de redefinição.';
+  document.getElementById('form-redefinir').style.display = 'none';
+}
+
+document.getElementById('form-redefinir').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const novaSenha = document.getElementById('nova-senha').value;
+  const confirmaSenha = document.getElementById('confirma-senha').value;
+  msgEl.style.color = '';
+
+  if (novaSenha !== confirmaSenha) {
+    msgEl.style.color = 'var(--vermelho)';
+    msgEl.textContent = 'As senhas não coincidem.';
+    return;
+  }
+
+  msgEl.textContent = 'Enviando...';
+  try {
+    const resp = await fetch('/api/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, newPassword: novaSenha })
+    });
+    const dados = await resp.json();
+    if (!resp.ok) {
+      msgEl.style.color = 'var(--vermelho)';
+      msgEl.textContent = dados.error || 'Erro ao redefinir a senha.';
+      return;
+    }
+    msgEl.style.color = 'var(--verde)';
+    msgEl.textContent = dados.message + ' Redirecionando...';
+    setTimeout(() => { window.location.href = '/'; }, 2000);
+  } catch (e) {
+    msgEl.style.color = 'var(--vermelho)';
+    msgEl.textContent = 'Erro de ligação ao servidor.';
+  }
+});
+</script>
+</body>
+</html>
