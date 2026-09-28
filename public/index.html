@@ -117,8 +117,31 @@
   .sidebar .nav-subitens.aberto { max-height: 600px; }
   .sidebar .nav-subitens button.nav-item { padding-left: 40px; font-size: 13px; font-weight: 400; }
   .sidebar .sair { margin: 12px 24px 0; }
+  .marca-rodape-sidebar {
+    text-align: center; font-size: 11px; color: #94a3b8; padding: 10px 16px 4px;
+    border-top: 1px solid rgba(255,255,255,.08); letter-spacing: .2px;
+  }
+  .marca-rodape-sidebar strong { color: #fff; }
   .conteudo { flex: 1; padding: 28px 36px; overflow-y: auto; max-height: 100vh; position: relative; }
   .conteudo h1 { color: var(--azul-corp); margin-top: 0; }
+
+  .btn-voltar-flutuante {
+    position: fixed; top: 18px; left: 262px; z-index: 500;
+    background: #fff; border: 1px solid #dbe3ef; color: var(--azul-corp);
+    padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    cursor: pointer; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(15,23,42,.08);
+    display: none;
+  }
+  .btn-voltar-flutuante.visivel { display: inline-flex; }
+  .btn-voltar-flutuante:hover { background: #f1f5f9; }
+
+  .marca-impulsionar-conteudo {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding: 8px 12px;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; width: fit-content;
+  }
+  .marca-impulsionar-conteudo img { height: 22px; display: block; }
+  .marca-impulsionar-conteudo span { font-size: 12px; color: #64748b; }
+  .marca-impulsionar-conteudo strong { color: var(--azul-corp); }
 
   .modal-fundo {
     position: fixed; inset: 0; background: rgba(15,23,42,.55); z-index: 900;
@@ -352,9 +375,11 @@
     <img src="/assets/logo-impulsionar.jpg" alt="Impulsionar V4" class="logo-sidebar" id="logo-sidebar-img" onerror="this.outerHTML='&lt;div class=&quot;logo-fallback-sidebar&quot;&gt;IMPULSIONAR V4&lt;/div&gt;'">
     <div class="usuario" id="info-usuario"></div>
     <nav id="nav-menu"></nav>
+    <div class="marca-rodape-sidebar">🚀 Powered by <strong>Impulsionar V4</strong></div>
     <button class="sair btn-secundario" onclick="sair()">Sair</button>
   </aside>
   <main class="conteudo" id="conteudo"></main>
+  <button class="btn-voltar-flutuante" id="btn-voltar-global" onclick="voltarTela()">← Voltar</button>
   <div class="notif-wrapper" id="notif-wrapper">
     <button class="notif-sino" id="notif-sino" onclick="alternarPainelNotificacoes()">
       🔔<span class="notif-badge" id="notif-badge" style="display:none;">0</span>
@@ -528,6 +553,7 @@ function sair(silencioso) {
   if (typeof VC_STREAM_LOCAL !== 'undefined' && VC_STREAM_LOCAL) { VC_STREAM_LOCAL.getTracks().forEach(t => t.stop()); VC_STREAM_LOCAL = null; }
   ESTADO.token = null;
   ESTADO.usuario = null;
+  HISTORICO_NAVEGACAO = [];
   localStorage.removeItem('impulsionar_token');
   localStorage.removeItem('impulsionar_usuario');
   sessionStorage.removeItem('impulsionar_token');
@@ -648,6 +674,9 @@ function grupoDaChave(role, chave) {
 function iniciarApp() {
   document.getElementById('tela-login').style.display = 'none';
   document.getElementById('app').classList.add('ativo');
+  HISTORICO_NAVEGACAO = [];
+  ESTADO.abaAtual = null;
+  atualizarBotaoVoltarGlobal();
   renderizarBarraVoltarMaster();
   const u = ESTADO.usuario;
   document.getElementById('info-usuario').innerHTML =
@@ -819,8 +848,18 @@ document.addEventListener('click', (ev) => {
   }
 });
 
-function irPara(aba) {
+// Pilha simples de navegação — permite um botão "Voltar" global que funciona
+// em qualquer tela, sem precisar guardar estado específico de cada uma.
+let HISTORICO_NAVEGACAO = [];
+
+function irPara(aba, semHistorico) {
+  const abaAnterior = ESTADO.abaAtual;
+  if (!semHistorico && abaAnterior && abaAnterior !== aba) {
+    HISTORICO_NAVEGACAO.push(abaAnterior);
+    if (HISTORICO_NAVEGACAO.length > 30) HISTORICO_NAVEGACAO.shift();
+  }
   ESTADO.abaAtual = aba;
+  atualizarBotaoVoltarGlobal();
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('ativo', b.dataset.aba === aba));
   // Se o item ativo está dentro de um grupo (pasta), garante que essa pasta esteja aberta.
   const nomeGrupo = grupoDaChave(ESTADO.usuario.role, aba);
@@ -847,6 +886,21 @@ function irPara(aba) {
   (renderizadores[aba] || renderDashboard)();
 }
 
+// Volta para a tela anterior visitada (equivalente a um botão "voltar" do
+// navegador, mas dentro do próprio app). Usado pelo botão flutuante e por
+// telas de detalhe que preferem chamar isso em vez de um destino fixo.
+function voltarTela() {
+  if (!HISTORICO_NAVEGACAO.length) return;
+  const alvo = HISTORICO_NAVEGACAO.pop();
+  irPara(alvo, true);
+}
+
+function atualizarBotaoVoltarGlobal() {
+  const btn = document.getElementById('btn-voltar-global');
+  if (!btn) return;
+  btn.classList.toggle('visivel', HISTORICO_NAVEGACAO.length > 0);
+}
+
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -868,29 +922,29 @@ async function renderDashboard() {
     cont.innerHTML = `
       <h1>Dashboard Executivo</h1>
       <div class="kpis">
-        <div class="kpi-card vivo kpi-azul"><span class="icone">🏢</span><div class="valor">${d.totalCompanies}</div><div class="rotulo">Corporações Ativas</div></div>
-        <div class="kpi-card vivo kpi-ciano"><span class="icone">👥</span><div class="valor">${d.totalEmployees}</div><div class="rotulo">Talentos Mapeados</div></div>
-        <div class="kpi-card vivo kpi-roxo"><span class="icone">🎓</span><div class="valor">${d.totalVideos}</div><div class="rotulo">Vídeos na Academy</div></div>
-        <div class="kpi-card vivo kpi-laranja"><span class="icone">📋</span><div class="valor">${d.totalAssessments}</div><div class="rotulo">Assessments Emitidos</div></div>
-        <div class="kpi-card vivo kpi-verde"><span class="icone">⭐</span><div class="valor">${d.averageScore || '-'}</div><div class="rotulo">Nota Média Geral</div><div class="subrotulo">Competence Check</div></div>
-        <div class="kpi-card vivo kpi-rosa"><span class="icone">✅</span><div class="valor">${d.taxaConclusaoPdi}%</div><div class="rotulo">PDIs Concluídos</div><div class="subrotulo">taxa de conclusão</div></div>
+        <div class="kpi-card vivo kpi-azul" style="cursor:pointer;" onclick="irPara('companies')" title="Ver corporações"><span class="icone">🏢</span><div class="valor">${d.totalCompanies}</div><div class="rotulo">Corporações Ativas</div></div>
+        <div class="kpi-card vivo kpi-ciano" style="cursor:pointer;" onclick="irPara('employees')" title="Ver talentos"><span class="icone">👥</span><div class="valor">${d.totalEmployees}</div><div class="rotulo">Talentos Mapeados</div></div>
+        <div class="kpi-card vivo kpi-roxo" style="cursor:pointer;" onclick="irPara('videos')" title="Ver vídeos da Academy"><span class="icone">🎓</span><div class="valor">${d.totalVideos}</div><div class="rotulo">Vídeos na Academy</div></div>
+        <div class="kpi-card vivo kpi-laranja" style="cursor:pointer;" onclick="irPara('assessments')" title="Ver assessments"><span class="icone">📋</span><div class="valor">${d.totalAssessments}</div><div class="rotulo">Assessments Emitidos</div></div>
+        <div class="kpi-card vivo kpi-verde" style="cursor:pointer;" onclick="irPara('assessments')" title="Ver assessments"><span class="icone">⭐</span><div class="valor">${d.averageScore || '-'}</div><div class="rotulo">Nota Média Geral</div><div class="subrotulo">Competence Check</div></div>
+        <div class="kpi-card vivo kpi-rosa" style="cursor:pointer;" onclick="irPara('pdi')" title="Ver PDIs"><span class="icone">✅</span><div class="valor">${d.taxaConclusaoPdi}%</div><div class="rotulo">PDIs Concluídos</div><div class="subrotulo">taxa de conclusão</div></div>
       </div>
 
       <div class="grid-3">
-        <div class="painel"><h3>Distribuição de Perfis DISC</h3><canvas id="grafico-disc"></canvas></div>
-        <div class="painel"><h3>Avanço por Fase Executiva</h3><canvas id="grafico-fases"></canvas></div>
-        <div class="painel"><h3>Radar de Competências de Liderança</h3><canvas id="grafico-radar"></canvas></div>
+        <div class="painel" style="cursor:pointer;" onclick="irPara('employees')" title="Ver talentos"><h3>Distribuição de Perfis DISC</h3><canvas id="grafico-disc"></canvas></div>
+        <div class="painel" style="cursor:pointer;" onclick="irPara('employees')" title="Ver talentos"><h3>Avanço por Fase Executiva</h3><canvas id="grafico-fases"></canvas></div>
+        <div class="painel" style="cursor:pointer;" onclick="irPara('employees')" title="Ver talentos"><h3>Radar de Competências de Liderança</h3><canvas id="grafico-radar"></canvas></div>
       </div>
 
       <div class="grid-2">
-        <div class="painel"><h3>Tendência de Assessments (últimos 6 meses)</h3><canvas id="grafico-tendencia"></canvas></div>
-        <div class="painel">
+        <div class="painel" style="cursor:pointer;" onclick="irPara('assessments')" title="Ver assessments"><h3>Tendência de Assessments (últimos 6 meses)</h3><canvas id="grafico-tendencia"></canvas></div>
+        <div class="painel" style="cursor:pointer;" onclick="irPara('ranking')" title="Ver ranking completo">
           <h3>🏆 Top 5 Talentos por Performance</h3>
           <div id="lista-ranking"></div>
         </div>
       </div>
 
-      <div class="painel">
+      <div class="painel" style="cursor:pointer;" onclick="irPara('pdi')" title="Ver PDIs">
         <h3>⚠️ Alertas de PDI (vencidos ou vencendo em ${d.pdiAlerts.janelaDias} dias) · 🤝 ${d.mentoriasRealizadasNoMes} mentoria(s) realizada(s) este mês</h3>
         <div id="lista-alertas"></div>
       </div>
@@ -985,7 +1039,7 @@ async function renderDashboardEmpresa() {
       <div class="grid-3">
         <div class="painel" style="cursor:pointer;" onclick="irPara('employees')"><h3>Perfis DISC do Time</h3><canvas id="grafico-disc"></canvas></div>
         <div class="painel" style="cursor:pointer;" onclick="irPara('pipelineDesenvolvimento')"><h3>Pipeline de Desenvolvimento</h3><canvas id="grafico-fases"></canvas></div>
-        <div class="painel"><h3>Radar de Competências de Liderança</h3><canvas id="grafico-radar"></canvas></div>
+        <div class="painel" style="cursor:pointer;" onclick="irPara('assessments')"><h3>Radar de Competências de Liderança</h3><canvas id="grafico-radar"></canvas></div>
       </div>
 
       <div class="grid-2" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
@@ -4723,24 +4777,24 @@ async function renderEngagement() {
       <h1>Painel de Engajamento</h1>
       <p style="color:#64748b;margin-top:-8px;">Visão consolidada de uso e adesão à plataforma.</p>
       <div class="kpis">
-        <div class="kpi-card vivo kpi-azul"><span class="icone">👥</span><div class="valor">${d.totalExecutivos}</div><div class="rotulo">Executivos Cadastrados</div></div>
-        <div class="kpi-card vivo kpi-verde"><span class="icone">📈</span><div class="valor">${d.progressoMedio}%</div><div class="rotulo">Progresso Médio</div></div>
-        <div class="kpi-card vivo kpi-roxo"><span class="icone">🔥</span><div class="valor">${d.usuariosAtivos30dias}</div><div class="rotulo">Ativos nos Últimos 30 dias</div><div class="subrotulo">Com alguma ação pontuada</div></div>
-        <div class="kpi-card vivo kpi-laranja"><span class="icone">🎯</span><div class="valor">${d.pdi.taxaConclusao}%</div><div class="rotulo">Taxa de Conclusão de PDI</div><div class="subrotulo">${d.pdi.concluidos} de ${d.pdi.total} concluídos</div></div>
+        <div class="kpi-card vivo kpi-azul" style="cursor:pointer;" onclick="irPara('employees')" title="Ver executivos"><span class="icone">👥</span><div class="valor">${d.totalExecutivos}</div><div class="rotulo">Executivos Cadastrados</div></div>
+        <div class="kpi-card vivo kpi-verde" style="cursor:pointer;" onclick="irPara('pdi')" title="Ver PDIs"><span class="icone">📈</span><div class="valor">${d.progressoMedio}%</div><div class="rotulo">Progresso Médio</div></div>
+        <div class="kpi-card vivo kpi-roxo" style="cursor:pointer;" onclick="irPara('ranking')" title="Ver ranking"><span class="icone">🔥</span><div class="valor">${d.usuariosAtivos30dias}</div><div class="rotulo">Ativos nos Últimos 30 dias</div><div class="subrotulo">Com alguma ação pontuada</div></div>
+        <div class="kpi-card vivo kpi-laranja" style="cursor:pointer;" onclick="irPara('pdi')" title="Ver PDIs"><span class="icone">🎯</span><div class="valor">${d.pdi.taxaConclusao}%</div><div class="rotulo">Taxa de Conclusão de PDI</div><div class="subrotulo">${d.pdi.concluidos} de ${d.pdi.total} concluídos</div></div>
       </div>
 
       <div class="grid-3" style="margin-top:8px;">
-        <div class="plano-card">
+        <div class="plano-card" style="cursor:pointer;" onclick="irPara('mentorships')" title="Ver mentorias">
           <h4 style="margin:0 0 8px;color:var(--azul-corp);">Mentorias</h4>
           <div class="plano-meta">${d.mentorias.total} agendadas no total</div>
           <div class="plano-meta">${d.mentorias.realizadas} realizadas</div>
         </div>
-        <div class="plano-card">
+        <div class="plano-card" style="cursor:pointer;" onclick="irPara('events')" title="Ver eventos">
           <h4 style="margin:0 0 8px;color:var(--azul-corp);">Eventos</h4>
           <div class="plano-meta">${d.eventos.totalEventos} evento(s) cadastrado(s)</div>
           <div class="plano-meta">${d.eventos.totalInscricoes} inscrição(ões) no total</div>
         </div>
-        <div class="plano-card">
+        <div class="plano-card" style="cursor:pointer;" onclick="irPara('pdi')" title="Ver PDIs">
           <h4 style="margin:0 0 8px;color:var(--azul-corp);">PDI</h4>
           <div class="plano-meta">${d.pdi.total} plano(s) criado(s)</div>
           <div class="plano-meta">${d.pdi.concluidos} concluído(s)</div>
@@ -4752,7 +4806,7 @@ async function renderEngagement() {
         <thead><tr><th>Trilha</th><th>Aulas</th><th>Alunos Engajados</th><th>Certificados Emitidos</th></tr></thead>
         <tbody>
           ${d.trilhas.map(t => `
-            <tr>
+            <tr style="cursor:pointer;" onclick="irPara('tracks')" title="Ver trilhas de curso">
               <td>${escapeHtml(t.title)}</td>
               <td>${t.totalAulas}</td>
               <td>${t.alunosEngajados}</td>
@@ -4763,7 +4817,7 @@ async function renderEngagement() {
       ${d.trilhas.length === 0 ? '<div class="msg-vazio">Nenhuma trilha cadastrada ainda.</div>' : ''}
 
       <h3 style="margin-top:28px;color:var(--azul-corp);">Top 5 do Ranking</h3>
-      <div>
+      <div style="cursor:pointer;" onclick="irPara('ranking')" title="Ver ranking completo">
         ${d.topRanking.map((r, i) => `
           <div class="ranking-linha">
             <div class="ranking-posicao">${i + 1}º</div>
@@ -6719,6 +6773,15 @@ function encerrarVideochamada() {
 if (ESTADO.token && ESTADO.usuario) {
   iniciarApp();
 }
+
+// Link de divulgação (Instagram/WhatsApp/bio) direto pro cadastro de
+// currículo: chega como "#cadastro-curriculo" e já abre o formulário de
+// cadastro de candidato, sem precisar clicar em nada na tela de login.
+(function tratarLinkDivulgacaoCadastro() {
+  if (location.hash !== '#cadastro-curriculo') return;
+  if (ESTADO.token && ESTADO.usuario) return; // já logado, não faz sentido mostrar cadastro
+  mostrarCadastroCandidato();
+})();
 
 // Link de vaga compartilhada (WhatsApp/Instagram): chega como "#vaga=<id>".
 // Funciona logado ou não — a rota /api/public/vagas/:id é pública.

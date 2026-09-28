@@ -1520,7 +1520,10 @@ app.post('/api/forgot-password', async (req, res) => {
             db.run(`UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?`, [token, expira, user.id], (err) => err ? reject(err) : resolve());
         });
 
-        const baseUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+        // Usa a mesma "URL Pública do Sistema" configurável em Meu Perfil (admin),
+        // em vez de uma variável de ambiente separada — assim o link de
+        // redefinição sempre aponta pro endereço público real, e não localhost.
+        const baseUrl = appBaseUrlAtiva || process.env.APP_URL || `http://localhost:${PORT}`;
         const linkRedefinicao = `${baseUrl}/redefinir-senha.html?token=${token}`;
 
         const mailOptions = {

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impulsionar — Desenvolvimento de Lideranças</title>
+<meta name="description" content="A Impulsionar é focada em desenvolvimento de lideranças. Cadastre seu currículo e entre para o nosso banco de talentos.">
+<style>
+  :root {
+    --azul-corp: #0b1329;
+    --azul-corp-2: #16213f;
+    --azul-acento: #2563eb;
+    --verde: #16a34a;
+    --cinza-700: #334155;
+    --cinza-500: #64748b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: 'Segoe UI', Arial, sans-serif; color: var(--cinza-700);
+    background: #f4f6fb;
+  }
+  .topo {
+    background: linear-gradient(160deg, var(--azul-corp), var(--azul-corp-2));
+    color: #fff; padding: 48px 20px 64px; text-align: center;
+  }
+  .logo-topo {
+    max-width: 160px; max-height: 80px; object-fit: contain; background: #fff;
+    border-radius: 14px; padding: 10px 14px; margin: 0 auto 28px; display: block;
+  }
+  .logo-fallback-topo {
+    font-weight: 800; font-size: 22px; letter-spacing: .5px; margin-bottom: 28px;
+  }
+  .topo h1 {
+    font-size: 30px; margin: 0 0 14px; line-height: 1.3; max-width: 620px; margin-inline: auto;
+  }
+  .topo p.subtitulo {
+    font-size: 16px; opacity: .88; max-width: 520px; margin: 0 auto; line-height: 1.5;
+  }
+  .conteudo { max-width: 760px; margin: -36px auto 0; padding: 0 20px 60px; }
+  .cartao-cta {
+    background: #fff; border-radius: 18px; box-shadow: 0 12px 32px rgba(11,19,41,.14);
+    padding: 32px 28px; text-align: center; margin-bottom: 28px;
+  }
+  .cartao-cta h2 { color: var(--azul-corp); font-size: 20px; margin: 0 0 10px; }
+  .cartao-cta p { font-size: 14px; color: var(--cinza-500); margin: 0 0 22px; }
+  .btn-cta {
+    display: inline-block; background: var(--verde); color: #fff; text-decoration: none;
+    font-weight: 700; font-size: 16px; padding: 16px 36px; border-radius: 30px;
+    box-shadow: 0 6px 18px rgba(22,163,74,.35); transition: transform .12s ease;
+  }
+  .btn-cta:hover { transform: translateY(-2px); }
+  .rodape-cartao { font-size: 12px; color: #94a3b8; margin-top: 16px; }
+
+  .grade-beneficios {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;
+    margin-bottom: 28px;
+  }
+  .beneficio {
+    background: #fff; border-radius: 14px; padding: 20px; text-align: center;
+    box-shadow: 0 4px 14px rgba(11,19,41,.06);
+  }
+  .beneficio .icone { font-size: 28px; margin-bottom: 8px; }
+  .beneficio h3 { font-size: 14px; color: var(--azul-corp); margin: 0 0 6px; }
+  .beneficio p { font-size: 12.5px; color: var(--cinza-500); margin: 0; line-height: 1.5; }
+
+  .faixa-final {
+    background: #fff; border-radius: 18px; padding: 26px 24px; text-align: center;
+    box-shadow: 0 4px 14px rgba(11,19,41,.06);
+  }
+  .faixa-final p { font-size: 13px; color: var(--cinza-500); margin: 0 0 16px; }
+
+  footer { text-align: center; padding: 24px 20px 40px; font-size: 12px; color: #94a3b8; }
+  footer strong { color: var(--azul-corp); }
+</style>
+</head>
+<body>
+
+  <div class="topo">
+    <img src="/assets/logo-impulsionar.jpg" class="logo-topo" alt="Impulsionar"
+         onerror="this.outerHTML='&lt;div class=&quot;logo-fallback-topo&quot;&gt;IMPULSIONAR&lt;/div&gt;'">
+    <h1>Somos focados em desenvolvimento de lideranças.</h1>
+    <p class="subtitulo">Ajudamos executivos e talentos a evoluírem na carreira — e conectamos esse talento às empresas que confiam na Impulsionar.</p>
+  </div>
+
+  <div class="conteudo">
+    <div class="cartao-cta">
+      <h2>Quer fazer parte do nosso banco de talentos?</h2>
+      <p>Cadastre seu currículo gratuitamente. As empresas parceiras da Impulsionar acessam nosso banco de talentos para encontrar profissionais como você.</p>
+      <a class="btn-cta" href="/#cadastro-curriculo">📄 Cadastrar meu currículo</a>
+      <div class="rodape-cartao">Leva menos de 2 minutos.</div>
+    </div>
+
+    <div class="grade-beneficios">
+      <div class="beneficio">
+        <div class="icone">🎯</div>
+        <h3>Desenvolvimento de Liderança</h3>
+        <p>Metodologia própria para evoluir executivos em todas as fases da carreira.</p>
+      </div>
+      <div class="beneficio">
+        <div class="icone">🤝</div>
+        <h3>Mentoria Especializada</h3>
+        <p>Acompanhamento próximo com mentores focados no seu crescimento.</p>
+      </div>
+      <div class="beneficio">
+        <div class="icone">🏢</div>
+        <h3>Conexão com Empresas</h3>
+        <p>Seu currículo fica disponível para empresas parceiras em busca de talentos.</p>
+      </div>
+    </div>
+
+    <div class="faixa-final">
+      <p>Já tem uma vaga aberta com a Impulsionar ou quer saber mais sobre nossos serviços de consultoria em liderança?</p>
+      <a class="btn-cta" href="/#cadastro-curriculo">Quero me cadastrar agora</a>
+    </div>
+  </div>
+
+  <footer>🚀 Powered by <strong>Impulsionar V4</strong></footer>
+
+</body>
+</html>
