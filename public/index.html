@@ -348,7 +348,7 @@
   .interruptor input:checked + .trilho:before { transform: translateX(18px); }
   .interruptor input:disabled + .trilho { opacity: .5; cursor: default; }
 
-  /* ---------- DPO Ambev (auditoria por pilar) ---------- */
+  /* ---------- DPO Ambev (consultoria por pilar) ---------- */
   .dpo-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-top: 18px; }
   .dpo-pilar-botao { background: #dc4c4c; color: #fff; border: none; border-radius: 12px; padding: 26px 16px; font-size: 14px; font-weight: 800; text-align: center; cursor: pointer; min-height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.3; text-transform: uppercase; transition: transform .12s, filter .12s; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
   .dpo-pilar-botao:hover { filter: brightness(1.06); transform: translateY(-2px); }
@@ -638,8 +638,8 @@ const MENU_POR_PERFIL = {
         ['jobPostings', 'Vagas Publicadas'], ['portalCandidates', 'Candidatos do Portal'],
         ['candidatesApproval', 'Aprovar Currículos'], ['vagaPlans', 'Planos de Vaga'], ['closingFeePlans', 'Planos de Fechamento']
     ]},
-    { group: 'DPO Ambev', items: [
-        ['dpoPrecos', 'Preços por Pilar'], ['dpoAgenda', 'Agenda de Auditorias']
+    { group: 'Impulsionar V4 DPO Ambev', items: [
+        ['dpoPrecos', 'Preços por Pilar'], ['dpoAgenda', 'Agenda de Consultorias']
     ]},
     { group: 'Administração', items: [
         ['plans', 'Planos'], ['engagement', 'Painel de Engajamento'], ['contracts', 'Contratos'],
@@ -666,7 +666,7 @@ const MENU_POR_PERFIL = {
     { group: 'Vagas Ofertadas', moduleKey: 'vagas', items: [
         ['talentPool', 'Banco de Currículos'], ['jobPostings', 'Vagas Ofertadas'], ['portalCandidates', 'Candidatos do Portal']
     ]},
-    { group: 'DPO Ambev', moduleKey: 'dpoAmbev', items: [
+    { group: 'Impulsionar V4 DPO Ambev', moduleKey: 'dpoAmbev', items: [
         ['dpoHome', 'DPO Ambev']
     ]},
     { group: 'Empresa', items: [
@@ -1053,7 +1053,7 @@ async function renderDashboard() {
 
 // Rótulos amigáveis dos módulos/pacotes contratados — usados no painel da
 // empresa e no checklist de permissões do Master (MODULOS_EMPRESA).
-const ROTULOS_MODULO_EMPRESA = { consultoria: 'Meu Time', pipeline: 'Pipeline de Desenvolvimento', pdi: 'PDI', academy: 'Treinamentos', mentoria: 'Mentorias', vagas: 'Vagas Ofertadas' };
+const ROTULOS_MODULO_EMPRESA = { consultoria: 'Meu Time', pipeline: 'Pipeline de Desenvolvimento', pdi: 'PDI', academy: 'Treinamentos', mentoria: 'Mentorias', vagas: 'Vagas Ofertadas', dpoAmbev: 'Impulsionar V4 DPO Ambev' };
 
 // ---------- Painel da Empresa (dashboard próprio do client_admin) ----------
 // Diferente do Dashboard Executivo do Master: aqui só entram os números do
@@ -1826,9 +1826,10 @@ function mostrarFormularioEmpresa(id) {
       ` : c ? `<div class="msg-vazio" style="text-align:left;margin-top:4px;">Esta empresa ainda não tem um Gestor cadastrado — preencha nome, e-mail e senha acima e salve para criar o acesso dele.</div>` : ''}
       ${c ? `
       <div class="linha" style="flex-direction:column;align-items:stretch;margin-top:6px;">
-        <label>Outros Acessos da Empresa (cada pessoa entra com e-mail e senha próprios, mesmo nível de acesso do Gestor)</label>
+        <label>Outros Acessos da Empresa (cada pessoa entra com e-mail e senha próprios — cada um tem suas próprias permissões de módulo, no botão 🔒 de cada linha)</label>
         <div id="ne-membros-area"><p style="font-size:12px;color:#94a3b8;">Carregando...</p></div>
       </div>
+      <div id="modal-area-membro"></div>
       ` : ''}
   `;
 
@@ -1837,7 +1838,6 @@ function mostrarFormularioEmpresa(id) {
       <button type="button" class="aba-empresa-botao ativa" data-aba="dados" onclick="trocarAbaEmpresa('dados')">🏢 Dados da Empresa</button>
       <button type="button" class="aba-empresa-botao" data-aba="acessos" onclick="trocarAbaEmpresa('acessos')">🔑 Acessos</button>
       ${c ? `
-      <button type="button" class="aba-empresa-botao" data-aba="permissoes" onclick="trocarAbaEmpresa('permissoes')">🔒 Permissões de Módulos</button>
       <button type="button" class="aba-empresa-botao" data-aba="creditos" onclick="trocarAbaEmpresa('creditos')">💳 Créditos</button>
       ` : ''}
     </div>
@@ -1849,7 +1849,6 @@ function mostrarFormularioEmpresa(id) {
       <div class="aba-empresa-painel ativa" data-aba-painel="dados">${painelDados}</div>
       <div class="aba-empresa-painel" data-aba-painel="acessos">${painelAcessos}</div>
       ${c ? `
-      <div class="aba-empresa-painel" data-aba-painel="permissoes">${camposPermissoesEmpresaHtml(c)}</div>
       <div class="aba-empresa-painel" data-aba-painel="creditos">${camposCreditoVagasHtml(c)}</div>
       ` : ''}
       <div class="acoes-form">
@@ -1879,63 +1878,85 @@ const MODULOS_EMPRESA = [
   { key: 'academy', icone: '🎓', label: 'Treinamentos', desc: 'Academy Digital, Trilhas, Competence Check' },
   { key: 'mentoria', icone: '🤝', label: 'Mentorias', desc: 'Mentorias, Comunidade, Eventos, Ranking' },
   { key: 'vagas', icone: '💼', label: 'Recrutamento', desc: 'Banco de Currículos, Vagas' },
-  { key: 'dpoAmbev', icone: '🛡️', label: 'DPO Ambev', desc: 'Auditoria de processos por pilar' }
+  { key: 'dpoAmbev', icone: '🛡️', label: 'Impulsionar V4 DPO Ambev', desc: 'Consultoria de processos por pilar' }
 ];
-
-function camposPermissoesEmpresaHtml(c) {
-  const restrito = Array.isArray(c.enabled_modules) ? c.enabled_modules
-    : (typeof c.enabled_modules === 'string' && c.enabled_modules ? (() => { try { return JSON.parse(c.enabled_modules); } catch (e) { return null; } })() : null);
-  const temRestricao = Array.isArray(restrito);
-  return `
-    <div class="linha" style="flex-direction:column;align-items:stretch;">
-      <label>Permissões de Acesso (conforme o contrato de consultoria fechado)</label>
-      <label style="font-weight:400;display:flex;align-items:center;gap:6px;font-size:13px;">
-        <input type="checkbox" id="ne-restringir-modulos" ${temRestricao ? 'checked' : ''} onchange="alternarRestricaoModulos(this.checked)">
-        Restringir esta empresa só aos módulos marcados abaixo (desmarcado = acesso completo a tudo)
-      </label>
-      <div id="ne-modulos-lista" style="display:${temRestricao ? 'block' : 'none'};margin-top:10px;">
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <button type="button" class="btn-secundario btn-sm" onclick="marcarTodosModulos(true)">Marcar todos</button>
-          <button type="button" class="btn-secundario btn-sm" onclick="marcarTodosModulos(false)">Desmarcar todos</button>
-        </div>
-        <div class="grade-modulos">
-          ${MODULOS_EMPRESA.map(m => {
-            const ligado = !temRestricao || restrito.includes(m.key);
-            return `
-            <label class="modulo-card ${ligado ? 'habilitado' : ''}" data-modulo-card>
-              <span class="modulo-icone">${m.icone}</span>
-              <span class="modulo-texto">
-                <span class="modulo-nome">${escapeHtml(m.label)}</span>
-                <span class="modulo-desc">${escapeHtml(m.desc)}</span>
-              </span>
-              <span class="interruptor">
-                <input type="checkbox" class="ne-modulo-check" value="${m.key}" ${ligado ? 'checked' : ''} onchange="atualizarCartaoModulo(this)">
-                <span class="trilho"></span>
-              </span>
-            </label>
-          `; }).join('')}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-// Mostra/esconde a grade de módulos ao ligar/desligar a restrição geral.
-function alternarRestricaoModulos(restringir) {
-  document.getElementById('ne-modulos-lista').style.display = restringir ? 'block' : 'none';
-}
 
 // Atualiza o realce visual (verde) do cartão do módulo junto com o interruptor.
 function atualizarCartaoModulo(input) {
   input.closest('[data-modulo-card]').classList.toggle('habilitado', input.checked);
 }
 
-// Botões "Marcar todos / Desmarcar todos" da grade de permissões.
-function marcarTodosModulos(ligar) {
-  document.querySelectorAll('.ne-modulo-check').forEach(chk => {
+// ---------- Permissões de módulo INDIVIDUAIS por acesso da empresa ----------
+// Cada linha de "Acessos" (o Gestor e cada Outro Acesso) tem sua própria
+// restrição de módulos, independente dos demais acessos da mesma empresa.
+let CACHE_MEMBROS_EMPRESA_ATUAL = [];
+
+function abrirPermissoesMembroEmpresa(companyId, memberId, prefixo) {
+  const m = CACHE_MEMBROS_EMPRESA_ATUAL.find(x => x.id === memberId);
+  if (!m) return;
+  let restrito = null;
+  try { restrito = m.enabled_modules ? JSON.parse(m.enabled_modules) : null; } catch (e) { restrito = null; }
+  const temRestricao = Array.isArray(restrito);
+  const area = document.getElementById('modal-area-membro');
+  area.innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area-membro').innerHTML=''">
+      <div class="modal-caixa" style="max-width:560px;">
+        <h3 style="margin-top:0;">🔒 Permissões de Acesso — ${escapeHtml(m.name)}</h3>
+        <p style="font-size:13px;color:#64748b;margin-top:-6px;">Controla o que esta pessoa vê ao entrar com o e-mail e senha próprios dela. Não afeta os outros acessos da empresa.</p>
+        <label style="font-weight:400;display:flex;align-items:center;gap:6px;font-size:13px;">
+          <input type="checkbox" id="pm-restringir" ${temRestricao ? 'checked' : ''} onchange="document.getElementById('pm-modulos-lista').style.display = this.checked ? 'block' : 'none'">
+          Restringir este acesso aos módulos marcados abaixo (desmarcado = acesso completo a tudo)
+        </label>
+        <div id="pm-modulos-lista" style="display:${temRestricao ? 'block' : 'none'};margin-top:10px;">
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <button type="button" class="btn-secundario btn-sm" onclick="marcarTodosModulosMembro(true)">Marcar todos</button>
+            <button type="button" class="btn-secundario btn-sm" onclick="marcarTodosModulosMembro(false)">Desmarcar todos</button>
+          </div>
+          <div class="grade-modulos">
+            ${MODULOS_EMPRESA.map(mod => {
+              const ligado = !temRestricao || restrito.includes(mod.key);
+              return `
+              <label class="modulo-card ${ligado ? 'habilitado' : ''}" data-modulo-card>
+                <span class="modulo-icone">${mod.icone}</span>
+                <span class="modulo-texto">
+                  <span class="modulo-nome">${escapeHtml(mod.label)}</span>
+                  <span class="modulo-desc">${escapeHtml(mod.desc)}</span>
+                </span>
+                <span class="interruptor">
+                  <input type="checkbox" class="pm-modulo-check" value="${mod.key}" ${ligado ? 'checked' : ''} onchange="atualizarCartaoModulo(this)">
+                  <span class="trilho"></span>
+                </span>
+              </label>
+            `; }).join('')}
+          </div>
+        </div>
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" onclick="salvarPermissoesMembroEmpresa(${companyId}, ${memberId}, '${prefixo}')">Salvar Permissões</button>
+          <button class="btn-secundario" onclick="document.getElementById('modal-area-membro').innerHTML=''">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function marcarTodosModulosMembro(ligar) {
+  document.querySelectorAll('.pm-modulo-check').forEach(chk => {
     chk.checked = ligar;
     atualizarCartaoModulo(chk);
   });
+}
+
+async function salvarPermissoesMembroEmpresa(companyId, memberId, prefixo) {
+  const restringir = document.getElementById('pm-restringir').checked;
+  const enabled_modules = restringir
+    ? Array.from(document.querySelectorAll('.pm-modulo-check:checked')).map(chk => chk.value)
+    : null;
+  try {
+    const r = await api('/api/companies/' + companyId + '/members/' + memberId + '/permissions', { method: 'PUT', body: JSON.stringify({ enabled_modules }) });
+    mostrarToast(r.message);
+    document.getElementById('modal-area-membro').innerHTML = '';
+    carregarMembrosEmpresa(companyId, prefixo);
+  } catch (e) { mostrarToast(e.message, true); }
 }
 
 function camposCreditoVagasHtml(c) {
@@ -1965,16 +1986,17 @@ async function adicionarCreditoVagas(companyId) {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
-// Abre uma nova aba já autenticada como o Gestor (client_admin) desta empresa,
-// para o Master conseguir dar suporte olhando a conta dele sem saber a senha.
+// Troca a sessão desta MESMA aba para o Gestor (client_admin) desta empresa,
+// para o Master conseguir dar suporte olhando a conta dele sem saber a senha
+// — sem abrir uma aba nova a cada troca (o botão "Voltar para Master", que já
+// existe no menu, restaura a sessão do Master de volta, também na mesma aba).
 async function acessarComoGestor(companyId, memberId) {
   try {
     const r = await api('/api/companies/' + companyId + '/login-as', { method: 'POST', body: JSON.stringify({ memberId: memberId || null }) });
-    // Leva também o token/usuário do Master atual junto na carga — é o que
-    // permite mostrar o botão "Voltar para Master" já na aba aberta, sem
-    // precisar ficar caçando a aba antiga.
-    const carga = btoa(unescape(encodeURIComponent(JSON.stringify({ token: r.token, user: r.user, masterToken: ESTADO.token, masterUser: ESTADO.usuario }))));
-    window.open(location.origin + location.pathname + '#loginas=' + carga, '_blank');
+    sessionStorage.setItem('impulsionar_master_backup', JSON.stringify({ token: ESTADO.token, user: ESTADO.usuario }));
+    sessionStorage.setItem('impulsionar_token', r.token);
+    sessionStorage.setItem('impulsionar_usuario', JSON.stringify(r.user));
+    location.reload();
   } catch (e) { mostrarToast(e.message, true); }
 }
 
@@ -2021,19 +2043,24 @@ async function carregarMembrosEmpresa(companyId, prefixo) {
   if (!area) return;
   try {
     const membros = await api('/api/companies/' + companyId + '/members');
+    CACHE_MEMBROS_EMPRESA_ATUAL = membros;
     area.innerHTML = `
       <table style="margin-bottom:8px;">
-        <thead><tr><th>Nome</th><th>E-mail</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Permissões</th><th>Ações</th></tr></thead>
         <tbody>
-          ${membros.map(m => `
+          ${membros.map(m => {
+            const restrito = m.enabled_modules ? (() => { try { return JSON.parse(m.enabled_modules); } catch (e) { return null; } })() : null;
+            return `
             <tr>
               <td>${escapeHtml(m.name)}</td>
               <td>${escapeHtml(m.email)}</td>
+              <td style="font-size:12px;color:${Array.isArray(restrito) ? '#c9a227' : '#16a34a'};">${Array.isArray(restrito) ? `Restrito (${restrito.length} módulo(s))` : 'Acesso completo'}</td>
               <td>
+                <button type="button" class="btn-secundario btn-sm" onclick="abrirPermissoesMembroEmpresa(${companyId}, ${m.id}, '${prefixo}')">🔒 Permissões</button>
                 ${prefixo === 'ne' ? `<button type="button" class="btn-secundario btn-sm" onclick="acessarComoGestor(${companyId}, ${m.id})">🔑 Acessar</button>` : ''}
                 <button type="button" class="btn-perigo btn-sm" onclick="removerMembroEmpresa(${companyId}, ${m.id}, '${prefixo}')" ${membros.length <= 1 ? 'disabled title="Cadastre outro acesso antes de remover este"' : ''}>Remover</button>
               </td>
-            </tr>`).join('')}
+            </tr>`; }).join('')}
         </tbody>
       </table>
       <div class="linha">
@@ -2078,7 +2105,6 @@ async function salvarEmpresa(id) {
     if (id) {
       const campoNovaSenha = document.getElementById('ne-newPassword');
       const campoSenhaGestor = document.getElementById('ne-adminPassword');
-      const restringirModulos = document.getElementById('ne-restringir-modulos');
       const corpo = {
         name: document.getElementById('ne-name').value,
         segment: document.getElementById('ne-segment').value,
@@ -2089,10 +2115,7 @@ async function salvarEmpresa(id) {
         adminName: document.getElementById('ne-adminName').value,
         adminEmail: document.getElementById('ne-adminEmail').value,
         newPassword: campoNovaSenha ? campoNovaSenha.value : '',
-        adminPassword: campoSenhaGestor ? campoSenhaGestor.value : '',
-        enabled_modules: restringirModulos && restringirModulos.checked
-          ? Array.from(document.querySelectorAll('.ne-modulo-check:checked')).map(chk => chk.value)
-          : null
+        adminPassword: campoSenhaGestor ? campoSenhaGestor.value : ''
       };
       const r = await api('/api/companies/' + id, { method: 'PUT', body: JSON.stringify(corpo) });
       mostrarToast(r.message || 'Empresa atualizada!');
@@ -2178,6 +2201,7 @@ async function renderMinhaEmpresa() {
         <label>Acessos da Empresa</label>
         <p style="font-size:12px;color:#64748b;margin-top:-4px;">Cadastre outros membros da sua equipe para que cada um entre com o e-mail e a senha próprios dele, em vez de dividir um único login.</p>
         <div id="me-membros-area"><p style="font-size:12px;color:#94a3b8;">Carregando...</p></div>
+        <div id="modal-area-membro"></div>
       </div>
     `;
     carregarMembrosEmpresa(ESTADO.usuario.companyId, 'me');
@@ -4623,6 +4647,25 @@ function mostrarCertificado(cert) {
   janela.document.close();
 }
 
+async function baixarBackupBanco() {
+  try {
+    mostrarToast('Gerando backup...');
+    const resp = await fetch('/api/admin/database-backup', { headers: { 'Authorization': 'Bearer ' + ESTADO.token } });
+    if (!resp.ok) {
+      const dados = await resp.json().catch(() => ({}));
+      throw new Error(dados.error || 'Erro ao gerar o backup do banco.');
+    }
+    const blob = await resp.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const carimbo = new Date().toISOString().replace(/[:.]/g, '-');
+    a.href = url; a.download = `backup-impulsionar-${carimbo}.sqlite`;
+    document.body.appendChild(a); a.click(); a.remove();
+    window.URL.revokeObjectURL(url);
+    mostrarToast('Backup baixado!');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
 async function baixarCertificadoPdf(trackId) {
   try {
     const resp = await fetch('/api/tracks/' + trackId + '/certificate/pdf', {
@@ -5419,7 +5462,7 @@ async function excluirClosingFeePlan(id) {
   catch (e) { mostrarToast(e.message, true); }
 }
 
-// ---------- DPO Ambev (auditoria de processos por pilar) ----------
+// ---------- DPO Ambev (consultoria de processos por pilar) ----------
 let CACHE_DPO_PILARES = null;
 let CACHE_DPO_EMPRESAS = [];
 let CACHE_DPO_CICLOS_ADMIN = [];
@@ -5458,15 +5501,15 @@ function corBadgeDpo(score) {
 // ----- Master: preços por pilar -----
 async function renderDpoPrecos() {
   const cont = document.getElementById('conteudo');
-  cont.innerHTML = '<h1>DPO Ambev — Preços por Pilar</h1><p>Carregando...</p>';
+  cont.innerHTML = '<h1>Impulsionar V4 — DPO Ambev — Preços por Pilar</h1><p>Carregando...</p>';
   try {
     CACHE_DPO_PILARES = await api('/api/dpo/pillars');
     cont.innerHTML = `
-      <h1>DPO Ambev — Preços por Pilar</h1>
-      <p style="color:#64748b;margin-top:-8px;">Defina o valor de cada pilar avulso e o valor da Auditoria Completa (todos os pilares). A empresa escolhe o pacote na tela dela.</p>
+      <h1>Impulsionar V4 — DPO Ambev — Preços por Pilar</h1>
+      <p style="color:#64748b;margin-top:-8px;">Defina o valor de cada pilar avulso e o valor da Consultoria Completa (todos os pilares). A empresa escolhe o pacote na tela dela.</p>
       <div class="formulario">
         <div class="linha">
-          <div><label>Preço da Auditoria Completa (todos os pilares)</label><input id="dpo-preco-completo" type="number" step="0.01" value="${Number(CACHE_DPO_PILARES.precoCompleto || 0).toFixed(2)}"></div>
+          <div><label>Preço da Consultoria Completa (todos os pilares)</label><input id="dpo-preco-completo" type="number" step="0.01" value="${Number(CACHE_DPO_PILARES.precoCompleto || 0).toFixed(2)}"></div>
         </div>
         <h3>Pilares avulsos</h3>
         ${CACHE_DPO_PILARES.pilares.map(p => `
@@ -5478,7 +5521,7 @@ async function renderDpoPrecos() {
         <div class="acoes-form"><button class="btn-primario" onclick="salvarDpoPrecos()">Salvar Preços</button></div>
       </div>
     `;
-  } catch (e) { cont.innerHTML = `<h1>DPO Ambev — Preços por Pilar</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+  } catch (e) { cont.innerHTML = `<h1>Impulsionar V4 — DPO Ambev — Preços por Pilar</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
 
 async function salvarDpoPrecos() {
@@ -5492,16 +5535,19 @@ async function salvarDpoPrecos() {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
-// ----- Master: agenda de auditorias (ciclos) -----
+// ----- Master: agenda de consultorias (ciclos) -----
+let CACHE_DPO_EMPRESAS_TODAS = [];
+
 async function renderDpoAgenda() {
   const cont = document.getElementById('conteudo');
-  cont.innerHTML = '<h1>DPO Ambev — Agenda de Auditorias</h1><p>Carregando...</p>';
+  cont.innerHTML = '<h1>Impulsionar V4 — DPO Ambev — Agenda de Consultorias</h1><p>Carregando...</p>';
   try {
     CACHE_DPO_PILARES = await api('/api/dpo/pillars');
     CACHE_DPO_EMPRESAS = await api('/api/admin/dpo/companies');
+    CACHE_DPO_EMPRESAS_TODAS = await api('/api/admin/dpo/companies?all=1');
     CACHE_DPO_CICLOS_ADMIN = await api('/api/dpo/cycles');
     cont.innerHTML = `
-      <h1>DPO Ambev — Agenda de Auditorias</h1>
+      <h1>Impulsionar V4 — DPO Ambev — Agenda de Consultorias</h1>
       <p style="color:#64748b;margin-top:-8px;">Crie um novo ciclo de autoavaliação (mensal) para uma empresa que já comprou algum pilar. A empresa preenche o checklist; você acompanha o resultado.</p>
       <div class="barra-acoes"><div class="direita"><button class="btn-primario" onclick="mostrarFormularioNovoCicloDpo()">+ Novo Ciclo</button></div></div>
       <div id="form-area"></div>
@@ -5522,8 +5568,120 @@ async function renderDpoAgenda() {
         `).join('')}
       </div>
       ${!CACHE_DPO_CICLOS_ADMIN.length ? '<div class="msg-vazio">Nenhum ciclo criado ainda.</div>' : ''}
+
+      <h2 style="margin-top:32px;">🗓️ Auditoria Oficial Ambev</h2>
+      <p style="color:#64748b;margin-top:-8px;">Esta é a data do evento real de auditoria da Ambev (diferente da autoavaliação mensal). Marque aqui a data combinada com cada empresa — ela também aparece na tela da própria empresa.</p>
+      <table>
+        <thead><tr><th>Empresa</th><th>Data da Auditoria Oficial</th><th>Observação</th><th></th></tr></thead>
+        <tbody>
+          ${CACHE_DPO_EMPRESAS_TODAS.map(e => `
+            <tr>
+              <td>${escapeHtml(e.name)}</td>
+              <td><input id="dpo-audoficial-data-${e.id}" type="date" value="${e.auditoriaOficialData || ''}"></td>
+              <td><input id="dpo-audoficial-nota-${e.id}" placeholder="ex: confirmar com auditor líder" value="${escapeHtml(e.auditoriaOficialNota || '')}" style="width:100%;"></td>
+              <td><button class="btn-secundario btn-sm" onclick="salvarAuditoriaOficialDpo(${e.id})">Salvar</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      ${!CACHE_DPO_EMPRESAS_TODAS.length ? '<div class="msg-vazio">Nenhuma empresa cadastrada ainda.</div>' : ''}
+
+      <h2 style="margin-top:32px;">🔍 Layout dos Pilares</h2>
+      <p style="color:#64748b;margin-top:-8px;">Veja como está estruturado cada pilar (perguntas, verificações, explicação de pontos e how to check) sem afetar nenhuma empresa.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;">
+        ${CACHE_DPO_PILARES.pilares.map(p => `<button class="dpo-pilar-botao" onclick="abrirLayoutPilarDpo('${p.key}')">${p.numero}. ${escapeHtml(p.label)}</button>`).join('')}
+      </div>
+
+      <h2 style="margin-top:32px;">💰 Valores Negociados</h2>
+      <p style="color:#64748b;margin-top:-8px;">Feche um valor diferente do preço de tabela com uma empresa específica e gere na hora o link de pagamento para enviar a ela.</p>
+      <div class="formulario">
+        <div class="linha">
+          <div style="flex:2"><label>Empresa</label>
+            <select id="dpo-negociado-empresa">
+              <option value="">Selecione...</option>
+              ${CACHE_DPO_EMPRESAS_TODAS.map(e => `<option value="${e.id}">${escapeHtml(e.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div><label>Pacote</label>
+            <select id="dpo-negociado-escopo" onchange="document.getElementById('dpo-negociado-pilar-area').style.display = this.value==='pilar' ? '' : 'none';">
+              <option value="completo">Consultoria Completa (todos os pilares)</option>
+              <option value="pilar">Pilar avulso</option>
+            </select>
+          </div>
+          <div id="dpo-negociado-pilar-area" style="display:none;"><label>Pilar</label>
+            <select id="dpo-negociado-pilar">
+              ${CACHE_DPO_PILARES.pilares.map(p => `<option value="${p.key}">${p.numero}. ${escapeHtml(p.label)}</option>`).join('')}
+            </select>
+          </div>
+          <div><label>Valor negociado (R$)</label><input id="dpo-negociado-preco" type="number" step="0.01" placeholder="0,00"></div>
+        </div>
+        <div class="acoes-form"><button class="btn-primario" onclick="gerarValorNegociadoDpo()">Gerar Link de Pagamento</button></div>
+        <div id="dpo-negociado-resultado"></div>
+      </div>
+      <div id="modal-area"></div>
     `;
-  } catch (e) { cont.innerHTML = `<h1>DPO Ambev — Agenda de Auditorias</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+  } catch (e) { cont.innerHTML = `<h1>Impulsionar V4 — DPO Ambev — Agenda de Consultorias</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+async function salvarAuditoriaOficialDpo(companyId) {
+  const data = document.getElementById('dpo-audoficial-data-' + companyId).value;
+  const nota = document.getElementById('dpo-audoficial-nota-' + companyId).value;
+  try {
+    await api('/api/admin/dpo/companies/' + companyId + '/auditoria-oficial', { method: 'PUT', body: JSON.stringify({ data: data || null, nota: nota || null }) });
+    mostrarToast('Data da Auditoria Oficial Ambev atualizada!');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function abrirLayoutPilarDpo(key) {
+  const area = document.getElementById('modal-area');
+  area.innerHTML = `<div class="modal-fundo"><div class="modal-caixa"><p>Carregando...</p></div></div>`;
+  try {
+    const pilar = await api('/api/admin/dpo/pillar-layout/' + key);
+    area.innerHTML = `
+      <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+        <div class="modal-caixa" style="max-width:800px;max-height:85vh;overflow:auto;">
+          <h3 style="margin-top:0;">${pilar.numero}. ${escapeHtml(pilar.label)}</h3>
+          ${pilar.grupos.map(g => `
+            <div style="margin-bottom:18px;">
+              <h4 style="margin-bottom:6px;">${escapeHtml(g.titulo || ('Grupo ' + g.numero))}</h4>
+              ${g.perguntas.map(q => `
+                <div class="dpo-pergunta" style="margin-bottom:10px;">
+                  <div><strong>${escapeHtml(q.numero)}.</strong> ${escapeHtml(q.questao)} ${q.mandatoria ? '<span style="color:#dc2626;font-size:11px;">(mandatória)</span>' : ''}</div>
+                  ${q.verificacao ? `<div style="font-size:13px;color:#334155;margin-top:4px;"><strong>Verificação:</strong> ${escapeHtml(q.verificacao)}</div>` : ''}
+                  <details style="margin-top:4px;"><summary style="cursor:pointer;font-size:12px;color:#2563eb;">Explicação de pontos / How to check</summary>
+                    ${q.explicacao_pontos ? `<div style="font-size:12px;white-space:pre-wrap;margin-top:4px;">${escapeHtml(q.explicacao_pontos)}</div>` : ''}
+                    ${q.how_to_check ? `<div style="font-size:12px;white-space:pre-wrap;margin-top:6px;"><strong>How to check:</strong> ${escapeHtml(q.how_to_check)}</div>` : ''}
+                  </details>
+                </div>
+              `).join('')}
+            </div>
+          `).join('')}
+          <div class="acoes-form"><button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button></div>
+        </div>
+      </div>
+    `;
+  } catch (e) { area.innerHTML = ''; mostrarToast(e.message, true); }
+}
+
+async function gerarValorNegociadoDpo() {
+  const companyId = document.getElementById('dpo-negociado-empresa').value;
+  const scope = document.getElementById('dpo-negociado-escopo').value;
+  const pillarKey = document.getElementById('dpo-negociado-pilar').value;
+  const price = document.getElementById('dpo-negociado-preco').value;
+  const resultado = document.getElementById('dpo-negociado-resultado');
+  if (!companyId) { mostrarToast('Selecione a empresa.', true); return; }
+  if (!price || Number(price) <= 0) { mostrarToast('Informe o valor negociado.', true); return; }
+  try {
+    const r = await api('/api/admin/dpo/negotiated-purchase', { method: 'POST', body: JSON.stringify({ companyId, scope, pillarKey: scope === 'pilar' ? pillarKey : null, price }) });
+    resultado.innerHTML = `
+      <div class="msg-vazio" style="color:#16a34a;border-color:#16a34a;">
+        Link de pagamento gerado para <strong>${escapeHtml(r.companyName)}</strong>:<br>
+        <input readonly value="${r.initPoint}" style="width:100%;margin-top:6px;" onclick="this.select();">
+        <div class="acoes-form" style="margin-top:8px;"><button class="btn-secundario btn-sm" onclick="navigator.clipboard.writeText('${r.initPoint}');mostrarToast('Link copiado!');">📋 Copiar Link</button></div>
+      </div>
+    `;
+    mostrarToast('Valor negociado criado!');
+  } catch (e) { mostrarToast(e.message, true); }
 }
 
 function mostrarFormularioNovoCicloDpo() {
@@ -5535,7 +5693,7 @@ function mostrarFormularioNovoCicloDpo() {
         <div style="flex:2"><label>Empresa</label>
           <select id="dpo-ciclo-empresa" onchange="atualizarPilaresDisponiveisCicloDpo()">
             <option value="">Selecione...</option>
-            ${CACHE_DPO_EMPRESAS.map(e => `<option value="${e.id}">${escapeHtml(e.name)}${e.compraCompleta ? ' (Auditoria Completa)' : ''}</option>`).join('')}
+            ${CACHE_DPO_EMPRESAS.map(e => `<option value="${e.id}">${escapeHtml(e.name)}${e.compraCompleta ? ' (Consultoria Completa)' : ''}</option>`).join('')}
           </select>
         </div>
         <div><label>Referência (ex: Setembro/2026)</label><input id="dpo-ciclo-referencia" placeholder="ex: Setembro/2026"></div>
@@ -5601,18 +5759,24 @@ async function verDetalheCicloDpoAdmin(id) {
 // ----- Empresa: home (grade de pilares, igual à referência) -----
 async function renderDpoHome() {
   const cont = document.getElementById('conteudo');
-  cont.innerHTML = '<h1>DPO Ambev</h1><p>Carregando...</p>';
+  cont.innerHTML = '<h1>Impulsionar V4 — DPO Ambev</h1><p>Carregando...</p>';
   try {
     CACHE_DPO_PILARES = await api('/api/dpo/pillars');
     const ciclos = await api('/api/dpo/cycles');
     const ciclosAbertos = ciclos.filter(c => c.status !== 'concluido');
     const cicloPorPilar = {};
     ciclosAbertos.forEach(c => { c.pilares.forEach(p => { if (!cicloPorPilar[p]) cicloPorPilar[p] = c; }); });
+    const minhaEmpresaDpo = await api('/api/companies/' + ESTADO.usuario.companyId).catch(() => null);
 
     cont.innerHTML = `
-      <h1>DPO Ambev</h1>
-      <p style="color:#64748b;margin-top:-8px;">Auditoria de processos por pilar, com autoavaliação mensal e planos de ação.</p>
-      <div class="barra-acoes"><div class="direita"><button class="btn-primario" onclick="mostrarComprasDpo()">🛒 Comprar Pilares / Auditoria Completa</button></div></div>
+      <h1>Impulsionar V4 — DPO Ambev</h1>
+      <p style="color:#64748b;margin-top:-8px;">Consultoria de processos por pilar, com autoavaliação mensal e planos de ação.</p>
+      ${minhaEmpresaDpo && minhaEmpresaDpo.dpo_auditoria_oficial_data ? `
+      <div class="msg-vazio" style="color:#7c3aed;border-color:#7c3aed;text-align:left;">
+        🗓️ <strong>Auditoria Oficial Ambev marcada para ${new Date(minhaEmpresaDpo.dpo_auditoria_oficial_data + 'T00:00:00').toLocaleDateString('pt-BR')}</strong>
+        ${minhaEmpresaDpo.dpo_auditoria_oficial_nota ? `<div style="font-size:13px;margin-top:4px;">${escapeHtml(minhaEmpresaDpo.dpo_auditoria_oficial_nota)}</div>` : ''}
+      </div>` : ''}
+      <div class="barra-acoes"><div class="direita"><button class="btn-primario" onclick="mostrarComprasDpo()">🛒 Comprar Pilares / Consultoria Completa</button></div></div>
       <div id="modal-area"></div>
       <div class="dpo-grade">
         ${CACHE_DPO_PILARES.pilares.map(p => {
@@ -5633,7 +5797,7 @@ async function renderDpoHome() {
         <div class="grid-3">
           ${CACHE_DPO_PILARES.pendentes.map(p => `
             <div class="plano-card">
-              <div class="plano-meta">${p.scope === 'completo' ? 'Auditoria Completa' : escapeHtml(dpoLabelDoPilar(p.pillar_key))} — R$ ${Number(p.price).toFixed(2)}</div>
+              <div class="plano-meta">${p.scope === 'completo' ? 'Consultoria Completa' : escapeHtml(dpoLabelDoPilar(p.pillar_key))} — R$ ${Number(p.price).toFixed(2)}</div>
               <div class="acoes-form"><button class="btn-primario btn-sm" onclick="pagarDpoPendente(${p.id})">Pagar</button></div>
             </div>
           `).join('')}
@@ -5655,7 +5819,7 @@ async function renderDpoHome() {
         </div>
       </div>` : ''}
     `;
-  } catch (e) { cont.innerHTML = `<h1>DPO Ambev</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+  } catch (e) { cont.innerHTML = `<h1>Impulsionar V4 — DPO Ambev</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
 
 function mostrarComprasDpo() {
@@ -5666,11 +5830,11 @@ function mostrarComprasDpo() {
     <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
       <div class="modal-caixa" style="max-width:520px;">
         <h3 style="margin-top:0;">Comprar DPO Ambev</h3>
-        ${completa ? `<p style="font-size:13px;color:#16a34a;">✓ Sua empresa já tem a Auditoria Completa (todos os pilares).</p>` : `
+        ${completa ? `<p style="font-size:13px;color:#16a34a;">✓ Sua empresa já tem a Consultoria Completa (todos os pilares).</p>` : `
         <div class="plano-card" style="margin-bottom:14px;">
-          <h4 style="margin-top:0;">Auditoria Completa</h4>
+          <h4 style="margin-top:0;">Consultoria Completa</h4>
           <div class="plano-meta">Todos os 7 pilares — R$ ${Number(CACHE_DPO_PILARES.precoCompleto).toFixed(2)}</div>
-          <div class="acoes-form"><button class="btn-primario btn-sm" onclick="comprarDpo('completo', null)">Comprar Auditoria Completa</button></div>
+          <div class="acoes-form"><button class="btn-primario btn-sm" onclick="comprarDpo('completo', null)">Comprar Consultoria Completa</button></div>
         </div>
         <p style="font-size:12px;color:#64748b;">Ou compre pilares avulsos:</p>
         `}
@@ -7113,11 +7277,12 @@ async function renderMeuPerfilImpulsionar() {
   const cont = document.getElementById('conteudo');
   cont.innerHTML = '<h1>Meu Perfil</h1><p>Carregando...</p>';
   try {
-    const [perfil, whats, mp, appUrl] = await Promise.all([
+    const [perfil, whats, mp, appUrl, dbInfo] = await Promise.all([
       api('/api/platform/profile'),
       api('/api/me/whatsapp'),
       api('/api/integrations/mercadopago').catch(() => ({ configured: false, tokenPreview: null })),
-      api('/api/integrations/app-url').catch(() => ({ url: '', isPublica: false }))
+      api('/api/integrations/app-url').catch(() => ({ url: '', isPublica: false })),
+      api('/api/admin/database-info').catch(() => ({ persistente: false, caminho: '' }))
     ]);
     cont.innerHTML = `
       <h1>Meu Perfil</h1>
@@ -7190,6 +7355,17 @@ async function renderMeuPerfilImpulsionar() {
           <button class="btn-primario" onclick="salvarAppUrl()">Salvar URL</button>
         </div>
         <div id="mp-app-url-resultado" style="font-size:13px;margin-top:6px;"></div>
+      </div>
+
+      <h3 style="margin-top:28px;">Backup do Banco de Dados</h3>
+      <p style="color:#64748b;margin-top:-8px;">
+        ${dbInfo.persistente
+          ? `<strong style="color:#16a34a;">✓ Banco em armazenamento persistente</strong> (${escapeHtml(dbInfo.caminho)}) — os dados sobrevivem a um novo deploy.`
+          : `<strong style="color:#dc2626;">⚠️ Banco dentro da pasta do código</strong> (${escapeHtml(dbInfo.caminho)}) — TODA vez que um novo deploy é feito (novo upload de arquivos no GitHub), este arquivo é substituído pelo que estiver salvo no repositório, apagando tudo que foi cadastrado depois do último upload do banco. Configure um Volume persistente no Railway e a variável DB_PATH para resolver isso de vez.`}
+      </p>
+      <div class="formulario" style="max-width:640px;">
+        <p style="font-size:12px;color:#64748b;">Baixe uma cópia do banco atual antes de qualquer mudança arriscada (trocar de servidor, configurar o Volume, etc.) — assim você sempre tem uma cópia de segurança na mão.</p>
+        <div class="acoes-form"><button class="btn-secundario" onclick="baixarBackupBanco()">⬇️ Baixar Backup Agora (.sqlite)</button></div>
       </div>
 
       <h3 style="margin-top:28px;">Teste de Envio de E-mail (SMTP)</h3>

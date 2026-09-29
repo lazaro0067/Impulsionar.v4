@@ -14,7 +14,7 @@ const multer = require('multer');
 const PDFDocument = require('pdfkit');
 const { MercadoPagoConfig, PreApproval, Preference, Payment, PaymentRefund } = require('mercadopago');
 
-// Base de perguntas do checklist "DPO AMBEV" (auditoria por pilares) — vem de
+// Base de perguntas do checklist "DPO AMBEV" (consultoria por pilares) — vem de
 // uma planilha modelo da Ambev e é conteúdo estático (não muda pela tela),
 // então fica num JSON à parte em vez de virar uma tabela gigante no banco.
 const DPO_AMBEV_DATA = require('./dpo_ambev_data.json');
@@ -352,7 +352,28 @@ async function perguntarIA(promptSistema, promptUsuario, maxTokens = 600) {
     return (dados.content || []).map(bloco => bloco.text || '').join('\n').trim();
 }
 
-const dbFile = path.join(__dirname, 'database.sqlite');
+// Caminho do banco: se DB_PATH estiver definido (ex.: um Volume persistente
+// no Railway, tipo /data/database.sqlite), usa ele — assim o banco fica FORA
+// da pasta do código e sobrevive a qualquer novo deploy/upload de arquivos.
+// Sem essa variável, continua funcionando como antes (arquivo ao lado do
+// server.js), só que aí ele é apagado/sobrescrito a cada novo deploy.
+const DB_CAMINHO_ANTIGO = path.join(__dirname, 'database.sqlite');
+const dbFile = process.env.DB_PATH || DB_CAMINHO_ANTIGO;
+const pastaDoBanco = path.dirname(dbFile);
+if (!fs.existsSync(pastaDoBanco)) fs.mkdirSync(pastaDoBanco, { recursive: true });
+
+// Migração automática (só acontece uma vez, na primeira subida depois de
+// configurar DB_PATH): se o banco persistente ainda não existir no Volume,
+// mas existir um banco antigo dentro da pasta do código (o que veio junto
+// no deploy), copia ele para dentro do Volume ANTES de abrir a conexão — sem
+// isso, ligar o Volume faria o sistema começar do zero, como se todo mundo
+// tivesse sido apagado.
+if (process.env.DB_PATH && dbFile !== DB_CAMINHO_ANTIGO && !fs.existsSync(dbFile) && fs.existsSync(DB_CAMINHO_ANTIGO)) {
+    fs.copyFileSync(DB_CAMINHO_ANTIGO, dbFile);
+    console.log(`♻️  Banco existente migrado automaticamente para o Volume persistente: ${dbFile}`);
+}
+
+console.log(`📂 Usando banco de dados em: ${dbFile}${process.env.DB_PATH ? ' (persistente, via DB_PATH)' : ' (⚠️ dentro da pasta do código — configure DB_PATH com um Volume para não perder dados a cada deploy)'}`);
 const db = new sqlite3.Database(dbFile, (err) => {
     if (err) {
         console.error('Erro na base de dados:', err.message);
@@ -389,7 +410,10 @@ function inicializarBase() {
          // anterior, preservado para empresas já cadastradas). vaga_credito_dias:
          // saldo de dias de divulgação de vaga que o Master concede como bônus,
          // consumido automaticamente na aprovação em vez de cobrar pelo Mercado Pago.
-         'enabled_modules TEXT', 'vaga_credito_dias INTEGER DEFAULT 0'].forEach(coluna => {
+         'enabled_modules TEXT', 'vaga_credito_dias INTEGER DEFAULT 0',
+         // Data da Auditoria Oficial Ambev (o evento real de auditoria, marcado
+         // pelo Master) e uma observação livre sobre esse agendamento.
+         'dpo_auditoria_oficial_data TEXT', 'dpo_auditoria_oficial_nota TEXT'].forEach(coluna => {
             db.run(`ALTER TABLE companies ADD COLUMN ${coluna}`, () => {});
         });
 
@@ -415,6 +439,12 @@ function inicializarBase() {
         db.run(`ALTER TABLE users ADD COLUMN mentor_id INTEGER`, () => {});
         db.run(`ALTER TABLE users ADD COLUMN whatsapp_number TEXT`, () => {});
         db.run(`ALTER TABLE users ADD COLUMN whatsapp_notifications INTEGER DEFAULT 0`, () => {});
+        // Permissão de módulos INDIVIDUAL por acesso (client_admin) dentro da
+        // empresa — antes só existia companies.enabled_modules (um valor único
+        // pra todo mundo da empresa). Agora cada usuário pode ter sua própria
+        // restrição; NULL = sem restrição própria, cai no padrão da empresa
+        // (companies.enabled_modules), que por sua vez, se também NULL, libera tudo.
+        db.run(`ALTER TABLE users ADD COLUMN enabled_modules TEXT`, () => {});
 
         // Dados da própria Impulsionar (usados nos contratos como CONTRATADA e
         // nas automações). Só existe uma linha, com id fixo = 1.
@@ -1018,9 +1048,9 @@ function inicializarBase() {
             FOREIGN KEY(created_by) REFERENCES users(id)
         )`);
 
-        // ---------- DPO AMBEV: auditoria de processos por pilar ----------
+        // ---------- DPO AMBEV: consultoria de processos por pilar ----------
         // Preço de cada pilar (Master define em "DPO Ambev > Preços"). O preço
-        // da "Auditoria Completa" (todos os pilares de uma vez) fica guardado
+        // da "Consultoria Completa" (todos os pilares de uma vez) fica guardado
         // em integration_settings (chave dpo_full_audit_price), reaproveitando
         // a mesma tabelinha de configurações que já existe pro Mercado Pago.
         db.run(`CREATE TABLE IF NOT EXISTS dpo_pillar_prices (
@@ -1032,7 +1062,7 @@ function inicializarBase() {
             db.run(`INSERT OR IGNORE INTO dpo_pillar_prices (pillar_key, price, active) VALUES (?, 0, 1)`, [chave]);
         });
 
-        // Compra de um pilar avulso ou da auditoria completa por uma empresa —
+        // Compra de um pilar avulso ou da consultoria completa por uma empresa —
         // cobrança única via Mercado Pago (Checkout Pro), no mesmo padrão já
         // usado para divulgação de vagas e taxa de fechamento.
         db.run(`CREATE TABLE IF NOT EXISTS dpo_purchases (
@@ -1617,9 +1647,15 @@ app.post('/api/login', (req, res) => {
             { expiresIn: '8h' }
         );
 
+        // Permissão por módulo: para um acesso de empresa (client_admin), o que
+        // vale primeiro é a restrição PRÓPRIA daquele usuário (users.enabled_modules);
+        // só quando ele não tem nada configurado é que cai no padrão da empresa
+        // (companies.enabled_modules) — mantém compatível quem já configurava
+        // por empresa antes de existir a opção por usuário.
         let enabledModules = null;
-        if (user.role === 'client_admin' && user.companyEnabledModules) {
-            try { enabledModules = JSON.parse(user.companyEnabledModules); } catch (e) { enabledModules = null; }
+        if (user.role === 'client_admin') {
+            const fonte = user.enabled_modules || user.companyEnabledModules;
+            if (fonte) { try { enabledModules = JSON.parse(fonte); } catch (e) { enabledModules = null; } }
         } else if (user.role === 'autonomous' && user.employeeEnabledModules) {
             try { enabledModules = JSON.parse(user.employeeEnabledModules); } catch (e) { enabledModules = null; }
         }
@@ -1884,7 +1920,8 @@ app.post('/api/companies/:id/login-as', requireRole('admin'), async (req, res) =
             { expiresIn: '2h' }
         );
         let enabledModules = null;
-        if (gestor.companyEnabledModules) { try { enabledModules = JSON.parse(gestor.companyEnabledModules); } catch (e) { enabledModules = null; } }
+        const fonteModulos = gestor.enabled_modules || gestor.companyEnabledModules;
+        if (fonteModulos) { try { enabledModules = JSON.parse(fonteModulos); } catch (e) { enabledModules = null; } }
         res.json({
             token,
             user: {
@@ -1906,8 +1943,26 @@ app.get('/api/companies/:id/members', requireRole('admin', 'client_admin'), asyn
     if (req.user.role === 'client_admin' && String(req.params.id) !== String(req.user.companyId)) {
         return res.status(403).json({ error: 'Você só pode ver os acessos da sua própria corporação.' });
     }
-    const membros = await dbAll(`SELECT id, name, email FROM users WHERE company_id = ? AND role = 'client_admin' ORDER BY id ASC`, [req.params.id]);
+    const membros = await dbAll(`SELECT id, name, email, enabled_modules FROM users WHERE company_id = ? AND role = 'client_admin' ORDER BY id ASC`, [req.params.id]);
     res.json(membros);
+});
+
+// Permissão de módulos individual deste acesso (gestor ou membro) — some com
+// o padrão da empresa (ver /api/login), então aqui só grava a restrição
+// PRÓPRIA deste usuário. enabled_modules === null (nenhuma marcação) limpa a
+// restrição própria e volta a valer o padrão da empresa.
+app.put('/api/companies/:id/members/:memberId/permissions', requireRole('admin', 'client_admin'), async (req, res) => {
+    if (req.user.role === 'client_admin' && String(req.params.id) !== String(req.user.companyId)) {
+        return res.status(403).json({ error: 'Você só pode gerenciar acessos da sua própria corporação.' });
+    }
+    const { enabled_modules } = req.body;
+    const valor = Array.isArray(enabled_modules) ? JSON.stringify(enabled_modules) : null;
+    db.run(`UPDATE users SET enabled_modules = ? WHERE id = ? AND company_id = ? AND role = 'client_admin'`,
+        [valor, req.params.memberId, req.params.id], function (err) {
+            if (err) return res.status(400).json({ error: 'Erro ao salvar permissões.' });
+            if (this.changes === 0) return res.status(404).json({ error: 'Acesso não encontrado nesta empresa.' });
+            res.json({ message: 'Permissões deste acesso atualizadas!' });
+        });
 });
 
 app.post('/api/companies/:id/members', requireRole('admin', 'client_admin'), async (req, res) => {
@@ -4464,6 +4519,23 @@ app.delete('/api/integrations/app-url', requireRole('admin'), (req, res) => {
     });
 });
 
+// Informa se o banco está num caminho persistente (DB_PATH, ex.: um Volume no
+// Railway) ou dentro da pasta do código — nesse segundo caso, todo novo
+// deploy substitui o arquivo pela versão salva no repositório, apagando o que
+// foi cadastrado depois do último upload do banco no GitHub.
+app.get('/api/admin/database-info', requireRole('admin'), (req, res) => {
+    res.json({ persistente: !!process.env.DB_PATH, caminho: dbFile });
+});
+
+// Baixa uma cópia do arquivo .sqlite atual — útil antes de qualquer mudança
+// arriscada (trocar de servidor, configurar um Volume, etc.), já que hoje o
+// banco não é versionado/backupeado automaticamente em lugar nenhum.
+app.get('/api/admin/database-backup', requireRole('admin'), (req, res) => {
+    res.download(dbFile, 'backup-impulsionar.sqlite', (err) => {
+        if (err && !res.headersSent) res.status(500).json({ error: 'Erro ao gerar o backup do banco.' });
+    });
+});
+
 // ============================================================
 // PAINEL DE AUTOMAÇÃO (o que roda sozinho x precisa de autorização do Master)
 // ============================================================
@@ -5114,10 +5186,10 @@ app.post('/api/companies/:id/subscription/change-plan', async (req, res) => {
 });
 
 // ============================================================
-// DPO AMBEV — auditoria de processos por pilar (autoavaliação mensal)
+// DPO AMBEV — consultoria de processos por pilar (autoavaliação mensal)
 // ============================================================
 
-// Pilares que a empresa já tem liberados: todos, se ela comprou a "Auditoria
+// Pilares que a empresa já tem liberados: todos, se ela comprou a "Consultoria
 // Completa", ou só os avulsos que ela pagou individualmente.
 async function pilaresAtivosDaEmpresa(companyId) {
     const compras = await dbAll(`SELECT * FROM dpo_purchases WHERE company_id = ? AND status = 'paid'`, [companyId]);
@@ -5130,7 +5202,7 @@ async function pilaresAtivosDaEmpresa(companyId) {
 // responde o erro) quando não pode.
 async function obterCicloComAcesso(req, res, cicloId) {
     const ciclo = await dbGet(`SELECT * FROM dpo_audit_cycles WHERE id = ?`, [cicloId]);
-    if (!ciclo) { res.status(404).json({ error: 'Ciclo de auditoria não encontrado.' }); return null; }
+    if (!ciclo) { res.status(404).json({ error: 'Ciclo de consultoria não encontrado.' }); return null; }
     if (req.user.role === 'client_admin' && String(ciclo.company_id) !== String(req.user.companyId)) {
         res.status(403).json({ error: 'Este ciclo não pertence à sua empresa.' });
         return null;
@@ -5221,7 +5293,80 @@ app.put('/api/admin/dpo/pricing', requireRole('admin'), async (req, res) => {
     } catch (e) { res.status(400).json({ error: 'Erro ao salvar os preços.' }); }
 });
 
-// Empresa compra um pilar avulso ou a auditoria completa — gera cobrança
+// Master visualiza o conteúdo completo de um pilar (perguntas, verificação,
+// explicação de pontos e how to check) sem depender de nenhuma empresa/ciclo —
+// só para conferir o layout das perguntas.
+app.get('/api/admin/dpo/pillar-layout/:key', requireRole('admin'), (req, res) => {
+    const chave = req.params.key;
+    if (!DPO_PILARES_ORDEM.includes(chave)) return res.status(404).json({ error: 'Pilar inválido.' });
+    res.json({ key: chave, numero: DPO_PILARES_ORDEM.indexOf(chave) + 1, ...DPO_AMBEV_DATA[chave] });
+});
+
+// Master calendariza a Auditoria Oficial Ambev (o evento real de auditoria,
+// diferente da autoavaliação mensal) para uma empresa específica.
+app.put('/api/admin/dpo/companies/:id/auditoria-oficial', requireRole('admin'), async (req, res) => {
+    const { data, nota } = req.body;
+    try {
+        const empresa = await dbGet(`SELECT id FROM companies WHERE id = ?`, [req.params.id]);
+        if (!empresa) return res.status(404).json({ error: 'Empresa não encontrada.' });
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE companies SET dpo_auditoria_oficial_data = ?, dpo_auditoria_oficial_nota = ? WHERE id = ?`,
+            [data || null, nota || null, req.params.id], (err) => err ? reject(err) : resolve()
+        ));
+        res.json({ message: 'Data da Auditoria Oficial Ambev atualizada!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar a data da auditoria oficial.' }); }
+});
+
+// Master fecha um valor negociado (diferente do preço de tabela) com uma
+// empresa específica, para um pilar avulso ou para a Consultoria Completa, e
+// gera na hora o link de pagamento do Mercado Pago para enviar à empresa.
+app.post('/api/admin/dpo/negotiated-purchase', requireRole('admin'), async (req, res) => {
+    const { companyId, scope, pillarKey, price } = req.body;
+    if (!companyId) return res.status(400).json({ error: 'Selecione a empresa.' });
+    if (!['completo', 'pilar'].includes(scope)) return res.status(400).json({ error: 'Escopo inválido.' });
+    if (scope === 'pilar' && !DPO_PILARES_ORDEM.includes(pillarKey)) return res.status(400).json({ error: 'Selecione um pilar válido.' });
+    const preco = Number(price);
+    if (!preco || preco <= 0) return res.status(400).json({ error: 'Informe o valor negociado.' });
+    if (!mpPreference) return res.status(503).json({ error: 'Mercado Pago ainda não foi configurado no servidor.' });
+    try {
+        const empresa = await dbGet(`SELECT id, name FROM companies WHERE id = ?`, [companyId]);
+        if (!empresa) return res.status(404).json({ error: 'Empresa não encontrada.' });
+        const ativos = await pilaresAtivosDaEmpresa(companyId);
+        if (scope === 'completo' && ativos.length === DPO_PILARES_ORDEM.length) return res.status(400).json({ error: 'Esta empresa já tem a Consultoria Completa liberada.' });
+        if (scope === 'pilar' && ativos.includes(pillarKey)) return res.status(400).json({ error: 'Esta empresa já tem este pilar liberado.' });
+
+        const titulo = scope === 'completo'
+            ? 'DPO Ambev — Consultoria Completa (valor negociado)'
+            : `DPO Ambev — Pilar ${DPO_AMBEV_DATA[pillarKey].label} (valor negociado)`;
+
+        const resultado = await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_purchases (company_id, scope, pillar_key, price) VALUES (?, ?, ?, ?)`,
+            [companyId, scope, scope === 'pilar' ? pillarKey : null, preco],
+            function (err) { err ? reject(err) : resolve(this.lastID); }
+        ));
+
+        const preference = await mpPreference.create({
+            body: {
+                items: [{ title: titulo, quantity: 1, unit_price: preco, currency_id: 'BRL' }],
+                external_reference: `dpoaudit:${resultado}`,
+                ...montarRetornoMercadoPago()
+            }
+        });
+        const checkoutUrl = preference.sandbox_init_point || preference.init_point;
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE dpo_purchases SET mp_preference_id = ?, checkout_url = ? WHERE id = ?`,
+            [preference.id, checkoutUrl, resultado], (err) => err ? reject(err) : resolve()
+        ));
+        notificarGestoresDaEmpresa(companyId, 'DPO Ambev — pagamento negociado', `Um valor negociado de R$ ${preco.toFixed(2)} foi definido — finalize o pagamento no seu painel do DPO Ambev.`);
+        res.json({ message: 'Valor negociado criado! Envie o link de pagamento para a empresa.', id: resultado, initPoint: checkoutUrl, companyName: empresa.name });
+    } catch (e) {
+        const detalhe = detalheErroMercadoPago(e);
+        console.error('Erro ao criar compra negociada DPO Ambev:', detalhe);
+        res.status(400).json({ error: `Erro ao iniciar o pagamento no Mercado Pago: ${detalhe}` });
+    }
+});
+
+// Empresa compra um pilar avulso ou a consultoria completa — gera cobrança
 // única no Mercado Pago (Checkout Pro), igual à divulgação de vaga.
 app.post('/api/dpo/purchase', requireRole('client_admin'), async (req, res) => {
     const { scope, pillarKey } = req.body;
@@ -5231,7 +5376,7 @@ app.post('/api/dpo/purchase', requireRole('client_admin'), async (req, res) => {
     try {
         const companyId = req.user.companyId;
         const ativos = await pilaresAtivosDaEmpresa(companyId);
-        if (scope === 'completo' && ativos.length === DPO_PILARES_ORDEM.length) return res.status(400).json({ error: 'Sua empresa já tem a Auditoria Completa liberada.' });
+        if (scope === 'completo' && ativos.length === DPO_PILARES_ORDEM.length) return res.status(400).json({ error: 'Sua empresa já tem a Consultoria Completa liberada.' });
         if (scope === 'pilar' && ativos.includes(pillarKey)) return res.status(400).json({ error: 'Sua empresa já tem este pilar liberado.' });
 
         // Já existe uma compra igual aguardando pagamento? Reaproveita o link em
@@ -5247,7 +5392,7 @@ app.post('/api/dpo/purchase', requireRole('client_admin'), async (req, res) => {
         if (scope === 'completo') {
             const row = await dbGet(`SELECT value FROM integration_settings WHERE key = 'dpo_full_audit_price'`);
             preco = row ? Number(row.value) : 0;
-            titulo = 'DPO Ambev — Auditoria Completa (todos os pilares)';
+            titulo = 'DPO Ambev — Consultoria Completa (todos os pilares)';
         } else {
             const row = await dbGet(`SELECT price FROM dpo_pillar_prices WHERE pillar_key = ?`, [pillarKey]);
             preco = row ? Number(row.price) : 0;
@@ -5312,7 +5457,7 @@ app.post('/api/dpo/reopen-checkout/:id', requireRole('client_admin'), async (req
         if (!compra) return res.status(404).json({ error: 'Compra não encontrada.' });
         if (compra.status === 'paid') return res.status(400).json({ error: 'Esta compra já foi paga.' });
         if (!mpPreference) return res.status(503).json({ error: 'Mercado Pago ainda não foi configurado no servidor.' });
-        const titulo = compra.scope === 'completo' ? 'DPO Ambev — Auditoria Completa (todos os pilares)' : `DPO Ambev — Pilar ${DPO_AMBEV_DATA[compra.pillar_key]?.label || compra.pillar_key}`;
+        const titulo = compra.scope === 'completo' ? 'DPO Ambev — Consultoria Completa (todos os pilares)' : `DPO Ambev — Pilar ${DPO_AMBEV_DATA[compra.pillar_key]?.label || compra.pillar_key}`;
         const preference = await mpPreference.create({
             body: {
                 items: [{ title: titulo, quantity: 1, unit_price: Number(compra.price) || 0.01, currency_id: 'BRL' }],
@@ -5330,14 +5475,24 @@ app.post('/api/dpo/reopen-checkout/:id', requireRole('client_admin'), async (req
 });
 
 // Lista de empresas com o resumo do que já compraram, para o Master escolher
-// na hora de criar um novo ciclo de auditoria.
+// na hora de criar um novo ciclo de consultoria.
 app.get('/api/admin/dpo/companies', requireRole('admin'), async (req, res) => {
     try {
-        const empresas = await dbAll(`SELECT id, name FROM companies ORDER BY name ASC`);
+        // ?all=1 traz todas as empresas (usado na precificação negociada e na
+        // agenda da Auditoria Oficial); sem o parâmetro, mantém o comportamento
+        // original de só listar quem já tem algum pilar liberado (uso nos ciclos).
+        const empresas = await dbAll(`SELECT id, name, dpo_auditoria_oficial_data, dpo_auditoria_oficial_nota FROM companies ORDER BY name ASC`);
         const resultado = [];
         for (const emp of empresas) {
             const ativos = await pilaresAtivosDaEmpresa(emp.id);
-            if (ativos.length) resultado.push({ id: emp.id, name: emp.name, pilaresAtivos: ativos, compraCompleta: ativos.length === DPO_PILARES_ORDEM.length });
+            if (ativos.length || req.query.all) {
+                resultado.push({
+                    id: emp.id, name: emp.name, pilaresAtivos: ativos,
+                    compraCompleta: ativos.length === DPO_PILARES_ORDEM.length,
+                    auditoriaOficialData: emp.dpo_auditoria_oficial_data || null,
+                    auditoriaOficialNota: emp.dpo_auditoria_oficial_nota || null
+                });
+            }
         }
         res.json(resultado);
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar empresas.' }); }
@@ -5566,7 +5721,7 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
                         `UPDATE dpo_purchases SET status = 'paid', mp_payment_id = ?, paid_at = CURRENT_TIMESTAMP WHERE id = ?`,
                         [dataId, compraId], () => resolve()
                     ));
-                    notificarGestoresDaEmpresa(compra.company_id, 'DPO Ambev liberado', 'Pagamento confirmado — o pilar/auditoria já está disponível para autoavaliação.');
+                    notificarGestoresDaEmpresa(compra.company_id, 'DPO Ambev liberado', 'Pagamento confirmado — o pilar/consultoria já está disponível para autoavaliação.');
                 }
             }
         }
