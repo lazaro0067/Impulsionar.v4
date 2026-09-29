@@ -2106,6 +2106,34 @@ app.post('/api/companies/:id/members', requireRole('admin', 'client_admin'), asy
     } catch (e) { res.status(500).json({ error: 'Erro ao criar o acesso.' }); }
 });
 
+// Edita cadastro de um acesso da empresa (nome/e-mail/senha) — senha é opcional,
+// deixando em branco mantém a atual. Mesmo espírito do PUT de empresa, que já
+// permite trocar nome/e-mail/senha do Gestor principal.
+app.put('/api/companies/:id/members/:memberId', requireRole('admin', 'client_admin'), async (req, res) => {
+    if (req.user.role === 'client_admin' && String(req.params.id) !== String(req.user.companyId)) {
+        return res.status(403).json({ error: 'Você só pode editar acessos da sua própria corporação.' });
+    }
+    const { name, email, password } = req.body;
+    if (!name || !email) return res.status(400).json({ error: 'Informe nome e e-mail.' });
+    if (password && password.length < 6) return res.status(400).json({ error: 'A nova senha precisa ter pelo menos 6 caracteres.' });
+    try {
+        const membro = await dbGet(`SELECT id FROM users WHERE id = ? AND company_id = ? AND role = 'client_admin'`, [req.params.memberId, req.params.id]);
+        if (!membro) return res.status(404).json({ error: 'Acesso não encontrado nesta empresa.' });
+        if (password) {
+            const hash = await bcrypt.hash(password, 10);
+            db.run(`UPDATE users SET name = ?, email = ?, password = ? WHERE id = ?`, [name, email.trim(), hash, req.params.memberId], (err) => {
+                if (err) return res.status(400).json({ error: 'Este e-mail já está em uso por outra conta.' });
+                res.json({ message: 'Acesso atualizado!' });
+            });
+        } else {
+            db.run(`UPDATE users SET name = ?, email = ? WHERE id = ?`, [name, email.trim(), req.params.memberId], (err) => {
+                if (err) return res.status(400).json({ error: 'Este e-mail já está em uso por outra conta.' });
+                res.json({ message: 'Acesso atualizado!' });
+            });
+        }
+    } catch (e) { res.status(500).json({ error: 'Erro ao editar o acesso.' }); }
+});
+
 app.delete('/api/companies/:id/members/:memberId', requireRole('admin', 'client_admin'), async (req, res) => {
     if (req.user.role === 'client_admin' && String(req.params.id) !== String(req.user.companyId)) {
         return res.status(403).json({ error: 'Você só pode remover acessos da sua própria corporação.' });
