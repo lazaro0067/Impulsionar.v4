@@ -2559,7 +2559,7 @@ app.post('/api/job-postings', requireRole('admin', 'client_admin'), async (req, 
             }
         });
 
-        const checkoutUrl = preference.sandbox_init_point || preference.init_point;
+        const checkoutUrl = preference.init_point;
         db.run(`UPDATE job_postings SET mp_preference_id = ?, checkout_url = ? WHERE id = ?`, [preference.id, checkoutUrl, resultado], () => {});
         res.json({ message: 'Vaga criada! Complete o pagamento para publicá-la.', id: resultado, initPoint: checkoutUrl });
     } catch (e) {
@@ -2613,7 +2613,7 @@ app.post('/api/job-postings/:id/approve', requireRole('admin'), async (req, res)
                     ...montarRetornoMercadoPago()
                 }
             });
-            const checkoutUrl = preference.sandbox_init_point || preference.init_point;
+            const checkoutUrl = preference.init_point;
             await new Promise((resolve, reject) => db.run(
                 `UPDATE job_postings SET status = 'pending_payment', approved_by = ?, approved_at = CURRENT_TIMESTAMP, mp_preference_id = ?, checkout_url = ? WHERE id = ?`,
                 [req.user.userId, preference.id, checkoutUrl, vaga.id], (err) => err ? reject(err) : resolve()
@@ -2651,7 +2651,7 @@ app.post('/api/job-postings/:id/reopen-checkout', requireRole('admin', 'client_a
                 ...montarRetornoMercadoPago()
             }
         });
-        const checkoutUrl = preference.sandbox_init_point || preference.init_point;
+        const checkoutUrl = preference.init_point;
         await new Promise((resolve, reject) => db.run(
             `UPDATE job_postings SET mp_preference_id = ?, checkout_url = ? WHERE id = ?`,
             [preference.id, checkoutUrl, vaga.id], (err) => err ? reject(err) : resolve()
@@ -2681,7 +2681,7 @@ app.post('/api/job-postings/:id/reopen-closing-fee-checkout', requireRole('admin
                 ...montarRetornoMercadoPago()
             }
         });
-        const checkoutUrl = preference.sandbox_init_point || preference.init_point;
+        const checkoutUrl = preference.init_point;
         await new Promise((resolve, reject) => db.run(
             `UPDATE job_postings SET closing_fee_status = 'pending_payment', closing_fee_mp_preference_id = ?, closing_fee_checkout_url = ? WHERE id = ?`,
             [preference.id, checkoutUrl, vaga.id], (err) => err ? reject(err) : resolve()
@@ -2903,7 +2903,7 @@ app.post('/api/job-postings/:id/close', requireRole('admin', 'client_admin'), as
                             ...montarRetornoMercadoPago()
                         }
                     });
-                    const checkoutUrl = preference.sandbox_init_point || preference.init_point;
+                    const checkoutUrl = preference.init_point;
                     await new Promise((resolve, reject) => db.run(
                         `UPDATE job_postings SET closing_fee_status = 'pending_payment', closing_fee_mp_preference_id = ?, closing_fee_checkout_url = ? WHERE id = ?`,
                         [preference.id, checkoutUrl, vaga.id], (err) => err ? reject(err) : resolve()
@@ -5448,7 +5448,7 @@ app.post('/api/admin/dpo/negotiated-purchase', requireRole('admin'), async (req,
                 ...montarRetornoMercadoPago()
             }
         });
-        const checkoutUrl = preference.sandbox_init_point || preference.init_point;
+        const checkoutUrl = preference.init_point;
         await new Promise((resolve, reject) => db.run(
             `UPDATE dpo_purchases SET mp_preference_id = ?, checkout_url = ? WHERE id = ?`,
             [preference.id, checkoutUrl, resultado], (err) => err ? reject(err) : resolve()
@@ -5512,7 +5512,7 @@ app.post('/api/dpo/purchase', requireRole('client_admin'), async (req, res) => {
                 ...montarRetornoMercadoPago()
             }
         });
-        const checkoutUrl = preference.sandbox_init_point || preference.init_point;
+        const checkoutUrl = preference.init_point;
         await new Promise((resolve, reject) => db.run(
             `UPDATE dpo_purchases SET mp_preference_id = ?, checkout_url = ? WHERE id = ?`,
             [preference.id, checkoutUrl, resultado], (err) => err ? reject(err) : resolve()
@@ -5564,7 +5564,7 @@ app.post('/api/dpo/reopen-checkout/:id', requireRole('client_admin'), async (req
                 ...montarRetornoMercadoPago()
             }
         });
-        const checkoutUrl = preference.sandbox_init_point || preference.init_point;
+        const checkoutUrl = preference.init_point;
         await new Promise((resolve, reject) => db.run(`UPDATE dpo_purchases SET mp_preference_id = ?, checkout_url = ? WHERE id = ?`, [preference.id, checkoutUrl, compra.id], (err) => err ? reject(err) : resolve()));
         res.json({ message: 'Novo link de pagamento gerado!', checkoutUrl });
     } catch (e) {

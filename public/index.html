@@ -192,9 +192,16 @@
   .videochamada-grade.modo-split { display: flex; flex-wrap: wrap; }
   .videochamada-grade.modo-split .local-tile { flex: 1 1 50%; aspect-ratio: auto; min-height: 320px; }
   .videochamada-grade.modo-split #vc-remotos-wrap { display: flex !important; flex-direction: column; gap: 10px; flex: 1 1 50%; }
-  /* Câmera flutuante (PiP) por cima da tela compartilhada — arrastável. */
-  .vc-pip { position: absolute; width: 130px; height: 88px; right: 12px; bottom: 12px; border-radius: 10px; overflow: hidden; border: 2px solid #fff; cursor: move; box-shadow: 0 4px 14px rgba(0,0,0,.45); z-index: 5; touch-action: none; }
-  .vc-pip video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* Modo "câmera flutuante" (PiP) ao compartilhar: a tela compartilhada ocupa
+     o quadro inteiro e todo mundo (você + os outros participantes) some da
+     grade normal e passa a aparecer em miniaturas dentro do #vc-pip-wrap. */
+  .videochamada-grade.modo-pip .local-tile { grid-column: 1 / -1; aspect-ratio: auto; min-height: 420px; }
+  .videochamada-grade.modo-pip #vc-remotos-wrap { display: none; }
+  /* Câmera(s) flutuante(s) por cima da tela compartilhada — arrastável como um todo. */
+  .vc-pip { position: absolute; display: flex; flex-direction: column; gap: 6px; right: 12px; bottom: 12px; z-index: 5; touch-action: none; cursor: move; }
+  .vc-pip-item { position: relative; width: 130px; height: 88px; border-radius: 10px; overflow: hidden; border: 2px solid #fff; box-shadow: 0 4px 14px rgba(0,0,0,.45); background: #1d3a8a; }
+  .vc-pip-item video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .vc-pip-item .rotulo { position: absolute; left: 6px; bottom: 4px; background: rgba(0,0,0,.55); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 8px; }
 
   .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
   .kpi-card { background: #fff; border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
@@ -7842,6 +7849,7 @@ async function gerarInsightsIA() {
 let VC_SOCKET = null;
 let VC_PEERS = new Map();   // socketId -> RTCPeerConnection (malha: 1 conexão por participante)
 let VC_NOMES = new Map();   // socketId -> nome
+let VC_STREAMS_REMOTOS = new Map(); // socketId -> MediaStream (para alimentar as miniaturas do PiP)
 let VC_STREAM_LOCAL = null;
 let VC_STREAM_TELA = null;
 let VC_MICRO_LIGADO = true;
@@ -7875,11 +7883,14 @@ function htmlCorpoVideochamada(titulo, mostrarConvite) {
         <div class="videochamada-video-wrap local-tile" id="vc-tile-local">
           <video id="vc-video-local" autoplay muted playsinline></video>
           <div class="rotulo">Você</div>
-          <div class="vc-pip" id="vc-pip-wrap" style="display:none;">
-            <video id="vc-video-pip" autoplay muted playsinline></video>
+          <div class="vc-pip" id="vc-pip-wrap" style="display:none;"></div>
+        </div>
+        <div id="vc-remotos-wrap" style="display:contents;">
+          <div class="videochamada-video-wrap" id="vc-tile-local-cam-split" style="display:none;">
+            <video id="vc-video-local-cam-split" autoplay muted playsinline></video>
+            <div class="rotulo">Você</div>
           </div>
         </div>
-        <div id="vc-remotos-wrap" style="display:contents;"></div>
       </div>
       <div class="videochamada-acoes">
         <button id="vc-btn-mic" class="btn-secundario" onclick="alternarMicrofone()">🎙️ Microfone</button>
@@ -7979,7 +7990,10 @@ async function iniciarVideochamada(opts) {
   VC_SOCKET.on('usuario-saiu', ({ socketId }) => {
     const peer = VC_PEERS.get(socketId);
     if (peer) { peer.close(); VC_PEERS.delete(socketId); }
+    VC_NOMES.delete(socketId);
+    VC_STREAMS_REMOTOS.delete(socketId);
     removerTileRemoto(socketId);
+    atualizarPipParticipantes();
     statusEl.textContent = 'Um participante saiu da chamada.';
   });
 
@@ -8019,8 +8033,10 @@ function criarConexaoPeer(socketId) {
   };
 
   peer.ontrack = (ev) => {
+    VC_STREAMS_REMOTOS.set(socketId, ev.streams[0]);
     const video = document.getElementById('vc-video-' + socketId);
     if (video) video.srcObject = ev.streams[0];
+    atualizarPipParticipantes();
     const statusEl = document.getElementById('vc-status');
     if (statusEl) statusEl.textContent = 'Chamada conectada.';
   };
@@ -8043,11 +8059,13 @@ function adicionarTileRemoto(socketId, nome) {
   div.id = 'vc-tile-' + socketId;
   div.innerHTML = `<video id="vc-video-${socketId}" autoplay playsinline></video><div class="rotulo">${escapeHtml(nome)}</div>`;
   wrap.appendChild(div);
+  atualizarPipParticipantes();
 }
 
 function removerTileRemoto(socketId) {
   const el = document.getElementById('vc-tile-' + socketId);
   if (el) el.remove();
+  atualizarPipParticipantes();
 }
 
 function alternarMicrofone() {
@@ -8119,23 +8137,63 @@ function alternarModoDivisaoTela() {
   aplicarModoTelaCompartilhamento();
 }
 
+// Enquanto estiver dividindo a tela ao meio, mostra sua câmera como mais uma
+// miniatura ao lado dos outros participantes (senão só apareceria a tela
+// compartilhada e as outras pessoas, sem você).
+function atualizarTileLocalNaFaixaSplit() {
+  const tile = document.getElementById('vc-tile-local-cam-split');
+  if (!tile) return;
+  if (VC_COMPARTILHANDO_TELA && VC_MODO_TELA === 'split') {
+    tile.style.display = '';
+    document.getElementById('vc-video-local-cam-split').srcObject = VC_STREAM_LOCAL;
+  } else {
+    tile.style.display = 'none';
+  }
+}
+
+// Redesenha as miniaturas do modo "câmera flutuante" (você + cada outro
+// participante), usada quando você compartilha a tela e quer ver todo mundo
+// numa janelinha, em vez do que está sendo compartilhado.
+function atualizarPipParticipantes() {
+  const pip = document.getElementById('vc-pip-wrap');
+  if (!pip || !VC_COMPARTILHANDO_TELA || VC_MODO_TELA !== 'pip') return;
+  const participantes = [{ id: 'local', nome: 'Você', stream: VC_STREAM_LOCAL, local: true }];
+  VC_NOMES.forEach((nome, id) => participantes.push({ id, nome, stream: VC_STREAMS_REMOTOS.get(id) || null, local: false }));
+  pip.innerHTML = participantes.map(p => `
+    <div class="vc-pip-item">
+      <video id="vc-pip-video-${p.id}" autoplay playsinline ${p.local ? 'muted' : ''}></video>
+      <div class="rotulo">${escapeHtml(p.nome)}</div>
+    </div>
+  `).join('');
+  participantes.forEach(p => {
+    const v = document.getElementById('vc-pip-video-' + p.id);
+    if (v && p.stream) v.srcObject = p.stream;
+  });
+}
+
 function aplicarModoTelaCompartilhamento() {
   const grade = document.getElementById('vc-grade');
   const pip = document.getElementById('vc-pip-wrap');
   const btnSplit = document.getElementById('vc-btn-split');
   if (!grade) return;
   if (!VC_COMPARTILHANDO_TELA) {
-    grade.classList.remove('modo-split');
+    grade.classList.remove('modo-split', 'modo-pip');
     if (pip) pip.style.display = 'none';
+    atualizarTileLocalNaFaixaSplit();
     return;
   }
   if (VC_MODO_TELA === 'split') {
+    grade.classList.remove('modo-pip');
     grade.classList.add('modo-split');
     if (pip) pip.style.display = 'none';
+    atualizarTileLocalNaFaixaSplit();
     if (btnSplit) btnSplit.textContent = '🗂️ Ver câmera flutuante (PiP)';
   } else {
     grade.classList.remove('modo-split');
-    if (pip) { pip.style.display = 'block'; document.getElementById('vc-video-pip').srcObject = VC_STREAM_LOCAL; }
+    grade.classList.add('modo-pip');
+    atualizarTileLocalNaFaixaSplit();
+    if (pip) { pip.style.display = 'flex'; }
+    atualizarPipParticipantes();
     if (btnSplit) btnSplit.textContent = '🗂️ Dividir tela (metade a metade)';
   }
 }
@@ -8227,6 +8285,7 @@ function encerrarVideochamada() {
   VC_PEERS.forEach(peer => peer.close());
   VC_PEERS.clear();
   VC_NOMES.clear();
+  VC_STREAMS_REMOTOS.clear();
   if (VC_STREAM_LOCAL) { VC_STREAM_LOCAL.getTracks().forEach(t => t.stop()); VC_STREAM_LOCAL = null; }
   if (VC_STREAM_TELA) { VC_STREAM_TELA.getTracks().forEach(t => t.stop()); VC_STREAM_TELA = null; }
   VC_COMPARTILHANDO_TELA = false;
