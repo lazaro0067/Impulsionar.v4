@@ -317,9 +317,9 @@
   .comentario-data { color: var(--cinza-500); font-size: 11px; }
   .comentario-texto { word-break: break-word; white-space: pre-wrap; }
   .link-excluir-comentario { background: none; border: none; color: var(--vermelho, #dc2626); cursor: pointer; font-size: 11px; margin-left: auto; padding: 0; }
-  .novo-comentario { display: flex; gap: 8px; align-items: center; }
-  .novo-comentario input { flex: 1 1 auto; min-width: 0; width: auto; margin-bottom: 0; padding: 9px 12px; border: 1px solid var(--cinza-200); border-radius: 8px; font-size: 13px; font-family: inherit; }
-  .novo-comentario button { flex: 0 0 auto; margin-bottom: 0; }
+  .novo-comentario { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+  .novo-comentario input { flex: none; width: 100%; margin-bottom: 0; padding: 9px 12px; border: 1px solid var(--cinza-200); border-radius: 8px; font-size: 13px; font-family: inherit; box-sizing: border-box; }
+  .novo-comentario button { flex: none; width: 100%; margin-bottom: 0; }
   .novo-comentario button:disabled { opacity: .6; cursor: default; }
   .msg-vazio-sm { color: var(--cinza-500); font-size: 12px; padding: 10px 0; }
 
@@ -7593,15 +7593,30 @@ async function gerarInsightsIA() {
 let VC_SOCKET = null;
 let VC_PEER = null;
 let VC_STREAM_LOCAL = null;
+let VC_STREAM_TELA = null;
 let VC_MICRO_LIGADO = true;
 let VC_CAMERA_LIGADA = true;
+let VC_COMPARTILHANDO_TELA = false;
+
+// Mensagens de erro do getUserMedia traduzidas — a maioria dos "câmera não
+// conecta" é permissão negada ou nenhum dispositivo encontrado, não um bug.
+function traduzirErroMidia(e) {
+  const nomes = {
+    NotAllowedError: 'Permissão de câmera/microfone negada. Verifique o cadeado ao lado do endereço do site e permita o acesso, depois recarregue a página.',
+    NotFoundError: 'Nenhuma câmera ou microfone foi encontrado neste dispositivo.',
+    NotReadableError: 'A câmera/microfone já está em uso por outro programa ou aba. Feche-o e tente novamente.',
+    OverconstrainedError: 'Nenhum dispositivo compatível encontrado.',
+    SecurityError: 'O navegador bloqueou o acesso à câmera (o site precisa estar em HTTPS).'
+  };
+  return nomes[e.name] || ('Não foi possível acessar sua câmera/microfone: ' + e.message);
+}
 
 function renderVideochamada(mentoriaId) {
   const m = CACHE_LISTA_MENTORIAS.find(x => x.id === mentoriaId);
   const cont = document.getElementById('conteudo');
   cont.innerHTML = `
     <h1>Videochamada — ${escapeHtml((m && (m.execName + ' & ' + m.mentorName)) || 'Mentoria')}</h1>
-    <div class="videochamada-tela">
+    <div class="videochamada-tela" id="vc-tela">
       <div class="videochamada-grade">
         <div class="videochamada-video-wrap">
           <video id="vc-video-local" autoplay muted playsinline></video>
@@ -7615,9 +7630,19 @@ function renderVideochamada(mentoriaId) {
       <div class="videochamada-acoes">
         <button id="vc-btn-mic" class="btn-secundario" onclick="alternarMicrofone()">🎙️ Microfone</button>
         <button id="vc-btn-cam" class="btn-secundario" onclick="alternarCamera()">🎥 Câmera</button>
+        <button id="vc-btn-tela" class="btn-secundario" onclick="alternarCompartilhamentoTela()">🖥️ Compartilhar tela</button>
+        <button id="vc-btn-chat" class="btn-secundario" onclick="alternarChatVideochamada()">💬 Chat</button>
+        <button class="btn-secundario" onclick="alternarTelaCheiaVideochamada()">⛶ Tela cheia</button>
         <button class="btn-perigo" onclick="encerrarVideochamada()">Encerrar</button>
       </div>
       <div class="videochamada-status" id="vc-status">Conectando à câmera e microfone...</div>
+      <div id="vc-chat-area" style="display:none;margin-top:14px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px;">
+        <div id="vc-chat-lista" style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;font-size:13px;margin-bottom:8px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input id="vc-chat-input" placeholder="Escreva uma mensagem..." style="margin-bottom:0;flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();enviarMensagemVideochamada();}">
+          <button class="btn-primario btn-sm" style="width:auto;" onclick="enviarMensagemVideochamada()">Enviar</button>
+        </div>
+      </div>
     </div>
   `;
   iniciarVideochamada(mentoriaId);
@@ -7627,11 +7652,20 @@ async function iniciarVideochamada(mentoriaId) {
   const statusEl = document.getElementById('vc-status');
   try {
     VC_STREAM_LOCAL = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    document.getElementById('vc-video-local').srcObject = VC_STREAM_LOCAL;
   } catch (e) {
-    statusEl.textContent = 'Não foi possível acessar sua câmera/microfone: ' + e.message;
-    return;
+    // Câmera falhou — tenta continuar só com áudio em vez de travar a mentoria inteira.
+    try {
+      VC_STREAM_LOCAL = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+      statusEl.textContent = traduzirErroMidia(e) + ' Entrando só com áudio.';
+      VC_CAMERA_LIGADA = false;
+      const btnCam = document.getElementById('vc-btn-cam');
+      if (btnCam) { btnCam.textContent = '🚫 Sem câmera'; btnCam.disabled = true; }
+    } catch (e2) {
+      statusEl.textContent = traduzirErroMidia(e2);
+      return;
+    }
   }
+  document.getElementById('vc-video-local').srcObject = VC_STREAM_LOCAL;
 
   statusEl.textContent = 'Conectando à sala da mentoria...';
   VC_SOCKET = io();
@@ -7663,6 +7697,10 @@ async function iniciarVideochamada(mentoriaId) {
     statusEl.textContent = 'O outro participante saiu da chamada.';
     const videoRemoto = document.getElementById('vc-video-remoto');
     if (videoRemoto) videoRemoto.srcObject = null;
+  });
+
+  VC_SOCKET.on('mensagem-sala-mentoria', ({ texto, nome }) => {
+    adicionarMensagemChatVideochamada(nome, texto, false);
   });
 
   VC_SOCKET.on('sinal-webrtc', async ({ tipo, dados }) => {
@@ -7717,10 +7755,82 @@ function alternarCamera() {
   document.getElementById('vc-btn-cam').textContent = VC_CAMERA_LIGADA ? '🎥 Câmera' : '🚫 Câmera desligada';
 }
 
+// Compartilhar tela (como no Teams/Meet): troca a faixa de vídeo enviada ao
+// outro participante pela captura de tela, sem precisar recriar a conexão —
+// usa RTCRtpSender.replaceTrack. Ao parar (botão ou o navegador encerrando o
+// compartilhamento), volta para a câmera automaticamente.
+async function alternarCompartilhamentoTela() {
+  const btn = document.getElementById('vc-btn-tela');
+  if (VC_COMPARTILHANDO_TELA) { pararCompartilhamentoTela(); return; }
+  if (!navigator.mediaDevices.getDisplayMedia) { mostrarToast('Seu navegador não suporta compartilhamento de tela.', true); return; }
+  try {
+    VC_STREAM_TELA = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+  } catch (e) { return; } // usuário cancelou o seletor de tela/janela
+
+  const faixaTela = VC_STREAM_TELA.getVideoTracks()[0];
+  const sender = VC_PEER && VC_PEER.getSenders().find(s => s.track && s.track.kind === 'video');
+  if (sender) await sender.replaceTrack(faixaTela);
+  document.getElementById('vc-video-local').srcObject = VC_STREAM_TELA;
+  VC_COMPARTILHANDO_TELA = true;
+  if (btn) { btn.textContent = '🛑 Parar compartilhamento'; btn.classList.add('btn-perigo'); }
+  // O navegador tem seu próprio botão "Parar compartilhamento" na barra do SO — precisa escutar esse evento também.
+  faixaTela.onended = () => pararCompartilhamentoTela();
+}
+
+async function pararCompartilhamentoTela() {
+  if (!VC_COMPARTILHANDO_TELA) return;
+  if (VC_STREAM_TELA) { VC_STREAM_TELA.getTracks().forEach(t => t.stop()); VC_STREAM_TELA = null; }
+  const faixaCamera = VC_STREAM_LOCAL && VC_STREAM_LOCAL.getVideoTracks()[0];
+  const sender = VC_PEER && VC_PEER.getSenders().find(s => s.track && s.track.kind === 'video');
+  if (sender && faixaCamera) await sender.replaceTrack(faixaCamera);
+  const videoLocal = document.getElementById('vc-video-local');
+  if (videoLocal) videoLocal.srcObject = VC_STREAM_LOCAL;
+  VC_COMPARTILHANDO_TELA = false;
+  const btn = document.getElementById('vc-btn-tela');
+  if (btn) { btn.textContent = '🖥️ Compartilhar tela'; btn.classList.remove('btn-perigo'); }
+}
+
+function alternarChatVideochamada() {
+  const area = document.getElementById('vc-chat-area');
+  if (!area) return;
+  area.style.display = area.style.display === 'none' ? 'block' : 'none';
+}
+
+function adicionarMensagemChatVideochamada(nome, texto, souEu) {
+  const lista = document.getElementById('vc-chat-lista');
+  if (!lista) return;
+  const linha = document.createElement('div');
+  linha.style.cssText = 'background:rgba(255,255,255,.08);border-radius:8px;padding:6px 10px;' + (souEu ? 'align-self:flex-end;' : '');
+  linha.innerHTML = `<strong>${escapeHtml(nome)}:</strong> ${escapeHtml(texto)}`;
+  lista.appendChild(linha);
+  lista.scrollTop = lista.scrollHeight;
+  // Se o chat estiver fechado, abre sozinho quando chega mensagem nova de outra pessoa.
+  const area = document.getElementById('vc-chat-area');
+  if (!souEu && area && area.style.display === 'none') area.style.display = 'block';
+}
+
+function enviarMensagemVideochamada() {
+  const input = document.getElementById('vc-chat-input');
+  const texto = input.value.trim();
+  if (!texto || !VC_SOCKET) return;
+  VC_SOCKET.emit('mensagem-sala-mentoria', { texto });
+  adicionarMensagemChatVideochamada(ESTADO.usuario?.name || 'Você', texto, true);
+  input.value = '';
+}
+
+function alternarTelaCheiaVideochamada() {
+  const tela = document.getElementById('vc-tela');
+  if (!tela) return;
+  if (!document.fullscreenElement) tela.requestFullscreen().catch(() => {});
+  else document.exitFullscreen().catch(() => {});
+}
+
 function encerrarVideochamada() {
   if (VC_SOCKET) { VC_SOCKET.emit('sair-sala-mentoria'); VC_SOCKET.disconnect(); VC_SOCKET = null; }
   if (VC_PEER) { VC_PEER.close(); VC_PEER = null; }
   if (VC_STREAM_LOCAL) { VC_STREAM_LOCAL.getTracks().forEach(t => t.stop()); VC_STREAM_LOCAL = null; }
+  if (VC_STREAM_TELA) { VC_STREAM_TELA.getTracks().forEach(t => t.stop()); VC_STREAM_TELA = null; }
+  VC_COMPARTILHANDO_TELA = false;
   renderMentorships();
 }
 

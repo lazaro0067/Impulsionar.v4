@@ -5894,6 +5894,16 @@ io.on('connection', (socket) => {
         socket.to(sala).emit('sinal-webrtc', { tipo, dados, de: socket.id });
     });
 
+    // Chat de texto dentro da videochamada — só repassa a mensagem para os
+    // outros participantes da mesma sala, não fica gravado no banco.
+    socket.on('mensagem-sala-mentoria', ({ texto }) => {
+        const sala = socket.data.sala;
+        if (!sala || !texto) return;
+        const participantes = SALAS_VIDEOCHAMADA.get(sala);
+        const eu = participantes && participantes.get(socket.id);
+        socket.to(sala).emit('mensagem-sala-mentoria', { texto: String(texto).slice(0, 1000), nome: eu ? eu.name : 'Participante', de: socket.id });
+    });
+
     socket.on('sair-sala-mentoria', () => {
         const sala = socket.data.sala;
         if (sala && SALAS_VIDEOCHAMADA.has(sala)) {
