@@ -688,6 +688,9 @@ const MENU_POR_PERFIL = {
     { group: 'Impulsionar V4 DPO Ambev', items: [
         ['dpoPrecos', 'Preços por Pilar'], ['dpoAgenda', 'Agenda de Consultorias'], ['dpoConsultores', 'Cadastro de Consultor']
     ]},
+    { group: 'Teste DISC', items: [
+        ['discTesteMaster', 'Testar & Enviar Teste DISC']
+    ]},
     { group: 'Administração', items: [
         ['plans', 'Planos'], ['engagement', 'Painel de Engajamento'], ['contracts', 'Contratos'],
         ['automacao', 'Painel de Automação'], ['assistenteIA', 'Assistente IA']
@@ -992,7 +995,7 @@ function irPara(aba, semHistorico) {
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
     dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores,
-    discTeste: renderDiscTeste
+    discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster
   };
   (renderizadores[aba] || renderDashboard)();
 }
@@ -3428,6 +3431,18 @@ async function atualizarProgressoMeta(id) {
 const NOMES_DIMENSAO_DISC = { D: 'Dominância', I: 'Influência', S: 'Estabilidade', C: 'Conformidade' };
 const CORES_DIMENSAO_DISC = { D: '#dc2626', I: '#f59e0b', S: '#16a34a', C: '#2563eb' };
 let ESTADO_DISC = { perguntas: [], indice: 0, respostas: [] };
+let DISC_MODO_PREVIEW = false;
+
+function calcularPontosDisc(respostas) {
+  const pontos = { D: 0, I: 0, S: 0, C: 0 };
+  const pesos = [4, 3, 2, 1];
+  respostas.forEach(r => r.ordem.forEach((dim, i) => { if (pontos[dim] !== undefined) pontos[dim] += pesos[i] || 0; }));
+  const maximoPorDimensao = respostas.length * 4;
+  const percentuais = {};
+  ['D', 'I', 'S', 'C'].forEach(d => { percentuais[d] = Math.round((pontos[d] / maximoPorDimensao) * 100); });
+  const ranking = ['D', 'I', 'S', 'C'].sort((a, b) => pontos[b] - pontos[a]);
+  return { pontos, percentuais, perfil_primario: ranking[0], perfil_secundario: ranking[1] };
+}
 
 function embaralharDisc(lista) {
   const arr = [...lista];
@@ -3450,7 +3465,8 @@ async function renderDiscTeste() {
   }
 }
 
-async function iniciarDiscTeste() {
+async function iniciarDiscTeste(modoPreview) {
+  DISC_MODO_PREVIEW = !!modoPreview;
   const cont = document.getElementById('conteudo');
   cont.innerHTML = '<h1>Teste de Perfil DISC</h1><p>Carregando perguntas...</p>';
   try {
@@ -3474,6 +3490,7 @@ function renderDiscPergunta() {
   const ultima = i === total - 1;
   cont.innerHTML = `
     <h1>Teste de Perfil DISC</h1>
+    ${DISC_MODO_PREVIEW ? `<div class="msg-vazio" style="text-align:left;background:#f5f3ff;border-radius:8px;padding:10px 14px;margin-bottom:8px;">🧪 Modo prévia (Master) — este resultado é só seu, não fica salvo nem some da disponibilidade de ninguém.</div>` : ''}
     <p style="color:#64748b;margin-top:-8px;">Pergunta ${i + 1} de ${total}. Clique nas frases abaixo na ordem: da que <strong>MAIS combina</strong> com você para a que <strong>MENOS combina</strong>.</p>
     <div class="barra-progresso" style="margin:8px 0;"><div style="width:${pct}%"></div></div>
     <div class="plano-card">
@@ -3525,6 +3542,11 @@ async function avancarPerguntaDisc() {
     return;
   }
   const cont = document.getElementById('conteudo');
+  if (DISC_MODO_PREVIEW) {
+    const resultado = calcularPontosDisc(ESTADO_DISC.respostas);
+    renderDiscResultado(resultado, true);
+    return;
+  }
   cont.innerHTML = '<h1>Teste de Perfil DISC</h1><p>Calculando seu resultado...</p>';
   try {
     const resultado = await api('/api/disc-test/submit', { method: 'POST', body: JSON.stringify({ respostas: ESTADO_DISC.respostas }) });
@@ -3536,12 +3558,13 @@ async function avancarPerguntaDisc() {
   }
 }
 
-function renderDiscResultado(resultado) {
+function renderDiscResultado(resultado, ehPreview) {
   const cont = document.getElementById('conteudo');
   const pct = resultado.percentuais || {};
   cont.innerHTML = `
     <h1>Teste de Perfil DISC</h1>
-    <p style="color:#64748b;margin-top:-8px;">Seu perfil predominante: <strong style="color:${CORES_DIMENSAO_DISC[resultado.perfil_primario]};">${escapeHtml(resultado.perfilPrimarioLabel || NOMES_DIMENSAO_DISC[resultado.perfil_primario])} (${escapeHtml(resultado.perfil_primario)})</strong>, com influência secundária de <strong style="color:${CORES_DIMENSAO_DISC[resultado.perfil_secundario]};">${escapeHtml(resultado.perfilSecundarioLabel || NOMES_DIMENSAO_DISC[resultado.perfil_secundario])} (${escapeHtml(resultado.perfil_secundario)})</strong>.</p>
+    ${ehPreview ? `<div class="msg-vazio" style="text-align:left;background:#f5f3ff;border-radius:8px;padding:10px 14px;margin-bottom:8px;">🧪 Isso foi uma prévia sua (Master) — não fica salvo.</div>` : ''}
+    <p style="color:#64748b;margin-top:-8px;">${ehPreview ? 'Perfil' : 'Seu perfil'} predominante: <strong style="color:${CORES_DIMENSAO_DISC[resultado.perfil_primario]};">${escapeHtml(resultado.perfilPrimarioLabel || NOMES_DIMENSAO_DISC[resultado.perfil_primario])} (${escapeHtml(resultado.perfil_primario)})</strong>, com influência secundária de <strong style="color:${CORES_DIMENSAO_DISC[resultado.perfil_secundario]};">${escapeHtml(resultado.perfilSecundarioLabel || NOMES_DIMENSAO_DISC[resultado.perfil_secundario])} (${escapeHtml(resultado.perfil_secundario)})</strong>.</p>
     <div class="plano-card">
       ${['D', 'I', 'S', 'C'].map(d => `
         <div style="margin-bottom:12px;">
@@ -3550,9 +3573,86 @@ function renderDiscResultado(resultado) {
         </div>
       `).join('')}
     </div>
-    <p style="font-size:12px;color:#94a3b8;margin-top:10px;">Teste realizado em ${new Date(resultado.created_at).toLocaleDateString('pt-BR')}.</p>
-    <button class="btn-secundario btn-sm" onclick="iniciarDiscTeste()">🔄 Refazer o teste</button>
+    ${ehPreview ? '' : `<p style="font-size:12px;color:#94a3b8;margin-top:10px;">Teste realizado em ${new Date(resultado.created_at).toLocaleDateString('pt-BR')}.</p>`}
+    <button class="btn-secundario btn-sm" onclick="iniciarDiscTeste(${ehPreview ? 'true' : 'false'})">🔄 ${ehPreview ? 'Testar de novo' : 'Refazer o teste'}</button>
+    ${ehPreview ? `<button class="btn-secundario btn-sm" onclick="renderDiscTesteMaster()">← Voltar</button>` : ''}
   `;
+}
+
+/* ---------- Master: testar o quiz e enviar (liberar) para empresas/funcionários ---------- */
+async function renderDiscTesteMaster() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>Teste DISC — Master</h1><p>Carregando...</p>';
+  try {
+    const [empresas, resultados] = await Promise.all([
+      api('/api/companies'),
+      api('/api/disc-test/resultados').catch(() => [])
+    ]);
+    const opcoesEmpresa = empresas.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+    cont.innerHTML = `
+      <h1>Teste DISC — Master</h1>
+      <p style="color:#64748b;margin-top:-8px;">Teste o formulário você mesmo, ou libere o Teste de Perfil DISC para um funcionário/empresa. Uso único: depois de respondido, só fica disponível de novo se você enviar novamente.</p>
+
+      <div class="plano-card" style="margin-bottom:16px;">
+        <h4 style="margin-top:0;">🧪 Testar</h4>
+        <p style="font-size:12.5px;color:#64748b;">Responda o teste você mesmo para conferir como ele funciona. Não salva nada nem afeta ninguém.</p>
+        <button class="btn-secundario btn-sm" onclick="iniciarDiscTeste(true)">Iniciar teste (modo prévia)</button>
+      </div>
+
+      <div class="plano-card" style="margin-bottom:16px;">
+        <h4 style="margin-top:0;">📤 Enviar / Liberar Teste DISC</h4>
+        <div class="linha">
+          <div><label>Empresa</label><select id="dtm-empresa" onchange="carregarFuncionariosDiscMaster()"><option value="">Selecione...</option>${opcoesEmpresa}</select></div>
+          <div style="flex:2"><label>Funcionário</label><select id="dtm-funcionario"><option value="">Toda a empresa</option></select></div>
+        </div>
+        <div class="acoes-form">
+          <button class="btn-primario btn-sm" onclick="enviarDiscMaster()">Enviar Teste DISC</button>
+        </div>
+      </div>
+
+      <div class="plano-card">
+        <h4 style="margin-top:0;">📋 Últimos resultados respondidos</h4>
+        ${resultados.length === 0 ? '<div class="msg-vazio">Nenhum resultado respondido ainda.</div>' : `
+        <table>
+          <thead><tr><th>Colaborador</th><th>Empresa</th><th>Perfil</th><th>Data</th></tr></thead>
+          <tbody>
+            ${resultados.map(r => `
+              <tr>
+                <td>${escapeHtml(r.employeeName)}</td>
+                <td>${escapeHtml(r.companyName || '-')}</td>
+                <td>${escapeHtml(r.perfil_primario)}/${escapeHtml(r.perfil_secundario)}</td>
+                <td>${new Date(r.created_at).toLocaleDateString('pt-BR')}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`}
+      </div>
+    `;
+  } catch (e) {
+    cont.innerHTML = `<h1>Teste DISC — Master</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function carregarFuncionariosDiscMaster() {
+  const companyId = document.getElementById('dtm-empresa').value;
+  const select = document.getElementById('dtm-funcionario');
+  select.innerHTML = '<option value="">Toda a empresa</option>';
+  if (!companyId) return;
+  try {
+    const funcionarios = await api('/api/employees?company_id=' + companyId);
+    select.innerHTML += funcionarios.map(f => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function enviarDiscMaster() {
+  const companyId = document.getElementById('dtm-empresa').value;
+  const employeeId = document.getElementById('dtm-funcionario').value;
+  if (!companyId) return mostrarToast('Selecione uma empresa.', true);
+  try {
+    const corpo = employeeId ? { employee_id: employeeId } : { company_id: companyId };
+    const r = await api('/api/disc-test/enviar', { method: 'POST', body: JSON.stringify(corpo) });
+    mostrarToast(r.message);
+    renderDiscTesteMaster();
+  } catch (e) { mostrarToast(e.message, true); }
 }
 
 /* ==========================================================
@@ -6646,30 +6746,12 @@ async function renderDpoMeusPlanos() {
         <div class="kpi-card kpi-verde"><div class="valor">${contagem['Concluída']}</div><div class="rotulo">Concluída(s)</div></div>
       </div>`}
       ${totalPlanos === 0 ? `<div class="msg-vazio">Nenhum plano de ação criado ainda.</div>` : porPilar.map(p => `
-        <div style="margin-top:20px;">
-          <h3 style="margin-bottom:8px;">${escapeHtml(p.label)} <span style="font-weight:400;color:#64748b;font-size:13px;">(${p.planos.length} plano${p.planos.length === 1 ? '' : 's'})</span></h3>
-          ${p.planos.map(pl => {
-            const situacao = calcularSituacaoPrazoDpo(pl);
-            const idDetalhe = 'dpo-plano-detalhe-' + pl.id;
-            return `
-            <div style="background:#fff;border:1px solid var(--cinza-200);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;cursor:pointer;" onclick="(function(el){ el.style.display = el.style.display === 'none' ? 'block' : 'none'; })(document.getElementById('${idDetalhe}'))">
-                <div style="font-size:12.5px;color:#334155;">
-                  <strong>Pergunta ${escapeHtml(pl.perguntaNumero || '')}:</strong> ${escapeHtml(pl.perguntaTexto || '')}
-                  ${pl.cicloReferencia ? ` · <strong>Ciclo:</strong> ${escapeHtml(pl.cicloReferencia)}` : ''}
-                  <span style="color:#94a3b8;"> (clique para ver a verificação completa ▾)</span>
-                </div>
-                <span class="dpo-score-badge" style="background:${situacao.cor}20;color:${situacao.cor};white-space:nowrap;">${situacao.texto}</span>
-              </div>
-              <div id="${idDetalhe}" style="display:none;margin-top:8px;">
-                ${pl.verificacaoTexto ? `<div style="font-size:12px;color:#334155;white-space:pre-line;margin-bottom:8px;background:#f8fafc;border-radius:6px;padding:8px;"><strong>Verificação:</strong><br>${escapeHtml(pl.verificacaoTexto)}</div>` : ''}
-                ${pl.howToCheck ? `<details style="margin-bottom:8px;"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#4338ca;">❓ How to Check</summary><div style="font-size:12px;color:#334155;white-space:pre-line;margin-top:6px;">${escapeHtml(pl.howToCheck)}</div></details>` : ''}
-                ${renderPlanoAcaoDpo(pl, false, 'recarregarMeusPlanosDpo')}
-              </div>
-            </div>
-          `; }).join('')}
+        <div style="margin-top:22px;">
+          <h3 style="margin-bottom:10px;">🧭 ${escapeHtml(p.label)} <span style="font-weight:400;color:#64748b;font-size:13px;">(${p.planos.length} plano${p.planos.length === 1 ? '' : 's'})</span></h3>
+          ${p.planos.map(pl => renderPlanoAcaoDpo(pl, false, 'recarregarMeusPlanosDpo')).join('')}
         </div>
       `).join('')}
+      <div id="modal-area"></div>
     `;
   } catch (e) {
     cont.innerHTML = `<h1>Meus Planos DPO</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
@@ -6871,19 +6953,25 @@ function renderPlanoAcaoDpo(plano, somenteLeitura, aoRecarregar) {
   const recarregar = aoRecarregar || 'recarregarCicloDpoAtual';
   MAPA_PLANOS_ACAO_DPO[plano.id] = plano;
   return `
-    <div style="background:#f8fafc;border:1px solid var(--cinza-200);border-radius:8px;padding:10px 12px;margin-top:6px;">
-      <div style="display:flex;justify-content:space-between;gap:8px;">
-        <div style="font-size:13px;color:#334155;flex:1;">${escapeHtml(plano.texto)}</div>
-        <span class="dpo-score-badge" style="background:${statusInfo.cor}20;color:${statusInfo.cor};white-space:nowrap;">${escapeHtml(statusInfo.texto)}</span>
-        ${!somenteLeitura ? `
-        <button class="btn-secundario btn-sm" style="padding:2px 8px;" onclick='abrirModalPlanoAcaoDpo({ questionKey: ${JSON.stringify(plano.question_key)}, cycleId: ${plano.cycle_id}, planoId: ${plano.id}, aoSalvar: ${recarregar} })'>✏️</button>
-        <button class="btn-perigo btn-sm" style="padding:2px 8px;" onclick="excluirPlanoAcaoDpo(${plano.id}, ${recarregar})">✕</button>` : ''}
+    <div style="background:linear-gradient(180deg,#ffffff,#f8fafc);border:1px solid var(--cinza-200);border-left:4px solid ${statusInfo.cor};border-radius:10px;padding:12px 14px;margin-top:8px;box-shadow:0 1px 3px rgba(15,23,42,.06);">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+        <div style="font-size:13.5px;color:#1e293b;font-weight:600;flex:1;">${escapeHtml(plano.texto)}${plano.perguntaNumero ? `<div style="font-size:11px;font-weight:400;color:#94a3b8;margin-top:2px;">Pergunta ${escapeHtml(String(plano.perguntaNumero))}${plano.cicloReferencia ? ' · ' + escapeHtml(plano.cicloReferencia) : ''}</div>` : ''}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;">
+          <span class="dpo-score-badge" style="background:${statusInfo.cor}20;color:${statusInfo.cor};white-space:nowrap;">${escapeHtml(statusInfo.texto)}</span>
+          ${!somenteLeitura
+            ? `<input type="date" value="${plano.data_prevista || ''}" onchange="salvarPrazoPlanoDpo(${plano.id}, this.value, ${recarregar})" title="Prazo do plano" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid var(--cinza-200);color:#64748b;background:#fff;">`
+            : (plano.data_prevista ? `<span style="font-size:11px;color:#64748b;">📅 ${new Date(plano.data_prevista + 'T00:00:00').toLocaleDateString('pt-BR')}</span>` : '')}
+        </div>
       </div>
-      <div style="font-size:11.5px;color:#64748b;margin-top:2px;display:flex;gap:12px;flex-wrap:wrap;">
+      <div style="font-size:11.5px;color:#64748b;margin-top:6px;display:flex;gap:12px;flex-wrap:wrap;">
         ${plano.verificacao_numero ? `<span><strong>Verificação:</strong> ${escapeHtml(plano.verificacao_numero)}</span>` : ''}
         ${plano.owner ? `<span><strong>Dono:</strong> ${escapeHtml(plano.owner)}</span>` : ''}
-        ${plano.data_prevista ? `<span><strong>Prazo:</strong> ${new Date(plano.data_prevista + 'T00:00:00').toLocaleDateString('pt-BR')}</span>` : ''}
       </div>
+      ${!somenteLeitura ? `
+      <div style="margin-top:8px;">
+        <button class="btn-secundario btn-sm" style="padding:2px 8px;" onclick='abrirModalPlanoAcaoDpo({ questionKey: ${JSON.stringify(plano.question_key)}, cycleId: ${plano.cycle_id}, planoId: ${plano.id}, aoSalvar: ${recarregar} })'>✏️ Editar</button>
+        <button class="btn-perigo btn-sm" style="padding:2px 8px;" onclick="excluirPlanoAcaoDpo(${plano.id}, ${recarregar})">✕ Excluir</button>
+      </div>` : ''}
       ${(plano.follows || []).map(f => `
         <div class="dpo-follow">
           <strong>Follow ${f.numero}:</strong> ${escapeHtml(f.texto)}${f.data_prevista ? ' · ' + new Date(f.data_prevista).toLocaleDateString('pt-BR') : ''}
@@ -6942,6 +7030,16 @@ async function adicionarFollowDpo(planoId, aoRecarregar) {
 async function marcarFollowDpo(id, status, aoRecarregar) {
   try { await api('/api/dpo/follow-ups/' + id, { method: 'PUT', body: JSON.stringify({ status }) }); (aoRecarregar || recarregarCicloDpoAtual)(); }
   catch (e) { mostrarToast(e.message, true); }
+}
+
+// Salva o prazo do próprio plano de ação direto pelo card (sem precisar abrir
+// o modal de edição) — auto-save ao trocar a data.
+async function salvarPrazoPlanoDpo(id, valor, aoRecarregar) {
+  try {
+    await api('/api/dpo/action-plans/' + id, { method: 'PUT', body: JSON.stringify({ data_prevista: valor || null }) });
+    mostrarToast('Prazo atualizado!');
+    (aoRecarregar || recarregarCicloDpoAtual)();
+  } catch (e) { mostrarToast(e.message, true); }
 }
 
 // ---------- Admin/client_admin: vagas publicadas pela empresa ----------
@@ -7009,7 +7107,10 @@ async function renderJobPostings() {
           return `
           <div class="plano-card">
             <div class="plano-cabecalho">
-              <div><h4>${escapeHtml(v.title)}</h4><div class="plano-meta">${ehAdmin ? escapeHtml(v.companyName || '') + ' · ' : ''}📍 ${escapeHtml(v.location || '')}${v.is_remote ? ' · Remoto' : ''}</div></div>
+              <div style="display:flex;gap:8px;align-items:flex-start;">
+                ${ehAdmin && v.companyLogo ? `<img src="${escapeHtml(v.companyLogo)}" style="width:32px;height:32px;border-radius:8px;object-fit:cover;flex-shrink:0;">` : ''}
+                <div><h4>${escapeHtml(v.title)}</h4><div class="plano-meta">${ehAdmin ? escapeHtml(v.companyName || '') + ' · ' : ''}📍 ${escapeHtml(v.location || '')}${v.is_remote ? ' · Remoto' : ''}</div></div>
+              </div>
               ${!excluida ? `<button class="btn-perigo btn-sm" onclick="excluirVaga(${v.id})">Excluir</button>` : ''}
             </div>
             <div class="plano-meta">Status: <strong style="color:${status.cor}">${status.texto}</strong></div>
@@ -7105,7 +7206,10 @@ function verDetalhesVaga(id) {
         <div style="background:${v.photo_url ? `url('${escapeHtml(v.photo_url)}') center/cover` : GRADIENTES_VAGA[id % GRADIENTES_VAGA.length]};min-height:120px;padding:16px;color:#fff;position:relative;">
           <div style="position:absolute;top:12px;left:12px;font-size:11px;font-weight:700;background:rgba(0,0,0,.4);padding:3px 10px;border-radius:999px;">📍 ${escapeHtml(v.location || 'A combinar')}${v.state ? '/' + escapeHtml(v.state) : ''}${v.is_remote ? ' · Remoto' : ''}</div>
           <h3 style="margin:32px 0 4px;text-shadow:0 1px 4px rgba(0,0,0,.4);">${escapeHtml(v.title)}</h3>
-          <div style="font-size:13px;opacity:.95;text-shadow:0 1px 4px rgba(0,0,0,.4);">${escapeHtml(v.companyName || '')}</div>
+          <div style="font-size:13px;opacity:.95;display:flex;align-items:center;gap:6px;text-shadow:0 1px 4px rgba(0,0,0,.4);">
+            ${v.companyLogo ? `<img src="${escapeHtml(v.companyLogo)}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;background:#fff;">` : '🏢'}
+            ${escapeHtml(v.companyName || '')}
+          </div>
         </div>
         <div style="padding:20px;max-height:60vh;overflow-y:auto;">
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">

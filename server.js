@@ -3321,8 +3321,46 @@ app.delete('/api/employee-goals/:id', requireRole('admin', 'client_admin'), ensu
    ========================================================== */
 const ROTULOS_PERFIL_DISC = { D: 'Dominância', I: 'Influência', S: 'Estabilidade', C: 'Conformidade' };
 
-app.get('/api/disc-test/questions', requireRole('autonomous'), (req, res) => {
+app.get('/api/disc-test/questions', requireRole('autonomous', 'admin'), (req, res) => {
     res.json(DISC_DATA);
+});
+
+// Master: envia (libera) o Teste DISC para um funcionário específico ou para
+// todos os funcionários de uma empresa. Só mexe em quem já tem uma restrição
+// de módulos definida (array) — quem já tem acesso completo (null) já
+// enxerga o módulo sem precisar de envio.
+app.post('/api/disc-test/enviar', requireRole('admin'), async (req, res) => {
+    const { employee_id, company_id } = req.body;
+    if (!employee_id && !company_id) return res.status(400).json({ error: 'Informe um funcionário ou uma empresa.' });
+    try {
+        const alvos = employee_id
+            ? await dbAll(`SELECT id, enabled_modules FROM employees WHERE id = ?`, [employee_id])
+            : await dbAll(`SELECT id, enabled_modules FROM employees WHERE company_id = ?`, [company_id]);
+        if (!alvos.length) return res.status(404).json({ error: 'Nenhum executivo encontrado.' });
+        for (const emp of alvos) {
+            let modulos;
+            try { modulos = emp.enabled_modules ? JSON.parse(emp.enabled_modules) : null; } catch (e) { modulos = null; }
+            if (Array.isArray(modulos) && !modulos.includes('discTest')) {
+                modulos.push('discTest');
+                await new Promise((resolve, reject) => db.run(`UPDATE employees SET enabled_modules = ? WHERE id = ?`, [JSON.stringify(modulos), emp.id], (err) => err ? reject(err) : resolve()));
+            }
+            notificarPorEmployeeId(emp.id, 'Teste de Perfil DISC liberado', 'Você tem um novo Teste de Perfil DISC disponível para responder.', 'discTeste');
+        }
+        res.json({ message: `Teste DISC enviado para ${alvos.length} colaborador(es)!` });
+    } catch (e) { res.status(400).json({ error: 'Erro ao enviar o teste DISC.' }); }
+});
+
+// Master: lista os resultados já respondidos, para acompanhar quem já fez o teste.
+app.get('/api/disc-test/resultados', requireRole('admin'), async (req, res) => {
+    const resultados = await dbAll(
+        `SELECT r.id, r.employee_id, r.perfil_primario, r.perfil_secundario, r.created_at,
+                e.name as employeeName, c.name as companyName
+         FROM disc_results r
+         JOIN employees e ON e.id = r.employee_id
+         LEFT JOIN companies c ON c.id = e.company_id
+         ORDER BY r.created_at DESC LIMIT 100`
+    );
+    res.json(resultados);
 });
 
 app.get('/api/disc-test/meu-resultado', requireRole('autonomous'), async (req, res) => {
@@ -3376,10 +3414,24 @@ app.post('/api/disc-test/submit', requireRole('autonomous'), async (req, res) =>
         `INSERT INTO disc_results (employee_id, respostas, pontos_d, pontos_i, pontos_s, pontos_c, perfil_primario, perfil_secundario)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [req.user.employeeId, JSON.stringify(respostas), pontos.D, pontos.I, pontos.S, pontos.C, perfilPrimario, perfilSecundario],
-        function (err) {
+        async function (err) {
             if (err) return res.status(400).json({ error: err.message });
             const perfilTexto = `${perfilPrimario}/${perfilSecundario}`;
             db.run(`UPDATE employees SET disc_profile = ? WHERE id = ?`, [perfilTexto, req.user.employeeId], () => {});
+            // Uso único: quem tem o módulo por uma restrição explícita (array)
+            // perde o acesso de volta ao concluir — só volta a ficar disponível
+            // se o Master/empresa "enviar" (liberar) de novo.
+            try {
+                const emp = await dbGet(`SELECT enabled_modules FROM employees WHERE id = ?`, [req.user.employeeId]);
+                if (emp) {
+                    let modulos;
+                    try { modulos = emp.enabled_modules ? JSON.parse(emp.enabled_modules) : null; } catch (e) { modulos = null; }
+                    if (Array.isArray(modulos) && modulos.includes('discTest')) {
+                        db.run(`UPDATE employees SET enabled_modules = ? WHERE id = ?`,
+                            [JSON.stringify(modulos.filter(m => m !== 'discTest')), req.user.employeeId], () => {});
+                    }
+                }
+            } catch (e) { /* não bloqueia a resposta do teste por causa disso */ }
             res.json({
                 message: 'Teste DISC concluído!',
                 id: this.lastID,
