@@ -26,13 +26,15 @@
     color: var(--cinza-700);
   }
   /* ---------- LOGIN ---------- */
-  #tela-login {
+  #tela-login, #tela-sala-convidado {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     background: linear-gradient(160deg, var(--azul-corp), var(--azul-corp-2));
   }
+  #tela-sala-convidado.oculto { display: none; }
+  #tela-sala-convidado .videochamada-tela { width: min(1000px, 94vw); }
   .card-login {
     background: #fff;
     border-radius: 16px;
@@ -178,7 +180,7 @@
   .notif-item .quando { font-size: 11px; color: #94a3b8; margin-top: 4px; }
 
   .videochamada-tela { background: #0b1329; border-radius: 16px; padding: 20px; color: #fff; }
-  .videochamada-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+  .videochamada-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 14px; }
   @media (max-width: 800px) { .videochamada-grade { grid-template-columns: 1fr; } }
   .videochamada-video-wrap { position: relative; background: #1d3a8a; border-radius: 12px; overflow: hidden; aspect-ratio: 16/9; }
   .videochamada-video-wrap video { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -186,6 +188,13 @@
   .videochamada-acoes { display: flex; gap: 10px; margin-top: 16px; justify-content: center; flex-wrap: wrap; }
   .videochamada-acoes button { border-radius: 24px; padding: 10px 20px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; }
   .videochamada-status { text-align: center; font-size: 13px; color: #cbd5e1; margin-top: 10px; min-height: 18px; }
+  /* Modo "dividir tela" ao compartilhar: metade fixa para a tela compartilhada, metade para quem está falando. */
+  .videochamada-grade.modo-split { display: flex; flex-wrap: wrap; }
+  .videochamada-grade.modo-split .local-tile { flex: 1 1 50%; aspect-ratio: auto; min-height: 320px; }
+  .videochamada-grade.modo-split #vc-remotos-wrap { display: flex !important; flex-direction: column; gap: 10px; flex: 1 1 50%; }
+  /* Câmera flutuante (PiP) por cima da tela compartilhada — arrastável. */
+  .vc-pip { position: absolute; width: 130px; height: 88px; right: 12px; bottom: 12px; border-radius: 10px; overflow: hidden; border: 2px solid #fff; cursor: move; box-shadow: 0 4px 14px rgba(0,0,0,.45); z-index: 5; touch-action: none; }
+  .vc-pip video { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
   .kpi-card { background: #fff; border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
@@ -413,6 +422,9 @@
   </div>
 </div>
 
+<!-- Tela do convidado externo que entra pelo link público da videochamada, sem login. -->
+<div id="tela-sala-convidado" class="oculto"></div>
+
 <!-- ===================== APP ===================== -->
 <div id="app">
   <aside class="sidebar">
@@ -593,8 +605,9 @@ document.getElementById('form-esqueci-senha').addEventListener('submit', async (
 function sair(silencioso) {
   pararPolinhaNotificacoes();
   if (typeof VC_SOCKET !== 'undefined' && VC_SOCKET) { VC_SOCKET.disconnect(); VC_SOCKET = null; }
-  if (typeof VC_PEER !== 'undefined' && VC_PEER) { VC_PEER.close(); VC_PEER = null; }
+  if (typeof VC_PEERS !== 'undefined' && VC_PEERS) { VC_PEERS.forEach(peer => peer.close()); VC_PEERS.clear(); }
   if (typeof VC_STREAM_LOCAL !== 'undefined' && VC_STREAM_LOCAL) { VC_STREAM_LOCAL.getTracks().forEach(t => t.stop()); VC_STREAM_LOCAL = null; }
+  if (typeof VC_STREAM_TELA !== 'undefined' && VC_STREAM_TELA) { VC_STREAM_TELA.getTracks().forEach(t => t.stop()); VC_STREAM_TELA = null; }
   ESTADO.token = null;
   ESTADO.usuario = null;
   HISTORICO_NAVEGACAO = [];
@@ -7587,12 +7600,17 @@ async function gerarInsightsIA() {
    VIDEOCHAMADA PRÓPRIA (WEBRTC) NAS MENTORIAS
    ========================================================== */
 let VC_SOCKET = null;
-let VC_PEER = null;
+let VC_PEERS = new Map();   // socketId -> RTCPeerConnection (malha: 1 conexão por participante)
+let VC_NOMES = new Map();   // socketId -> nome
 let VC_STREAM_LOCAL = null;
 let VC_STREAM_TELA = null;
 let VC_MICRO_LIGADO = true;
 let VC_CAMERA_LIGADA = true;
 let VC_COMPARTILHANDO_TELA = false;
+let VC_MODO_TELA = 'pip'; // 'pip' (câmera flutuante) ou 'split' (metade/metade)
+let VC_SOU_CONVIDADO = false;
+let VC_MENTORIA_ID_ATUAL = null;
+let VC_ROOM_TOKEN_CONVIDADO = null;
 
 // Mensagens de erro do getUserMedia traduzidas — a maioria dos "câmera não
 // conecta" é permissão negada ou nenhum dispositivo encontrado, não um bug.
@@ -7607,28 +7625,30 @@ function traduzirErroMidia(e) {
   return nomes[e.name] || ('Não foi possível acessar sua câmera/microfone: ' + e.message);
 }
 
-function renderVideochamada(mentoriaId) {
-  const m = CACHE_LISTA_MENTORIAS.find(x => x.id === mentoriaId);
-  const cont = document.getElementById('conteudo');
-  cont.innerHTML = `
-    <h1>Videochamada — ${escapeHtml((m && (m.execName + ' & ' + m.mentorName)) || 'Mentoria')}</h1>
+// Corpo da tela de videochamada — usado tanto para quem está logado (mentoria)
+// quanto para o convidado externo que entrou pelo link público.
+function htmlCorpoVideochamada(titulo, mostrarConvite) {
+  return `
+    <h1>${escapeHtml(titulo)}</h1>
     <div class="videochamada-tela" id="vc-tela">
-      <div class="videochamada-grade">
-        <div class="videochamada-video-wrap">
+      <div class="videochamada-grade" id="vc-grade">
+        <div class="videochamada-video-wrap local-tile" id="vc-tile-local">
           <video id="vc-video-local" autoplay muted playsinline></video>
           <div class="rotulo">Você</div>
+          <div class="vc-pip" id="vc-pip-wrap" style="display:none;">
+            <video id="vc-video-pip" autoplay muted playsinline></video>
+          </div>
         </div>
-        <div class="videochamada-video-wrap">
-          <video id="vc-video-remoto" autoplay playsinline></video>
-          <div class="rotulo">Outro participante</div>
-        </div>
+        <div id="vc-remotos-wrap" style="display:contents;"></div>
       </div>
       <div class="videochamada-acoes">
         <button id="vc-btn-mic" class="btn-secundario" onclick="alternarMicrofone()">🎙️ Microfone</button>
         <button id="vc-btn-cam" class="btn-secundario" onclick="alternarCamera()">🎥 Câmera</button>
         <button id="vc-btn-tela" class="btn-secundario" onclick="alternarCompartilhamentoTela()">🖥️ Compartilhar tela</button>
+        <button id="vc-btn-split" class="btn-secundario" onclick="alternarModoDivisaoTela()" style="display:none;">🗂️ Dividir tela</button>
         <button id="vc-btn-chat" class="btn-secundario" onclick="alternarChatVideochamada()">💬 Chat</button>
         <button class="btn-secundario" onclick="alternarTelaCheiaVideochamada()">⛶ Tela cheia</button>
+        ${mostrarConvite ? `<button class="btn-secundario" onclick="abrirConviteVideochamada()">🔗 Convidar</button>` : ''}
         <button class="btn-perigo" onclick="encerrarVideochamada()">Encerrar</button>
       </div>
       <div class="videochamada-status" id="vc-status">Conectando à câmera e microfone...</div>
@@ -7639,17 +7659,37 @@ function renderVideochamada(mentoriaId) {
           <button class="btn-primario btn-sm" style="width:auto;" onclick="enviarMensagemVideochamada()">Enviar</button>
         </div>
       </div>
+      <div id="modal-area-vc"></div>
     </div>
   `;
-  iniciarVideochamada(mentoriaId);
 }
 
-async function iniciarVideochamada(mentoriaId) {
+function renderVideochamada(mentoriaId) {
+  const m = CACHE_LISTA_MENTORIAS.find(x => x.id === mentoriaId);
+  VC_SOU_CONVIDADO = false;
+  VC_MENTORIA_ID_ATUAL = mentoriaId;
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = htmlCorpoVideochamada('Videochamada — ' + ((m && (m.execName + ' & ' + m.mentorName)) || 'Mentoria'), true);
+  tornarPipArrastavel();
+  iniciarVideochamada({ mentorshipId: mentoriaId, token: ESTADO.token });
+}
+
+// Chamado depois que o convidado externo (sem login) digita o nome dele na
+// tela que abriu a partir do link público (#sala=<token>).
+function renderVideochamadaConvidado(nome) {
+  VC_SOU_CONVIDADO = true;
+  const tela = document.getElementById('tela-sala-convidado');
+  tela.innerHTML = `<div style="width:100%;padding:20px;">${htmlCorpoVideochamada('Sala de Videochamada', false)}</div>`;
+  tornarPipArrastavel();
+  iniciarVideochamada({ roomToken: VC_ROOM_TOKEN_CONVIDADO, nome });
+}
+
+async function iniciarVideochamada(opts) {
   const statusEl = document.getElementById('vc-status');
   try {
     VC_STREAM_LOCAL = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
   } catch (e) {
-    // Câmera falhou — tenta continuar só com áudio em vez de travar a mentoria inteira.
+    // Câmera falhou — tenta continuar só com áudio em vez de travar a reunião inteira.
     try {
       VC_STREAM_LOCAL = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
       statusEl.textContent = traduzirErroMidia(e) + ' Entrando só com áudio.';
@@ -7663,78 +7703,111 @@ async function iniciarVideochamada(mentoriaId) {
   }
   document.getElementById('vc-video-local').srcObject = VC_STREAM_LOCAL;
 
-  statusEl.textContent = 'Conectando à sala da mentoria...';
+  statusEl.textContent = 'Conectando à sala...';
   VC_SOCKET = io();
 
   VC_SOCKET.on('connect', () => {
-    VC_SOCKET.emit('entrar-sala-mentoria', { mentorshipId: mentoriaId, token: ESTADO.token });
+    if (opts.roomToken) VC_SOCKET.emit('entrar-sala-mentoria-convidado', { roomToken: opts.roomToken, nome: opts.nome });
+    else VC_SOCKET.emit('entrar-sala-mentoria', { mentorshipId: opts.mentorshipId, token: opts.token });
   });
 
   VC_SOCKET.on('sala-entrada-negada', (d) => {
     statusEl.textContent = 'Não foi possível entrar: ' + (d.error || 'acesso negado.');
   });
 
+  // Recém-chegado: recebe quem já está na sala e é ELE quem cria a oferta
+  // para cada um deles — assim funciona com qualquer número de participantes,
+  // não só 2 (cada par de participantes tem sua própria conexão WebRTC).
   VC_SOCKET.on('entrou-na-sala', async (d) => {
-    statusEl.textContent = d.outros.length ? 'Outro participante já está na sala. Conectando...' : 'Aguardando o outro participante entrar...';
-    criarConexaoPeer();
-    if (d.souOSegundo) {
-      // Quem entra em segundo lugar é quem cria a oferta (evita os dois ofertarem ao mesmo tempo).
-      const oferta = await VC_PEER.createOffer();
-      await VC_PEER.setLocalDescription(oferta);
-      VC_SOCKET.emit('sinal-webrtc', { tipo: 'offer', dados: oferta });
+    statusEl.textContent = d.outros.length ? `${d.outros.length} participante(s) já na sala. Conectando...` : 'Aguardando outras pessoas entrarem...';
+    for (const p of d.outros) {
+      VC_NOMES.set(p.socketId, p.name);
+      adicionarTileRemoto(p.socketId, p.name);
+      const peer = criarConexaoPeer(p.socketId);
+      const oferta = await peer.createOffer();
+      await peer.setLocalDescription(oferta);
+      VC_SOCKET.emit('sinal-webrtc', { tipo: 'offer', dados: oferta, paraSocketId: p.socketId });
     }
   });
 
-  VC_SOCKET.on('usuario-entrou', () => {
-    statusEl.textContent = 'Participante entrou na sala. Conectando...';
+  VC_SOCKET.on('usuario-entrou', ({ socketId, name }) => {
+    VC_NOMES.set(socketId, name);
+    adicionarTileRemoto(socketId, name);
+    statusEl.textContent = escapeHtml(name) + ' entrou na sala.';
   });
 
-  VC_SOCKET.on('usuario-saiu', () => {
-    statusEl.textContent = 'O outro participante saiu da chamada.';
-    const videoRemoto = document.getElementById('vc-video-remoto');
-    if (videoRemoto) videoRemoto.srcObject = null;
+  VC_SOCKET.on('usuario-saiu', ({ socketId }) => {
+    const peer = VC_PEERS.get(socketId);
+    if (peer) { peer.close(); VC_PEERS.delete(socketId); }
+    removerTileRemoto(socketId);
+    statusEl.textContent = 'Um participante saiu da chamada.';
   });
 
   VC_SOCKET.on('mensagem-sala-mentoria', ({ texto, nome }) => {
     adicionarMensagemChatVideochamada(nome, texto, false);
   });
 
-  VC_SOCKET.on('sinal-webrtc', async ({ tipo, dados }) => {
-    if (!VC_PEER) criarConexaoPeer();
+  VC_SOCKET.on('sinal-webrtc', async ({ tipo, dados, de }) => {
+    let peer = VC_PEERS.get(de);
+    if (!peer) { adicionarTileRemoto(de, VC_NOMES.get(de) || 'Participante'); peer = criarConexaoPeer(de); }
     if (tipo === 'offer') {
-      await VC_PEER.setRemoteDescription(new RTCSessionDescription(dados));
-      const resposta = await VC_PEER.createAnswer();
-      await VC_PEER.setLocalDescription(resposta);
-      VC_SOCKET.emit('sinal-webrtc', { tipo: 'answer', dados: resposta });
+      await peer.setRemoteDescription(new RTCSessionDescription(dados));
+      const resposta = await peer.createAnswer();
+      await peer.setLocalDescription(resposta);
+      VC_SOCKET.emit('sinal-webrtc', { tipo: 'answer', dados: resposta, paraSocketId: de });
     } else if (tipo === 'answer') {
-      await VC_PEER.setRemoteDescription(new RTCSessionDescription(dados));
+      await peer.setRemoteDescription(new RTCSessionDescription(dados));
     } else if (tipo === 'candidate' && dados) {
-      try { await VC_PEER.addIceCandidate(new RTCIceCandidate(dados)); } catch (e) { /* candidato tardio, pode ignorar */ }
+      try { await peer.addIceCandidate(new RTCIceCandidate(dados)); } catch (e) { /* candidato tardio, pode ignorar */ }
     }
   });
 }
 
-function criarConexaoPeer() {
-  VC_PEER = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-  VC_STREAM_LOCAL.getTracks().forEach(track => VC_PEER.addTrack(track, VC_STREAM_LOCAL));
+function criarConexaoPeer(socketId) {
+  const peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+  VC_PEERS.set(socketId, peer);
+  const faixaVideoAtual = VC_COMPARTILHANDO_TELA && VC_STREAM_TELA ? VC_STREAM_TELA.getVideoTracks()[0] : null;
+  VC_STREAM_LOCAL.getTracks().forEach(track => {
+    // Se eu já estiver compartilhando tela quando alguém novo entra, ele já
+    // deve receber a tela, não a câmera.
+    if (track.kind === 'video' && faixaVideoAtual) peer.addTrack(faixaVideoAtual, VC_STREAM_TELA);
+    else peer.addTrack(track, VC_STREAM_LOCAL);
+  });
 
-  VC_PEER.onicecandidate = (ev) => {
-    if (ev.candidate) VC_SOCKET.emit('sinal-webrtc', { tipo: 'candidate', dados: ev.candidate });
+  peer.onicecandidate = (ev) => {
+    if (ev.candidate) VC_SOCKET.emit('sinal-webrtc', { tipo: 'candidate', dados: ev.candidate, paraSocketId: socketId });
   };
 
-  VC_PEER.ontrack = (ev) => {
-    const videoRemoto = document.getElementById('vc-video-remoto');
-    if (videoRemoto) videoRemoto.srcObject = ev.streams[0];
+  peer.ontrack = (ev) => {
+    const video = document.getElementById('vc-video-' + socketId);
+    if (video) video.srcObject = ev.streams[0];
     const statusEl = document.getElementById('vc-status');
     if (statusEl) statusEl.textContent = 'Chamada conectada.';
   };
 
-  VC_PEER.onconnectionstatechange = () => {
-    const statusEl = document.getElementById('vc-status');
-    if (!statusEl || !VC_PEER) return;
-    if (VC_PEER.connectionState === 'connected') statusEl.textContent = 'Chamada conectada.';
-    if (VC_PEER.connectionState === 'disconnected' || VC_PEER.connectionState === 'failed') statusEl.textContent = 'Conexão perdida com o outro participante.';
+  peer.onconnectionstatechange = () => {
+    if (peer.connectionState === 'failed' || peer.connectionState === 'disconnected') {
+      const statusEl = document.getElementById('vc-status');
+      if (statusEl) statusEl.textContent = 'Conexão perdida com um participante.';
+    }
   };
+  return peer;
+}
+
+function adicionarTileRemoto(socketId, nome) {
+  if (document.getElementById('vc-tile-' + socketId)) return;
+  const wrap = document.getElementById('vc-remotos-wrap');
+  if (!wrap) return;
+  const div = document.createElement('div');
+  div.className = 'videochamada-video-wrap';
+  div.id = 'vc-tile-' + socketId;
+  div.innerHTML = `<video id="vc-video-${socketId}" autoplay playsinline></video><div class="rotulo">${escapeHtml(nome)}</div>`;
+  wrap.appendChild(div);
+}
+
+function removerTileRemoto(socketId) {
+  const el = document.getElementById('vc-tile-' + socketId);
+  if (el) el.remove();
 }
 
 function alternarMicrofone() {
@@ -7751,10 +7824,10 @@ function alternarCamera() {
   document.getElementById('vc-btn-cam').textContent = VC_CAMERA_LIGADA ? '🎥 Câmera' : '🚫 Câmera desligada';
 }
 
-// Compartilhar tela (como no Teams/Meet): troca a faixa de vídeo enviada ao
-// outro participante pela captura de tela, sem precisar recriar a conexão —
-// usa RTCRtpSender.replaceTrack. Ao parar (botão ou o navegador encerrando o
-// compartilhamento), volta para a câmera automaticamente.
+// Compartilhar tela (como no Teams/Meet): troca a faixa de vídeo enviada para
+// TODOS os participantes pela captura de tela, sem precisar recriar nenhuma
+// conexão — usa RTCRtpSender.replaceTrack em cada peer. Ao parar (botão ou o
+// navegador encerrando o compartilhamento), volta para a câmera sozinho.
 async function alternarCompartilhamentoTela() {
   const btn = document.getElementById('vc-btn-tela');
   if (VC_COMPARTILHANDO_TELA) { pararCompartilhamentoTela(); return; }
@@ -7764,26 +7837,92 @@ async function alternarCompartilhamentoTela() {
   } catch (e) { return; } // usuário cancelou o seletor de tela/janela
 
   const faixaTela = VC_STREAM_TELA.getVideoTracks()[0];
-  const sender = VC_PEER && VC_PEER.getSenders().find(s => s.track && s.track.kind === 'video');
-  if (sender) await sender.replaceTrack(faixaTela);
+  for (const peer of VC_PEERS.values()) {
+    const sender = peer.getSenders().find(s => s.track && s.track.kind === 'video');
+    if (sender) await sender.replaceTrack(faixaTela);
+  }
   document.getElementById('vc-video-local').srcObject = VC_STREAM_TELA;
   VC_COMPARTILHANDO_TELA = true;
   if (btn) { btn.textContent = '🛑 Parar compartilhamento'; btn.classList.add('btn-perigo'); }
+  const btnSplit = document.getElementById('vc-btn-split');
+  if (btnSplit) btnSplit.style.display = '';
   // O navegador tem seu próprio botão "Parar compartilhamento" na barra do SO — precisa escutar esse evento também.
   faixaTela.onended = () => pararCompartilhamentoTela();
+  aplicarModoTelaCompartilhamento();
 }
 
 async function pararCompartilhamentoTela() {
   if (!VC_COMPARTILHANDO_TELA) return;
   if (VC_STREAM_TELA) { VC_STREAM_TELA.getTracks().forEach(t => t.stop()); VC_STREAM_TELA = null; }
   const faixaCamera = VC_STREAM_LOCAL && VC_STREAM_LOCAL.getVideoTracks()[0];
-  const sender = VC_PEER && VC_PEER.getSenders().find(s => s.track && s.track.kind === 'video');
-  if (sender && faixaCamera) await sender.replaceTrack(faixaCamera);
+  for (const peer of VC_PEERS.values()) {
+    const sender = peer.getSenders().find(s => s.track && s.track.kind === 'video');
+    if (sender && faixaCamera) await sender.replaceTrack(faixaCamera);
+  }
   const videoLocal = document.getElementById('vc-video-local');
   if (videoLocal) videoLocal.srcObject = VC_STREAM_LOCAL;
   VC_COMPARTILHANDO_TELA = false;
   const btn = document.getElementById('vc-btn-tela');
   if (btn) { btn.textContent = '🖥️ Compartilhar tela'; btn.classList.remove('btn-perigo'); }
+  const btnSplit = document.getElementById('vc-btn-split');
+  if (btnSplit) btnSplit.style.display = 'none';
+  aplicarModoTelaCompartilhamento();
+}
+
+// Dois jeitos de ver a tela compartilhada, como no Teams: "pip" deixa uma
+// janelinha da sua câmera flutuando (arrastável) por cima da tela grande, e
+// "split" divide a tela ao meio — metade o que está sendo compartilhado,
+// metade a câmera de quem está falando.
+function alternarModoDivisaoTela() {
+  if (!VC_COMPARTILHANDO_TELA) return;
+  VC_MODO_TELA = VC_MODO_TELA === 'split' ? 'pip' : 'split';
+  aplicarModoTelaCompartilhamento();
+}
+
+function aplicarModoTelaCompartilhamento() {
+  const grade = document.getElementById('vc-grade');
+  const pip = document.getElementById('vc-pip-wrap');
+  const btnSplit = document.getElementById('vc-btn-split');
+  if (!grade) return;
+  if (!VC_COMPARTILHANDO_TELA) {
+    grade.classList.remove('modo-split');
+    if (pip) pip.style.display = 'none';
+    return;
+  }
+  if (VC_MODO_TELA === 'split') {
+    grade.classList.add('modo-split');
+    if (pip) pip.style.display = 'none';
+    if (btnSplit) btnSplit.textContent = '🗂️ Ver câmera flutuante (PiP)';
+  } else {
+    grade.classList.remove('modo-split');
+    if (pip) { pip.style.display = 'block'; document.getElementById('vc-video-pip').srcObject = VC_STREAM_LOCAL; }
+    if (btnSplit) btnSplit.textContent = '🗂️ Dividir tela (metade a metade)';
+  }
+}
+
+// Deixa a câmera flutuante arrastável dentro do quadro da tela compartilhada
+// (mouse e toque), como o "picture in picture" do Teams/Meet.
+function tornarPipArrastavel() {
+  const pip = document.getElementById('vc-pip-wrap');
+  const dentro = document.getElementById('vc-tile-local');
+  if (!pip || !dentro || pip.dataset.arrastavelPronto) return;
+  pip.dataset.arrastavelPronto = '1';
+  let arrastando = false, offX = 0, offY = 0;
+  const iniciar = (x, y) => { arrastando = true; const r = pip.getBoundingClientRect(); offX = x - r.left; offY = y - r.top; };
+  const mover = (x, y) => {
+    if (!arrastando) return;
+    const limite = dentro.getBoundingClientRect();
+    let left = Math.max(0, Math.min(x - limite.left - offX, limite.width - pip.offsetWidth));
+    let top = Math.max(0, Math.min(y - limite.top - offY, limite.height - pip.offsetHeight));
+    pip.style.left = left + 'px'; pip.style.top = top + 'px'; pip.style.right = 'auto'; pip.style.bottom = 'auto';
+  };
+  const parar = () => arrastando = false;
+  pip.addEventListener('mousedown', (e) => iniciar(e.clientX, e.clientY));
+  window.addEventListener('mousemove', (e) => mover(e.clientX, e.clientY));
+  window.addEventListener('mouseup', parar);
+  pip.addEventListener('touchstart', (e) => { const t = e.touches[0]; iniciar(t.clientX, t.clientY); }, { passive: true });
+  window.addEventListener('touchmove', (e) => { const t = e.touches[0]; mover(t.clientX, t.clientY); }, { passive: true });
+  window.addEventListener('touchend', parar);
 }
 
 function alternarChatVideochamada() {
@@ -7810,7 +7949,7 @@ function enviarMensagemVideochamada() {
   const texto = input.value.trim();
   if (!texto || !VC_SOCKET) return;
   VC_SOCKET.emit('mensagem-sala-mentoria', { texto });
-  adicionarMensagemChatVideochamada(ESTADO.usuario?.name || 'Você', texto, true);
+  adicionarMensagemChatVideochamada((VC_SOU_CONVIDADO ? 'Você' : (ESTADO.usuario?.name || 'Você')), texto, true);
   input.value = '';
 }
 
@@ -7821,13 +7960,42 @@ function alternarTelaCheiaVideochamada() {
   else document.exitFullscreen().catch(() => {});
 }
 
+// Gera (ou reaproveita) o link público da sala e mostra pronto para copiar —
+// dá para mandar para qualquer pessoa, sem login, até 1000 na mesma sala.
+async function abrirConviteVideochamada() {
+  if (!VC_MENTORIA_ID_ATUAL) return;
+  try {
+    const r = await api('/api/mentorships/' + VC_MENTORIA_ID_ATUAL + '/room-link', { method: 'POST' });
+    const area = document.getElementById('modal-area-vc');
+    area.innerHTML = `
+      <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area-vc').innerHTML=''">
+        <div class="modal-caixa" style="max-width:480px;">
+          <h3 style="margin-top:0;">🔗 Convidar para a videochamada</h3>
+          <p style="font-size:13px;color:#64748b;">Envie este link para quem você quiser — não precisa de login, só o nome. Até 1000 pessoas podem entrar na mesma sala (para uma audiência bem grande, o ideal é os convidados extras entrarem com a câmera desligada, só ouvindo, para a chamada rodar bem).</p>
+          <input readonly value="${r.link}" style="width:100%;" onclick="this.select();">
+          <div class="acoes-form">
+            <button class="btn-primario btn-sm" onclick="navigator.clipboard.writeText('${r.link}');mostrarToast('Link copiado!');">📋 Copiar Link</button>
+            <button class="btn-secundario btn-sm" onclick="document.getElementById('modal-area-vc').innerHTML=''">Fechar</button>
+          </div>
+        </div>
+      </div>`;
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
 function encerrarVideochamada() {
   if (VC_SOCKET) { VC_SOCKET.emit('sair-sala-mentoria'); VC_SOCKET.disconnect(); VC_SOCKET = null; }
-  if (VC_PEER) { VC_PEER.close(); VC_PEER = null; }
+  VC_PEERS.forEach(peer => peer.close());
+  VC_PEERS.clear();
+  VC_NOMES.clear();
   if (VC_STREAM_LOCAL) { VC_STREAM_LOCAL.getTracks().forEach(t => t.stop()); VC_STREAM_LOCAL = null; }
   if (VC_STREAM_TELA) { VC_STREAM_TELA.getTracks().forEach(t => t.stop()); VC_STREAM_TELA = null; }
   VC_COMPARTILHANDO_TELA = false;
-  renderMentorships();
+  if (VC_SOU_CONVIDADO) {
+    VC_SOU_CONVIDADO = false;
+    document.getElementById('tela-sala-convidado').innerHTML = '<div class="card-login"><p style="text-align:center;">Você saiu da videochamada. Pode fechar esta aba.</p></div>';
+  } else {
+    renderMentorships();
+  }
 }
 
 /* ==========================================================
@@ -7856,6 +8024,40 @@ function encerrarVideochamada() {
 
 if (ESTADO.token && ESTADO.usuario) {
   iniciarApp();
+}
+
+// Link público de convite para a videochamada (enviado por "🔗 Convidar"):
+// chega como "#sala=<código>" e não exige login — só o nome de quem entra.
+(function tratarLinkSalaConvidado() {
+  if (!location.hash.startsWith('#sala=')) return;
+  const token = location.hash.slice('#sala='.length);
+  VC_ROOM_TOKEN_CONVIDADO = token;
+  document.getElementById('tela-login').style.display = 'none';
+  document.getElementById('app').classList.remove('ativo');
+  const tela = document.getElementById('tela-sala-convidado');
+  tela.classList.remove('oculto');
+  tela.innerHTML = '<div class="card-login"><p style="text-align:center;">Carregando informações da sala...</p></div>';
+  fetch('/api/public/sala/' + token).then(r => r.json()).then(info => {
+    if (info.error) throw new Error(info.error);
+    tela.innerHTML = `
+      <div class="card-login">
+        <div class="logo-fallback-login">IMPULSIONAR V4</div>
+        <p style="text-align:center;font-size:14px;color:#475569;margin-top:-10px;">Você foi convidado para uma videochamada${info.mentorName ? ' com ' + escapeHtml(info.mentorName) : ''}.</p>
+        <label>Seu nome</label>
+        <input type="text" id="sala-convidado-nome" placeholder="Como você quer aparecer na chamada" onkeydown="if(event.key==='Enter'){entrarSalaComoConvidado();}">
+        <button class="btn-primario" onclick="entrarSalaComoConvidado()">Entrar na Videochamada</button>
+        <div id="sala-convidado-erro" style="text-align:center;font-size:13px;color:#dc2626;margin-top:8px;min-height:18px;"></div>
+      </div>
+    `;
+  }).catch(() => {
+    tela.innerHTML = '<div class="card-login"><p style="text-align:center;color:#dc2626;">Link inválido ou expirado.</p></div>';
+  });
+})();
+
+function entrarSalaComoConvidado() {
+  const nome = document.getElementById('sala-convidado-nome').value.trim();
+  if (!nome) { document.getElementById('sala-convidado-erro').textContent = 'Informe seu nome para entrar.'; return; }
+  renderVideochamadaConvidado(nome);
 }
 
 // Link de divulgação (Instagram/WhatsApp/bio) direto pro cadastro de

@@ -673,6 +673,10 @@ function inicializarBase() {
         db.run(`ALTER TABLE mentorships ADD COLUMN participants_json TEXT DEFAULT '[]'`, () => {});
         db.run(`ALTER TABLE mentorships ADD COLUMN ics_uid TEXT`, () => {});
         db.run(`ALTER TABLE mentorships ADD COLUMN ics_sequence INTEGER DEFAULT 0`, () => {});
+        // Código aleatório da sala de videochamada — usado no link público que dá
+        // acesso a convidados sem login (só quem tem o link entra; o id numérico
+        // sozinho não seria suficiente porque é sequencial e fácil de adivinhar).
+        db.run(`ALTER TABLE mentorships ADD COLUMN room_token TEXT`, () => {});
 
         // Horários disponíveis de cada mentor, por data específica do calendário
         // (ex: 14/10/2026 das 09:00 às 10:00), usados para só permitir agendar
@@ -3703,6 +3707,38 @@ app.put('/api/mentorships/:id', requireRole('admin', 'client_admin', 'autonomous
 });
 app.delete('/api/mentorships/:id', requireRole('admin', 'client_admin', 'autonomous'), ensureRecordAccess('mentorships'), (req, res) => { db.run(`DELETE FROM mentorships WHERE id = ?`, [req.params.id], () => res.json({ message: 'Removido!' })); });
 
+// Gera (ou reaproveita) o link público da sala de videochamada desta mentoria,
+// para convidar qualquer pessoa (sem precisar de login) — até 1000 pessoas na
+// mesma sala. Só quem participa da mentoria pode gerar/ver o link.
+app.post('/api/mentorships/:id/room-link', requireRole('admin', 'client_admin', 'mentor', 'autonomous'), async (req, res) => {
+    try {
+        const mentoria = await dbGet(`SELECT * FROM mentorships WHERE id = ?`, [req.params.id]);
+        if (!mentoria) return res.status(404).json({ error: 'Mentoria não encontrada.' });
+        const permitido =
+            req.user.role === 'admin' ||
+            (req.user.role === 'autonomous' && req.user.employeeId === mentoria.employee_id) ||
+            (req.user.role === 'mentor' && req.user.mentorId === mentoria.mentor_id) ||
+            (req.user.role === 'client_admin' && await dbGet(`SELECT id FROM employees WHERE id = ? AND company_id = ?`, [mentoria.employee_id, req.user.companyId]));
+        if (!permitido) return res.status(403).json({ error: 'Você não faz parte desta mentoria.' });
+
+        let token = mentoria.room_token;
+        if (!token) {
+            token = crypto.randomBytes(12).toString('hex');
+            await new Promise((resolve, reject) => db.run(`UPDATE mentorships SET room_token = ? WHERE id = ?`, [token, req.params.id], (err) => err ? reject(err) : resolve()));
+        }
+        const baseUrl = appBaseUrlAtiva || process.env.APP_URL || `http://localhost:${PORT}`;
+        res.json({ token, link: `${baseUrl.replace(/\/$/, '')}/#sala=${token}` });
+    } catch (e) { res.status(500).json({ error: 'Erro ao gerar o link da sala.' }); }
+});
+
+// Consulta pública (sem login) usada pela tela de entrada do convidado, só
+// para mostrar de qual reunião se trata antes de pedir o nome dele.
+app.get('/api/public/sala/:token', async (req, res) => {
+    const mentoria = await dbGet(`SELECT id, mentor_name, meeting_date FROM mentorships WHERE room_token = ?`, [req.params.token]);
+    if (!mentoria) return res.status(404).json({ error: 'Link inválido ou expirado.' });
+    res.json({ mentorName: mentoria.mentor_name || '', meeting_date: mentoria.meeting_date });
+});
+
 // ============================================================
 // MÓDULO DE CONSULTORIA: planos de acompanhamento com marcos,
 // separados do PDI do executivo, + calendário agregado de eventos.
@@ -5854,8 +5890,33 @@ app.use(express.static(path.join(__dirname, 'public')));
 const httpServer = http.createServer(app);
 const io = new SocketIOServer(httpServer, { cors: { origin: '*' } });
 
-// mentorshipRoomId -> Map(socketId -> { userId, name, role })
+// mentorshipRoomId -> Map(socketId -> { userId, name, role, convidado })
 const SALAS_VIDEOCHAMADA = new Map();
+// Limite só para não deixar a sala crescer sem controle — não é uma promessa de
+// que 1000 câmeras simultâneas rodam bem: WebRTC em malha (cada participante
+// conectado a todos os outros) funciona bem até uns 10-15 com vídeo ligado.
+// Para uma audiência grande de verdade (dezenas/centenas assistindo), o jeito
+// certo é os extras entrarem só de áudio/vídeo desligado, ou migrar para um
+// servidor de mídia (SFU) — fica registrado aqui para uma próxima etapa.
+const CAPACIDADE_MAXIMA_SALA = 1000;
+
+function entrarNaSalaVideochamada(socket, sala, participante) {
+    if (!SALAS_VIDEOCHAMADA.has(sala)) SALAS_VIDEOCHAMADA.set(sala, new Map());
+    const participantes = SALAS_VIDEOCHAMADA.get(sala);
+    if (participantes.size >= CAPACIDADE_MAXIMA_SALA) {
+        socket.emit('sala-entrada-negada', { error: 'Esta sala já atingiu o limite de participantes.' });
+        return;
+    }
+    const outros = Array.from(participantes.entries()).map(([id, p]) => ({ socketId: id, name: p.name }));
+    participantes.set(socket.id, participante);
+    socket.join(sala);
+    socket.data.sala = sala;
+    // O recém-chegado recebe a lista de quem já está na sala e é ele quem
+    // cria a oferta WebRTC para CADA um deles (evita duas ofertas cruzadas
+    // no mesmo par e permite qualquer número de participantes, não só 2).
+    socket.emit('entrou-na-sala', { outros });
+    socket.to(sala).emit('usuario-entrou', { socketId: socket.id, name: participante.name });
+}
 
 io.on('connection', (socket) => {
     socket.on('entrar-sala-mentoria', async ({ mentorshipId, token }) => {
@@ -5872,26 +5933,32 @@ io.on('connection', (socket) => {
             if (!permitido) return socket.emit('sala-entrada-negada', { error: 'Você não faz parte desta mentoria.' });
 
             const usuario = await dbGet(`SELECT name FROM users WHERE id = ?`, [payload.userId]);
-            const sala = `mentoria-${mentorshipId}`;
-            if (!SALAS_VIDEOCHAMADA.has(sala)) SALAS_VIDEOCHAMADA.set(sala, new Map());
-            const participantes = SALAS_VIDEOCHAMADA.get(sala);
-
-            const outros = Array.from(participantes.entries()).map(([id, p]) => ({ socketId: id, name: p.name }));
-            participantes.set(socket.id, { userId: payload.userId, name: usuario ? usuario.name : 'Participante', role: payload.role });
-
-            socket.join(sala);
-            socket.data.sala = sala;
-            socket.emit('entrou-na-sala', { outros, souOSegundo: outros.length > 0 });
-            socket.to(sala).emit('usuario-entrou', { socketId: socket.id, name: usuario ? usuario.name : 'Participante' });
+            entrarNaSalaVideochamada(socket, `mentoria-${mentorshipId}`, { userId: payload.userId, name: usuario ? usuario.name : 'Participante', role: payload.role, convidado: false });
         } catch (e) {
             socket.emit('sala-entrada-negada', { error: 'Token inválido ou expirado.' });
         }
     });
 
-    socket.on('sinal-webrtc', ({ tipo, dados }) => {
+    // Convidado externo entrando pelo link público (sem login) — só precisa do
+    // código da sala (room_token, aleatório e não sequencial) e do nome dele.
+    socket.on('entrar-sala-mentoria-convidado', async ({ roomToken, nome }) => {
+        try {
+            if (!roomToken || !nome) return socket.emit('sala-entrada-negada', { error: 'Informe seu nome.' });
+            const mentoria = await dbGet(`SELECT * FROM mentorships WHERE room_token = ?`, [roomToken]);
+            if (!mentoria) return socket.emit('sala-entrada-negada', { error: 'Link inválido ou expirado.' });
+            entrarNaSalaVideochamada(socket, `mentoria-${mentoria.id}`, { userId: null, name: String(nome).slice(0, 60), role: 'convidado', convidado: true });
+        } catch (e) {
+            socket.emit('sala-entrada-negada', { error: 'Não foi possível entrar na sala.' });
+        }
+    });
+
+    // Sinalização WebRTC dirigida a UM participante específico (necessário com
+    // mais de 2 pessoas na sala — antes ia para a sala inteira, o que só
+    // funciona quando só existem 2 participantes).
+    socket.on('sinal-webrtc', ({ tipo, dados, paraSocketId }) => {
         const sala = socket.data.sala;
-        if (!sala) return;
-        socket.to(sala).emit('sinal-webrtc', { tipo, dados, de: socket.id });
+        if (!sala || !paraSocketId) return;
+        io.to(paraSocketId).emit('sinal-webrtc', { tipo, dados, de: socket.id });
     });
 
     // Chat de texto dentro da videochamada — só repassa a mensagem para os
