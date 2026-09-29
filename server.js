@@ -19,6 +19,7 @@ const ExcelJS = require('exceljs');
 // uma planilha modelo da Ambev e é conteúdo estático (não muda pela tela),
 // então fica num JSON à parte em vez de virar uma tabela gigante no banco.
 const DPO_AMBEV_DATA = require('./dpo_ambev_data.json');
+const DISC_DATA = require('./disc_data.json');
 const DPO_PILARES_ORDEM = ['gente', 'seguranca', 'planejamento', 'armazem', 'frota', 'entrega', 'gestao'];
 
 const app = express();
@@ -543,6 +544,24 @@ function inicializarBase() {
         // restrito só a PDI — quem cadastrou (client_admin ou Master) libera o
         // resto depois, na tela de Permissões do colaborador.
         db.run(`ALTER TABLE employees ADD COLUMN enabled_modules TEXT`, () => {});
+
+        // Resultados do Teste de Perfil DISC (formato "ranking por pergunta"):
+        // cada linha é uma tentativa completa do próprio executivo/colaborador
+        // (role 'autonomous'), com as respostas brutas (ordem escolhida em cada
+        // pergunta) e os pontos já calculados por dimensão D/I/S/C.
+        db.run(`CREATE TABLE IF NOT EXISTS disc_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id INTEGER NOT NULL,
+            respostas TEXT,
+            pontos_d INTEGER DEFAULT 0,
+            pontos_i INTEGER DEFAULT 0,
+            pontos_s INTEGER DEFAULT 0,
+            pontos_c INTEGER DEFAULT 0,
+            perfil_primario TEXT,
+            perfil_secundario TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(employee_id) REFERENCES employees(id)
+        )`);
 
         // Histórico de mudanças de fase do Pipeline de Desenvolvimento: registra o
         // motivo da movimentação e a frase que aparece para o colaborador, para dar
@@ -3260,6 +3279,87 @@ app.delete('/api/employee-goals/:id', requireRole('admin', 'client_admin'), ensu
     db.run(`DELETE FROM employee_goals WHERE id = ?`, [req.params.id], () => res.json({ message: 'Removida!' }));
 });
 
+/* ==========================================================
+   TESTE DE PERFIL DISC (ranking por pergunta) — o próprio
+   executivo/colaborador (role 'autonomous') responde, liberado pelo
+   Master/empresa via o módulo 'discTest' em employees.enabled_modules.
+   ========================================================== */
+const ROTULOS_PERFIL_DISC = { D: 'Dominância', I: 'Influência', S: 'Estabilidade', C: 'Conformidade' };
+
+app.get('/api/disc-test/questions', requireRole('autonomous'), (req, res) => {
+    res.json(DISC_DATA);
+});
+
+app.get('/api/disc-test/meu-resultado', requireRole('autonomous'), async (req, res) => {
+    const resultado = await dbGet(
+        `SELECT * FROM disc_results WHERE employee_id = ? ORDER BY id DESC LIMIT 1`,
+        [req.user.employeeId]
+    );
+    if (!resultado) return res.json(null);
+    try { resultado.respostas = JSON.parse(resultado.respostas || '[]'); } catch (e) { resultado.respostas = []; }
+    const maximoPorDimensao = DISC_DATA.length * 4;
+    resultado.percentuais = {
+        D: Math.round((resultado.pontos_d / maximoPorDimensao) * 100),
+        I: Math.round((resultado.pontos_i / maximoPorDimensao) * 100),
+        S: Math.round((resultado.pontos_s / maximoPorDimensao) * 100),
+        C: Math.round((resultado.pontos_c / maximoPorDimensao) * 100)
+    };
+    resultado.perfilPrimarioLabel = ROTULOS_PERFIL_DISC[resultado.perfil_primario];
+    resultado.perfilSecundarioLabel = ROTULOS_PERFIL_DISC[resultado.perfil_secundario];
+    res.json(resultado);
+});
+
+app.post('/api/disc-test/submit', requireRole('autonomous'), async (req, res) => {
+    const { respostas } = req.body; // [{ perguntaId, ordem: ['D','I','S','C'] em ordem do que MAIS combina para o que MENOS combina }]
+    if (!Array.isArray(respostas) || respostas.length !== DISC_DATA.length) {
+        return res.status(400).json({ error: 'É preciso responder todas as perguntas do teste.' });
+    }
+    const pontos = { D: 0, I: 0, S: 0, C: 0 };
+    const pesos = [4, 3, 2, 1]; // 1º lugar (mais combina) = 4 pontos, ... 4º lugar (menos combina) = 1 ponto
+    for (const resp of respostas) {
+        const ordem = Array.isArray(resp.ordem) ? resp.ordem : [];
+        if (ordem.length !== 4 || new Set(ordem).size !== 4) {
+            return res.status(400).json({ error: 'Cada pergunta precisa ranquear as 4 frases, sem repetição.' });
+        }
+        ordem.forEach((dim, i) => {
+            if (pontos[dim] === undefined) return;
+            pontos[dim] += pesos[i] || 0;
+        });
+    }
+    const maximoPorDimensao = DISC_DATA.length * 4; // 24 perguntas * 4 pontos no melhor caso
+    const percentuais = {
+        D: Math.round((pontos.D / maximoPorDimensao) * 100),
+        I: Math.round((pontos.I / maximoPorDimensao) * 100),
+        S: Math.round((pontos.S / maximoPorDimensao) * 100),
+        C: Math.round((pontos.C / maximoPorDimensao) * 100)
+    };
+    const ranking = ['D', 'I', 'S', 'C'].sort((a, b) => pontos[b] - pontos[a]);
+    const perfilPrimario = ranking[0];
+    const perfilSecundario = ranking[1];
+
+    db.run(
+        `INSERT INTO disc_results (employee_id, respostas, pontos_d, pontos_i, pontos_s, pontos_c, perfil_primario, perfil_secundario)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [req.user.employeeId, JSON.stringify(respostas), pontos.D, pontos.I, pontos.S, pontos.C, perfilPrimario, perfilSecundario],
+        function (err) {
+            if (err) return res.status(400).json({ error: err.message });
+            const perfilTexto = `${perfilPrimario}/${perfilSecundario}`;
+            db.run(`UPDATE employees SET disc_profile = ? WHERE id = ?`, [perfilTexto, req.user.employeeId], () => {});
+            res.json({
+                message: 'Teste DISC concluído!',
+                id: this.lastID,
+                employee_id: req.user.employeeId,
+                pontos_d: pontos.D, pontos_i: pontos.I, pontos_s: pontos.S, pontos_c: pontos.C,
+                percentuais,
+                perfil_primario: perfilPrimario, perfil_secundario: perfilSecundario,
+                perfilPrimarioLabel: ROTULOS_PERFIL_DISC[perfilPrimario],
+                perfilSecundarioLabel: ROTULOS_PERFIL_DISC[perfilSecundario],
+                created_at: new Date().toISOString()
+            });
+        }
+    );
+});
+
 // Autoatendimento de identidade/rede/currículo — o próprio executivo (autonomous),
 // o gestor da empresa (client_admin) ou o Master podem atualizar estes campos,
 // sem mexer nos campos administrativos do cadastro principal.
@@ -5942,18 +6042,20 @@ app.get('/api/dpo/meus-planos', requireRole('admin', 'client_admin'), async (req
         planos.forEach(p => {
             const [pilarKey, numeroPergunta] = String(p.question_key).split(':');
             const pilarInfo = DPO_AMBEV_DATA[pilarKey];
-            let perguntaTexto = '';
+            let pergunta = null;
             if (pilarInfo) {
                 for (const g of pilarInfo.grupos) {
                     const achou = g.perguntas.find(q => q.numero === numeroPergunta);
-                    if (achou) { perguntaTexto = achou.questao; break; }
+                    if (achou) { pergunta = achou; break; }
                 }
             }
             if (!porPilar[pilarKey]) porPilar[pilarKey] = { key: pilarKey, label: pilarInfo ? pilarInfo.label : pilarKey, planos: [] };
             porPilar[pilarKey].planos.push({
                 ...p,
                 perguntaNumero: numeroPergunta,
-                perguntaTexto,
+                perguntaTexto: pergunta ? pergunta.questao : '',
+                verificacaoTexto: pergunta ? pergunta.verificacao : '',
+                howToCheck: pergunta ? pergunta.how_to_check : '',
                 follows: followsPorPlano[p.id] || []
             });
         });
@@ -5963,6 +6065,47 @@ app.get('/api/dpo/meus-planos', requireRole('admin', 'client_admin'), async (req
     } catch (e) {
         console.error('Erro ao carregar Meus Planos DPO:', e.message);
         res.status(500).json({ error: 'Erro ao carregar os planos de ação.' });
+    }
+});
+
+// Resumo compacto pro "Painel da Empresa" (dashboard) — quantos planos de
+// ação estão em cada situação de prazo e a média geral de pontuação do
+// checklist, sem precisar a tela do dashboard buscar cada ciclo um por um.
+app.get('/api/dpo/resumo', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const companyId = req.user.role === 'client_admin' ? req.user.companyId : (req.query.company_id || null);
+        if (!companyId) return res.status(400).json({ error: 'Informe a empresa (company_id).' });
+        const planos = await dbAll(`
+            SELECT ap.status, ap.data_prevista
+            FROM dpo_action_plans ap
+            JOIN dpo_audit_cycles dac ON dac.id = ap.cycle_id
+            WHERE dac.company_id = ?
+        `, [companyId]);
+        const hojeISO = new Date().toISOString().slice(0, 10);
+        const acoes = { noPrazo: 0, vencida: 0, emAndamento: 0, concluida: 0 };
+        planos.forEach(p => {
+            if (p.status === 'concluida') { acoes.concluida++; return; }
+            if (p.data_prevista && p.data_prevista.slice(0, 10) < hojeISO) { acoes.vencida++; return; }
+            if (p.status === 'em_andamento') { acoes.emAndamento++; return; }
+            acoes.noPrazo++;
+        });
+        const mediaRow = await dbGet(`
+            SELECT AVG(da.score) as media, COUNT(*) as total
+            FROM dpo_answers da
+            JOIN dpo_audit_cycles dac ON dac.id = da.cycle_id
+            WHERE dac.company_id = ? AND da.score IS NOT NULL
+        `, [companyId]);
+        const pilaresAtivos = await pilaresAtivosDaEmpresa(companyId);
+        res.json({
+            totalPlanos: planos.length,
+            acoes,
+            mediaGeral: mediaRow && mediaRow.total ? Number(mediaRow.media).toFixed(1) : null,
+            totalPerguntasRespondidas: mediaRow ? mediaRow.total : 0,
+            pilaresAtivos: pilaresAtivos.length
+        });
+    } catch (e) {
+        console.error('Erro ao carregar resumo DPO:', e.message);
+        res.status(500).json({ error: 'Erro ao carregar o resumo do DPO.' });
     }
 });
 

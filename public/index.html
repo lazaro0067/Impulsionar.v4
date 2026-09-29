@@ -721,6 +721,9 @@ const MENU_POR_PERFIL = {
     { group: 'Mentoria & Comunidade', moduleKey: 'mentoria', items: [
         ['mentorships', 'Minhas Mentorias'], ['community', 'Comunidade'], ['events', 'Eventos'], ['ranking', 'Ranking']
     ]},
+    { group: 'Teste DISC', moduleKey: 'discTest', items: [
+        ['discTeste', 'Teste de Perfil DISC']
+    ]},
     ['meuPerfil', 'Meu Perfil'], ['contracts', 'Meus Contratos']
   ],
   mentor: [
@@ -969,7 +972,8 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores
+    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores,
+    discTeste: renderDiscTeste
   };
   (renderizadores[aba] || renderDashboard)();
 }
@@ -1103,11 +1107,25 @@ async function renderDashboardEmpresa() {
 
     let modulos = null;
     try { modulos = empresa && empresa.enabled_modules ? JSON.parse(empresa.enabled_modules) : null; } catch (e) { modulos = null; }
+    // null (nenhuma restrição marcada pelo Master) = acesso completo a tudo;
+    // só filtra os cartões quando a empresa tem mesmo uma lista de módulos.
+    const modAtivo = (chave) => !Array.isArray(modulos) || modulos.includes(chave);
     const pacotesTexto = Array.isArray(modulos) && modulos.length
       ? modulos.map(k => ROTULOS_MODULO_EMPRESA[k] || k).join(' · ')
       : 'Acesso completo aos módulos (sem restrição definida pelo Master)';
 
     const mentoriasAgendadas = mentorias.filter(m => m.status === 'Agendada').length;
+
+    // Resumo do DPO Ambev só é buscado (e só aparece) se o módulo estiver
+    // liberado para esta empresa/acesso E ela já tiver algum pilar comprado —
+    // senão não tem nada pra mostrar aí.
+    let resumoDpo = null;
+    if (modAtivo('dpoAmbev')) {
+      try {
+        const r = await api('/api/dpo/resumo');
+        if (r.pilaresAtivos > 0) resumoDpo = r;
+      } catch (e) { resumoDpo = null; }
+    }
 
     cont.innerHTML = `
       <h1>Painel da Empresa</h1>
@@ -1116,20 +1134,34 @@ async function renderDashboardEmpresa() {
         <div style="font-size:16px;font-weight:700;margin-top:4px;">${escapeHtml(pacotesTexto)}</div>
       </div>
       <div class="kpis">
-        <div class="kpi-card vivo kpi-azul" style="cursor:pointer;" onclick="irPara('employees')"><span class="icone">👥</span><div class="valor">${d.totalEmployees}</div><div class="rotulo">Funcionários Cadastrados</div></div>
-        <div class="kpi-card vivo kpi-roxo" style="cursor:pointer;" onclick="irPara('pipelineDesenvolvimento')"><span class="icone">🧭</span><div class="valor">${d.phaseDistribution.length ? d.phaseDistribution.sort((a,b)=>b.total-a.total)[0].fase.split(':')[0] : '-'}</div><div class="rotulo">Fase com Mais Gente</div><div class="subrotulo">no Pipeline de Desenvolvimento</div></div>
-        <div class="kpi-card vivo kpi-rosa" style="cursor:pointer;" onclick="irPara('pdi')"><span class="icone">✅</span><div class="valor">${d.taxaConclusaoPdi}%</div><div class="rotulo">PDIs Concluídos</div></div>
-        <div class="kpi-card vivo kpi-laranja" style="cursor:pointer;" onclick="irPara('videos')"><span class="icone">🎓</span><div class="valor">${videos.length}</div><div class="rotulo">Treinamentos Disponíveis</div><div class="subrotulo">na Academy Digital</div></div>
-        <div class="kpi-card vivo kpi-ciano" style="cursor:pointer;" onclick="irPara('mentorships')"><span class="icone">🤝</span><div class="valor">${d.mentoriasRealizadasNoMes}</div><div class="rotulo">Mentorias Realizadas</div><div class="subrotulo">este mês</div></div>
-        <div class="kpi-card vivo kpi-verde" style="cursor:pointer;" onclick="irPara('mentorships')"><span class="icone">📅</span><div class="valor">${mentoriasAgendadas}</div><div class="rotulo">Mentorias Agendadas</div></div>
+        ${modAtivo('consultoria') ? `<div class="kpi-card vivo kpi-azul" style="cursor:pointer;" onclick="irPara('employees')"><span class="icone">👥</span><div class="valor">${d.totalEmployees}</div><div class="rotulo">Funcionários Cadastrados</div></div>` : ''}
+        ${modAtivo('pipeline') ? `<div class="kpi-card vivo kpi-roxo" style="cursor:pointer;" onclick="irPara('pipelineDesenvolvimento')"><span class="icone">🧭</span><div class="valor">${d.phaseDistribution.length ? d.phaseDistribution.sort((a,b)=>b.total-a.total)[0].fase.split(':')[0] : '-'}</div><div class="rotulo">Fase com Mais Gente</div><div class="subrotulo">no Pipeline de Desenvolvimento</div></div>` : ''}
+        ${modAtivo('pdi') ? `<div class="kpi-card vivo kpi-rosa" style="cursor:pointer;" onclick="irPara('pdi')"><span class="icone">✅</span><div class="valor">${d.taxaConclusaoPdi}%</div><div class="rotulo">PDIs Concluídos</div></div>` : ''}
+        ${modAtivo('academy') ? `<div class="kpi-card vivo kpi-laranja" style="cursor:pointer;" onclick="irPara('videos')"><span class="icone">🎓</span><div class="valor">${videos.length}</div><div class="rotulo">Treinamentos Disponíveis</div><div class="subrotulo">na Academy Digital</div></div>` : ''}
+        ${modAtivo('mentoria') ? `<div class="kpi-card vivo kpi-ciano" style="cursor:pointer;" onclick="irPara('mentorships')"><span class="icone">🤝</span><div class="valor">${d.mentoriasRealizadasNoMes}</div><div class="rotulo">Mentorias Realizadas</div><div class="subrotulo">este mês</div></div>` : ''}
+        ${modAtivo('mentoria') ? `<div class="kpi-card vivo kpi-verde" style="cursor:pointer;" onclick="irPara('mentorships')"><span class="icone">📅</span><div class="valor">${mentoriasAgendadas}</div><div class="rotulo">Mentorias Agendadas</div></div>` : ''}
       </div>
 
+      ${resumoDpo ? `
+      <div class="painel" style="cursor:pointer;margin-bottom:18px;" onclick="irPara('dpoHome')">
+        <h3 style="margin-top:0;">🛡️ Acompanhamento DPO Ambev</h3>
+        <div class="kpis">
+          <div class="kpi-card kpi-azul"><div class="valor">${resumoDpo.acoes.noPrazo}</div><div class="rotulo">Ações no prazo</div></div>
+          <div class="kpi-card" style="background:#fef2f2;"><div class="valor" style="color:#dc2626;">${resumoDpo.acoes.vencida}</div><div class="rotulo" style="color:#dc2626;">Ações vencidas</div></div>
+          <div class="kpi-card kpi-laranja"><div class="valor">${resumoDpo.acoes.emAndamento}</div><div class="rotulo">Em andamento</div></div>
+          <div class="kpi-card kpi-verde"><div class="valor">${resumoDpo.acoes.concluida}</div><div class="rotulo">Concluídas</div></div>
+          ${resumoDpo.mediaGeral !== null ? `<div class="kpi-card kpi-roxo"><div class="valor">${resumoDpo.mediaGeral}</div><div class="rotulo">Pontuação média</div><div class="subrotulo">${resumoDpo.totalPerguntasRespondidas} pergunta(s) avaliada(s)</div></div>` : ''}
+        </div>
+      </div>` : ''}
+
+      ${(modAtivo('consultoria') || modAtivo('pipeline') || modAtivo('academy')) ? `
       <div class="grid-3">
-        <div class="painel" style="cursor:pointer;" onclick="irPara('employees')"><h3>Perfis DISC do Time</h3><canvas id="grafico-disc"></canvas></div>
-        <div class="painel" style="cursor:pointer;" onclick="irPara('pipelineDesenvolvimento')"><h3>Pipeline de Desenvolvimento</h3><canvas id="grafico-fases"></canvas></div>
-        <div class="painel" style="cursor:pointer;" onclick="irPara('assessments')"><h3>Radar de Competências de Liderança</h3><canvas id="grafico-radar"></canvas></div>
-      </div>
+        ${modAtivo('consultoria') ? `<div class="painel" style="cursor:pointer;" onclick="irPara('employees')"><h3>Perfis DISC do Time</h3><canvas id="grafico-disc"></canvas></div>` : ''}
+        ${modAtivo('pipeline') ? `<div class="painel" style="cursor:pointer;" onclick="irPara('pipelineDesenvolvimento')"><h3>Pipeline de Desenvolvimento</h3><canvas id="grafico-fases"></canvas></div>` : ''}
+        ${modAtivo('academy') ? `<div class="painel" style="cursor:pointer;" onclick="irPara('assessments')"><h3>Radar de Competências de Liderança</h3><canvas id="grafico-radar"></canvas></div>` : ''}
+      </div>` : ''}
 
+      ${modAtivo('mentoria') ? `
       <div class="grid-2" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
         <div class="painel">
           <h3>🏆 Ranking do Mês (${ranking.mes ? formatarMesMeta(ranking.mes) : ''})</h3>
@@ -1157,36 +1189,39 @@ async function renderDashboardEmpresa() {
               </div>`).join('')}
           </div>`}
         </div>
-      </div>
+      </div>` : ''}
 
+      ${modAtivo('pdi') ? `
       <div class="painel" style="cursor:pointer;" onclick="irPara('pdi')">
         <h3>⚠️ Alertas de PDI (vencidos ou vencendo em ${d.pdiAlerts.janelaDias} dias)</h3>
         <div id="lista-alertas"></div>
-      </div>
+      </div>` : ''}
 
       <div class="acoes-form" style="margin-top:16px;">
-        <button class="btn-primario" onclick="irPara('pipelineDesenvolvimento')">Ver Pipeline de Talentos →</button>
-        <button class="btn-secundario" onclick="irPara('pdi')">Ver PDIs →</button>
+        ${modAtivo('pipeline') ? `<button class="btn-primario" onclick="irPara('pipelineDesenvolvimento')">Ver Pipeline de Talentos →</button>` : ''}
+        ${modAtivo('pdi') ? `<button class="btn-secundario" onclick="irPara('pdi')">Ver PDIs →</button>` : ''}
       </div>
     `;
 
-    desenharGraficoPizza('grafico-disc', d.discDistribution.map(x => x.perfil), d.discDistribution.map(x => x.total));
-    desenharGraficoBarras('grafico-fases', d.phaseDistribution.map(x => x.fase), d.phaseDistribution.map(x => x.total));
-    desenharGraficoRadar('grafico-radar', d.competenceRadar.map(x => x.competencia), d.competenceRadar.map(x => x.media));
+    if (modAtivo('consultoria')) desenharGraficoPizza('grafico-disc', d.discDistribution.map(x => x.perfil), d.discDistribution.map(x => x.total));
+    if (modAtivo('pipeline')) desenharGraficoBarras('grafico-fases', d.phaseDistribution.map(x => x.fase), d.phaseDistribution.map(x => x.total));
+    if (modAtivo('academy')) desenharGraficoRadar('grafico-radar', d.competenceRadar.map(x => x.competencia), d.competenceRadar.map(x => x.media));
 
     const listaAlertas = document.getElementById('lista-alertas');
-    const todos = [...d.pdiAlerts.vencidos, ...d.pdiAlerts.vencendoEmBreve];
-    if (todos.length === 0) {
-      listaAlertas.innerHTML = '<div class="msg-vazio">Nenhum PDI vencido ou próximo do vencimento. 🎉</div>';
-    } else {
-      listaAlertas.innerHTML = todos.map(p => `
-        <div class="alerta-item">
-          <span>${escapeHtml(p.execName)} — ${escapeHtml(p.objective)}</span>
-          <span class="tag ${p.diasRestantes < 0 ? 'tag-vencido' : 'tag-breve'}">
-            ${p.diasRestantes < 0 ? Math.abs(p.diasRestantes) + ' dia(s) vencido' : 'vence em ' + p.diasRestantes + ' dia(s)'}
-          </span>
-        </div>
-      `).join('');
+    if (listaAlertas) {
+      const todos = [...d.pdiAlerts.vencidos, ...d.pdiAlerts.vencendoEmBreve];
+      if (todos.length === 0) {
+        listaAlertas.innerHTML = '<div class="msg-vazio">Nenhum PDI vencido ou próximo do vencimento. 🎉</div>';
+      } else {
+        listaAlertas.innerHTML = todos.map(p => `
+          <div class="alerta-item">
+            <span>${escapeHtml(p.execName)} — ${escapeHtml(p.objective)}</span>
+            <span class="tag ${p.diasRestantes < 0 ? 'tag-vencido' : 'tag-breve'}">
+              ${p.diasRestantes < 0 ? Math.abs(p.diasRestantes) + ' dia(s) vencido' : 'vence em ' + p.diasRestantes + ' dia(s)'}
+            </span>
+          </div>
+        `).join('');
+      }
     }
   } catch (e) {
     cont.innerHTML = `<h1>Painel da Empresa</h1><div class="msg-vazio">Não foi possível carregar: ${escapeHtml(e.message)}</div>`;
@@ -2654,7 +2689,8 @@ const MODULOS_COLABORADOR = [
   { key: 'consultoria', icone: '👥', label: 'Meu Acompanhamento', desc: 'Consultoria e Minhas Metas' },
   { key: 'pdi', icone: '🎯', label: 'PDI', desc: 'Meus Planos de Desenvolvimento Individual' },
   { key: 'academy', icone: '🎓', label: 'Treinamentos', desc: 'Academy Digital, Trilhas, Assessments' },
-  { key: 'mentoria', icone: '🤝', label: 'Mentorias', desc: 'Minhas Mentorias, Comunidade, Eventos, Ranking' }
+  { key: 'mentoria', icone: '🤝', label: 'Mentorias', desc: 'Minhas Mentorias, Comunidade, Eventos, Ranking' },
+  { key: 'discTest', icone: '🧭', label: 'Teste DISC', desc: 'Teste de Perfil Comportamental DISC (ranking por pergunta)' }
 ];
 
 function abrirPermissoesColaborador(employeeId) {
@@ -3362,6 +3398,142 @@ async function atualizarProgressoMeta(id) {
     mostrarToast('Progresso atualizado!');
     renderMinhasMetas();
   } catch (e) { mostrarToast(e.message, true); }
+}
+
+/* ==========================================================
+   TESTE DE PERFIL DISC (ranking por pergunta — "tipo DISC oficial"):
+   em cada pergunta, o colaborador ordena 4 frases (uma de cada
+   dimensão D/I/S/C) da que MAIS combina com ele para a que MENOS
+   combina. Liberado pelo módulo 'discTest' (ver MODULOS_COLABORADOR).
+   ========================================================== */
+const NOMES_DIMENSAO_DISC = { D: 'Dominância', I: 'Influência', S: 'Estabilidade', C: 'Conformidade' };
+const CORES_DIMENSAO_DISC = { D: '#dc2626', I: '#f59e0b', S: '#16a34a', C: '#2563eb' };
+let ESTADO_DISC = { perguntas: [], indice: 0, respostas: [] };
+
+function embaralharDisc(lista) {
+  const arr = [...lista];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+async function renderDiscTeste() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>Teste de Perfil DISC</h1><p>Carregando...</p>';
+  try {
+    const resultado = await api('/api/disc-test/meu-resultado');
+    if (resultado) { renderDiscResultado(resultado); return; }
+    await iniciarDiscTeste();
+  } catch (e) {
+    cont.innerHTML = `<h1>Teste de Perfil DISC</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function iniciarDiscTeste() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>Teste de Perfil DISC</h1><p>Carregando perguntas...</p>';
+  try {
+    const perguntas = await api('/api/disc-test/questions');
+    ESTADO_DISC.perguntas = perguntas.map(p => ({ ...p, frases: embaralharDisc(p.frases) }));
+    ESTADO_DISC.indice = 0;
+    ESTADO_DISC.respostas = perguntas.map(p => ({ perguntaId: p.id, ordem: [] }));
+    renderDiscPergunta();
+  } catch (e) {
+    cont.innerHTML = `<h1>Teste de Perfil DISC</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderDiscPergunta() {
+  const cont = document.getElementById('conteudo');
+  const total = ESTADO_DISC.perguntas.length;
+  const i = ESTADO_DISC.indice;
+  const pergunta = ESTADO_DISC.perguntas[i];
+  const resposta = ESTADO_DISC.respostas[i];
+  const pct = Math.round((i / total) * 100);
+  const ultima = i === total - 1;
+  cont.innerHTML = `
+    <h1>Teste de Perfil DISC</h1>
+    <p style="color:#64748b;margin-top:-8px;">Pergunta ${i + 1} de ${total}. Clique nas frases abaixo na ordem: da que <strong>MAIS combina</strong> com você para a que <strong>MENOS combina</strong>.</p>
+    <div class="barra-progresso" style="margin:8px 0;"><div style="width:${pct}%"></div></div>
+    <div class="plano-card">
+      ${pergunta.frases.map(f => {
+        const posicao = resposta.ordem.indexOf(f.dimensao);
+        const escolhida = posicao > -1;
+        return `
+        <div class="modulo-card ${escolhida ? 'habilitado' : ''}" style="cursor:${escolhida ? 'default' : 'pointer'};margin-bottom:8px;" ${escolhida ? '' : `onclick="escolherOrdemDisc('${f.dimensao}')"`}>
+          <span class="modulo-icone">${escolhida ? (posicao + 1) + 'º' : '⬜'}</span>
+          <span class="modulo-texto"><span class="modulo-nome" style="font-weight:400;">${escapeHtml(f.texto)}</span></span>
+        </div>`;
+      }).join('')}
+      <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;gap:8px;">
+          ${resposta.ordem.length > 0 ? `<button class="btn-secundario btn-sm" onclick="desfazerOrdemDisc()">↩️ Desfazer</button>` : ''}
+          ${i > 0 ? `<button class="btn-secundario btn-sm" onclick="voltarPerguntaDisc()">⬅️ Anterior</button>` : ''}
+        </div>
+        <button class="btn-primario btn-sm" ${resposta.ordem.length === 4 ? '' : 'disabled'} onclick="avancarPerguntaDisc()">${ultima ? '✅ Concluir Teste' : 'Próxima pergunta ➡️'}</button>
+      </div>
+    </div>
+  `;
+}
+
+function escolherOrdemDisc(dimensao) {
+  const resposta = ESTADO_DISC.respostas[ESTADO_DISC.indice];
+  if (resposta.ordem.includes(dimensao) || resposta.ordem.length >= 4) return;
+  resposta.ordem.push(dimensao);
+  renderDiscPergunta();
+}
+
+function desfazerOrdemDisc() {
+  const resposta = ESTADO_DISC.respostas[ESTADO_DISC.indice];
+  resposta.ordem.pop();
+  renderDiscPergunta();
+}
+
+function voltarPerguntaDisc() {
+  if (ESTADO_DISC.indice === 0) return;
+  ESTADO_DISC.indice--;
+  renderDiscPergunta();
+}
+
+async function avancarPerguntaDisc() {
+  const resposta = ESTADO_DISC.respostas[ESTADO_DISC.indice];
+  if (resposta.ordem.length !== 4) return;
+  if (ESTADO_DISC.indice < ESTADO_DISC.perguntas.length - 1) {
+    ESTADO_DISC.indice++;
+    renderDiscPergunta();
+    return;
+  }
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>Teste de Perfil DISC</h1><p>Calculando seu resultado...</p>';
+  try {
+    const resultado = await api('/api/disc-test/submit', { method: 'POST', body: JSON.stringify({ respostas: ESTADO_DISC.respostas }) });
+    mostrarToast('Teste concluído!');
+    renderDiscResultado(resultado);
+  } catch (e) {
+    mostrarToast(e.message, true);
+    renderDiscPergunta();
+  }
+}
+
+function renderDiscResultado(resultado) {
+  const cont = document.getElementById('conteudo');
+  const pct = resultado.percentuais || {};
+  cont.innerHTML = `
+    <h1>Teste de Perfil DISC</h1>
+    <p style="color:#64748b;margin-top:-8px;">Seu perfil predominante: <strong style="color:${CORES_DIMENSAO_DISC[resultado.perfil_primario]};">${escapeHtml(resultado.perfilPrimarioLabel || NOMES_DIMENSAO_DISC[resultado.perfil_primario])} (${escapeHtml(resultado.perfil_primario)})</strong>, com influência secundária de <strong style="color:${CORES_DIMENSAO_DISC[resultado.perfil_secundario]};">${escapeHtml(resultado.perfilSecundarioLabel || NOMES_DIMENSAO_DISC[resultado.perfil_secundario])} (${escapeHtml(resultado.perfil_secundario)})</strong>.</p>
+    <div class="plano-card">
+      ${['D', 'I', 'S', 'C'].map(d => `
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:${CORES_DIMENSAO_DISC[d]};"><span>${NOMES_DIMENSAO_DISC[d]} (${d})</span><span>${pct[d] ?? 0}%</span></div>
+          <div class="barra-progresso" style="margin-top:4px;"><div style="width:${pct[d] ?? 0}%;background:${CORES_DIMENSAO_DISC[d]};"></div></div>
+        </div>
+      `).join('')}
+    </div>
+    <p style="font-size:12px;color:#94a3b8;margin-top:10px;">Teste realizado em ${new Date(resultado.created_at).toLocaleDateString('pt-BR')}.</p>
+    <button class="btn-secundario btn-sm" onclick="iniciarDiscTeste()">🔄 Refazer o teste</button>
+  `;
 }
 
 /* ==========================================================
@@ -6183,6 +6355,19 @@ async function renderDpoHome() {
   } catch (e) { cont.innerHTML = `<h1>Impulsionar V4 — DPO Ambev</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
 
+// Calcula a SITUAÇÃO DO PRAZO de um plano (diferente do status manual que a
+// pessoa escolhe) — cruza o status com a data do "Prazo" pra dizer, de forma
+// automática, se a ação está "No prazo", "Vencida", "Em andamento" (dentro do
+// prazo mas ainda rodando) ou "Concluída".
+function calcularSituacaoPrazoDpo(plano) {
+  if (plano.status === 'concluida') return { texto: 'Concluída', cor: '#16a34a' };
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const prazo = plano.data_prevista ? new Date(plano.data_prevista + 'T00:00:00') : null;
+  if (prazo && prazo < hoje) return { texto: 'Vencida', cor: '#dc2626' };
+  if (plano.status === 'em_andamento') return { texto: 'Em andamento', cor: '#c9a227' };
+  return { texto: 'No prazo', cor: '#2563eb' };
+}
+
 // "Meus Planos DPO" — todos os planos de ação já criados pela empresa,
 // consolidados por pilar, juntando todos os ciclos (não só o mais recente).
 async function renderDpoMeusPlanos() {
@@ -6190,10 +6375,13 @@ async function renderDpoMeusPlanos() {
   cont.innerHTML = '<h1>Meus Planos DPO</h1><p>Carregando...</p>';
   try {
     const porPilar = await api('/api/dpo/meus-planos');
-    const totalPlanos = porPilar.reduce((soma, p) => soma + p.planos.length, 0);
+    const todosPlanos = porPilar.flatMap(p => p.planos);
+    const totalPlanos = todosPlanos.length;
+    const contagem = { 'No prazo': 0, 'Vencida': 0, 'Em andamento': 0, 'Concluída': 0 };
+    todosPlanos.forEach(pl => { contagem[calcularSituacaoPrazoDpo(pl).texto]++; });
     cont.innerHTML = `
       <h1>Meus Planos DPO</h1>
-      <p style="color:#64748b;margin-top:-8px;">Todos os planos de ação já criados pela sua empresa no DPO Ambev, consolidados por pilar (juntando todos os ciclos/meses).</p>
+      <p style="color:#64748b;margin-top:-8px;">Todos os planos de ação já criados pela sua empresa no DPO Ambev, consolidados por pilar (juntando todos os ciclos/meses). Clique na pergunta para ver a verificação completa.</p>
       <div class="barra-acoes">
         <div></div>
         <div class="direita">
@@ -6202,18 +6390,36 @@ async function renderDpoMeusPlanos() {
           <button class="btn-secundario" onclick="renderDpoHome()">← Voltar ao DPO Ambev</button>
         </div>
       </div>
+      ${totalPlanos === 0 ? '' : `
+      <div class="kpis" style="margin-bottom:18px;">
+        <div class="kpi-card kpi-azul"><div class="valor">${contagem['No prazo']}</div><div class="rotulo">No prazo</div></div>
+        <div class="kpi-card" style="background:#fef2f2;"><div class="valor" style="color:#dc2626;">${contagem['Vencida']}</div><div class="rotulo" style="color:#dc2626;">Vencida(s)</div></div>
+        <div class="kpi-card kpi-laranja"><div class="valor">${contagem['Em andamento']}</div><div class="rotulo">Em andamento</div></div>
+        <div class="kpi-card kpi-verde"><div class="valor">${contagem['Concluída']}</div><div class="rotulo">Concluída(s)</div></div>
+      </div>`}
       ${totalPlanos === 0 ? `<div class="msg-vazio">Nenhum plano de ação criado ainda.</div>` : porPilar.map(p => `
         <div style="margin-top:20px;">
           <h3 style="margin-bottom:8px;">${escapeHtml(p.label)} <span style="font-weight:400;color:#64748b;font-size:13px;">(${p.planos.length} plano${p.planos.length === 1 ? '' : 's'})</span></h3>
-          ${p.planos.map(pl => `
+          ${p.planos.map(pl => {
+            const situacao = calcularSituacaoPrazoDpo(pl);
+            const idDetalhe = 'dpo-plano-detalhe-' + pl.id;
+            return `
             <div style="background:#fff;border:1px solid var(--cinza-200);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
-              <div style="font-size:11.5px;color:#64748b;margin-bottom:4px;">
-                <strong>Pergunta ${escapeHtml(pl.perguntaNumero || '')}:</strong> ${escapeHtml(pl.perguntaTexto || '')}
-                ${pl.cicloReferencia ? ` · <strong>Ciclo:</strong> ${escapeHtml(pl.cicloReferencia)}` : ''}
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;cursor:pointer;" onclick="(function(el){ el.style.display = el.style.display === 'none' ? 'block' : 'none'; })(document.getElementById('${idDetalhe}'))">
+                <div style="font-size:12.5px;color:#334155;">
+                  <strong>Pergunta ${escapeHtml(pl.perguntaNumero || '')}:</strong> ${escapeHtml(pl.perguntaTexto || '')}
+                  ${pl.cicloReferencia ? ` · <strong>Ciclo:</strong> ${escapeHtml(pl.cicloReferencia)}` : ''}
+                  <span style="color:#94a3b8;"> (clique para ver a verificação completa ▾)</span>
+                </div>
+                <span class="dpo-score-badge" style="background:${situacao.cor}20;color:${situacao.cor};white-space:nowrap;">${situacao.texto}</span>
               </div>
-              ${renderPlanoAcaoDpo(pl, false, 'recarregarMeusPlanosDpo')}
+              <div id="${idDetalhe}" style="display:none;margin-top:8px;">
+                ${pl.verificacaoTexto ? `<div style="font-size:12px;color:#334155;white-space:pre-line;margin-bottom:8px;background:#f8fafc;border-radius:6px;padding:8px;"><strong>Verificação:</strong><br>${escapeHtml(pl.verificacaoTexto)}</div>` : ''}
+                ${pl.howToCheck ? `<details style="margin-bottom:8px;"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#4338ca;">❓ How to Check</summary><div style="font-size:12px;color:#334155;white-space:pre-line;margin-top:6px;">${escapeHtml(pl.howToCheck)}</div></details>` : ''}
+                ${renderPlanoAcaoDpo(pl, false, 'recarregarMeusPlanosDpo')}
+              </div>
             </div>
-          `).join('')}
+          `; }).join('')}
         </div>
       `).join('')}
     `;

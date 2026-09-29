@@ -1,0 +1,146 @@
+[
+  { "id": 1, "frases": [
+      { "dimensao": "D", "texto": "Gosto de tomar decisões rápidas e assumir o controle da situação." },
+      { "dimensao": "I", "texto": "Prefiro conversar com as pessoas e deixar o ambiente mais leve e animado." },
+      { "dimensao": "S", "texto": "Prefiro manter a calma e dar apoio constante para quem está ao meu redor." },
+      { "dimensao": "C", "texto": "Prefiro analisar os detalhes com cuidado antes de agir." }
+  ]},
+  { "id": 2, "frases": [
+      { "dimensao": "D", "texto": "Não tenho medo de enfrentar um conflito de frente quando é necessário." },
+      { "dimensao": "I", "texto": "Consigo convencer as pessoas facilmente com entusiasmo e boa conversa." },
+      { "dimensao": "S", "texto": "Evito conflitos e procuro manter a harmonia entre todos." },
+      { "dimensao": "C", "texto": "Prefiro resolver desacordos com dados e argumentos objetivos." }
+  ]},
+  { "id": 3, "frases": [
+      { "dimensao": "D", "texto": "Gosto de desafios grandes e resultados rápidos." },
+      { "dimensao": "I", "texto": "Gosto de estar cercado de gente e de novas experiências sociais." },
+      { "dimensao": "S", "texto": "Gosto de rotinas previsíveis e de um ritmo estável de trabalho." },
+      { "dimensao": "C", "texto": "Gosto de seguir processos bem definidos e de fazer tudo corretamente." }
+  ]},
+  { "id": 4, "frases": [
+      { "dimensao": "D", "texto": "Costumo ser direto ao dizer o que penso, mesmo que incomode alguém." },
+      { "dimensao": "I", "texto": "Costumo expressar minhas emoções abertamente e com entusiasmo." },
+      { "dimensao": "S", "texto": "Costumo ouvir mais do que falar, para não gerar atrito." },
+      { "dimensao": "C", "texto": "Costumo pensar bem antes de falar, escolhendo as palavras com cuidado." }
+  ]},
+  { "id": 5, "frases": [
+      { "dimensao": "D", "texto": "Prefiro liderar o grupo a seguir instruções de outra pessoa." },
+      { "dimensao": "I", "texto": "Prefiro trabalhar em equipe, trocando ideias o tempo todo." },
+      { "dimensao": "S", "texto": "Prefiro um papel de apoio, ajudando o time a manter o equilíbrio." },
+      { "dimensao": "C", "texto": "Prefiro trabalhar de forma independente, com foco e concentração." }
+  ]},
+  { "id": 6, "frases": [
+      { "dimensao": "D", "texto": "Assumo riscos com facilidade quando acredito no resultado." },
+      { "dimensao": "I", "texto": "Me arrisco por impulso, guiado mais pelo entusiasmo do momento." },
+      { "dimensao": "S", "texto": "Prefiro caminhos seguros e testados a arriscar algo novo." },
+      { "dimensao": "C", "texto": "Só me arrisco depois de avaliar cuidadosamente os prós e contras." }
+  ]},
+  { "id": 7, "frases": [
+      { "dimensao": "D", "texto": "Fico impaciente quando as coisas demoram para acontecer." },
+      { "dimensao": "I", "texto": "Fico entediado com tarefas repetitivas e sem interação com pessoas." },
+      { "dimensao": "S", "texto": "Fico incomodado quando há mudanças bruscas na rotina." },
+      { "dimensao": "C", "texto": "Fico incomodado quando as coisas são feitas sem seguir um padrão." }
+  ]},
+  { "id": 8, "frases": [
+      { "dimensao": "D", "texto": "Sob pressão, tendo a ficar mais autoritário e impositivo." },
+      { "dimensao": "I", "texto": "Sob pressão, tendo a falar mais e buscar apoio das pessoas." },
+      { "dimensao": "S", "texto": "Sob pressão, tendo a me fechar e evitar confrontos." },
+      { "dimensao": "C", "texto": "Sob pressão, tendo a focar ainda mais em dados e critérios técnicos." }
+  ]},
+  { "id": 9, "frases": [
+      { "dimensao": "D", "texto": "Gosto de competir e de ser reconhecido pelos meus resultados." },
+      { "dimensao": "I", "texto": "Gosto de ser notado e de receber elogios das pessoas ao redor." },
+      { "dimensao": "S", "texto": "Gosto de saber que fiz a minha parte, mesmo sem grande destaque." },
+      { "dimensao": "C", "texto": "Gosto de saber que fiz tudo certo, dentro do esperado." }
+  ]},
+  { "id": 10, "frases": [
+      { "dimensao": "D", "texto": "Tomo decisões rapidamente, mesmo com poucas informações." },
+      { "dimensao": "I", "texto": "Tomo decisões seguindo mais a intuição e o que sinto no momento." },
+      { "dimensao": "S", "texto": "Tomo decisões com calma, considerando como isso afeta os outros." },
+      { "dimensao": "C", "texto": "Tomo decisões só depois de reunir o máximo de informação possível." }
+  ]},
+  { "id": 11, "frases": [
+      { "dimensao": "D", "texto": "Em uma reunião, costumo ser quem toma a frente e propõe a direção." },
+      { "dimensao": "I", "texto": "Em uma reunião, costumo ser quem anima o grupo e traz ideias novas." },
+      { "dimensao": "S", "texto": "Em uma reunião, costumo ser quem escuta e busca o consenso." },
+      { "dimensao": "C", "texto": "Em uma reunião, costumo ser quem questiona detalhes e verifica os fatos." }
+  ]},
+  { "id": 12, "frases": [
+      { "dimensao": "D", "texto": "Não gosto de perder tempo com burocracia desnecessária." },
+      { "dimensao": "I", "texto": "Não gosto de trabalhar sozinho por muito tempo." },
+      { "dimensao": "S", "texto": "Não gosto de mudanças repentinas sem aviso prévio." },
+      { "dimensao": "C", "texto": "Não gosto de trabalhar sem um plano ou processo claro." }
+  ]},
+  { "id": 13, "frases": [
+      { "dimensao": "D", "texto": "Costumo ser visto como alguém confiante e determinado." },
+      { "dimensao": "I", "texto": "Costumo ser visto como alguém alegre e comunicativo." },
+      { "dimensao": "S", "texto": "Costumo ser visto como alguém paciente e leal." },
+      { "dimensao": "C", "texto": "Costumo ser visto como alguém cuidadoso e organizado." }
+  ]},
+  { "id": 14, "frases": [
+      { "dimensao": "D", "texto": "Prefiro metas ambiciosas, mesmo que o caminho seja incerto." },
+      { "dimensao": "I", "texto": "Prefiro metas que envolvam reconhecimento e interação com pessoas." },
+      { "dimensao": "S", "texto": "Prefiro metas realistas, alcançadas em um ritmo constante." },
+      { "dimensao": "C", "texto": "Prefiro metas bem definidas, com critérios claros de sucesso." }
+  ]},
+  { "id": 15, "frases": [
+      { "dimensao": "D", "texto": "Ao receber uma crítica, tendo a reagir de forma direta e defender meu ponto." },
+      { "dimensao": "I", "texto": "Ao receber uma crítica, tendo a levar para o lado pessoal, mas sigo em frente rápido." },
+      { "dimensao": "S", "texto": "Ao receber uma crítica, tendo a guardar para mim e refletir com calma." },
+      { "dimensao": "C", "texto": "Ao receber uma crítica, tendo a analisar se ela é tecnicamente correta." }
+  ]},
+  { "id": 16, "frases": [
+      { "dimensao": "D", "texto": "Gosto de ter autonomia total para decidir como fazer meu trabalho." },
+      { "dimensao": "I", "texto": "Gosto de ambientes descontraídos, com liberdade para interagir." },
+      { "dimensao": "S", "texto": "Gosto de saber exatamente o que se espera de mim, com estabilidade." },
+      { "dimensao": "C", "texto": "Gosto de ter regras e procedimentos claros para seguir." }
+  ]},
+  { "id": 17, "frases": [
+      { "dimensao": "D", "texto": "Quando algo dá errado, parto logo para resolver o problema." },
+      { "dimensao": "I", "texto": "Quando algo dá errado, busco apoio e converso com outras pessoas sobre isso." },
+      { "dimensao": "S", "texto": "Quando algo dá errado, mantenho a calma e sigo passo a passo." },
+      { "dimensao": "C", "texto": "Quando algo dá errado, investigo a causa antes de agir." }
+  ]},
+  { "id": 18, "frases": [
+      { "dimensao": "D", "texto": "Sou visto(a) como alguém que gosta de estar no comando." },
+      { "dimensao": "I", "texto": "Sou visto(a) como alguém extrovertido(a) e cheio(a) de energia." },
+      { "dimensao": "S", "texto": "Sou visto(a) como alguém tranquilo(a) e fácil de conviver." },
+      { "dimensao": "C", "texto": "Sou visto(a) como alguém exigente com qualidade e precisão." }
+  ]},
+  { "id": 19, "frases": [
+      { "dimensao": "D", "texto": "Prefiro resultados imediatos a processos longos de planejamento." },
+      { "dimensao": "I", "texto": "Prefiro brainstorms livres a reuniões muito estruturadas." },
+      { "dimensao": "S", "texto": "Prefiro processos estáveis, sem muita pressa." },
+      { "dimensao": "C", "texto": "Prefiro um planejamento detalhado antes de qualquer execução." }
+  ]},
+  { "id": 20, "frases": [
+      { "dimensao": "D", "texto": "Me sinto confortável dando ordens e cobrando resultados." },
+      { "dimensao": "I", "texto": "Me sinto confortável sendo o centro das atenções em um grupo." },
+      { "dimensao": "S", "texto": "Me sinto confortável em papéis de apoio e cuidado com o time." },
+      { "dimensao": "C", "texto": "Me sinto confortável quando posso checar tudo com atenção." }
+  ]},
+  { "id": 21, "frases": [
+      { "dimensao": "D", "texto": "Tenho dificuldade em aceitar um 'não' como resposta final." },
+      { "dimensao": "I", "texto": "Tenho dificuldade em manter o foco em tarefas muito solitárias." },
+      { "dimensao": "S", "texto": "Tenho dificuldade em me adaptar a mudanças muito rápidas." },
+      { "dimensao": "C", "texto": "Tenho dificuldade em decidir sem ter todas as informações." }
+  ]},
+  { "id": 22, "frases": [
+      { "dimensao": "D", "texto": "Costumo assumir a responsabilidade quando algo precisa ser decidido." },
+      { "dimensao": "I", "texto": "Costumo contagiar o time com otimismo, mesmo em momentos difíceis." },
+      { "dimensao": "S", "texto": "Costumo ser o ponto de equilíbrio do time em momentos de tensão." },
+      { "dimensao": "C", "texto": "Costumo garantir que os detalhes não sejam esquecidos por ninguém." }
+  ]},
+  { "id": 23, "frases": [
+      { "dimensao": "D", "texto": "Prefiro agir logo e ajustar a rota no caminho, se precisar." },
+      { "dimensao": "I", "texto": "Prefiro engajar as pessoas em torno de uma ideia antes de agir." },
+      { "dimensao": "S", "texto": "Prefiro esperar o momento certo, sem pressa, antes de agir." },
+      { "dimensao": "C", "texto": "Prefiro validar cada etapa antes de seguir para a próxima." }
+  ]},
+  { "id": 24, "frases": [
+      { "dimensao": "D", "texto": "Minha maior força é a capacidade de decidir e agir rápido." },
+      { "dimensao": "I", "texto": "Minha maior força é conseguir engajar e motivar pessoas." },
+      { "dimensao": "S", "texto": "Minha maior força é a consistência e a lealdade ao longo do tempo." },
+      { "dimensao": "C", "texto": "Minha maior força é a atenção aos detalhes e o rigor técnico." }
+  ]}
+]
