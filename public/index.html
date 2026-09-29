@@ -652,7 +652,7 @@ const MENU_POR_PERFIL = {
         ['candidatesApproval', 'Aprovar Currículos'], ['vagaPlans', 'Planos de Vaga'], ['closingFeePlans', 'Planos de Fechamento']
     ]},
     { group: 'Impulsionar V4 DPO Ambev', items: [
-        ['dpoPrecos', 'Preços por Pilar'], ['dpoAgenda', 'Agenda de Consultorias']
+        ['dpoPrecos', 'Preços por Pilar'], ['dpoAgenda', 'Agenda de Consultorias'], ['dpoConsultores', 'Cadastro de Consultor']
     ]},
     { group: 'Administração', items: [
         ['plans', 'Planos'], ['engagement', 'Painel de Engajamento'], ['contracts', 'Contratos'],
@@ -769,7 +769,7 @@ function iniciarApp() {
     ? Array.from(new Set([...restricoesBrutas, 'pdi', 'pipeline']))
     : restricoesBrutas;
   const itensMenu = (MENU_POR_PERFIL[u.role] || MENU_POR_PERFIL.autonomous)
-    .filter(item => !restricoes || !item.moduleKey || restricoes.includes(item.moduleKey));
+    .filter(item => !restricoes || !item.moduleKey || restricoes.includes(item.moduleKey) || restricoes.some(r => r.startsWith(item.moduleKey + ':')));
   itensMenu.forEach(item => {
     if (item && item.group) {
       const btnGrupo = document.createElement('button');
@@ -954,7 +954,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome
+    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores
   };
   (renderizadores[aba] || renderDashboard)();
 }
@@ -1904,12 +1904,16 @@ function atualizarCartaoModulo(input) {
 // restrição de módulos, independente dos demais acessos da mesma empresa.
 let CACHE_MEMBROS_EMPRESA_ATUAL = [];
 
-function abrirPermissoesMembroEmpresa(companyId, memberId, prefixo) {
+async function abrirPermissoesMembroEmpresa(companyId, memberId, prefixo) {
   const m = CACHE_MEMBROS_EMPRESA_ATUAL.find(x => x.id === memberId);
   if (!m) return;
   let restrito = null;
   try { restrito = m.enabled_modules ? JSON.parse(m.enabled_modules) : null; } catch (e) { restrito = null; }
   const temRestricao = Array.isArray(restrito);
+  const restritoPilares = temRestricao ? restrito.filter(r => r.startsWith('dpoAmbev:')).map(r => r.split(':')[1]) : [];
+  const temRestricaoPilares = restritoPilares.length > 0;
+  let pilaresDpo = [];
+  try { pilaresDpo = (await api('/api/dpo/pillars')).pilares; } catch (e) { pilaresDpo = []; }
   const area = document.getElementById('modal-area-membro');
   area.innerHTML = `
     <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area-membro').innerHTML=''">
@@ -1942,6 +1946,20 @@ function abrirPermissoesMembroEmpresa(companyId, memberId, prefixo) {
               </label>
             `; }).join('')}
           </div>
+          ${pilaresDpo.length ? `
+          <div style="margin-top:14px;border-top:1px dashed var(--cinza-200);padding-top:10px;">
+            <label style="font-weight:400;display:flex;align-items:center;gap:6px;font-size:13px;">
+              <input type="checkbox" id="pm-restringir-pilares" ${temRestricaoPilares ? 'checked' : ''} onchange="document.getElementById('pm-pilares-lista').style.display = this.checked ? 'flex' : 'none'">
+              Dentro do DPO Ambev, liberar só alguns pilares para esta pessoa (desmarcado = todos os pilares que a empresa tiver)
+            </label>
+            <div id="pm-pilares-lista" style="display:${temRestricaoPilares ? 'flex' : 'none'};flex-wrap:wrap;gap:8px;margin-top:8px;">
+              ${pilaresDpo.map(p => `
+                <label style="font-size:12px;display:flex;align-items:center;gap:4px;background:#f8fafc;border-radius:6px;padding:4px 8px;font-weight:400;">
+                  <input type="checkbox" class="pm-pilar-check" value="${p.key}" ${restritoPilares.includes(p.key) ? 'checked' : ''}> ${p.numero}. ${escapeHtml(p.label)}
+                </label>
+              `).join('')}
+            </div>
+          </div>` : ''}
         </div>
         <div class="acoes-form" style="margin-top:14px;">
           <button class="btn-primario" onclick="salvarPermissoesMembroEmpresa(${companyId}, ${memberId}, '${prefixo}')">Salvar Permissões</button>
@@ -1961,9 +1979,16 @@ function marcarTodosModulosMembro(ligar) {
 
 async function salvarPermissoesMembroEmpresa(companyId, memberId, prefixo) {
   const restringir = document.getElementById('pm-restringir').checked;
-  const enabled_modules = restringir
+  let enabled_modules = restringir
     ? Array.from(document.querySelectorAll('.pm-modulo-check:checked')).map(chk => chk.value)
     : null;
+  if (restringir) {
+    const restringirPilares = document.getElementById('pm-restringir-pilares');
+    if (restringirPilares && restringirPilares.checked) {
+      const pilaresMarcados = Array.from(document.querySelectorAll('.pm-pilar-check:checked')).map(chk => 'dpoAmbev:' + chk.value);
+      enabled_modules = enabled_modules.concat(pilaresMarcados);
+    }
+  }
   try {
     const r = await api('/api/companies/' + companyId + '/members/' + memberId + '/permissions', { method: 'PUT', body: JSON.stringify({ enabled_modules }) });
     mostrarToast(r.message);
@@ -2063,11 +2088,12 @@ async function carregarMembrosEmpresa(companyId, prefixo) {
         <tbody>
           ${membros.map(m => {
             const restrito = m.enabled_modules ? (() => { try { return JSON.parse(m.enabled_modules); } catch (e) { return null; } })() : null;
+            const qtdModulos = Array.isArray(restrito) ? restrito.filter(r => !r.startsWith('dpoAmbev:')).length : 0;
             return `
             <tr>
               <td>${escapeHtml(m.name)}</td>
               <td>${escapeHtml(m.email)}</td>
-              <td style="font-size:12px;color:${Array.isArray(restrito) ? '#c9a227' : '#16a34a'};">${Array.isArray(restrito) ? `Restrito (${restrito.length} módulo(s))` : 'Acesso completo'}</td>
+              <td style="font-size:12px;color:${Array.isArray(restrito) ? '#c9a227' : '#16a34a'};">${Array.isArray(restrito) ? `Restrito (${qtdModulos} módulo(s))` : 'Acesso completo'}</td>
               <td>
                 <button type="button" class="btn-secundario btn-sm" onclick="abrirPermissoesMembroEmpresa(${companyId}, ${m.id}, '${prefixo}')">🔒 Permissões</button>
                 ${prefixo === 'ne' ? `<button type="button" class="btn-secundario btn-sm" onclick="acessarComoGestor(${companyId}, ${m.id})">🔑 Acessar</button>` : ''}
@@ -5548,6 +5574,93 @@ async function salvarDpoPrecos() {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
+// ----- Master: cadastro de consultores do DPO Ambev -----
+let CACHE_DPO_CONSULTORES = [];
+
+async function renderDpoConsultores() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>Impulsionar V4 — DPO Ambev — Cadastro de Consultor</h1><p>Carregando...</p>';
+  try {
+    CACHE_DPO_CONSULTORES = await api('/api/admin/dpo/consultants');
+    cont.innerHTML = `
+      <h1>Impulsionar V4 — DPO Ambev — Cadastro de Consultor</h1>
+      <p style="color:#64748b;margin-top:-8px;">Consultores disponíveis para conduzir a consultoria — a empresa escolhe um deles na hora de comprar um pilar ou a Consultoria Completa.</p>
+      <div class="barra-acoes"><div class="direita"><button class="btn-primario" onclick="mostrarFormularioDpoConsultor()">+ Novo Consultor</button></div></div>
+      <div id="form-area"></div>
+      <table>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody>
+          ${CACHE_DPO_CONSULTORES.map(c => `
+            <tr>
+              <td>${escapeHtml(c.name)}</td>
+              <td>${escapeHtml(c.email || '-')}</td>
+              <td>${escapeHtml(c.phone || '-')}</td>
+              <td>${c.active ? '<span style="color:#16a34a;">Ativo</span>' : '<span style="color:#94a3b8;">Inativo</span>'}</td>
+              <td>
+                <button class="btn-secundario btn-sm" onclick="mostrarFormularioDpoConsultor(${c.id})">Editar</button>
+                <button class="btn-secundario btn-sm" onclick="alternarAtivoDpoConsultor(${c.id}, ${!c.active})">${c.active ? 'Desativar' : 'Reativar'}</button>
+                <button class="btn-perigo btn-sm" onclick="excluirDpoConsultor(${c.id})">Excluir</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      ${!CACHE_DPO_CONSULTORES.length ? '<div class="msg-vazio">Nenhum consultor cadastrado ainda.</div>' : ''}
+    `;
+  } catch (e) { cont.innerHTML = `<h1>Impulsionar V4 — DPO Ambev — Cadastro de Consultor</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+function mostrarFormularioDpoConsultor(id) {
+  const c = id ? CACHE_DPO_CONSULTORES.find(x => x.id === id) : null;
+  const area = document.getElementById('form-area');
+  area.innerHTML = `
+    <div class="formulario">
+      <h3 style="margin-top:0;">${c ? 'Editar' : 'Novo'} Consultor</h3>
+      <div class="linha">
+        <div><label>Nome</label><input id="dc-nome" value="${c ? escapeHtml(c.name) : ''}"></div>
+        <div><label>E-mail</label><input id="dc-email" type="email" value="${c ? escapeHtml(c.email || '') : ''}"></div>
+        <div><label>Telefone</label><input id="dc-telefone" value="${c ? escapeHtml(c.phone || '') : ''}"></div>
+      </div>
+      <label>Bio / especialidade</label>
+      <textarea id="dc-bio" rows="3">${c ? escapeHtml(c.bio || '') : ''}</textarea>
+      <div class="acoes-form">
+        <button class="btn-primario" onclick="salvarDpoConsultor(${id || 'null'})">Salvar</button>
+        <button class="btn-secundario" onclick="document.getElementById('form-area').innerHTML=''">Cancelar</button>
+      </div>
+    </div>
+  `;
+}
+
+async function salvarDpoConsultor(id) {
+  const name = document.getElementById('dc-nome').value.trim();
+  const email = document.getElementById('dc-email').value.trim();
+  const phone = document.getElementById('dc-telefone').value.trim();
+  const bio = document.getElementById('dc-bio').value.trim();
+  if (!name) { mostrarToast('Informe o nome do consultor.', true); return; }
+  try {
+    if (id) await api('/api/admin/dpo/consultants/' + id, { method: 'PUT', body: JSON.stringify({ name, email, phone, bio, active: true }) });
+    else await api('/api/admin/dpo/consultants', { method: 'POST', body: JSON.stringify({ name, email, phone, bio }) });
+    mostrarToast('Consultor salvo!');
+    renderDpoConsultores();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function alternarAtivoDpoConsultor(id, ativo) {
+  const c = CACHE_DPO_CONSULTORES.find(x => x.id === id);
+  if (!c) return;
+  try {
+    await api('/api/admin/dpo/consultants/' + id, { method: 'PUT', body: JSON.stringify({ name: c.name, email: c.email, phone: c.phone, bio: c.bio, active: ativo }) });
+    mostrarToast(ativo ? 'Consultor reativado!' : 'Consultor desativado!');
+    renderDpoConsultores();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function excluirDpoConsultor(id) {
+  if (!confirm('Excluir este consultor?')) return;
+  try { await api('/api/admin/dpo/consultants/' + id, { method: 'DELETE' }); mostrarToast('Removido!'); renderDpoConsultores(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
 // ----- Master: agenda de consultorias (ciclos) -----
 let CACHE_DPO_EMPRESAS_TODAS = [];
 
@@ -5649,6 +5762,100 @@ async function salvarAuditoriaOficialDpo(companyId) {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
+// Mapa questionKey -> texto da pergunta, usado pelo modal de plano de ação para
+// evitar embutir texto bruto (com aspas/apóstrofos) dentro de atributos onclick.
+let MAPA_TEXTO_PERGUNTA_DPO = {};
+// Mapa pilarKey -> lista de ciclos (empresa/referência) que contêm aquele pilar,
+// usado pelo botão "Criar Plano" da revisão abstrata do Master (sem isso, precisaríamos
+// embutir nomes de empresa (que podem ter aspas/apóstrofos) direto no onclick).
+let MAPA_CICLOS_POR_PILAR_DPO = {};
+// Mapa planoId -> objeto do plano de ação, usado para editar sem embutir texto
+// livre (descrição, dono etc., que podem ter aspas/apóstrofos) dentro de onclick.
+let MAPA_PLANOS_ACAO_DPO = {};
+
+const ROTULOS_STATUS_PLANO_DPO = {
+  nao_iniciada: { texto: 'Não iniciada', cor: '#94a3b8' },
+  em_andamento: { texto: 'Em andamento', cor: '#c9a227' },
+  concluida: { texto: 'Concluída', cor: '#16a34a' }
+};
+
+// Abre o modal de criação/edição de plano de ação. opts:
+//   questionKey (obrigatório), cycleId (se já conhecido, ex: dentro do ciclo real),
+//   ciclosDisponiveis (lista de ciclos para escolher, quando cycleId não é conhecido —
+//   caso da revisão abstrata do Master), planoExistente (para editar), aoSalvar (callback).
+function abrirModalPlanoAcaoDpo(opts) {
+  const { questionKey, cycleId, aoSalvar } = opts;
+  const planoExistente = opts.planoId ? MAPA_PLANOS_ACAO_DPO[opts.planoId] : (opts.planoExistente || null);
+  const pilarKeyDaPergunta = questionKey.split(':')[0];
+  const ciclosDisponiveis = opts.ciclosDisponiveis || MAPA_CICLOS_POR_PILAR_DPO[pilarKeyDaPergunta] || [];
+  const area = document.getElementById('modal-area');
+  if (!area) { mostrarToast('Não foi possível abrir o plano de ação aqui.', true); return; }
+  const pergunta = MAPA_TEXTO_PERGUNTA_DPO[questionKey] || questionKey;
+  window.ESTADO_MODAL_PLANO_DPO = { questionKey, cycleId: cycleId || null, planoId: planoExistente ? planoExistente.id : null, aoSalvar: aoSalvar || null };
+  const precisaEscolherCiclo = !cycleId && ciclosDisponiveis && ciclosDisponiveis.length;
+  area.innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) fecharModalPlanoAcaoDpo()">
+      <div class="modal-caixa" style="max-width:520px;">
+        <h3 style="margin-top:0;">${planoExistente ? 'Editar Plano de Ação' : 'Criar Plano de Ação'}</h3>
+        <label>Pergunta</label>
+        <div style="font-size:13px;color:#334155;background:#f8fafc;border:1px solid var(--cinza-200);border-radius:8px;padding:8px 10px;margin-bottom:8px;white-space:pre-wrap;">${escapeHtml(pergunta)}</div>
+        ${precisaEscolherCiclo ? `
+        <label>Ciclo / Empresa</label>
+        <select id="pa-dpo-ciclo">
+          <option value="">Selecione o ciclo...</option>
+          ${ciclosDisponiveis.map(c => `<option value="${c.id}">${escapeHtml(c.companyName || '')} — ${escapeHtml(c.referencia || '')}</option>`).join('')}
+        </select>` : (!cycleId ? `<div class="msg-vazio">Nenhum ciclo com este pilar encontrado para escolher.</div>` : '')}
+        <label>Verificação (nº)</label>
+        <input id="pa-dpo-verificacao" placeholder="Número da verificação" value="${escapeHtml(planoExistente?.verificacao_numero || '')}">
+        <label>Descrição do plano</label>
+        <textarea id="pa-dpo-texto" rows="3" placeholder="Descreva o plano de ação...">${escapeHtml(planoExistente?.texto || '')}</textarea>
+        <label>Dono da ação</label>
+        <input id="pa-dpo-owner" placeholder="Responsável pela ação" value="${escapeHtml(planoExistente?.owner || '')}">
+        <label>Status</label>
+        <select id="pa-dpo-status">
+          <option value="nao_iniciada" ${(!planoExistente || planoExistente.status === 'nao_iniciada') ? 'selected' : ''}>Não iniciada</option>
+          <option value="em_andamento" ${planoExistente?.status === 'em_andamento' ? 'selected' : ''}>Em andamento</option>
+          <option value="concluida" ${planoExistente?.status === 'concluida' ? 'selected' : ''}>Concluída</option>
+        </select>
+        <div class="acoes-form" style="margin-top:12px;">
+          <button class="btn-primario" onclick="salvarNovoPlanoAcaoDpo()">Salvar</button>
+          <button class="btn-secundario" onclick="fecharModalPlanoAcaoDpo()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function fecharModalPlanoAcaoDpo() {
+  const area = document.getElementById('modal-area');
+  if (area) area.innerHTML = '';
+  window.ESTADO_MODAL_PLANO_DPO = null;
+}
+
+async function salvarNovoPlanoAcaoDpo() {
+  const ctx = window.ESTADO_MODAL_PLANO_DPO;
+  if (!ctx) return;
+  const cicloSelect = document.getElementById('pa-dpo-ciclo');
+  const cycleId = ctx.cycleId || (cicloSelect ? Number(cicloSelect.value) : null);
+  const texto = document.getElementById('pa-dpo-texto').value.trim();
+  const verificacao_numero = document.getElementById('pa-dpo-verificacao').value.trim();
+  const owner = document.getElementById('pa-dpo-owner').value.trim();
+  const status = document.getElementById('pa-dpo-status').value;
+  if (!texto) { mostrarToast('Descreva o plano de ação.', true); return; }
+  if (!cycleId) { mostrarToast('Selecione o ciclo/empresa deste plano.', true); return; }
+  try {
+    if (ctx.planoId) {
+      await api('/api/dpo/action-plans/' + ctx.planoId, { method: 'PUT', body: JSON.stringify({ texto, verificacao_numero, owner, status }) });
+      mostrarToast('Plano de ação atualizado!');
+    } else {
+      await api('/api/dpo/action-plans', { method: 'POST', body: JSON.stringify({ cycle_id: cycleId, questionKey: ctx.questionKey, texto, verificacao_numero, owner, status }) });
+      mostrarToast('Plano de ação criado!');
+    }
+    fecharModalPlanoAcaoDpo();
+    if (ctx.aoSalvar) ctx.aoSalvar();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
 // Monta o HTML de revisão de um pilar inteiro (todas as perguntas, verificação,
 // explicação de pontos e how to check) — usado tanto na lista de revisão do
 // Master (todos os pilares abertos na mesma tela) quanto, se precisar, num modal avulso.
@@ -5657,7 +5864,16 @@ function montarHtmlRevisaoPilarDpo(pilar) {
     ${pilar.grupos.map(g => `
       <div style="margin-bottom:18px;">
         <h4 style="margin-bottom:6px;">${escapeHtml(g.titulo || ('Grupo ' + g.numero))}</h4>
-        ${g.perguntas.map(q => `
+        ${(() => {
+          MAPA_CICLOS_POR_PILAR_DPO[pilar.key] = CACHE_DPO_CICLOS_ADMIN
+            .filter(c => (c.pilares || []).includes(pilar.key))
+            .map(c => ({ id: c.id, companyName: c.companyName, referencia: c.referencia }));
+          return '';
+        })()}
+        ${g.perguntas.map(q => {
+          const questionKey = pilar.key + ':' + q.numero;
+          MAPA_TEXTO_PERGUNTA_DPO[questionKey] = q.numero + '. ' + q.questao;
+          return `
           <div class="dpo-pergunta" style="margin-bottom:10px;">
             <div><strong>${escapeHtml(q.numero)}.</strong> ${escapeHtml(q.questao)} ${q.mandatoria ? '<span style="color:#dc2626;font-size:11px;">(mandatória)</span>' : ''}</div>
             ${q.verificacao ? `<div style="font-size:13px;color:#334155;margin-top:4px;"><strong>Verificação:</strong> ${escapeHtml(q.verificacao)}</div>` : ''}
@@ -5665,8 +5881,11 @@ function montarHtmlRevisaoPilarDpo(pilar) {
               ${q.explicacao_pontos ? `<div style="font-size:12px;white-space:pre-wrap;margin-top:4px;">${escapeHtml(q.explicacao_pontos)}</div>` : ''}
               ${q.how_to_check ? `<div style="font-size:12px;white-space:pre-wrap;margin-top:6px;"><strong>How to check:</strong> ${escapeHtml(q.how_to_check)}</div>` : ''}
             </details>
+            <div style="margin-top:6px;">
+              <button class="btn-secundario btn-sm" onclick='abrirModalPlanoAcaoDpo({ questionKey: ${JSON.stringify(questionKey)} })'>➕ Criar Plano</button>
+            </div>
           </div>
-        `).join('')}
+        `; }).join('')}
       </div>
     `).join('')}
   `;
@@ -5776,6 +5995,15 @@ async function renderDpoHome() {
     const cicloPorPilar = {};
     ciclosAbertos.forEach(c => { c.pilares.forEach(p => { if (!cicloPorPilar[p]) cicloPorPilar[p] = c; }); });
     const minhaEmpresaDpo = await api('/api/companies/' + ESTADO.usuario.companyId).catch(() => null);
+    // Permissão por pilar: se o Master restringiu este acesso a pilares
+    // específicos do DPO Ambev (em vez de liberar o módulo inteiro), essa
+    // pessoa só vê os pilares marcados para ela — mesmo que a empresa tenha
+    // comprado outros também.
+    const restricoesUsuarioDpo = Array.isArray(ESTADO.usuario.enabledModules) ? ESTADO.usuario.enabledModules : null;
+    const pilaresPermitidosUsuario = restricoesUsuarioDpo && restricoesUsuarioDpo.some(r => r.startsWith('dpoAmbev:'))
+      ? restricoesUsuarioDpo.filter(r => r.startsWith('dpoAmbev:')).map(r => r.split(':')[1])
+      : null;
+    const pilaresParaExibir = pilaresPermitidosUsuario ? CACHE_DPO_PILARES.pilares.filter(p => pilaresPermitidosUsuario.includes(p.key)) : CACHE_DPO_PILARES.pilares;
 
     cont.innerHTML = `
       <h1>Impulsionar V4 — DPO Ambev</h1>
@@ -5788,7 +6016,7 @@ async function renderDpoHome() {
       <div class="barra-acoes"><div class="direita"><button class="btn-primario" onclick="mostrarComprasDpo()">🛒 Comprar Pilares / Consultoria Completa</button></div></div>
       <div id="modal-area"></div>
       <div class="dpo-grade">
-        ${CACHE_DPO_PILARES.pilares.map(p => {
+        ${pilaresParaExibir.map(p => {
           const comprado = CACHE_DPO_PILARES.meusPilares && CACHE_DPO_PILARES.meusPilares.includes(p.key);
           const ciclo = cicloPorPilar[p.key];
           if (!comprado) {
@@ -5831,14 +6059,23 @@ async function renderDpoHome() {
   } catch (e) { cont.innerHTML = `<h1>Impulsionar V4 — DPO Ambev</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
 
-function mostrarComprasDpo() {
+let CACHE_DPO_CONSULTORES_COMPRA = [];
+
+async function mostrarComprasDpo() {
   const modalArea = document.getElementById('modal-area');
   if (!modalArea) return;
   const completa = CACHE_DPO_PILARES.compraCompleta;
+  try { CACHE_DPO_CONSULTORES_COMPRA = await api('/api/dpo/consultants'); } catch (e) { CACHE_DPO_CONSULTORES_COMPRA = []; }
+  const opcoesConsultor = '<option value="">Selecione o consultor...</option>' +
+    CACHE_DPO_CONSULTORES_COMPRA.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
   modalArea.innerHTML = `
     <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
       <div class="modal-caixa" style="max-width:520px;">
         <h3 style="margin-top:0;">Comprar DPO Ambev</h3>
+        ${!CACHE_DPO_CONSULTORES_COMPRA.length ? `<div class="msg-vazio" style="text-align:left;">Ainda não há consultores cadastrados pelo Master — fale com o suporte antes de comprar.</div>` : `
+        <label>Consultor responsável</label>
+        <select id="dpo-compra-consultor">${opcoesConsultor}</select>
+        `}
         ${completa ? `<p style="font-size:13px;color:#16a34a;">✓ Sua empresa já tem a Consultoria Completa (todos os pilares).</p>` : `
         <div class="plano-card" style="margin-bottom:14px;">
           <h4 style="margin-top:0;">Consultoria Completa</h4>
@@ -5860,8 +6097,11 @@ function mostrarComprasDpo() {
 }
 
 async function comprarDpo(scope, pillarKey) {
+  const consultorEl = document.getElementById('dpo-compra-consultor');
+  const consultantId = consultorEl ? consultorEl.value : null;
+  if (!consultantId) { mostrarToast('Escolha o consultor responsável antes de comprar.', true); return; }
   try {
-    const r = await api('/api/dpo/purchase', { method: 'POST', body: JSON.stringify({ scope, pillarKey }) });
+    const r = await api('/api/dpo/purchase', { method: 'POST', body: JSON.stringify({ scope, pillarKey, consultantId }) });
     mostrarToast(r.message);
     if (r.initPoint) window.open(r.initPoint, '_blank');
     document.getElementById('modal-area').innerHTML = '';
@@ -5920,6 +6160,7 @@ function renderCicloDpoAtual() {
         ${g.perguntas.map(p => renderPerguntaDpo(p, somenteLeitura)).join('')}
       </div>
     `).join('')}
+    <div id="modal-area"></div>
   `;
 }
 
@@ -5932,6 +6173,7 @@ function renderPerguntaDpo(p, somenteLeitura) {
   const opcoes = analisarOpcoesPontuacaoDpo(p.explicacao_pontos);
   const cor = corBadgeDpo(p.score);
   const idSeguro = cssIdDpo(p.questionKey);
+  MAPA_TEXTO_PERGUNTA_DPO[p.questionKey] = p.numero + '. ' + p.questao;
   return `
     <div class="dpo-pergunta" id="dpo-pergunta-${idSeguro}">
       <div class="dpo-pergunta-cabecalho" onclick="document.getElementById('dpo-pergunta-${idSeguro}').classList.toggle('aberta')">
@@ -5955,9 +6197,8 @@ function renderPerguntaDpo(p, somenteLeitura) {
           <label style="font-size:12px;">Plano de Ação</label>
           ${p.planosDeAcao.map(pl => renderPlanoAcaoDpo(pl, somenteLeitura)).join('')}
           ${!somenteLeitura ? `
-          <div style="display:flex;gap:8px;margin-top:6px;">
-            <input id="dpo-novo-plano-${idSeguro}" placeholder="Descreva o plano de ação..." style="flex:1;">
-            <button class="btn-secundario btn-sm" onclick="criarPlanoAcaoDpo('${p.questionKey}')">+ Adicionar</button>
+          <div style="margin-top:6px;">
+            <button class="btn-secundario btn-sm" onclick='abrirModalPlanoAcaoDpo({ questionKey: ${JSON.stringify(p.questionKey)}, cycleId: ESTADO_DPO_VIEW.ciclo.id, aoSalvar: recarregarCicloDpoAtual })'>➕ Criar Plano</button>
           </div>` : ''}
         </div>
       </div>
@@ -5966,11 +6207,20 @@ function renderPerguntaDpo(p, somenteLeitura) {
 }
 
 function renderPlanoAcaoDpo(plano, somenteLeitura) {
+  const statusInfo = ROTULOS_STATUS_PLANO_DPO[plano.status] || ROTULOS_STATUS_PLANO_DPO.nao_iniciada;
+  MAPA_PLANOS_ACAO_DPO[plano.id] = plano;
   return `
     <div style="background:#f8fafc;border:1px solid var(--cinza-200);border-radius:8px;padding:10px 12px;margin-top:6px;">
       <div style="display:flex;justify-content:space-between;gap:8px;">
         <div style="font-size:13px;color:#334155;flex:1;">${escapeHtml(plano.texto)}</div>
-        ${!somenteLeitura ? `<button class="btn-perigo btn-sm" style="padding:2px 8px;" onclick="excluirPlanoAcaoDpo(${plano.id})">✕</button>` : ''}
+        <span class="dpo-score-badge" style="background:${statusInfo.cor}20;color:${statusInfo.cor};white-space:nowrap;">${escapeHtml(statusInfo.texto)}</span>
+        ${!somenteLeitura ? `
+        <button class="btn-secundario btn-sm" style="padding:2px 8px;" onclick='abrirModalPlanoAcaoDpo({ questionKey: ${JSON.stringify(plano.question_key)}, cycleId: ESTADO_DPO_VIEW.ciclo.id, planoId: ${plano.id}, aoSalvar: recarregarCicloDpoAtual })'>✏️</button>
+        <button class="btn-perigo btn-sm" style="padding:2px 8px;" onclick="excluirPlanoAcaoDpo(${plano.id})">✕</button>` : ''}
+      </div>
+      <div style="font-size:11.5px;color:#64748b;margin-top:2px;display:flex;gap:12px;flex-wrap:wrap;">
+        ${plano.verificacao_numero ? `<span><strong>Verificação:</strong> ${escapeHtml(plano.verificacao_numero)}</span>` : ''}
+        ${plano.owner ? `<span><strong>Dono:</strong> ${escapeHtml(plano.owner)}</span>` : ''}
       </div>
       ${(plano.follows || []).map(f => `
         <div class="dpo-follow">
@@ -6006,16 +6256,6 @@ async function salvarPontuacaoDpo(questionKey, valor) {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
-async function criarPlanoAcaoDpo(questionKey) {
-  const input = document.getElementById('dpo-novo-plano-' + cssIdDpo(questionKey));
-  const texto = input.value.trim();
-  if (!texto) { mostrarToast('Descreva o plano de ação.', true); return; }
-  try {
-    await api('/api/dpo/action-plans', { method: 'POST', body: JSON.stringify({ cycle_id: ESTADO_DPO_VIEW.ciclo.id, questionKey, texto }) });
-    mostrarToast('Plano de ação criado!');
-    recarregarCicloDpoAtual();
-  } catch (e) { mostrarToast(e.message, true); }
-}
 
 async function excluirPlanoAcaoDpo(id) {
   if (!confirm('Remover este plano de ação (e seus follow-ups)?')) return;

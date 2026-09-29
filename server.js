@@ -1066,6 +1066,18 @@ function inicializarBase() {
             db.run(`INSERT OR IGNORE INTO dpo_pillar_prices (pillar_key, price, active) VALUES (?, 0, 1)`, [chave]);
         });
 
+        // Consultores cadastrados pelo Master — a empresa escolhe um deles na
+        // hora de comprar um pilar ou a Consultoria Completa.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_consultants (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT,
+            phone TEXT,
+            bio TEXT,
+            active INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+
         // Compra de um pilar avulso ou da consultoria completa por uma empresa —
         // cobrança única via Mercado Pago (Checkout Pro), no mesmo padrão já
         // usado para divulgação de vagas e taxa de fechamento.
@@ -1083,6 +1095,8 @@ function inicializarBase() {
             paid_at DATETIME,
             FOREIGN KEY(company_id) REFERENCES companies(id)
         )`);
+        // Consultor escolhido pela empresa no momento da compra.
+        db.run(`ALTER TABLE dpo_purchases ADD COLUMN consultant_id INTEGER REFERENCES dpo_consultants(id)`, () => {});
 
         // Ciclo de autoavaliação: o Master cria um novo ciclo (mensal, "quando
         // quiser") para a empresa, com os pilares que ela já comprou. É dentro
@@ -1125,6 +1139,12 @@ function inicializarBase() {
             created_by INTEGER,
             FOREIGN KEY(cycle_id) REFERENCES dpo_audit_cycles(id)
         )`);
+        // Campos adicionais do plano de ação: número da verificação (dentro da
+        // lista de verificações da pergunta) a que o plano se refere, dono da
+        // ação e status dela — pedidos para dar mais rastreabilidade a cada plano.
+        ['verificacao_numero TEXT', 'owner TEXT', "status TEXT DEFAULT 'nao_iniciada'"].forEach(coluna => {
+            db.run(`ALTER TABLE dpo_action_plans ADD COLUMN ${coluna}`, () => {});
+        });
         db.run(`CREATE TABLE IF NOT EXISTS dpo_follow_ups (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             action_plan_id INTEGER NOT NULL,
@@ -5329,6 +5349,46 @@ app.put('/api/admin/dpo/pricing', requireRole('admin'), async (req, res) => {
     } catch (e) { res.status(400).json({ error: 'Erro ao salvar os preços.' }); }
 });
 
+// Cadastro de consultores do DPO Ambev — quem faz a consultoria de verdade
+// junto com a empresa. A empresa escolhe um deles na hora de comprar.
+app.get('/api/admin/dpo/consultants', requireRole('admin'), async (req, res) => {
+    try { res.json(await dbAll(`SELECT * FROM dpo_consultants ORDER BY name ASC`)); }
+    catch (e) { res.status(500).json({ error: 'Erro ao carregar os consultores.' }); }
+});
+
+// Listagem simplificada (só ativos) usada pela empresa na hora da compra.
+app.get('/api/dpo/consultants', requireRole('admin', 'client_admin'), async (req, res) => {
+    try { res.json(await dbAll(`SELECT id, name, bio FROM dpo_consultants WHERE active = 1 ORDER BY name ASC`)); }
+    catch (e) { res.status(500).json({ error: 'Erro ao carregar os consultores.' }); }
+});
+
+app.post('/api/admin/dpo/consultants', requireRole('admin'), async (req, res) => {
+    const { name, email, phone, bio } = req.body;
+    if (!name) return res.status(400).json({ error: 'Informe o nome do consultor.' });
+    db.run(`INSERT INTO dpo_consultants (name, email, phone, bio) VALUES (?, ?, ?, ?)`,
+        [name, email || null, phone || null, bio || null], function (err) {
+            if (err) return res.status(400).json({ error: 'Erro ao cadastrar o consultor.' });
+            res.json({ message: 'Consultor cadastrado!', id: this.lastID });
+        });
+});
+
+app.put('/api/admin/dpo/consultants/:id', requireRole('admin'), async (req, res) => {
+    const { name, email, phone, bio, active } = req.body;
+    db.run(`UPDATE dpo_consultants SET name = ?, email = ?, phone = ?, bio = ?, active = ? WHERE id = ?`,
+        [name, email || null, phone || null, bio || null, active === false ? 0 : 1, req.params.id], function (err) {
+            if (err) return res.status(400).json({ error: 'Erro ao atualizar o consultor.' });
+            if (this.changes === 0) return res.status(404).json({ error: 'Consultor não encontrado.' });
+            res.json({ message: 'Consultor atualizado!' });
+        });
+});
+
+app.delete('/api/admin/dpo/consultants/:id', requireRole('admin'), async (req, res) => {
+    db.run(`DELETE FROM dpo_consultants WHERE id = ?`, [req.params.id], function (err) {
+        if (err) return res.status(400).json({ error: 'Erro ao remover o consultor.' });
+        res.json({ message: 'Consultor removido!' });
+    });
+});
+
 // Master visualiza o conteúdo completo de um pilar (perguntas, verificação,
 // explicação de pontos e how to check) sem depender de nenhuma empresa/ciclo —
 // só para conferir o layout das perguntas.
@@ -5357,7 +5417,7 @@ app.put('/api/admin/dpo/companies/:id/auditoria-oficial', requireRole('admin'), 
 // empresa específica, para um pilar avulso ou para a Consultoria Completa, e
 // gera na hora o link de pagamento do Mercado Pago para enviar à empresa.
 app.post('/api/admin/dpo/negotiated-purchase', requireRole('admin'), async (req, res) => {
-    const { companyId, scope, pillarKey, price } = req.body;
+    const { companyId, scope, pillarKey, price, consultantId } = req.body;
     if (!companyId) return res.status(400).json({ error: 'Selecione a empresa.' });
     if (!['completo', 'pilar'].includes(scope)) return res.status(400).json({ error: 'Escopo inválido.' });
     if (scope === 'pilar' && !DPO_PILARES_ORDEM.includes(pillarKey)) return res.status(400).json({ error: 'Selecione um pilar válido.' });
@@ -5376,8 +5436,8 @@ app.post('/api/admin/dpo/negotiated-purchase', requireRole('admin'), async (req,
             : `DPO Ambev — Pilar ${DPO_AMBEV_DATA[pillarKey].label} (valor negociado)`;
 
         const resultado = await new Promise((resolve, reject) => db.run(
-            `INSERT INTO dpo_purchases (company_id, scope, pillar_key, price) VALUES (?, ?, ?, ?)`,
-            [companyId, scope, scope === 'pilar' ? pillarKey : null, preco],
+            `INSERT INTO dpo_purchases (company_id, scope, pillar_key, price, consultant_id) VALUES (?, ?, ?, ?, ?)`,
+            [companyId, scope, scope === 'pilar' ? pillarKey : null, preco, consultantId || null],
             function (err) { err ? reject(err) : resolve(this.lastID); }
         ));
 
@@ -5405,11 +5465,14 @@ app.post('/api/admin/dpo/negotiated-purchase', requireRole('admin'), async (req,
 // Empresa compra um pilar avulso ou a consultoria completa — gera cobrança
 // única no Mercado Pago (Checkout Pro), igual à divulgação de vaga.
 app.post('/api/dpo/purchase', requireRole('client_admin'), async (req, res) => {
-    const { scope, pillarKey } = req.body;
+    const { scope, pillarKey, consultantId } = req.body;
     if (!['completo', 'pilar'].includes(scope)) return res.status(400).json({ error: 'Escopo de compra inválido.' });
     if (scope === 'pilar' && !DPO_PILARES_ORDEM.includes(pillarKey)) return res.status(400).json({ error: 'Selecione um pilar válido.' });
+    if (!consultantId) return res.status(400).json({ error: 'Escolha o consultor que vai conduzir esta consultoria.' });
     if (!mpPreference) return res.status(503).json({ error: 'Mercado Pago ainda não foi configurado no servidor.' });
     try {
+        const consultor = await dbGet(`SELECT id FROM dpo_consultants WHERE id = ? AND active = 1`, [consultantId]);
+        if (!consultor) return res.status(400).json({ error: 'Consultor inválido.' });
         const companyId = req.user.companyId;
         const ativos = await pilaresAtivosDaEmpresa(companyId);
         if (scope === 'completo' && ativos.length === DPO_PILARES_ORDEM.length) return res.status(400).json({ error: 'Sua empresa já tem a Consultoria Completa liberada.' });
@@ -5437,8 +5500,8 @@ app.post('/api/dpo/purchase', requireRole('client_admin'), async (req, res) => {
         if (!preco) return res.status(400).json({ error: 'Este item ainda não tem um preço definido pelo Master.' });
 
         const resultado = await new Promise((resolve, reject) => db.run(
-            `INSERT INTO dpo_purchases (company_id, scope, pillar_key, price) VALUES (?, ?, ?, ?)`,
-            [companyId, scope, scope === 'pilar' ? pillarKey : null, preco],
+            `INSERT INTO dpo_purchases (company_id, scope, pillar_key, price, consultant_id) VALUES (?, ?, ?, ?, ?)`,
+            [companyId, scope, scope === 'pilar' ? pillarKey : null, preco, consultantId],
             function (err) { err ? reject(err) : resolve(this.lastID); }
         ));
 
@@ -5622,29 +5685,35 @@ app.put('/api/dpo/cycles/:id/answers', requireRole('admin', 'client_admin'), asy
     } catch (e) { res.status(400).json({ error: 'Erro ao salvar a resposta.' }); }
 });
 
+const STATUS_PLANO_ACAO_DPO = ['nao_iniciada', 'em_andamento', 'concluida'];
+
 app.post('/api/dpo/action-plans', requireRole('admin', 'client_admin'), async (req, res) => {
-    const { cycle_id, questionKey, texto } = req.body;
+    const { cycle_id, questionKey, texto, verificacao_numero, owner, status } = req.body;
     if (!cycle_id || !questionKey || !texto) return res.status(400).json({ error: 'Preencha o plano de ação.' });
+    const statusFinal = STATUS_PLANO_ACAO_DPO.includes(status) ? status : 'nao_iniciada';
     try {
         const ciclo = await obterCicloComAcesso(req, res, cycle_id);
         if (!ciclo) return;
         if (ciclo.status === 'concluido') return res.status(400).json({ error: 'Este ciclo já foi encerrado.' });
         const resultado = await new Promise((resolve, reject) => db.run(
-            `INSERT INTO dpo_action_plans (cycle_id, question_key, texto, created_by) VALUES (?, ?, ?, ?)`,
-            [cycle_id, questionKey, texto, req.user.userId], function (err) { err ? reject(err) : resolve(this.lastID); }
+            `INSERT INTO dpo_action_plans (cycle_id, question_key, texto, created_by, verificacao_numero, owner, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [cycle_id, questionKey, texto, req.user.userId, verificacao_numero || null, owner || null, statusFinal], function (err) { err ? reject(err) : resolve(this.lastID); }
         ));
         res.json({ message: 'Plano de ação criado!', id: resultado });
     } catch (e) { res.status(400).json({ error: 'Erro ao criar o plano de ação.' }); }
 });
 
 app.put('/api/dpo/action-plans/:id', requireRole('admin', 'client_admin'), async (req, res) => {
-    const { texto } = req.body;
+    const { texto, verificacao_numero, owner, status } = req.body;
     try {
         const plano = await dbGet(`SELECT * FROM dpo_action_plans WHERE id = ?`, [req.params.id]);
         if (!plano) return res.status(404).json({ error: 'Plano de ação não encontrado.' });
         const ciclo = await obterCicloComAcesso(req, res, plano.cycle_id);
         if (!ciclo) return;
-        db.run(`UPDATE dpo_action_plans SET texto = ? WHERE id = ?`, [texto || '', req.params.id], () => res.json({ message: 'Plano de ação atualizado!' }));
+        const statusFinal = status !== undefined ? (STATUS_PLANO_ACAO_DPO.includes(status) ? status : plano.status) : plano.status;
+        db.run(`UPDATE dpo_action_plans SET texto = ?, verificacao_numero = ?, owner = ?, status = ? WHERE id = ?`,
+            [texto !== undefined ? texto : plano.texto, verificacao_numero !== undefined ? verificacao_numero : plano.verificacao_numero, owner !== undefined ? owner : plano.owner, statusFinal, req.params.id],
+            () => res.json({ message: 'Plano de ação atualizado!' }));
     } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o plano de ação.' }); }
 });
 
