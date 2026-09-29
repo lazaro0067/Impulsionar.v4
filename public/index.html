@@ -202,6 +202,14 @@
   .vc-pip-item { position: relative; width: 130px; height: 88px; border-radius: 10px; overflow: hidden; border: 2px solid #fff; box-shadow: 0 4px 14px rgba(0,0,0,.45); background: #1d3a8a; }
   .vc-pip-item video { width: 100%; height: 100%; object-fit: cover; display: block; }
   .vc-pip-item .rotulo { position: absolute; left: 6px; bottom: 4px; background: rgba(0,0,0,.55); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 8px; }
+  /* Aviso amigável de "câmera desligada" — some com o quadro preto/congelado,
+     tanto no seu próprio quadro quanto no dos outros participantes. */
+  .vc-cam-off-overlay {
+    position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    background: linear-gradient(135deg, #1d3a8a, #0b1329); color: #cbd5e1; font-size: 13px; text-align: center; z-index: 2;
+  }
+  .vc-cam-off-overlay.ativo { display: flex; }
+  .vc-cam-off-overlay .avatar { width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; font-size: 24px; }
 
   .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
   .kpi-card { background: #fff; border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
@@ -6079,7 +6087,10 @@ async function renderDpoHome() {
         🗓️ <strong>Auditoria Oficial Ambev marcada para ${new Date(minhaEmpresaDpo.dpo_auditoria_oficial_data + 'T00:00:00').toLocaleDateString('pt-BR')}</strong>
         ${minhaEmpresaDpo.dpo_auditoria_oficial_nota ? `<div style="font-size:13px;margin-top:4px;">${escapeHtml(minhaEmpresaDpo.dpo_auditoria_oficial_nota)}</div>` : ''}
       </div>` : ''}
-      <div class="barra-acoes"><div class="direita"><button class="btn-primario" onclick="mostrarComprasDpo()">🛒 Comprar Pilares / Consultoria Completa</button></div></div>
+      <div class="barra-acoes"><div class="direita">
+        <button class="btn-secundario" onclick="renderDpoMeusPlanos()">📋 Meus Planos DPO</button>
+        <button class="btn-primario" onclick="mostrarComprasDpo()">🛒 Comprar Pilares / Consultoria Completa</button>
+      </div></div>
       <div id="modal-area"></div>
       <div class="dpo-grade">
         ${pilaresParaExibir.map(p => {
@@ -6123,6 +6134,38 @@ async function renderDpoHome() {
       </div>` : ''}
     `;
   } catch (e) { cont.innerHTML = `<h1>Impulsionar V4 — DPO Ambev</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+// "Meus Planos DPO" — todos os planos de ação já criados pela empresa,
+// consolidados por pilar, juntando todos os ciclos (não só o mais recente).
+async function renderDpoMeusPlanos() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>Meus Planos DPO</h1><p>Carregando...</p>';
+  try {
+    const porPilar = await api('/api/dpo/meus-planos');
+    const totalPlanos = porPilar.reduce((soma, p) => soma + p.planos.length, 0);
+    cont.innerHTML = `
+      <h1>Meus Planos DPO</h1>
+      <p style="color:#64748b;margin-top:-8px;">Todos os planos de ação já criados pela sua empresa no DPO Ambev, consolidados por pilar (juntando todos os ciclos/meses).</p>
+      <div class="barra-acoes"><div></div><div class="direita"><button class="btn-secundario" onclick="renderDpoHome()">← Voltar ao DPO Ambev</button></div></div>
+      ${totalPlanos === 0 ? `<div class="msg-vazio">Nenhum plano de ação criado ainda.</div>` : porPilar.map(p => `
+        <div style="margin-top:20px;">
+          <h3 style="margin-bottom:8px;">${escapeHtml(p.label)} <span style="font-weight:400;color:#64748b;font-size:13px;">(${p.planos.length} plano${p.planos.length === 1 ? '' : 's'})</span></h3>
+          ${p.planos.map(pl => `
+            <div style="background:#fff;border:1px solid var(--cinza-200);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+              <div style="font-size:11.5px;color:#64748b;margin-bottom:4px;">
+                <strong>Pergunta ${escapeHtml(pl.perguntaNumero || '')}:</strong> ${escapeHtml(pl.perguntaTexto || '')}
+                ${pl.cicloReferencia ? ` · <strong>Ciclo:</strong> ${escapeHtml(pl.cicloReferencia)}` : ''}
+              </div>
+              ${renderPlanoAcaoDpo(pl, true)}
+            </div>
+          `).join('')}
+        </div>
+      `).join('')}
+    `;
+  } catch (e) {
+    cont.innerHTML = `<h1>Meus Planos DPO</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
+  }
 }
 
 let CACHE_DPO_CONSULTORES_COMPRA = [];
@@ -7323,9 +7366,20 @@ let CACHE_LISTA_CONTRATOS = [];
 
 let CACHE_PERFIL_IMPULSIONAR = null;
 
-const RASCUNHO_CONTRATO_EMPRESA = (nomeEmpresa) => `CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE CONSULTORIA
+// dadosEmpresa: string (só o nome, modo antigo) ou objeto { name, cnpj,
+// enderecoFormatado } com os dados carregados de /api/admin/companies/:id/contract-data
+// — quanto mais completo, mais o contrato já sai com validade jurídica (CNPJ e
+// endereço da CONTRATANTE, exigidos em qualquer contrato de verdade).
+const RASCUNHO_CONTRATO_EMPRESA = (dadosEmpresa) => {
+  const d = typeof dadosEmpresa === 'string' ? { name: dadosEmpresa } : (dadosEmpresa || {});
+  const identificacaoContratante = [
+    d.name || '[NOME DA EMPRESA CONTRATANTE]',
+    d.cnpj ? 'CNPJ ' + d.cnpj : null,
+    d.enderecoFormatado ? 'com sede em ' + d.enderecoFormatado : null
+  ].filter(Boolean).join(', ');
+  return `CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE CONSULTORIA
 
-Pelo presente instrumento particular, de um lado ${escapeHtml((CACHE_PERFIL_IMPULSIONAR && CACHE_PERFIL_IMPULSIONAR.name) || 'IMPULSIONAR CONSULTORIA')}${CACHE_PERFIL_IMPULSIONAR && CACHE_PERFIL_IMPULSIONAR.cnpj ? ', CNPJ ' + CACHE_PERFIL_IMPULSIONAR.cnpj : ''} e, de outro lado, ${nomeEmpresa || '[NOME DA EMPRESA CONTRATANTE]'}, doravante denominadas simplesmente CONTRATADA e CONTRATANTE, têm entre si justo e acordado o presente Contrato de Prestação de Serviços de Consultoria em Gestão de Pessoas e Desenvolvimento de Liderança, mediante as cláusulas e condições a seguir:
+Pelo presente instrumento particular, de um lado ${escapeHtml((CACHE_PERFIL_IMPULSIONAR && CACHE_PERFIL_IMPULSIONAR.name) || 'IMPULSIONAR CONSULTORIA')}${CACHE_PERFIL_IMPULSIONAR && CACHE_PERFIL_IMPULSIONAR.cnpj ? ', CNPJ ' + CACHE_PERFIL_IMPULSIONAR.cnpj : ''} e, de outro lado, ${escapeHtml(identificacaoContratante)}, doravante denominadas simplesmente CONTRATADA e CONTRATANTE, têm entre si justo e acordado o presente Contrato de Prestação de Serviços de Consultoria em Gestão de Pessoas e Desenvolvimento de Liderança, mediante as cláusulas e condições a seguir:
 
 CLÁUSULA 1ª — DO OBJETO
 O presente contrato tem por objeto a prestação de serviços de consultoria em desenvolvimento de executivos, mentoria, assessments comportamentais e programas de PDI (Plano de Desenvolvimento Individual) aos colaboradores indicados pela CONTRATANTE.
@@ -7343,6 +7397,7 @@ CLÁUSULA 5ª — DO FORO
 Fica eleito o foro da comarca da CONTRATADA para dirimir quaisquer dúvidas oriundas deste contrato.
 
 E por estarem assim justas e contratadas, firmam o presente instrumento de forma eletrônica.`;
+};
 
 const RASCUNHO_CONTRATO_EXECUTIVO = (nomeExecutivo) => `TERMO DE ADESÃO AO PROGRAMA DE DESENVOLVIMENTO DE LIDERANÇA
 
@@ -7409,6 +7464,8 @@ async function renderContracts() {
               <td>
                 ${c.status === 'assinado' && c.signed_file_url ? `<button class="btn-secundario" onclick="window.open('${c.signed_file_url}','_blank')">📄 Baixar Assinado</button>` : ''}
                 ${podeVerificarStatus && c.status === 'enviado' ? `<button class="btn-secundario" onclick="atualizarStatusContrato(${c.id})">🔄 Verificar Status Agora</button>` : ''}
+                ${podeVerificarStatus && c.status === 'enviado' ? `<button class="btn-secundario" onclick="reenviarContrato(${c.id})">📧 Reenviar</button>` : ''}
+                ${podeCriarExcluir && c.status === 'enviado' ? `<button class="btn-secundario" onclick="mostrarFormularioContrato(${c.id})">✏️ Editar</button>` : ''}
                 ${podeCriarExcluir ? `<button class="btn-perigo" onclick="excluirContrato(${c.id})">Excluir</button>` : ''}
               </td>
             </tr>`).join('')}
@@ -7421,23 +7478,26 @@ async function renderContracts() {
   }
 }
 
-async function mostrarFormularioContrato() {
+async function mostrarFormularioContrato(contratoIdParaEditar) {
   if (!CACHE_PERFIL_IMPULSIONAR) {
     try { CACHE_PERFIL_IMPULSIONAR = await api('/api/platform/profile'); } catch (e) { CACHE_PERFIL_IMPULSIONAR = {}; }
   }
+  const contratoEditando = contratoIdParaEditar ? (CACHE_LISTA_CONTRATOS || []).find(c => c.id === contratoIdParaEditar) : null;
+  const contratoEditandoEhAnexo = !!(contratoEditando && /^\[Arquivo anexado pelo usuário/.test(contratoEditando.content || ''));
   const area = document.getElementById('form-area');
   const ehAdmin = ESTADO.usuario.role === 'admin';
-  const opcoesEmpresa = CACHE_LISTA_EMPRESAS.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
-  const opcoesExecutivo = CACHE_LISTA_EXECUTIVOS.map(e => `<option value="${e.id}" data-nome="${escapeHtml(e.name)}" data-email="${escapeHtml(e.email || '')}">${escapeHtml(e.name)}</option>`).join('');
-  const opcoesMentor = CACHE_LISTA_MENTORES.map(m => `<option value="${m.id}" data-nome="${escapeHtml(m.name)}" data-email="${escapeHtml(m.email || '')}">${escapeHtml(m.name)}</option>`).join('');
+  const opcoesEmpresa = CACHE_LISTA_EMPRESAS.map(c => `<option value="${c.id}" ${contratoEditando && contratoEditando.company_id === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
+  const opcoesExecutivo = CACHE_LISTA_EXECUTIVOS.map(e => `<option value="${e.id}" data-nome="${escapeHtml(e.name)}" data-email="${escapeHtml(e.email || '')}" ${contratoEditando && contratoEditando.employee_id === e.id ? 'selected' : ''}>${escapeHtml(e.name)}</option>`).join('');
+  const opcoesMentor = CACHE_LISTA_MENTORES.map(m => `<option value="${m.id}" data-nome="${escapeHtml(m.name)}" data-email="${escapeHtml(m.email || '')}" ${contratoEditando && contratoEditando.mentor_id === m.id ? 'selected' : ''}>${escapeHtml(m.name)}</option>`).join('');
   area.innerHTML = `
     <div class="cartao-formulario">
-      <h3>Novo Contrato</h3>
+      <h3>${contratoEditando ? 'Editar Contrato' : 'Novo Contrato'}</h3>
+      <input type="hidden" id="ct-id-editando" value="${contratoEditando ? contratoEditando.id : ''}">
       <div class="campo">
         <label>Tipo de contrato</label>
         <select id="ct-tipo" onchange="alternarTipoContrato()">
-          <option value="empresa">Empresa (Impulsionar ↔ Empresa)</option>
-          <option value="executivo">Executivo/Mentor (Empresa/Impulsionar ↔ Executivo ou Mentor)</option>
+          <option value="empresa" ${!contratoEditando || contratoEditando.type === 'empresa' ? 'selected' : ''}>Empresa (Impulsionar ↔ Empresa)</option>
+          <option value="executivo" ${contratoEditando && contratoEditando.type === 'executivo' ? 'selected' : ''}>Executivo/Mentor (Empresa/Impulsionar ↔ Executivo ou Mentor)</option>
         </select>
       </div>
       <div class="campo" id="ct-campo-empresa" style="${ehAdmin ? '' : 'display:none'}">
@@ -7460,11 +7520,23 @@ async function mostrarFormularioContrato() {
       </div>
       <div class="campo">
         <label>Título do contrato</label>
-        <input type="text" id="ct-titulo" placeholder="Ex: Contrato de Prestação de Serviços - Empresa X">
+        <input type="text" id="ct-titulo" placeholder="Ex: Contrato de Prestação de Serviços - Empresa X" value="${contratoEditando ? escapeHtml(contratoEditando.title) : ''}">
       </div>
       <div class="campo">
+        <label>Como criar o contrato</label>
+        <select id="ct-modo" onchange="alternarModoContrato()">
+          <option value="modelo" ${!contratoEditandoEhAnexo ? 'selected' : ''}>Usar modelo (texto editável abaixo)</option>
+          <option value="anexar" ${contratoEditandoEhAnexo ? 'selected' : ''}>Anexar um arquivo já pronto (PDF ou Word) apenas para assinatura</option>
+        </select>
+      </div>
+      <div class="campo" id="ct-campo-modelo">
         <label>Conteúdo do contrato (editável)</label>
-        <textarea id="ct-conteudo" rows="14">${RASCUNHO_CONTRATO_EMPRESA('')}</textarea>
+        <textarea id="ct-conteudo" rows="14">${contratoEditando && !contratoEditandoEhAnexo ? escapeHtml(contratoEditando.content || '') : RASCUNHO_CONTRATO_EMPRESA('')}</textarea>
+      </div>
+      <div class="campo" id="ct-campo-anexo" style="display:none">
+        <label>Arquivo do contrato (PDF ou Word)</label>
+        <input type="file" id="ct-arquivo" accept=".pdf,.doc,.docx">
+        <div style="color:#64748b;font-size:12px;margin-top:4px;">${contratoEditandoEhAnexo ? 'Este contrato está com um arquivo anexado. Como o contrato foi alterado, selecione novamente o arquivo (mesmo que seja o mesmo) para reenviar para assinatura.' : 'O arquivo será enviado exatamente como está, apenas para coleta de assinatura(s).'}</div>
       </div>
       <div class="campo">
         <label>Signatários (nome e e-mail de cada pessoa que deve assinar)</label>
@@ -7472,13 +7544,27 @@ async function mostrarFormularioContrato() {
         <button type="button" class="btn-secundario" onclick="adicionarLinhaSignatario()">+ Adicionar Signatário</button>
       </div>
       <div class="acoes-formulario">
-        <button class="btn-primario" onclick="salvarContrato()">Enviar para Assinatura</button>
+        <button class="btn-primario" onclick="salvarContrato()">${contratoEditando ? 'Salvar Alterações' : 'Enviar para Assinatura'}</button>
         <button class="btn-secundario" onclick="document.getElementById('form-area').innerHTML=''">Cancelar</button>
       </div>
     </div>
   `;
-  adicionarLinhaSignatario();
+  if (contratoEditando && Array.isArray(contratoEditando.signers) && contratoEditando.signers.length) {
+    contratoEditando.signers.forEach(s => adicionarLinhaSignatario(s.name, s.email));
+  } else {
+    adicionarLinhaSignatario();
+  }
   alternarTipoContrato();
+  alternarModoContrato();
+  if (contratoEditando && ehAdmin && contratoEditando.type === 'empresa' && contratoEditando.company_id) {
+    atualizarRascunhoContrato(true);
+  }
+}
+
+function alternarModoContrato() {
+  const modo = document.getElementById('ct-modo').value;
+  document.getElementById('ct-campo-modelo').style.display = modo === 'anexar' ? 'none' : '';
+  document.getElementById('ct-campo-anexo').style.display = modo === 'anexar' ? '' : 'none';
 }
 
 function alternarTipoContrato() {
@@ -7488,27 +7574,39 @@ function alternarTipoContrato() {
   atualizarRascunhoContrato();
 }
 
-function atualizarRascunhoContrato() {
+async function atualizarRascunhoContrato(mantendoConteudo) {
   const tipo = document.getElementById('ct-tipo').value;
   const conteudoEl = document.getElementById('ct-conteudo');
+  const modo = document.getElementById('ct-modo') ? document.getElementById('ct-modo').value : 'modelo';
   if (tipo === 'empresa') {
     const selEmpresa = document.getElementById('ct-empresa');
     const nomeEmpresa = selEmpresa && selEmpresa.selectedOptions[0] ? selEmpresa.selectedOptions[0].textContent : '';
-    conteudoEl.value = RASCUNHO_CONTRATO_EMPRESA(nomeEmpresa);
+    let dadosEmpresa = nomeEmpresa;
+    if (selEmpresa && selEmpresa.value && ESTADO.usuario.role === 'admin') {
+      try {
+        dadosEmpresa = await api(`/api/admin/companies/${selEmpresa.value}/contract-data`);
+      } catch (e) { dadosEmpresa = nomeEmpresa; }
+    }
+    if (modo !== 'anexar' && !mantendoConteudo) {
+      conteudoEl.value = RASCUNHO_CONTRATO_EMPRESA(dadosEmpresa);
+    }
     document.getElementById('ct-titulo').value = `Contrato de Prestação de Serviços${nomeEmpresa ? ' - ' + nomeEmpresa : ''}`;
+    preencherSignatarioAutomatico(typeof dadosEmpresa === 'object' ? dadosEmpresa : null);
   } else {
     const selExec = document.getElementById('ct-executivo');
     const selMentor = document.getElementById('ct-mentor');
     const nomeExec = (selExec && selExec.value && selExec.selectedOptions[0]) ? selExec.selectedOptions[0].dataset.nome : '';
     const nomeMentor = (selMentor && selMentor.value && selMentor.selectedOptions[0]) ? selMentor.selectedOptions[0].dataset.nome : '';
     const nome = nomeExec || nomeMentor || '';
-    conteudoEl.value = RASCUNHO_CONTRATO_EXECUTIVO(nome);
+    if (modo !== 'anexar' && !mantendoConteudo) {
+      conteudoEl.value = RASCUNHO_CONTRATO_EXECUTIVO(nome);
+    }
     document.getElementById('ct-titulo').value = `Termo de Adesão${nome ? ' - ' + nome : ''}`;
+    preencherSignatarioAutomatico(null);
   }
-  preencherSignatarioAutomatico();
 }
 
-function preencherSignatarioAutomatico() {
+function preencherSignatarioAutomatico(dadosEmpresa) {
   const tipo = document.getElementById('ct-tipo').value;
   const linhas = document.querySelectorAll('#ct-signatarios .linha-signatario');
   if (linhas.length === 0) return;
@@ -7517,7 +7615,10 @@ function preencherSignatarioAutomatico() {
   if (primeiraNome.value || primeiraEmail.value) return; // não sobrescreve o que o usuário já digitou
   if (tipo === 'empresa') {
     const selEmpresa = document.getElementById('ct-empresa');
-    if (selEmpresa && selEmpresa.value) {
+    if (dadosEmpresa && dadosEmpresa.adminName) {
+      primeiraNome.value = dadosEmpresa.adminName + ' (Responsável)';
+      primeiraEmail.value = dadosEmpresa.adminEmail || '';
+    } else if (selEmpresa && selEmpresa.value) {
       primeiraNome.value = selEmpresa.selectedOptions[0].textContent + ' (Responsável)';
     }
   } else {
@@ -7533,23 +7634,25 @@ function preencherSignatarioAutomatico() {
   }
 }
 
-function adicionarLinhaSignatario() {
+function adicionarLinhaSignatario(nomeInicial, emailInicial) {
   const wrap = document.getElementById('ct-signatarios');
   const div = document.createElement('div');
   div.className = 'linha-signatario';
   div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;';
   div.innerHTML = `
-    <input type="text" class="sig-nome" placeholder="Nome do signatário" style="flex:1;">
-    <input type="email" class="sig-email" placeholder="E-mail do signatário" style="flex:1;">
+    <input type="text" class="sig-nome" placeholder="Nome do signatário" style="flex:1;" value="${nomeInicial ? escapeHtml(nomeInicial) : ''}">
+    <input type="email" class="sig-email" placeholder="E-mail do signatário" style="flex:1;" value="${emailInicial ? escapeHtml(emailInicial) : ''}">
     <button type="button" class="btn-secundario" onclick="this.parentElement.remove()">Remover</button>
   `;
   wrap.appendChild(div);
 }
 
 async function salvarContrato() {
+  const idEditando = document.getElementById('ct-id-editando').value;
   const tipo = document.getElementById('ct-tipo').value;
   const titulo = document.getElementById('ct-titulo').value.trim();
-  const conteudo = document.getElementById('ct-conteudo').value.trim();
+  const modo = document.getElementById('ct-modo').value;
+  const conteudo = modo === 'anexar' ? '' : document.getElementById('ct-conteudo').value.trim();
   const ehAdmin = ESTADO.usuario.role === 'admin';
   const company_id = ehAdmin ? (document.getElementById('ct-empresa').value || null) : undefined;
   const employee_id = tipo === 'executivo' ? (document.getElementById('ct-executivo').value || null) : null;
@@ -7560,13 +7663,34 @@ async function salvarContrato() {
     email: linha.querySelector('.sig-email').value.trim()
   })).filter(s => s.name || s.email);
 
-  if (!titulo || !conteudo) { mostrarToast('Informe título e conteúdo do contrato.', true); return; }
+  if (!titulo) { mostrarToast('Informe o título do contrato.', true); return; }
+  if (modo !== 'anexar' && !conteudo) { mostrarToast('Informe o conteúdo do contrato.', true); return; }
+  const arquivoInput = document.getElementById('ct-arquivo');
+  const arquivoSelecionado = arquivoInput && arquivoInput.files && arquivoInput.files[0];
+  if (modo === 'anexar' && !arquivoSelecionado) { mostrarToast('Selecione o arquivo do contrato para anexar.', true); return; }
   if (ehAdmin && tipo === 'empresa' && !company_id) { mostrarToast('Selecione a empresa.', true); return; }
   if (signers.length === 0 || signers.some(s => !s.name || !s.email)) { mostrarToast('Preencha nome e e-mail de todos os signatários.', true); return; }
 
   try {
-    const resp = await api('/api/contracts', { method: 'POST', body: JSON.stringify({ type: tipo, company_id, employee_id, mentor_id, title: titulo, content: conteudo, signers }) });
-    mostrarToast(resp.message || 'Contrato enviado para assinatura!');
+    let attachedFileUrl, attachedFileName;
+    if (modo === 'anexar' && arquivoSelecionado) {
+      const formData = new FormData();
+      formData.append('file', arquivoSelecionado);
+      const respUpload = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + ESTADO.token },
+        body: formData
+      });
+      const dadosUpload = await respUpload.json();
+      if (!respUpload.ok) throw new Error(dadosUpload.error || 'Falha ao enviar o arquivo.');
+      attachedFileUrl = dadosUpload.url;
+      attachedFileName = dadosUpload.originalName;
+    }
+    const corpo = { type: tipo, company_id, employee_id, mentor_id, title: titulo, content: conteudo, signers, attachedFileUrl, attachedFileName };
+    const resp = idEditando
+      ? await api(`/api/contracts/${idEditando}`, { method: 'PUT', body: JSON.stringify(corpo) })
+      : await api('/api/contracts', { method: 'POST', body: JSON.stringify(corpo) });
+    mostrarToast(resp.message || (idEditando ? 'Contrato atualizado!' : 'Contrato enviado para assinatura!'));
     document.getElementById('form-area').innerHTML = '';
     renderContracts();
   } catch (e) {
@@ -7578,6 +7702,16 @@ async function atualizarStatusContrato(id) {
   try {
     const resp = await api(`/api/contracts/${id}/refresh-status`, { method: 'POST' });
     mostrarToast(resp.message || 'Status atualizado!');
+    renderContracts();
+  } catch (e) {
+    mostrarToast(e.message, true);
+  }
+}
+
+async function reenviarContrato(id) {
+  try {
+    const resp = await api(`/api/contracts/${id}/resend`, { method: 'POST' });
+    mostrarToast(resp.message || 'Lembrete de assinatura reenviado!');
     renderContracts();
   } catch (e) {
     mostrarToast(e.message, true);
@@ -7928,6 +8062,14 @@ let VC_MODO_TELA = 'pip'; // 'pip' (câmera flutuante) ou 'split' (metade/metade
 let VC_SOU_CONVIDADO = false;
 let VC_MENTORIA_ID_ATUAL = null;
 let VC_ROOM_TOKEN_CONVIDADO = null;
+// Janela flutuante DE VERDADE (Picture-in-Picture do próprio navegador/SO) —
+// ao contrário da "janelinha" flutuante em CSS de dentro da página (que some
+// assim que você troca de aba), esta continua visível por cima de qualquer
+// outro programa/aba enquanto você navega para fora do Impulsionar.
+let VC_PIP_SISTEMA_ATIVO = false;
+let VC_PIP_CANVAS = null;
+let VC_PIP_VIDEO_OCULTO = null;
+let VC_PIP_ANIMACAO_ID = null;
 
 // Mensagens de erro do getUserMedia traduzidas — a maioria dos "câmera não
 // conecta" é permissão negada ou nenhum dispositivo encontrado, não um bug.
@@ -7951,6 +8093,7 @@ function htmlCorpoVideochamada(titulo, mostrarConvite) {
       <div class="videochamada-grade" id="vc-grade">
         <div class="videochamada-video-wrap local-tile" id="vc-tile-local">
           <video id="vc-video-local" autoplay muted playsinline></video>
+          <div class="vc-cam-off-overlay" id="vc-cam-off-local"><div class="avatar">🎥</div>Câmera desligada</div>
           <div class="rotulo">Você</div>
           <div class="vc-pip" id="vc-pip-wrap" style="display:none;"></div>
         </div>
@@ -7966,6 +8109,7 @@ function htmlCorpoVideochamada(titulo, mostrarConvite) {
         <button id="vc-btn-cam" class="btn-secundario" onclick="alternarCamera()">🎥 Câmera</button>
         <button id="vc-btn-tela" class="btn-secundario" onclick="alternarCompartilhamentoTela()">🖥️ Compartilhar tela</button>
         <button id="vc-btn-split" class="btn-secundario" onclick="alternarModoDivisaoTela()" style="display:none;">🗂️ Dividir tela</button>
+        <button id="vc-btn-pip-sistema" class="btn-secundario" onclick="alternarPipSistema()">📌 Janela flutuante (fora da aba)</button>
         <button id="vc-btn-chat" class="btn-secundario" onclick="alternarChatVideochamada()">💬 Chat</button>
         <button class="btn-secundario" onclick="alternarTelaCheiaVideochamada()">⛶ Tela cheia</button>
         ${mostrarConvite ? `<button class="btn-secundario" onclick="abrirConviteVideochamada()">🔗 Convidar</button>` : ''}
@@ -8070,6 +8214,11 @@ async function iniciarVideochamada(opts) {
     adicionarMensagemChatVideochamada(nome, texto, false);
   });
 
+  VC_SOCKET.on('camera-estado', ({ socketId, ligada }) => {
+    const overlay = document.getElementById('vc-cam-off-' + socketId);
+    if (overlay) overlay.classList.toggle('ativo', !ligada);
+  });
+
   VC_SOCKET.on('sinal-webrtc', async ({ tipo, dados, de }) => {
     let peer = VC_PEERS.get(de);
     if (!peer) { adicionarTileRemoto(de, VC_NOMES.get(de) || 'Participante'); peer = criarConexaoPeer(de); }
@@ -8126,7 +8275,7 @@ function adicionarTileRemoto(socketId, nome) {
   const div = document.createElement('div');
   div.className = 'videochamada-video-wrap';
   div.id = 'vc-tile-' + socketId;
-  div.innerHTML = `<video id="vc-video-${socketId}" autoplay playsinline></video><div class="rotulo">${escapeHtml(nome)}</div>`;
+  div.innerHTML = `<video id="vc-video-${socketId}" autoplay playsinline></video><div class="vc-cam-off-overlay" id="vc-cam-off-${socketId}"><div class="avatar">🎥</div>${escapeHtml(nome)} — câmera desligada</div><div class="rotulo">${escapeHtml(nome)}</div>`;
   wrap.appendChild(div);
   atualizarPipParticipantes();
 }
@@ -8149,6 +8298,11 @@ function alternarCamera() {
   VC_CAMERA_LIGADA = !VC_CAMERA_LIGADA;
   VC_STREAM_LOCAL.getVideoTracks().forEach(t => t.enabled = VC_CAMERA_LIGADA);
   document.getElementById('vc-btn-cam').textContent = VC_CAMERA_LIGADA ? '🎥 Câmera' : '🚫 Câmera desligada';
+  const overlay = document.getElementById('vc-cam-off-local');
+  if (overlay) overlay.classList.toggle('ativo', !VC_CAMERA_LIGADA);
+  // Avisa os outros participantes pra eles trocarem o quadro preto/congelado
+  // pelo mesmo aviso amigável, em vez de ficar parecendo que a chamada travou.
+  if (VC_SOCKET) VC_SOCKET.emit('camera-estado', { ligada: VC_CAMERA_LIGADA });
 }
 
 // Compartilhar tela (como no Teams/Meet): troca a faixa de vídeo enviada para
@@ -8226,18 +8380,89 @@ function atualizarTileLocalNaFaixaSplit() {
 function atualizarPipParticipantes() {
   const pip = document.getElementById('vc-pip-wrap');
   if (!pip || !VC_COMPARTILHANDO_TELA || VC_MODO_TELA !== 'pip') return;
-  const participantes = [{ id: 'local', nome: 'Você', stream: VC_STREAM_LOCAL, local: true }];
-  VC_NOMES.forEach((nome, id) => participantes.push({ id, nome, stream: VC_STREAMS_REMOTOS.get(id) || null, local: false }));
-  pip.innerHTML = participantes.map(p => `
+  // Só as OUTRAS pessoas aparecem aqui — a sua própria câmera já ocupa a tela
+  // toda (compartilhamento), então repeti-la nessa janelinha era um "espelho"
+  // (seu próprio rosto) que só atrapalhava; a janelinha existe pra ver quem
+  // está do outro lado, não pra se ver de novo.
+  const participantes = [];
+  VC_NOMES.forEach((nome, id) => participantes.push({ id, nome, stream: VC_STREAMS_REMOTOS.get(id) || null }));
+  pip.innerHTML = participantes.length ? participantes.map(p => `
     <div class="vc-pip-item">
-      <video id="vc-pip-video-${p.id}" autoplay playsinline ${p.local ? 'muted' : ''}></video>
+      <video id="vc-pip-video-${p.id}" autoplay playsinline></video>
       <div class="rotulo">${escapeHtml(p.nome)}</div>
     </div>
-  `).join('');
+  `).join('') : `<div class="vc-pip-item" style="display:flex;align-items:center;justify-content:center;font-size:11px;padding:6px;text-align:center;">Aguardando outras pessoas...</div>`;
   participantes.forEach(p => {
     const v = document.getElementById('vc-pip-video-' + p.id);
     if (v && p.stream) v.srcObject = p.stream;
   });
+}
+
+// Abre uma janela flutuante DE VERDADE (Picture-in-Picture nativo do
+// navegador) mostrando as OUTRAS pessoas da chamada — diferente da janelinha
+// em CSS de cima, esta sobrevive quando você sai da aba/site do Impulsionar,
+// porque quem está desenhando os quadros é o próprio navegador/SO, não a
+// página. Como o PiP nativo só aceita UM <video>, "compomos" (desenhamos) o
+// vídeo de cada participante remoto lado a lado dentro de um <canvas>
+// escondido, e é o streaming desse canvas que vira a janela flutuante.
+async function alternarPipSistema() {
+  if (VC_PIP_SISTEMA_ATIVO) {
+    if (document.pictureInPictureElement) { try { await document.exitPictureInPicture(); } catch (e) { /* já fechada */ } }
+    return;
+  }
+  if (!document.pictureInPictureEnabled) { mostrarToast('Seu navegador não suporta janela flutuante (Picture-in-Picture).', true); return; }
+
+  if (!VC_PIP_CANVAS) { VC_PIP_CANVAS = document.createElement('canvas'); VC_PIP_CANVAS.width = 640; VC_PIP_CANVAS.height = 360; }
+  if (!VC_PIP_VIDEO_OCULTO) {
+    VC_PIP_VIDEO_OCULTO = document.createElement('video');
+    VC_PIP_VIDEO_OCULTO.muted = true;
+    VC_PIP_VIDEO_OCULTO.playsInline = true;
+    VC_PIP_VIDEO_OCULTO.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;';
+    document.body.appendChild(VC_PIP_VIDEO_OCULTO);
+    VC_PIP_VIDEO_OCULTO.addEventListener('leavepictureinpicture', pararPipSistema);
+  }
+
+  const ctx = VC_PIP_CANVAS.getContext('2d');
+  const desenhar = () => {
+    ctx.fillStyle = '#0b1329';
+    ctx.fillRect(0, 0, VC_PIP_CANVAS.width, VC_PIP_CANVAS.height);
+    const videosRemotos = Array.from(VC_NOMES.keys()).map(id => document.getElementById('vc-video-' + id)).filter(v => v && v.readyState >= 2);
+    if (!videosRemotos.length) {
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '18px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Aguardando outras pessoas entrarem...', VC_PIP_CANVAS.width / 2, VC_PIP_CANVAS.height / 2);
+    } else {
+      const colunas = Math.ceil(Math.sqrt(videosRemotos.length));
+      const linhas = Math.ceil(videosRemotos.length / colunas);
+      const largura = VC_PIP_CANVAS.width / colunas, altura = VC_PIP_CANVAS.height / linhas;
+      videosRemotos.forEach((v, i) => {
+        const x = (i % colunas) * largura, y = Math.floor(i / colunas) * altura;
+        try { ctx.drawImage(v, x, y, largura, altura); } catch (e) { /* frame ainda não pronto */ }
+      });
+    }
+    VC_PIP_ANIMACAO_ID = requestAnimationFrame(desenhar);
+  };
+  desenhar();
+
+  try {
+    VC_PIP_VIDEO_OCULTO.srcObject = VC_PIP_CANVAS.captureStream(25);
+    await VC_PIP_VIDEO_OCULTO.play();
+    await VC_PIP_VIDEO_OCULTO.requestPictureInPicture();
+    VC_PIP_SISTEMA_ATIVO = true;
+    const btn = document.getElementById('vc-btn-pip-sistema');
+    if (btn) btn.textContent = '📌 Fechar janela flutuante';
+  } catch (e) {
+    mostrarToast('Não foi possível abrir a janela flutuante: ' + e.message, true);
+    pararPipSistema();
+  }
+}
+
+function pararPipSistema() {
+  VC_PIP_SISTEMA_ATIVO = false;
+  if (VC_PIP_ANIMACAO_ID) { cancelAnimationFrame(VC_PIP_ANIMACAO_ID); VC_PIP_ANIMACAO_ID = null; }
+  const btn = document.getElementById('vc-btn-pip-sistema');
+  if (btn) btn.textContent = '📌 Janela flutuante (fora da aba)';
 }
 
 function aplicarModoTelaCompartilhamento() {
@@ -8358,6 +8583,10 @@ function encerrarVideochamada() {
   if (VC_STREAM_LOCAL) { VC_STREAM_LOCAL.getTracks().forEach(t => t.stop()); VC_STREAM_LOCAL = null; }
   if (VC_STREAM_TELA) { VC_STREAM_TELA.getTracks().forEach(t => t.stop()); VC_STREAM_TELA = null; }
   VC_COMPARTILHANDO_TELA = false;
+  if (document.pictureInPictureElement) { document.exitPictureInPicture().catch(() => {}); }
+  pararPipSistema();
+  if (VC_PIP_VIDEO_OCULTO) { VC_PIP_VIDEO_OCULTO.remove(); VC_PIP_VIDEO_OCULTO = null; }
+  VC_PIP_CANVAS = null;
   if (VC_SOU_CONVIDADO) {
     VC_SOU_CONVIDADO = false;
     document.getElementById('tela-sala-convidado').innerHTML = '<div class="card-login"><p style="text-align:center;">Você saiu da videochamada. Pode fechar esta aba.</p></div>';

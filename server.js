@@ -26,8 +26,13 @@ const PORT = process.env.PORT || 3000;
 // Pasta onde ficam os arquivos enviados pelos usuários (vídeos da Academy,
 // vídeos de bio dos mentores). Fica dentro de /public para ser servida
 // diretamente pelo Express como arquivo estático.
-const PASTA_UPLOADS = path.join(__dirname, 'public', 'uploads');
+// Se UPLOADS_PATH estiver definido (ex.: uma subpasta dentro do mesmo Volume
+// persistente usado pelo DB_PATH, tipo /data/uploads), os arquivos enviados
+// (contratos anexados, fotos, vídeos etc.) ficam FORA da pasta do código —
+// senão eles são apagados a cada novo deploy, igual acontecia com o banco.
+const PASTA_UPLOADS = process.env.UPLOADS_PATH || path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(PASTA_UPLOADS)) fs.mkdirSync(PASTA_UPLOADS, { recursive: true });
+console.log(`📁 Uploads salvos em: ${PASTA_UPLOADS}${process.env.UPLOADS_PATH ? ' (persistente, via UPLOADS_PATH)' : ' (⚠️ dentro da pasta do código — configure UPLOADS_PATH com um Volume para não perder arquivos a cada deploy)'}`);
 
 const armazenamentoUpload = multer.diskStorage({
     destination: (req, file, cb) => cb(null, PASTA_UPLOADS),
@@ -260,7 +265,7 @@ async function consultarContratoNoAutentique(documentId) {
         query { document(id: "${documentId}") {
             id name
             files { signed }
-            signatures { public_id name email signed { created_at } rejected { created_at } }
+            signatures { public_id name email link { short_link } signed { created_at } rejected { created_at } }
         } }
     `;
     const resposta = await fetch(AUTENTIQUE_GRAPHQL_URL, {
@@ -4807,10 +4812,37 @@ app.get('/api/contracts', requireRole('admin', 'client_admin', 'autonomous', 'me
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar contratos.' }); }
 });
 
+// Gera o Buffer do PDF a partir do texto do contrato (título + parágrafos) —
+// usado quando o contrato é escrito/editado na própria tela (não anexado).
+function gerarPdfContratoDeTexto(title, content) {
+    return new Promise((resolve, reject) => {
+        const doc = new PDFDocument({ margin: 60 });
+        const chunks = [];
+        doc.on('data', (c) => chunks.push(c));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+        doc.font('Helvetica-Bold').fontSize(16).text(title, { align: 'center' });
+        doc.moveDown(1.5);
+        doc.font('Helvetica').fontSize(11).text(content, { align: 'justify', lineGap: 4 });
+        doc.end();
+    });
+}
+
+// Lê um arquivo já enviado via /api/upload (um contrato pronto — Word ou PDF —
+// anexado pelo usuário só para coletar assinatura, sem gerar nada a partir de texto).
+function lerArquivoAnexadoContrato(attachedFileUrl) {
+    if (!attachedFileUrl || !attachedFileUrl.startsWith('/uploads/')) throw new Error('Arquivo anexado inválido.');
+    const nomeArquivo = path.basename(attachedFileUrl);
+    const caminho = path.join(PASTA_UPLOADS, nomeArquivo);
+    if (!fs.existsSync(caminho)) throw new Error('Arquivo anexado não encontrado no servidor.');
+    return fs.readFileSync(caminho);
+}
+
 app.post('/api/contracts', requireRole('admin'), async (req, res) => {
     if (!AUTENTIQUE_API_TOKEN) return res.status(503).json({ error: 'Assinatura digital ainda não foi configurada no servidor (defina AUTENTIQUE_API_TOKEN no .env).' });
-    const { type, company_id, employee_id, mentor_id, title, content, signers } = req.body;
-    if (!title || !content) return res.status(400).json({ error: 'Informe o título e o conteúdo do contrato.' });
+    const { type, company_id, employee_id, mentor_id, title, content, signers, attachedFileUrl, attachedFileName } = req.body;
+    if (!title) return res.status(400).json({ error: 'Informe o título do contrato.' });
+    if (!attachedFileUrl && !content) return res.status(400).json({ error: 'Informe o conteúdo do contrato (ou anexe um arquivo pronto).' });
     if (!Array.isArray(signers) || signers.length < 1) return res.status(400).json({ error: 'Informe ao menos um signatário (nome e e-mail).' });
     if (signers.some(s => !s.name || !s.email)) return res.status(400).json({ error: 'Todo signatário precisa de nome e e-mail.' });
 
@@ -4821,33 +4853,96 @@ app.post('/api/contracts', requireRole('admin'), async (req, res) => {
     }
 
     try {
-        // Gera o PDF do contrato a partir do texto (título + parágrafos).
-        const pdfBuffer = await new Promise((resolve, reject) => {
-            const doc = new PDFDocument({ margin: 60 });
-            const chunks = [];
-            doc.on('data', (c) => chunks.push(c));
-            doc.on('end', () => resolve(Buffer.concat(chunks)));
-            doc.on('error', reject);
-            doc.font('Helvetica-Bold').fontSize(16).text(title, { align: 'center' });
-            doc.moveDown(1.5);
-            doc.font('Helvetica').fontSize(11).text(content, { align: 'justify', lineGap: 4 });
-            doc.end();
-        });
+        const pdfBuffer = attachedFileUrl ? lerArquivoAnexadoContrato(attachedFileUrl) : await gerarPdfContratoDeTexto(title, content);
+        const conteudoSalvo = attachedFileUrl ? `[Arquivo anexado pelo usuário: ${attachedFileName || attachedFileUrl}]` : content;
+        const nomeArquivoEnvio = attachedFileUrl ? (attachedFileName || path.basename(attachedFileUrl)) : `${title}.pdf`;
+        const resultado = await enviarContratoParaAutentique(title, pdfBuffer, signers, nomeArquivoEnvio);
 
-        const resultado = await enviarContratoParaAutentique(title, pdfBuffer, signers);
-
-        await new Promise((resolve, reject) => db.run(
+        const novoId = await new Promise((resolve, reject) => db.run(
             `INSERT INTO contracts (type, company_id, employee_id, mentor_id, title, content, status, autentique_document_id, signers_json, created_by)
              VALUES (?, ?, ?, ?, ?, ?, 'enviado', ?, ?, ?)`,
-            [type || 'empresa', companyId, employee_id || null, mentor_id || null, title, content, resultado.id, JSON.stringify(resultado.signatures), req.user.userId],
+            [type || 'empresa', companyId, employee_id || null, mentor_id || null, title, conteudoSalvo, resultado.id, JSON.stringify(resultado.signatures), req.user.userId],
             function (err) { err ? reject(err) : resolve(this.lastID); }
         ));
 
-        res.json({ message: 'Contrato enviado para assinatura! Os signatários recebem um e-mail do Autentique.', signatures: resultado.signatures });
+        // Deixa um recado na tela de login/notificações do contratante — sem
+        // isso, a empresa só ficava sabendo do contrato se alguém avisasse por
+        // fora, mesmo o e-mail do Autentique podendo cair no spam.
+        if (companyId) notificarPorCompanyAdmins(companyId, 'Novo contrato para assinatura', `"${title}" foi enviado e está aguardando sua assinatura.`, 'contracts');
+
+        res.json({ message: 'Contrato enviado para assinatura! Os signatários recebem um e-mail do Autentique.', signatures: resultado.signatures, id: novoId });
     } catch (e) {
         console.error('Erro ao enviar contrato para o Autentique:', e.message);
         res.status(400).json({ error: 'Erro ao gerar/enviar o contrato para assinatura: ' + e.message });
     }
+});
+
+// Edita um contrato que AINDA NÃO foi assinado — recria o documento no
+// Autentique com o conteúdo atualizado e reenvia para assinatura (o link
+// antigo deixa de valer na prática, já que o registro passa a apontar para
+// este novo documento). Bloqueado assim que alguém já assinou.
+app.put('/api/contracts/:id', requireRole('admin'), async (req, res) => {
+    if (!AUTENTIQUE_API_TOKEN) return res.status(503).json({ error: 'Assinatura digital ainda não foi configurada no servidor.' });
+    const { title, content, signers, attachedFileUrl, attachedFileName } = req.body;
+    try {
+        const contrato = await dbGet(`SELECT * FROM contracts WHERE id = ?`, [req.params.id]);
+        if (!contrato) return res.status(404).json({ error: 'Contrato não encontrado.' });
+        if (contrato.status === 'assinado') return res.status(400).json({ error: 'Este contrato já foi assinado e não pode mais ser editado.' });
+
+        const tituloFinal = title || contrato.title;
+        if (!attachedFileUrl && !content) return res.status(400).json({ error: 'Informe o conteúdo do contrato (ou anexe um arquivo pronto).' });
+        if (!Array.isArray(signers) || signers.length < 1) return res.status(400).json({ error: 'Informe ao menos um signatário (nome e e-mail).' });
+        if (signers.some(s => !s.name || !s.email)) return res.status(400).json({ error: 'Todo signatário precisa de nome e e-mail.' });
+
+        const pdfBuffer = attachedFileUrl ? lerArquivoAnexadoContrato(attachedFileUrl) : await gerarPdfContratoDeTexto(tituloFinal, content);
+        const conteudoSalvo = attachedFileUrl ? `[Arquivo anexado pelo usuário: ${attachedFileName || attachedFileUrl}]` : content;
+        const nomeArquivoEnvio = attachedFileUrl ? (attachedFileName || path.basename(attachedFileUrl)) : `${tituloFinal}.pdf`;
+        const resultado = await enviarContratoParaAutentique(tituloFinal, pdfBuffer, signers, nomeArquivoEnvio);
+
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE contracts SET title = ?, content = ?, status = 'enviado', autentique_document_id = ?, signers_json = ?, signed_file_url = NULL WHERE id = ?`,
+            [tituloFinal, conteudoSalvo, resultado.id, JSON.stringify(resultado.signatures), req.params.id],
+            (err) => err ? reject(err) : resolve()
+        ));
+
+        if (contrato.company_id) notificarPorCompanyAdmins(contrato.company_id, 'Contrato atualizado — nova assinatura necessária', `"${tituloFinal}" foi atualizado e reenviado para assinatura.`, 'contracts');
+
+        res.json({ message: 'Contrato atualizado e reenviado para assinatura!' });
+    } catch (e) {
+        console.error('Erro ao editar/reenviar contrato:', e.message);
+        res.status(400).json({ error: 'Erro ao atualizar o contrato: ' + e.message });
+    }
+});
+
+// "Reenviar" não recria o documento no Autentique (evitando duplicar o
+// histórico) — só manda de novo, por e-mail, o mesmo link de assinatura que o
+// Autentique já gerou na criação, só para quem ainda não assinou.
+app.post('/api/contracts/:id/resend', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const contrato = await dbGet(`SELECT * FROM contracts WHERE id = ?`, [req.params.id]);
+        if (!contrato) return res.status(404).json({ error: 'Contrato não encontrado.' });
+        if (req.user.role === 'client_admin' && contrato.company_id !== req.user.companyId) return res.status(403).json({ error: 'Este contrato não pertence à sua empresa.' });
+        if (contrato.status === 'assinado') return res.status(400).json({ error: 'Este contrato já foi assinado.' });
+
+        const signatarios = JSON.parse(contrato.signers_json || '[]');
+        const pendentes = signatarios.filter(s => !s.signed && s.email && s.link && s.link.short_link);
+        if (!pendentes.length) return res.status(400).json({ error: 'Nenhum signatário pendente com link de assinatura disponível para reenviar (tente "Verificar Status Agora" primeiro).' });
+
+        for (const s of pendentes) {
+            try {
+                await transporter.sendMail({
+                    from: process.env.SMTP_FROM || '"Impulsionar V4" <no-reply@impulsionar.com>',
+                    to: s.email,
+                    subject: `Lembrete: assinatura pendente — ${contrato.title}`,
+                    text: `Olá, ${s.name}!\n\nVocê ainda não assinou o documento "${contrato.title}". Acesse o link abaixo para assinar:\n${s.link.short_link}\n\nEquipe Impulsionar V4.`
+                });
+            } catch (erroEnvio) {
+                console.warn('⚠️  Falha ao reenviar e-mail de assinatura para', s.email, erroEnvio.message);
+            }
+        }
+        if (contrato.company_id) notificarPorCompanyAdmins(contrato.company_id, 'Assinatura pendente — lembrete', `"${contrato.title}" ainda está aguardando sua assinatura.`, 'contracts');
+        res.json({ message: `Lembrete reenviado para ${pendentes.length} signatário(s) pendente(s).` });
+    } catch (e) { res.status(400).json({ error: 'Erro ao reenviar o contrato.' }); }
 });
 
 // Consulta o status mais recente direto na API do Autentique (mesma lógica de
@@ -5786,6 +5881,57 @@ app.get('/api/dpo/cycles/:id', requireRole('admin', 'client_admin'), async (req,
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar o ciclo.' }); }
 });
 
+// "Meus Planos DPO" — visão consolidada de TODOS os planos de ação já criados
+// pela empresa, agrupados por pilar, juntando ciclos diferentes (histórico
+// inteiro), para não depender de entrar ciclo por ciclo pra achar um plano.
+app.get('/api/dpo/meus-planos', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const companyId = req.user.role === 'client_admin' ? req.user.companyId : (req.query.company_id || null);
+        if (!companyId) return res.status(400).json({ error: 'Informe a empresa (company_id).' });
+        const planos = await dbAll(`
+            SELECT ap.*, dac.referencia as cicloReferencia, dac.status as cicloStatus, dac.id as cicloId
+            FROM dpo_action_plans ap
+            JOIN dpo_audit_cycles dac ON dac.id = ap.cycle_id
+            WHERE dac.company_id = ?
+            ORDER BY ap.question_key ASC, ap.created_at ASC
+        `, [companyId]);
+        const planoIds = planos.map(p => p.id);
+        let followsPorPlano = {};
+        if (planoIds.length) {
+            const follows = await dbAll(`SELECT * FROM dpo_follow_ups WHERE action_plan_id IN (${planoIds.map(() => '?').join(',')}) ORDER BY numero ASC`, planoIds);
+            follows.forEach(f => {
+                if (!followsPorPlano[f.action_plan_id]) followsPorPlano[f.action_plan_id] = [];
+                followsPorPlano[f.action_plan_id].push(f);
+            });
+        }
+        const porPilar = {};
+        planos.forEach(p => {
+            const [pilarKey, numeroPergunta] = String(p.question_key).split(':');
+            const pilarInfo = DPO_AMBEV_DATA[pilarKey];
+            let perguntaTexto = '';
+            if (pilarInfo) {
+                for (const g of pilarInfo.grupos) {
+                    const achou = g.perguntas.find(q => q.numero === numeroPergunta);
+                    if (achou) { perguntaTexto = achou.questao; break; }
+                }
+            }
+            if (!porPilar[pilarKey]) porPilar[pilarKey] = { key: pilarKey, label: pilarInfo ? pilarInfo.label : pilarKey, planos: [] };
+            porPilar[pilarKey].planos.push({
+                ...p,
+                perguntaNumero: numeroPergunta,
+                perguntaTexto,
+                follows: followsPorPlano[p.id] || []
+            });
+        });
+        const ordenado = DPO_PILARES_ORDEM.filter(k => porPilar[k]).map(k => porPilar[k]);
+        Object.keys(porPilar).forEach(k => { if (!DPO_PILARES_ORDEM.includes(k)) ordenado.push(porPilar[k]); });
+        res.json(ordenado);
+    } catch (e) {
+        console.error('Erro ao carregar Meus Planos DPO:', e.message);
+        res.status(500).json({ error: 'Erro ao carregar os planos de ação.' });
+    }
+});
+
 app.put('/api/dpo/cycles/:id/answers', requireRole('admin', 'client_admin'), async (req, res) => {
     const { questionKey, score } = req.body;
     if (!questionKey) return res.status(400).json({ error: 'Informe a pergunta.' });
@@ -6065,6 +6211,10 @@ app.get('/api/ranking', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar ranking.' }); }
 });
 
+// Serve os uploads a partir de PASTA_UPLOADS (que pode estar fora da pasta do
+// código, se UPLOADS_PATH estiver definido) — tem que vir ANTES do estático
+// genérico de /public pra funcionar mesmo quando os dois caminhos são diferentes.
+app.use('/uploads', express.static(PASTA_UPLOADS));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ============================================================
@@ -6157,6 +6307,15 @@ io.on('connection', (socket) => {
         const participantes = SALAS_VIDEOCHAMADA.get(sala);
         const eu = participantes && participantes.get(socket.id);
         socket.to(sala).emit('mensagem-sala-mentoria', { texto: String(texto).slice(0, 1000), nome: eu ? eu.name : 'Participante', de: socket.id });
+    });
+
+    // Avisa os outros participantes se a câmera de alguém foi ligada/desligada,
+    // pra eles poderem trocar o vídeo congelado/preto por um aviso amigável
+    // ("câmera desligada") em vez de ficar com um quadro estranho.
+    socket.on('camera-estado', ({ ligada }) => {
+        const sala = socket.data.sala;
+        if (!sala) return;
+        socket.to(sala).emit('camera-estado', { socketId: socket.id, ligada: !!ligada });
     });
 
     socket.on('sair-sala-mentoria', () => {
