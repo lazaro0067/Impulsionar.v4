@@ -598,6 +598,39 @@ function inicializarBase() {
             status TEXT DEFAULT 'Em Andamento',
             FOREIGN KEY(employee_id) REFERENCES employees(id)
         )`);
+        // photo_url: foto de capa do PDI. final_delivery: "o que vamos entregar
+        // no final desse PDI" — o resultado esperado, combinado desde o início.
+        ['photo_url TEXT', 'final_delivery TEXT'].forEach(coluna => {
+            db.run(`ALTER TABLE pd_plans ADD COLUMN ${coluna}`, () => {});
+        });
+        // foto de evidência de cada ação do PDI (ex: print/foto do que foi feito).
+        db.run(`ALTER TABLE pdi_actions ADD COLUMN foto_url TEXT`, () => {});
+
+        // Linha do tempo de evolução do PDI: vários follow-ups ao longo do
+        // acompanhamento (não um status único), cada um podendo ter uma foto —
+        // é o que dá o histórico de "andamento e evolução do cliente" pedido.
+        db.run(`CREATE TABLE IF NOT EXISTS pdi_updates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pd_plan_id INTEGER NOT NULL,
+            texto TEXT NOT NULL,
+            foto_url TEXT,
+            created_by_name TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(pd_plan_id) REFERENCES pd_plans(id)
+        )`);
+
+        // Materiais de apoio do PDI: arquivos, livros ou links indicados ao
+        // executivo para ajudar de verdade no desenvolvimento dele.
+        db.run(`CREATE TABLE IF NOT EXISTS pdi_materials (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pd_plan_id INTEGER NOT NULL,
+            titulo TEXT NOT NULL,
+            tipo TEXT DEFAULT 'arquivo',
+            url TEXT,
+            nota TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(pd_plan_id) REFERENCES pd_plans(id)
+        )`);
 
         // Metas mensais do colaborador: até 5 por colaborador, cada uma podendo ser
         // medida em dinheiro (R$), número (unidade) ou percentual (%).
@@ -1189,6 +1222,8 @@ function inicializarBase() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(action_plan_id) REFERENCES dpo_action_plans(id)
         )`);
+        // Foto de evidência de cada follow-up (ex: print/foto do que foi feito).
+        db.run(`ALTER TABLE dpo_follow_ups ADD COLUMN foto_url TEXT`, () => {});
 
         db.get(`SELECT COUNT(*) as total FROM vaga_plans`, [], (err, row) => {
             if (!err && row && row.total === 0) {
@@ -3411,30 +3446,46 @@ app.get('/api/export/pdi', requireRole('admin', 'client_admin'), (req, res) => {
 });
 
 app.post('/api/pdi', requireRole('admin', 'client_admin'), ensureEmployeeAccess(req => req.body.employee_id), (req, res) => {
-    const { employee_id, objective, action_plan, deadline, status } = req.body;
-    db.run(`INSERT INTO pd_plans (employee_id, objective, action_plan, deadline, status) VALUES (?, ?, ?, ?, ?)`, [employee_id, objective, action_plan, deadline, status || 'Em Andamento'], () => {
+    const { employee_id, objective, action_plan, deadline, status, photo_url, final_delivery } = req.body;
+    db.run(`INSERT INTO pd_plans (employee_id, objective, action_plan, deadline, status, photo_url, final_delivery) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [employee_id, objective, action_plan, deadline, status || 'Em Andamento', photo_url || null, final_delivery || null], () => {
         notificarPorEmployeeId(employee_id, 'Novo PDI criado', objective, 'pdi');
         res.json({ message: 'PDI criado!' });
     });
 });
-app.put('/api/pdi/:id', requireRole('admin', 'client_admin'), ensureRecordAccess('pd_plans'), (req, res) => {
-    const { objective, action_plan, deadline, status } = req.body;
-    db.run(
-        `UPDATE pd_plans SET objective = ?, action_plan = ?, deadline = ?, status = ? WHERE id = ?`,
-        [objective, action_plan, deadline, status, req.params.id],
-        (err) => {
-            if (err) return res.status(400).json({ error: err.message });
-            if (status === 'Concluído') {
-                darPontos(req.user.userId, 50, 'PDI concluído');
-                db.get(`SELECT employee_id FROM pd_plans WHERE id = ?`, [req.params.id], (e, row) => {
-                    if (!e && row) notificarPorEmployeeId(row.employee_id, 'PDI concluído', objective, 'pdi');
-                });
+app.put('/api/pdi/:id', requireRole('admin', 'client_admin'), ensureRecordAccess('pd_plans'), async (req, res) => {
+    const { objective, action_plan, deadline, status, photo_url, final_delivery } = req.body;
+    try {
+        const atual = await dbGet(`SELECT * FROM pd_plans WHERE id = ?`, [req.params.id]);
+        if (!atual) return res.status(404).json({ error: 'PDI não encontrado.' });
+        db.run(
+            `UPDATE pd_plans SET objective = ?, action_plan = ?, deadline = ?, status = ?, photo_url = ?, final_delivery = ? WHERE id = ?`,
+            [
+                objective !== undefined ? objective : atual.objective,
+                action_plan !== undefined ? action_plan : atual.action_plan,
+                deadline !== undefined ? deadline : atual.deadline,
+                status !== undefined ? status : atual.status,
+                photo_url !== undefined ? photo_url : atual.photo_url,
+                final_delivery !== undefined ? final_delivery : atual.final_delivery,
+                req.params.id
+            ],
+            (err) => {
+                if (err) return res.status(400).json({ error: err.message });
+                if (status === 'Concluído' && atual.status !== 'Concluído') {
+                    darPontos(req.user.userId, 50, 'PDI concluído');
+                    notificarPorEmployeeId(atual.employee_id, 'PDI concluído', objective || atual.objective, 'pdi');
+                }
+                res.json({ message: 'PDI atualizado!' });
             }
-            res.json({ message: 'PDI atualizado!' });
-        }
-    );
+        );
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o PDI.' }); }
 });
-app.delete('/api/pdi/:id', requireRole('admin', 'client_admin'), ensureRecordAccess('pd_plans'), (req, res) => { db.run(`DELETE FROM pd_plans WHERE id = ?`, [req.params.id], () => res.json({ message: 'Removido!' })); });
+app.delete('/api/pdi/:id', requireRole('admin', 'client_admin'), ensureRecordAccess('pd_plans'), (req, res) => {
+    db.run(`DELETE FROM pdi_updates WHERE pd_plan_id = ?`, [req.params.id], () => {});
+    db.run(`DELETE FROM pdi_materials WHERE pd_plan_id = ?`, [req.params.id], () => {});
+    db.run(`DELETE FROM pdi_actions WHERE pd_plan_id = ?`, [req.params.id], () => {});
+    db.run(`DELETE FROM pd_plans WHERE id = ?`, [req.params.id], () => res.json({ message: 'Removido!' }));
+});
 
 // Ações de um PDI: quebram o plano em passos concretos (não iniciada / em
 // andamento / concluída) em vez de um status único — dá a visão de "quantas
@@ -3444,9 +3495,9 @@ app.get('/api/pdi/:id/actions', ensureRecordAccess('pd_plans'), (req, res) => {
 });
 
 app.post('/api/pdi/:id/actions', requireRole('admin', 'client_admin'), ensureRecordAccess('pd_plans'), (req, res) => {
-    const { description } = req.body;
+    const { description, foto_url } = req.body;
     if (!description) return res.status(400).json({ error: 'Descreva a ação.' });
-    db.run(`INSERT INTO pdi_actions (pd_plan_id, description, status) VALUES (?, ?, 'Não iniciada')`, [req.params.id, description], function (err) {
+    db.run(`INSERT INTO pdi_actions (pd_plan_id, description, status, foto_url) VALUES (?, ?, 'Não iniciada', ?)`, [req.params.id, description, foto_url || null], function (err) {
         if (err) return res.status(400).json({ error: err.message });
         res.json({ message: 'Ação adicionada!', id: this.lastID });
     });
@@ -3466,16 +3517,86 @@ function ensurePdiActionAccess() {
     };
 }
 
-app.put('/api/pdi-actions/:id', requireRole('admin', 'client_admin'), ensurePdiActionAccess(), (req, res) => {
-    const { description, status } = req.body;
-    db.run(`UPDATE pdi_actions SET description = ?, status = ? WHERE id = ?`, [description, status, req.params.id], (err) => {
-        if (err) return res.status(400).json({ error: err.message });
-        res.json({ message: 'Ação atualizada!' });
-    });
+app.put('/api/pdi-actions/:id', requireRole('admin', 'client_admin'), ensurePdiActionAccess(), async (req, res) => {
+    const { description, status, foto_url } = req.body;
+    try {
+        const atual = await dbGet(`SELECT * FROM pdi_actions WHERE id = ?`, [req.params.id]);
+        if (!atual) return res.status(404).json({ error: 'Ação não encontrada.' });
+        db.run(`UPDATE pdi_actions SET description = ?, status = ?, foto_url = ? WHERE id = ?`,
+            [
+                description !== undefined ? description : atual.description,
+                status !== undefined ? status : atual.status,
+                foto_url !== undefined ? foto_url : atual.foto_url,
+                req.params.id
+            ],
+            (err) => {
+                if (err) return res.status(400).json({ error: err.message });
+                res.json({ message: 'Ação atualizada!' });
+            });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar a ação.' }); }
 });
 
 app.delete('/api/pdi-actions/:id', requireRole('admin', 'client_admin'), ensurePdiActionAccess(), (req, res) => {
     db.run(`DELETE FROM pdi_actions WHERE id = ?`, [req.params.id], () => res.json({ message: 'Removida!' }));
+});
+
+// Valida acesso a um registro (pdi_updates ou pdi_materials) a partir do
+// pd_plan_id que ele carrega, no mesmo espírito de ensurePdiActionAccess.
+function ensurePdiRelatedAccess(table) {
+    return async (req, res, next) => {
+        if (req.user.role === 'admin') return next();
+        try {
+            const row = await dbGet(`SELECT pd_plan_id FROM ${table} WHERE id = ?`, [req.params.id]);
+            if (!row) return res.status(404).json({ error: 'Registro não encontrado.' });
+            const plano = await dbGet(`SELECT employee_id FROM pd_plans WHERE id = ?`, [row.pd_plan_id]);
+            if (!plano) return res.status(404).json({ error: 'PDI não encontrado.' });
+            return ensureEmployeeAccess(() => plano.employee_id)(req, res, next);
+        } catch (e) { return res.status(500).json({ error: 'Erro ao validar permissão.' }); }
+    };
+}
+
+// Evolução do PDI: vários follow-ups ao longo do acompanhamento, cada um
+// podendo trazer uma foto de evidência — histórico do andamento do cliente.
+app.get('/api/pdi/:id/updates', ensureRecordAccess('pd_plans'), (req, res) => {
+    db.all(`SELECT * FROM pdi_updates WHERE pd_plan_id = ? ORDER BY id DESC`, [req.params.id], (err, rows) => res.json(rows || []));
+});
+
+app.post('/api/pdi/:id/updates', requireRole('admin', 'client_admin'), ensureRecordAccess('pd_plans'), async (req, res) => {
+    const { texto, foto_url } = req.body;
+    if (!texto) return res.status(400).json({ error: 'Descreva a evolução/atualização.' });
+    try {
+        const plano = await dbGet(`SELECT employee_id FROM pd_plans WHERE id = ?`, [req.params.id]);
+        const autor = await dbGet(`SELECT name FROM users WHERE id = ?`, [req.user.userId]);
+        db.run(`INSERT INTO pdi_updates (pd_plan_id, texto, foto_url, created_by_name) VALUES (?, ?, ?, ?)`,
+            [req.params.id, texto, foto_url || null, (autor && autor.name) || null], function (err) {
+                if (err) return res.status(400).json({ error: err.message });
+                if (plano) notificarPorEmployeeId(plano.employee_id, 'Atualização no seu PDI', texto, 'pdi');
+                res.json({ message: 'Evolução registrada!', id: this.lastID });
+            });
+    } catch (e) { res.status(400).json({ error: 'Erro ao registrar a evolução.' }); }
+});
+
+app.delete('/api/pdi-updates/:id', requireRole('admin', 'client_admin'), ensurePdiRelatedAccess('pdi_updates'), (req, res) => {
+    db.run(`DELETE FROM pdi_updates WHERE id = ?`, [req.params.id], () => res.json({ message: 'Removida!' }));
+});
+
+// Materiais de apoio do PDI: arquivos, livros e links indicados ao executivo.
+app.get('/api/pdi/:id/materials', ensureRecordAccess('pd_plans'), (req, res) => {
+    db.all(`SELECT * FROM pdi_materials WHERE pd_plan_id = ? ORDER BY id DESC`, [req.params.id], (err, rows) => res.json(rows || []));
+});
+
+app.post('/api/pdi/:id/materials', requireRole('admin', 'client_admin'), ensureRecordAccess('pd_plans'), (req, res) => {
+    const { titulo, tipo, url, nota } = req.body;
+    if (!titulo) return res.status(400).json({ error: 'Dê um título ao material.' });
+    db.run(`INSERT INTO pdi_materials (pd_plan_id, titulo, tipo, url, nota) VALUES (?, ?, ?, ?, ?)`,
+        [req.params.id, titulo, tipo || 'arquivo', url || null, nota || null], function (err) {
+            if (err) return res.status(400).json({ error: err.message });
+            res.json({ message: 'Material adicionado!', id: this.lastID });
+        });
+});
+
+app.delete('/api/pdi-materials/:id', requireRole('admin', 'client_admin'), ensurePdiRelatedAccess('pdi_materials'), (req, res) => {
+    db.run(`DELETE FROM pdi_materials WHERE id = ?`, [req.params.id], () => res.json({ message: 'Removido!' }));
 });
 
 // Upload gen\u00E9rico de arquivo (v\u00EDdeo ou imagem) \u2014 usado pela Academy e pelo
@@ -6310,7 +6431,7 @@ app.delete('/api/dpo/action-plans/:id', requireRole('admin', 'client_admin'), as
 });
 
 app.post('/api/dpo/action-plans/:id/follow-ups', requireRole('admin', 'client_admin'), async (req, res) => {
-    const { texto, data_prevista } = req.body;
+    const { texto, data_prevista, foto_url } = req.body;
     if (!texto) return res.status(400).json({ error: 'Descreva o follow-up.' });
     try {
         const plano = await dbGet(`SELECT * FROM dpo_action_plans WHERE id = ?`, [req.params.id]);
@@ -6320,23 +6441,23 @@ app.post('/api/dpo/action-plans/:id/follow-ups', requireRole('admin', 'client_ad
         const ultimo = await dbGet(`SELECT MAX(numero) as maximo FROM dpo_follow_ups WHERE action_plan_id = ?`, [req.params.id]);
         const numero = (ultimo && ultimo.maximo) ? ultimo.maximo + 1 : 1;
         const resultado = await new Promise((resolve, reject) => db.run(
-            `INSERT INTO dpo_follow_ups (action_plan_id, numero, texto, data_prevista) VALUES (?, ?, ?, ?)`,
-            [req.params.id, numero, texto, data_prevista || null], function (err) { err ? reject(err) : resolve(this.lastID); }
+            `INSERT INTO dpo_follow_ups (action_plan_id, numero, texto, data_prevista, foto_url) VALUES (?, ?, ?, ?, ?)`,
+            [req.params.id, numero, texto, data_prevista || null, foto_url || null], function (err) { err ? reject(err) : resolve(this.lastID); }
         ));
         res.json({ message: `Follow ${numero} adicionado!`, id: resultado, numero });
     } catch (e) { res.status(400).json({ error: 'Erro ao adicionar o follow-up.' }); }
 });
 
 app.put('/api/dpo/follow-ups/:id', requireRole('admin', 'client_admin'), async (req, res) => {
-    const { texto, data_prevista, status } = req.body;
+    const { texto, data_prevista, status, foto_url } = req.body;
     try {
         const follow = await dbGet(`SELECT * FROM dpo_follow_ups WHERE id = ?`, [req.params.id]);
         if (!follow) return res.status(404).json({ error: 'Follow-up não encontrado.' });
         const plano = await dbGet(`SELECT * FROM dpo_action_plans WHERE id = ?`, [follow.action_plan_id]);
         const ciclo = await obterCicloComAcesso(req, res, plano.cycle_id);
         if (!ciclo) return;
-        db.run(`UPDATE dpo_follow_ups SET texto = COALESCE(?, texto), data_prevista = COALESCE(?, data_prevista), status = COALESCE(?, status) WHERE id = ?`,
-            [texto || null, data_prevista || null, status || null, req.params.id], () => res.json({ message: 'Follow-up atualizado!' }));
+        db.run(`UPDATE dpo_follow_ups SET texto = COALESCE(?, texto), data_prevista = COALESCE(?, data_prevista), status = COALESCE(?, status), foto_url = COALESCE(?, foto_url) WHERE id = ?`,
+            [texto || null, data_prevista || null, status || null, foto_url || null, req.params.id], () => res.json({ message: 'Follow-up atualizado!' }));
     } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o follow-up.' }); }
 });
 

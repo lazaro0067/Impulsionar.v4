@@ -510,6 +510,25 @@ async function api(caminho, opcoes = {}) {
   return dados;
 }
 
+// Envia o arquivo selecionado num <input type="file"> (se houver) para
+// /api/upload e devolve a URL pública salva — usado em vários formulários
+// (fotos de PDI/planos de ação, materiais de apoio, etc.) para não repetir
+// a mesma lógica de FormData + fetch em cada tela.
+async function uploadArquivoGenerico(inputId) {
+  const input = document.getElementById(inputId);
+  if (!input || !input.files || !input.files[0]) return null;
+  const formData = new FormData();
+  formData.append('file', input.files[0]);
+  const resposta = await fetch('/api/upload', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + ESTADO.token },
+    body: formData
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados.error || 'Falha ao enviar arquivo.');
+  return dados.url;
+}
+
 /* ==========================================================
    LOGIN / LOGOUT
    ========================================================== */
@@ -3622,6 +3641,8 @@ async function salvarMeuPerfil() {
    PDI
    ========================================================== */
 let CACHE_LISTA_PDI = [];
+let PDI_DETALHE_ABERTO = null;
+let PDI_DETALHE_DADOS = {};
 
 async function renderPdi() {
   const cont = document.getElementById('conteudo');
@@ -3636,6 +3657,7 @@ async function renderPdi() {
     }
     cont.innerHTML = `
       <h1>Planos de Desenvolvimento Individual</h1>
+      <p style="color:#64748b;margin-top:-8px;">Cada PDI é um plano completo: objetivo, o que será entregue no final, ações, evolução do cliente ao longo do tempo (com fotos) e materiais de apoio.</p>
       <div class="barra-acoes">
         <div></div>
         <div class="direita">
@@ -3644,26 +3666,238 @@ async function renderPdi() {
         </div>
       </div>
       <div id="form-area" data-opcoes-exec='${opcoesExec.replace(/'/g, "&#39;")}'></div>
-      <table>
-        <thead><tr><th>Executivo</th><th>Objetivo</th><th>Prazo</th><th>Estado</th><th>Ações</th></tr></thead>
-        <tbody>
-          ${lista.map(p => `
-            <tr>
-              <td>${escapeHtml(p.execName)}</td>
-              <td>${escapeHtml(p.objective)}</td>
-              <td>${escapeHtml(p.deadline || '-')}</td>
-              <td>${escapeHtml(p.status)}</td>
-              <td>${ESTADO.usuario.role !== 'autonomous' ? `
-                <button class="btn-secundario btn-sm" onclick="mostrarFormularioPdi(${p.id})">Editar</button>
-                <button class="btn-perigo btn-sm" onclick="excluirPdi(${p.id})">Excluir</button>` : ''}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
+      <div id="lista-cards-pdi">${lista.map(p => cartaoPdi(p)).join('')}</div>
       ${lista.length === 0 ? '<div class="msg-vazio">Nenhum PDI registado ainda.</div>' : ''}
     `;
   } catch (e) {
     cont.innerHTML = `<h1>Planos de Desenvolvimento Individual</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
   }
+}
+
+function atualizarListaCardsPdi() {
+  const cont = document.getElementById('lista-cards-pdi');
+  if (cont) cont.innerHTML = CACHE_LISTA_PDI.map(p => cartaoPdi(p)).join('');
+}
+
+function corPdiStatus(status) {
+  if (status === 'Concluído') return '#16a34a';
+  if (status === 'Atrasado') return '#dc2626';
+  return '#c9a227';
+}
+
+function cartaoPdi(p) {
+  const podeGerenciar = ESTADO.usuario.role !== 'autonomous';
+  const aberto = PDI_DETALHE_ABERTO === p.id;
+  return `
+    <div class="plano-card" style="margin-bottom:14px;">
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        ${p.photo_url
+          ? `<img src="${escapeHtml(p.photo_url)}" style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;">`
+          : `<div style="width:56px;height:56px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎯</div>`}
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <div>
+              <h4 style="margin:0;">${escapeHtml(p.objective)}</h4>
+              <div class="plano-meta">${escapeHtml(p.execName)}${p.deadline ? ' · Prazo: ' + new Date(p.deadline + 'T00:00:00').toLocaleDateString('pt-BR') : ''}</div>
+            </div>
+            <span class="dpo-score-badge" style="background:${corPdiStatus(p.status)}20;color:${corPdiStatus(p.status)};white-space:nowrap;">${escapeHtml(p.status)}</span>
+          </div>
+          ${p.action_plan ? `<div style="font-size:12.5px;color:#64748b;margin-top:6px;">${escapeHtml(p.action_plan)}</div>` : ''}
+          ${p.final_delivery ? `<div style="font-size:12.5px;color:#334155;margin-top:6px;background:#f8fafc;border-radius:6px;padding:6px 8px;"><strong>🎁 Entrega final:</strong> ${escapeHtml(p.final_delivery)}</div>` : ''}
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-secundario btn-sm" onclick="toggleDetalhePdi(${p.id})">${aberto ? '▲ Fechar detalhes' : '▼ Abrir detalhes (ações, evolução, materiais)'}</button>
+            ${podeGerenciar ? `
+            <button class="btn-secundario btn-sm" onclick="mostrarFormularioPdi(${p.id})">✏️ Editar</button>
+            <button class="btn-perigo btn-sm" onclick="excluirPdi(${p.id})">Excluir</button>` : ''}
+          </div>
+        </div>
+      </div>
+      <div id="detalhe-pdi-${p.id}" style="margin-top:12px;${aberto ? '' : 'display:none;'}">${aberto ? '<p style="font-size:12px;color:#94a3b8;">Carregando...</p>' : ''}</div>
+    </div>
+  `;
+}
+
+async function toggleDetalhePdi(id) {
+  PDI_DETALHE_ABERTO = (PDI_DETALHE_ABERTO === id) ? null : id;
+  atualizarListaCardsPdi();
+  if (PDI_DETALHE_ABERTO === id) await carregarDetalhePdi(id);
+}
+
+async function carregarDetalhePdi(id) {
+  const div = document.getElementById('detalhe-pdi-' + id);
+  try {
+    const [acoes, updates, materiais] = await Promise.all([
+      api('/api/pdi/' + id + '/actions'),
+      api('/api/pdi/' + id + '/updates'),
+      api('/api/pdi/' + id + '/materials')
+    ]);
+    PDI_DETALHE_DADOS[id] = { acoes, updates, materiais };
+    renderDetalhePdi(id);
+  } catch (e) {
+    if (div) div.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderDetalhePdi(id) {
+  const div = document.getElementById('detalhe-pdi-' + id);
+  if (!div) return;
+  const podeGerenciar = ESTADO.usuario.role !== 'autonomous';
+  const dados = PDI_DETALHE_DADOS[id] || { acoes: [], updates: [], materiais: [] };
+  const { acoes, updates, materiais } = dados;
+  const iconesMaterial = { livro: '📖', link: '🔗', arquivo: '📎' };
+  div.innerHTML = `
+    <div style="border-top:1px solid #e2e8f0;padding-top:10px;margin-bottom:14px;">
+      <strong style="font-size:13px;">✅ Ações do PDI</strong>
+      ${acoes.length ? `
+      <table style="margin-top:6px;">
+        <thead><tr><th>Ação</th><th>Estado</th><th>Evidência</th>${podeGerenciar ? '<th></th>' : ''}</tr></thead>
+        <tbody>
+          ${acoes.map(a => `
+            <tr>
+              <td style="font-size:12px;">${escapeHtml(a.description)}</td>
+              <td>${podeGerenciar
+                ? `<select onchange="mudarStatusAcaoPdiGlobal(${a.id}, ${id}, this.value)" style="font-size:12px;">
+                    ${['Não iniciada', 'Em andamento', 'Concluída'].map(o => `<option ${a.status === o ? 'selected' : ''}>${o}</option>`).join('')}
+                  </select>`
+                : escapeHtml(a.status)}</td>
+              <td>${a.foto_url ? `<a href="${escapeHtml(a.foto_url)}" target="_blank"><img src="${escapeHtml(a.foto_url)}" style="width:32px;height:32px;object-fit:cover;border-radius:6px;"></a>` : '-'}</td>
+              ${podeGerenciar ? `<td><button class="btn-perigo btn-sm" onclick="excluirAcaoPdiGlobal(${a.id}, ${id})">✕</button></td>` : ''}
+            </tr>`).join('')}
+        </tbody>
+      </table>` : '<p style="font-size:12px;color:#94a3b8;margin-top:4px;">Nenhuma ação cadastrada ainda.</p>'}
+      ${podeGerenciar ? `
+      <div class="acoes-form" style="margin-top:8px;flex-wrap:wrap;">
+        <input id="pdi-nova-acao-${id}" placeholder="Nova ação..." style="flex:2;min-width:160px;">
+        <input id="pdi-nova-acao-foto-${id}" type="file" accept="image/*" style="max-width:220px;">
+        <button class="btn-secundario btn-sm" onclick="adicionarAcaoPdiGlobal(${id})">+ Ação</button>
+      </div>` : ''}
+    </div>
+
+    <div style="border-top:1px solid #e2e8f0;padding-top:10px;margin-bottom:14px;">
+      <strong style="font-size:13px;">📈 Evolução do Cliente (follow-ups)</strong>
+      <div style="margin-top:6px;">
+        ${updates.length === 0 ? '<p style="font-size:12px;color:#94a3b8;">Nenhuma atualização registrada ainda.</p>' : updates.map(u => `
+          <div class="dpo-follow" style="margin-bottom:6px;">
+            <div style="display:flex;justify-content:space-between;gap:8px;">
+              <div><strong>${escapeHtml(u.created_by_name || 'Consultoria')}</strong><span style="color:#94a3b8;font-size:11px;"> · ${formatarDataHoraCurta(u.created_at) || ''}</span></div>
+              ${podeGerenciar ? `<button class="btn-perigo btn-sm" style="padding:1px 6px;" onclick="excluirUpdatePdi(${u.id}, ${id})">✕</button>` : ''}
+            </div>
+            <div style="font-size:13px;margin-top:2px;">${escapeHtml(u.texto)}</div>
+            ${u.foto_url ? `<a href="${escapeHtml(u.foto_url)}" target="_blank"><img src="${escapeHtml(u.foto_url)}" style="max-width:140px;border-radius:8px;margin-top:6px;display:block;"></a>` : ''}
+          </div>
+        `).join('')}
+      </div>
+      ${podeGerenciar ? `
+      <div style="margin-top:8px;">
+        <textarea id="pdi-novo-update-${id}" rows="2" placeholder="Descreva a evolução/andamento do cliente..." style="width:100%;"></textarea>
+        <div class="acoes-form" style="margin-top:6px;flex-wrap:wrap;">
+          <input id="pdi-novo-update-foto-${id}" type="file" accept="image/*">
+          <button class="btn-secundario btn-sm" onclick="adicionarUpdatePdi(${id})">+ Registrar Evolução</button>
+        </div>
+      </div>` : ''}
+    </div>
+
+    <div style="border-top:1px solid #e2e8f0;padding-top:10px;">
+      <strong style="font-size:13px;">📚 Materiais de Apoio (livros, arquivos, links)</strong>
+      <div style="margin-top:6px;">
+        ${materiais.length === 0 ? '<p style="font-size:12px;color:#94a3b8;">Nenhum material indicado ainda.</p>' : materiais.map(m => `
+          <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:6px 0;">
+            <div style="font-size:12.5px;">
+              ${iconesMaterial[m.tipo] || '📎'} ${m.url ? `<a href="${escapeHtml(m.url)}" target="_blank" rel="noopener">${escapeHtml(m.titulo)}</a>` : escapeHtml(m.titulo)}
+              ${m.nota ? `<div style="color:#64748b;font-size:11.5px;">${escapeHtml(m.nota)}</div>` : ''}
+            </div>
+            ${podeGerenciar ? `<button class="btn-perigo btn-sm" onclick="excluirMaterialPdi(${m.id}, ${id})">✕</button>` : ''}
+          </div>
+        `).join('')}
+      </div>
+      ${podeGerenciar ? `
+      <div class="acoes-form" style="margin-top:8px;flex-wrap:wrap;">
+        <input id="pdi-material-titulo-${id}" placeholder="Título (ex: livro, artigo, checklist)..." style="flex:2;min-width:160px;">
+        <select id="pdi-material-tipo-${id}" style="max-width:110px;">
+          <option value="arquivo">Arquivo</option>
+          <option value="livro">Livro</option>
+          <option value="link">Link</option>
+        </select>
+      </div>
+      <div class="acoes-form" style="margin-top:6px;flex-wrap:wrap;">
+        <input id="pdi-material-link-${id}" placeholder="Link (opcional se for enviar arquivo)" style="flex:2;min-width:160px;">
+        <input id="pdi-material-arquivo-${id}" type="file" style="max-width:220px;">
+      </div>
+      <div class="acoes-form" style="margin-top:6px;">
+        <button class="btn-secundario btn-sm" onclick="adicionarMaterialPdi(${id})">+ Adicionar Material</button>
+      </div>` : ''}
+    </div>
+  `;
+}
+
+async function adicionarAcaoPdiGlobal(pdiId) {
+  const input = document.getElementById('pdi-nova-acao-' + pdiId);
+  const description = input.value.trim();
+  if (!description) return mostrarToast('Descreva a ação.', true);
+  try {
+    const foto_url = await uploadArquivoGenerico('pdi-nova-acao-foto-' + pdiId);
+    await api('/api/pdi/' + pdiId + '/actions', { method: 'POST', body: JSON.stringify({ description, foto_url }) });
+    await carregarDetalhePdi(pdiId);
+    mostrarToast('Ação adicionada!');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function mudarStatusAcaoPdiGlobal(actionId, pdiId, status) {
+  try {
+    await api('/api/pdi-actions/' + actionId, { method: 'PUT', body: JSON.stringify({ status }) });
+    await carregarDetalhePdi(pdiId);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function excluirAcaoPdiGlobal(actionId, pdiId) {
+  if (!confirm('Remover esta ação?')) return;
+  try {
+    await api('/api/pdi-actions/' + actionId, { method: 'DELETE' });
+    await carregarDetalhePdi(pdiId);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function adicionarUpdatePdi(pdiId) {
+  const textoEl = document.getElementById('pdi-novo-update-' + pdiId);
+  const texto = textoEl.value.trim();
+  if (!texto) return mostrarToast('Descreva a evolução.', true);
+  try {
+    const foto_url = await uploadArquivoGenerico('pdi-novo-update-foto-' + pdiId);
+    await api('/api/pdi/' + pdiId + '/updates', { method: 'POST', body: JSON.stringify({ texto, foto_url }) });
+    await carregarDetalhePdi(pdiId);
+    mostrarToast('Evolução registrada!');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function excluirUpdatePdi(updateId, pdiId) {
+  if (!confirm('Remover esta atualização?')) return;
+  try {
+    await api('/api/pdi-updates/' + updateId, { method: 'DELETE' });
+    await carregarDetalhePdi(pdiId);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function adicionarMaterialPdi(pdiId) {
+  const tituloEl = document.getElementById('pdi-material-titulo-' + pdiId);
+  const titulo = tituloEl.value.trim();
+  if (!titulo) return mostrarToast('Dê um título ao material.', true);
+  const tipo = document.getElementById('pdi-material-tipo-' + pdiId).value;
+  const linkInput = document.getElementById('pdi-material-link-' + pdiId).value.trim();
+  try {
+    const arquivoUrl = await uploadArquivoGenerico('pdi-material-arquivo-' + pdiId);
+    const url = arquivoUrl || linkInput || null;
+    await api('/api/pdi/' + pdiId + '/materials', { method: 'POST', body: JSON.stringify({ titulo, tipo, url }) });
+    await carregarDetalhePdi(pdiId);
+    mostrarToast('Material adicionado!');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function excluirMaterialPdi(materialId, pdiId) {
+  if (!confirm('Remover este material?')) return;
+  try {
+    await api('/api/pdi-materials/' + materialId, { method: 'DELETE' });
+    await carregarDetalhePdi(pdiId);
+  } catch (e) { mostrarToast(e.message, true); }
 }
 
 function mostrarFormularioPdi(id) {
@@ -3682,6 +3916,14 @@ function mostrarFormularioPdi(id) {
                  ${['Em Andamento','Concluído','Atrasado'].map(o => `<option ${p.status === o ? 'selected' : ''}>${o}</option>`).join('')}
                </select></div>` : ''}
       </div>
+      <div class="linha">
+        <div style="flex:2"><label>O que vamos entregar no final deste PDI?</label><textarea id="np-final-delivery" rows="2" placeholder="Ex.: Executivo apto a liderar reuniões de diretoria com autonomia e domínio de indicadores.">${escapeHtml(p?.final_delivery || '')}</textarea></div>
+        <div>
+          <label>Foto de capa</label>
+          ${p?.photo_url ? `<div style="margin-bottom:6px;"><img src="${escapeHtml(p.photo_url)}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;"></div>` : ''}
+          <input id="np-photo-file" type="file" accept="image/*">
+        </div>
+      </div>
       <div class="acoes-form">
         <button class="btn-primario" onclick="salvarPdi(${p ? p.id : 'null'})">${p ? 'Salvar Alterações' : 'Salvar'}</button>
         <button class="btn-secundario" onclick="renderPdi()">Cancelar</button>
@@ -3692,13 +3934,17 @@ function mostrarFormularioPdi(id) {
 
 async function salvarPdi(id) {
   try {
+    const foto_url = await uploadArquivoGenerico('np-photo-file');
+    const final_delivery = document.getElementById('np-final-delivery').value;
     if (id) {
       const corpo = {
         objective: document.getElementById('np-objective').value,
         action_plan: document.getElementById('np-action').value,
         deadline: document.getElementById('np-deadline').value,
-        status: document.getElementById('np-status').value
+        status: document.getElementById('np-status').value,
+        final_delivery
       };
+      if (foto_url) corpo.photo_url = foto_url;
       await api('/api/pdi/' + id, { method: 'PUT', body: JSON.stringify(corpo) });
       mostrarToast('PDI atualizado!');
     } else {
@@ -3706,7 +3952,9 @@ async function salvarPdi(id) {
         employee_id: document.getElementById('np-employee').value,
         objective: document.getElementById('np-objective').value,
         action_plan: document.getElementById('np-action').value,
-        deadline: document.getElementById('np-deadline').value
+        deadline: document.getElementById('np-deadline').value,
+        final_delivery,
+        photo_url: foto_url || null
       };
       await api('/api/pdi', { method: 'POST', body: JSON.stringify(corpo) });
       mostrarToast('PDI criado!');
@@ -6640,13 +6888,15 @@ function renderPlanoAcaoDpo(plano, somenteLeitura, aoRecarregar) {
         <div class="dpo-follow">
           <strong>Follow ${f.numero}:</strong> ${escapeHtml(f.texto)}${f.data_prevista ? ' · ' + new Date(f.data_prevista).toLocaleDateString('pt-BR') : ''}
           <span style="float:right;font-weight:700;color:${f.status === 'concluido' ? '#16a34a' : f.status === 'em_andamento' ? '#c9a227' : '#94a3b8'};">${escapeHtml(f.status)}</span>
+          ${f.foto_url ? `<div style="clear:both;margin-top:4px;"><a href="${escapeHtml(f.foto_url)}" target="_blank"><img src="${escapeHtml(f.foto_url)}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;"></a></div>` : ''}
           ${!somenteLeitura ? `<div style="margin-top:4px;clear:both;"><button class="btn-secundario btn-sm" style="padding:1px 6px;font-size:11px;" onclick="marcarFollowDpo(${f.id}, '${f.status === 'concluido' ? 'pendente' : 'concluido'}', ${recarregar})">${f.status === 'concluido' ? 'Reabrir' : 'Concluir'}</button></div>` : ''}
         </div>
       `).join('')}
       ${!somenteLeitura ? `
-      <div style="display:flex;gap:6px;margin-top:6px;">
+      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
         <input id="dpo-follow-texto-${plano.id}" placeholder="Novo follow-up..." style="flex:1;font-size:12px;padding:5px 8px;">
         <input id="dpo-follow-data-${plano.id}" type="date" style="font-size:12px;padding:5px 8px;">
+        <input id="dpo-follow-foto-${plano.id}" type="file" accept="image/*" style="font-size:11px;max-width:150px;">
         <button class="btn-secundario btn-sm" onclick="adicionarFollowDpo(${plano.id}, ${recarregar})">+ Follow</button>
       </div>` : ''}
     </div>
@@ -6682,7 +6932,8 @@ async function adicionarFollowDpo(planoId, aoRecarregar) {
   const data = document.getElementById('dpo-follow-data-' + planoId).value;
   if (!texto) { mostrarToast('Descreva o follow-up.', true); return; }
   try {
-    await api('/api/dpo/action-plans/' + planoId + '/follow-ups', { method: 'POST', body: JSON.stringify({ texto, data_prevista: data || null }) });
+    const foto_url = await uploadArquivoGenerico('dpo-follow-foto-' + planoId);
+    await api('/api/dpo/action-plans/' + planoId + '/follow-ups', { method: 'POST', body: JSON.stringify({ texto, data_prevista: data || null, foto_url }) });
     mostrarToast('Follow-up adicionado!');
     (aoRecarregar || recarregarCicloDpoAtual)();
   } catch (e) { mostrarToast(e.message, true); }
