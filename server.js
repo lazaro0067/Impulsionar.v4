@@ -789,6 +789,10 @@ function inicializarBase() {
         // aplicado de verdade (liberando os créditos de funcionário) depois que o
         // Mercado Pago confirma o pagamento. Até lá, fica guardado aqui.
         db.run(`ALTER TABLE companies ADD COLUMN pending_plan_id INTEGER`, () => {});
+        // Pedido de cancelamento: a empresa não cancela a assinatura sozinha,
+        // apenas solicita — fica marcado aqui até o Master analisar e confirmar
+        // (ou recusar) o cancelamento de fato.
+        db.run(`ALTER TABLE companies ADD COLUMN cancellation_requested_at TEXT`, () => {});
 
         db.get(`SELECT COUNT(*) as total FROM plans`, [], (err, row) => {
             if (!err && row && row.total === 0) {
@@ -4482,6 +4486,24 @@ async function obterEmailContatoEmpresa(companyId) {
     return gestor ? gestor.email : null;
 }
 
+// O SDK do Mercado Pago costuma jogar o motivo real do erro dentro de
+// "cause" (um array de {code, description}) em vez de em e.message — sem
+// isso, toda falha aparecia como o mesmo aviso genérico e ninguém conseguia
+// saber o que corrigir sem acesso ao log do servidor. Essa função extrai o
+// texto mais útil possível para mostrar direto na tela de quem está tentando
+// assinar/trocar de plano.
+function detalheErroMercadoPago(e) {
+    try {
+        if (Array.isArray(e?.cause) && e.cause.length) {
+            return e.cause.map(c => c.description || c.message || JSON.stringify(c)).filter(Boolean).join(' | ');
+        }
+        if (e?.cause?.description) return e.cause.description;
+        return e?.message || 'Erro desconhecido ao comunicar com o Mercado Pago.';
+    } catch (err) {
+        return e?.message || 'Erro desconhecido ao comunicar com o Mercado Pago.';
+    }
+}
+
 // Notifica todos os gestores (client_admin) de uma empresa sobre mudanças na assinatura.
 function notificarGestoresDaEmpresa(companyId, title, message) {
     db.all(`SELECT id FROM users WHERE company_id = ? AND role = 'client_admin'`, [companyId], (err, gestores) => {
@@ -4535,8 +4557,9 @@ app.post('/api/companies/:id/subscribe', async (req, res) => {
 
         res.json({ message: 'Assinatura iniciada! Complete a autorização no Mercado Pago.', initPoint: resultado.init_point, status: resultado.status });
     } catch (e) {
-        console.error('Erro ao criar assinatura Mercado Pago:', e.message);
-        res.status(400).json({ error: 'Erro ao iniciar assinatura no Mercado Pago. Verifique o preço do plano e as credenciais configuradas.' });
+        const detalhe = detalheErroMercadoPago(e);
+        console.error('Erro ao criar assinatura Mercado Pago:', detalhe);
+        res.status(400).json({ error: `Erro ao iniciar assinatura no Mercado Pago: ${detalhe}` });
     }
 });
 
@@ -4560,7 +4583,8 @@ app.get('/api/companies/:id/subscription', async (req, res) => {
             hasPreapproval: !!empresa.mp_preapproval_id,
             mercadoPagoConfigurado: !!mpPreApproval,
             pendingPlanId: empresa.pending_plan_id || null,
-            pendingPlanName
+            pendingPlanName,
+            cancellationRequestedAt: empresa.cancellation_requested_at || null
         });
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar assinatura.' }); }
 });
@@ -4597,16 +4621,18 @@ app.post('/api/companies/:id/subscription/refresh', async (req, res) => {
     }
 });
 
-app.post('/api/companies/:id/subscription/cancel', async (req, res) => {
+// Cancelamento de fato só o Master confirma — a empresa (client_admin) só pode
+// SOLICITAR (endpoint abaixo). Isso evita que a empresa saia clicando um botão
+// e derrube a cobrança recorrente sem a Impulsionar saber/negociar antes.
+app.post('/api/companies/:id/subscription/cancel', requireRole('admin'), async (req, res) => {
     const { id } = req.params;
-    if (!ensureCompanyAccess(req, res, id)) return;
     if (!mpPreApproval) return res.status(503).json({ error: 'Mercado Pago ainda não foi configurado no servidor.' });
     try {
         const empresa = await dbGet(`SELECT mp_preapproval_id FROM companies WHERE id = ?`, [id]);
         if (!empresa || !empresa.mp_preapproval_id) return res.status(400).json({ error: 'Esta empresa não tem assinatura ativa para cancelar.' });
         await mpPreApproval.update({ id: empresa.mp_preapproval_id, body: { status: 'cancelled' } });
         await new Promise((resolve, reject) => db.run(
-            `UPDATE companies SET subscription_status = 'cancelled', subscription_updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            `UPDATE companies SET subscription_status = 'cancelled', subscription_updated_at = CURRENT_TIMESTAMP, cancellation_requested_at = NULL WHERE id = ?`,
             [id], (err) => err ? reject(err) : resolve()
         ));
         notificarGestoresDaEmpresa(id, 'Assinatura cancelada', 'A cobrança recorrente desta empresa foi cancelada.');
@@ -4614,6 +4640,49 @@ app.post('/api/companies/:id/subscription/cancel', async (req, res) => {
     } catch (e) {
         console.error('Erro ao cancelar assinatura Mercado Pago:', e.message);
         res.status(400).json({ error: 'Erro ao cancelar a assinatura no Mercado Pago.' });
+    }
+});
+
+// A empresa solicita o cancelamento — não cancela na hora, só avisa o Master,
+// que decide (confirma o cancelamento ou recusa o pedido e segue cobrando).
+app.post('/api/companies/:id/subscription/request-cancellation', async (req, res) => {
+    const { id } = req.params;
+    if (!ensureCompanyAccess(req, res, id)) return;
+    try {
+        const empresa = await dbGet(`SELECT name, subscription_status, cancellation_requested_at FROM companies WHERE id = ?`, [id]);
+        if (!empresa) return res.status(404).json({ error: 'Empresa não encontrada.' });
+        if (!['authorized', 'pending', 'paused'].includes(empresa.subscription_status)) {
+            return res.status(400).json({ error: 'Esta empresa não tem assinatura ativa para cancelar.' });
+        }
+        if (empresa.cancellation_requested_at) {
+            return res.status(400).json({ error: 'Já existe um pedido de cancelamento em análise pelo Master.' });
+        }
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE companies SET cancellation_requested_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            [id], (err) => err ? reject(err) : resolve()
+        ));
+        db.all(`SELECT id FROM users WHERE role = 'admin'`, [], (e, admins) => {
+            if (!e) admins.forEach(a => notificar(a.id, 'Pedido de cancelamento de plano', `${empresa.name} solicitou o cancelamento da assinatura.`, 'companies'));
+        });
+        res.json({ message: 'Pedido de cancelamento enviado! O Master vai analisar e confirmar em breve.' });
+    } catch (e) {
+        console.error('Erro ao solicitar cancelamento:', e.message);
+        res.status(400).json({ error: 'Erro ao registrar o pedido de cancelamento.' });
+    }
+});
+
+// Master recusa o pedido de cancelamento (a assinatura continua ativa normalmente).
+app.post('/api/companies/:id/subscription/request-cancellation/dismiss', requireRole('admin'), async (req, res) => {
+    const { id } = req.params;
+    try {
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE companies SET cancellation_requested_at = NULL WHERE id = ?`,
+            [id], (err) => err ? reject(err) : resolve()
+        ));
+        notificarGestoresDaEmpresa(id, 'Pedido de cancelamento não aprovado', 'A Impulsionar entrará em contato. Sua assinatura continua ativa normalmente.');
+        res.json({ message: 'Pedido de cancelamento recusado — assinatura continua ativa.' });
+    } catch (e) {
+        res.status(400).json({ error: 'Erro ao recusar o pedido de cancelamento.' });
     }
 });
 
@@ -4699,8 +4768,9 @@ app.post('/api/companies/:id/subscription/change-plan', async (req, res) => {
             status: resultado.status
         });
     } catch (e) {
-        console.error('Erro ao trocar plano da assinatura:', e.message);
-        res.status(400).json({ error: 'Erro ao iniciar o pagamento no Mercado Pago. Verifique o preço do plano e as credenciais configuradas.' });
+        const detalhe = detalheErroMercadoPago(e);
+        console.error('Erro ao trocar plano da assinatura:', detalhe);
+        res.status(400).json({ error: `Erro ao iniciar o pagamento no Mercado Pago: ${detalhe}` });
     }
 });
 

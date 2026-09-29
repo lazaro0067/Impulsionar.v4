@@ -322,6 +322,31 @@
   .novo-comentario button { flex: 0 0 auto; margin-bottom: 0; }
   .novo-comentario button:disabled { opacity: .6; cursor: default; }
   .msg-vazio-sm { color: var(--cinza-500); font-size: 12px; padding: 10px 0; }
+
+  /* ---------- Abas do cadastro de Empresa (Dados / Acessos / Permissões / Créditos) ---------- */
+  .abas-empresa { display: flex; gap: 4px; border-bottom: 2px solid var(--cinza-200); margin-bottom: 18px; flex-wrap: wrap; }
+  .aba-empresa-botao { padding: 10px 16px; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--cinza-500); border-radius: 6px 6px 0 0; }
+  .aba-empresa-botao:hover { background: var(--cinza-100, #f1f5f9); }
+  .aba-empresa-botao.ativa { color: var(--azul-corp); border-bottom-color: var(--azul-corp); }
+  .aba-empresa-painel { display: none; }
+  .aba-empresa-painel.ativa { display: block; }
+
+  /* ---------- Cartões de Permissão de Módulo (toggle bonito, um por acesso) ---------- */
+  .grade-modulos { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-top: 10px; }
+  .modulo-card { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--cinza-200); border-radius: 10px; padding: 12px 14px; transition: border-color .15s, background .15s; }
+  .modulo-card.habilitado { border-color: #bbf7d0; background: #f0fdf4; }
+  .modulo-card .modulo-icone { font-size: 20px; flex-shrink: 0; width: 28px; text-align: center; }
+  .modulo-card .modulo-texto { flex: 1; min-width: 0; }
+  .modulo-card .modulo-nome { font-size: 13px; font-weight: 700; color: var(--cinza-700); display: block; }
+  .modulo-card .modulo-desc { font-size: 11.5px; font-weight: 400; color: var(--cinza-500); display: block; margin-top: 2px; }
+
+  .interruptor { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+  .interruptor input { opacity: 0; width: 0; height: 0; }
+  .interruptor .trilho { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; transition: .2s; border-radius: 22px; }
+  .interruptor .trilho:before { content: ""; position: absolute; height: 16px; width: 16px; left: 3px; bottom: 3px; background: #fff; transition: .2s; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .interruptor input:checked + .trilho { background: var(--verde, #16a34a); }
+  .interruptor input:checked + .trilho:before { transform: translateX(18px); }
+  .interruptor input:disabled + .trilho { opacity: .5; cursor: default; }
 </style>
 </head>
 <body>
@@ -1531,7 +1556,7 @@ async function renderCompanies() {
               <td>
                 <button class="btn-secundario btn-sm" onclick="mostrarFormularioEmpresa(${c.id})">Editar</button>
                 ${c.adminEmail ? `<button class="btn-secundario btn-sm" onclick="acessarComoGestor(${c.id})">🔑 Acessar</button>` : ''}
-                <button class="btn-secundario btn-sm" onclick="verAssinaturaEmpresaAdmin(${c.id})">Assinatura</button>
+                <button class="btn-secundario btn-sm" onclick="verAssinaturaEmpresaAdmin(${c.id})">Assinatura${c.cancellation_requested_at ? ' ⚠️' : ''}</button>
                 <button class="btn-perigo btn-sm" onclick="excluirEmpresa(${c.id})">Excluir</button>
               </td>
             </tr>`).join('')}
@@ -1556,6 +1581,20 @@ async function verAssinaturaEmpresaAdmin(companyId) {
     let texto = `Plano: ${a.planName || '(nenhum)'}\nStatus: ${rotulos[a.subscriptionStatus] || a.subscriptionStatus}`;
     if (a.trialEndsAt) texto += `\nTeste grátis até: ${new Date(a.trialEndsAt).toLocaleDateString('pt-BR')}`;
     if (a.mp_price) texto += `\nValor recorrente: R$ ${Number(a.mp_price).toFixed(2)}/mês`;
+
+    if (a.cancellationRequestedAt) {
+      texto += `\n\n⚠️ Pedido de cancelamento enviado em ${new Date(a.cancellationRequestedAt).toLocaleDateString('pt-BR')} — a empresa está aguardando sua decisão.`;
+      if (confirm(texto + '\n\nClique OK para CONFIRMAR o cancelamento da assinatura, ou Cancelar para RECUSAR o pedido (a assinatura continua ativa).')) {
+        const r = await api('/api/companies/' + companyId + '/subscription/cancel', { method: 'POST' });
+        mostrarToast(r.message);
+      } else {
+        const r = await api('/api/companies/' + companyId + '/subscription/request-cancellation/dismiss', { method: 'POST' });
+        mostrarToast(r.message);
+      }
+      irPara(ESTADO.abaAtual);
+      return;
+    }
+
     if (['authorized', 'pending', 'paused'].includes(a.subscriptionStatus) && confirm(texto + '\n\nDeseja cancelar esta assinatura?')) {
       const r = await api('/api/companies/' + companyId + '/subscription/cancel', { method: 'POST' });
       mostrarToast(r.message);
@@ -1714,8 +1753,8 @@ async function enviarArquivoUploadEmpresa() {
 
 function mostrarFormularioEmpresa(id) {
   const c = id ? CACHE_LISTA_EMPRESAS.find(x => x.id === id) : null;
-  document.getElementById('form-area').innerHTML = `
-    <div class="formulario">
+
+  const painelDados = `
       <div class="linha">
         <div><label>Razão Social</label><input id="ne-name" value="${escapeHtml(c?.name || '')}"></div>
         <div><label>Segmento</label><input id="ne-segment" value="${escapeHtml(c?.segment || '')}"></div>
@@ -1733,6 +1772,9 @@ function mostrarFormularioEmpresa(id) {
           </select>
         </div>
       </div>
+  `;
+
+  const painelAcessos = `
       <div class="linha">
         <div><label>Nome do Gestor</label><input id="ne-adminName" value="${escapeHtml(c?.adminName || '')}" autocomplete="off"></div>
         <div><label>E-mail do Gestor</label><input id="ne-adminEmail" type="email" value="${escapeHtml(c?.adminEmail || '')}" autocomplete="off" name="ne-adminEmail-${Date.now()}"></div>
@@ -1748,13 +1790,31 @@ function mostrarFormularioEmpresa(id) {
       </div>
       ` : c ? `<div class="msg-vazio" style="text-align:left;margin-top:4px;">Esta empresa ainda não tem um Gestor cadastrado — preencha nome, e-mail e senha acima e salve para criar o acesso dele.</div>` : ''}
       ${c ? `
-      <div class="linha" style="flex-direction:column;align-items:stretch;">
-        <label>Acessos da Empresa (outros membros que entram com o e-mail próprio deles)</label>
+      <div class="linha" style="flex-direction:column;align-items:stretch;margin-top:6px;">
+        <label>Outros Acessos da Empresa (cada pessoa entra com e-mail e senha próprios, mesmo nível de acesso do Gestor)</label>
         <div id="ne-membros-area"><p style="font-size:12px;color:#94a3b8;">Carregando...</p></div>
       </div>
       ` : ''}
-      ${c ? camposPermissoesEmpresaHtml(c) : ''}
-      ${c ? camposCreditoVagasHtml(c) : ''}
+  `;
+
+  const abas = c ? `
+    <div class="abas-empresa">
+      <button type="button" class="aba-empresa-botao ativa" data-aba="dados" onclick="trocarAbaEmpresa('dados')">🏢 Dados da Empresa</button>
+      <button type="button" class="aba-empresa-botao" data-aba="acessos" onclick="trocarAbaEmpresa('acessos')">🔑 Acessos</button>
+      <button type="button" class="aba-empresa-botao" data-aba="permissoes" onclick="trocarAbaEmpresa('permissoes')">🔒 Permissões de Módulos</button>
+      <button type="button" class="aba-empresa-botao" data-aba="creditos" onclick="trocarAbaEmpresa('creditos')">💳 Créditos</button>
+    </div>
+  ` : '';
+
+  document.getElementById('form-area').innerHTML = `
+    <div class="formulario">
+      ${abas}
+      <div class="aba-empresa-painel ativa" data-aba-painel="dados">${painelDados}</div>
+      ${c ? `
+      <div class="aba-empresa-painel" data-aba-painel="acessos">${painelAcessos}</div>
+      <div class="aba-empresa-painel" data-aba-painel="permissoes">${camposPermissoesEmpresaHtml(c)}</div>
+      <div class="aba-empresa-painel" data-aba-painel="creditos">${camposCreditoVagasHtml(c)}</div>
+      ` : ''}
       <div class="acoes-form">
         <button class="btn-primario" onclick="salvarEmpresa(${c ? c.id : 'null'})">${c ? 'Salvar Alterações' : 'Cadastrar Empresa'}</button>
         <button class="btn-secundario" onclick="renderCompanies()">Cancelar</button>
@@ -1764,16 +1824,24 @@ function mostrarFormularioEmpresa(id) {
   if (c) carregarMembrosEmpresa(c.id, 'ne');
 }
 
+// Troca de aba dentro do cadastro/edição de Empresa — o conteúdo de todas as
+// abas já está renderizado no DOM (nada é recarregado), só mostra/esconde,
+// então trocar de aba não perde o que foi digitado nas outras.
+function trocarAbaEmpresa(nome) {
+  document.querySelectorAll('.aba-empresa-botao').forEach(b => b.classList.toggle('ativa', b.dataset.aba === nome));
+  document.querySelectorAll('.aba-empresa-painel').forEach(p => p.classList.toggle('ativa', p.dataset.abaPainel === nome));
+}
+
 // Módulos que o Master pode liberar/restringir por empresa, conforme o que foi
 // fechado no contrato de consultoria. Sem restrição marcada = libera tudo
 // (comportamento padrão, preservado para não quebrar empresas já cadastradas).
 const MODULOS_EMPRESA = [
-  { key: 'consultoria', label: 'Meu Time (Funcionários, Consultoria)' },
-  { key: 'pipeline', label: 'Pipeline de Desenvolvimento (visão por fase de cada funcionário)' },
-  { key: 'pdi', label: 'PDI (Planos de Desenvolvimento Individual)' },
-  { key: 'academy', label: 'Treinamentos (Academy Digital, Trilhas, Competence Check)' },
-  { key: 'mentoria', label: 'Mentorias (Mentorias, Comunidade, Eventos, Ranking)' },
-  { key: 'vagas', label: 'Recrutamento (Banco de Currículos, Vagas)' }
+  { key: 'consultoria', icone: '👥', label: 'Meu Time', desc: 'Funcionários e Consultoria' },
+  { key: 'pipeline', icone: '📊', label: 'Pipeline de Desenvolvimento', desc: 'Visão por fase de cada funcionário' },
+  { key: 'pdi', icone: '🎯', label: 'PDI', desc: 'Planos de Desenvolvimento Individual' },
+  { key: 'academy', icone: '🎓', label: 'Treinamentos', desc: 'Academy Digital, Trilhas, Competence Check' },
+  { key: 'mentoria', icone: '🤝', label: 'Mentorias', desc: 'Mentorias, Comunidade, Eventos, Ranking' },
+  { key: 'vagas', icone: '💼', label: 'Recrutamento', desc: 'Banco de Currículos, Vagas' }
 ];
 
 function camposPermissoesEmpresaHtml(c) {
@@ -1784,19 +1852,52 @@ function camposPermissoesEmpresaHtml(c) {
     <div class="linha" style="flex-direction:column;align-items:stretch;">
       <label>Permissões de Acesso (conforme o contrato de consultoria fechado)</label>
       <label style="font-weight:400;display:flex;align-items:center;gap:6px;font-size:13px;">
-        <input type="checkbox" id="ne-restringir-modulos" ${temRestricao ? 'checked' : ''} onchange="document.getElementById('ne-modulos-lista').style.display = this.checked ? 'flex' : 'none'">
-        Restringir esta empresa só aos módulos marcados abaixo (desmarcado = acesso completo)
+        <input type="checkbox" id="ne-restringir-modulos" ${temRestricao ? 'checked' : ''} onchange="alternarRestricaoModulos(this.checked)">
+        Restringir esta empresa só aos módulos marcados abaixo (desmarcado = acesso completo a tudo)
       </label>
-      <div id="ne-modulos-lista" style="display:${temRestricao ? 'flex' : 'none'};flex-wrap:wrap;gap:10px;background:#f8fafc;border-radius:8px;padding:10px;margin-top:6px;">
-        ${MODULOS_EMPRESA.map(m => `
-          <label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;">
-            <input type="checkbox" class="ne-modulo-check" value="${m.key}" ${!temRestricao || restrito.includes(m.key) ? 'checked' : ''}>
-            ${escapeHtml(m.label)}
-          </label>
-        `).join('')}
+      <div id="ne-modulos-lista" style="display:${temRestricao ? 'block' : 'none'};margin-top:10px;">
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button type="button" class="btn-secundario btn-sm" onclick="marcarTodosModulos(true)">Marcar todos</button>
+          <button type="button" class="btn-secundario btn-sm" onclick="marcarTodosModulos(false)">Desmarcar todos</button>
+        </div>
+        <div class="grade-modulos">
+          ${MODULOS_EMPRESA.map(m => {
+            const ligado = !temRestricao || restrito.includes(m.key);
+            return `
+            <label class="modulo-card ${ligado ? 'habilitado' : ''}" data-modulo-card>
+              <span class="modulo-icone">${m.icone}</span>
+              <span class="modulo-texto">
+                <span class="modulo-nome">${escapeHtml(m.label)}</span>
+                <span class="modulo-desc">${escapeHtml(m.desc)}</span>
+              </span>
+              <span class="interruptor">
+                <input type="checkbox" class="ne-modulo-check" value="${m.key}" ${ligado ? 'checked' : ''} onchange="atualizarCartaoModulo(this)">
+                <span class="trilho"></span>
+              </span>
+            </label>
+          `; }).join('')}
+        </div>
       </div>
     </div>
   `;
+}
+
+// Mostra/esconde a grade de módulos ao ligar/desligar a restrição geral.
+function alternarRestricaoModulos(restringir) {
+  document.getElementById('ne-modulos-lista').style.display = restringir ? 'block' : 'none';
+}
+
+// Atualiza o realce visual (verde) do cartão do módulo junto com o interruptor.
+function atualizarCartaoModulo(input) {
+  input.closest('[data-modulo-card]').classList.toggle('habilitado', input.checked);
+}
+
+// Botões "Marcar todos / Desmarcar todos" da grade de permissões.
+function marcarTodosModulos(ligar) {
+  document.querySelectorAll('.ne-modulo-check').forEach(chk => {
+    chk.checked = ligar;
+    atualizarCartaoModulo(chk);
+  });
 }
 
 function camposCreditoVagasHtml(c) {
@@ -1822,6 +1923,7 @@ async function adicionarCreditoVagas(companyId) {
     const idx = CACHE_LISTA_EMPRESAS.findIndex(x => x.id === companyId);
     if (idx >= 0) CACHE_LISTA_EMPRESAS[idx] = { ...CACHE_LISTA_EMPRESAS[idx], vaga_credito_dias: empresa.vaga_credito_dias };
     mostrarFormularioEmpresa(companyId);
+    trocarAbaEmpresa('creditos');
   } catch (e) { mostrarToast(e.message, true); }
 }
 
@@ -2047,7 +2149,7 @@ function renderPainelAssinatura(assinatura, planos, planoIdAtual) {
   };
   const status = rotulos[assinatura.subscriptionStatus] || rotulos.none;
   const podeAssinar = ['none', 'cancelled'].includes(assinatura.subscriptionStatus);
-  const podeCancelar = ['authorized', 'pending', 'paused'].includes(assinatura.subscriptionStatus);
+  const podeSolicitarCancelamento = ['authorized', 'pending', 'paused'].includes(assinatura.subscriptionStatus) && !assinatura.cancellationRequestedAt;
   const outrosPlanos = planos.filter(p => p.id !== planoIdAtual && p.mp_price);
 
   if (!assinatura.mercadoPagoConfigurado) {
@@ -2058,11 +2160,12 @@ function renderPainelAssinatura(assinatura, planos, planoIdAtual) {
     <div style="margin-top:14px;border-top:1px solid #e2e8f0;padding-top:12px;">
       <div class="plano-meta">Status da assinatura: <strong style="color:${status.cor}">${status.texto}</strong></div>
       ${assinatura.trialEndsAt ? `<div class="plano-meta">Período de teste até ${new Date(assinatura.trialEndsAt).toLocaleDateString('pt-BR')}</div>` : ''}
+      ${assinatura.cancellationRequestedAt ? `<div class="plano-meta" style="color:#c9a227;">⏳ Pedido de cancelamento enviado em ${new Date(assinatura.cancellationRequestedAt).toLocaleDateString('pt-BR')} — aguardando o Master confirmar.</div>` : ''}
       <div class="acoes-form" style="margin-top:10px;flex-wrap:wrap;">
         ${podeAssinar && assinatura.mp_price ? `<button class="btn-primario btn-sm" onclick="assinarPlanoEmpresa()">Assinar via Mercado Pago</button>` : ''}
         ${podeAssinar && !assinatura.mp_price ? `<span style="font-size:12px;color:#94a3b8;">Este plano ainda não tem preço de cobrança recorrente configurado.</span>` : ''}
         ${assinatura.hasPreapproval ? `<button class="btn-secundario btn-sm" onclick="verificarStatusAssinatura()">Verificar Status Agora</button>` : ''}
-        ${podeCancelar ? `<button class="btn-perigo btn-sm" onclick="cancelarAssinaturaEmpresa()">Cancelar Assinatura</button>` : ''}
+        ${podeSolicitarCancelamento ? `<button class="btn-perigo btn-sm" onclick="solicitarCancelamentoAssinatura()">Solicitar Cancelamento</button>` : ''}
       </div>
       ${assinatura.subscriptionStatus === 'pending' ? `<div class="plano-meta" style="color:#94a3b8;">Depois de concluir o pagamento na aba do Mercado Pago, clique em "Verificar Status Agora" para atualizar aqui.${assinatura.pendingPlanName ? ' O plano <strong>' + escapeHtml(assinatura.pendingPlanName) + '</strong> só libera os créditos de funcionário após a confirmação do pagamento.' : ''}</div>` : ''}
       ${outrosPlanos.length ? `
@@ -2099,10 +2202,10 @@ async function verificarStatusAssinatura() {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
-async function cancelarAssinaturaEmpresa() {
-  if (!confirm('Cancelar a assinatura recorrente desta empresa?')) return;
+async function solicitarCancelamentoAssinatura() {
+  if (!confirm('Solicitar o cancelamento da assinatura desta empresa? O Master vai analisar e confirmar antes que a cobrança recorrente seja de fato interrompida.')) return;
   try {
-    const r = await api('/api/companies/' + ESTADO.usuario.companyId + '/subscription/cancel', { method: 'POST' });
+    const r = await api('/api/companies/' + ESTADO.usuario.companyId + '/subscription/request-cancellation', { method: 'POST' });
     mostrarToast(r.message);
     irPara(ESTADO.abaAtual);
   } catch (e) { mostrarToast(e.message, true); }
