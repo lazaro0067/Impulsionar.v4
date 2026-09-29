@@ -1797,21 +1797,23 @@ function mostrarFormularioEmpresa(id) {
       ` : ''}
   `;
 
-  const abas = c ? `
+  const abas = `
     <div class="abas-empresa">
       <button type="button" class="aba-empresa-botao ativa" data-aba="dados" onclick="trocarAbaEmpresa('dados')">🏢 Dados da Empresa</button>
       <button type="button" class="aba-empresa-botao" data-aba="acessos" onclick="trocarAbaEmpresa('acessos')">🔑 Acessos</button>
+      ${c ? `
       <button type="button" class="aba-empresa-botao" data-aba="permissoes" onclick="trocarAbaEmpresa('permissoes')">🔒 Permissões de Módulos</button>
       <button type="button" class="aba-empresa-botao" data-aba="creditos" onclick="trocarAbaEmpresa('creditos')">💳 Créditos</button>
+      ` : ''}
     </div>
-  ` : '';
+  `;
 
   document.getElementById('form-area').innerHTML = `
     <div class="formulario">
       ${abas}
       <div class="aba-empresa-painel ativa" data-aba-painel="dados">${painelDados}</div>
-      ${c ? `
       <div class="aba-empresa-painel" data-aba-painel="acessos">${painelAcessos}</div>
+      ${c ? `
       <div class="aba-empresa-painel" data-aba-painel="permissoes">${camposPermissoesEmpresaHtml(c)}</div>
       <div class="aba-empresa-painel" data-aba-painel="creditos">${camposCreditoVagasHtml(c)}</div>
       ` : ''}
