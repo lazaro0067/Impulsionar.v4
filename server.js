@@ -13,6 +13,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const PDFDocument = require('pdfkit');
 const { MercadoPagoConfig, PreApproval, Preference, Payment, PaymentRefund } = require('mercadopago');
+const ExcelJS = require('exceljs');
 
 // Base de perguntas do checklist "DPO AMBEV" (consultoria por pilares) — vem de
 // uma planilha modelo da Ambev e é conteúdo estático (não muda pela tela),
@@ -1153,7 +1154,10 @@ function inicializarBase() {
         // Campos adicionais do plano de ação: número da verificação (dentro da
         // lista de verificações da pergunta) a que o plano se refere, dono da
         // ação e status dela — pedidos para dar mais rastreabilidade a cada plano.
-        ['verificacao_numero TEXT', 'owner TEXT', "status TEXT DEFAULT 'nao_iniciada'"].forEach(coluna => {
+        // "data_prevista" é o prazo do PLANO em si (escolhido já na criação, sem
+        // precisar abrir um follow-up separado só para ter uma data) — diferente
+        // do data_prevista de cada follow-up individual, que continua existindo.
+        ['verificacao_numero TEXT', 'owner TEXT', "status TEXT DEFAULT 'nao_iniciada'", 'data_prevista TEXT'].forEach(coluna => {
             db.run(`ALTER TABLE dpo_action_plans ADD COLUMN ${coluna}`, () => {});
         });
         db.run(`CREATE TABLE IF NOT EXISTS dpo_follow_ups (
@@ -5626,6 +5630,36 @@ app.post('/api/admin/dpo/grant-trial', requireRole('admin'), async (req, res) =>
     } catch (e) { res.status(400).json({ error: 'Erro ao conceder o período de teste.' }); }
 });
 
+// Interrompe um trial que está rodando ANTES do prazo combinado — só marca a
+// expiração para agora (não apaga a linha, fica no histórico de quem já teve
+// esse pilar liberado em algum momento).
+app.post('/api/admin/dpo/trial/:id/cancelar', requireRole('admin'), async (req, res) => {
+    try {
+        const trial = await dbGet(`SELECT * FROM dpo_purchases WHERE id = ? AND is_trial = 1`, [req.params.id]);
+        if (!trial) return res.status(404).json({ error: 'Período de teste não encontrado.' });
+        const empresa = await dbGet(`SELECT name FROM companies WHERE id = ?`, [trial.company_id]);
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE dpo_purchases SET trial_expires_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            [req.params.id],
+            (err) => err ? reject(err) : resolve()
+        ));
+        const rotuloEscopo = trial.scope === 'completo' ? 'a Consultoria Completa' : `o pilar ${DPO_AMBEV_DATA[trial.pillar_key] ? DPO_AMBEV_DATA[trial.pillar_key].label : trial.pillar_key}`;
+        notificarGestoresDaEmpresa(trial.company_id, 'DPO Ambev — período de teste interrompido', `O Master encerrou antes do prazo o período de teste de ${rotuloEscopo}.`);
+        res.json({ message: `Período de teste de ${empresa ? empresa.name : 'empresa'} interrompido!` });
+    } catch (e) { res.status(400).json({ error: 'Erro ao interromper o período de teste.' }); }
+});
+
+// Exclui de vez o registro do trial (some do histórico também). Diferente do
+// "Interromper", que só marca o prazo como já encerrado, isto apaga a linha.
+app.delete('/api/admin/dpo/trial/:id', requireRole('admin'), async (req, res) => {
+    try {
+        const trial = await dbGet(`SELECT * FROM dpo_purchases WHERE id = ? AND is_trial = 1`, [req.params.id]);
+        if (!trial) return res.status(404).json({ error: 'Período de teste não encontrado.' });
+        await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_purchases WHERE id = ?`, [req.params.id], (err) => err ? reject(err) : resolve()));
+        res.json({ message: 'Período de teste excluído!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao excluir o período de teste.' }); }
+});
+
 // Empresa compra um pilar avulso ou a consultoria completa — gera cobrança
 // única no Mercado Pago (Checkout Pro), igual à divulgação de vaga.
 app.post('/api/dpo/purchase', requireRole('client_admin'), async (req, res) => {
@@ -5765,13 +5799,13 @@ app.get('/api/admin/dpo/companies', requireRole('admin'), async (req, res) => {
         for (const emp of empresas) {
             const ativos = await pilaresAtivosDaEmpresa(emp.id);
             if (ativos.length || req.query.all) {
-                const trials = await dbAll(`SELECT scope, pillar_key, trial_expires_at FROM dpo_purchases WHERE company_id = ? AND status = 'paid' AND is_trial = 1 AND trial_expires_at > datetime('now') ORDER BY trial_expires_at ASC`, [emp.id]);
+                const trials = await dbAll(`SELECT id, scope, pillar_key, trial_expires_at FROM dpo_purchases WHERE company_id = ? AND status = 'paid' AND is_trial = 1 AND trial_expires_at > datetime('now') ORDER BY trial_expires_at ASC`, [emp.id]);
                 resultado.push({
                     id: emp.id, name: emp.name, pilaresAtivos: ativos,
                     compraCompleta: ativos.length === DPO_PILARES_ORDEM.length,
                     auditoriaOficialData: emp.dpo_auditoria_oficial_data || null,
                     auditoriaOficialNota: emp.dpo_auditoria_oficial_nota || null,
-                    trialsAtivos: trials.map(t => ({ scope: t.scope, pillarKey: t.pillar_key, expiraEm: t.trial_expires_at }))
+                    trialsAtivos: trials.map(t => ({ id: t.id, scope: t.scope, pillarKey: t.pillar_key, expiraEm: t.trial_expires_at }))
                 });
             }
         }
@@ -5932,6 +5966,131 @@ app.get('/api/dpo/meus-planos', requireRole('admin', 'client_admin'), async (req
     }
 });
 
+// Baixa em Excel (.xlsx) todos os planos de ação da empresa, consolidados por
+// pilar — mesma base de dados de "Meus Planos DPO", só que num arquivo pra
+// levar pra reunião/enviar por e-mail em vez de ficar só na tela.
+app.get('/api/dpo/export/planos', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const companyId = req.user.role === 'client_admin' ? req.user.companyId : (req.query.company_id || null);
+        if (!companyId) return res.status(400).json({ error: 'Informe a empresa (company_id).' });
+        const empresa = await dbGet(`SELECT name FROM companies WHERE id = ?`, [companyId]);
+        const planos = await dbAll(`
+            SELECT ap.*, dac.referencia as cicloReferencia
+            FROM dpo_action_plans ap
+            JOIN dpo_audit_cycles dac ON dac.id = ap.cycle_id
+            WHERE dac.company_id = ?
+            ORDER BY ap.question_key ASC, ap.created_at ASC
+        `, [companyId]);
+        const planoIds = planos.map(p => p.id);
+        let followsPorPlano = {};
+        if (planoIds.length) {
+            const follows = await dbAll(`SELECT * FROM dpo_follow_ups WHERE action_plan_id IN (${planoIds.map(() => '?').join(',')}) ORDER BY numero ASC`, planoIds);
+            follows.forEach(f => {
+                if (!followsPorPlano[f.action_plan_id]) followsPorPlano[f.action_plan_id] = [];
+                followsPorPlano[f.action_plan_id].push(f);
+            });
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Planos de Ação');
+        sheet.columns = [
+            { header: 'Pilar', key: 'pilar', width: 22 },
+            { header: 'Pergunta', key: 'pergunta', width: 50 },
+            { header: 'Verificação', key: 'verificacao', width: 14 },
+            { header: 'Plano de Ação', key: 'plano', width: 55 },
+            { header: 'Dono', key: 'dono', width: 18 },
+            { header: 'Status', key: 'status', width: 16 },
+            { header: 'Prazo', key: 'prazo', width: 14 },
+            { header: 'Ciclo', key: 'ciclo', width: 16 },
+            { header: 'Follow-ups', key: 'follows', width: 70 }
+        ];
+        sheet.getRow(1).font = { bold: true };
+        planos.forEach(p => {
+            const [pilarKey, numeroPergunta] = String(p.question_key).split(':');
+            const pilarInfo = DPO_AMBEV_DATA[pilarKey];
+            const follows = followsPorPlano[p.id] || [];
+            sheet.addRow({
+                pilar: pilarInfo ? pilarInfo.label : pilarKey,
+                pergunta: `${numeroPergunta}. ${textoDaPerguntaDpo(pilarKey, numeroPergunta)}`,
+                verificacao: p.verificacao_numero || '',
+                plano: p.texto || '',
+                dono: p.owner || '',
+                status: ROTULOS_STATUS_PLANO_DPO_SERVIDOR[p.status] || p.status || '',
+                prazo: p.data_prevista ? new Date(p.data_prevista + 'T00:00:00').toLocaleDateString('pt-BR') : '',
+                ciclo: p.cicloReferencia || '',
+                follows: follows.map(f => `Follow ${f.numero}: ${f.texto}${f.data_prevista ? ' (' + new Date(f.data_prevista).toLocaleDateString('pt-BR') + ')' : ''} [${f.status}]`).join(' | ')
+            });
+        });
+        const buffer = await workbook.xlsx.writeBuffer();
+        const nomeArquivo = `planos-dpo-${(empresa ? empresa.name : 'empresa').replace(/[^a-z0-9]+/gi, '-')}.xlsx`;
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
+        res.send(Buffer.from(buffer));
+    } catch (e) {
+        console.error('Erro ao exportar planos DPO em Excel:', e.message);
+        res.status(500).json({ error: 'Erro ao exportar os planos em Excel.' });
+    }
+});
+
+// Baixa em Excel (.xlsx) o checklist completo (todas as perguntas de todos os
+// pilares já liberados) com a pontuação dada em cada ciclo já respondido.
+app.get('/api/dpo/export/checklist', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const companyId = req.user.role === 'client_admin' ? req.user.companyId : (req.query.company_id || null);
+        if (!companyId) return res.status(400).json({ error: 'Informe a empresa (company_id).' });
+        const empresa = await dbGet(`SELECT name FROM companies WHERE id = ?`, [companyId]);
+        const ciclos = await dbAll(`SELECT * FROM dpo_audit_cycles WHERE company_id = ? ORDER BY created_at ASC`, [companyId]);
+
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Checklist DPO');
+        sheet.columns = [
+            { header: 'Ciclo', key: 'ciclo', width: 18 },
+            { header: 'Pilar', key: 'pilar', width: 22 },
+            { header: 'Grupo', key: 'grupo', width: 32 },
+            { header: 'Nº', key: 'numero', width: 8 },
+            { header: 'Pergunta', key: 'pergunta', width: 55 },
+            { header: 'Mandatória', key: 'mandatoria', width: 12 },
+            { header: 'Peso', key: 'peso', width: 8 },
+            { header: 'Pontuação', key: 'score', width: 14 }
+        ];
+        sheet.getRow(1).font = { bold: true };
+        for (const ciclo of ciclos) {
+            const pilaresCiclo = JSON.parse(ciclo.pilares || '[]');
+            const respostas = await dbAll(`SELECT question_key, score FROM dpo_answers WHERE cycle_id = ?`, [ciclo.id]);
+            const mapaRespostas = {};
+            respostas.forEach(r => { mapaRespostas[r.question_key] = r.score; });
+            pilaresCiclo.forEach(pilarKey => {
+                const pilarInfo = DPO_AMBEV_DATA[pilarKey];
+                if (!pilarInfo) return;
+                pilarInfo.grupos.forEach(g => {
+                    g.perguntas.forEach(q => {
+                        const key = `${pilarKey}:${q.numero}`;
+                        const scoreValor = mapaRespostas[key];
+                        sheet.addRow({
+                            ciclo: ciclo.referencia || '',
+                            pilar: pilarInfo.label,
+                            grupo: g.titulo || ('Grupo ' + g.numero),
+                            numero: q.numero,
+                            pergunta: q.questao,
+                            mandatoria: q.mandatoria ? 'Sim' : 'Não',
+                            peso: q.peso != null ? q.peso : '',
+                            score: (scoreValor === null || scoreValor === undefined) ? 'Não avaliado' : scoreValor
+                        });
+                    });
+                });
+            });
+        }
+        const buffer = await workbook.xlsx.writeBuffer();
+        const nomeArquivo = `checklist-dpo-${(empresa ? empresa.name : 'empresa').replace(/[^a-z0-9]+/gi, '-')}.xlsx`;
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
+        res.send(Buffer.from(buffer));
+    } catch (e) {
+        console.error('Erro ao exportar checklist DPO em Excel:', e.message);
+        res.status(500).json({ error: 'Erro ao exportar o checklist em Excel.' });
+    }
+});
+
 app.put('/api/dpo/cycles/:id/answers', requireRole('admin', 'client_admin'), async (req, res) => {
     const { questionKey, score } = req.body;
     if (!questionKey) return res.status(400).json({ error: 'Informe a pergunta.' });
@@ -5951,9 +6110,23 @@ app.put('/api/dpo/cycles/:id/answers', requireRole('admin', 'client_admin'), asy
 });
 
 const STATUS_PLANO_ACAO_DPO = ['nao_iniciada', 'em_andamento', 'concluida'];
+const ROTULOS_STATUS_PLANO_DPO_SERVIDOR = { nao_iniciada: 'Não iniciada', em_andamento: 'Em andamento', concluida: 'Concluída' };
+
+// Acha o texto da pergunta (dado estático) a partir da question_key salva no
+// plano/resposta — usado nas exportações em Excel, que precisam do texto por
+// fora do JSON já montado pra tela.
+function textoDaPerguntaDpo(pilarKey, numeroPergunta) {
+    const pilarInfo = DPO_AMBEV_DATA[pilarKey];
+    if (!pilarInfo) return '';
+    for (const g of pilarInfo.grupos) {
+        const achou = g.perguntas.find(q => q.numero === numeroPergunta);
+        if (achou) return achou.questao;
+    }
+    return '';
+}
 
 app.post('/api/dpo/action-plans', requireRole('admin', 'client_admin'), async (req, res) => {
-    const { cycle_id, questionKey, texto, verificacao_numero, owner, status } = req.body;
+    const { cycle_id, questionKey, texto, verificacao_numero, owner, status, data_prevista } = req.body;
     if (!cycle_id || !questionKey || !texto) return res.status(400).json({ error: 'Preencha o plano de ação.' });
     const statusFinal = STATUS_PLANO_ACAO_DPO.includes(status) ? status : 'nao_iniciada';
     try {
@@ -5961,23 +6134,23 @@ app.post('/api/dpo/action-plans', requireRole('admin', 'client_admin'), async (r
         if (!ciclo) return;
         if (ciclo.status === 'concluido') return res.status(400).json({ error: 'Este ciclo já foi encerrado.' });
         const resultado = await new Promise((resolve, reject) => db.run(
-            `INSERT INTO dpo_action_plans (cycle_id, question_key, texto, created_by, verificacao_numero, owner, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [cycle_id, questionKey, texto, req.user.userId, verificacao_numero || null, owner || null, statusFinal], function (err) { err ? reject(err) : resolve(this.lastID); }
+            `INSERT INTO dpo_action_plans (cycle_id, question_key, texto, created_by, verificacao_numero, owner, status, data_prevista) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [cycle_id, questionKey, texto, req.user.userId, verificacao_numero || null, owner || null, statusFinal, data_prevista || null], function (err) { err ? reject(err) : resolve(this.lastID); }
         ));
         res.json({ message: 'Plano de ação criado!', id: resultado });
     } catch (e) { res.status(400).json({ error: 'Erro ao criar o plano de ação.' }); }
 });
 
 app.put('/api/dpo/action-plans/:id', requireRole('admin', 'client_admin'), async (req, res) => {
-    const { texto, verificacao_numero, owner, status } = req.body;
+    const { texto, verificacao_numero, owner, status, data_prevista } = req.body;
     try {
         const plano = await dbGet(`SELECT * FROM dpo_action_plans WHERE id = ?`, [req.params.id]);
         if (!plano) return res.status(404).json({ error: 'Plano de ação não encontrado.' });
         const ciclo = await obterCicloComAcesso(req, res, plano.cycle_id);
         if (!ciclo) return;
         const statusFinal = status !== undefined ? (STATUS_PLANO_ACAO_DPO.includes(status) ? status : plano.status) : plano.status;
-        db.run(`UPDATE dpo_action_plans SET texto = ?, verificacao_numero = ?, owner = ?, status = ? WHERE id = ?`,
-            [texto !== undefined ? texto : plano.texto, verificacao_numero !== undefined ? verificacao_numero : plano.verificacao_numero, owner !== undefined ? owner : plano.owner, statusFinal, req.params.id],
+        db.run(`UPDATE dpo_action_plans SET texto = ?, verificacao_numero = ?, owner = ?, status = ?, data_prevista = ? WHERE id = ?`,
+            [texto !== undefined ? texto : plano.texto, verificacao_numero !== undefined ? verificacao_numero : plano.verificacao_numero, owner !== undefined ? owner : plano.owner, statusFinal, data_prevista !== undefined ? data_prevista : plano.data_prevista, req.params.id],
             () => res.json({ message: 'Plano de ação atualizado!' }));
     } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o plano de ação.' }); }
 });

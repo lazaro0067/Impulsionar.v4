@@ -5536,10 +5536,32 @@ function dpoLabelDoPilar(key) {
 function cssIdDpo(str) { return String(str).replace(/[^a-zA-Z0-9]/g, '_'); }
 
 // "3 - Todas as verificações...\n\n1 - V.1...\n\n0 - ..." -> [{valor:3,texto:'...'}, ...]
+// Extrai as opções de pontuação (normalmente 3: nota 3, 1 e 0) do texto
+// "explicacao_pontos" de cada pergunta (vem pronto da planilha modelo da
+// Ambev). Duas coisas no texto original quebravam o corte em blocos e
+// derrubavam pontuações pra 1 ou 2 opções em várias perguntas:
+//   1) "linhas em branco" que na verdade tinham um monte de espaços dentro
+//      (não eram \n\n de verdade, então o split antigo não separava ali);
+//   2) blocos que começam com "3." ou "3)" em vez de "3 -" (o traço nem
+//      sempre é usado no texto original).
+// Por isso aqui primeiro qualquer linha só-de-espaços vira uma linha
+// realmente vazia, DEPOIS quebra por linha vazia, e o separador depois do
+// número aceita "-", ".", ":" ou ")".
 function analisarOpcoesPontuacaoDpo(texto) {
   if (!texto) return [];
-  return String(texto).split(/\n\n+/).map(bloco => {
-    const m = bloco.match(/^\s*(\d+)\s*-\s*([\s\S]*)$/);
+  const linhas = String(texto).replace(/\r/g, '').split('\n');
+  const blocos = [];
+  let atual = [];
+  linhas.forEach(linha => {
+    if (linha.trim() === '') {
+      if (atual.length) { blocos.push(atual.join('\n')); atual = []; }
+    } else {
+      atual.push(linha);
+    }
+  });
+  if (atual.length) blocos.push(atual.join('\n'));
+  return blocos.map(bloco => {
+    const m = bloco.match(/^\s*(\d+)\s*[-.:)]\s*([\s\S]*)$/);
     if (!m) return null;
     return { valor: Number(m[1]), texto: m[2].replace(/\n/g, ' ').trim() };
   }).filter(Boolean);
@@ -5793,13 +5815,17 @@ async function renderDpoAgenda() {
         <div style="margin-top:14px;">
           <label style="font-size:12px;">Trials ativos agora</label>
           <table>
-            <thead><tr><th>Empresa</th><th>Pacote</th><th>Expira em</th></tr></thead>
+            <thead><tr><th>Empresa</th><th>Pacote</th><th>Expira em</th><th>Ações</th></tr></thead>
             <tbody>
               ${CACHE_DPO_EMPRESAS_TODAS.flatMap(e => (e.trialsAtivos || []).map(t => `
                 <tr>
                   <td>${escapeHtml(e.name)}</td>
                   <td>${t.scope === 'completo' ? 'Consultoria Completa' : 'Pilar ' + escapeHtml(dpoLabelDoPilar(t.pillarKey))}</td>
                   <td>${new Date(t.expiraEm).toLocaleDateString('pt-BR')}</td>
+                  <td>
+                    <button class="btn-secundario btn-sm" onclick="interromperTrialDpo(${t.id})">⏸️ Interromper</button>
+                    <button class="btn-perigo btn-sm" onclick="excluirTrialDpo(${t.id})">Excluir</button>
+                  </td>
                 </tr>
               `)).join('')}
             </tbody>
@@ -5875,6 +5901,8 @@ function abrirModalPlanoAcaoDpo(opts) {
           <option value="em_andamento" ${planoExistente?.status === 'em_andamento' ? 'selected' : ''}>Em andamento</option>
           <option value="concluida" ${planoExistente?.status === 'concluida' ? 'selected' : ''}>Concluída</option>
         </select>
+        <label>Prazo (data)</label>
+        <input id="pa-dpo-data-prevista" type="date" value="${planoExistente?.data_prevista ? String(planoExistente.data_prevista).slice(0, 10) : ''}">
         <div class="acoes-form" style="margin-top:12px;">
           <button class="btn-primario" onclick="salvarNovoPlanoAcaoDpo()">Salvar</button>
           <button class="btn-secundario" onclick="fecharModalPlanoAcaoDpo()">Cancelar</button>
@@ -5899,14 +5927,15 @@ async function salvarNovoPlanoAcaoDpo() {
   const verificacao_numero = document.getElementById('pa-dpo-verificacao').value.trim();
   const owner = document.getElementById('pa-dpo-owner').value.trim();
   const status = document.getElementById('pa-dpo-status').value;
+  const data_prevista = document.getElementById('pa-dpo-data-prevista').value || null;
   if (!texto) { mostrarToast('Descreva o plano de ação.', true); return; }
   if (!cycleId) { mostrarToast('Selecione o ciclo/empresa deste plano.', true); return; }
   try {
     if (ctx.planoId) {
-      await api('/api/dpo/action-plans/' + ctx.planoId, { method: 'PUT', body: JSON.stringify({ texto, verificacao_numero, owner, status }) });
+      await api('/api/dpo/action-plans/' + ctx.planoId, { method: 'PUT', body: JSON.stringify({ texto, verificacao_numero, owner, status, data_prevista }) });
       mostrarToast('Plano de ação atualizado!');
     } else {
-      await api('/api/dpo/action-plans', { method: 'POST', body: JSON.stringify({ cycle_id: cycleId, questionKey: ctx.questionKey, texto, verificacao_numero, owner, status }) });
+      await api('/api/dpo/action-plans', { method: 'POST', body: JSON.stringify({ cycle_id: cycleId, questionKey: ctx.questionKey, texto, verificacao_numero, owner, status, data_prevista }) });
       mostrarToast('Plano de ação criado!');
     }
     fecharModalPlanoAcaoDpo();
@@ -5982,6 +6011,24 @@ async function concederTrialDpo() {
     const r = await api('/api/admin/dpo/grant-trial', { method: 'POST', body: JSON.stringify({ companyId, scope, pillarKey: scope === 'pilar' ? pillarKey : null, days }) });
     resultado.innerHTML = `<div class="msg-vazio" style="color:#16a34a;border-color:#16a34a;">${escapeHtml(r.message)}</div>`;
     mostrarToast('Período de teste concedido!');
+    renderDpoAgenda();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function interromperTrialDpo(id) {
+  if (!confirm('Interromper este período de teste agora? A empresa perde o acesso liberado por ele imediatamente.')) return;
+  try {
+    const r = await api(`/api/admin/dpo/trial/${id}/cancelar`, { method: 'POST' });
+    mostrarToast(r.message || 'Período de teste interrompido!');
+    renderDpoAgenda();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function excluirTrialDpo(id) {
+  if (!confirm('Excluir este período de teste? Isso remove o registro por completo (não é só interromper).')) return;
+  try {
+    const r = await api(`/api/admin/dpo/trial/${id}`, { method: 'DELETE' });
+    mostrarToast(r.message || 'Período de teste excluído!');
     renderDpoAgenda();
   } catch (e) { mostrarToast(e.message, true); }
 }
@@ -6147,7 +6194,14 @@ async function renderDpoMeusPlanos() {
     cont.innerHTML = `
       <h1>Meus Planos DPO</h1>
       <p style="color:#64748b;margin-top:-8px;">Todos os planos de ação já criados pela sua empresa no DPO Ambev, consolidados por pilar (juntando todos os ciclos/meses).</p>
-      <div class="barra-acoes"><div></div><div class="direita"><button class="btn-secundario" onclick="renderDpoHome()">← Voltar ao DPO Ambev</button></div></div>
+      <div class="barra-acoes">
+        <div></div>
+        <div class="direita">
+          <button class="btn-secundario" onclick="baixarExcelDpo('planos')">📊 Baixar Excel dos Planos</button>
+          <button class="btn-secundario" onclick="baixarExcelDpo('checklist')">📊 Baixar Excel do Checklist</button>
+          <button class="btn-secundario" onclick="renderDpoHome()">← Voltar ao DPO Ambev</button>
+        </div>
+      </div>
       ${totalPlanos === 0 ? `<div class="msg-vazio">Nenhum plano de ação criado ainda.</div>` : porPilar.map(p => `
         <div style="margin-top:20px;">
           <h3 style="margin-bottom:8px;">${escapeHtml(p.label)} <span style="font-weight:400;color:#64748b;font-size:13px;">(${p.planos.length} plano${p.planos.length === 1 ? '' : 's'})</span></h3>
@@ -6157,7 +6211,7 @@ async function renderDpoMeusPlanos() {
                 <strong>Pergunta ${escapeHtml(pl.perguntaNumero || '')}:</strong> ${escapeHtml(pl.perguntaTexto || '')}
                 ${pl.cicloReferencia ? ` · <strong>Ciclo:</strong> ${escapeHtml(pl.cicloReferencia)}` : ''}
               </div>
-              ${renderPlanoAcaoDpo(pl, true)}
+              ${renderPlanoAcaoDpo(pl, false, 'recarregarMeusPlanosDpo')}
             </div>
           `).join('')}
         </div>
@@ -6166,6 +6220,29 @@ async function renderDpoMeusPlanos() {
   } catch (e) {
     cont.innerHTML = `<h1>Meus Planos DPO</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
   }
+}
+
+function recarregarMeusPlanosDpo() { renderDpoMeusPlanos(); }
+
+// Baixa em Excel (.xlsx) ou os planos de ação, ou o checklist inteiro
+// (todas as perguntas + pontuação de todos os ciclos) — tipo: 'planos' | 'checklist'.
+async function baixarExcelDpo(tipo, companyId) {
+  try {
+    mostrarToast('Gerando Excel...');
+    const urlPedido = '/api/dpo/export/' + tipo + (companyId ? '?company_id=' + companyId : '');
+    const resp = await fetch(urlPedido, { headers: { 'Authorization': 'Bearer ' + ESTADO.token } });
+    if (!resp.ok) {
+      const dados = await resp.json().catch(() => ({}));
+      throw new Error(dados.error || 'Erro ao gerar o Excel.');
+    }
+    const blob = await resp.blob();
+    const urlBlob = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = urlBlob;
+    a.download = (tipo === 'planos' ? 'planos-dpo' : 'checklist-dpo') + '.xlsx';
+    document.body.appendChild(a); a.click(); a.remove();
+    window.URL.revokeObjectURL(urlBlob);
+  } catch (e) { mostrarToast(e.message, true); }
 }
 
 let CACHE_DPO_CONSULTORES_COMPRA = [];
@@ -6266,6 +6343,10 @@ function renderCicloDpoAtual() {
   cont.innerHTML = `
     <div class="barra-acoes">
       <div><button class="btn-secundario btn-sm" onclick="${somenteLeitura ? 'renderDpoAgenda()' : 'renderDpoHome()'}">← Voltar</button></div>
+      <div class="direita">
+        <button class="btn-secundario btn-sm" onclick="baixarExcelDpo('planos', ${ciclo.company_id || 'null'})">📊 Excel dos Planos</button>
+        <button class="btn-secundario btn-sm" onclick="baixarExcelDpo('checklist', ${ciclo.company_id || 'null'})">📊 Excel do Checklist</button>
+      </div>
     </div>
     <h1>${ciclo.companyName ? escapeHtml(ciclo.companyName) + ' — ' : ''}${escapeHtml(ciclo.referencia || 'Ciclo de Autoavaliação')}</h1>
     <p style="color:#64748b;margin-top:-8px;">Status: <strong>${ROTULOS_STATUS_CICLO_DPO[ciclo.status]?.texto}</strong>${ciclo.scheduled_at ? ' · Data: ' + new Date(ciclo.scheduled_at).toLocaleDateString('pt-BR') : ''}</p>
@@ -6325,8 +6406,15 @@ function renderPerguntaDpo(p, somenteLeitura) {
   `;
 }
 
-function renderPlanoAcaoDpo(plano, somenteLeitura) {
+// aoRecarregar é o NOME (bare, sem aspas) de uma função global que recarrega
+// a tela de onde este card foi chamado — cada tela tem a sua (dentro do
+// ciclo é recarregarCicloDpoAtual; no consolidado "Meus Planos DPO" é
+// recarregarMeusPlanosDpo) — assim os botões de editar/excluir/follow deste
+// mesmo card funcionam em qualquer lugar que o chame, sem depender de estado
+// global (usa plano.cycle_id, que já vem em qualquer uma das duas consultas).
+function renderPlanoAcaoDpo(plano, somenteLeitura, aoRecarregar) {
   const statusInfo = ROTULOS_STATUS_PLANO_DPO[plano.status] || ROTULOS_STATUS_PLANO_DPO.nao_iniciada;
+  const recarregar = aoRecarregar || 'recarregarCicloDpoAtual';
   MAPA_PLANOS_ACAO_DPO[plano.id] = plano;
   return `
     <div style="background:#f8fafc;border:1px solid var(--cinza-200);border-radius:8px;padding:10px 12px;margin-top:6px;">
@@ -6334,25 +6422,26 @@ function renderPlanoAcaoDpo(plano, somenteLeitura) {
         <div style="font-size:13px;color:#334155;flex:1;">${escapeHtml(plano.texto)}</div>
         <span class="dpo-score-badge" style="background:${statusInfo.cor}20;color:${statusInfo.cor};white-space:nowrap;">${escapeHtml(statusInfo.texto)}</span>
         ${!somenteLeitura ? `
-        <button class="btn-secundario btn-sm" style="padding:2px 8px;" onclick='abrirModalPlanoAcaoDpo({ questionKey: ${JSON.stringify(plano.question_key)}, cycleId: ESTADO_DPO_VIEW.ciclo.id, planoId: ${plano.id}, aoSalvar: recarregarCicloDpoAtual })'>✏️</button>
-        <button class="btn-perigo btn-sm" style="padding:2px 8px;" onclick="excluirPlanoAcaoDpo(${plano.id})">✕</button>` : ''}
+        <button class="btn-secundario btn-sm" style="padding:2px 8px;" onclick='abrirModalPlanoAcaoDpo({ questionKey: ${JSON.stringify(plano.question_key)}, cycleId: ${plano.cycle_id}, planoId: ${plano.id}, aoSalvar: ${recarregar} })'>✏️</button>
+        <button class="btn-perigo btn-sm" style="padding:2px 8px;" onclick="excluirPlanoAcaoDpo(${plano.id}, ${recarregar})">✕</button>` : ''}
       </div>
       <div style="font-size:11.5px;color:#64748b;margin-top:2px;display:flex;gap:12px;flex-wrap:wrap;">
         ${plano.verificacao_numero ? `<span><strong>Verificação:</strong> ${escapeHtml(plano.verificacao_numero)}</span>` : ''}
         ${plano.owner ? `<span><strong>Dono:</strong> ${escapeHtml(plano.owner)}</span>` : ''}
+        ${plano.data_prevista ? `<span><strong>Prazo:</strong> ${new Date(plano.data_prevista + 'T00:00:00').toLocaleDateString('pt-BR')}</span>` : ''}
       </div>
       ${(plano.follows || []).map(f => `
         <div class="dpo-follow">
           <strong>Follow ${f.numero}:</strong> ${escapeHtml(f.texto)}${f.data_prevista ? ' · ' + new Date(f.data_prevista).toLocaleDateString('pt-BR') : ''}
           <span style="float:right;font-weight:700;color:${f.status === 'concluido' ? '#16a34a' : f.status === 'em_andamento' ? '#c9a227' : '#94a3b8'};">${escapeHtml(f.status)}</span>
-          ${!somenteLeitura ? `<div style="margin-top:4px;clear:both;"><button class="btn-secundario btn-sm" style="padding:1px 6px;font-size:11px;" onclick="marcarFollowDpo(${f.id}, '${f.status === 'concluido' ? 'pendente' : 'concluido'}')">${f.status === 'concluido' ? 'Reabrir' : 'Concluir'}</button></div>` : ''}
+          ${!somenteLeitura ? `<div style="margin-top:4px;clear:both;"><button class="btn-secundario btn-sm" style="padding:1px 6px;font-size:11px;" onclick="marcarFollowDpo(${f.id}, '${f.status === 'concluido' ? 'pendente' : 'concluido'}', ${recarregar})">${f.status === 'concluido' ? 'Reabrir' : 'Concluir'}</button></div>` : ''}
         </div>
       `).join('')}
       ${!somenteLeitura ? `
       <div style="display:flex;gap:6px;margin-top:6px;">
         <input id="dpo-follow-texto-${plano.id}" placeholder="Novo follow-up..." style="flex:1;font-size:12px;padding:5px 8px;">
         <input id="dpo-follow-data-${plano.id}" type="date" style="font-size:12px;padding:5px 8px;">
-        <button class="btn-secundario btn-sm" onclick="adicionarFollowDpo(${plano.id})">+ Follow</button>
+        <button class="btn-secundario btn-sm" onclick="adicionarFollowDpo(${plano.id}, ${recarregar})">+ Follow</button>
       </div>` : ''}
     </div>
   `;
@@ -6376,25 +6465,25 @@ async function salvarPontuacaoDpo(questionKey, valor) {
 }
 
 
-async function excluirPlanoAcaoDpo(id) {
+async function excluirPlanoAcaoDpo(id, aoRecarregar) {
   if (!confirm('Remover este plano de ação (e seus follow-ups)?')) return;
-  try { await api('/api/dpo/action-plans/' + id, { method: 'DELETE' }); mostrarToast('Removido!'); recarregarCicloDpoAtual(); }
+  try { await api('/api/dpo/action-plans/' + id, { method: 'DELETE' }); mostrarToast('Removido!'); (aoRecarregar || recarregarCicloDpoAtual)(); }
   catch (e) { mostrarToast(e.message, true); }
 }
 
-async function adicionarFollowDpo(planoId) {
+async function adicionarFollowDpo(planoId, aoRecarregar) {
   const texto = document.getElementById('dpo-follow-texto-' + planoId).value.trim();
   const data = document.getElementById('dpo-follow-data-' + planoId).value;
   if (!texto) { mostrarToast('Descreva o follow-up.', true); return; }
   try {
     await api('/api/dpo/action-plans/' + planoId + '/follow-ups', { method: 'POST', body: JSON.stringify({ texto, data_prevista: data || null }) });
     mostrarToast('Follow-up adicionado!');
-    recarregarCicloDpoAtual();
+    (aoRecarregar || recarregarCicloDpoAtual)();
   } catch (e) { mostrarToast(e.message, true); }
 }
 
-async function marcarFollowDpo(id, status) {
-  try { await api('/api/dpo/follow-ups/' + id, { method: 'PUT', body: JSON.stringify({ status }) }); recarregarCicloDpoAtual(); }
+async function marcarFollowDpo(id, status, aoRecarregar) {
+  try { await api('/api/dpo/follow-ups/' + id, { method: 'PUT', body: JSON.stringify({ status }) }); (aoRecarregar || recarregarCicloDpoAtual)(); }
   catch (e) { mostrarToast(e.message, true); }
 }
 
