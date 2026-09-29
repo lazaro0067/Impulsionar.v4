@@ -347,6 +347,25 @@
   .interruptor input:checked + .trilho { background: var(--verde, #16a34a); }
   .interruptor input:checked + .trilho:before { transform: translateX(18px); }
   .interruptor input:disabled + .trilho { opacity: .5; cursor: default; }
+
+  /* ---------- DPO Ambev (auditoria por pilar) ---------- */
+  .dpo-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-top: 18px; }
+  .dpo-pilar-botao { background: #dc4c4c; color: #fff; border: none; border-radius: 12px; padding: 26px 16px; font-size: 14px; font-weight: 800; text-align: center; cursor: pointer; min-height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.3; text-transform: uppercase; transition: transform .12s, filter .12s; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+  .dpo-pilar-botao:hover { filter: brightness(1.06); transform: translateY(-2px); }
+  .dpo-pilar-botao:disabled, .dpo-pilar-botao.bloqueado { background: #cbd5e1; color: #64748b; cursor: not-allowed; transform: none; }
+  .dpo-pilar-botao .dpo-pilar-badge { display: block; font-size: 10px; font-weight: 700; opacity: .85; margin-top: 6px; text-transform: none; }
+  .dpo-grupo { margin-top: 22px; }
+  .dpo-grupo-titulo { font-size: 13px; font-weight: 800; letter-spacing: .4px; color: #475569; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 10px; }
+  .dpo-pergunta { background: #fff; border: 1px solid var(--cinza-200); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+  .dpo-pergunta-cabecalho { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; cursor: pointer; }
+  .dpo-pergunta-titulo { font-size: 13.5px; font-weight: 700; color: var(--cinza-700); }
+  .dpo-pergunta-corpo { display: none; margin-top: 12px; }
+  .dpo-pergunta.aberta .dpo-pergunta-corpo { display: block; }
+  .dpo-pontuacao-opcoes { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+  .dpo-pontuacao-opcao { border: 2px solid var(--cinza-200); background: #fff; border-radius: 8px; padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer; max-width: 340px; text-align: left; }
+  .dpo-pontuacao-opcao.selecionada { border-color: var(--verde, #16a34a); background: #f0fdf4; color: #166534; }
+  .dpo-follow { background: #f8fafc; border: 1px dashed var(--cinza-200); border-radius: 8px; padding: 8px 10px; margin-top: 6px; font-size: 12.5px; }
+  .dpo-score-badge { font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -619,6 +638,9 @@ const MENU_POR_PERFIL = {
         ['jobPostings', 'Vagas Publicadas'], ['portalCandidates', 'Candidatos do Portal'],
         ['candidatesApproval', 'Aprovar Currículos'], ['vagaPlans', 'Planos de Vaga'], ['closingFeePlans', 'Planos de Fechamento']
     ]},
+    { group: 'DPO Ambev', items: [
+        ['dpoPrecos', 'Preços por Pilar'], ['dpoAgenda', 'Agenda de Auditorias']
+    ]},
     { group: 'Administração', items: [
         ['plans', 'Planos'], ['engagement', 'Painel de Engajamento'], ['contracts', 'Contratos'],
         ['automacao', 'Painel de Automação'], ['assistenteIA', 'Assistente IA']
@@ -643,6 +665,9 @@ const MENU_POR_PERFIL = {
     ]},
     { group: 'Vagas Ofertadas', moduleKey: 'vagas', items: [
         ['talentPool', 'Banco de Currículos'], ['jobPostings', 'Vagas Ofertadas'], ['portalCandidates', 'Candidatos do Portal']
+    ]},
+    { group: 'DPO Ambev', moduleKey: 'dpoAmbev', items: [
+        ['dpoHome', 'DPO Ambev']
     ]},
     { group: 'Empresa', items: [
         ['engagement', 'Painel de Engajamento'], ['contracts', 'Meu Contrato'], ['planosEmpresa', 'Planos Disponíveis'], ['minhaEmpresa', 'Minha Empresa']
@@ -915,7 +940,8 @@ function irPara(aba, semHistorico) {
     portalPerfil: renderPortalPerfil, portalVagas: renderPortalVagas, portalCandidaturas: renderPortalCandidaturas,
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
-    pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado
+    pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
+    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome
   };
   (renderizadores[aba] || renderDashboard)();
 }
@@ -1852,7 +1878,8 @@ const MODULOS_EMPRESA = [
   { key: 'pdi', icone: '🎯', label: 'PDI', desc: 'Planos de Desenvolvimento Individual' },
   { key: 'academy', icone: '🎓', label: 'Treinamentos', desc: 'Academy Digital, Trilhas, Competence Check' },
   { key: 'mentoria', icone: '🤝', label: 'Mentorias', desc: 'Mentorias, Comunidade, Eventos, Ranking' },
-  { key: 'vagas', icone: '💼', label: 'Recrutamento', desc: 'Banco de Currículos, Vagas' }
+  { key: 'vagas', icone: '💼', label: 'Recrutamento', desc: 'Banco de Currículos, Vagas' },
+  { key: 'dpoAmbev', icone: '🛡️', label: 'DPO Ambev', desc: 'Auditoria de processos por pilar' }
 ];
 
 function camposPermissoesEmpresaHtml(c) {
@@ -5392,6 +5419,453 @@ async function excluirClosingFeePlan(id) {
   catch (e) { mostrarToast(e.message, true); }
 }
 
+// ---------- DPO Ambev (auditoria de processos por pilar) ----------
+let CACHE_DPO_PILARES = null;
+let CACHE_DPO_EMPRESAS = [];
+let CACHE_DPO_CICLOS_ADMIN = [];
+let ESTADO_DPO_VIEW = null; // { ciclo, somenteLeitura, pilarAtivo }
+
+const ROTULOS_STATUS_CICLO_DPO = {
+  agendado: { texto: 'Agendado', cor: '#7c3aed' },
+  em_andamento: { texto: 'Em andamento', cor: '#c9a227' },
+  concluido: { texto: 'Concluído', cor: '#16a34a' }
+};
+
+function dpoLabelDoPilar(key) {
+  const p = CACHE_DPO_PILARES && CACHE_DPO_PILARES.pilares && CACHE_DPO_PILARES.pilares.find(x => x.key === key);
+  return p ? p.label : key;
+}
+
+function cssIdDpo(str) { return String(str).replace(/[^a-zA-Z0-9]/g, '_'); }
+
+// "3 - Todas as verificações...\n\n1 - V.1...\n\n0 - ..." -> [{valor:3,texto:'...'}, ...]
+function analisarOpcoesPontuacaoDpo(texto) {
+  if (!texto) return [];
+  return String(texto).split(/\n\n+/).map(bloco => {
+    const m = bloco.match(/^\s*(\d+)\s*-\s*([\s\S]*)$/);
+    if (!m) return null;
+    return { valor: Number(m[1]), texto: m[2].replace(/\n/g, ' ').trim() };
+  }).filter(Boolean);
+}
+
+function corBadgeDpo(score) {
+  if (score === null || score === undefined) return '#94a3b8';
+  if (score >= 3) return '#16a34a';
+  if (score >= 1) return '#c9a227';
+  return '#dc2626';
+}
+
+// ----- Master: preços por pilar -----
+async function renderDpoPrecos() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>DPO Ambev — Preços por Pilar</h1><p>Carregando...</p>';
+  try {
+    CACHE_DPO_PILARES = await api('/api/dpo/pillars');
+    cont.innerHTML = `
+      <h1>DPO Ambev — Preços por Pilar</h1>
+      <p style="color:#64748b;margin-top:-8px;">Defina o valor de cada pilar avulso e o valor da Auditoria Completa (todos os pilares). A empresa escolhe o pacote na tela dela.</p>
+      <div class="formulario">
+        <div class="linha">
+          <div><label>Preço da Auditoria Completa (todos os pilares)</label><input id="dpo-preco-completo" type="number" step="0.01" value="${Number(CACHE_DPO_PILARES.precoCompleto || 0).toFixed(2)}"></div>
+        </div>
+        <h3>Pilares avulsos</h3>
+        ${CACHE_DPO_PILARES.pilares.map(p => `
+          <div class="linha" style="align-items:center;">
+            <div style="flex:2"><strong>${p.numero}. ${escapeHtml(p.label)}</strong><div style="font-size:12px;color:#64748b;">${p.totalPerguntas} pergunta(s)</div></div>
+            <div><label>Preço</label><input id="dpo-preco-${p.key}" type="number" step="0.01" value="${Number(p.price).toFixed(2)}"></div>
+          </div>
+        `).join('')}
+        <div class="acoes-form"><button class="btn-primario" onclick="salvarDpoPrecos()">Salvar Preços</button></div>
+      </div>
+    `;
+  } catch (e) { cont.innerHTML = `<h1>DPO Ambev — Preços por Pilar</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+async function salvarDpoPrecos() {
+  try {
+    const precos = {};
+    CACHE_DPO_PILARES.pilares.forEach(p => { precos[p.key] = document.getElementById('dpo-preco-' + p.key).value; });
+    const precoCompleto = document.getElementById('dpo-preco-completo').value;
+    await api('/api/admin/dpo/pricing', { method: 'PUT', body: JSON.stringify({ precos, precoCompleto }) });
+    mostrarToast('Preços atualizados!');
+    renderDpoPrecos();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+// ----- Master: agenda de auditorias (ciclos) -----
+async function renderDpoAgenda() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>DPO Ambev — Agenda de Auditorias</h1><p>Carregando...</p>';
+  try {
+    CACHE_DPO_PILARES = await api('/api/dpo/pillars');
+    CACHE_DPO_EMPRESAS = await api('/api/admin/dpo/companies');
+    CACHE_DPO_CICLOS_ADMIN = await api('/api/dpo/cycles');
+    cont.innerHTML = `
+      <h1>DPO Ambev — Agenda de Auditorias</h1>
+      <p style="color:#64748b;margin-top:-8px;">Crie um novo ciclo de autoavaliação (mensal) para uma empresa que já comprou algum pilar. A empresa preenche o checklist; você acompanha o resultado.</p>
+      <div class="barra-acoes"><div class="direita"><button class="btn-primario" onclick="mostrarFormularioNovoCicloDpo()">+ Novo Ciclo</button></div></div>
+      <div id="form-area"></div>
+      <div class="grid-3">
+        ${CACHE_DPO_CICLOS_ADMIN.map(c => `
+          <div class="plano-card">
+            <h4>${escapeHtml(c.companyName)}</h4>
+            <div class="plano-meta">${escapeHtml(c.referencia || 'Sem referência')}</div>
+            <div class="plano-meta">Pilares: ${c.pilares.map(p => escapeHtml(dpoLabelDoPilar(p))).join(', ')}</div>
+            <div class="plano-meta">Status: <strong style="color:${ROTULOS_STATUS_CICLO_DPO[c.status]?.cor}">${ROTULOS_STATUS_CICLO_DPO[c.status]?.texto || c.status}</strong></div>
+            ${c.scheduled_at ? `<div class="plano-meta">Data: ${new Date(c.scheduled_at).toLocaleDateString('pt-BR')}</div>` : ''}
+            <div class="plano-meta">${c.totalRespondidas}/${c.totalPerguntas} pergunta(s) respondida(s)</div>
+            <div class="acoes-form" style="flex-wrap:wrap;">
+              <button class="btn-secundario btn-sm" onclick="verDetalheCicloDpoAdmin(${c.id})">👁️ Ver</button>
+              ${c.status !== 'concluido' ? `<button class="btn-perigo btn-sm" onclick="mudarStatusCicloDpo(${c.id}, 'concluido')">Encerrar Ciclo</button>` : `<button class="btn-secundario btn-sm" onclick="mudarStatusCicloDpo(${c.id}, 'em_andamento')">Reabrir</button>`}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      ${!CACHE_DPO_CICLOS_ADMIN.length ? '<div class="msg-vazio">Nenhum ciclo criado ainda.</div>' : ''}
+    `;
+  } catch (e) { cont.innerHTML = `<h1>DPO Ambev — Agenda de Auditorias</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+function mostrarFormularioNovoCicloDpo() {
+  const area = document.getElementById('form-area');
+  area.innerHTML = `
+    <div class="formulario">
+      <h3 style="margin-top:0;">Novo Ciclo de Autoavaliação</h3>
+      <div class="linha">
+        <div style="flex:2"><label>Empresa</label>
+          <select id="dpo-ciclo-empresa" onchange="atualizarPilaresDisponiveisCicloDpo()">
+            <option value="">Selecione...</option>
+            ${CACHE_DPO_EMPRESAS.map(e => `<option value="${e.id}">${escapeHtml(e.name)}${e.compraCompleta ? ' (Auditoria Completa)' : ''}</option>`).join('')}
+          </select>
+        </div>
+        <div><label>Referência (ex: Setembro/2026)</label><input id="dpo-ciclo-referencia" placeholder="ex: Setembro/2026"></div>
+        <div><label>Data da autoavaliação</label><input id="dpo-ciclo-data" type="date"></div>
+      </div>
+      <div id="dpo-ciclo-pilares-area"><p style="font-size:12px;color:#64748b;">Selecione a empresa para ver os pilares liberados.</p></div>
+      <div class="acoes-form">
+        <button class="btn-primario" onclick="salvarNovoCicloDpo()">Criar Ciclo</button>
+        <button class="btn-secundario" onclick="document.getElementById('form-area').innerHTML=''">Cancelar</button>
+      </div>
+    </div>
+  `;
+  if (CACHE_DPO_EMPRESAS.length === 1) {
+    document.getElementById('dpo-ciclo-empresa').value = CACHE_DPO_EMPRESAS[0].id;
+    atualizarPilaresDisponiveisCicloDpo();
+  }
+}
+
+function atualizarPilaresDisponiveisCicloDpo() {
+  const companyId = Number(document.getElementById('dpo-ciclo-empresa').value);
+  const area = document.getElementById('dpo-ciclo-pilares-area');
+  const empresa = CACHE_DPO_EMPRESAS.find(e => e.id === companyId);
+  if (!empresa) { area.innerHTML = ''; return; }
+  area.innerHTML = `
+    <label>Pilares deste ciclo</label>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+      ${empresa.pilaresAtivos.map(chave => `
+        <label style="font-weight:400;font-size:13px;display:flex;align-items:center;gap:6px;">
+          <input type="checkbox" class="dpo-ciclo-pilar-check" value="${chave}" checked> ${escapeHtml(dpoLabelDoPilar(chave))}
+        </label>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function salvarNovoCicloDpo() {
+  const companyId = document.getElementById('dpo-ciclo-empresa').value;
+  const referencia = document.getElementById('dpo-ciclo-referencia').value;
+  const scheduled_at = document.getElementById('dpo-ciclo-data').value;
+  const pilares = [...document.querySelectorAll('.dpo-ciclo-pilar-check:checked')].map(c => c.value);
+  if (!companyId) { mostrarToast('Selecione a empresa.', true); return; }
+  if (!pilares.length) { mostrarToast('Selecione ao menos um pilar.', true); return; }
+  try {
+    await api('/api/admin/dpo/cycles', { method: 'POST', body: JSON.stringify({ company_id: companyId, referencia, pilares, scheduled_at: scheduled_at || null }) });
+    mostrarToast('Ciclo criado! A empresa já foi avisada.');
+    renderDpoAgenda();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function mudarStatusCicloDpo(id, status) {
+  if (status === 'concluido' && !confirm('Encerrar este ciclo? Ele deixa de poder ser editado pela empresa.')) return;
+  try { await api('/api/admin/dpo/cycles/' + id, { method: 'PUT', body: JSON.stringify({ status }) }); mostrarToast('Ciclo atualizado!'); renderDpoAgenda(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+async function verDetalheCicloDpoAdmin(id) {
+  try {
+    const ciclo = await api('/api/dpo/cycles/' + id);
+    abrirVisualizacaoCicloDpo(ciclo, true);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+// ----- Empresa: home (grade de pilares, igual à referência) -----
+async function renderDpoHome() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>DPO Ambev</h1><p>Carregando...</p>';
+  try {
+    CACHE_DPO_PILARES = await api('/api/dpo/pillars');
+    const ciclos = await api('/api/dpo/cycles');
+    const ciclosAbertos = ciclos.filter(c => c.status !== 'concluido');
+    const cicloPorPilar = {};
+    ciclosAbertos.forEach(c => { c.pilares.forEach(p => { if (!cicloPorPilar[p]) cicloPorPilar[p] = c; }); });
+
+    cont.innerHTML = `
+      <h1>DPO Ambev</h1>
+      <p style="color:#64748b;margin-top:-8px;">Auditoria de processos por pilar, com autoavaliação mensal e planos de ação.</p>
+      <div class="barra-acoes"><div class="direita"><button class="btn-primario" onclick="mostrarComprasDpo()">🛒 Comprar Pilares / Auditoria Completa</button></div></div>
+      <div id="modal-area"></div>
+      <div class="dpo-grade">
+        ${CACHE_DPO_PILARES.pilares.map(p => {
+          const comprado = CACHE_DPO_PILARES.meusPilares && CACHE_DPO_PILARES.meusPilares.includes(p.key);
+          const ciclo = cicloPorPilar[p.key];
+          if (!comprado) {
+            return `<button class="dpo-pilar-botao bloqueado" onclick="mostrarComprasDpo()">${p.numero} - ${escapeHtml(p.label)}<span class="dpo-pilar-badge">🔒 Comprar</span></button>`;
+          }
+          if (!ciclo) {
+            return `<button class="dpo-pilar-botao bloqueado" disabled>${p.numero} - ${escapeHtml(p.label)}<span class="dpo-pilar-badge">Aguardando agenda do Master</span></button>`;
+          }
+          return `<button class="dpo-pilar-botao" onclick="abrirCicloDpo(${ciclo.id}, '${p.key}')">${p.numero} - ${escapeHtml(p.label)}<span class="dpo-pilar-badge">${ROTULOS_STATUS_CICLO_DPO[ciclo.status].texto} · ${escapeHtml(ciclo.referencia || '')}</span></button>`;
+        }).join('')}
+      </div>
+      ${CACHE_DPO_PILARES.pendentes && CACHE_DPO_PILARES.pendentes.length ? `
+      <div style="margin-top:22px;">
+        <h3>Pagamentos pendentes</h3>
+        <div class="grid-3">
+          ${CACHE_DPO_PILARES.pendentes.map(p => `
+            <div class="plano-card">
+              <div class="plano-meta">${p.scope === 'completo' ? 'Auditoria Completa' : escapeHtml(dpoLabelDoPilar(p.pillar_key))} — R$ ${Number(p.price).toFixed(2)}</div>
+              <div class="acoes-form"><button class="btn-primario btn-sm" onclick="pagarDpoPendente(${p.id})">Pagar</button></div>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
+      ${ciclos.length ? `
+      <div style="margin-top:24px;">
+        <h3>Histórico de Ciclos</h3>
+        <div class="grid-3">
+          ${ciclos.map(c => `
+            <div class="plano-card">
+              <div class="plano-meta">${escapeHtml(c.referencia || 'Sem referência')}</div>
+              <div class="plano-meta">Pilares: ${c.pilares.map(p => escapeHtml(dpoLabelDoPilar(p))).join(', ')}</div>
+              <div class="plano-meta">Status: <strong style="color:${ROTULOS_STATUS_CICLO_DPO[c.status]?.cor}">${ROTULOS_STATUS_CICLO_DPO[c.status]?.texto}</strong></div>
+              <div class="plano-meta">${c.totalRespondidas}/${c.totalPerguntas} respondida(s)</div>
+              <div class="acoes-form"><button class="btn-secundario btn-sm" onclick="abrirCicloDpo(${c.id}, '${c.pilares[0]}')">Abrir</button></div>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
+    `;
+  } catch (e) { cont.innerHTML = `<h1>DPO Ambev</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+function mostrarComprasDpo() {
+  const modalArea = document.getElementById('modal-area');
+  if (!modalArea) return;
+  const completa = CACHE_DPO_PILARES.compraCompleta;
+  modalArea.innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa" style="max-width:520px;">
+        <h3 style="margin-top:0;">Comprar DPO Ambev</h3>
+        ${completa ? `<p style="font-size:13px;color:#16a34a;">✓ Sua empresa já tem a Auditoria Completa (todos os pilares).</p>` : `
+        <div class="plano-card" style="margin-bottom:14px;">
+          <h4 style="margin-top:0;">Auditoria Completa</h4>
+          <div class="plano-meta">Todos os 7 pilares — R$ ${Number(CACHE_DPO_PILARES.precoCompleto).toFixed(2)}</div>
+          <div class="acoes-form"><button class="btn-primario btn-sm" onclick="comprarDpo('completo', null)">Comprar Auditoria Completa</button></div>
+        </div>
+        <p style="font-size:12px;color:#64748b;">Ou compre pilares avulsos:</p>
+        `}
+        ${CACHE_DPO_PILARES.pilares.filter(p => !completa && !(CACHE_DPO_PILARES.meusPilares || []).includes(p.key)).map(p => `
+          <div class="plano-card" style="margin-bottom:8px;">
+            <div class="plano-meta"><strong>${p.numero}. ${escapeHtml(p.label)}</strong> — R$ ${Number(p.price).toFixed(2)}</div>
+            <div class="acoes-form"><button class="btn-secundario btn-sm" onclick="comprarDpo('pilar', '${p.key}')">Comprar este pilar</button></div>
+          </div>
+        `).join('')}
+        <div class="acoes-form"><button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button></div>
+      </div>
+    </div>
+  `;
+}
+
+async function comprarDpo(scope, pillarKey) {
+  try {
+    const r = await api('/api/dpo/purchase', { method: 'POST', body: JSON.stringify({ scope, pillarKey }) });
+    mostrarToast(r.message);
+    if (r.initPoint) window.open(r.initPoint, '_blank');
+    document.getElementById('modal-area').innerHTML = '';
+    renderDpoHome();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function pagarDpoPendente(id) {
+  try {
+    const r = await api('/api/dpo/reopen-checkout/' + id, { method: 'POST' });
+    mostrarToast(r.message);
+    if (r.checkoutUrl) window.open(r.checkoutUrl, '_blank');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function confirmarPagamentoDpo(paymentId) {
+  try { const r = await api('/api/dpo/confirm-payment', { method: 'POST', body: JSON.stringify({ paymentId }) }); mostrarToast(r.message); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+// ----- Questionário do ciclo (empresa preenche / Master acompanha) -----
+async function abrirCicloDpo(cicloId, pilarKeyInicial) {
+  try {
+    const ciclo = await api('/api/dpo/cycles/' + cicloId);
+    abrirVisualizacaoCicloDpo(ciclo, ESTADO.usuario.role === 'admin', pilarKeyInicial);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+function abrirVisualizacaoCicloDpo(ciclo, somenteLeitura, pilarKeyInicial) {
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key) };
+  renderCicloDpoAtual();
+}
+
+function renderCicloDpoAtual() {
+  const cont = document.getElementById('conteudo');
+  const { ciclo, somenteLeitura, pilarAtivo } = ESTADO_DPO_VIEW;
+  const pilar = ciclo.pilares.find(p => p.key === pilarAtivo) || ciclo.pilares[0];
+  if (!pilar) { cont.innerHTML = '<div class="msg-vazio">Este ciclo não tem pilares.</div>'; return; }
+  const totalPerguntas = pilar.grupos.reduce((s, g) => s + g.perguntas.length, 0);
+  const respondidas = pilar.grupos.reduce((s, g) => s + g.perguntas.filter(p => p.score !== null && p.score !== undefined).length, 0);
+  const validos = pilar.grupos.flatMap(g => g.perguntas).filter(p => p.score !== null && p.score !== undefined);
+  const mediaScore = validos.length ? (validos.reduce((s, p) => s + p.score, 0) / validos.length).toFixed(1) : null;
+  cont.innerHTML = `
+    <div class="barra-acoes">
+      <div><button class="btn-secundario btn-sm" onclick="${somenteLeitura ? 'renderDpoAgenda()' : 'renderDpoHome()'}">← Voltar</button></div>
+    </div>
+    <h1>${ciclo.companyName ? escapeHtml(ciclo.companyName) + ' — ' : ''}${escapeHtml(ciclo.referencia || 'Ciclo de Autoavaliação')}</h1>
+    <p style="color:#64748b;margin-top:-8px;">Status: <strong>${ROTULOS_STATUS_CICLO_DPO[ciclo.status]?.texto}</strong>${ciclo.scheduled_at ? ' · Data: ' + new Date(ciclo.scheduled_at).toLocaleDateString('pt-BR') : ''}</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+      ${ciclo.pilares.map(p => `<button class="btn-sm ${p.key === pilar.key ? 'btn-primario' : 'btn-secundario'}" onclick="trocarPilarCicloDpo('${p.key}')">${escapeHtml(p.label)}</button>`).join('')}
+    </div>
+    <div class="plano-meta" style="margin-bottom:12px;">${respondidas}/${totalPerguntas} pergunta(s) respondida(s)${mediaScore !== null ? ` · Média: <strong>${mediaScore}</strong>` : ''}</div>
+    ${pilar.grupos.map(g => `
+      <div class="dpo-grupo">
+        <div class="dpo-grupo-titulo">${escapeHtml(g.numero)} ${escapeHtml(g.titulo)}</div>
+        ${g.perguntas.map(p => renderPerguntaDpo(p, somenteLeitura)).join('')}
+      </div>
+    `).join('')}
+  `;
+}
+
+function trocarPilarCicloDpo(key) {
+  ESTADO_DPO_VIEW.pilarAtivo = key;
+  renderCicloDpoAtual();
+}
+
+function renderPerguntaDpo(p, somenteLeitura) {
+  const opcoes = analisarOpcoesPontuacaoDpo(p.explicacao_pontos);
+  const cor = corBadgeDpo(p.score);
+  const idSeguro = cssIdDpo(p.questionKey);
+  return `
+    <div class="dpo-pergunta" id="dpo-pergunta-${idSeguro}">
+      <div class="dpo-pergunta-cabecalho" onclick="document.getElementById('dpo-pergunta-${idSeguro}').classList.toggle('aberta')">
+        <div>
+          <span class="dpo-pergunta-titulo">${escapeHtml(p.numero)} ${escapeHtml(p.questao)}</span>
+          ${p.mandatoria ? '<span style="color:#dc2626;font-size:11px;font-weight:700;"> · Mandatória</span>' : ''}
+          <div style="font-size:11.5px;color:#94a3b8;">Peso ${p.peso || 0}${p.aplicabilidade ? ' · ' + escapeHtml(p.aplicabilidade) : ''}</div>
+        </div>
+        <span class="dpo-score-badge" style="background:${cor}20;color:${cor};">${(p.score === null || p.score === undefined) ? 'Não avaliado' : 'Nota ' + p.score}</span>
+      </div>
+      <div class="dpo-pergunta-corpo">
+        ${p.verificacao ? `<div style="font-size:12.5px;color:#334155;white-space:pre-line;margin-bottom:10px;"><strong>Verificação:</strong><br>${escapeHtml(p.verificacao)}</div>` : ''}
+        <details style="margin-bottom:10px;"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#4338ca;">❓ How to Check (tirar dúvidas)</summary>
+          <div style="font-size:12.5px;color:#334155;white-space:pre-line;margin-top:6px;">${escapeHtml(p.how_to_check || '')}</div>
+        </details>
+        <label style="font-size:12px;">Pontuação</label>
+        <div class="dpo-pontuacao-opcoes">
+          ${opcoes.map(o => `<button class="dpo-pontuacao-opcao ${p.score === o.valor ? 'selecionada' : ''}" ${somenteLeitura ? 'disabled' : ''} onclick="salvarPontuacaoDpo('${p.questionKey}', ${o.valor})">${o.valor} — ${escapeHtml(o.texto)}</button>`).join('')}
+        </div>
+        <div style="margin-top:12px;">
+          <label style="font-size:12px;">Plano de Ação</label>
+          ${p.planosDeAcao.map(pl => renderPlanoAcaoDpo(pl, somenteLeitura)).join('')}
+          ${!somenteLeitura ? `
+          <div style="display:flex;gap:8px;margin-top:6px;">
+            <input id="dpo-novo-plano-${idSeguro}" placeholder="Descreva o plano de ação..." style="flex:1;">
+            <button class="btn-secundario btn-sm" onclick="criarPlanoAcaoDpo('${p.questionKey}')">+ Adicionar</button>
+          </div>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPlanoAcaoDpo(plano, somenteLeitura) {
+  return `
+    <div style="background:#f8fafc;border:1px solid var(--cinza-200);border-radius:8px;padding:10px 12px;margin-top:6px;">
+      <div style="display:flex;justify-content:space-between;gap:8px;">
+        <div style="font-size:13px;color:#334155;flex:1;">${escapeHtml(plano.texto)}</div>
+        ${!somenteLeitura ? `<button class="btn-perigo btn-sm" style="padding:2px 8px;" onclick="excluirPlanoAcaoDpo(${plano.id})">✕</button>` : ''}
+      </div>
+      ${(plano.follows || []).map(f => `
+        <div class="dpo-follow">
+          <strong>Follow ${f.numero}:</strong> ${escapeHtml(f.texto)}${f.data_prevista ? ' · ' + new Date(f.data_prevista).toLocaleDateString('pt-BR') : ''}
+          <span style="float:right;font-weight:700;color:${f.status === 'concluido' ? '#16a34a' : f.status === 'em_andamento' ? '#c9a227' : '#94a3b8'};">${escapeHtml(f.status)}</span>
+          ${!somenteLeitura ? `<div style="margin-top:4px;clear:both;"><button class="btn-secundario btn-sm" style="padding:1px 6px;font-size:11px;" onclick="marcarFollowDpo(${f.id}, '${f.status === 'concluido' ? 'pendente' : 'concluido'}')">${f.status === 'concluido' ? 'Reabrir' : 'Concluir'}</button></div>` : ''}
+        </div>
+      `).join('')}
+      ${!somenteLeitura ? `
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <input id="dpo-follow-texto-${plano.id}" placeholder="Novo follow-up..." style="flex:1;font-size:12px;padding:5px 8px;">
+        <input id="dpo-follow-data-${plano.id}" type="date" style="font-size:12px;padding:5px 8px;">
+        <button class="btn-secundario btn-sm" onclick="adicionarFollowDpo(${plano.id})">+ Follow</button>
+      </div>` : ''}
+    </div>
+  `;
+}
+
+async function recarregarCicloDpoAtual() {
+  const cicloId = ESTADO_DPO_VIEW.ciclo.id;
+  const pilarAtivo = ESTADO_DPO_VIEW.pilarAtivo;
+  const somenteLeitura = ESTADO_DPO_VIEW.somenteLeitura;
+  const ciclo = await api('/api/dpo/cycles/' + cicloId);
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo };
+  renderCicloDpoAtual();
+}
+
+async function salvarPontuacaoDpo(questionKey, valor) {
+  try {
+    await api('/api/dpo/cycles/' + ESTADO_DPO_VIEW.ciclo.id + '/answers', { method: 'PUT', body: JSON.stringify({ questionKey, score: valor }) });
+    mostrarToast('Pontuação salva!');
+    recarregarCicloDpoAtual();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function criarPlanoAcaoDpo(questionKey) {
+  const input = document.getElementById('dpo-novo-plano-' + cssIdDpo(questionKey));
+  const texto = input.value.trim();
+  if (!texto) { mostrarToast('Descreva o plano de ação.', true); return; }
+  try {
+    await api('/api/dpo/action-plans', { method: 'POST', body: JSON.stringify({ cycle_id: ESTADO_DPO_VIEW.ciclo.id, questionKey, texto }) });
+    mostrarToast('Plano de ação criado!');
+    recarregarCicloDpoAtual();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function excluirPlanoAcaoDpo(id) {
+  if (!confirm('Remover este plano de ação (e seus follow-ups)?')) return;
+  try { await api('/api/dpo/action-plans/' + id, { method: 'DELETE' }); mostrarToast('Removido!'); recarregarCicloDpoAtual(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+async function adicionarFollowDpo(planoId) {
+  const texto = document.getElementById('dpo-follow-texto-' + planoId).value.trim();
+  const data = document.getElementById('dpo-follow-data-' + planoId).value;
+  if (!texto) { mostrarToast('Descreva o follow-up.', true); return; }
+  try {
+    await api('/api/dpo/action-plans/' + planoId + '/follow-ups', { method: 'POST', body: JSON.stringify({ texto, data_prevista: data || null }) });
+    mostrarToast('Follow-up adicionado!');
+    recarregarCicloDpoAtual();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function marcarFollowDpo(id, status) {
+  try { await api('/api/dpo/follow-ups/' + id, { method: 'PUT', body: JSON.stringify({ status }) }); recarregarCicloDpoAtual(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
 // ---------- Admin/client_admin: vagas publicadas pela empresa ----------
 let CACHE_VAGA_PLANS_ATIVOS = [];
 let CACHE_CLOSING_FEE_PLANS_ATIVOS = [];
@@ -7131,6 +7605,13 @@ if (ESTADO.token && ESTADO.usuario) {
       window.history.replaceState({}, document.title, window.location.pathname);
       if (ESTADO.usuario && ['admin', 'client_admin'].includes(ESTADO.usuario.role)) {
         setTimeout(() => irPara('jobPostings'), 300);
+      }
+    });
+  } else if (paymentId && externalReference && externalReference.startsWith('dpoaudit:') && ESTADO.token) {
+    confirmarPagamentoDpo(paymentId).then(() => {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      if (ESTADO.usuario && ['admin', 'client_admin'].includes(ESTADO.usuario.role)) {
+        setTimeout(() => irPara('dpoHome'), 300);
       }
     });
   }

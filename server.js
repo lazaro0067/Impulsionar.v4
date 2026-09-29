@@ -14,6 +14,12 @@ const multer = require('multer');
 const PDFDocument = require('pdfkit');
 const { MercadoPagoConfig, PreApproval, Preference, Payment, PaymentRefund } = require('mercadopago');
 
+// Base de perguntas do checklist "DPO AMBEV" (auditoria por pilares) — vem de
+// uma planilha modelo da Ambev e é conteúdo estático (não muda pela tela),
+// então fica num JSON à parte em vez de virar uma tabela gigante no banco.
+const DPO_AMBEV_DATA = require('./dpo_ambev_data.json');
+const DPO_PILARES_ORDEM = ['gente', 'seguranca', 'planejamento', 'armazem', 'frota', 'entrega', 'gestao'];
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -1010,6 +1016,90 @@ function inicializarBase() {
             FOREIGN KEY(employee_id) REFERENCES employees(id),
             FOREIGN KEY(mentor_id) REFERENCES mentors(id),
             FOREIGN KEY(created_by) REFERENCES users(id)
+        )`);
+
+        // ---------- DPO AMBEV: auditoria de processos por pilar ----------
+        // Preço de cada pilar (Master define em "DPO Ambev > Preços"). O preço
+        // da "Auditoria Completa" (todos os pilares de uma vez) fica guardado
+        // em integration_settings (chave dpo_full_audit_price), reaproveitando
+        // a mesma tabelinha de configurações que já existe pro Mercado Pago.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_pillar_prices (
+            pillar_key TEXT PRIMARY KEY,
+            price REAL DEFAULT 0,
+            active INTEGER DEFAULT 1
+        )`);
+        DPO_PILARES_ORDEM.forEach(chave => {
+            db.run(`INSERT OR IGNORE INTO dpo_pillar_prices (pillar_key, price, active) VALUES (?, 0, 1)`, [chave]);
+        });
+
+        // Compra de um pilar avulso ou da auditoria completa por uma empresa —
+        // cobrança única via Mercado Pago (Checkout Pro), no mesmo padrão já
+        // usado para divulgação de vagas e taxa de fechamento.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_purchases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER NOT NULL,
+            scope TEXT NOT NULL,
+            pillar_key TEXT,
+            price REAL,
+            status TEXT DEFAULT 'pending_payment',
+            mp_preference_id TEXT,
+            mp_payment_id TEXT,
+            checkout_url TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            paid_at DATETIME,
+            FOREIGN KEY(company_id) REFERENCES companies(id)
+        )`);
+
+        // Ciclo de autoavaliação: o Master cria um novo ciclo (mensal, "quando
+        // quiser") para a empresa, com os pilares que ela já comprou. É dentro
+        // do ciclo que a empresa preenche as respostas daquele mês — assim dá
+        // pra comparar a evolução mês a mês olhando os ciclos anteriores.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_audit_cycles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER NOT NULL,
+            referencia TEXT,
+            pilares TEXT NOT NULL,
+            scheduled_at DATETIME,
+            status TEXT DEFAULT 'agendado',
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            closed_at DATETIME,
+            FOREIGN KEY(company_id) REFERENCES companies(id)
+        )`);
+
+        // Pontuação marcada pela empresa em cada pergunta, dentro de um ciclo.
+        // question_key = "<pilar>:<numero da pergunta>", ex.: "seguranca:1.1".
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_answers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cycle_id INTEGER NOT NULL,
+            question_key TEXT NOT NULL,
+            score INTEGER,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_by INTEGER,
+            UNIQUE(cycle_id, question_key),
+            FOREIGN KEY(cycle_id) REFERENCES dpo_audit_cycles(id)
+        )`);
+
+        // Plano de ação de uma pergunta específica do ciclo, com um ou mais
+        // "follows" (Follow 1, Follow 2...) de acompanhamento.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_action_plans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cycle_id INTEGER NOT NULL,
+            question_key TEXT NOT NULL,
+            texto TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            created_by INTEGER,
+            FOREIGN KEY(cycle_id) REFERENCES dpo_audit_cycles(id)
+        )`);
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_follow_ups (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            action_plan_id INTEGER NOT NULL,
+            numero INTEGER,
+            texto TEXT,
+            data_prevista TEXT,
+            status TEXT DEFAULT 'pendente',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(action_plan_id) REFERENCES dpo_action_plans(id)
         )`);
 
         db.get(`SELECT COUNT(*) as total FROM vaga_plans`, [], (err, row) => {
@@ -5023,6 +5113,403 @@ app.post('/api/companies/:id/subscription/change-plan', async (req, res) => {
     }
 });
 
+// ============================================================
+// DPO AMBEV — auditoria de processos por pilar (autoavaliação mensal)
+// ============================================================
+
+// Pilares que a empresa já tem liberados: todos, se ela comprou a "Auditoria
+// Completa", ou só os avulsos que ela pagou individualmente.
+async function pilaresAtivosDaEmpresa(companyId) {
+    const compras = await dbAll(`SELECT * FROM dpo_purchases WHERE company_id = ? AND status = 'paid'`, [companyId]);
+    if (compras.some(c => c.scope === 'completo')) return DPO_PILARES_ORDEM.slice();
+    return [...new Set(compras.filter(c => c.scope === 'pilar').map(c => c.pillar_key))];
+}
+
+// Busca um ciclo garantindo que o usuário logado pode vê-lo/editá-lo (admin
+// sempre pode; client_admin só o ciclo da própria empresa). Retorna null (e já
+// responde o erro) quando não pode.
+async function obterCicloComAcesso(req, res, cicloId) {
+    const ciclo = await dbGet(`SELECT * FROM dpo_audit_cycles WHERE id = ?`, [cicloId]);
+    if (!ciclo) { res.status(404).json({ error: 'Ciclo de auditoria não encontrado.' }); return null; }
+    if (req.user.role === 'client_admin' && String(ciclo.company_id) !== String(req.user.companyId)) {
+        res.status(403).json({ error: 'Este ciclo não pertence à sua empresa.' });
+        return null;
+    }
+    return ciclo;
+}
+
+// Monta a lista de perguntas (dado estático) de um pilar, já mesclada com as
+// respostas/planos de ação/follow-ups já salvos naquele ciclo.
+async function montarPilarDoCiclo(cicloId, pilarKey) {
+    const pilar = DPO_AMBEV_DATA[pilarKey];
+    if (!pilar) return null;
+    const respostas = await dbAll(`SELECT question_key, score FROM dpo_answers WHERE cycle_id = ? AND question_key LIKE ?`, [cicloId, `${pilarKey}:%`]);
+    const mapaRespostas = {};
+    respostas.forEach(r => { mapaRespostas[r.question_key] = r.score; });
+    const planos = await dbAll(`SELECT * FROM dpo_action_plans WHERE cycle_id = ? AND question_key LIKE ? ORDER BY created_at ASC`, [cicloId, `${pilarKey}:%`]);
+    const planoIds = planos.map(p => p.id);
+    let followsPorPlano = {};
+    if (planoIds.length) {
+        const follows = await dbAll(`SELECT * FROM dpo_follow_ups WHERE action_plan_id IN (${planoIds.map(() => '?').join(',')}) ORDER BY numero ASC`, planoIds);
+        follows.forEach(f => {
+            if (!followsPorPlano[f.action_plan_id]) followsPorPlano[f.action_plan_id] = [];
+            followsPorPlano[f.action_plan_id].push(f);
+        });
+    }
+    const grupos = pilar.grupos.map(g => ({
+        numero: g.numero,
+        titulo: g.titulo,
+        perguntas: g.perguntas.map(p => {
+            const key = `${pilarKey}:${p.numero}`;
+            const planosDaPergunta = planos.filter(pl => pl.question_key === key).map(pl => ({ ...pl, follows: followsPorPlano[pl.id] || [] }));
+            return { ...p, questionKey: key, score: (key in mapaRespostas) ? mapaRespostas[key] : null, planosDeAcao: planosDaPergunta };
+        })
+    }));
+    return { key: pilarKey, label: pilar.label, grupos };
+}
+
+// Catálogo de pilares + preços. Para client_admin, já vem com o que a empresa
+// já comprou/paga e o que está pendente de pagamento.
+app.get('/api/dpo/pillars', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const precos = await dbAll(`SELECT * FROM dpo_pillar_prices`);
+        const mapaPrecos = {};
+        precos.forEach(p => { mapaPrecos[p.pillar_key] = p; });
+        const precoCompletoRow = await dbGet(`SELECT value FROM integration_settings WHERE key = 'dpo_full_audit_price'`);
+        const precoCompleto = precoCompletoRow ? Number(precoCompletoRow.value) : 0;
+
+        const pilares = DPO_PILARES_ORDEM.map((chave, i) => ({
+            key: chave,
+            numero: i + 1,
+            label: DPO_AMBEV_DATA[chave].label,
+            totalPerguntas: DPO_AMBEV_DATA[chave].grupos.reduce((soma, g) => soma + g.perguntas.length, 0),
+            price: mapaPrecos[chave] ? Number(mapaPrecos[chave].price) : 0,
+            active: mapaPrecos[chave] ? !!mapaPrecos[chave].active : true
+        }));
+
+        let meusPilares = null, compraCompleta = false, pendentes = [];
+        if (req.user.role === 'client_admin') {
+            const compras = await dbAll(`SELECT * FROM dpo_purchases WHERE company_id = ? ORDER BY created_at DESC`, [req.user.companyId]);
+            compraCompleta = compras.some(c => c.scope === 'completo' && c.status === 'paid');
+            meusPilares = compraCompleta ? DPO_PILARES_ORDEM.slice() : [...new Set(compras.filter(c => c.scope === 'pilar' && c.status === 'paid').map(c => c.pillar_key))];
+            pendentes = compras.filter(c => c.status === 'pending_payment');
+        }
+        res.json({ pilares, precoCompleto, meusPilares, compraCompleta, pendentes });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar os pilares do DPO Ambev.' }); }
+});
+
+app.put('/api/admin/dpo/pricing', requireRole('admin'), async (req, res) => {
+    const { precos, precoCompleto } = req.body;
+    try {
+        if (precos && typeof precos === 'object') {
+            for (const chave of Object.keys(precos)) {
+                if (!DPO_PILARES_ORDEM.includes(chave)) continue;
+                await new Promise((resolve, reject) => db.run(
+                    `UPDATE dpo_pillar_prices SET price = ? WHERE pillar_key = ?`,
+                    [Number(precos[chave]) || 0, chave], (err) => err ? reject(err) : resolve()
+                ));
+            }
+        }
+        if (precoCompleto !== undefined) {
+            await new Promise((resolve, reject) => db.run(
+                `INSERT INTO integration_settings (key, value) VALUES ('dpo_full_audit_price', ?)
+                 ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+                [String(Number(precoCompleto) || 0)], (err) => err ? reject(err) : resolve()
+            ));
+        }
+        res.json({ message: 'Preços do DPO Ambev atualizados!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar os preços.' }); }
+});
+
+// Empresa compra um pilar avulso ou a auditoria completa — gera cobrança
+// única no Mercado Pago (Checkout Pro), igual à divulgação de vaga.
+app.post('/api/dpo/purchase', requireRole('client_admin'), async (req, res) => {
+    const { scope, pillarKey } = req.body;
+    if (!['completo', 'pilar'].includes(scope)) return res.status(400).json({ error: 'Escopo de compra inválido.' });
+    if (scope === 'pilar' && !DPO_PILARES_ORDEM.includes(pillarKey)) return res.status(400).json({ error: 'Selecione um pilar válido.' });
+    if (!mpPreference) return res.status(503).json({ error: 'Mercado Pago ainda não foi configurado no servidor.' });
+    try {
+        const companyId = req.user.companyId;
+        const ativos = await pilaresAtivosDaEmpresa(companyId);
+        if (scope === 'completo' && ativos.length === DPO_PILARES_ORDEM.length) return res.status(400).json({ error: 'Sua empresa já tem a Auditoria Completa liberada.' });
+        if (scope === 'pilar' && ativos.includes(pillarKey)) return res.status(400).json({ error: 'Sua empresa já tem este pilar liberado.' });
+
+        // Já existe uma compra igual aguardando pagamento? Reaproveita o link em
+        // vez de criar outra cobrança duplicada para o mesmo pilar/escopo.
+        const pendente = scope === 'completo'
+            ? await dbGet(`SELECT * FROM dpo_purchases WHERE company_id = ? AND scope = 'completo' AND status = 'pending_payment'`, [companyId])
+            : await dbGet(`SELECT * FROM dpo_purchases WHERE company_id = ? AND scope = 'pilar' AND pillar_key = ? AND status = 'pending_payment'`, [companyId, pillarKey]);
+        if (pendente && pendente.checkout_url) {
+            return res.json({ message: 'Você já tem um pagamento pendente para este item — reabrindo o checkout.', id: pendente.id, initPoint: pendente.checkout_url });
+        }
+
+        let preco, titulo;
+        if (scope === 'completo') {
+            const row = await dbGet(`SELECT value FROM integration_settings WHERE key = 'dpo_full_audit_price'`);
+            preco = row ? Number(row.value) : 0;
+            titulo = 'DPO Ambev — Auditoria Completa (todos os pilares)';
+        } else {
+            const row = await dbGet(`SELECT price FROM dpo_pillar_prices WHERE pillar_key = ?`, [pillarKey]);
+            preco = row ? Number(row.price) : 0;
+            titulo = `DPO Ambev — Pilar ${DPO_AMBEV_DATA[pillarKey].label}`;
+        }
+        if (!preco) return res.status(400).json({ error: 'Este item ainda não tem um preço definido pelo Master.' });
+
+        const resultado = await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_purchases (company_id, scope, pillar_key, price) VALUES (?, ?, ?, ?)`,
+            [companyId, scope, scope === 'pilar' ? pillarKey : null, preco],
+            function (err) { err ? reject(err) : resolve(this.lastID); }
+        ));
+
+        const preference = await mpPreference.create({
+            body: {
+                items: [{ title: titulo, quantity: 1, unit_price: preco, currency_id: 'BRL' }],
+                external_reference: `dpoaudit:${resultado}`,
+                ...montarRetornoMercadoPago()
+            }
+        });
+        const checkoutUrl = preference.sandbox_init_point || preference.init_point;
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE dpo_purchases SET mp_preference_id = ?, checkout_url = ? WHERE id = ?`,
+            [preference.id, checkoutUrl, resultado], (err) => err ? reject(err) : resolve()
+        ));
+        res.json({ message: 'Compra criada! Complete o pagamento para liberar.', id: resultado, initPoint: checkoutUrl });
+    } catch (e) {
+        const detalhe = detalheErroMercadoPago(e);
+        console.error('Erro ao criar compra DPO Ambev:', detalhe);
+        res.status(400).json({ error: `Erro ao iniciar o pagamento no Mercado Pago: ${detalhe}` });
+    }
+});
+
+app.post('/api/dpo/confirm-payment', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { paymentId } = req.body;
+    if (!paymentId) return res.status(400).json({ error: 'Informe o paymentId.' });
+    if (!mpPayment) return res.status(503).json({ error: 'Mercado Pago ainda não foi configurado no servidor.' });
+    try {
+        const pagamento = await mpPayment.get({ id: paymentId });
+        const ref = pagamento.external_reference || '';
+        if (!ref.startsWith('dpoaudit:')) return res.status(400).json({ error: 'Pagamento não corresponde a uma compra do DPO Ambev.' });
+        const compraId = ref.split(':')[1];
+        const compra = await dbGet(`SELECT * FROM dpo_purchases WHERE id = ?`, [compraId]);
+        if (!compra) return res.status(404).json({ error: 'Compra não encontrada.' });
+        if (req.user.role === 'client_admin' && compra.company_id !== req.user.companyId) return res.status(403).json({ error: 'Esta compra não pertence à sua empresa.' });
+        if (pagamento.status === 'approved') {
+            await new Promise((resolve, reject) => db.run(
+                `UPDATE dpo_purchases SET status = 'paid', mp_payment_id = ?, paid_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                [paymentId, compraId], (err) => err ? reject(err) : resolve()
+            ));
+        }
+        res.json({ message: pagamento.status === 'approved' ? 'Pagamento confirmado — pilar(es) liberado(s)!' : 'Pagamento ainda não aprovado.', status: pagamento.status });
+    } catch (e) {
+        console.error('Erro ao confirmar pagamento DPO Ambev:', e.message);
+        res.status(400).json({ error: 'Erro ao consultar o pagamento no Mercado Pago.' });
+    }
+});
+
+app.post('/api/dpo/reopen-checkout/:id', requireRole('client_admin'), async (req, res) => {
+    try {
+        const compra = await dbGet(`SELECT * FROM dpo_purchases WHERE id = ? AND company_id = ?`, [req.params.id, req.user.companyId]);
+        if (!compra) return res.status(404).json({ error: 'Compra não encontrada.' });
+        if (compra.status === 'paid') return res.status(400).json({ error: 'Esta compra já foi paga.' });
+        if (!mpPreference) return res.status(503).json({ error: 'Mercado Pago ainda não foi configurado no servidor.' });
+        const titulo = compra.scope === 'completo' ? 'DPO Ambev — Auditoria Completa (todos os pilares)' : `DPO Ambev — Pilar ${DPO_AMBEV_DATA[compra.pillar_key]?.label || compra.pillar_key}`;
+        const preference = await mpPreference.create({
+            body: {
+                items: [{ title: titulo, quantity: 1, unit_price: Number(compra.price) || 0.01, currency_id: 'BRL' }],
+                external_reference: `dpoaudit:${compra.id}`,
+                ...montarRetornoMercadoPago()
+            }
+        });
+        const checkoutUrl = preference.sandbox_init_point || preference.init_point;
+        await new Promise((resolve, reject) => db.run(`UPDATE dpo_purchases SET mp_preference_id = ?, checkout_url = ? WHERE id = ?`, [preference.id, checkoutUrl, compra.id], (err) => err ? reject(err) : resolve()));
+        res.json({ message: 'Novo link de pagamento gerado!', checkoutUrl });
+    } catch (e) {
+        const detalhe = detalheErroMercadoPago(e);
+        res.status(400).json({ error: `Erro ao gerar novo link: ${detalhe}` });
+    }
+});
+
+// Lista de empresas com o resumo do que já compraram, para o Master escolher
+// na hora de criar um novo ciclo de auditoria.
+app.get('/api/admin/dpo/companies', requireRole('admin'), async (req, res) => {
+    try {
+        const empresas = await dbAll(`SELECT id, name FROM companies ORDER BY name ASC`);
+        const resultado = [];
+        for (const emp of empresas) {
+            const ativos = await pilaresAtivosDaEmpresa(emp.id);
+            if (ativos.length) resultado.push({ id: emp.id, name: emp.name, pilaresAtivos: ativos, compraCompleta: ativos.length === DPO_PILARES_ORDEM.length });
+        }
+        res.json(resultado);
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar empresas.' }); }
+});
+
+// Master cria um novo ciclo (autoavaliação mensal) para a empresa, com os
+// pilares que ela já tem liberados (ou um subconjunto, se preferir).
+app.post('/api/admin/dpo/cycles', requireRole('admin'), async (req, res) => {
+    const { company_id, referencia, pilares, scheduled_at } = req.body;
+    if (!company_id) return res.status(400).json({ error: 'Selecione a empresa.' });
+    try {
+        const ativos = await pilaresAtivosDaEmpresa(company_id);
+        if (!ativos.length) return res.status(400).json({ error: 'Esta empresa ainda não comprou nenhum pilar do DPO Ambev.' });
+        const escolhidos = (Array.isArray(pilares) && pilares.length) ? pilares.filter(p => ativos.includes(p)) : ativos;
+        if (!escolhidos.length) return res.status(400).json({ error: 'Nenhum dos pilares selecionados está liberado para esta empresa.' });
+
+        const resultado = await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_audit_cycles (company_id, referencia, pilares, scheduled_at, status, created_by) VALUES (?, ?, ?, ?, 'agendado', ?)`,
+            [company_id, referencia || '', JSON.stringify(escolhidos), scheduled_at || null, req.user.userId],
+            function (err) { err ? reject(err) : resolve(this.lastID); }
+        ));
+        notificarPorCompanyAdmins(company_id, 'Nova autoavaliação DPO Ambev', `Um novo ciclo (${referencia || ''}) foi aberto — preencha o checklist dos pilares liberados.`, 'dpoHome');
+        res.json({ message: 'Ciclo de autoavaliação criado!', id: resultado });
+    } catch (e) { res.status(400).json({ error: 'Erro ao criar o ciclo.' }); }
+});
+
+app.put('/api/admin/dpo/cycles/:id', requireRole('admin'), async (req, res) => {
+    const { status, scheduled_at, referencia } = req.body;
+    try {
+        const ciclo = await dbGet(`SELECT * FROM dpo_audit_cycles WHERE id = ?`, [req.params.id]);
+        if (!ciclo) return res.status(404).json({ error: 'Ciclo não encontrado.' });
+        const novoStatus = status || ciclo.status;
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE dpo_audit_cycles SET status = ?, scheduled_at = COALESCE(?, scheduled_at), referencia = COALESCE(?, referencia), closed_at = CASE WHEN ? = 'concluido' THEN CURRENT_TIMESTAMP ELSE closed_at END WHERE id = ?`,
+            [novoStatus, scheduled_at || null, referencia || null, novoStatus, req.params.id],
+            (err) => err ? reject(err) : resolve()
+        ));
+        res.json({ message: 'Ciclo atualizado!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o ciclo.' }); }
+});
+
+// Lista os ciclos — da própria empresa (client_admin) ou, para o Master, de
+// uma empresa específica (?company_id=) ou de todas (visão geral).
+app.get('/api/dpo/cycles', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const companyId = req.user.role === 'client_admin' ? req.user.companyId : (req.query.company_id || null);
+        const ciclos = companyId
+            ? await dbAll(`SELECT dac.*, c.name as companyName FROM dpo_audit_cycles dac JOIN companies c ON c.id = dac.company_id WHERE dac.company_id = ? ORDER BY dac.created_at DESC`, [companyId])
+            : await dbAll(`SELECT dac.*, c.name as companyName FROM dpo_audit_cycles dac JOIN companies c ON c.id = dac.company_id ORDER BY dac.created_at DESC`);
+        const comResumo = [];
+        for (const ciclo of ciclos) {
+            const pilaresCiclo = JSON.parse(ciclo.pilares || '[]');
+            const totalPerguntas = pilaresCiclo.reduce((soma, p) => soma + (DPO_AMBEV_DATA[p] ? DPO_AMBEV_DATA[p].grupos.reduce((s, g) => s + g.perguntas.length, 0) : 0), 0);
+            const totalRespondidas = await dbGet(`SELECT COUNT(*) as total FROM dpo_answers WHERE cycle_id = ? AND score IS NOT NULL`, [ciclo.id]);
+            comResumo.push({ ...ciclo, pilares: pilaresCiclo, totalPerguntas, totalRespondidas: totalRespondidas.total });
+        }
+        res.json(comResumo);
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar os ciclos.' }); }
+});
+
+app.get('/api/dpo/cycles/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const ciclo = await obterCicloComAcesso(req, res, req.params.id);
+        if (!ciclo) return;
+        const empresa = await dbGet(`SELECT name FROM companies WHERE id = ?`, [ciclo.company_id]);
+        const pilaresCiclo = JSON.parse(ciclo.pilares || '[]');
+        const pilares = [];
+        for (const chave of pilaresCiclo) {
+            const montado = await montarPilarDoCiclo(ciclo.id, chave);
+            if (montado) pilares.push(montado);
+        }
+        res.json({ ...ciclo, companyName: empresa ? empresa.name : '', pilares });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar o ciclo.' }); }
+});
+
+app.put('/api/dpo/cycles/:id/answers', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { questionKey, score } = req.body;
+    if (!questionKey) return res.status(400).json({ error: 'Informe a pergunta.' });
+    try {
+        const ciclo = await obterCicloComAcesso(req, res, req.params.id);
+        if (!ciclo) return;
+        if (ciclo.status === 'concluido') return res.status(400).json({ error: 'Este ciclo já foi encerrado e não pode mais ser editado.' });
+        const valor = (score === null || score === '') ? null : Number(score);
+        await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_answers (cycle_id, question_key, score, updated_by) VALUES (?, ?, ?, ?)
+             ON CONFLICT(cycle_id, question_key) DO UPDATE SET score = excluded.score, updated_at = CURRENT_TIMESTAMP, updated_by = excluded.updated_by`,
+            [req.params.id, questionKey, valor, req.user.userId], (err) => err ? reject(err) : resolve()
+        ));
+        if (ciclo.status === 'agendado') db.run(`UPDATE dpo_audit_cycles SET status = 'em_andamento' WHERE id = ?`, [req.params.id], () => {});
+        res.json({ message: 'Resposta salva!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar a resposta.' }); }
+});
+
+app.post('/api/dpo/action-plans', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { cycle_id, questionKey, texto } = req.body;
+    if (!cycle_id || !questionKey || !texto) return res.status(400).json({ error: 'Preencha o plano de ação.' });
+    try {
+        const ciclo = await obterCicloComAcesso(req, res, cycle_id);
+        if (!ciclo) return;
+        if (ciclo.status === 'concluido') return res.status(400).json({ error: 'Este ciclo já foi encerrado.' });
+        const resultado = await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_action_plans (cycle_id, question_key, texto, created_by) VALUES (?, ?, ?, ?)`,
+            [cycle_id, questionKey, texto, req.user.userId], function (err) { err ? reject(err) : resolve(this.lastID); }
+        ));
+        res.json({ message: 'Plano de ação criado!', id: resultado });
+    } catch (e) { res.status(400).json({ error: 'Erro ao criar o plano de ação.' }); }
+});
+
+app.put('/api/dpo/action-plans/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { texto } = req.body;
+    try {
+        const plano = await dbGet(`SELECT * FROM dpo_action_plans WHERE id = ?`, [req.params.id]);
+        if (!plano) return res.status(404).json({ error: 'Plano de ação não encontrado.' });
+        const ciclo = await obterCicloComAcesso(req, res, plano.cycle_id);
+        if (!ciclo) return;
+        db.run(`UPDATE dpo_action_plans SET texto = ? WHERE id = ?`, [texto || '', req.params.id], () => res.json({ message: 'Plano de ação atualizado!' }));
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o plano de ação.' }); }
+});
+
+app.delete('/api/dpo/action-plans/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const plano = await dbGet(`SELECT * FROM dpo_action_plans WHERE id = ?`, [req.params.id]);
+        if (!plano) return res.status(404).json({ error: 'Plano de ação não encontrado.' });
+        const ciclo = await obterCicloComAcesso(req, res, plano.cycle_id);
+        if (!ciclo) return;
+        db.run(`DELETE FROM dpo_follow_ups WHERE action_plan_id = ?`, [req.params.id], () => {});
+        db.run(`DELETE FROM dpo_action_plans WHERE id = ?`, [req.params.id], () => res.json({ message: 'Plano de ação removido!' }));
+    } catch (e) { res.status(400).json({ error: 'Erro ao remover o plano de ação.' }); }
+});
+
+app.post('/api/dpo/action-plans/:id/follow-ups', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { texto, data_prevista } = req.body;
+    if (!texto) return res.status(400).json({ error: 'Descreva o follow-up.' });
+    try {
+        const plano = await dbGet(`SELECT * FROM dpo_action_plans WHERE id = ?`, [req.params.id]);
+        if (!plano) return res.status(404).json({ error: 'Plano de ação não encontrado.' });
+        const ciclo = await obterCicloComAcesso(req, res, plano.cycle_id);
+        if (!ciclo) return;
+        const ultimo = await dbGet(`SELECT MAX(numero) as maximo FROM dpo_follow_ups WHERE action_plan_id = ?`, [req.params.id]);
+        const numero = (ultimo && ultimo.maximo) ? ultimo.maximo + 1 : 1;
+        const resultado = await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_follow_ups (action_plan_id, numero, texto, data_prevista) VALUES (?, ?, ?, ?)`,
+            [req.params.id, numero, texto, data_prevista || null], function (err) { err ? reject(err) : resolve(this.lastID); }
+        ));
+        res.json({ message: `Follow ${numero} adicionado!`, id: resultado, numero });
+    } catch (e) { res.status(400).json({ error: 'Erro ao adicionar o follow-up.' }); }
+});
+
+app.put('/api/dpo/follow-ups/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { texto, data_prevista, status } = req.body;
+    try {
+        const follow = await dbGet(`SELECT * FROM dpo_follow_ups WHERE id = ?`, [req.params.id]);
+        if (!follow) return res.status(404).json({ error: 'Follow-up não encontrado.' });
+        const plano = await dbGet(`SELECT * FROM dpo_action_plans WHERE id = ?`, [follow.action_plan_id]);
+        const ciclo = await obterCicloComAcesso(req, res, plano.cycle_id);
+        if (!ciclo) return;
+        db.run(`UPDATE dpo_follow_ups SET texto = COALESCE(?, texto), data_prevista = COALESCE(?, data_prevista), status = COALESCE(?, status) WHERE id = ?`,
+            [texto || null, data_prevista || null, status || null, req.params.id], () => res.json({ message: 'Follow-up atualizado!' }));
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o follow-up.' }); }
+});
+
+app.delete('/api/dpo/follow-ups/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const follow = await dbGet(`SELECT * FROM dpo_follow_ups WHERE id = ?`, [req.params.id]);
+        if (!follow) return res.status(404).json({ error: 'Follow-up não encontrado.' });
+        const plano = await dbGet(`SELECT * FROM dpo_action_plans WHERE id = ?`, [follow.action_plan_id]);
+        const ciclo = await obterCicloComAcesso(req, res, plano.cycle_id);
+        if (!ciclo) return;
+        db.run(`DELETE FROM dpo_follow_ups WHERE id = ?`, [req.params.id], () => res.json({ message: 'Follow-up removido!' }));
+    } catch (e) { res.status(400).json({ error: 'Erro ao remover o follow-up.' }); }
+});
+
 // Webhook público do Mercado Pago — recebe notificações de mudança de status
 // da assinatura (autorizada, pausada, cancelada) e sincroniza com o banco local.
 app.post('/api/webhooks/mercadopago', async (req, res) => {
@@ -5071,6 +5558,16 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
                     [dataId, jobId], () => resolve()
                 ));
                 if (vaga) notificarGestoresDaEmpresa(vaga.company_id, 'Taxa de fechamento paga', `Pagamento da taxa de fechamento da vaga "${vaga.title}" confirmado.`);
+            } else if (ref.startsWith('dpoaudit:') && pagamento.status === 'approved') {
+                const compraId = ref.split(':')[1];
+                const compra = await dbGet(`SELECT * FROM dpo_purchases WHERE id = ?`, [compraId]);
+                if (compra && compra.status !== 'paid') {
+                    await new Promise((resolve) => db.run(
+                        `UPDATE dpo_purchases SET status = 'paid', mp_payment_id = ?, paid_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                        [dataId, compraId], () => resolve()
+                    ));
+                    notificarGestoresDaEmpresa(compra.company_id, 'DPO Ambev liberado', 'Pagamento confirmado — o pilar/auditoria já está disponível para autoavaliação.');
+                }
             }
         }
         res.sendStatus(200);
