@@ -784,6 +784,11 @@ function inicializarBase() {
         db.run(`ALTER TABLE companies ADD COLUMN subscription_status TEXT DEFAULT 'none'`, () => {});
         db.run(`ALTER TABLE companies ADD COLUMN subscription_updated_at DATETIME`, () => {});
         db.run(`ALTER TABLE companies ADD COLUMN trial_ends_at TEXT`, () => {});
+        // Plano "pendente de pagamento": quando a empresa clica pra aderir/trocar de
+        // plano pela tela "Planos Disponíveis" (self-service), o plan_id só é
+        // aplicado de verdade (liberando os créditos de funcionário) depois que o
+        // Mercado Pago confirma o pagamento. Até lá, fica guardado aqui.
+        db.run(`ALTER TABLE companies ADD COLUMN pending_plan_id INTEGER`, () => {});
 
         db.get(`SELECT COUNT(*) as total FROM plans`, [], (err, row) => {
             if (!err && row && row.total === 0) {
@@ -4541,6 +4546,11 @@ app.get('/api/companies/:id/subscription', async (req, res) => {
     try {
         const empresa = await dbGet(`SELECT c.*, p.name as planName, p.mp_price, p.trial_days FROM companies c LEFT JOIN plans p ON p.id = c.plan_id WHERE c.id = ?`, [id]);
         if (!empresa) return res.status(404).json({ error: 'Empresa não encontrada.' });
+        let pendingPlanName = null;
+        if (empresa.pending_plan_id) {
+            const pendente = await dbGet(`SELECT name FROM plans WHERE id = ?`, [empresa.pending_plan_id]);
+            pendingPlanName = pendente ? pendente.name : null;
+        }
         res.json({
             planName: empresa.planName,
             mp_price: empresa.mp_price,
@@ -4548,7 +4558,9 @@ app.get('/api/companies/:id/subscription', async (req, res) => {
             subscriptionStatus: empresa.subscription_status || 'none',
             trialEndsAt: empresa.trial_ends_at,
             hasPreapproval: !!empresa.mp_preapproval_id,
-            mercadoPagoConfigurado: !!mpPreApproval
+            mercadoPagoConfigurado: !!mpPreApproval,
+            pendingPlanId: empresa.pending_plan_id || null,
+            pendingPlanName
         });
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar assinatura.' }); }
 });
@@ -4561,13 +4573,22 @@ app.post('/api/companies/:id/subscription/refresh', async (req, res) => {
     if (!ensureCompanyAccess(req, res, id)) return;
     if (!mpPreApproval) return res.status(503).json({ error: 'Mercado Pago ainda não foi configurado no servidor (defina MP_ACCESS_TOKEN no .env).' });
     try {
-        const empresa = await dbGet(`SELECT mp_preapproval_id FROM companies WHERE id = ?`, [id]);
+        const empresa = await dbGet(`SELECT mp_preapproval_id, pending_plan_id FROM companies WHERE id = ?`, [id]);
         if (!empresa || !empresa.mp_preapproval_id) return res.status(400).json({ error: 'Esta empresa ainda não iniciou nenhuma assinatura.' });
         const dadosAtualizados = await mpPreApproval.get({ id: empresa.mp_preapproval_id });
-        await new Promise((resolve, reject) => db.run(
-            `UPDATE companies SET subscription_status = ?, subscription_updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-            [dadosAtualizados.status, id], (err) => err ? reject(err) : resolve()
-        ));
+
+        if (dadosAtualizados.status === 'authorized' && empresa.pending_plan_id) {
+            // Pagamento confirmado — agora sim libera o plano (e o crédito de funcionário) escolhido.
+            await new Promise((resolve, reject) => db.run(
+                `UPDATE companies SET subscription_status = ?, subscription_updated_at = CURRENT_TIMESTAMP, plan_id = ?, pending_plan_id = NULL WHERE id = ?`,
+                [dadosAtualizados.status, empresa.pending_plan_id, id], (err) => err ? reject(err) : resolve()
+            ));
+        } else {
+            await new Promise((resolve, reject) => db.run(
+                `UPDATE companies SET subscription_status = ?, subscription_updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                [dadosAtualizados.status, id], (err) => err ? reject(err) : resolve()
+            ));
+        }
         if (dadosAtualizados.status === 'authorized') notificarGestoresDaEmpresa(id, 'Assinatura ativada!', 'Sua assinatura foi confirmada no Mercado Pago.');
         res.json({ message: 'Status atualizado!', subscriptionStatus: dadosAtualizados.status });
     } catch (e) {
@@ -4596,9 +4617,19 @@ app.post('/api/companies/:id/subscription/cancel', async (req, res) => {
     }
 });
 
-// Upgrade/downgrade: troca o plano de uma empresa que já tem assinatura ativa,
-// atualizando o valor cobrado diretamente no preapproval existente (sem exigir
-// que o gestor autorize tudo de novo no Mercado Pago).
+// Troca/adesão de plano pela empresa (tela "Planos Disponíveis" / self-service).
+//
+// Duas situações bem diferentes:
+// 1) A empresa JÁ tem uma assinatura ativa e autorizada no Mercado Pago — nesse
+//    caso ela já é uma cliente pagante, então um upgrade/downgrade só ajusta o
+//    valor cobrado dali pra frente no preapproval existente, sem exigir nova
+//    autorização, e o plan_id muda na hora.
+// 2) A empresa NÃO tem assinatura ativa ainda (primeira adesão, ou assinatura
+//    cancelada) — nesse caso o plan_id NÃO pode mudar na hora, porque isso
+//    liberaria crédito de cadastro de funcionário de graça. Em vez disso,
+//    criamos uma nova cobrança no Mercado Pago e guardamos o plano escolhido em
+//    "pending_plan_id"; só quando o pagamento for confirmado (via webhook ou
+//    "Verificar Status Agora") é que o plan_id de fato muda.
 app.post('/api/companies/:id/subscription/change-plan', async (req, res) => {
     const { id } = req.params;
     if (!ensureCompanyAccess(req, res, id)) return;
@@ -4610,20 +4641,66 @@ app.post('/api/companies/:id/subscription/change-plan', async (req, res) => {
         const empresa = await dbGet(`SELECT * FROM companies WHERE id = ?`, [id]);
         if (!empresa) return res.status(404).json({ error: 'Empresa não encontrada.' });
 
-        if (empresa.mp_preapproval_id && empresa.subscription_status === 'authorized') {
+        const jaEhAssinantePagante = !!(empresa.mp_preapproval_id && empresa.subscription_status === 'authorized');
+
+        if (jaEhAssinantePagante) {
+            // Upgrade/downgrade de quem já paga: ajusta o valor cobrado e troca na hora.
             if (!mpPreApproval) return res.status(503).json({ error: 'Mercado Pago ainda não foi configurado no servidor.' });
-            if (!novoPlano.mp_price) return res.status(400).json({ error: 'O novo plano ainda não tem preço configurado para cobrança recorrente.' });
+            if (!novoPlano.mp_price) return res.status(400).json({ error: 'O novo plano ainda não tem preço configurado para cobrança recorrente. Fale com a Impulsionar.' });
             await mpPreApproval.update({
                 id: empresa.mp_preapproval_id,
                 body: { auto_recurring: { transaction_amount: Number(novoPlano.mp_price) } }
             });
+            await new Promise((resolve, reject) => db.run(
+                `UPDATE companies SET plan_id = ?, pending_plan_id = NULL WHERE id = ?`, [planId, id],
+                (err) => err ? reject(err) : resolve()
+            ));
+            return res.json({ message: 'Plano alterado com sucesso!' });
         }
 
-        await new Promise((resolve, reject) => db.run(`UPDATE companies SET plan_id = ? WHERE id = ?`, [planId, id], (err) => err ? reject(err) : resolve()));
-        res.json({ message: 'Plano alterado com sucesso!' });
+        // Primeira adesão (ou assinatura anterior cancelada): precisa pagar antes.
+        if (!mpPreApproval) return res.status(503).json({ error: 'Mercado Pago ainda não foi configurado no servidor (defina MP_ACCESS_TOKEN no .env).' });
+        if (!novoPlano.mp_price) return res.status(400).json({ error: 'Este plano ainda não tem preço de cobrança recorrente configurado — fale com a Impulsionar para contratar.' });
+
+        const emailContato = await obterEmailContatoEmpresa(id);
+        if (!emailContato) return res.status(400).json({ error: 'Cadastre um gestor (client_admin) com e-mail para esta empresa antes de assinar.' });
+
+        const corpo = {
+            reason: `Impulsionar V4 — Plano ${novoPlano.name}`,
+            external_reference: `company:${id}`,
+            payer_email: emailContato,
+            back_url: appBaseUrlAtiva,
+            auto_recurring: {
+                frequency: 1,
+                frequency_type: 'months',
+                transaction_amount: Number(novoPlano.mp_price),
+                currency_id: 'BRL'
+            },
+            status: 'pending'
+        };
+        if (novoPlano.trial_days && Number(novoPlano.trial_days) > 0) {
+            corpo.auto_recurring.free_trial = { frequency: Number(novoPlano.trial_days), frequency_type: 'days' };
+        }
+
+        const resultado = await mpPreApproval.create({ body: corpo });
+        const dataTrial = novoPlano.trial_days && Number(novoPlano.trial_days) > 0
+            ? new Date(Date.now() + Number(novoPlano.trial_days) * 86400000).toISOString()
+            : null;
+
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE companies SET mp_preapproval_id = ?, subscription_status = ?, subscription_updated_at = CURRENT_TIMESTAMP, trial_ends_at = ?, pending_plan_id = ? WHERE id = ?`,
+            [resultado.id, resultado.status || 'pending', dataTrial, planId, id],
+            (err) => err ? reject(err) : resolve()
+        ));
+
+        res.json({
+            message: 'Quase lá! Complete o pagamento na aba do Mercado Pago — os créditos deste plano são liberados assim que o pagamento for confirmado.',
+            initPoint: resultado.init_point,
+            status: resultado.status
+        });
     } catch (e) {
         console.error('Erro ao trocar plano da assinatura:', e.message);
-        res.status(400).json({ error: 'Erro ao alterar o plano da assinatura no Mercado Pago.' });
+        res.status(400).json({ error: 'Erro ao iniciar o pagamento no Mercado Pago. Verifique o preço do plano e as credenciais configuradas.' });
     }
 });
 
@@ -4637,11 +4714,20 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
 
         if (tipo === 'preapproval' && mpPreApproval) {
             const dadosAtualizados = await mpPreApproval.get({ id: dataId });
-            const empresa = await dbGet(`SELECT id FROM companies WHERE mp_preapproval_id = ?`, [dataId]);
-            await new Promise((resolve) => db.run(
-                `UPDATE companies SET subscription_status = ?, subscription_updated_at = CURRENT_TIMESTAMP WHERE mp_preapproval_id = ?`,
-                [dadosAtualizados.status, dataId], () => resolve()
-            ));
+            const empresa = await dbGet(`SELECT id, pending_plan_id FROM companies WHERE mp_preapproval_id = ?`, [dataId]);
+            if (dadosAtualizados.status === 'authorized' && empresa && empresa.pending_plan_id) {
+                // Pagamento confirmado automaticamente pelo Mercado Pago — libera o
+                // plano (e os créditos de cadastro de funcionário) escolhido.
+                await new Promise((resolve) => db.run(
+                    `UPDATE companies SET subscription_status = ?, subscription_updated_at = CURRENT_TIMESTAMP, plan_id = ?, pending_plan_id = NULL WHERE mp_preapproval_id = ?`,
+                    [dadosAtualizados.status, empresa.pending_plan_id, dataId], () => resolve()
+                ));
+            } else {
+                await new Promise((resolve) => db.run(
+                    `UPDATE companies SET subscription_status = ?, subscription_updated_at = CURRENT_TIMESTAMP WHERE mp_preapproval_id = ?`,
+                    [dadosAtualizados.status, dataId], () => resolve()
+                ));
+            }
             if (empresa) {
                 const rotulos = { authorized: 'Assinatura ativada!', paused: 'Assinatura pausada', cancelled: 'Assinatura cancelada' };
                 if (rotulos[dadosAtualizados.status]) notificarGestoresDaEmpresa(empresa.id, rotulos[dadosAtualizados.status], 'Status atualizado automaticamente pelo Mercado Pago.');
