@@ -6089,7 +6089,7 @@ async function renderDpoHome() {
             return `<button class="dpo-pilar-botao bloqueado" onclick="mostrarComprasDpo()">${p.numero} - ${escapeHtml(p.label)}<span class="dpo-pilar-badge">🔒 Comprar</span></button>`;
           }
           if (!ciclo) {
-            return `<button class="dpo-pilar-botao bloqueado" disabled>${p.numero} - ${escapeHtml(p.label)}<span class="dpo-pilar-badge">Aguardando agenda do Master</span></button>`;
+            return `<button class="dpo-pilar-botao" onclick="abrirOuCriarPilarDpo('${p.key}')">${p.numero} - ${escapeHtml(p.label)}<span class="dpo-pilar-badge">Liberado · clique para responder</span></button>`;
           }
           return `<button class="dpo-pilar-botao" onclick="abrirCicloDpo(${ciclo.id}, '${p.key}')">${p.numero} - ${escapeHtml(p.label)}<span class="dpo-pilar-badge">${ROTULOS_STATUS_CICLO_DPO[ciclo.status].texto} · ${escapeHtml(ciclo.referencia || '')}</span></button>`;
         }).join('')}
@@ -6193,6 +6193,16 @@ async function abrirCicloDpo(cicloId, pilarKeyInicial) {
   try {
     const ciclo = await api('/api/dpo/cycles/' + cicloId);
     abrirVisualizacaoCicloDpo(ciclo, ESTADO.usuario.role === 'admin', pilarKeyInicial);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+// A empresa clica num pilar liberado que ainda não tem nenhum ciclo aberto —
+// abre na hora (sem esperar o Master agendar nada), reaproveitando um ciclo já
+// aberto ou criando um novo automaticamente no servidor.
+async function abrirOuCriarPilarDpo(pillarKey) {
+  try {
+    const r = await api('/api/dpo/cycles/auto-open', { method: 'POST', body: JSON.stringify({ pillarKey }) });
+    abrirCicloDpo(r.id, pillarKey);
   } catch (e) { mostrarToast(e.message, true); }
 }
 

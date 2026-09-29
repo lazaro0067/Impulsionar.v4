@@ -223,7 +223,7 @@ if (!AUTENTIQUE_API_TOKEN) {
 // Envia um documento (PDF já pronto, em Buffer) para assinatura no Autentique,
 // via GraphQL multipart request (spec do Apollo Upload). Usa o fetch nativo do
 // Node (18+) e FormData/Blob nativos — não exige nenhuma lib de upload extra.
-async function enviarContratoParaAutentique(titulo, pdfBuffer, signatarios) {
+async function enviarContratoParaAutentique(titulo, pdfBuffer, signatarios, nomeArquivo) {
     const query = `
         mutation CriarDocumento($document: DocumentInput!, $signers: [SignerInput!]!, $file: Upload!) {
             createDocument(document: $document, signers: $signers, file: $file) {
@@ -241,7 +241,7 @@ async function enviarContratoParaAutentique(titulo, pdfBuffer, signatarios) {
     const formData = new FormData();
     formData.append('operations', JSON.stringify({ query, variables }));
     formData.append('map', JSON.stringify({ '0': ['variables.file'] }));
-    formData.append('0', new Blob([pdfBuffer], { type: 'application/pdf' }), `${titulo}.pdf`);
+    formData.append('0', new Blob([pdfBuffer], { type: 'application/pdf' }), nomeArquivo || `${titulo}.pdf`);
 
     const resposta = await fetch(AUTENTIQUE_GRAPHQL_URL, {
         method: 'POST',
@@ -1801,6 +1801,35 @@ app.get('/api/companies/:id', requireRole('admin', 'client_admin'), (req, res) =
         if (err || !row) return res.status(404).json({ error: 'Empresa não encontrada.' });
         res.json(row);
     });
+});
+
+// Dados completos da empresa + do gestor responsável, usados só para
+// pré-preencher o contrato (razão social, CNPJ, endereço completo e o
+// signatário) na hora de criar — sem isso, o Master tinha que digitar tudo de
+// novo manualmente e o contrato corria o risco de sair sem CNPJ/endereço
+// (o que compromete a validade jurídica do documento).
+app.get('/api/admin/companies/:id/contract-data', requireRole('admin'), async (req, res) => {
+    try {
+        const empresa = await dbGet(`SELECT * FROM companies WHERE id = ?`, [req.params.id]);
+        if (!empresa) return res.status(404).json({ error: 'Empresa não encontrada.' });
+        const gestor = await dbGet(`SELECT name, email FROM users WHERE company_id = ? AND role = 'client_admin' ORDER BY id ASC LIMIT 1`, [req.params.id]);
+        const enderecoPartes = [
+            empresa.street ? (empresa.street + (empresa.address_number ? ', ' + empresa.address_number : '')) : null,
+            empresa.neighborhood || null,
+            empresa.city && empresa.state ? (empresa.city + '/' + empresa.state) : (empresa.city || empresa.state || null),
+            empresa.cep ? ('CEP ' + empresa.cep) : null
+        ].filter(Boolean);
+        const enderecoFormatado = enderecoPartes.length ? enderecoPartes.join(', ') : (empresa.address || '');
+        res.json({
+            name: empresa.name,
+            cnpj: empresa.cnpj,
+            documentType: empresa.document_type || 'cnpj',
+            phone: empresa.phone || '',
+            enderecoFormatado,
+            adminName: gestor ? gestor.name : '',
+            adminEmail: gestor ? gestor.email : ''
+        });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar os dados da empresa.' }); }
 });
 
 app.get('/api/export/companies', requireRole('admin'), (req, res) => {
@@ -5674,6 +5703,38 @@ app.post('/api/admin/dpo/cycles', requireRole('admin'), async (req, res) => {
         notificarPorCompanyAdmins(company_id, 'Nova autoavaliação DPO Ambev', `Um novo ciclo (${referencia || ''}) foi aberto — preencha o checklist dos pilares liberados.`, 'dpoHome');
         res.json({ message: 'Ciclo de autoavaliação criado!', id: resultado });
     } catch (e) { res.status(400).json({ error: 'Erro ao criar o ciclo.' }); }
+});
+
+// A empresa acessa e responde o checklist de um pilar A QUALQUER MOMENTO,
+// desde que o pilar esteja liberado (pago ou em período de teste) — não
+// precisa mais esperar o Master "agendar" nada para isso. O calendário do
+// Master (Auditoria Oficial Ambev) serve só para marcar a data da consultoria
+// de verdade, não para travar o acesso da empresa ao autoatendimento.
+// Esta rota reaproveita um ciclo aberto que já cubra o pilar ou cria um novo
+// automaticamente (em 'em_andamento', sem precisar de agendamento prévio).
+app.post('/api/dpo/cycles/auto-open', requireRole('client_admin'), async (req, res) => {
+    const { pillarKey } = req.body;
+    if (!pillarKey || !DPO_PILARES_ORDEM.includes(pillarKey)) return res.status(400).json({ error: 'Pilar inválido.' });
+    try {
+        const companyId = req.user.companyId;
+        const ativos = await pilaresAtivosDaEmpresa(companyId);
+        if (!ativos.includes(pillarKey)) return res.status(403).json({ error: 'Sua empresa ainda não tem este pilar liberado.' });
+
+        const abertos = await dbAll(`SELECT * FROM dpo_audit_cycles WHERE company_id = ? AND status != 'concluido' ORDER BY created_at DESC`, [companyId]);
+        const existente = abertos.find(c => JSON.parse(c.pilares || '[]').includes(pillarKey));
+        if (existente) return res.json({ id: existente.id });
+
+        const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        const agora = new Date();
+        const referencia = `${meses[agora.getMonth()]}/${agora.getFullYear()}`;
+
+        const resultado = await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_audit_cycles (company_id, referencia, pilares, status, created_by) VALUES (?, ?, ?, 'em_andamento', ?)`,
+            [companyId, referencia, JSON.stringify([pillarKey]), req.user.userId],
+            function (err) { err ? reject(err) : resolve(this.lastID); }
+        ));
+        res.json({ id: resultado });
+    } catch (e) { res.status(400).json({ error: 'Erro ao abrir o pilar.' }); }
 });
 
 app.put('/api/admin/dpo/cycles/:id', requireRole('admin'), async (req, res) => {
