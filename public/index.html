@@ -617,7 +617,7 @@ const MENU_POR_PERFIL = {
     ]},
     { group: 'Portal de Vagas', items: [
         ['jobPostings', 'Vagas Publicadas'], ['portalCandidates', 'Candidatos do Portal'],
-        ['candidatesApproval', 'Aprovar Currículos'], ['vagaPlans', 'Planos de Vaga']
+        ['candidatesApproval', 'Aprovar Currículos'], ['vagaPlans', 'Planos de Vaga'], ['closingFeePlans', 'Planos de Fechamento']
     ]},
     { group: 'Administração', items: [
         ['plans', 'Planos'], ['engagement', 'Painel de Engajamento'], ['contracts', 'Contratos'],
@@ -648,15 +648,24 @@ const MENU_POR_PERFIL = {
         ['engagement', 'Painel de Engajamento'], ['contracts', 'Meu Contrato'], ['planosEmpresa', 'Planos Disponíveis'], ['minhaEmpresa', 'Minha Empresa']
     ]}
   ],
+  // moduleKey em cada grupo: filtrado pelo enabledModules do PRÓPRIO
+  // colaborador (employees.enabled_modules), no mesmo mecanismo que já
+  // restringe o menu do client_admin pelo enabled_modules da empresa — ver o
+  // filtro em iniciarApp(). Um acesso novo começa só com 'pdi' liberado
+  // (mais os itens sem moduleKey, sempre visíveis); quem cadastrou libera o
+  // resto depois em "Permissões" no cartão do colaborador.
   autonomous: [
     ['dashboard', 'Meu Painel'],
-    { group: 'Meu Desenvolvimento', items: [
-        ['consulting', 'Meu Acompanhamento'], ['pdi', 'Meus PDIs'], ['minhasMetas', 'Minhas Metas'], ['assessments', 'Meus Assessments']
+    { group: 'Meu Time', moduleKey: 'consultoria', items: [
+        ['consulting', 'Meu Acompanhamento'], ['minhasMetas', 'Minhas Metas']
     ]},
-    { group: 'Academy & Trilhas', items: [
-        ['videos', 'Academy Digital'], ['tracks', 'Trilhas de Curso']
+    { group: 'PDI', moduleKey: 'pdi', items: [
+        ['pdi', 'Meus PDIs']
     ]},
-    { group: 'Mentoria & Comunidade', items: [
+    { group: 'Treinamentos', moduleKey: 'academy', items: [
+        ['videos', 'Academy Digital'], ['tracks', 'Trilhas de Curso'], ['assessments', 'Meus Assessments']
+    ]},
+    { group: 'Mentoria & Comunidade', moduleKey: 'mentoria', items: [
         ['mentorships', 'Minhas Mentorias'], ['community', 'Comunidade'], ['events', 'Eventos'], ['ranking', 'Ranking']
     ]},
     ['meuPerfil', 'Meu Perfil'], ['contracts', 'Meus Contratos']
@@ -902,7 +911,7 @@ function irPara(aba, semHistorico) {
     tracks: renderTracks, community: renderCommunity, talentPool: renderTalentPool,
     events: renderEvents, plans: renderPlans, ranking: renderRanking, meuPerfil: renderMeuPerfil,
     engagement: renderEngagement, jobPostings: renderJobPostings, portalCandidates: renderPortalCandidates,
-    candidatesApproval: renderCandidatesApproval, vagaPlans: renderVagaPlans,
+    candidatesApproval: renderCandidatesApproval, vagaPlans: renderVagaPlans, closingFeePlans: renderClosingFeePlans,
     portalPerfil: renderPortalPerfil, portalVagas: renderPortalVagas, portalCandidaturas: renderPortalCandidaturas,
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
@@ -2096,14 +2105,24 @@ async function renderMinhaEmpresa() {
     const c = await api('/api/companies/' + ESTADO.usuario.companyId);
     let planos = [];
     try { planos = await api('/api/plans'); } catch (e) {}
+    let totalColaboradores = null;
+    try { totalColaboradores = (await api('/api/employees')).length; } catch (e) {}
     const planoAtual = planos.find(p => p.id === c.plan_id);
     CACHE_LISTA_PLANOS = planos;
+    const limiteColaboradores = planoAtual ? planoAtual.max_employees : null;
+    const esgotado = limiteColaboradores !== null && limiteColaboradores !== undefined && totalColaboradores !== null && totalColaboradores >= limiteColaboradores;
     cont.innerHTML = `
       <h1>Minha Empresa</h1>
       <p style="color:#64748b;margin-top:-8px;">Dados e identidade visual da sua empresa dentro da plataforma. A logo cadastrada aqui aparece no menu para todos os usuários da sua empresa.</p>
       <div class="plano-card" style="max-width:480px;margin-bottom:16px;">
         <div class="plano-cabecalho"><div><h4>Plano Atual</h4><div class="plano-meta">${planoAtual ? escapeHtml(planoAtual.name) : 'Nenhum plano atribuído'}</div></div></div>
         ${planoAtual ? `<p style="font-size:13px;color:#64748b;">${escapeHtml(planoAtual.features_text || '')}</p><div class="plano-meta">${planoAtual.max_employees ? 'Até ' + planoAtual.max_employees + ' executivos · ' : 'Executivos ilimitados · '}${escapeHtml(planoAtual.price_display || '')}</div>` : '<p style="font-size:13px;color:#64748b;">Nenhum plano contratado ainda.</p>'}
+        ${totalColaboradores !== null ? `
+        <div class="plano-meta" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--cinza-200,#e2e8f0);">
+          Créditos de colaborador: <strong style="${esgotado ? 'color:#dc2626;' : ''}">${totalColaboradores}${limiteColaboradores !== null && limiteColaboradores !== undefined ? ' / ' + limiteColaboradores + ' usados' : ' cadastrados (sem limite definido)'}</strong>
+        </div>
+        ${esgotado ? '<div class="plano-meta" style="color:#dc2626;">Limite atingido — faça upgrade do plano para cadastrar mais colaboradores.</div>' : ''}
+        ` : ''}
         <div class="acoes-form" style="margin-top:10px;">
           <button class="btn-secundario btn-sm" onclick="irPara('planosEmpresa')">Ver Planos Disponíveis →</button>
         </div>
@@ -2356,6 +2375,7 @@ async function renderEmployees() {
               <td>${e.hasLogin ? '<span style="color:#16a34a;font-size:12px;">🔑 Com acesso</span>' : '<span style="color:#94a3b8;font-size:12px;">Sem acesso</span>'}</td>
               <td>
                 <button class="btn-secundario btn-sm" onclick="abrirPainelColaborador(${e.id})">👁️ Ver Colaborador</button>
+                ${e.hasLogin ? `<button class="btn-secundario btn-sm" onclick="abrirPermissoesColaborador(${e.id})">🔒 Permissões</button>` : ''}
                 <button class="btn-perigo btn-sm" onclick="excluirExecutivo(${e.id})">Excluir</button>
               </td>
             </tr>`).join('')}
@@ -2517,6 +2537,76 @@ async function excluirExecutivo(id) {
   if (!confirm('Remover este executivo?')) return;
   try { await api('/api/employees/' + id, { method: 'DELETE' }); mostrarToast('Removido!'); renderEmployees(); }
   catch (e) { mostrarToast(e.message, true); }
+}
+
+/* ==========================================================
+   PERMISSÕES DE ACESSO DO COLABORADOR — o que o login individual
+   dele (role 'autonomous') pode ver no menu. Um acesso novo já
+   entra restrito só a PDI (ver upsertAcessoColaborador no servidor);
+   aqui o client_admin/Master libera o resto, um colaborador de cada vez.
+   ========================================================== */
+const MODULOS_COLABORADOR = [
+  { key: 'consultoria', icone: '👥', label: 'Meu Acompanhamento', desc: 'Consultoria e Minhas Metas' },
+  { key: 'pdi', icone: '🎯', label: 'PDI', desc: 'Meus Planos de Desenvolvimento Individual' },
+  { key: 'academy', icone: '🎓', label: 'Treinamentos', desc: 'Academy Digital, Trilhas, Assessments' },
+  { key: 'mentoria', icone: '🤝', label: 'Mentorias', desc: 'Minhas Mentorias, Comunidade, Eventos, Ranking' }
+];
+
+function abrirPermissoesColaborador(employeeId) {
+  const ex = CACHE_LISTA_EXECUTIVOS.find(x => x.id === employeeId);
+  if (!ex) return;
+  let restrito = null;
+  try { restrito = ex.enabled_modules ? JSON.parse(ex.enabled_modules) : null; } catch (e) { restrito = null; }
+  const temRestricao = Array.isArray(restrito);
+  const area = document.getElementById('modal-area-colaborador');
+  area.innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area-colaborador').innerHTML=''">
+      <div class="modal-caixa" style="max-width:560px;">
+        <h3>🔒 Permissões de Acesso — ${escapeHtml(ex.name)}</h3>
+        <p style="font-size:13px;color:#64748b;margin-top:-6px;">Controla o que este colaborador vê quando entra com o login próprio dele (Página Inicial e Meu Perfil sempre ficam visíveis).</p>
+        <label style="font-weight:400;display:flex;align-items:center;gap:6px;font-size:13px;">
+          <input type="checkbox" id="pc-restringir" ${temRestricao ? 'checked' : ''} onchange="document.getElementById('pc-modulos-lista').style.display = this.checked ? 'block' : 'none'">
+          Restringir este colaborador aos módulos marcados abaixo (desmarcado = acesso completo a tudo)
+        </label>
+        <div id="pc-modulos-lista" style="display:${temRestricao ? 'block' : 'none'};margin-top:10px;">
+          <div class="grade-modulos">
+            ${MODULOS_COLABORADOR.map(m => {
+              const ligado = !temRestricao || restrito.includes(m.key);
+              return `
+              <label class="modulo-card ${ligado ? 'habilitado' : ''}" data-modulo-card>
+                <span class="modulo-icone">${m.icone}</span>
+                <span class="modulo-texto">
+                  <span class="modulo-nome">${escapeHtml(m.label)}</span>
+                  <span class="modulo-desc">${escapeHtml(m.desc)}</span>
+                </span>
+                <span class="interruptor">
+                  <input type="checkbox" class="pc-modulo-check" value="${m.key}" ${ligado ? 'checked' : ''} onchange="atualizarCartaoModulo(this)">
+                  <span class="trilho"></span>
+                </span>
+              </label>
+            `; }).join('')}
+          </div>
+        </div>
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" onclick="salvarPermissoesColaborador(${employeeId})">Salvar Permissões</button>
+          <button class="btn-secundario" onclick="document.getElementById('modal-area-colaborador').innerHTML=''">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function salvarPermissoesColaborador(employeeId) {
+  const restringir = document.getElementById('pc-restringir').checked;
+  const enabled_modules = restringir
+    ? Array.from(document.querySelectorAll('.pc-modulo-check:checked')).map(chk => chk.value)
+    : null;
+  try {
+    const r = await api('/api/employees/' + employeeId + '/permissions', { method: 'PUT', body: JSON.stringify({ enabled_modules }) });
+    mostrarToast(r.message);
+    document.getElementById('modal-area-colaborador').innerHTML = '';
+    renderEmployees();
+  } catch (e) { mostrarToast(e.message, true); }
 }
 
 /* ==========================================================
@@ -5225,8 +5315,86 @@ async function excluirVagaPlan(id) {
   catch (e) { mostrarToast(e.message, true); }
 }
 
+/* ==========================================================
+   PLANOS DE FECHAMENTO — taxa de sucesso cobrada da empresa quando
+   a vaga é fechada COM contratação, um valor por função (Analista,
+   Gerente, Diretor etc). Espelha "Planos de Vaga" acima.
+   ========================================================== */
+let CACHE_CLOSING_FEE_PLANS = [];
+
+async function renderClosingFeePlans() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>Planos de Fechamento</h1><p>Carregando...</p>';
+  try {
+    const lista = await api('/api/admin/closing-fee-plans');
+    CACHE_CLOSING_FEE_PLANS = lista;
+    cont.innerHTML = `
+      <h1>Planos de Fechamento</h1>
+      <p style="color:#64748b;margin-top:-8px;">Taxa de sucesso cobrada da empresa quando a vaga é fechada COM contratação — um valor por função/senioridade. Cobrada à parte do plano de divulgação.</p>
+      <div class="barra-acoes">
+        <div></div>
+        <div class="direita"><button class="btn-primario" onclick="mostrarFormularioClosingFeePlan()">+ Nova Função</button></div>
+      </div>
+      <div id="form-area"></div>
+      <table>
+        <thead><tr><th>Função</th><th>Valor de Fechamento</th><th>Ativo</th><th>Ações</th></tr></thead>
+        <tbody>
+          ${lista.map(p => `
+            <tr>
+              <td>${escapeHtml(p.function_label || '-')}</td>
+              <td>R$ ${Number(p.price).toFixed(2)}</td>
+              <td>${p.active ? 'Sim' : 'Não'}</td>
+              <td><button class="btn-secundario btn-sm" onclick="mostrarFormularioClosingFeePlan(${p.id})">Editar</button> <button class="btn-perigo btn-sm" onclick="excluirClosingFeePlan(${p.id})">Excluir</button></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+      ${lista.length === 0 ? '<div class="msg-vazio">Nenhuma função de fechamento cadastrada ainda.</div>' : ''}
+    `;
+  } catch (e) {
+    cont.innerHTML = `<h1>Planos de Fechamento</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function mostrarFormularioClosingFeePlan(id) {
+  const p = id ? CACHE_CLOSING_FEE_PLANS.find(x => x.id === id) : null;
+  document.getElementById('form-area').innerHTML = `
+    <div class="formulario">
+      <div class="linha">
+        <div><label>Função / Senioridade</label><input id="cf-label" value="${p ? escapeHtml(p.function_label || '') : ''}" placeholder="ex: Gerente"></div>
+        <div><label>Valor de Fechamento (R$)</label><input id="cf-price" type="number" step="0.01" min="0" value="${p ? p.price : ''}"></div>
+        ${p ? `<div><label style="font-weight:400;"><input type="checkbox" id="cf-active" ${p.active ? 'checked' : ''}> Ativo (visível para as empresas)</label></div>` : ''}
+      </div>
+      <div class="acoes-form">
+        <button class="btn-primario" onclick="salvarClosingFeePlan(${p ? p.id : 'null'})">Salvar</button>
+        <button class="btn-secundario" onclick="renderClosingFeePlans()">Cancelar</button>
+      </div>
+    </div>
+  `;
+}
+
+async function salvarClosingFeePlan(id) {
+  const corpo = {
+    function_label: document.getElementById('cf-label').value,
+    price: document.getElementById('cf-price').value,
+    active: id ? document.getElementById('cf-active').checked : true
+  };
+  if (!corpo.function_label || !corpo.price) { mostrarToast('Informe a função e o valor.', true); return; }
+  try {
+    if (id) { await api('/api/closing-fee-plans/' + id, { method: 'PUT', body: JSON.stringify(corpo) }); mostrarToast('Função atualizada!'); }
+    else { await api('/api/closing-fee-plans', { method: 'POST', body: JSON.stringify(corpo) }); mostrarToast('Função criada!'); }
+    renderClosingFeePlans();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function excluirClosingFeePlan(id) {
+  if (!confirm('Excluir esta função de fechamento?')) return;
+  try { await api('/api/closing-fee-plans/' + id, { method: 'DELETE' }); mostrarToast('Removido!'); renderClosingFeePlans(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
 // ---------- Admin/client_admin: vagas publicadas pela empresa ----------
 let CACHE_VAGA_PLANS_ATIVOS = [];
+let CACHE_CLOSING_FEE_PLANS_ATIVOS = [];
 let CACHE_LISTA_VAGAS = [];
 
 const ROTULOS_STATUS_VAGA = {
@@ -5258,6 +5426,7 @@ async function renderJobPostings() {
     const lista = await api('/api/job-postings');
     CACHE_LISTA_VAGAS = lista;
     try { CACHE_VAGA_PLANS_ATIVOS = await api('/api/vaga-plans'); } catch (e) { CACHE_VAGA_PLANS_ATIVOS = []; }
+    try { CACHE_CLOSING_FEE_PLANS_ATIVOS = await api('/api/closing-fee-plans'); } catch (e) { CACHE_CLOSING_FEE_PLANS_ATIVOS = []; }
     if (ESTADO.usuario.role === 'admin') {
       try { CACHE_LISTA_EMPRESAS = await api('/api/companies'); } catch (e) { CACHE_LISTA_EMPRESAS = []; }
     }
@@ -5296,6 +5465,8 @@ async function renderJobPostings() {
             ${v.status === 'fechada' ? `<div class="plano-meta" style="color:#334155;">${v.closedApplicantName ? `✅ Vaga preenchida por ${escapeHtml(v.closedApplicantName)}` : ''}${v.closed_reason ? `${v.closedApplicantName ? ' · ' : ''}Motivo: ${escapeHtml(v.closed_reason)}` : ''}</div>` : ''}
             ${(v.status === 'rejeitada' || v.status === 'ajustes_solicitados') && v.rejection_reason ? `<div class="plano-meta" style="color:${v.status === 'rejeitada' ? '#dc2626' : '#b45309'};">${v.status === 'rejeitada' ? 'Motivo' : 'O que ajustar'}: ${escapeHtml(v.rejection_reason)}</div>` : ''}
             ${v.paid_with_credit ? `<div class="plano-meta" style="color:#7c3aed;">✓ Publicada com crédito de dias da empresa</div>` : ''}
+            ${v.refunded_at ? `<div class="plano-meta" style="color:#7c3aed;">↩️ Pagamento estornado em ${new Date(v.refunded_at).toLocaleDateString('pt-BR')}</div>` : ''}
+            ${v.closingFeeLabel ? `<div class="plano-meta">Taxa de fechamento: <strong>${escapeHtml(v.closingFeeLabel)}</strong> — R$ ${Number(v.closingFeePrice).toFixed(2)}${v.closing_fee_status === 'paid' ? ' <span style="color:#16a34a;">(paga ✓)</span>' : v.closing_fee_status === 'pending_payment' ? ' <span style="color:#c9a227;">(pagamento pendente)</span>' : ''}</div>` : ''}
             ${v.expires_at ? `<div class="plano-meta">Expira em ${new Date(v.expires_at).toLocaleDateString('pt-BR')}</div>` : ''}
             <div class="plano-meta">${v.totalCandidaturas} candidatura(s) · ❤️ ${v.totalCurtidas || 0} curtida(s)</div>
             <div class="acoes-form" style="margin-top:10px;flex-wrap:wrap;">
@@ -5307,6 +5478,8 @@ async function renderJobPostings() {
               ${v.status === 'active' ? `<button class="btn-secundario btn-sm" onclick="compartilharVaga(${v.id})">📤 Compartilhar</button>` : ''}
               ${!excluida && !['pendente_aprovacao', 'fechada'].includes(v.status) ? `<button class="btn-secundario btn-sm" onclick="mostrarFormularioFecharVaga(${v.id})">🔒 Fechar Vaga</button>` : ''}
               ${v.totalCandidaturas > 0 ? `<button class="btn-secundario btn-sm" onclick="verCandidaturasVaga(${v.id})">Ver Candidaturas</button>` : ''}
+              ${ehAdmin && v.mp_payment_id && !v.paid_with_credit && !v.refunded_at ? `<button class="btn-perigo btn-sm" onclick="estornarVaga(${v.id})">↩️ Estornar Pagamento</button>` : ''}
+              ${v.closing_fee_status === 'pending_payment' ? `<button class="btn-primario btn-sm" onclick="pagarTaxaFechamentoVaga(${v.id})">💳 Pagar Taxa de Fechamento</button>` : ''}
             </div>
           </div>`;
         }).join('')}
@@ -5355,6 +5528,10 @@ async function confirmarFecharVaga(id) {
     document.getElementById('modal-area').innerHTML = '';
     ABA_VAGAS_OFERTADAS = 'fechadas';
     renderJobPostings();
+    if (r.closingFeeInitPoint) {
+      mostrarToast('Abrindo pagamento da taxa de fechamento...');
+      window.open(r.closingFeeInitPoint, '_blank');
+    }
   } catch (e) { mostrarToast(e.message, true); }
 }
 
@@ -5422,6 +5599,17 @@ async function solicitarAjusteVaga(id) {
   if (!motivo) return;
   try { const r = await api('/api/job-postings/' + id + '/request-changes', { method: 'POST', body: JSON.stringify({ reason: motivo }) }); mostrarToast(r.message); renderJobPostings(); }
   catch (e) { mostrarToast(e.message, true); }
+}
+
+// Estorno do pagamento único da vaga — só o Master decide (dinheiro saindo
+// de verdade do Mercado Pago), por isso o botão só aparece pra ele.
+async function estornarVaga(id) {
+  if (!confirm('Estornar o pagamento desta vaga? O valor volta para o cliente pelo mesmo meio usado na compra — esta ação não pode ser desfeita.')) return;
+  try {
+    const r = await api('/api/job-postings/' + id + '/refund', { method: 'POST' });
+    mostrarToast(r.message);
+    renderJobPostings();
+  } catch (e) { mostrarToast(e.message, true); }
 }
 
 // ---------- Compartilhar vaga (WhatsApp / Instagram) ----------
@@ -5591,6 +5779,21 @@ function mostrarFormularioVaga(id) {
         </div>` : ''}
       </div>
       <div class="linha">
+        <div style="flex:2">
+          <label>Função (taxa de fechamento)</label>
+          ${v && v.closing_fee_status ? `
+          <div style="font-size:13px;color:#334155;padding:8px 10px;background:#f1f5f9;border-radius:8px;">
+            ${v.closingFeeLabel ? escapeHtml(v.closingFeeLabel) + ' — R$ ' + Number(v.closingFeePrice).toFixed(2) : '—'}
+            <span style="color:#64748b;">(taxa já ${v.closing_fee_status === 'paid' ? 'paga' : 'em cobrança'}, não pode ser alterada)</span>
+          </div>` : `
+          <select id="vg-closing-fee-plan">
+            <option value="">— Sem taxa de fechamento —</option>
+            ${CACHE_CLOSING_FEE_PLANS_ATIVOS.map(p => `<option value="${p.id}" ${v && v.closing_fee_plan_id === p.id ? 'selected' : ''}>${escapeHtml(p.function_label)} — R$ ${Number(p.price).toFixed(2)}</option>`).join('')}
+          </select>
+          <div style="font-size:12px;color:#64748b;margin-top:4px;">Se definida, uma cobrança automática no Mercado Pago é gerada para a empresa quando a vaga for fechada com um candidato contratado.</div>`}
+        </div>
+      </div>
+      <div class="linha">
         <div style="flex:2"><label>Descrição</label><textarea id="vg-description" rows="4">${v ? escapeHtml(v.description || '') : ''}</textarea></div>
       </div>
       <div class="linha">
@@ -5649,6 +5852,8 @@ async function salvarVaga(id) {
     corpo.vagaPlanId = document.getElementById('vg-plan').value;
     if (ESTADO.usuario.role === 'admin') corpo.company_id = document.getElementById('vg-company').value;
   }
+  const selectTaxaFechamento = document.getElementById('vg-closing-fee-plan');
+  if (selectTaxaFechamento) corpo.closingFeePlanId = selectTaxaFechamento.value || null;
   if (!corpo.title) { mostrarToast('Informe o título da vaga.', true); return; }
   if (!id && !corpo.vagaPlanId) { mostrarToast('Selecione um plano de divulgação.', true); return; }
   if (!id && ESTADO.usuario.role === 'admin' && !corpo.company_id) { mostrarToast('Selecione a empresa.', true); return; }
@@ -5681,6 +5886,18 @@ async function pagarVaga(id) {
   try {
     mostrarToast('Gerando link de pagamento...');
     const r = await api('/api/job-postings/' + id + '/reopen-checkout', { method: 'POST' });
+    mostrarToast(r.message);
+    if (r.checkoutUrl) window.open(r.checkoutUrl, '_blank');
+    renderJobPostings();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function pagarTaxaFechamentoVaga(id) {
+  const v = CACHE_LISTA_VAGAS.find(x => x.id === id);
+  if (v && v.closing_fee_checkout_url) { window.open(v.closing_fee_checkout_url, '_blank'); return; }
+  try {
+    mostrarToast('Gerando link de pagamento...');
+    const r = await api('/api/job-postings/' + id + '/reopen-closing-fee-checkout', { method: 'POST' });
     mostrarToast(r.message);
     if (r.checkoutUrl) window.open(r.checkoutUrl, '_blank');
     renderJobPostings();

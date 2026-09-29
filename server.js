@@ -12,7 +12,7 @@ const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const PDFDocument = require('pdfkit');
-const { MercadoPagoConfig, PreApproval, Preference, Payment } = require('mercadopago');
+const { MercadoPagoConfig, PreApproval, Preference, Payment, PaymentRefund } = require('mercadopago');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -181,6 +181,7 @@ let mpClient = null;
 let mpPreApproval = null;
 let mpPreference = null; // pagamento único (Checkout Pro) — usado na cobrança por vaga divulgada
 let mpPayment = null;
+let mpPaymentRefund = null; // estorno de um pagamento único já confirmado (ex.: vaga divulgada)
 let mpAccessTokenAtivo = ''; // token realmente em uso agora (banco de dados, com fallback pro .env)
 
 // Monta (ou desmonta) o cliente do Mercado Pago com o token informado. Chamada
@@ -193,8 +194,9 @@ function configurarMercadoPago(token) {
         mpPreApproval = new PreApproval(mpClient);
         mpPreference = new Preference(mpClient);
         mpPayment = new Payment(mpClient);
+        mpPaymentRefund = new PaymentRefund(mpClient);
     } else {
-        mpClient = null; mpPreApproval = null; mpPreference = null; mpPayment = null;
+        mpClient = null; mpPreApproval = null; mpPreference = null; mpPayment = null; mpPaymentRefund = null;
     }
 }
 configurarMercadoPago(MP_ACCESS_TOKEN);
@@ -491,6 +493,14 @@ function inicializarBase() {
         // target_role: para qual vaga/posição a empresa está preparando essa pessoa.
         db.run(`ALTER TABLE employees ADD COLUMN current_challenge TEXT`, () => {});
         db.run(`ALTER TABLE employees ADD COLUMN target_role TEXT`, () => {});
+        // Permissões de acesso do PRÓPRIO colaborador (login individual, role
+        // 'autonomous'): JSON com os módulos liberados para ele, no mesmo
+        // formato de companies.enabled_modules. NULL = sem restrição definida
+        // (mantém o comportamento anterior para acessos já existentes antes
+        // deste recurso). Um acesso novo criado a partir de agora começa
+        // restrito só a PDI — quem cadastrou (client_admin ou Master) libera o
+        // resto depois, na tela de Permissões do colaborador.
+        db.run(`ALTER TABLE employees ADD COLUMN enabled_modules TEXT`, () => {});
 
         // Histórico de mudanças de fase do Pipeline de Desenvolvimento: registra o
         // motivo da movimentação e a frase que aparece para o colaborador, para dar
@@ -884,6 +894,17 @@ function inicializarBase() {
             active INTEGER DEFAULT 1
         )`);
 
+        // Taxa de sucesso (fechamento) por função — cobrada da empresa quando
+        // a vaga é fechada COM contratação, além do valor de divulgação. O
+        // Master cadastra a lista de funções e o valor de cada uma em
+        // "Planos de Fechamento"; a empresa escolhe a função ao criar a vaga.
+        db.run(`CREATE TABLE IF NOT EXISTS closing_fee_plans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            function_label TEXT NOT NULL,
+            price REAL NOT NULL,
+            active INTEGER DEFAULT 1
+        )`);
+
         // Vagas publicadas pelas empresas no portal público.
         db.run(`CREATE TABLE IF NOT EXISTS job_postings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -932,6 +953,21 @@ function inicializarBase() {
         db.run(`ALTER TABLE job_postings ADD COLUMN closed_application_id INTEGER`, () => {});
         db.run(`ALTER TABLE job_postings ADD COLUMN closed_at DATETIME`, () => {});
         db.run(`ALTER TABLE job_postings ADD COLUMN deleted_at DATETIME`, () => {});
+        // Estorno do pagamento único da divulgação (Master decide reembolsar a
+        // empresa) — mantém o pagamento original (mp_payment_id) como histórico
+        // e só registra quando/quem estornou.
+        db.run(`ALTER TABLE job_postings ADD COLUMN refunded_at DATETIME`, () => {});
+        db.run(`ALTER TABLE job_postings ADD COLUMN refunded_by INTEGER`, () => {});
+        // Taxa de fechamento (sucesso na contratação), cobrada à parte da
+        // divulgação — a empresa escolhe a função no cadastro da vaga, e a
+        // cobrança é gerada automaticamente quando a vaga é fechada COM
+        // candidato contratado (nunca ao só cancelar/encerrar sem contratar).
+        db.run(`ALTER TABLE job_postings ADD COLUMN closing_fee_plan_id INTEGER`, () => {});
+        db.run(`ALTER TABLE job_postings ADD COLUMN closing_fee_status TEXT`, () => {}); // null | 'pending_payment' | 'paid'
+        db.run(`ALTER TABLE job_postings ADD COLUMN closing_fee_mp_preference_id TEXT`, () => {});
+        db.run(`ALTER TABLE job_postings ADD COLUMN closing_fee_payment_id TEXT`, () => {});
+        db.run(`ALTER TABLE job_postings ADD COLUMN closing_fee_checkout_url TEXT`, () => {});
+        db.run(`ALTER TABLE job_postings ADD COLUMN closing_fee_paid_at DATETIME`, () => {});
 
         db.run(`CREATE TABLE IF NOT EXISTS job_applications (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1477,7 +1513,10 @@ app.get('/api/dashboard/stats', async (req, res) => {
 
 app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
-    db.get(`SELECT u.*, c.name as companyName, c.logo_url as companyLogoUrl, c.enabled_modules as companyEnabledModules FROM users u LEFT JOIN companies c ON u.company_id = c.id WHERE u.email = ?`, [email], async (err, user) => {
+    db.get(`SELECT u.*, c.name as companyName, c.logo_url as companyLogoUrl, c.enabled_modules as companyEnabledModules,
+                   e.enabled_modules as employeeEnabledModules
+            FROM users u LEFT JOIN companies c ON u.company_id = c.id LEFT JOIN employees e ON u.employee_id = e.id
+            WHERE u.email = ?`, [email], async (err, user) => {
         if (err || !user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
         }
@@ -1491,6 +1530,8 @@ app.post('/api/login', (req, res) => {
         let enabledModules = null;
         if (user.role === 'client_admin' && user.companyEnabledModules) {
             try { enabledModules = JSON.parse(user.companyEnabledModules); } catch (e) { enabledModules = null; }
+        } else if (user.role === 'autonomous' && user.employeeEnabledModules) {
+            try { enabledModules = JSON.parse(user.employeeEnabledModules); } catch (e) { enabledModules = null; }
         }
 
         res.json({
@@ -2249,14 +2290,47 @@ app.delete('/api/vaga-plans/:id', requireRole('admin'), (req, res) => {
     db.run(`DELETE FROM vaga_plans WHERE id = ?`, [req.params.id], () => res.json({ message: 'Removido!' }));
 });
 
+// ---------- Planos de Fechamento (taxa de sucesso por função, configurado pelo Master) ----------
+app.get('/api/closing-fee-plans', (req, res) => {
+    db.all(`SELECT * FROM closing_fee_plans WHERE active = 1 ORDER BY price ASC`, [], (err, rows) => res.json(rows || []));
+});
+
+app.get('/api/admin/closing-fee-plans', requireRole('admin'), (req, res) => {
+    db.all(`SELECT * FROM closing_fee_plans ORDER BY price ASC`, [], (err, rows) => res.json(rows || []));
+});
+
+app.post('/api/closing-fee-plans', requireRole('admin'), (req, res) => {
+    const { function_label, price } = req.body;
+    if (!function_label || !price) return res.status(400).json({ error: 'Informe a função e o valor de fechamento.' });
+    db.run(`INSERT INTO closing_fee_plans (function_label, price) VALUES (?, ?)`, [function_label, price], function (err) {
+        if (err) return res.status(400).json({ error: err.message });
+        res.json({ message: 'Função de fechamento criada!', id: this.lastID });
+    });
+});
+
+app.put('/api/closing-fee-plans/:id', requireRole('admin'), (req, res) => {
+    const { function_label, price, active } = req.body;
+    db.run(`UPDATE closing_fee_plans SET function_label = ?, price = ?, active = ? WHERE id = ?`,
+        [function_label || '', price, active === false ? 0 : 1, req.params.id], (err) => {
+            if (err) return res.status(400).json({ error: err.message });
+            res.json({ message: 'Função de fechamento atualizada!' });
+        });
+});
+
+app.delete('/api/closing-fee-plans/:id', requireRole('admin'), (req, res) => {
+    db.run(`DELETE FROM closing_fee_plans WHERE id = ?`, [req.params.id], () => res.json({ message: 'Removido!' }));
+});
+
 // ---------- Vagas publicadas pelas empresas ----------
 app.get('/api/job-postings', requireRole('admin', 'client_admin'), async (req, res) => {
     try {
         let query = `SELECT jp.*, vp.label as planLabel, vp.days as planDays, vp.price as planPrice, c.name as companyName, c.logo_url as companyLogo,
+                     cfp.function_label as closingFeeLabel, cfp.price as closingFeePrice,
                      (SELECT COUNT(*) FROM job_applications ja WHERE ja.job_posting_id = jp.id) as totalCandidaturas,
                      (SELECT COUNT(*) FROM job_posting_likes jl WHERE jl.job_posting_id = jp.id) as totalCurtidas,
                      (SELECT u.name FROM job_applications ja2 JOIN users u ON u.id = ja2.candidate_user_id WHERE ja2.id = jp.closed_application_id) as closedApplicantName
-                     FROM job_postings jp LEFT JOIN vaga_plans vp ON vp.id = jp.vaga_plan_id LEFT JOIN companies c ON c.id = jp.company_id`;
+                     FROM job_postings jp LEFT JOIN vaga_plans vp ON vp.id = jp.vaga_plan_id LEFT JOIN companies c ON c.id = jp.company_id
+                     LEFT JOIN closing_fee_plans cfp ON cfp.id = jp.closing_fee_plan_id`;
         const params = [];
         if (req.user.role === 'client_admin') { query += ` WHERE jp.company_id = ?`; params.push(req.user.companyId); }
         query += ` ORDER BY jp.created_at DESC`;
@@ -2266,7 +2340,7 @@ app.get('/api/job-postings', requireRole('admin', 'client_admin'), async (req, r
 });
 
 app.post('/api/job-postings', requireRole('admin', 'client_admin'), async (req, res) => {
-    const { title, description, location, state, is_remote, seniority, salary_range, vagaPlanId, company_id,
+    const { title, description, location, state, is_remote, seniority, salary_range, vagaPlanId, closingFeePlanId, company_id,
              education, languages, requirements, responsibilities, benefits, photo_url } = req.body;
     if (!title) return res.status(400).json({ error: 'Informe o título da vaga.' });
     const companyId = req.user.role === 'client_admin' ? req.user.companyId : company_id;
@@ -2274,16 +2348,19 @@ app.post('/api/job-postings', requireRole('admin', 'client_admin'), async (req, 
     try {
         const plano = await dbGet(`SELECT * FROM vaga_plans WHERE id = ? AND active = 1`, [vagaPlanId]);
         if (!plano) return res.status(400).json({ error: 'Selecione um plano de divulgação válido.' });
+        // Taxa de fechamento é opcional — nem toda empresa/vaga precisa ter uma
+        // função de cobrança por contratação vinculada.
+        const planoFechamento = closingFeePlanId ? await dbGet(`SELECT id FROM closing_fee_plans WHERE id = ? AND active = 1`, [closingFeePlanId]) : null;
 
         // Vaga criada pela própria empresa (client_admin) sempre passa pela
         // aprovação do Master antes de ir para pagamento/publicação — é o que
         // garante que só o Master decide o que é divulgado na rede.
         if (req.user.role === 'client_admin') {
             const resultado = await new Promise((resolve, reject) => db.run(
-                `INSERT INTO job_postings (company_id, title, description, location, state, is_remote, seniority, salary_range, vaga_plan_id, status,
+                `INSERT INTO job_postings (company_id, title, description, location, state, is_remote, seniority, salary_range, vaga_plan_id, closing_fee_plan_id, status,
                     education, languages, requirements, responsibilities, benefits, photo_url)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente_aprovacao', ?, ?, ?, ?, ?, ?)`,
-                [companyId, title, description || '', location || '', (state || '').toUpperCase(), is_remote ? 1 : 0, seniority || '', salary_range || '', plano.id,
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente_aprovacao', ?, ?, ?, ?, ?, ?)`,
+                [companyId, title, description || '', location || '', (state || '').toUpperCase(), is_remote ? 1 : 0, seniority || '', salary_range || '', plano.id, planoFechamento ? planoFechamento.id : null,
                     education || '', languages || '', requirements || '', responsibilities || '', benefits || '', photo_url || ''],
                 function (err) { err ? reject(err) : resolve(this.lastID); }
             ));
@@ -2297,10 +2374,10 @@ app.post('/api/job-postings', requireRole('admin', 'client_admin'), async (req, 
         // antigo, sem etapa de aprovação (ele já é quem aprovaria).
         if (!mpPreference) return res.status(503).json({ error: 'Mercado Pago ainda não foi configurado no servidor (defina MP_ACCESS_TOKEN no .env).' });
         const resultado = await new Promise((resolve, reject) => db.run(
-            `INSERT INTO job_postings (company_id, title, description, location, state, is_remote, seniority, salary_range, vaga_plan_id, status, approved_by, approved_at,
+            `INSERT INTO job_postings (company_id, title, description, location, state, is_remote, seniority, salary_range, vaga_plan_id, closing_fee_plan_id, status, approved_by, approved_at,
                 education, languages, requirements, responsibilities, benefits, photo_url)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?)`,
-            [companyId, title, description || '', location || '', (state || '').toUpperCase(), is_remote ? 1 : 0, seniority || '', salary_range || '', plano.id, req.user.userId,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?)`,
+            [companyId, title, description || '', location || '', (state || '').toUpperCase(), is_remote ? 1 : 0, seniority || '', salary_range || '', plano.id, planoFechamento ? planoFechamento.id : null, req.user.userId,
                 education || '', languages || '', requirements || '', responsibilities || '', benefits || '', photo_url || ''],
             function (err) { err ? reject(err) : resolve(this.lastID); }
         ));
@@ -2417,6 +2494,37 @@ app.post('/api/job-postings/:id/reopen-checkout', requireRole('admin', 'client_a
     }
 });
 
+// Reabre o checkout da TAXA DE FECHAMENTO (caso o primeiro link tenha expirado
+// ou a chamada ao Mercado Pago tenha falhado no momento do fechamento).
+app.post('/api/job-postings/:id/reopen-closing-fee-checkout', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const vaga = await dbGet(`SELECT jp.*, cfp.function_label, cfp.price FROM job_postings jp LEFT JOIN closing_fee_plans cfp ON cfp.id = jp.closing_fee_plan_id WHERE jp.id = ?`, [req.params.id]);
+        if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada.' });
+        if (req.user.role === 'client_admin' && vaga.company_id !== req.user.companyId) return res.status(403).json({ error: 'Esta vaga não pertence à sua empresa.' });
+        if (!vaga.closing_fee_plan_id) return res.status(400).json({ error: 'Esta vaga não tem uma taxa de fechamento vinculada.' });
+        if (vaga.closing_fee_status === 'paid') return res.status(400).json({ error: 'A taxa de fechamento desta vaga já foi paga.' });
+        if (!mpPreference) return res.status(503).json({ error: 'Mercado Pago ainda não foi configurado no servidor.' });
+
+        const preference = await mpPreference.create({
+            body: {
+                items: [{ title: `Taxa de fechamento — vaga preenchida: ${vaga.title} (${vaga.function_label || 'Função'})`, quantity: 1, unit_price: Number(vaga.price) || 0.01, currency_id: 'BRL' }],
+                external_reference: `closingfee:${vaga.id}`,
+                ...montarRetornoMercadoPago()
+            }
+        });
+        const checkoutUrl = preference.sandbox_init_point || preference.init_point;
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE job_postings SET closing_fee_status = 'pending_payment', closing_fee_mp_preference_id = ?, closing_fee_checkout_url = ? WHERE id = ?`,
+            [preference.id, checkoutUrl, vaga.id], (err) => err ? reject(err) : resolve()
+        ));
+        res.json({ message: 'Link de pagamento da taxa de fechamento gerado!', checkoutUrl });
+    } catch (e) {
+        const detalhe = detalheErroMercadoPago(e);
+        console.error('Erro ao reabrir checkout da taxa de fechamento:', detalhe);
+        res.status(400).json({ error: `Não foi possível gerar o link de pagamento agora: ${detalhe}` });
+    }
+});
+
 // Master pede ajustes em vez de aprovar/rejeitar de vez — a vaga volta para a
 // empresa com a mensagem do que precisa mudar; ao editar e reenviar, ela volta
 // para 'pendente_aprovacao' automaticamente (ver PUT /api/job-postings/:id).
@@ -2439,7 +2547,7 @@ app.post('/api/job-postings/:id/request-changes', requireRole('admin'), async (r
 // Se a empresa edita uma vaga que estava rejeitada/com ajuste solicitado, ela
 // volta para 'pendente_aprovacao' automaticamente (reenvio para nova análise).
 app.put('/api/job-postings/:id', requireRole('admin', 'client_admin'), async (req, res) => {
-    const { title, description, location, state, is_remote, seniority, salary_range,
+    const { title, description, location, state, is_remote, seniority, salary_range, closingFeePlanId,
              education, languages, requirements, responsibilities, benefits, photo_url } = req.body;
     if (!title) return res.status(400).json({ error: 'Informe o título da vaga.' });
     try {
@@ -2448,14 +2556,24 @@ app.put('/api/job-postings/:id', requireRole('admin', 'client_admin'), async (re
         if (req.user.role === 'client_admin' && vaga.company_id !== req.user.companyId) {
             return res.status(403).json({ error: 'Esta vaga não pertence à sua empresa.' });
         }
+        // A função de fechamento só pode ser trocada enquanto ainda não foi
+        // cobrada (senão mudaria o valor de uma cobrança já gerada/paga).
+        let closingFeePlanIdFinal = vaga.closing_fee_plan_id;
+        if (!vaga.closing_fee_status) {
+            if (closingFeePlanId === null || closingFeePlanId === '' ) closingFeePlanIdFinal = null;
+            else if (closingFeePlanId) {
+                const planoFechamento = await dbGet(`SELECT id FROM closing_fee_plans WHERE id = ? AND active = 1`, [closingFeePlanId]);
+                if (planoFechamento) closingFeePlanIdFinal = planoFechamento.id;
+            }
+        }
         const reenviarParaAnalise = req.user.role === 'client_admin' && ['rejeitada', 'ajustes_solicitados'].includes(vaga.status);
         const novoStatus = reenviarParaAnalise ? 'pendente_aprovacao' : vaga.status;
         await new Promise((resolve, reject) => db.run(
-            `UPDATE job_postings SET title = ?, description = ?, location = ?, state = ?, is_remote = ?, seniority = ?, salary_range = ?,
+            `UPDATE job_postings SET title = ?, description = ?, location = ?, state = ?, is_remote = ?, seniority = ?, salary_range = ?, closing_fee_plan_id = ?,
                 education = ?, languages = ?, requirements = ?, responsibilities = ?, benefits = ?, photo_url = ?,
                 status = ?, rejection_reason = CASE WHEN ? THEN NULL ELSE rejection_reason END
              WHERE id = ?`,
-            [title, description || '', location || '', (state || '').toUpperCase(), is_remote ? 1 : 0, seniority || '', salary_range || '',
+            [title, description || '', location || '', (state || '').toUpperCase(), is_remote ? 1 : 0, seniority || '', salary_range || '', closingFeePlanIdFinal,
                 education || '', languages || '', requirements || '', responsibilities || '', benefits || '', photo_url || vaga.photo_url || '',
                 novoStatus, reenviarParaAnalise ? 1 : 0, req.params.id],
             (err) => err ? reject(err) : resolve()
@@ -2498,6 +2616,21 @@ app.post('/api/job-postings/confirm-payment', requireRole('admin', 'client_admin
     try {
         const pagamento = await mpPayment.get({ id: paymentId });
         const ref = pagamento.external_reference || '';
+
+        if (ref.startsWith('closingfee:')) {
+            const jobId = ref.split(':')[1];
+            const vaga = await dbGet(`SELECT * FROM job_postings WHERE id = ?`, [jobId]);
+            if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada.' });
+            if (req.user.role === 'client_admin' && vaga.company_id !== req.user.companyId) return res.status(403).json({ error: 'Esta vaga não pertence à sua empresa.' });
+            if (pagamento.status === 'approved') {
+                await new Promise((resolve, reject) => db.run(
+                    `UPDATE job_postings SET closing_fee_status = 'paid', closing_fee_payment_id = ?, closing_fee_paid_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                    [paymentId, jobId], (err) => err ? reject(err) : resolve()
+                ));
+            }
+            return res.json({ message: pagamento.status === 'approved' ? 'Pagamento da taxa de fechamento confirmado!' : 'Pagamento ainda não aprovado.', status: pagamento.status });
+        }
+
         if (!ref.startsWith('jobposting:')) return res.status(400).json({ error: 'Pagamento não corresponde a uma vaga.' });
         const jobId = ref.split(':')[1];
         const vaga = await dbGet(`SELECT jp.*, vp.days as planDays FROM job_postings jp LEFT JOIN vaga_plans vp ON vp.id = jp.vaga_plan_id WHERE jp.id = ?`, [jobId]);
@@ -2515,6 +2648,35 @@ app.post('/api/job-postings/confirm-payment', requireRole('admin', 'client_admin
     } catch (e) {
         console.error('Erro ao confirmar pagamento de vaga:', e.message);
         res.status(400).json({ error: 'Erro ao consultar o pagamento no Mercado Pago.' });
+    }
+});
+
+// Estorna (reembolsa) o pagamento único de uma vaga divulgada. Só o Master
+// decide isso (é dinheiro saindo de verdade) — nunca a própria empresa.
+// Vaga paga com crédito de dias (paid_with_credit) não passou pelo Mercado
+// Pago, então não há o que estornar ali.
+app.post('/api/job-postings/:id/refund', requireRole('admin'), async (req, res) => {
+    const { id } = req.params;
+    if (!mpPaymentRefund) return res.status(503).json({ error: 'Mercado Pago ainda não foi configurado no servidor.' });
+    try {
+        const vaga = await dbGet(`SELECT * FROM job_postings WHERE id = ?`, [id]);
+        if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada.' });
+        if (vaga.paid_with_credit) return res.status(400).json({ error: 'Esta vaga foi publicada com crédito de dias, não houve cobrança no Mercado Pago para estornar.' });
+        if (!vaga.mp_payment_id) return res.status(400).json({ error: 'Esta vaga não tem um pagamento confirmado no Mercado Pago para estornar.' });
+        if (vaga.refunded_at) return res.status(400).json({ error: 'Este pagamento já foi estornado anteriormente.' });
+
+        await mpPaymentRefund.create({ payment_id: vaga.mp_payment_id });
+
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE job_postings SET refunded_at = CURRENT_TIMESTAMP, refunded_by = ? WHERE id = ?`,
+            [req.user.userId, id], (err) => err ? reject(err) : resolve()
+        ));
+        notificarGestoresDaEmpresa(vaga.company_id, 'Pagamento estornado', `O pagamento da vaga "${vaga.title}" foi estornado pela Impulsionar. O valor volta pelo mesmo meio usado na compra.`);
+        res.json({ message: 'Pagamento estornado com sucesso! O valor volta para o cliente pelo mesmo meio usado na compra.' });
+    } catch (e) {
+        const detalhe = detalheErroMercadoPago(e);
+        console.error('Erro ao estornar pagamento de vaga:', detalhe);
+        res.status(400).json({ error: `Erro ao estornar no Mercado Pago: ${detalhe}` });
     }
 });
 
@@ -2548,14 +2710,51 @@ app.post('/api/job-postings/:id/close', requireRole('admin', 'client_admin'), as
             const candidatura = await dbGet(`SELECT id FROM job_applications WHERE id = ? AND job_posting_id = ?`, [candidatoId, req.params.id]);
             if (!candidatura) return res.status(400).json({ error: 'Candidatura informada não pertence a esta vaga.' });
         }
-        db.run(
+        await new Promise((resolve, reject) => db.run(
             `UPDATE job_postings SET status = 'fechada', closed_reason = ?, closed_application_id = ?, closed_at = CURRENT_TIMESTAMP WHERE id = ?`,
             [motivo || null, candidatoId, req.params.id],
-            (err) => {
-                if (err) return res.status(400).json({ error: err.message });
-                res.json({ message: 'Vaga fechada!' });
+            (err) => err ? reject(err) : resolve()
+        ));
+
+        // Taxa de fechamento (sucesso na contratação): só quando a vaga foi
+        // fechada COM um candidato contratado (não em cancelamento/encerramento
+        // sem contratar), quando existe uma função de fechamento vinculada, e
+        // só uma vez por vaga (closing_fee_status ainda vazio).
+        let cobrancaFechamento = null;
+        if (candidatoId && vaga.closing_fee_plan_id && !vaga.closing_fee_status) {
+            if (!mpPreference) {
+                cobrancaFechamento = { aviso: 'Vaga fechada, mas a taxa de fechamento não pôde ser cobrada: Mercado Pago não está configurado no servidor.' };
+            } else {
+                try {
+                    const planoFechamento = await dbGet(`SELECT * FROM closing_fee_plans WHERE id = ?`, [vaga.closing_fee_plan_id]);
+                    const preference = await mpPreference.create({
+                        body: {
+                            items: [{ title: `Taxa de fechamento — vaga preenchida: ${vaga.title} (${planoFechamento?.function_label || 'Função'})`, quantity: 1, unit_price: Number(planoFechamento?.price) || 0.01, currency_id: 'BRL' }],
+                            external_reference: `closingfee:${vaga.id}`,
+                            ...montarRetornoMercadoPago()
+                        }
+                    });
+                    const checkoutUrl = preference.sandbox_init_point || preference.init_point;
+                    await new Promise((resolve, reject) => db.run(
+                        `UPDATE job_postings SET closing_fee_status = 'pending_payment', closing_fee_mp_preference_id = ?, closing_fee_checkout_url = ? WHERE id = ?`,
+                        [preference.id, checkoutUrl, vaga.id], (err) => err ? reject(err) : resolve()
+                    ));
+                    notificarGestoresDaEmpresa(vaga.company_id, 'Taxa de fechamento gerada', `A vaga "${vaga.title}" foi preenchida — complete o pagamento da taxa de fechamento (${planoFechamento?.function_label || ''}).`);
+                    cobrancaFechamento = { initPoint: checkoutUrl, funcao: planoFechamento?.function_label, valor: planoFechamento?.price };
+                } catch (mpErr) {
+                    const detalhe = detalheErroMercadoPago(mpErr);
+                    console.error('Erro ao gerar cobrança de taxa de fechamento:', detalhe);
+                    cobrancaFechamento = { aviso: `Vaga fechada, mas não foi possível gerar a cobrança da taxa de fechamento agora (${detalhe}). Tente reabrir o checkout depois.` };
+                }
             }
-        );
+        }
+
+        res.json({
+            message: cobrancaFechamento?.initPoint
+                ? `Vaga fechada! Taxa de fechamento (${cobrancaFechamento.funcao || ''} — R$ ${Number(cobrancaFechamento.valor || 0).toFixed(2)}) gerada — complete o pagamento no Mercado Pago.`
+                : (cobrancaFechamento?.aviso || 'Vaga fechada!'),
+            closingFeeInitPoint: cobrancaFechamento?.initPoint || null
+        });
     } catch (e) { res.status(500).json({ error: 'Erro ao fechar a vaga.' }); }
 });
 
@@ -2597,6 +2796,18 @@ async function upsertAcessoColaborador(employeeId, name, email, phone, password,
                 `INSERT INTO users (name, email, password, company_id, employee_id, role) VALUES (?, ?, ?, ?, ?, 'autonomous')`,
                 [name, email, hash, companyId, employeeId], (err) => err ? reject(err) : resolve()
             ));
+            // Primeiro login deste colaborador: começa restrito só a "PDI" (mais
+            // Página Inicial/Meu Perfil, sempre visíveis) — quem cadastrou libera
+            // o resto depois em "Permissões" no cartão do colaborador. Só define
+            // esse padrão quando o colaborador ainda não tinha nada configurado,
+            // pra não sobrescrever uma permissão já ajustada manualmente.
+            const atual = await dbGet(`SELECT enabled_modules FROM employees WHERE id = ?`, [employeeId]);
+            if (atual && !atual.enabled_modules) {
+                await new Promise((resolve, reject) => db.run(
+                    `UPDATE employees SET enabled_modules = ? WHERE id = ?`,
+                    [JSON.stringify(['pdi']), employeeId], (err) => err ? reject(err) : resolve()
+                ));
+            }
         }
         return null;
     } catch (e) {
@@ -2682,6 +2893,20 @@ app.put('/api/employees/:id/phase', requireRole('admin', 'client_admin'), ensure
 
 app.get('/api/employees/:id/phase-history', ensureEmployeeAccess(req => req.params.id), (req, res) => {
     db.all(`SELECT * FROM employee_phase_history WHERE employee_id = ? ORDER BY id DESC`, [req.params.id], (err, rows) => res.json(rows || []));
+});
+
+// Permissões de acesso do PRÓPRIO colaborador (o que ele vê no menu quando
+// entra com o login individual dele). null = sem restrição (vê tudo que o
+// módulo da empresa libera); um array restringe só a esse colaborador,
+// independente do que a empresa como um todo tem liberado.
+app.put('/api/employees/:id/permissions', requireRole('admin', 'client_admin'), ensureEmployeeAccess(req => req.params.id), async (req, res) => {
+    const { enabled_modules } = req.body;
+    const valor = Array.isArray(enabled_modules) ? JSON.stringify(enabled_modules) : null;
+    db.run(`UPDATE employees SET enabled_modules = ? WHERE id = ?`, [valor, req.params.id], function (err) {
+        if (err) return res.status(400).json({ error: 'Erro ao salvar permissões.' });
+        if (this.changes === 0) return res.status(404).json({ error: 'Executivo não encontrado.' });
+        res.json({ message: 'Permissões de acesso atualizadas!' });
+    });
 });
 
 /* ==========================================================
@@ -4838,6 +5063,14 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
                     `UPDATE job_postings SET status = 'active', mp_payment_id = ?, published_at = CURRENT_TIMESTAMP, expires_at = datetime(CURRENT_TIMESTAMP, '+${Number(dias)} days') WHERE id = ?`,
                     [dataId, jobId], () => resolve()
                 ));
+            } else if (ref.startsWith('closingfee:') && pagamento.status === 'approved') {
+                const jobId = ref.split(':')[1];
+                const vaga = await dbGet(`SELECT company_id, title FROM job_postings WHERE id = ?`, [jobId]);
+                await new Promise((resolve) => db.run(
+                    `UPDATE job_postings SET closing_fee_status = 'paid', closing_fee_payment_id = ?, closing_fee_paid_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                    [dataId, jobId], () => resolve()
+                ));
+                if (vaga) notificarGestoresDaEmpresa(vaga.company_id, 'Taxa de fechamento paga', `Pagamento da taxa de fechamento da vaga "${vaga.title}" confirmado.`);
             }
         }
         res.sendStatus(200);
