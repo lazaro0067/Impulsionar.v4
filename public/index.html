@@ -5755,6 +5755,49 @@ async function renderDpoAgenda() {
         <div class="acoes-form"><button class="btn-primario" onclick="gerarValorNegociadoDpo()">Gerar Link de Pagamento</button></div>
         <div id="dpo-negociado-resultado"></div>
       </div>
+
+      <h2 style="margin-top:32px;">🎁 Período de Teste (Trial)</h2>
+      <p style="color:#64748b;margin-top:-8px;">Libera um pilar (ou a Consultoria Completa) para a empresa sem cobrar nada no Mercado Pago, por quantos dias você decidir. Passado o prazo, o acesso é encerrado sozinho.</p>
+      <div class="formulario">
+        <div class="linha">
+          <div style="flex:2"><label>Empresa</label>
+            <select id="dpo-trial-empresa">
+              <option value="">Selecione...</option>
+              ${CACHE_DPO_EMPRESAS_TODAS.map(e => `<option value="${e.id}">${escapeHtml(e.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div><label>Pacote</label>
+            <select id="dpo-trial-escopo" onchange="document.getElementById('dpo-trial-pilar-area').style.display = this.value==='pilar' ? '' : 'none';">
+              <option value="completo">Consultoria Completa (todos os pilares)</option>
+              <option value="pilar">Pilar avulso</option>
+            </select>
+          </div>
+          <div id="dpo-trial-pilar-area" style="display:none;"><label>Pilar</label>
+            <select id="dpo-trial-pilar">
+              ${CACHE_DPO_PILARES.pilares.map(p => `<option value="${p.key}">${p.numero}. ${escapeHtml(p.label)}</option>`).join('')}
+            </select>
+          </div>
+          <div><label>Duração (dias)</label><input id="dpo-trial-dias" type="number" min="1" step="1" placeholder="ex: 15" value="15"></div>
+        </div>
+        <div class="acoes-form"><button class="btn-primario" onclick="concederTrialDpo()">Conceder Período de Teste</button></div>
+        <div id="dpo-trial-resultado"></div>
+        ${CACHE_DPO_EMPRESAS_TODAS.some(e => (e.trialsAtivos || []).length) ? `
+        <div style="margin-top:14px;">
+          <label style="font-size:12px;">Trials ativos agora</label>
+          <table>
+            <thead><tr><th>Empresa</th><th>Pacote</th><th>Expira em</th></tr></thead>
+            <tbody>
+              ${CACHE_DPO_EMPRESAS_TODAS.flatMap(e => (e.trialsAtivos || []).map(t => `
+                <tr>
+                  <td>${escapeHtml(e.name)}</td>
+                  <td>${t.scope === 'completo' ? 'Consultoria Completa' : 'Pilar ' + escapeHtml(dpoLabelDoPilar(t.pillarKey))}</td>
+                  <td>${new Date(t.expiraEm).toLocaleDateString('pt-BR')}</td>
+                </tr>
+              `)).join('')}
+            </tbody>
+          </table>
+        </div>` : ''}
+      </div>
       <div id="modal-area"></div>
     `;
   } catch (e) { cont.innerHTML = `<h1>Impulsionar V4 — DPO Ambev — Agenda de Consultorias</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
@@ -5916,6 +5959,22 @@ async function gerarValorNegociadoDpo() {
       </div>
     `;
     mostrarToast('Valor negociado criado!');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function concederTrialDpo() {
+  const companyId = document.getElementById('dpo-trial-empresa').value;
+  const scope = document.getElementById('dpo-trial-escopo').value;
+  const pillarKey = document.getElementById('dpo-trial-pilar').value;
+  const days = document.getElementById('dpo-trial-dias').value;
+  const resultado = document.getElementById('dpo-trial-resultado');
+  if (!companyId) { mostrarToast('Selecione a empresa.', true); return; }
+  if (!days || Number(days) <= 0) { mostrarToast('Informe a duração do período de teste em dias.', true); return; }
+  try {
+    const r = await api('/api/admin/dpo/grant-trial', { method: 'POST', body: JSON.stringify({ companyId, scope, pillarKey: scope === 'pilar' ? pillarKey : null, days }) });
+    resultado.innerHTML = `<div class="msg-vazio" style="color:#16a34a;border-color:#16a34a;">${escapeHtml(r.message)}</div>`;
+    mostrarToast('Período de teste concedido!');
+    renderDpoAgenda();
   } catch (e) { mostrarToast(e.message, true); }
 }
 

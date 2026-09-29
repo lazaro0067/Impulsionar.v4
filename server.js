@@ -1097,6 +1097,12 @@ function inicializarBase() {
         )`);
         // Consultor escolhido pela empresa no momento da compra.
         db.run(`ALTER TABLE dpo_purchases ADD COLUMN consultant_id INTEGER REFERENCES dpo_consultants(id)`, () => {});
+        // Período de teste concedido pelo Master (sem cobrança): is_trial=1 e
+        // trial_expires_at marcam a liberação temporária; passada a data, o
+        // pilar deixa de contar como ativo automaticamente (ver pilaresAtivosDaEmpresa).
+        ['is_trial INTEGER DEFAULT 0', 'trial_expires_at DATETIME', 'granted_by INTEGER'].forEach(coluna => {
+            db.run(`ALTER TABLE dpo_purchases ADD COLUMN ${coluna}`, () => {});
+        });
 
         // Ciclo de autoavaliação: o Master cria um novo ciclo (mensal, "quando
         // quiser") para a empresa, com os pilares que ela já comprou. É dentro
@@ -5248,7 +5254,11 @@ app.post('/api/companies/:id/subscription/change-plan', async (req, res) => {
 // Pilares que a empresa já tem liberados: todos, se ela comprou a "Consultoria
 // Completa", ou só os avulsos que ela pagou individualmente.
 async function pilaresAtivosDaEmpresa(companyId) {
-    const compras = await dbAll(`SELECT * FROM dpo_purchases WHERE company_id = ? AND status = 'paid'`, [companyId]);
+    const todas = await dbAll(`SELECT * FROM dpo_purchases WHERE company_id = ? AND status = 'paid'`, [companyId]);
+    const agora = Date.now();
+    // Um "trial" com prazo vencido não conta mais como ativo (mas a linha fica
+    // no banco pra histórico — não precisa apagar nem mudar o status).
+    const compras = todas.filter(c => !c.is_trial || !c.trial_expires_at || new Date(c.trial_expires_at).getTime() > agora);
     if (compras.some(c => c.scope === 'completo')) return DPO_PILARES_ORDEM.slice();
     return [...new Set(compras.filter(c => c.scope === 'pilar').map(c => c.pillar_key))];
 }
@@ -5462,6 +5472,36 @@ app.post('/api/admin/dpo/negotiated-purchase', requireRole('admin'), async (req,
     }
 });
 
+// Master concede um período de teste (sem cobrança nenhuma no Mercado Pago) —
+// libera o pilar (ou a Consultoria Completa) por N dias, escolhidos pelo
+// Master. Passado o prazo, o pilar deixa de aparecer como ativo sozinho
+// (pilaresAtivosDaEmpresa já filtra pela data), sem precisar de nenhuma ação manual.
+app.post('/api/admin/dpo/grant-trial', requireRole('admin'), async (req, res) => {
+    const { companyId, scope, pillarKey, days } = req.body;
+    if (!companyId) return res.status(400).json({ error: 'Selecione a empresa.' });
+    if (!['completo', 'pilar'].includes(scope)) return res.status(400).json({ error: 'Escopo inválido.' });
+    if (scope === 'pilar' && !DPO_PILARES_ORDEM.includes(pillarKey)) return res.status(400).json({ error: 'Selecione um pilar válido.' });
+    const dias = Number(days);
+    if (!dias || dias <= 0) return res.status(400).json({ error: 'Informe quantos dias o período de teste vai durar.' });
+    try {
+        const empresa = await dbGet(`SELECT id, name FROM companies WHERE id = ?`, [companyId]);
+        if (!empresa) return res.status(404).json({ error: 'Empresa não encontrada.' });
+        const ativos = await pilaresAtivosDaEmpresa(companyId);
+        if (scope === 'completo' && ativos.length === DPO_PILARES_ORDEM.length) return res.status(400).json({ error: 'Esta empresa já tem a Consultoria Completa liberada.' });
+        if (scope === 'pilar' && ativos.includes(pillarKey)) return res.status(400).json({ error: 'Esta empresa já tem este pilar liberado.' });
+
+        const expira = new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString();
+        const resultado = await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_purchases (company_id, scope, pillar_key, price, status, is_trial, trial_expires_at, granted_by, paid_at) VALUES (?, ?, ?, 0, 'paid', 1, ?, ?, CURRENT_TIMESTAMP)`,
+            [companyId, scope, scope === 'pilar' ? pillarKey : null, expira, req.user.userId],
+            function (err) { err ? reject(err) : resolve(this.lastID); }
+        ));
+        const rotuloEscopo = scope === 'completo' ? 'a Consultoria Completa (todos os pilares)' : `o pilar ${DPO_AMBEV_DATA[pillarKey].label}`;
+        notificarGestoresDaEmpresa(companyId, 'DPO Ambev — período de teste liberado', `O Master liberou ${rotuloEscopo} em período de teste por ${dias} dia(s), até ${new Date(expira).toLocaleDateString('pt-BR')}.`);
+        res.json({ message: `Período de teste de ${dias} dia(s) liberado para ${empresa.name}!`, id: resultado, expiresAt: expira });
+    } catch (e) { res.status(400).json({ error: 'Erro ao conceder o período de teste.' }); }
+});
+
 // Empresa compra um pilar avulso ou a consultoria completa — gera cobrança
 // única no Mercado Pago (Checkout Pro), igual à divulgação de vaga.
 app.post('/api/dpo/purchase', requireRole('client_admin'), async (req, res) => {
@@ -5478,13 +5518,29 @@ app.post('/api/dpo/purchase', requireRole('client_admin'), async (req, res) => {
         if (scope === 'completo' && ativos.length === DPO_PILARES_ORDEM.length) return res.status(400).json({ error: 'Sua empresa já tem a Consultoria Completa liberada.' });
         if (scope === 'pilar' && ativos.includes(pillarKey)) return res.status(400).json({ error: 'Sua empresa já tem este pilar liberado.' });
 
-        // Já existe uma compra igual aguardando pagamento? Reaproveita o link em
-        // vez de criar outra cobrança duplicada para o mesmo pilar/escopo.
+        // Já existe uma compra igual aguardando pagamento? Reaproveita a MESMA
+        // linha (não cria outra cobrança duplicada para o mesmo pilar/escopo),
+        // mas sempre gera um link novo no Mercado Pago em vez de devolver o
+        // antigo — um link salvo antes pode ter ficado velho/inválido (ex:
+        // apontando para o sandbox de testes em vez do checkout real).
         const pendente = scope === 'completo'
             ? await dbGet(`SELECT * FROM dpo_purchases WHERE company_id = ? AND scope = 'completo' AND status = 'pending_payment'`, [companyId])
             : await dbGet(`SELECT * FROM dpo_purchases WHERE company_id = ? AND scope = 'pilar' AND pillar_key = ? AND status = 'pending_payment'`, [companyId, pillarKey]);
-        if (pendente && pendente.checkout_url) {
-            return res.json({ message: 'Você já tem um pagamento pendente para este item — reabrindo o checkout.', id: pendente.id, initPoint: pendente.checkout_url });
+        if (pendente) {
+            const tituloPendente = scope === 'completo' ? 'DPO Ambev — Consultoria Completa (todos os pilares)' : `DPO Ambev — Pilar ${DPO_AMBEV_DATA[pillarKey].label}`;
+            const preferencePendente = await mpPreference.create({
+                body: {
+                    items: [{ title: tituloPendente, quantity: 1, unit_price: Number(pendente.price), currency_id: 'BRL' }],
+                    external_reference: `dpoaudit:${pendente.id}`,
+                    ...montarRetornoMercadoPago()
+                }
+            });
+            const checkoutUrlPendente = preferencePendente.init_point;
+            await new Promise((resolve, reject) => db.run(
+                `UPDATE dpo_purchases SET mp_preference_id = ?, checkout_url = ?, consultant_id = COALESCE(?, consultant_id) WHERE id = ?`,
+                [preferencePendente.id, checkoutUrlPendente, consultantId || null, pendente.id], (err) => err ? reject(err) : resolve()
+            ));
+            return res.json({ message: 'Você já tem um pagamento pendente para este item — reabrindo o checkout.', id: pendente.id, initPoint: checkoutUrlPendente });
         }
 
         let preco, titulo;
@@ -5585,11 +5641,13 @@ app.get('/api/admin/dpo/companies', requireRole('admin'), async (req, res) => {
         for (const emp of empresas) {
             const ativos = await pilaresAtivosDaEmpresa(emp.id);
             if (ativos.length || req.query.all) {
+                const trials = await dbAll(`SELECT scope, pillar_key, trial_expires_at FROM dpo_purchases WHERE company_id = ? AND status = 'paid' AND is_trial = 1 AND trial_expires_at > datetime('now') ORDER BY trial_expires_at ASC`, [emp.id]);
                 resultado.push({
                     id: emp.id, name: emp.name, pilaresAtivos: ativos,
                     compraCompleta: ativos.length === DPO_PILARES_ORDEM.length,
                     auditoriaOficialData: emp.dpo_auditoria_oficial_data || null,
-                    auditoriaOficialNota: emp.dpo_auditoria_oficial_nota || null
+                    auditoriaOficialNota: emp.dpo_auditoria_oficial_nota || null,
+                    trialsAtivos: trials.map(t => ({ scope: t.scope, pillarKey: t.pillar_key, expiraEm: t.trial_expires_at }))
                 });
             }
         }
