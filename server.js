@@ -4504,6 +4504,24 @@ function detalheErroMercadoPago(e) {
     }
 }
 
+// O Mercado Pago EXIGE um back_url válido (http/https, não-localhost) para
+// criar uma assinatura (PreApproval) — se a "URL Pública do Sistema" (Meu
+// Perfil) ainda não estiver configurada corretamente, ou tiver sido
+// resetada (ex.: um redeploy que sobrescreveu o banco), a chamada à API
+// falha com "Invalid value for back_url". Em vez de deixar o Mercado Pago
+// devolver esse erro técnico confuso, verificamos antes e explicamos o que
+// falta configurar.
+function obterBackUrlAssinaturaOuErro(res) {
+    if (urlPublicaValida(appBaseUrlAtiva)) return appBaseUrlAtiva;
+    if (urlPublicaValida(APP_BASE_URL_ENV)) return APP_BASE_URL_ENV;
+    res.status(400).json({
+        error: 'A "URL Pública do Sistema" ainda não está configurada corretamente (Meu Perfil > URL Pública do Sistema). ' +
+               'Ela precisa ser um endereço público começando com https:// (ex.: https://www.impulsionarv4.com.br), não localhost. ' +
+               'Configure-a e tente novamente.'
+    });
+    return null;
+}
+
 // Notifica todos os gestores (client_admin) de uma empresa sobre mudanças na assinatura.
 function notificarGestoresDaEmpresa(companyId, title, message) {
     db.all(`SELECT id FROM users WHERE company_id = ? AND role = 'client_admin'`, [companyId], (err, gestores) => {
@@ -4527,11 +4545,14 @@ app.post('/api/companies/:id/subscribe', async (req, res) => {
         const emailContato = await obterEmailContatoEmpresa(id);
         if (!emailContato) return res.status(400).json({ error: 'Cadastre um gestor (client_admin) com e-mail para esta empresa antes de assinar.' });
 
+        const backUrl = obterBackUrlAssinaturaOuErro(res);
+        if (!backUrl) return;
+
         const corpo = {
             reason: `Impulsionar V4 — Plano ${plano.name}`,
             external_reference: `company:${id}`,
             payer_email: emailContato,
-            back_url: appBaseUrlAtiva,
+            back_url: backUrl,
             auto_recurring: {
                 frequency: 1,
                 frequency_type: 'months',
@@ -4734,11 +4755,14 @@ app.post('/api/companies/:id/subscription/change-plan', async (req, res) => {
         const emailContato = await obterEmailContatoEmpresa(id);
         if (!emailContato) return res.status(400).json({ error: 'Cadastre um gestor (client_admin) com e-mail para esta empresa antes de assinar.' });
 
+        const backUrl = obterBackUrlAssinaturaOuErro(res);
+        if (!backUrl) return;
+
         const corpo = {
             reason: `Impulsionar V4 — Plano ${novoPlano.name}`,
             external_reference: `company:${id}`,
             payer_email: emailContato,
-            back_url: appBaseUrlAtiva,
+            back_url: backUrl,
             auto_recurring: {
                 frequency: 1,
                 frequency_type: 'months',
