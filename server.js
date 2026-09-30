@@ -1225,6 +1225,24 @@ function inicializarBase() {
         // Foto de evidência de cada follow-up (ex: print/foto do que foi feito).
         db.run(`ALTER TABLE dpo_follow_ups ADD COLUMN foto_url TEXT`, () => {});
 
+        // "Perguntas Bate-Papo" — pasta dentro de cada pilar onde a empresa (ou o
+        // Master/consultor) registra perguntas feitas no bate-papo e as respostas,
+        // sempre vinculadas a uma pergunta oficial do pilar (question_numero, ex.:
+        // "1.1"). Pertence à EMPRESA + PILAR (não ao ciclo), então o histórico fica
+        // guardado de um mês para o outro.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_chat_questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER NOT NULL,
+            pillar_key TEXT NOT NULL,
+            question_numero TEXT NOT NULL,
+            pergunta TEXT NOT NULL,
+            resposta TEXT,
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME,
+            FOREIGN KEY(company_id) REFERENCES companies(id)
+        )`);
+
         db.get(`SELECT COUNT(*) as total FROM vaga_plans`, [], (err, row) => {
             if (!err && row && row.total === 0) {
                 db.run(`INSERT INTO vaga_plans (label, days, price, active) VALUES
@@ -6432,6 +6450,185 @@ app.get('/api/dpo/export/checklist', requireRole('admin', 'client_admin'), async
     } catch (e) {
         console.error('Erro ao exportar checklist DPO em Excel:', e.message);
         res.status(500).json({ error: 'Erro ao exportar o checklist em Excel.' });
+    }
+});
+
+// ---------- DPO Ambev — pasta "Perguntas Bate-Papo" (por pilar) ----------
+// Posição de cada pergunta oficial dentro do pilar (ordem do checklist), usada
+// para ordenar as perguntas do bate-papo "por pergunta do pilar".
+function ordemDasPerguntasDoPilarDpo(pilarKey) {
+    const ordem = {};
+    const pilarInfo = DPO_AMBEV_DATA[pilarKey];
+    if (!pilarInfo) return ordem;
+    let i = 0;
+    pilarInfo.grupos.forEach(g => g.perguntas.forEach(q => { ordem[q.numero] = i++; }));
+    return ordem;
+}
+
+// Resolve de qual empresa é a pasta: client_admin sempre a própria; Master
+// informa ?company_id= (ou company_id no corpo). Também confere que o pilar
+// está liberado para a empresa. Retorna null (e já responde o erro) se não pode.
+async function resolverEmpresaBatePapoDpo(req, res, pilarKey, companyIdInformado) {
+    if (!DPO_PILARES_ORDEM.includes(pilarKey)) { res.status(400).json({ error: 'Pilar inválido.' }); return null; }
+    const companyId = req.user.role === 'client_admin' ? req.user.companyId : companyIdInformado;
+    if (!companyId) { res.status(400).json({ error: 'Informe a empresa (company_id).' }); return null; }
+    if (req.user.role === 'client_admin') {
+        const ativos = await pilaresAtivosDaEmpresa(companyId);
+        if (!ativos.includes(pilarKey)) { res.status(403).json({ error: 'Sua empresa ainda não tem este pilar liberado.' }); return null; }
+    }
+    return companyId;
+}
+
+async function listarBatePapoDpo(companyId, pilarKey) {
+    const linhas = await dbAll(`
+        SELECT cq.*, u.name as autorNome
+        FROM dpo_chat_questions cq
+        LEFT JOIN users u ON u.id = cq.created_by
+        WHERE cq.company_id = ? AND cq.pillar_key = ?
+    `, [companyId, pilarKey]);
+    const ordem = ordemDasPerguntasDoPilarDpo(pilarKey);
+    linhas.sort((a, b) => {
+        const oa = ordem[a.question_numero] !== undefined ? ordem[a.question_numero] : 99999;
+        const ob = ordem[b.question_numero] !== undefined ? ordem[b.question_numero] : 99999;
+        if (oa !== ob) return oa - ob;
+        return String(a.created_at).localeCompare(String(b.created_at)) || a.id - b.id;
+    });
+    return linhas.map(l => ({ ...l, perguntaPilarTexto: textoDaPerguntaDpo(pilarKey, l.question_numero) }));
+}
+
+app.get('/api/dpo/bate-papo/:pillarKey', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const companyId = await resolverEmpresaBatePapoDpo(req, res, req.params.pillarKey, req.query.company_id);
+        if (!companyId) return;
+        res.json(await listarBatePapoDpo(companyId, req.params.pillarKey));
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar as perguntas do bate-papo.' }); }
+});
+
+// Aceita uma OU várias perguntas de uma vez para a mesma pergunta do pilar:
+// { pillarKey, questionNumero, itens: [{ pergunta, resposta }, ...] }
+// (também aceita { pergunta, resposta } soltos, para uma só).
+app.post('/api/dpo/bate-papo', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { pillarKey, questionNumero, company_id } = req.body;
+    const itens = Array.isArray(req.body.itens) ? req.body.itens : [{ pergunta: req.body.pergunta, resposta: req.body.resposta }];
+    const validos = itens
+        .map(i => ({ pergunta: String((i && i.pergunta) || '').trim(), resposta: String((i && i.resposta) || '').trim() }))
+        .filter(i => i.pergunta);
+    if (!questionNumero) return res.status(400).json({ error: 'Escolha a pergunta do pilar.' });
+    if (!validos.length) return res.status(400).json({ error: 'Descreva pelo menos uma pergunta.' });
+    try {
+        const companyId = await resolverEmpresaBatePapoDpo(req, res, pillarKey, company_id);
+        if (!companyId) return;
+        if (!textoDaPerguntaDpo(pillarKey, questionNumero)) return res.status(400).json({ error: 'Pergunta do pilar inválida.' });
+        for (const item of validos) {
+            await new Promise((resolve, reject) => db.run(
+                `INSERT INTO dpo_chat_questions (company_id, pillar_key, question_numero, pergunta, resposta, created_by) VALUES (?, ?, ?, ?, ?, ?)`,
+                [companyId, pillarKey, questionNumero, item.pergunta, item.resposta || null, req.user.userId],
+                (err) => err ? reject(err) : resolve()
+            ));
+        }
+        res.json({ message: validos.length === 1 ? 'Pergunta adicionada!' : `${validos.length} perguntas adicionadas!` });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar a pergunta do bate-papo.' }); }
+});
+
+async function obterBatePapoComAcesso(req, res, id) {
+    const item = await dbGet(`SELECT * FROM dpo_chat_questions WHERE id = ?`, [id]);
+    if (!item) { res.status(404).json({ error: 'Pergunta não encontrada.' }); return null; }
+    if (req.user.role === 'client_admin' && String(item.company_id) !== String(req.user.companyId)) {
+        res.status(403).json({ error: 'Esta pergunta não pertence à sua empresa.' });
+        return null;
+    }
+    return item;
+}
+
+app.put('/api/dpo/bate-papo/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { questionNumero, pergunta, resposta } = req.body;
+    try {
+        const item = await obterBatePapoComAcesso(req, res, req.params.id);
+        if (!item) return;
+        const novoNumero = questionNumero || item.question_numero;
+        if (!textoDaPerguntaDpo(item.pillar_key, novoNumero)) return res.status(400).json({ error: 'Pergunta do pilar inválida.' });
+        const novaPergunta = pergunta !== undefined ? String(pergunta).trim() : item.pergunta;
+        if (!novaPergunta) return res.status(400).json({ error: 'Descreva a pergunta.' });
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE dpo_chat_questions SET question_numero = ?, pergunta = ?, resposta = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            [novoNumero, novaPergunta, resposta !== undefined ? (String(resposta).trim() || null) : item.resposta, item.id],
+            (err) => err ? reject(err) : resolve()
+        ));
+        res.json({ message: 'Pergunta atualizada!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar a pergunta.' }); }
+});
+
+app.delete('/api/dpo/bate-papo/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const item = await obterBatePapoComAcesso(req, res, req.params.id);
+        if (!item) return;
+        await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_chat_questions WHERE id = ?`, [item.id], (err) => err ? reject(err) : resolve()));
+        res.json({ message: 'Pergunta excluída!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao excluir a pergunta.' }); }
+});
+
+// Excel padrão da pasta "Perguntas Bate-Papo" de um pilar, já ordenado pela
+// pergunta do pilar.
+app.get('/api/dpo/bate-papo/:pillarKey/export', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const pilarKey = req.params.pillarKey;
+        const companyId = await resolverEmpresaBatePapoDpo(req, res, pilarKey, req.query.company_id);
+        if (!companyId) return;
+        const empresa = await dbGet(`SELECT name FROM companies WHERE id = ?`, [companyId]);
+        const linhas = await listarBatePapoDpo(companyId, pilarKey);
+        const pilarLabel = DPO_AMBEV_DATA[pilarKey].label;
+
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'Impulsionar V4';
+        workbook.created = new Date();
+        const sheet = workbook.addWorksheet('Perguntas Bate-Papo', { views: [{ state: 'frozen', ySplit: 1 }] });
+        sheet.columns = [
+            { header: 'Empresa', key: 'empresa', width: 24 },
+            { header: 'Pilar', key: 'pilar', width: 24 },
+            { header: 'Nº Pergunta do Pilar', key: 'numero', width: 12 },
+            { header: 'Pergunta do Pilar', key: 'perguntaPilar', width: 40 },
+            { header: 'Item', key: 'item', width: 7 },
+            { header: 'Pergunta (Bate-Papo)', key: 'pergunta', width: 55 },
+            { header: 'Resposta', key: 'resposta', width: 65 },
+            { header: 'Registrado por', key: 'autor', width: 22 },
+            { header: 'Data', key: 'data', width: 13 }
+        ];
+        const cabecalho = sheet.getRow(1);
+        cabecalho.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cabecalho.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC4C4C' } };
+        cabecalho.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        cabecalho.height = 30;
+
+        const contadorPorPergunta = {};
+        linhas.forEach(l => {
+            contadorPorPergunta[l.question_numero] = (contadorPorPergunta[l.question_numero] || 0) + 1;
+            const row = sheet.addRow({
+                empresa: empresa ? empresa.name : '',
+                pilar: pilarLabel,
+                numero: l.question_numero,
+                perguntaPilar: l.perguntaPilarTexto || '',
+                item: contadorPorPergunta[l.question_numero],
+                pergunta: l.pergunta || '',
+                resposta: l.resposta || '',
+                autor: l.autorNome || '',
+                data: l.created_at ? new Date(String(l.created_at).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : ''
+            });
+            row.alignment = { vertical: 'top', wrapText: true };
+            ['numero', 'item', 'data'].forEach(k => { row.getCell(k).alignment = { vertical: 'top', horizontal: 'center' }; });
+        });
+        sheet.eachRow(row => row.eachCell(cell => {
+            cell.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+        }));
+        sheet.autoFilter = { from: 'A1', to: 'I1' };
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const nomeArquivo = `perguntas-bate-papo-${pilarKey}-${(empresa ? empresa.name : 'empresa').replace(/[^a-z0-9]+/gi, '-')}.xlsx`;
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
+        res.send(Buffer.from(buffer));
+    } catch (e) {
+        console.error('Erro ao exportar bate-papo DPO em Excel:', e.message);
+        res.status(500).json({ error: 'Erro ao exportar as perguntas em Excel.' });
     }
 });
 
