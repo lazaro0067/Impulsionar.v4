@@ -7467,6 +7467,30 @@ app.get('/api/dpo/autoavaliacoes', requireRole('admin', 'client_admin'), async (
     }
 });
 
+// Master: todas as autoavaliações feitas, de todas as revendas com pacote contratado.
+app.get('/api/admin/dpo/autoavaliacoes', requireRole('admin'), async (req, res) => {
+    try {
+        const empresas = await dbAll(`SELECT id, name, dpo_primeira_auditoria FROM companies ORDER BY name ASC`);
+        const resultado = [];
+        for (const emp of empresas) {
+            const ativos = await pilaresAtivosDaEmpresa(emp.id);
+            if (!ativos.length) continue;
+            const avaliacoes = await dbAll(`SELECT a.*, u.name as aprovadoPor FROM dpo_self_assessments a LEFT JOIN users u ON u.id = a.approved_by WHERE a.company_id = ? ORDER BY a.referencia DESC`, [emp.id]);
+            const lista = [];
+            for (const av of avaliacoes) {
+                const r = calcularResumoAutoavaliacaoDpo(await respostasDaAutoavaliacaoDpo(av.id), ativos, !!emp.dpo_primeira_auditoria);
+                lista.push({ id: av.id, referencia: av.referencia, referenciaLabel: rotuloReferenciaDpo(av.referencia), status: av.status, approved_at: av.approved_at, aprovadoPor: av.aprovadoPor,
+                    nivelGeral: r.nivelGeral, pct: r.categorias.todos, totalPerguntas: r.totalPerguntas, totalRespondidas: r.totalRespondidas });
+            }
+            resultado.push({ companyId: emp.id, empresa: emp.name, pilaresAtivos: ativos, avaliacoes: lista });
+        }
+        res.json(resultado);
+    } catch (e) {
+        console.error('Erro ao listar autoavaliações (Master):', e.message);
+        res.status(500).json({ error: 'Erro ao carregar as autoavaliações.' });
+    }
+});
+
 // Abre a autoavaliação do mês atual (ou devolve a que já existe).
 app.post('/api/dpo/autoavaliacoes', requireRole('admin', 'client_admin'), async (req, res) => {
     try {
@@ -7546,7 +7570,6 @@ app.put('/api/dpo/autoavaliacoes/:id/respostas', requireRole('admin', 'client_ad
                 ? 'Esta autoavaliação já foi aprovada — só o Master pode alterar. Abra um chamado pedindo ajuste.'
                 : 'A autoavaliação está salva. Clique em "Editar" para alterar as notas.' });
         }
-        if (req.user.role === 'admin' && av.status === 'salva') return res.status(400).json({ error: 'A autoavaliação está salva. Clique em "Editar" para alterar as notas.' });
         const [pilarKey, numero] = String(questionKey || '').split(':');
         const ativos = await pilaresAtivosDaEmpresa(av.company_id);
         if (!ativos.includes(pilarKey) || !perguntaDoPilarDpo(pilarKey, numero)) return res.status(400).json({ error: 'Pergunta inválida.' });
@@ -7559,7 +7582,7 @@ app.put('/api/dpo/autoavaliacoes/:id/respostas', requireRole('admin', 'client_ad
                 [av.id, questionKey, valor, req.user.userId], (err) => err ? reject(err) : resolve()
             ));
         }
-        if (av.status === 'aprovada') registrarEventoAutoavaliacaoDpo(av.id, 'ajuste_master', `${questionKey} → ${valor === null ? 'sem nota' : valor === 'na' ? 'N/A' : valor}`, req.user.userId);
+        if (req.user.role === 'admin' && av.status !== 'em_andamento') registrarEventoAutoavaliacaoDpo(av.id, 'ajuste_master', `${questionKey} → ${valor === null ? 'sem nota' : valor === 'na' ? 'N/A' : valor}`, req.user.userId);
         const resumo = calcularResumoAutoavaliacaoDpo(await respostasDaAutoavaliacaoDpo(av.id), ativos, await primeiraAuditoriaDaEmpresaDpo(av.company_id));
         res.json({ message: 'Nota salva!', resumo });
     } catch (e) { res.status(400).json({ error: 'Erro ao salvar a nota.' }); }
@@ -8414,7 +8437,12 @@ app.get('/api/dpo/ferramentas-digitais/:chave/export', requireRole('admin', 'cli
             const cfg = CAMPOS_SIM_DPO[chave];
             add('Parâmetros', [['Parâmetro', 'k', 40], ['Valor', 'v', 16]], Object.entries(dados.params || {}).map(([k, v]) => ({ k, v })));
             ['plan', 'real'].forEach(cen => {
-                const linhas = cfg[cen].map(([campo, rot]) => {
+                const extras = Object.fromEntries((dados['custos_extra_' + cen] || []).filter(x => x && x.id).map(x => ['x_' + x.id, 'Custo criado: ' + x.nome]));
+                const conhecidos = new Set(cfg[cen].map(c => c[0]));
+                const outros = [...new Set((dados[cen] || []).flatMap(m => Object.keys(m || {})))].filter(k => !conhecidos.has(k));
+                const rotular = k => extras[k] || ('OBZ — ' + k.replace(/^(o_|custo_)/, '').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()) + ' (R$)');
+                const campos = [...cfg[cen], ...outros.map(k => [k, rotular(k)])];
+                const linhas = campos.map(([campo, rot]) => {
                     const l = { ind: rot };
                     MESES_CURTOS_DPO.forEach((m, i) => { l['m' + i] = numDpo(((dados[cen] || [])[i] || {})[campo]); });
                     return l;

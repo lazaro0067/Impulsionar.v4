@@ -524,12 +524,26 @@
   .fd-valid-lista.aviso { color: #92400e; }
   .ppr-params { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-top: 8px; }
   .ppr-params label { font-size: 11.5px; margin: 0; }
+  .ppr-params > div { display: flex; flex-direction: column; justify-content: flex-end; }
   .ppr-params input { margin: 2px 0 0; }
   .ppr-cenarios { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
   .ppr-cenarios button { background: #fff; border: 2px solid var(--cinza-200); border-radius: 999px; padding: 7px 14px; font-weight: 800; cursor: pointer; font-size: 12.5px; }
   .ppr-cenarios button.ativo { background: #0b1329; color: #fff; border-color: #0b1329; }
   .ppr-grade td:first-child { white-space: nowrap; font-weight: 600; position: sticky; left: 0; background: #fff; z-index: 1; }
-  .ppr-grade input { width: 86px; text-align: right; }
+  .ppr-grade input { width: 92px; text-align: right; }
+  .sim-inp { display: inline-flex; align-items: center; gap: 3px; position: relative; width: 100%; }
+  .sim-inp i { font-style: normal; font-size: 10.5px; color: #64748b; font-weight: 700; white-space: nowrap; }
+  .sim-inp input { flex: 1; min-width: 0; text-align: right; }
+  .ppr-params .sim-inp input { margin: 2px 0 0; }
+  .sim-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sim-chip { background: #f8fafc; border: 1px solid var(--cinza-200); border-radius: 10px; padding: 6px 10px; display: flex; flex-direction: column; font-size: 12.5px; }
+  .sim-chip small { color: #64748b; font-size: 11px; }
+  .obz-cat td { font-weight: 700; background: #f8fafc; }
+  .obz-linha td { font-size: 12px; color: #475569; }
+  .obz-linha td:first-child { padding-left: 22px; font-weight: 500; }
+  .obz-total td { font-weight: 800; background: #eef2ff; }
+  .obz-vlc { background: #ede9fe; color: #6d28d9; border-radius: 6px; padding: 0 5px; font-size: 10px; font-weight: 800; }
+  .obz-tabela td:not(:first-child), .obz-tabela th:not(:first-child) { text-align: right; white-space: nowrap; }
   .ppr-grupo td { background: #fef2f2 !important; color: #b91c1c; font-weight: 800; font-size: 11.5px; text-transform: uppercase; letter-spacing: .3px; }
   .ppr-derivado td { background: #f8fafc; color: #0f172a; text-align: right; font-weight: 700; }
   .ppr-derivado td:first-child { text-align: left; color: #475569; font-style: italic; background: #f8fafc; }
@@ -1357,6 +1371,12 @@ async function renderDashboardEmpresa() {
 
     let modulos = null;
     try { modulos = empresa && empresa.enabled_modules ? JSON.parse(empresa.enabled_modules) : null; } catch (e) { modulos = null; }
+    // Mesmo critério do menu lateral: a restrição do próprio acesso (quando
+    // existe) vale sobre a da empresa — o painel só mostra os pacotes contratados.
+    if (Array.isArray(u.enabledModules)) {
+      modulos = u.enabledModules.includes('consultoria') ? Array.from(new Set([...u.enabledModules, 'pdi', 'pipeline'])) : u.enabledModules.slice();
+      modulos = Array.from(new Set(modulos.map(m => String(m).split(':')[0])));
+    }
     // null (nenhuma restrição marcada pelo Master) = acesso completo a tudo;
     // só filtra os cartões quando a empresa tem mesmo uma lista de módulos.
     const modAtivo = (chave) => !Array.isArray(modulos) || modulos.includes(chave);
@@ -1396,10 +1416,10 @@ async function renderDashboardEmpresa() {
       <div class="painel" style="cursor:pointer;margin-bottom:18px;" onclick="irPara('dpoHome')">
         <h3 style="margin-top:0;">🛡️ Acompanhamento DPO Ambev</h3>
         <div class="kpis">
-          <div class="kpi-card kpi-azul"><div class="valor">${resumoDpo.acoes.noPrazo}</div><div class="rotulo">Ações no prazo</div></div>
+          <div class="kpi-card vivo kpi-azul"><div class="valor">${resumoDpo.acoes.noPrazo}</div><div class="rotulo">Ações no prazo</div></div>
           <div class="kpi-card" style="background:#fef2f2;"><div class="valor" style="color:#dc2626;">${resumoDpo.acoes.vencida}</div><div class="rotulo" style="color:#dc2626;">Ações vencidas</div></div>
-          <div class="kpi-card kpi-laranja"><div class="valor">${resumoDpo.acoes.emAndamento}</div><div class="rotulo">Em andamento</div></div>
-          <div class="kpi-card kpi-verde"><div class="valor">${resumoDpo.acoes.concluida}</div><div class="rotulo">Concluídas</div></div>
+          <div class="kpi-card vivo kpi-laranja"><div class="valor">${resumoDpo.acoes.emAndamento}</div><div class="rotulo">Em andamento</div></div>
+          <div class="kpi-card vivo kpi-verde"><div class="valor">${resumoDpo.acoes.concluida}</div><div class="rotulo">Concluídas</div></div>
           ${resumoDpo.mediaGeral !== null ? `<div class="kpi-card vivo" style="background:${visualSeloDpo(resumoDpo.nivelGeral).cor};"><div class="valor" style="color:${visualSeloDpo(resumoDpo.nivelGeral).texto};">${resumoDpo.mediaGeral}</div><div class="rotulo" style="color:${visualSeloDpo(resumoDpo.nivelGeral).texto};">${escapeHtml(resumoDpo.nivelGeralLabel || '')}</div><div class="subrotulo" style="color:${visualSeloDpo(resumoDpo.nivelGeral).texto};">Última autoavaliação · ${escapeHtml(resumoDpo.referenciaLabel || '')}</div></div>` : ''}
         </div>
       </div>` : ''}
@@ -6486,37 +6506,57 @@ async function renderDpoAgenda() {
     CACHE_DPO_EMPRESAS_TODAS = await api('/api/admin/dpo/companies?all=1');
     CACHE_DPO_CICLOS_ADMIN = await api('/api/dpo/cycles');
     const CACHE_DPO_LAYOUTS_TODOS = await Promise.all(CACHE_DPO_PILARES.pilares.map(p => api('/api/admin/dpo/pillar-layout/' + p.key)));
+    const AVS_MASTER = await api('/api/admin/dpo/autoavaliacoes');
+    const CONTRATADAS = CACHE_DPO_EMPRESAS_TODAS.filter(e => (e.pilaresAtivos || []).length);
     cont.innerHTML = `
-      <h1>Impulsionar V4 — DPO Ambev — Agenda de Consultorias</h1>
-      <p style="color:#64748b;margin-top:-8px;">Crie um novo ciclo de autoavaliação (mensal) para uma empresa que já comprou algum pilar. A empresa preenche o checklist; você acompanha o resultado.</p>
-      <div class="barra-acoes"><div class="direita"><button class="btn-primario" onclick="mostrarFormularioNovoCicloDpo()">+ Novo Ciclo</button></div></div>
-      <div id="form-area"></div>
-      <div class="grid-3">
+      <h1>Impulsionar V4 — DPO Ambev — Gestão das revendas</h1>
+      <p style="color:#64748b;margin-top:-8px;">Aqui aparecem apenas as revendas com pacote DPO contratado. Como Master você pode abrir, editar (em qualquer status — fica registrado no histórico) ou excluir as autoavaliações feitas.</p>
+
+      <h2 style="margin-top:18px;">📊 Autoavaliações feitas</h2>
+      ${!AVS_MASTER.length ? '<div class="msg-vazio">Nenhuma revenda com pacote contratado ainda.</div>' : AVS_MASTER.map(emp => `
+        <div class="painel" style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div><strong style="font-size:15px;">${escapeHtml(emp.empresa)}</strong>
+              <div style="font-size:12px;color:#64748b;">Pacotes: ${emp.pilaresAtivos.map(p => escapeHtml(dpoLabelDoPilar(p))).join(', ')}</div></div>
+            <button class="btn-secundario btn-sm" onclick="renderDpoAutoavaliacao(${emp.companyId})">📊 Abrir autoavaliações</button>
+          </div>
+          ${!emp.avaliacoes.length ? '<div style="font-size:12.5px;color:#94a3b8;margin-top:8px;">Nenhuma autoavaliação feita ainda.</div>' : `
+          <table style="margin-top:10px;">
+            <thead><tr><th>Autoavaliação</th><th>Status</th><th>Selo · %</th><th>Avaliadas</th><th style="text-align:right;">Ações</th></tr></thead>
+            <tbody>${emp.avaliacoes.map(a => { const st = STATUS_AV_DPO[a.status] || STATUS_AV_DPO.em_andamento, v = visualSeloDpo(a.nivelGeral); return `<tr>
+              <td><strong>${escapeHtml(a.referenciaLabel)}</strong>${a.status === 'aprovada' && a.aprovadoPor ? `<div style="font-size:11px;color:#64748b;">aprovada por ${escapeHtml(a.aprovadoPor)}</div>` : ''}</td>
+              <td><span class="dpo-score-badge" style="background:${st.fundo};color:${st.cor};">${st.texto}</span></td>
+              <td><span class="dpo-mes-bolinha" style="background:${v.cor};display:inline-block;"></span> ${a.nivelGeral ? escapeHtml(v.label) + ' · ' + fmtPctDpoFront(a.pct) : '—'}</td>
+              <td>${a.totalRespondidas}/${a.totalPerguntas}</td>
+              <td style="text-align:right;white-space:nowrap;">
+                <button class="btn-secundario btn-sm" onclick="renderDpoAutoavaliacao(${emp.companyId}, ${a.id}, 'resumo')">👁 Ver</button>
+                <button class="btn-secundario btn-sm" onclick="renderDpoAutoavaliacao(${emp.companyId}, ${a.id}, 'responder')">✏️ Editar</button>
+                <button class="btn-perigo btn-sm" onclick="excluirAutoavaliacaoDpoMaster(${a.id}, '${escapeHtml(emp.empresa).replace(/'/g, '')} — ${escapeHtml(a.referenciaLabel)}')">🗑 Excluir</button>
+              </td></tr>`; }).join('')}</tbody>
+          </table>`}
+        </div>`).join('')}
+      ${CACHE_DPO_CICLOS_ADMIN.length ? `
+      <details class="painel" style="margin-top:14px;"><summary style="cursor:pointer;font-weight:700;">📝 Gestão (checklist) por revenda (${CACHE_DPO_CICLOS_ADMIN.length})</summary>
+        <div class="grid-3" style="margin-top:12px;">
         ${CACHE_DPO_CICLOS_ADMIN.map(c => `
           <div class="plano-card">
             <h4>${escapeHtml(c.companyName)}</h4>
-            <div class="plano-meta">${escapeHtml(c.referencia || 'Sem referência')}</div>
             <div class="plano-meta">Pilares: ${c.pilares.map(p => escapeHtml(dpoLabelDoPilar(p))).join(', ')}</div>
             <div class="plano-meta">Status: <strong style="color:${ROTULOS_STATUS_CICLO_DPO[c.status]?.cor}">${ROTULOS_STATUS_CICLO_DPO[c.status]?.texto || c.status}</strong></div>
-            ${c.scheduled_at ? `<div class="plano-meta">Data: ${new Date(c.scheduled_at).toLocaleDateString('pt-BR')}</div>` : ''}
             <div class="plano-meta">${c.totalRespondidas}/${c.totalPerguntas} pergunta(s) respondida(s)</div>
-            <div class="acoes-form" style="flex-wrap:wrap;">
-              <button class="btn-secundario btn-sm" onclick="verDetalheCicloDpoAdmin(${c.id})">👁️ Ver</button>
-              ${c.status !== 'concluido' ? `<button class="btn-perigo btn-sm" onclick="mudarStatusCicloDpo(${c.id}, 'concluido')">Encerrar Ciclo</button>` : `<button class="btn-secundario btn-sm" onclick="mudarStatusCicloDpo(${c.id}, 'em_andamento')">Reabrir</button>`}
-            </div>
-          </div>
-        `).join('')}
-      </div>
-      ${!CACHE_DPO_CICLOS_ADMIN.length ? '<div class="msg-vazio">Nenhum ciclo criado ainda.</div>' : ''}
+            <div class="acoes-form" style="flex-wrap:wrap;"><button class="btn-secundario btn-sm" onclick="verDetalheCicloDpoAdmin(${c.id})">👁️ Abrir gestão</button></div>
+          </div>`).join('')}
+        </div></details>` : ''}
+      <div id="form-area"></div>
 
       <h2 style="margin-top:32px;">🔐 Pastas liberadas por empresa</h2>
       <p style="color:#64748b;margin-top:-8px;">Escolha quais pastas do DPO cada empresa enxerga dentro dos pilares que ela comprou (a empresa recebe uma notificação quando uma pasta nova é liberada). Marque "1ª auditoria em 2026" para revendas que nunca foram auditadas — só elas podem ficar no selo Route Basic. Em "📊 Autoavaliações" você vê o resumo e as notas de cada mês da empresa.</p>
       <table>
         <thead><tr><th>Empresa</th><th>📝 Gestão (Checklist)</th><th>📁 Perguntas Bate-Papo</th><th>📂 Material do Pilar</th><th>🧰 Ferramentas Impulsionar</th><th>📊 Autoavaliação Mensal</th><th title="Revenda que nunca foi auditada: pode receber o selo Route Basic">1ª auditoria em 2026</th><th></th></tr></thead>
         <tbody>
-          ${CACHE_DPO_EMPRESAS_TODAS.map(e => `
+          ${CONTRATADAS.map(e => `
             <tr>
-              <td>${escapeHtml(e.name)}</td>
+              <td>${escapeHtml(e.name)}<div style="font-size:11px;color:#64748b;">${e.pilaresAtivos.map(p => escapeHtml(dpoLabelDoPilar(p))).join(', ')}</div></td>
               ${['checklist', 'batepapo', 'material', 'ferramentas', 'autoavaliacao'].map(p => `<td style="text-align:center;"><input type="checkbox" id="dpo-pasta-${p}-${e.id}" style="width:auto;" ${e.pastas && e.pastas[p] ? 'checked' : ''}></td>`).join('')}
               <td style="text-align:center;"><input type="checkbox" id="dpo-primeira-${e.id}" style="width:auto;" ${e.primeiraAuditoria ? 'checked' : ''}></td>
               <td style="white-space:nowrap;"><button class="btn-secundario btn-sm" onclick="salvarPastasEmpresaDpo(${e.id})">Salvar</button>
@@ -6525,14 +6565,14 @@ async function renderDpoAgenda() {
           `).join('')}
         </tbody>
       </table>
-      ${!CACHE_DPO_EMPRESAS_TODAS.length ? '<div class="msg-vazio">Nenhuma empresa cadastrada ainda.</div>' : ''}
+      ${!CONTRATADAS.length ? '<div class="msg-vazio">Nenhuma revenda com pacote contratado ainda.</div>' : ''}
 
       <h2 style="margin-top:32px;">🗓️ Auditoria Oficial Ambev</h2>
       <p style="color:#64748b;margin-top:-8px;">Esta é a data do evento real de auditoria da Ambev (diferente da autoavaliação mensal). Marque aqui a data combinada com cada empresa — ela também aparece na tela da própria empresa.</p>
       <table>
         <thead><tr><th>Empresa</th><th>Data da Auditoria Oficial</th><th>Observação</th><th></th></tr></thead>
         <tbody>
-          ${CACHE_DPO_EMPRESAS_TODAS.map(e => `
+          ${CONTRATADAS.map(e => `
             <tr>
               <td>${escapeHtml(e.name)}</td>
               <td><input id="dpo-audoficial-data-${e.id}" type="date" value="${e.auditoriaOficialData || ''}"></td>
@@ -6542,7 +6582,7 @@ async function renderDpoAgenda() {
           `).join('')}
         </tbody>
       </table>
-      ${!CACHE_DPO_EMPRESAS_TODAS.length ? '<div class="msg-vazio">Nenhuma empresa cadastrada ainda.</div>' : ''}
+      ${!CONTRATADAS.length ? '<div class="msg-vazio">Nenhuma revenda com pacote contratado ainda.</div>' : ''}
 
       <h2 style="margin-top:32px;">🔍 Revisar Todos os Pilares</h2>
       <p style="color:#64748b;margin-top:-8px;">Todos os 7 pilares com todas as perguntas, verificações, explicação de pontos e how to check — para o Master conferir se está tudo conforme pedido, sem afetar nenhuma empresa. Clique em cada pilar para abrir/fechar.</p>
@@ -7198,7 +7238,7 @@ function renderCicloDpoAtual() {
         <button class="btn-secundario btn-sm" onclick="baixarExcelDpo('checklist', ${ciclo.company_id || 'null'})">📊 Excel da Autoavaliação</button>
       </div>
     </div>
-    <h1>${ciclo.companyName ? escapeHtml(ciclo.companyName) + ' — ' : ''}${escapeHtml(ciclo.referencia || 'Ciclo de Autoavaliação')}</h1>
+    <h1>${ciclo.companyName ? escapeHtml(ciclo.companyName) + ' — ' : ''}Gestão DPO</h1>
     <p style="color:#64748b;margin-top:-8px;">Status: <strong>${ROTULOS_STATUS_CICLO_DPO[ciclo.status]?.texto}</strong>${ciclo.scheduled_at ? ' · Data: ' + new Date(ciclo.scheduled_at).toLocaleDateString('pt-BR') : ''}</p>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
       ${ciclo.pilares.map(p => `<button class="btn-sm ${p.key === pilar.key ? 'btn-primario' : 'btn-secundario'}" onclick="trocarPilarCicloDpo('${p.key}')">${escapeHtml(p.label)}</button>`).join('')}
@@ -8126,7 +8166,7 @@ const ROTULOS_ACAO_AV_DPO = { salvar: '💾 Salvou', editar: '✏️ Liberou par
 
 function podeEditarNotasAutoavaliacaoDpo() {
   const st = ESTADO_AUTOAVAL.atual.status;
-  return ESTADO.usuario.role === 'admin' ? (st === 'em_andamento' || st === 'aprovada') : st === 'em_andamento';
+  return ESTADO.usuario.role === 'admin' ? true : st === 'em_andamento';
 }
 
 function limitanteDpoTexto(r) {
@@ -8471,6 +8511,11 @@ async function iniciarAutoavaliacaoDpo() {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
+async function excluirAutoavaliacaoDpoMaster(id, rotulo) {
+  if (!confirm(`Excluir a autoavaliação ${rotulo}? As notas serão apagadas e não dá para desfazer.`)) return;
+  try { const r = await api('/api/dpo/autoavaliacoes/' + id, { method: 'DELETE' }); mostrarToast(r.message); renderDpoAgenda(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
 async function excluirAutoavaliacaoDpo(id) {
   if (!confirm('Excluir esta autoavaliação e todas as notas dela?')) return;
   try { const r = await api('/api/dpo/autoavaliacoes/' + id, { method: 'DELETE' }); mostrarToast(r.message); renderDpoAutoavaliacao(ESTADO_AUTOAVAL.companyId); }
@@ -9036,7 +9081,7 @@ function fdDesenhar() {
   const ehAcomp = acompEh();
   const abas = ehAcomp ? acompAbas() : FD.chave === 'swot'
     ? [['inicio', '🏁 Início e áreas'], ['forcas', '💪 Forças'], ['fraquezas', '⚠️ Fraquezas'], ['oportunidades', '🚀 Oportunidades'], ['ameacas', '🛑 Ameaças'], ['matriz', '🧮 Matriz SWOT'], ['cruzamentos', '🔀 Cruzamentos'], ['objetivos', '🎯 Objetivos estratégicos'], ['planos', '📋 Planos de ação'], ['validacao', '✅ Validação 1.3'], ['arquivos', '📎 Arquivos']]
-    : ehSim ? [['parametros', '⚙️ Parâmetros'], ['plan', '📋 Orçamento (Plan)'], ['real', '📈 Realizado'], ['comparativo', '📊 Plan x Real'], ['arquivos', '📎 Arquivos'], ['validacao', '✅ Validação 1.1']]
+    : ehSim ? [['parametros', '⚙️ Parâmetros'], ['plan', '📋 Orçamento (Plan)'], ['real', '📈 Realizado'], ['comparativo', '📊 Plan x Real'], ['obz', '💰 OBZ Plan x Real'], ['arquivos', '📎 Arquivos'], ['validacao', '✅ Validação 1.1']]
     : [['raci', '👥 RACI e processo'], ['kpis', '🌱 KPIs de sustentabilidade'], ['pdca', '🔁 PDCA de custos'], ['arquivos', '📎 Arquivos'], ['validacao', '✅ Validação 1.1']];
   const titulo = ehAcomp ? `🚀 ${escapeHtml(m.template.numero)} ${escapeHtml(m.template.questao)}` : FD.chave === 'swot' ? '🧭 ' + escapeHtml(m.titulo) : ehSim ? `${SIMS_DPO[FD.chave].icone} ${SIMS_DPO[FD.chave].titulo}` : '📑 Orçamento, RACI e KPIs';
   const anosHtml = FD.chave === 'swot' || ehAcomp
@@ -9079,6 +9124,7 @@ function fdHtmlAba() {
     if (a === 'parametros') return simHtmlParametros(FD.chave);
     if (a === 'plan' || a === 'real') return simHtmlGrade(FD.chave, a);
     if (a === 'comparativo') return simHtmlComparativo(FD.chave);
+    if (a === 'obz') return simHtmlObz(FD.chave);
   } else {
     if (a === 'raci') return orcHtmlRaci();
     if (a === 'kpis') return orcHtmlKpis();
@@ -9099,6 +9145,7 @@ function fdTabela(path, colunas, opts) {
       return `<select ${on}><option value=""></option>${ops.map(o => `<option value="${escapeHtml(o)}" ${String(o) === String(v) ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('')}${v && !ops.includes(v) ? `<option selected>${escapeHtml(v)}</option>` : ''}</select>`;
     }
     if (c.tipo === 'textarea') return `<textarea rows="2" ${on}>${escapeHtml(v)}</textarea>`;
+    if (c.tipo === 'decimal') return `<input type="text" inputmode="decimal" value="${escapeHtml(fdFmtInput(v))}" onchange="fdEditarLinha('${path}', ${i}, '${c.campo}', fdParse(this.value), ${!!c.recarregar}); this.value = fdFmtInput(fdParse(this.value));">`;
     if (c.tipo === 'calc') return `<span id="${c.id ? c.id(i) : ''}" class="fd-calc">${c.valor(l, i)}</span>`;
     return `<input type="${c.tipo || 'text'}" ${c.tipo === 'number' ? 'step="any"' : ''} value="${escapeHtml(v)}" ${on}>`;
   };
@@ -9497,36 +9544,117 @@ const MESES_FD = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set',
 const up = Math.ceil;
 function simP(chave, dados) { // leitor de parâmetros com padrão
   const defs = Object.fromEntries(SIMS_DPO[chave].params.flatMap(g => g[1]).map(p => [p[0], p[2]]));
-  return k => { const v = fdNum(((dados || {}).params || {})[k]); return v !== null ? v : (fdNum(defs[k]) || 0); };
+  const raw = k => fdNum(((dados || {}).params || {})[k]);
+  const P = k => { const v = raw(k); return v !== null ? v : (fdNum(defs[k]) || 0); };
+  P.set = k => raw(k) !== null;
+  return P;
 }
 function simMes(dados, cen, i) { return (((dados || {})[cen] || [])[i]) || {}; }
 const nOf = m => k => fdNum(m[k]) || 0;
 const div = (a, b) => b ? a / b : null;
 function cobertura(q, abs) { return q ? q + up(q * abs) + up(q / 12) : 0; } // + absenteísmo + férias (1/12)
 
+// ---- blocos de parâmetros compartilhados (abertos como no PPR / Resumo OBZ) ----
+const MESES_LONGOS_FD = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+const simParamsGente = funcoes => [
+  ['👥 Gente — salário, encargos e benefícios (custo de pessoal aberto 100%)', [
+    ...funcoes.flatMap(([f, nome, legado]) => [['sal_' + f, `Salário base — ${nome} (R$/pessoa)`, ''], ['custo_' + f, `${nome}: custo fechado (R$/pessoa, usado se o salário ficar vazio)`, legado]]),
+    ['encargos_pct', '% encargos sobre salário (INSS, FGTS, 13º, férias, provisões)', 70],
+    ['ben_va', 'Vale alimentação / refeição (R$/pessoa)', ''], ['ben_saude', 'Plano de saúde / odonto (R$/pessoa)', ''],
+    ['ben_vt', 'Vale transporte (R$/pessoa)', ''], ['ben_outros', 'Outros benefícios (seguro de vida, auxílios) (R$/pessoa)', ''],
+    ['uniforme_epi', 'Uniforme + EPI (R$/pessoa/mês)', '']]],
+  ['📅 Gente — dissídio, horas extras e remuneração variável', [
+    ['dissidio_mes', 'Mês do dissídio coletivo', '', 'mes'], ['dissidio_pct', '% de ajuste do dissídio (aplica do mês em diante)', ''],
+    ['he_pct', '% horas extras + DSR sobre salário c/ encargos', ''],
+    ...funcoes.map(([f, nome]) => ['rv_' + f, `Remuneração variável — ${nome} (R$/pessoa/mês)`, ''])]]
+];
+const simParamsFrota = (nome, d) => [
+  [`🚚 Frota — despesa fixa por ${nome} (R$/mês)`, [['seguro_veic', 'Seguro (R$)', ''], ['rastreador_veic', 'Rastreador (R$)', ''], ['ipva_veic', 'IPVA + licenciamento mensal (R$)', ''], ['lavagem_veic', 'Lavagem (R$)', ''], ['depreciacao_veic', 'Depreciação (R$ — vazio = calcula pela árvore)', ''], ['remcap_veic', 'Remuneração de capital (R$ — vazio = calcula pela árvore)', ''], ['custo_fixo_veiculo', 'Outros fixos (R$)', '']]],
+  [`🌳 Frota — árvore de custo do ${nome}`, [['valor_veiculo', 'Valor do veículo sem impostos (R$)', ''], ['valor_carroceria', 'Valor da carroceria / implemento (R$)', ''], ['residual_veic_pct', '% valor residual do veículo', 30], ['residual_carr_pct', '% valor residual da carroceria', 10], ['vida_meses', 'Período de depreciação (meses)', 120], ['remcap_base_pct', '% do veículo como base de capital', 65], ['remcap_taxa_pct', '% taxa de remuneração de capital a.a.', 12]]],
+  ['⛽ Frota — diesel, pneus, manutenção e óleo (custo por km)', [['diesel_litro', 'Diesel (R$/litro)', d.diesel], ['consumo_km_l', 'Consumo (km/litro)', d.consumo],
+    ['pneu_km', 'Pneus (R$/km — vazio = calcula pelos pneus)', ''], ['pneu_dir_valor', 'Pneu direcional (R$/unidade)', ''], ['pneu_dir_qtd', 'Qtd pneus direcionais', d.pdir], ['pneu_tra_valor', 'Pneu de tração (R$/unidade)', ''], ['pneu_tra_qtd', 'Qtd pneus de tração', d.ptra], ['pneu_colocacao', 'Colocação (R$/pneu)', ''], ['recauch_valor', 'Recauchutagem (R$/pneu)', ''], ['recauch_qtd', 'Recauchutagens por pneu', 2], ['pneu_vida_km', 'Vida útil dos pneus (km)', 180000],
+    ['manut_km', 'Manutenção (R$/km — vazio = calcula pelo valor do veículo)', ''], ['manut_pct', '% do valor do veículo gasto por manutenção', 1], ['manut_intervalo_km', 'Km entre manutenções', 10000], ['oleo_km', 'Óleos e lubrificantes (R$/km)', '']]],
+  ['🛣️ Frota — custo por viagem (R$/viagem)', [['pedagio_viagem', 'Pedágio (R$)', ''], ['balsa_viagem', 'Balsa (R$)', ''], ['escolta_viagem', 'Escolta (R$)', ''], ['estadas_viagem', 'Viagem e estadas / diárias (R$)', ''], ['custo_extra_viagem', 'Outros por viagem (R$)', '']]]
+];
+function simBeneficios(P) { return P('ben_va') + P('ben_saude') + P('ben_vt') + P('ben_outros'); }
+function simFatorDissidio(P, i) { const m = P('dissidio_mes'); return m && i !== undefined && i + 1 >= m ? 1 + P('dissidio_pct') / 100 : 1; }
+// custo por pessoa no mês i: salário + encargos (com dissídio) e benefícios
+function simPessoa(P, f, i) {
+  const fator = simFatorDissidio(P, i), sal = P('sal_' + f);
+  if (sal > 0) return { salEnc: sal * (1 + P('encargos_pct') / 100) * fator, ben: simBeneficios(P), aberto: true };
+  return { salEnc: P('custo_' + f) * fator, ben: 0, aberto: false };
+}
+// árvore de custo do veículo (igual à aba Árvore de Custo do PPR)
+function simFrotaUnit(P) {
+  const vv = P('valor_veiculo'), vc = P('valor_carroceria'), temValor = vv || vc;
+  const dep = P('depreciacao_veic') || (temValor ? (vv * (1 - P('residual_veic_pct') / 100) + vc * (1 - P('residual_carr_pct') / 100)) / (P('vida_meses') || 120) : 0);
+  const remcap = P('remcap_veic') || (temValor ? (vv * P('remcap_base_pct') / 100 + vc * 0.5) * P('remcap_taxa_pct') / 100 / 12 : 0);
+  const qp = P('pneu_dir_qtd') + P('pneu_tra_qtd');
+  const jogo = P('pneu_dir_valor') * P('pneu_dir_qtd') + P('pneu_tra_valor') * P('pneu_tra_qtd') + qp * P('pneu_colocacao');
+  const pneu = P('pneu_km') || (jogo ? (jogo + qp * P('recauch_qtd') * P('recauch_valor')) / (P('pneu_vida_km') || 180000) : 0);
+  const manut = P('manut_km') || (temValor ? ((vv + vc - jogo) * P('manut_pct') / 100) / (P('manut_intervalo_km') || 10000) : 0);
+  const u = { seguro: P('seguro_veic'), rastreador: P('rastreador_veic'), ipva: P('ipva_veic'), lavagem: P('lavagem_veic'), depreciacao: dep, remcap, outros_fixos: P('custo_fixo_veiculo') || P('custo_fixo_carreta'),
+    diesel: P('consumo_km_l') ? P('diesel_litro') / P('consumo_km_l') : 0, pneu, manut, oleo: P('oleo_km') };
+  u.fixoTotal = u.seguro + u.rastreador + u.ipva + u.lavagem + u.depreciacao + u.remcap + u.outros_fixos;
+  u.kmTotal = u.diesel + u.pneu + u.manut + u.oleo;
+  return u;
+}
+const FIXOS_FROTA_OBZ = [['seguro', 'Seguro'], ['rastreador', 'Rastreador'], ['ipva', 'IPVA + licenciamento'], ['lavagem', 'Lavagem'], ['depreciacao', 'Depreciação'], ['remcap', 'Remuneração de capital'], ['outros_fixos', 'Outros fixos']];
+const KM_FROTA_OBZ = [['combustivel', 'Combustível (diesel)'], ['manutencao', 'Manutenção'], ['pneu', 'Pneus'], ['oleo', 'Óleos e lubrificantes']];
+const VIAGEM_OBZ = [['balsa', 'Balsa'], ['pedagio', 'Pedágio'], ['escolta', 'Escolta'], ['estadas', 'Viagem e estadas'], ['outros_viagem', 'Outros por viagem']];
+function simLinhasFrota(o, F, qtdVeic, km, viagens, P) {
+  FIXOS_FROTA_OBZ.forEach(([k]) => { o[k] = qtdVeic * F[k]; });
+  o.combustivel = km * F.diesel; o.manutencao = km * F.manut; o.pneu = km * F.pneu; o.oleo = km * F.oleo;
+  o.balsa = viagens * P('balsa_viagem'); o.pedagio = viagens * P('pedagio_viagem'); o.escolta = viagens * P('escolta_viagem'); o.estadas = viagens * P('estadas_viagem'); o.outros_viagem = viagens * P('custo_extra_viagem');
+}
+// resumo "calculado" que aparece na aba de parâmetros
+function simResumoFrota(P, nome) {
+  const F = simFrotaUnit(P);
+  return [[`Fixo total por ${nome}/mês`, F.fixoTotal, 'rs'], ['Depreciação usada', F.depreciacao, 'rs'], ['Remuneração de capital usada', F.remcap, 'rs'], ['Diesel por km', F.diesel, 'rs2'], ['Pneus por km', F.pneu, 'rs2'], ['Manutenção por km', F.manut, 'rs2'], ['Variável total por km', F.kmTotal, 'rs2']];
+}
+function simResumoGente(P, funcoes) {
+  return funcoes.map(([f, nome]) => { const p = simPessoa(P, f, 0), d = simPessoa(P, f, 11); return [`${nome} (${p.aberto ? 'aberto' : 'fechado'}) — Jan / Dez`, `R$ ${fdFmt(p.salEnc + p.ben, 2)} / R$ ${fdFmt(d.salEnc + d.ben, 2)}`, 'txt']; });
+}
+
+const FUNC_ARM = [['operador', 'Operador de empilhadeira', 2176], ['conferente', 'Conferente', 2542], ['ajudante', 'Ajudante de armazém', 1525], ['extra', 'Amarração / QLP extra', 1525]];
+const FUNC_ENT = [['motorista', 'Motorista', 4354.7], ['ajudante', 'Ajudante de entrega', 2889.49]];
+const FUNC_PUX = [['motorista', 'Motorista carreteiro', 4500]];
+const CARGOS_ADM_PPR = ['Ger/Coord/Sup Armazém', 'Analista/Auxiliar Armazém', 'Coord/Sup de Puxada', 'Analista/Téc./Aux. Puxada', 'Analista/Téc./Aux. Controle', 'Manobristas', 'Serviços Gerais', 'Mecânicos'];
+
 const SIMS_DPO = {
   sim_armazem: {
     icone: '🏭', titulo: 'Simulador Armazém', planilha: 'PPR Armazém', cor: '#7c3aed',
-    desc: 'Volume → paletes; carregamentos de rota e descargas de puxada × tempos padrão → horímetro, empilhadeiras e QLP por função (operador, conferente, ajudante) com absenteísmo e férias → custo por pacote, PNP e R$/hl.',
+    desc: 'Volume → paletes; carregamentos de rota e descargas de puxada × tempos padrão → horímetro, empilhadeiras e QLP por função (operador, conferente, ajudante) com absenteísmo e férias → custo OBZ aberto (empilhadeira, pessoal com salário/encargos/benefícios/dissídio, prejuízos, outros), R$/hl e VLC/hl.',
     params: [
       ['Conversões e jornada', [['fator_cx_hl', 'Caixas por hl', 5.88], ['cx_palete', 'Caixas por palete', 42], ['jornada_h', 'Jornada (h/dia)', 7.33], ['absenteismo', '% absenteísmo', 4], ['horas_emp_dia', 'Horas disponíveis por empilhadeira/dia', 14], ['reserva_emp', '% empilhadeiras reserva', 10]]],
       ['Tempos padrão — operador de empilhadeira (min)', [['op_min_carreg', 'Por carregamento de rota', 20], ['op_min_retorno', 'Por retorno de rota', 20], ['op_min_puxada', 'Por carreta de puxada (descarga/carga)', 39], ['op_min_palete', 'Reabastecimento por palete', 1]]],
       ['Tempos padrão — conferente (min)', [['conf_min_carreg', 'Por carregamento de rota', 15], ['conf_min_retorno', 'Por retorno de rota', 12], ['conf_min_puxada', 'Por carreta de puxada', 20], ['conf_min_dia', 'Fixos por dia (balanço de massa, contagem)', 240]]],
-      ['Produtividade e estrutura', [['aj_paletes_dia', 'Ajudante: paletes por dia', 20], ['qlp_adm', 'QLP administrativo (gerente, analista, coord.)', 4]]],
-      ['Custos', [['custo_operador', 'Custo mensal operador (R$)', 2176], ['custo_conferente', 'Custo mensal conferente (R$)', 2542], ['custo_ajudante', 'Custo mensal ajudante (R$)', 1525], ['custo_extra', 'Custo mensal QLP extra (R$)', 1525], ['custo_adm_mes', 'Custo administrativo total/mês (R$)', 27661], ['emp_aluguel', 'Aluguel por empilhadeira alugada (R$/mês)', ''], ['emp_custo_h', 'Custo variável empilhadeira (R$/h: gás, manut., pneus)', 20.5], ['rs_hl_meta', 'Meta R$/hl do orçamento', '']]]
+      ['Produtividade e estrutura', [['aj_paletes_dia', 'Ajudante: paletes por dia', 20], ['qlp_adm', 'QLP administrativo (se a tabela de equipe ADM ficar vazia)', 4], ['custo_adm_mes', 'Custo administrativo total/mês (R$ — se a tabela ficar vazia)', 27661]]],
+      ...simParamsGente(FUNC_ARM),
+      ['📋 Pessoal — outros', [['rescisoes_mes', 'Rescisões trabalhistas (R$/mês)', '']]],
+      ['🏗️ Empilhadeiras', [['emp_aluguel', 'Aluguel por empilhadeira alugada (R$/mês)', ''], ['emp_deprec_mes', 'Depreciação das empilhadeiras próprias (R$/mês total)', ''], ['emp_manut_h', 'Manutenção (R$/hora de horímetro)', 5], ['emp_pneu_h', 'Pneus (R$/hora de horímetro)', 1], ['emp_gas_h', 'Gás (R$/hora de horímetro)', 14.5]]],
+      ['🎯 Meta', [['rs_hl_meta', 'Meta R$/hl do orçamento', '']]]
     ],
+    resumoParams: P => [...simResumoGente(P, FUNC_ARM), ['Empilhadeira variável por hora', P('emp_manut_h') + P('emp_pneu_h') + P('emp_gas_h'), 'rs2']],
     plan: [
       ['Volume', [['volume_hl', 'Volume puxado/expedido (hl)'], ['volume_mktp_hl', 'Volume Marketplace (hl)'], ['dias_trab', 'Dias trabalhados']]],
-      ['Operação (vazio = usa os simuladores de Entrega e Puxada)', [['viagens_rota', 'Viagens de rota no mês (carregamentos)'], ['viagens_puxada', 'Viagens de puxada no mês (descargas)'], ['qlp_extra', 'QLP extra (limpeza, picking, repack, amarração)'], ['emp_alugadas', 'Empilhadeiras alugadas']]],
-      ['Outros custos (R$)', [['custo_prejuizos', 'Prejuízos (refugo, inventário, quebras)'], ['custo_outros', 'Outros (instalações, stretch, software...)']]]
+      ['Operação (vazio = usa os simuladores de Entrega e Puxada)', [['viagens_rota', 'Viagens de rota no mês (carregamentos)'], ['viagens_puxada', 'Viagens de puxada no mês (descargas)'], ['qlp_extra', 'QLP extra (limpeza, picking, repack, amarração)'], ['emp_alugadas', 'Empilhadeiras alugadas']]]
     ],
     real: [
       ['Volume', [['volume_hl', 'Volume (hl)'], ['volume_mktp_hl', 'Volume Marketplace (hl)'], ['dias_trab', 'Dias trabalhados']]],
       ['Operação', [['viagens_rota', 'Viagens de rota'], ['viagens_puxada', 'Viagens de puxada'], ['empilhadeiras', 'Empilhadeiras em uso'], ['horimetro', 'Horímetro (h)']]],
-      ['QLP real', [['operadores', 'Operadores'], ['conferentes', 'Conferentes'], ['ajudantes', 'Ajudantes'], ['qlp_extra', 'QLP extra'], ['qlp_adm', 'QLP administrativo']]],
-      ['Custos (R$)', [['custo_empilhadeiras', 'Empilhadeiras'], ['custo_pessoal', 'Pessoal'], ['custo_prejuizos', 'Prejuízos'], ['custo_outros', 'Outros']]]
+      ['QLP real', [['operadores', 'Operadores'], ['conferentes', 'Conferentes'], ['ajudantes', 'Ajudantes'], ['qlp_extra', 'QLP extra'], ['qlp_adm', 'QLP administrativo']]]
     ],
-    calcPlan(m, P, ctx) {
+    obz: [
+      { k: 'emp_fixo', rot: 'Empilhadeira — fixo', linhas: [['emp_deprec', 'Depreciação'], ['emp_aluguel', 'Aluguel'], ['custo_empilhadeiras', 'Ajuste empilhadeira', 'input']] },
+      { k: 'emp_var', rot: 'Empilhadeira — variável (horímetro)', vlc: true, linhas: [['emp_manut', 'Manutenção'], ['emp_pneus', 'Pneus'], ['emp_gas', 'Gás']] },
+      { k: 'pessoal', rot: 'Pessoal', linhas: [['conferente', 'Conferentes (salário + encargos)'], ['operador', 'Operadores de empilhadeira (salário + encargos)'], ['ajudante', 'Ajudantes (salário + encargos)'], ['amarracao', 'Amarração / QLP extra'], ['administrativo', 'Administrativo e outros'], ['beneficios', 'Benefícios (VA/VR, saúde, transporte)'], ['uniforme_epi', 'Uniforme + EPI'], ['rescisoes', 'Rescisões trabalhistas'], ['custo_pessoal', 'Ajuste pessoal', 'input']] },
+      { k: 'rv', rot: 'Remuneração variável e horas extras', vlc: true, linhas: [['rv', 'Remuneração variável'], ['he', 'Horas extras + DSR']] },
+      { k: 'prejuizo', rot: 'Prejuízo', vlc: true, linhas: [['custo_refugo', 'Refugo', 'input'], ['custo_inventario', 'Inventário', 'input'], ['custo_quebras', 'Quebras / avarias', 'input'], ['custo_prejuizos', 'Outros prejuízos', 'input']] },
+      { k: 'outros', rot: 'Outros custos', linhas: [['custo_instalacoes', 'Instalações (aluguel, energia, água)', 'input'], ['custo_outros', 'Outros (stretch, software...)', 'input']] }
+    ],
+    legado: { custo_empilhadeiras: ['emp_fixo', 'emp_var'], custo_pessoal: ['pessoal', 'rv'], custo_prejuizos: ['prejuizo'], custo_outros: ['outros'] },
+    calcPlan(m, P, ctx, i, dados) {
       const n = nOf(m), r = {};
       const vol = n('volume_hl'), dias = n('dias_trab'), abs = P('absenteismo') / 100, jor = P('jornada_h') || 7.33;
       r.caixas = vol * P('fator_cx_hl'); r.paletes = div(r.caixas, P('cx_palete'));
@@ -9539,17 +9667,29 @@ const SIMS_DPO = {
       const hDia = r.horimetro / dias;
       const empNec = up(hDia / (P('horas_emp_dia') || 14));
       r.empilhadeiras = empNec + up(empNec * P('reserva_emp') / 100);
-      const op = up(hDia / jor); r.operadores = cobertura(op, abs);
+      r.operadores = cobertura(up(hDia / jor), abs);
       const confMin = r.viagens_rota * (P('conf_min_carreg') + P('conf_min_retorno')) + r.viagens_puxada * P('conf_min_puxada') + P('conf_min_dia') * dias;
       r.conferentes = cobertura(up(confMin / 60 / dias / jor), abs);
       r.ajudantes = cobertura(up((r.paletes || 0) / dias / (P('aj_paletes_dia') || 20)), abs);
-      r.qlp_extra = n('qlp_extra'); r.qlp_adm = P('qlp_adm');
+      r.qlp_extra = n('qlp_extra');
+      const fator = simFatorDissidio(P, i), enc = 1 + P('encargos_pct') / 100, ben = simBeneficios(P);
+      const adm = ((dados || {}).adm_equipe || []).filter(a => fdNum(a.qtd));
+      r.qlp_adm = adm.length ? adm.reduce((s, a) => s + fdNum(a.qtd), 0) : P('qlp_adm');
       r.qlp = r.operadores + r.conferentes + r.ajudantes + r.qlp_extra + r.qlp_adm;
-      r.custo_pessoal = r.operadores * P('custo_operador') + r.conferentes * P('custo_conferente') + r.ajudantes * P('custo_ajudante') + r.qlp_extra * P('custo_extra') + P('custo_adm_mes');
-      r.custo_empilhadeiras = n('emp_alugadas') * P('emp_aluguel') + r.horimetro * P('emp_custo_h');
-      r.custo_prejuizos = n('custo_prejuizos'); r.custo_outros = n('custo_outros');
-      r.custo_total = r.custo_pessoal + r.custo_empilhadeiras + r.custo_prejuizos + r.custo_outros;
-      r.rs_hl = div(r.custo_total, vol); r.pnp = div(vol, r.qlp * jor * dias); r.fnp = div(vol, r.horimetro);
+      const po = simPessoa(P, 'operador', i), pc = simPessoa(P, 'conferente', i), pa = simPessoa(P, 'ajudante', i), pe = simPessoa(P, 'extra', i);
+      const esc = P.set('emp_custo_h') && !['emp_manut_h', 'emp_pneu_h', 'emp_gas_h'].some(P.set) ? P('emp_custo_h') / 20.5 : 1; // parâmetro antigo (R$/h único)
+      const o = {};
+      o.emp_deprec = P('emp_deprec_mes'); o.emp_aluguel = n('emp_alugadas') * P('emp_aluguel');
+      o.emp_manut = r.horimetro * P('emp_manut_h') * esc; o.emp_pneus = r.horimetro * P('emp_pneu_h') * esc; o.emp_gas = r.horimetro * P('emp_gas_h') * esc;
+      o.operador = r.operadores * po.salEnc; o.conferente = r.conferentes * pc.salEnc; o.ajudante = r.ajudantes * pa.salEnc; o.amarracao = r.qlp_extra * pe.salEnc;
+      o.administrativo = adm.length ? adm.reduce((s, a) => s + fdNum(a.qtd) * ((fdNum(a.salario) || 0) * enc * fator + ben), 0) : P('custo_adm_mes') * fator;
+      o.beneficios = r.operadores * po.ben + r.conferentes * pc.ben + r.ajudantes * pa.ben + r.qlp_extra * pe.ben;
+      o.uniforme_epi = r.qlp * P('uniforme_epi');
+      o.rescisoes = P('rescisoes_mes');
+      o.rv = r.operadores * P('rv_operador') + r.conferentes * P('rv_conferente') + r.ajudantes * P('rv_ajudante') + r.qlp_extra * P('rv_extra');
+      o.he = (o.operador + o.conferente + o.ajudante + o.amarracao) * P('he_pct') / 100;
+      r.o = o;
+      r.pnp = div(vol, r.qlp * jor * dias); r.fnp = div(vol, r.horimetro);
       r.equip = r.empilhadeiras;
       return r;
     },
@@ -9557,25 +9697,26 @@ const SIMS_DPO = {
       const n = nOf(m), r = {}, vol = n('volume_hl'), jor = P('jornada_h') || 7.33;
       r.caixas = vol * P('fator_cx_hl'); r.paletes = div(r.caixas, P('cx_palete'));
       r.qlp = n('operadores') + n('conferentes') + n('ajudantes') + n('qlp_extra') + n('qlp_adm') || null;
-      r.custo_total = ['custo_empilhadeiras', 'custo_pessoal', 'custo_prejuizos', 'custo_outros'].reduce((s, k) => s + n(k), 0) || null;
-      r.rs_hl = vol && r.custo_total ? r.custo_total / vol : null;
       r.pnp = r.qlp && n('dias_trab') ? div(vol, r.qlp * jor * n('dias_trab')) : null;
       r.fnp = div(vol, n('horimetro'));
       r.equip = n('empilhadeiras') || null; r.viagens = n('viagens_rota') + n('viagens_puxada') || null;
       return r;
     },
-    derivPlan: [['caixas', 'Caixas', 0], ['paletes', 'Paletes', 0], ['viagens_rota', 'Viagens de rota usadas', 0], ['viagens_puxada', 'Viagens de puxada usadas', 0], ['horimetro', 'Horímetro necessário (h)', 0], ['empilhadeiras', 'Empilhadeiras necessárias (c/ reserva)', 0], ['operadores', 'Operadores (c/ absenteísmo e férias)', 0], ['conferentes', 'Conferentes (c/ cobertura)', 0], ['ajudantes', 'Ajudantes (c/ cobertura)', 0], ['qlp', 'QLP total (inclui extra e ADM)', 0], ['pnp', 'PNP (hl por hora-homem)', 2], ['fnp', 'FNP (hl por hora de empilhadeira)', 1], ['custo_pessoal', 'Custo pessoal (R$)', 0], ['custo_empilhadeiras', 'Custo empilhadeiras (R$)', 0], ['custo_total', 'Custo total (R$)', 0], ['rs_hl', 'R$/hl', 2]],
-    derivReal: [['caixas', 'Caixas', 0], ['qlp', 'QLP total', 0], ['pnp', 'PNP (hl por hora-homem)', 2], ['fnp', 'FNP (hl por hora de empilhadeira)', 1], ['custo_total', 'Custo total (R$)', 0], ['rs_hl', 'R$/hl', 2]],
-    comp: [['Volume (hl)', r => r.__vol], ['Empilhadeiras', r => r.equip], ['QLP', r => r.qlp], ['PNP', r => r.pnp, 2], ['Custo total (R$)', r => r.custo_total], ['R$/hl', r => r.rs_hl, 2]]
+    derivPlan: [['caixas', 'Caixas', 0], ['paletes', 'Paletes', 0], ['viagens_rota', 'Viagens de rota usadas', 0], ['viagens_puxada', 'Viagens de puxada usadas', 0], ['horimetro', 'Horímetro necessário (h)', 0], ['empilhadeiras', 'Empilhadeiras necessárias (c/ reserva)', 0], ['operadores', 'Operadores (c/ absenteísmo e férias)', 0], ['conferentes', 'Conferentes (c/ cobertura)', 0], ['ajudantes', 'Ajudantes (c/ cobertura)', 0], ['qlp', 'QLP total (inclui extra e ADM)', 0], ['pnp', 'PNP (hl por hora-homem)', 2], ['fnp', 'FNP (hl por hora de empilhadeira)', 1]],
+    derivReal: [['caixas', 'Caixas', 0], ['qlp', 'QLP total', 0], ['pnp', 'PNP (hl por hora-homem)', 2], ['fnp', 'FNP (hl por hora de empilhadeira)', 1]],
+    comp: [['Volume (hl)', r => r.__vol], ['Empilhadeiras', r => r.equip], ['QLP', r => r.qlp], ['PNP', r => r.pnp, 2], ['Custo total', r => r.custo_total, 'rs'], ['R$/hl', r => r.rs_hl, 'rs2'], ['VLC/hl', r => r.vlc_hl, 'rs2']]
   },
   sim_entrega: {
     icone: '🚚', titulo: 'Simulador Entrega', planilha: 'PPR Entrega', cor: '#2563eb',
-    desc: 'Volume → caixas; frota fixa ativa × dias → disponibilidade; 1ª e 2ª viagem com a meta de caixas por viagem; o que não cabe vai para o spot → QLP de motoristas e ajudantes com reserva e feristas → custo OBZ (fixo, pessoal, variável por km, spot, outros) e R$/hl.',
+    desc: 'Volume → caixas; frota fixa ativa × dias → disponibilidade; 1ª e 2ª viagem com a meta de caixas por viagem; o que não cabe vai para o spot → QLP de motoristas e ajudantes com reserva e feristas → custo OBZ aberto igual ao Resumo OBZ do PPR (despesa fixa da frota, equipe com salário/encargos/benefícios/dissídio, diesel/manutenção/pneus por km, custo por viagem, remuneração variável, frota parada e spot), R$/hl e VLC/hl.',
     params: [
       ['Conversões e metas de rota', [['fator_cx_hl', 'Caixas por hl', 5.88], ['cx_viagem_ff', 'Caixas por viagem — frota fixa (meta)', 245], ['cx_viagem_spot', 'Caixas por viagem — spot', 144], ['cap_media_cx', 'Capacidade média do veículo (cx)', 341], ['util_1a', '% utilização da frota na 1ª viagem', 85], ['pct_2a_viagem', '% de 2ª viagem (recarga)', 10], ['km_medio_viagem', 'Km médio por viagem', 215.84]]],
-      ['Equipe', [['mot_por_veiculo', 'Motoristas por veículo', 1], ['aj_por_veiculo', 'Ajudantes por veículo', 1], ['absenteismo', '% absenteísmo', 1]]],
-      ['Custos', [['custo_motorista', 'Custo mensal motorista (salário, encargos, benefícios, RV, HE)', 4354.7], ['custo_ajudante', 'Custo mensal ajudante', 2889.49], ['custo_fixo_veiculo', 'Custo fixo por veículo/mês (seguro, IPVA, rastreador, depreciação)', ''], ['diesel_litro', 'Diesel (R$/L)', 6.19], ['consumo_km_l', 'Consumo (km/L)', 3.5], ['manut_km', 'Manutenção (R$/km)', ''], ['pneu_km', 'Pneus (R$/km)', ''], ['frete_spot', 'Frete spot (R$/viagem)', 1500], ['custo_extra_viagem', 'Pedágio, diárias e balsa (R$/viagem)', ''], ['rs_hl_meta', 'Meta R$/hl do orçamento', '']]]
+      ['Equipe', [['mot_por_veiculo', 'Motoristas por veículo', 1], ['aj_por_veiculo', 'Ajudantes por veículo', 1], ['absenteismo', '% absenteísmo', 1], ['custo_dia_extra', 'Adicional domingo/feriado (R$ por pessoa/dia)', '']]],
+      ...simParamsGente(FUNC_ENT),
+      ...simParamsFrota('veículo', { diesel: 6.19, consumo: 3.5, pdir: 2, ptra: 4 }),
+      ['📦 Spot e meta', [['frete_spot', 'Frete spot (R$/viagem)', 1500], ['rs_hl_meta', 'Meta R$/hl do orçamento', '']]]
     ],
+    resumoParams: P => [...simResumoGente(P, FUNC_ENT), ...simResumoFrota(P, 'veículo')],
     plan: [
       ['Volume', [['volume_hl', 'Volume (hl)'], ['volume_mktp_hl', 'Volume Marketplace (hl)'], ['dias_uteis', 'Dias úteis'], ['dias_extra', 'Feriados e domingos trabalhados']]],
       ['Frota', [['ff_ativa', 'Frota fixa ativa (veículos)'], ['ff_parada', 'Frota parada (veículos)'], ['cap_media_cx', 'Capacidade média no mês (vazio = parâmetro)']]]
@@ -9583,10 +9724,19 @@ const SIMS_DPO = {
     real: [
       ['Volume', [['volume_hl', 'Volume (hl)'], ['volume_mktp_hl', 'Volume Marketplace (hl)'], ['dias_uteis', 'Dias trabalhados']]],
       ['Frota e viagens', [['ff_ativa', 'Frota fixa ativa'], ['viagens_ff', 'Viagens frota fixa'], ['viagens_spot', 'Viagens spot'], ['km_rodado', 'Km rodado']]],
-      ['QLP real', [['motoristas', 'Motoristas'], ['ajudantes', 'Ajudantes']]],
-      ['Custos OBZ (R$)', [['custo_fixo', 'Fixo frota'], ['custo_pessoal', 'Pessoal'], ['custo_variavel', 'Variável (diesel, manutenção, pneus)'], ['custo_spot', 'Spot / fretes'], ['custo_outros', 'Outros (pedágio, diárias)']]]
+      ['QLP real', [['motoristas', 'Motoristas'], ['ajudantes', 'Ajudantes']]]
     ],
-    calcPlan(m, P) {
+    obz: [
+      { k: 'fixo_ativa', rot: 'Despesa fixa — frota fixa ativa', linhas: [...FIXOS_FROTA_OBZ, ['custo_fixo', 'Ajuste custo fixo', 'input']] },
+      { k: 'equipe', rot: 'Despesa fixa — equipe de entrega', linhas: [['sal_mot', 'Salário + encargos — motoristas'], ['sal_aj', 'Salário + encargos — ajudantes'], ['beneficios', 'Benefícios (VA/VR, saúde, transporte)'], ['uniforme_epi', 'Uniforme + EPI (motorista + ajudante)'], ['custo_pessoal', 'Ajuste equipe de entrega', 'input']] },
+      { k: 'var_km', rot: 'Custo variável (km)', vlc: true, linhas: [...KM_FROTA_OBZ, ['custo_variavel', 'Ajuste custo variável', 'input']] },
+      { k: 'viagem', rot: 'Custo por viagem', vlc: true, linhas: [...VIAGEM_OBZ, ['custo_outros', 'Ajuste outros custos', 'input']] },
+      { k: 'rv', rot: 'Remuneração variável', vlc: true, linhas: [['he_mot', 'HEs + DSR — motoristas'], ['he_aj', 'HEs + DSR — ajudantes'], ['rv_mot', 'Rem. variável — motoristas'], ['rv_aj', 'Rem. variável — ajudantes'], ['dom_fer', 'Adicional domingos e feriados']] },
+      { k: 'parada', rot: 'Despesa fixa — frota parada', linhas: [['fixo_parada', 'Fixos da frota parada']] },
+      { k: 'spot', rot: 'Custo freteiro (spot)', vlc: true, linhas: [['spot', 'Fretes spot', 'calc', 'custo_spot']] }
+    ],
+    legado: { custo_fixo: ['fixo_ativa', 'parada'], custo_pessoal: ['equipe', 'rv'], custo_variavel: ['var_km'], custo_spot: ['spot'], custo_outros: ['viagem'] },
+    calcPlan(m, P, ctx, i) {
       const n = nOf(m), r = {};
       const vol = n('volume_hl'), dias = n('dias_uteis') + n('dias_extra'), ativa = n('ff_ativa'), parada = n('ff_parada'), abs = P('absenteismo') / 100;
       r.caixas = vol * P('fator_cx_hl');
@@ -9606,51 +9756,62 @@ const SIMS_DPO = {
       const mot = up(ativa * P('mot_por_veiculo')), aj = up(ativa * P('aj_por_veiculo'));
       r.motoristas = cobertura(mot, abs); r.ajudantes = cobertura(aj, abs); r.qlp = r.motoristas + r.ajudantes;
       r.km = r.viagens_ff * P('km_medio_viagem');
-      r.custo_fixo = (ativa + parada) * P('custo_fixo_veiculo');
-      r.custo_pessoal = r.motoristas * P('custo_motorista') + r.ajudantes * P('custo_ajudante');
-      r.custo_variavel = r.km * ((P('consumo_km_l') ? P('diesel_litro') / P('consumo_km_l') : 0) + P('manut_km') + P('pneu_km'));
-      r.custo_spot = r.viagens_spot * P('frete_spot');
-      r.custo_outros = r.viagens_ff * P('custo_extra_viagem');
-      r.custo_total = r.custo_fixo + r.custo_pessoal + r.custo_variavel + r.custo_spot + r.custo_outros;
-      r.rs_hl = div(r.custo_total, vol); r.rs_cx = div(r.custo_total, r.caixas);
-      r.equip = ativa;
+      const F = simFrotaUnit(P), pm = simPessoa(P, 'motorista', i), pa = simPessoa(P, 'ajudante', i), o = {};
+      simLinhasFrota(o, F, ativa, r.km, r.viagens_ff, P);
+      o.sal_mot = r.motoristas * pm.salEnc; o.sal_aj = r.ajudantes * pa.salEnc;
+      o.beneficios = r.motoristas * pm.ben + r.ajudantes * pa.ben; o.uniforme_epi = r.qlp * P('uniforme_epi');
+      o.he_mot = o.sal_mot * P('he_pct') / 100; o.he_aj = o.sal_aj * P('he_pct') / 100;
+      o.rv_mot = r.motoristas * P('rv_motorista'); o.rv_aj = r.ajudantes * P('rv_ajudante');
+      o.dom_fer = n('dias_extra') * (mot + aj) * P('custo_dia_extra');
+      o.fixo_parada = parada * F.fixoTotal;
+      o.spot = r.viagens_spot * P('frete_spot');
+      r.o = o; r.equip = ativa;
       return r;
     },
     calcReal(m, P) {
-      const n = nOf(m), r = {}, vol = n('volume_hl');
-      r.caixas = vol * P('fator_cx_hl');
+      const n = nOf(m), r = {};
+      r.caixas = n('volume_hl') * P('fator_cx_hl');
       r.viagens = n('viagens_ff') + n('viagens_spot') || null;
       r.cx_viagem = div(r.caixas, r.viagens);
       r.utilizacao = n('ff_ativa') && n('dias_uteis') ? n('viagens_ff') / (n('ff_ativa') * n('dias_uteis')) : null;
       r.pct_spot = div(n('viagens_spot'), r.viagens);
       r.km_viagem = div(n('km_rodado'), n('viagens_ff'));
       r.qlp = n('motoristas') + n('ajudantes') || null;
-      r.custo_total = ['custo_fixo', 'custo_pessoal', 'custo_variavel', 'custo_spot', 'custo_outros'].reduce((s, k) => s + n(k), 0) || null;
-      r.rs_hl = vol && r.custo_total ? r.custo_total / vol : null; r.rs_cx = div(r.custo_total, r.caixas);
       r.equip = n('ff_ativa') || null;
       return r;
     },
-    derivPlan: [['caixas', 'Caixas', 0], ['disp', 'Disponibilidade (veículo × dia)', 0], ['viagens_1a', 'Viagens de 1ª', 0], ['viagens_2a', 'Viagens de 2ª (recarga)', 0], ['viagens_ff', 'Viagens frota fixa', 0], ['viagens_spot', 'Viagens spot necessárias', 0], ['utilizacao', 'Utilização da frota fixa', 'pct'], ['ocupacao', '% ocupação do veículo', 'pct'], ['pct_spot', '% volume no spot', 'pct'], ['motoristas', 'Motoristas (c/ reserva e feristas)', 0], ['ajudantes', 'Ajudantes (c/ reserva e feristas)', 0], ['qlp', 'QLP total da entrega', 0], ['km', 'Km rodado', 0], ['custo_fixo', 'Custo fixo frota (R$)', 0], ['custo_pessoal', 'Custo pessoal (R$)', 0], ['custo_variavel', 'Custo variável (R$)', 0], ['custo_spot', 'Custo spot (R$)', 0], ['custo_outros', 'Outros custos (R$)', 0], ['custo_total', 'Custo total OBZ (R$)', 0], ['rs_hl', 'R$/hl', 2], ['rs_cx', 'R$/caixa', 2]],
-    derivReal: [['caixas', 'Caixas', 0], ['viagens', 'Viagens totais', 0], ['cx_viagem', 'Caixas por viagem', 0], ['utilizacao', 'Utilização da frota fixa', 'pct'], ['pct_spot', '% viagens spot', 'pct'], ['km_viagem', 'Km por viagem', 1], ['qlp', 'QLP total', 0], ['custo_total', 'Custo total OBZ (R$)', 0], ['rs_hl', 'R$/hl', 2], ['rs_cx', 'R$/caixa', 2]],
-    comp: [['Volume (hl)', r => r.__vol], ['Viagens', r => r.viagens], ['Frota ativa', r => r.equip], ['QLP', r => r.qlp], ['Custo total (R$)', r => r.custo_total], ['R$/hl', r => r.rs_hl, 2]]
+    derivPlan: [['caixas', 'Caixas', 0], ['disp', 'Disponibilidade (veículo × dia)', 0], ['viagens_1a', 'Viagens de 1ª', 0], ['viagens_2a', 'Viagens de 2ª (recarga)', 0], ['viagens_ff', 'Viagens frota fixa', 0], ['viagens_spot', 'Viagens spot necessárias', 0], ['utilizacao', 'Utilização da frota fixa', 'pct'], ['ocupacao', '% ocupação do veículo', 'pct'], ['pct_spot', '% volume no spot', 'pct'], ['motoristas', 'Motoristas (c/ reserva e feristas)', 0], ['ajudantes', 'Ajudantes (c/ reserva e feristas)', 0], ['qlp', 'QLP total da entrega', 0], ['km', 'Km rodado', 0]],
+    derivReal: [['caixas', 'Caixas', 0], ['viagens', 'Viagens totais', 0], ['cx_viagem', 'Caixas por viagem', 0], ['utilizacao', 'Utilização da frota fixa', 'pct'], ['pct_spot', '% viagens spot', 'pct'], ['km_viagem', 'Km por viagem', 1], ['qlp', 'QLP total', 0]],
+    comp: [['Volume (hl)', r => r.__vol], ['Viagens', r => r.viagens], ['Frota ativa', r => r.equip], ['QLP', r => r.qlp], ['Custo total', r => r.custo_total, 'rs'], ['R$/hl', r => r.rs_hl, 'rs2'], ['VLC/hl', r => r.vlc_hl, 'rs2']]
   },
   sim_puxada: {
     icone: '🚛', titulo: 'Simulador Puxada', planilha: 'PPR Puxada / Armazém', cor: '#d97706',
-    desc: 'Volume puxado → paletes → viagens de carreta; divisão frota própria × spot; tempo de ciclo × viagens por dia → carretas e motoristas necessários → custo (fixo, pessoal, km, spot) e R$/hl. No Realizado, acompanha o furo de puxada.',
+    desc: 'Volume puxado → paletes → viagens de carreta; divisão frota própria × spot; tempo de ciclo × viagens por dia → carretas e motoristas necessários → custo OBZ aberto (fixo da carreta, motoristas com salário/encargos/benefícios/dissídio, diesel/manutenção/pneus por km, custo por viagem, spot), R$/hl e VLC/hl. No Realizado, acompanha o furo de puxada.',
     params: [
-      ['Conversões e operação', [['fator_cx_hl', 'Caixas por hl', 5.88], ['cx_palete', 'Caixas por palete', 42], ['paletes_carreta', 'Paletes por carreta', 28], ['pct_frota_propria', '% das viagens na frota própria', 90], ['km_viagem', 'Km ida e volta por viagem', 300], ['ciclo_h', 'Tempo de ciclo por viagem (h)', 10], ['horas_carreta_dia', 'Horas disponíveis por carreta/dia', 20], ['mot_por_carreta', 'Motoristas por carreta', 1.5], ['absenteismo', '% absenteísmo', 3], ['meta_furo', 'Meta de furo de puxada (%)', 10]]],
-      ['Custos', [['custo_motorista', 'Custo mensal motorista carreteiro (R$)', 4500], ['custo_fixo_carreta', 'Custo fixo por carreta/mês (R$)', ''], ['custo_km', 'Custo variável (R$/km: diesel, manut., pneus)', ''], ['frete_spot', 'Frete spot (R$/viagem)', 2500], ['rs_hl_meta', 'Meta R$/hl do orçamento', '']]]
+      ['Conversões e operação', [['fator_cx_hl', 'Caixas por hl', 5.88], ['cx_palete', 'Caixas por palete', 42], ['paletes_carreta', 'Paletes por carreta', 28], ['pct_frota_propria', '% das viagens na frota própria', 90], ['km_viagem', 'Km ida e volta por viagem', 300], ['ciclo_h', 'Tempo de ciclo por viagem (h)', 10], ['horas_carreta_dia', 'Horas disponíveis por carreta/dia', 20], ['mot_por_carreta', 'Motoristas por carreta', 1.5], ['absenteismo', '% absenteísmo', 3], ['meta_furo', '% meta de furo de puxada', 10]]],
+      ...simParamsGente(FUNC_PUX),
+      ...simParamsFrota('carreta', { diesel: 6.19, consumo: 2.2, pdir: 2, ptra: 8 }).map(([g, l]) => [g, g.startsWith('⛽') ? [...l, ['custo_km', 'Outros variáveis (R$/km)', '']] : l]),
+      ['📦 Spot e meta', [['frete_spot', 'Frete spot (R$/viagem)', 2500], ['rs_hl_meta', 'Meta R$/hl do orçamento', '']]]
     ],
+    resumoParams: P => [...simResumoGente(P, FUNC_PUX), ...simResumoFrota(P, 'carreta')],
     plan: [
       ['Volume', [['volume_hl', 'Volume puxado (hl)'], ['volume_mktp_hl', 'Volume Marketplace (hl)'], ['dias', 'Dias de operação']]],
       ['Frota', [['carretas_ativas', 'Carretas próprias ativas']]]
     ],
     real: [
       ['Volume', [['volume_hl', 'Volume puxado (hl)'], ['volume_mktp_hl', 'Volume Marketplace (hl)'], ['dias', 'Dias de operação']]],
-      ['Viagens e frota', [['carretas_ativas', 'Carretas ativas'], ['viagens_programadas', 'Viagens programadas'], ['viagens_ff', 'Viagens frota própria realizadas'], ['viagens_spot', 'Viagens spot'], ['viagens_furadas', 'Viagens furadas'], ['km_rodado', 'Km rodado'], ['motoristas', 'Motoristas']]],
-      ['Custos (R$)', [['custo_fixo', 'Fixo carretas'], ['custo_pessoal', 'Pessoal'], ['custo_variavel', 'Variável (km)'], ['custo_spot', 'Spot']]]
+      ['Viagens e frota', [['carretas_ativas', 'Carretas ativas'], ['viagens_programadas', 'Viagens programadas'], ['viagens_ff', 'Viagens frota própria realizadas'], ['viagens_spot', 'Viagens spot'], ['viagens_furadas', 'Viagens furadas'], ['km_rodado', 'Km rodado'], ['motoristas', 'Motoristas']]]
     ],
-    calcPlan(m, P) {
+    obz: [
+      { k: 'fixo', rot: 'Despesa fixa — carretas', linhas: [...FIXOS_FROTA_OBZ, ['custo_fixo', 'Ajuste custo fixo', 'input']] },
+      { k: 'equipe', rot: 'Despesa fixa — motoristas', linhas: [['sal_mot', 'Salário + encargos — motoristas'], ['beneficios', 'Benefícios (VA/VR, saúde, transporte)'], ['uniforme_epi', 'Uniforme + EPI'], ['custo_pessoal', 'Ajuste pessoal', 'input']] },
+      { k: 'var_km', rot: 'Custo variável (km)', vlc: true, linhas: [...KM_FROTA_OBZ, ['outros_km', 'Outros variáveis por km'], ['custo_variavel', 'Ajuste custo variável', 'input']] },
+      { k: 'viagem', rot: 'Custo por viagem', vlc: true, linhas: [...VIAGEM_OBZ, ['custo_outros', 'Ajuste outros custos', 'input']] },
+      { k: 'rv', rot: 'Remuneração variável', vlc: true, linhas: [['he_mot', 'HEs + DSR — motoristas'], ['rv_mot', 'Rem. variável — motoristas']] },
+      { k: 'spot', rot: 'Custo freteiro (spot)', vlc: true, linhas: [['spot', 'Fretes spot', 'calc', 'custo_spot']] }
+    ],
+    legado: { custo_fixo: ['fixo'], custo_pessoal: ['equipe', 'rv'], custo_variavel: ['var_km'], custo_spot: ['spot'], custo_outros: ['viagem'] },
+    calcPlan(m, P, ctx, i) {
       const n = nOf(m), r = {}, vol = n('volume_hl'), dias = n('dias'), ativas = n('carretas_ativas'), abs = P('absenteismo') / 100;
       r.caixas = vol * P('fator_cx_hl'); r.paletes = div(r.caixas, P('cx_palete'));
       if (!vol) return r;
@@ -9662,49 +9823,96 @@ const SIMS_DPO = {
       r.utilizacao = div(r.carretas_nec, ativas);
       r.motoristas = cobertura(up((r.carretas_nec || 0) * P('mot_por_carreta')), abs);
       r.km = r.viagens_ff * P('km_viagem');
-      r.custo_fixo = ativas * P('custo_fixo_carreta');
-      r.custo_pessoal = r.motoristas * P('custo_motorista');
-      r.custo_variavel = r.km * P('custo_km');
-      r.custo_spot = r.viagens_spot * P('frete_spot');
-      r.custo_total = r.custo_fixo + r.custo_pessoal + r.custo_variavel + r.custo_spot;
-      r.rs_hl = div(r.custo_total, vol); r.qlp = r.motoristas; r.equip = ativas;
+      const F = simFrotaUnit(P), pm = simPessoa(P, 'motorista', i), o = {};
+      simLinhasFrota(o, F, ativas, r.km, r.viagens_ff, P);
+      o.outros_km = r.km * P('custo_km');
+      o.sal_mot = r.motoristas * pm.salEnc; o.beneficios = r.motoristas * pm.ben; o.uniforme_epi = r.motoristas * P('uniforme_epi');
+      o.he_mot = o.sal_mot * P('he_pct') / 100; o.rv_mot = r.motoristas * P('rv_motorista');
+      o.spot = r.viagens_spot * P('frete_spot');
+      r.o = o; r.qlp = r.motoristas; r.equip = ativas;
       return r;
     },
     calcReal(m, P) {
-      const n = nOf(m), r = {}, vol = n('volume_hl');
-      r.caixas = vol * P('fator_cx_hl');
+      const n = nOf(m), r = {};
+      r.caixas = n('volume_hl') * P('fator_cx_hl');
       r.viagens = n('viagens_ff') + n('viagens_spot') || null;
       r.furo = div(n('viagens_furadas'), n('viagens_programadas'));
       r.pct_spot = div(n('viagens_spot'), r.viagens);
       r.qlp = n('motoristas') || null;
-      r.custo_total = ['custo_fixo', 'custo_pessoal', 'custo_variavel', 'custo_spot'].reduce((s, k) => s + n(k), 0) || null;
-      r.rs_hl = vol && r.custo_total ? r.custo_total / vol : null;
       r.equip = n('carretas_ativas') || null;
       return r;
     },
-    derivPlan: [['caixas', 'Caixas', 0], ['paletes', 'Paletes', 0], ['viagens', 'Viagens de carreta', 0], ['viagens_ff', 'Viagens frota própria', 0], ['viagens_spot', 'Viagens spot', 0], ['viagens_ff_dia', 'Viagens próprias por dia', 1], ['carretas_nec', 'Carretas necessárias', 0], ['utilizacao', 'Utilização das carretas ativas', 'pct'], ['motoristas', 'Motoristas (c/ cobertura)', 0], ['km', 'Km rodado', 0], ['custo_fixo', 'Custo fixo (R$)', 0], ['custo_pessoal', 'Custo pessoal (R$)', 0], ['custo_variavel', 'Custo variável (R$)', 0], ['custo_spot', 'Custo spot (R$)', 0], ['custo_total', 'Custo total (R$)', 0], ['rs_hl', 'R$/hl', 2]],
-    derivReal: [['caixas', 'Caixas', 0], ['viagens', 'Viagens realizadas', 0], ['furo', 'Furo de puxada', 'pct'], ['pct_spot', '% viagens spot', 'pct'], ['custo_total', 'Custo total (R$)', 0], ['rs_hl', 'R$/hl', 2]],
-    comp: [['Volume (hl)', r => r.__vol], ['Viagens', r => r.viagens], ['Carretas', r => r.equip], ['Motoristas', r => r.qlp], ['Custo total (R$)', r => r.custo_total], ['R$/hl', r => r.rs_hl, 2]]
+    derivPlan: [['caixas', 'Caixas', 0], ['paletes', 'Paletes', 0], ['viagens', 'Viagens de carreta', 0], ['viagens_ff', 'Viagens frota própria', 0], ['viagens_spot', 'Viagens spot', 0], ['viagens_ff_dia', 'Viagens próprias por dia', 1], ['carretas_nec', 'Carretas necessárias', 0], ['utilizacao', 'Utilização das carretas ativas', 'pct'], ['motoristas', 'Motoristas (c/ cobertura)', 0], ['km', 'Km rodado', 0]],
+    derivReal: [['caixas', 'Caixas', 0], ['viagens', 'Viagens realizadas', 0], ['furo', 'Furo de puxada', 'pct'], ['pct_spot', '% viagens spot', 'pct']],
+    comp: [['Volume (hl)', r => r.__vol], ['Viagens', r => r.viagens], ['Carretas', r => r.equip], ['Motoristas', r => r.qlp], ['Custo total', r => r.custo_total, 'rs'], ['R$/hl', r => r.rs_hl, 'rs2'], ['VLC/hl', r => r.vlc_hl, 'rs2']]
   }
 };
 const ORDEM_SIMS = ['sim_armazem', 'sim_entrega', 'sim_puxada'];
+
+// ---- motor do OBZ: linhas calculadas + lançadas + custos criados ----
+function simCampoLinha(l, cen) { const [k, , tipo, campo] = l; return tipo === 'input' ? k : cen === 'real' ? (campo || 'o_' + k) : null; }
+function simExtras(dados, cen) { return ((dados || {})['custos_extra_' + cen] || []).filter(x => x && x.id); }
+function simFinalizar(chave, cen, r, m, dados) {
+  const cfg = SIMS_DPO[chave], n = nOf(m), vol = fdNum(m.volume_hl);
+  if (cen === 'plan' && !r.o) return r; // sem volume/dias no mês: sem custo
+  r.linhas = {}; r.cats = {};
+  let total = 0, vlc = 0;
+  cfg.obz.forEach(c => {
+    let t = 0;
+    c.linhas.forEach(l => { const campo = simCampoLinha(l, cen); const v = campo ? n(campo) : ((r.o || {})[l[0]] || 0); r.linhas[l[0]] = v; t += v; });
+    r.cats[c.k] = t; total += t; if (c.vlc) vlc += t;
+  });
+  const ex = simExtras(dados, cen).reduce((s, x) => { const v = n('x_' + x.id); r.linhas['x_' + x.id] = v; if (x.vlc) vlc += v; return s + v; }, 0);
+  r.cats.__extra = ex; total += ex;
+  Object.entries(cfg.legado).forEach(([k, cats]) => { r[k] = cats.reduce((s, c) => s + (r.cats[c] || 0), 0); });
+  r.custo_total = total || (cen === 'plan' ? 0 : null);
+  r.vlc = vlc || null;
+  r.rs_hl = vol && r.custo_total ? r.custo_total / vol : null;
+  r.vlc_hl = vol && r.vlc ? r.vlc / vol : null;
+  if (r.caixas) r.rs_cx = div(r.custo_total, r.caixas);
+  return r;
+}
 
 function simDados(chave) { return FD && FD.chave === chave ? FD.dados : (DIM && DIM.pastas[chave] ? DIM.pastas[chave].dados : {}); }
 function simContexto(chave, i) {
   if (chave !== 'sim_armazem') return {};
   const ent = simDados('sim_entrega'), pux = simDados('sim_puxada');
-  const ce = SIMS_DPO.sim_entrega.calcPlan(simMes(ent, 'plan', i), simP('sim_entrega', ent), {});
-  const cp = SIMS_DPO.sim_puxada.calcPlan(simMes(pux, 'plan', i), simP('sim_puxada', pux), {});
+  const ce = SIMS_DPO.sim_entrega.calcPlan(simMes(ent, 'plan', i), simP('sim_entrega', ent), {}, i);
+  const cp = SIMS_DPO.sim_puxada.calcPlan(simMes(pux, 'plan', i), simP('sim_puxada', pux), {}, i);
   return { viagensRota: ce.viagens ? Math.round(ce.viagens) : 0, viagensPuxada: cp.viagens || 0 };
 }
 function simCalc(chave, cen, i, dados) {
   dados = dados || simDados(chave);
   const P = simP(chave, dados), m = simMes(dados, cen, i);
-  const r = cen === 'plan' ? SIMS_DPO[chave].calcPlan(m, P, simContexto(chave, i)) : SIMS_DPO[chave].calcReal(m, P);
+  const r = cen === 'plan' ? SIMS_DPO[chave].calcPlan(m, P, simContexto(chave, i), i, dados) : SIMS_DPO[chave].calcReal(m, P);
+  simFinalizar(chave, cen, r, m, dados);
   r.__vol = fdNum(m.volume_hl);
   return r;
 }
-function simFmt(v, f) { return f === 'pct' ? fdPct(v) : fdFmt(v, f || 0); }
+function simFmt(v, f) {
+  if (f === 'pct') return fdPct(v);
+  if (f === 'rs' || f === 'rs2') return v === null || v === undefined || !isFinite(v) ? '—' : (v < 0 ? '-' : '') + 'R$ ' + fdFmt(Math.abs(v), f === 'rs2' ? 2 : 0);
+  if (f === 'txt') return escapeHtml(v);
+  return fdFmt(v, f || 0);
+}
+// entrada numérica com vírgula (pt-BR), R$ e %
+function fdParse(v) {
+  let s = String(v === null || v === undefined ? '' : v).replace(/R\$|%|\s/g, '');
+  if (!s) return '';
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  const n = Number(s);
+  return isNaN(n) ? '' : n;
+}
+function fdFmtInput(v) { const n = fdNum(v); return n === null ? '' : n.toLocaleString('pt-BR', { maximumFractionDigits: 4 }); }
+function simUnid(k, rot) {
+  if (/%/.test(rot || '')) return 'pct';
+  if (/R\$/.test(rot || '') || /^(custo_|sal_|ben_|rv_|x_|o_|frete|diesel_litro|emp_aluguel|emp_manut_h|emp_pneu_h|emp_gas_h|emp_deprec|rs_hl|manut_km|pneu_km|oleo_km|pneu_dir_valor|pneu_tra_valor|pneu_colocacao|recauch_valor|valor_|seguro_|rastreador_|ipva_|lavagem_|depreciacao_|remcap_veic|uniforme|pedagio|balsa|escolta|estadas|rescisoes)/.test(k)) return 'rs';
+  return 'num';
+}
+function simInp(valor, unid, onchange, ph, estilo) {
+  return `<span class="sim-inp ${unid}" ${estilo ? `style="${estilo}"` : ''}>${unid === 'rs' ? '<i>R$</i>' : ''}<input type="text" inputmode="decimal" value="${escapeHtml(fdFmtInput(valor))}" placeholder="${escapeHtml(ph || '')}" onchange="${onchange}; this.value = fdFmtInput(fdParse(this.value));">${unid === 'pct' ? '<i>%</i>' : ''}</span>`;
+}
 function simGarantirMeses(chave, cen) {
   let l = FD.dados[cen];
   if (!Array.isArray(l)) { FD.dados[cen] = []; l = FD.dados[cen]; }
@@ -9715,35 +9923,76 @@ function simMesesPreenchidos(dados, cen, campos) { return MESES_FD.filter((_, i)
 function simAnual(chave, cen, dados) {
   const calcs = MESES_FD.map((_, i) => simCalc(chave, cen, i, dados));
   const custo = calcs.reduce((s, c) => s + (c.custo_total || 0), 0);
-  const vol = MESES_FD.reduce((s, _, i) => s + (fdNum(simMes(dados, cen, i).volume_hl) || 0), 0);
-  return { custo, vol, rs_hl: vol && custo ? custo / vol : null };
+  const vlc = calcs.reduce((s, c) => s + (c.vlc || 0), 0);
+  const vol = MESES_FD.reduce((s, _, i) => s + (cen === 'real' && !calcs[i].custo_total ? 0 : (fdNum(simMes(dados, cen, i).volume_hl) || 0)), 0);
+  return { custo, vol, rs_hl: vol && custo ? custo / vol : null, vlc_hl: vol && vlc ? vlc / vol : null };
 }
 
 // ---- telas do simulador ----
 function simHtmlParametros(chave) {
-  const cfg = SIMS_DPO[chave];
+  const cfg = SIMS_DPO[chave], P = simP(chave, FD.dados);
+  const campo = ([k, r, def, tipo]) => {
+    const v = (FD.dados.params || {})[k];
+    if (tipo === 'mes') return `<div><label>${escapeHtml(r)}</label><select onchange="fdDefinir('params.${k}', this.value === '' ? '' : Number(this.value)); simAtualizarResumoParams();"><option value="">Sem dissídio</option>${MESES_LONGOS_FD.map((m, i) => `<option value="${i + 1}" ${Number(v) === i + 1 ? 'selected' : ''}>${m}</option>`).join('')}</select></div>`;
+    const u = simUnid(k, r);
+    return `<div><label>${escapeHtml(r)}</label>${simInp(v, u, `fdDefinir('params.${k}', fdParse(this.value)); simAtualizarResumoParams()`, def === '' ? 'preencher' : 'padrão ' + fdFmtInput(def))}</div>`;
+  };
   return `
     <div class="painel" style="margin-bottom:12px;"><div style="font-size:15px;font-weight:800;">${cfg.icone} Como o ${cfg.titulo} calcula</div><div style="font-size:12.5px;color:#475569;">${cfg.desc}</div>
-      <div style="font-size:12px;color:#64748b;margin-top:4px;">Os parâmetros valem para o ano ${FD.ano} inteiro. Campos vazios usam o valor padrão do PPR (mostrado em cinza). Ao abrir uma pasta de ano nova, os parâmetros são copiados do ano anterior.</div></div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px;">Os parâmetros valem para o ano ${FD.ano} inteiro. Pode digitar com vírgula (ex.: 6,19). Campos vazios usam o padrão do PPR (em cinza). O custo de pessoal é aberto em salário + encargos + benefícios; se o salário ficar vazio, usa o custo fechado por pessoa. O dissídio corrige salário e encargos a partir do mês escolhido.</div></div>
+    <div class="painel sim-resumo-params" id="sim-resumo-params" style="margin-bottom:12px;">${simHtmlResumoParams(chave, P)}</div>
     ${cfg.params.map(([grupo, lista]) => `
       <div class="painel" style="margin-bottom:12px;">
         <h4 style="margin:0 0 6px;">${escapeHtml(grupo)}</h4>
-        <div class="ppr-params">${lista.map(([k, r, def]) => `<div><label>${escapeHtml(r)}</label><input type="number" step="any" value="${escapeHtml((FD.dados.params || {})[k] ?? '')}" placeholder="${def === '' ? 'preencher' : 'padrão ' + String(def).replace('.', ',')}" onchange="fdDefinir('params.${k}', this.value === '' ? '' : Number(this.value))"></div>`).join('')}</div>
+        <div class="ppr-params">${lista.map(campo).join('')}</div>
+        ${chave === 'sim_armazem' && grupo.startsWith('📋') ? simHtmlEquipeAdm() : ''}
       </div>`).join('')}`;
 }
+function simHtmlResumoParams(chave, P) {
+  const l = (SIMS_DPO[chave].resumoParams || (() => []))(P || simP(chave, FD.dados));
+  if (!l.length) return '';
+  return `<div style="font-weight:800;margin-bottom:6px;">🧮 Valores calculados com os parâmetros</div><div class="sim-chips">${l.map(([r, v, f]) => `<span class="sim-chip"><small>${escapeHtml(r)}</small><strong>${f === 'txt' ? escapeHtml(v) : simFmt(v, f)}</strong></span>`).join('')}</div>`;
+}
+function simAtualizarResumoParams() { const el = document.getElementById('sim-resumo-params'); if (el && FD) el.innerHTML = simHtmlResumoParams(FD.chave); }
+function simHtmlEquipeAdm() {
+  return `<div style="margin-top:12px;"><strong style="font-size:13px;">Equipe administrativa e outros (igual ao PPR — salário base por pessoa; encargos, benefícios e dissídio são aplicados)</strong>
+    ${fdTabela('adm_equipe', [{ campo: 'cargo', rotulo: 'Cargo', largura: 220 }, { campo: 'qtd', rotulo: 'QLP', tipo: 'decimal', largura: 70 }, { campo: 'salario', rotulo: 'Salário base (R$)', tipo: 'decimal', largura: 120 }], { botao: 'Adicionar cargo' })}
+    <button class="btn-secundario btn-sm" style="margin-top:8px;margin-left:6px;" onclick="simSugerirCargosAdm()">✨ Cargos padrão do PPR</button></div>`;
+}
+function simSugerirCargosAdm() {
+  const l = fdLista('adm_equipe');
+  CARGOS_ADM_PPR.forEach(c => { if (!l.some(x => x.cargo === c)) l.push({ id: fdId(), cargo: c }); });
+  fdAgendarSalvar(); fdCorpoRender();
+}
 
+function simHtmlObzLinhas(chave, cen, calcs, opts) {
+  const cfg = SIMS_DPO[chave], soma = f => calcs.reduce((s, c) => s + (f(c) || 0), 0);
+  const cel = v => `<td>${simFmt(v || null, 'rs')}</td>`;
+  const extras = simExtras(FD.dados, cen);
+  let h = cfg.obz.map(c => `
+    <tr class="ppr-derivado obz-cat"><td>${escapeHtml(c.rot)}${c.vlc ? ' <small class="obz-vlc" title="Entra no VLC/hl (custo variável)">VLC</small>' : ''}</td>${calcs.map(x => cel(x.cats && x.cats[c.k])).join('')}<td>${simFmt(soma(x => x.cats && x.cats[c.k]) || null, 'rs')}</td></tr>
+    ${opts.linhas ? c.linhas.map(l => `<tr class="ppr-derivado obz-linha"><td>${escapeHtml(l[1])}${l[2] === 'input' ? ' <small title="lançado no mês">✍️</small>' : ''}</td>${calcs.map(x => cel(x.linhas && x.linhas[l[0]])).join('')}<td>${simFmt(soma(x => x.linhas && x.linhas[l[0]]) || null, 'rs')}</td></tr>`).join('') : ''}`).join('');
+  if (extras.length) h += `<tr class="ppr-derivado obz-cat"><td>Custos criados por você</td>${calcs.map(x => cel(x.cats && x.cats.__extra)).join('')}<td>${simFmt(soma(x => x.cats && x.cats.__extra) || null, 'rs')}</td></tr>`;
+  const anual = simAnual(chave, cen, FD.dados);
+  h += `<tr class="ppr-derivado destaque"><td>Custo total OBZ</td>${calcs.map(x => cel(x.custo_total)).join('')}<td>${simFmt(soma(x => x.custo_total) || null, 'rs')}</td></tr>
+    <tr class="ppr-derivado destaque"><td>R$/hl</td>${calcs.map(x => `<td>${simFmt(x.rs_hl, 'rs2')}</td>`).join('')}<td>${simFmt(anual.rs_hl, 'rs2')}</td></tr>
+    <tr class="ppr-derivado"><td>VLC/hl (custo variável por hl)</td>${calcs.map(x => `<td>${simFmt(x.vlc_hl, 'rs2')}</td>`).join('')}<td>${simFmt(anual.vlc_hl, 'rs2')}</td></tr>`;
+  if (chave === 'sim_entrega') h += `<tr class="ppr-derivado"><td>R$/caixa</td>${calcs.map(x => `<td>${simFmt(x.rs_cx, 'rs2')}</td>`).join('')}<td></td></tr>`;
+  return h;
+}
 function simHtmlDerivados(chave, cen) {
   const cfg = SIMS_DPO[chave];
   const calcs = MESES_FD.map((_, i) => simCalc(chave, cen, i));
-  const anual = simAnual(chave, cen, FD.dados);
-  const somaveis = ['caixas', 'paletes', 'viagens', 'viagens_ff', 'viagens_spot', 'viagens_1a', 'viagens_2a', 'viagens_rota', 'viagens_puxada', 'horimetro', 'km', 'custo_fixo', 'custo_pessoal', 'custo_variavel', 'custo_spot', 'custo_outros', 'custo_empilhadeiras', 'custo_total'];
-  return (cen === 'plan' ? cfg.derivPlan : cfg.derivReal).map(([k, rot, f]) => {
-    const tot = k === 'rs_hl' ? anual.rs_hl : somaveis.includes(k) ? calcs.reduce((s, c) => s + (c[k] || 0), 0) : null;
-    return `<tr class="ppr-derivado ${k === 'rs_hl' || k === 'custo_total' ? 'destaque' : ''}"><td>${rot}</td>${calcs.map(c => `<td>${simFmt(c[k], f)}${k === 'viagens_rota' && c.origem && c.origem.includes('R') ? ' <small title="vindo do Simulador Entrega">🚚</small>' : ''}${k === 'viagens_puxada' && c.origem && c.origem.includes('P') ? ' <small title="vindo do Simulador Puxada">🚛</small>' : ''}</td>`).join('')}<td>${tot === null ? '' : simFmt(tot, f)}</td></tr>`;
+  const somaveis = ['caixas', 'paletes', 'viagens', 'viagens_ff', 'viagens_spot', 'viagens_1a', 'viagens_2a', 'viagens_rota', 'viagens_puxada', 'horimetro', 'km'];
+  const oper = (cen === 'plan' ? cfg.derivPlan : cfg.derivReal).map(([k, rot, f]) => {
+    const tot = somaveis.includes(k) ? calcs.reduce((s, c) => s + (c[k] || 0), 0) : null;
+    return `<tr class="ppr-derivado"><td>${rot}</td>${calcs.map(c => `<td>${simFmt(c[k], f)}${k === 'viagens_rota' && c.origem && c.origem.includes('R') ? ' <small title="vindo do Simulador Entrega">🚚</small>' : ''}${k === 'viagens_puxada' && c.origem && c.origem.includes('P') ? ' <small title="vindo do Simulador Puxada">🚛</small>' : ''}</td>`).join('')}<td>${tot === null ? '' : simFmt(tot, f)}</td></tr>`;
   }).join('');
+  return oper + `<tr class="ppr-grupo calc"><td colspan="14">💰 OBZ — custo ${cen === 'plan' ? 'orçado (calculado + lançado)' : 'realizado'} por pacote</td></tr>` + simHtmlObzLinhas(chave, cen, calcs, { linhas: cen === 'plan' });
 }
 function simEditarCelula(chave, cen, i, campo, valor) {
-  simGarantirMeses(chave, cen)[i][campo] = valor === '' ? '' : Number(String(valor).replace(',', '.'));
+  const v = fdParse(valor);
+  simGarantirMeses(chave, cen)[i][campo] = v;
   fdAgendarSalvar();
   const tot = document.getElementById(`sim-tot-${campo}`);
   if (tot) tot.textContent = simTotalCampo(cen, campo);
@@ -9752,39 +10001,92 @@ function simEditarCelula(chave, cen, i, campo, valor) {
 }
 function simReplicar(chave, cen, campo) {
   const l = simGarantirMeses(chave, cen);
-  if (l[0][campo] === undefined || l[0][campo] === '') { mostrarToast('Preencha janeiro primeiro.', true); return; }
-  l.forEach(m => { m[campo] = l[0][campo]; });
-  fdAgendarSalvar(); fdCorpoRender();
+  const fonte = l.find(m => fdNum(m[campo]) !== null);
+  let valor = fonte ? fonte[campo] : null;
+  if (valor === null) {
+    const d = prompt('Valor para lançar em todos os 12 meses (pode usar vírgula):');
+    if (d === null) return;
+    valor = fdParse(d);
+    if (valor === '') { mostrarToast('Valor inválido.', true); return; }
+  } else if (!confirm(`Lançar ${fdFmtInput(valor)} em todos os 12 meses (sobrescreve os meses já preenchidos)?`)) return;
+  l.forEach(m => { m[campo] = valor; });
+  fdAgendarSalvar(); fdCorpoRender(); mostrarToast('Valor lançado nos 12 meses.');
 }
 const SIM_MEDIAS = ['dias_uteis', 'dias_extra', 'dias_trab', 'dias', 'ff_ativa', 'ff_parada', 'cap_media_cx', 'carretas_ativas', 'emp_alugadas', 'qlp_extra', 'motoristas', 'ajudantes', 'operadores', 'conferentes', 'empilhadeiras', 'qlp_adm'];
 function simTotalCampo(cen, campo) {
   const vals = simGarantirMeses(FD.chave, cen).map(m => fdNum(m[campo])).filter(v => v !== null);
   if (!vals.length) return '—';
   const s = vals.reduce((a, b) => a + b, 0);
-  return SIM_MEDIAS.includes(campo) ? 'média ' + fdFmt(s / vals.length, 1) : fdFmt(s);
+  if (SIM_MEDIAS.includes(campo)) return 'média ' + fdFmt(s / vals.length, 1);
+  return simUnid(campo) === 'rs' ? simFmt(s, 'rs') : fdFmt(s);
+}
+// grupos digitáveis da grade: direcionadores + lançamentos OBZ + custos criados
+function simGruposGrade(chave, cen) {
+  const cfg = SIMS_DPO[chave], g = [...cfg[cen]];
+  if (cen === 'plan') {
+    const lanc = cfg.obz.flatMap(c => c.linhas.filter(l => l[2] === 'input').map(l => [l[0], `${l[1]} (${c.rot})`]));
+    if (lanc.length) g.push(['✍️ Lançamentos mensais do orçamento (R$) — ajustes, prejuízos e custos que não saem do cálculo', lanc]);
+  } else {
+    cfg.obz.forEach(c => g.push([`💰 ${c.rot} (R$)`, c.linhas.map(l => [simCampoLinha(l, 'real'), l[1]])]));
+  }
+  return g;
+}
+function simLinhaGrade(chave, cen, k, r, extra) {
+  const u = simUnid(k, r);
+  return `<tr><td>${extra ? extra : escapeHtml(r)} <button class="ppr-replicar" title="Lançar o mesmo valor nos 12 meses" onclick="simReplicar('${chave}', '${cen}', '${k}')">⇉ 12 meses</button></td>
+    ${MESES_FD.map((_, i) => `<td>${simInp(simMes(FD.dados, cen, i)[k], u, `simEditarCelula('${chave}', '${cen}', ${i}, '${k}', this.value)`)}</td>`).join('')}
+    <td id="sim-tot-${k}" class="ppr-total">${simTotalCampo(cen, k)}</td></tr>`;
 }
 function simHtmlGrade(chave, cen) {
-  const cfg = SIMS_DPO[chave];
   simGarantirMeses(chave, cen);
-  const grupos = cfg[cen];
   const extra = chave === 'sim_puxada' && cen === 'plan' ? `<button class="btn-secundario btn-sm" onclick="simCopiarVolumeArmazem()">⇩ Copiar volume e dias do Simulador Armazém</button>` : '';
+  const extras = simExtras(FD.dados, cen);
   return `
     <div class="ppr-cenarios">
-      <span class="ppr-cenario-rot">${cen === 'plan' ? '📋 Orçamento (Plan) — digite os direcionadores; o dimensionamento e o custo são calculados.' : '📈 Realizado — preencha todo mês após o fechamento (base da rotina de custos e da dispersão Real x Plan).'}</span>
+      <span class="ppr-cenario-rot">${cen === 'plan' ? '📋 Orçamento (Plan) — digite os direcionadores; o dimensionamento e o custo OBZ são calculados pelos parâmetros.' : '📈 Realizado — preencha todo mês após o fechamento, linha a linha do OBZ (base da rotina de custos, do LE e da dispersão Real x Plan).'}</span>
       ${extra}
     </div>
     <div class="fd-tabela-wrap"><table class="fd-tabela ppr-grade">
-      <thead><tr><th style="min-width:250px;">${cen === 'plan' ? 'Orçamento ' + FD.ano : 'Realizado ' + FD.ano}</th>${MESES_FD.map(m => `<th>${m}</th>`).join('')}<th>Ano</th></tr></thead>
-      ${grupos.map(([grupo, campos]) => `
+      <thead><tr><th style="min-width:260px;">${cen === 'plan' ? 'Orçamento ' + FD.ano : 'Realizado ' + FD.ano}</th>${MESES_FD.map(m => `<th>${m}</th>`).join('')}<th>Ano</th></tr></thead>
+      ${simGruposGrade(chave, cen).map(([grupo, campos]) => `
         <tbody><tr class="ppr-grupo"><td colspan="14">${escapeHtml(grupo)}</td></tr>
-        ${campos.map(([k, r]) => `<tr><td>${escapeHtml(r)} <button class="ppr-replicar" title="Replicar janeiro para os 12 meses" onclick="simReplicar('${chave}', '${cen}', '${k}')">⇉</button></td>
-          ${MESES_FD.map((_, i) => `<td><input type="number" step="any" value="${escapeHtml(simMes(FD.dados, cen, i)[k] ?? '')}" onchange="simEditarCelula('${chave}', '${cen}', ${i}, '${k}', this.value)"></td>`).join('')}
-          <td id="sim-tot-${k}" class="ppr-total">${simTotalCampo(cen, k)}</td></tr>`).join('')}
+        ${campos.map(([k, r]) => simLinhaGrade(chave, cen, k, r)).join('')}
         </tbody>`).join('')}
-      <tbody><tr class="ppr-grupo calc"><td colspan="14">${cen === 'plan' ? '⚙️ Dimensionamento e custo calculados' : '⚙️ Indicadores do realizado'}</td></tr></tbody>
+      <tbody><tr class="ppr-grupo"><td colspan="14">➕ Custos criados por você (R$) <button class="btn-secundario btn-sm" style="margin-left:8px;" onclick="simCriarCusto('${chave}', '${cen}')">+ Criar custo</button></td></tr>
+        ${extras.map(x => simLinhaGrade(chave, cen, 'x_' + x.id, x.nome, `${escapeHtml(x.nome)}${x.vlc ? ' <small class="obz-vlc">VLC</small>' : ''} <button class="ppr-replicar" title="Renomear" onclick="simEditarCusto('${cen}', '${x.id}')">✏️</button><button class="ppr-replicar" title="Excluir" onclick="simExcluirCusto('${cen}', '${x.id}')">✕</button>`)).join('')}
+        ${!extras.length ? '<tr><td colspan="14" style="color:#94a3b8;font-size:12px;">Crie linhas de custo que não existem no modelo (ex.: aluguel de pátio, consultoria, telefonia). Elas entram no custo total e no R$/hl.</td></tr>' : ''}
+      </tbody>
+      <tbody><tr class="ppr-grupo calc"><td colspan="14">${cen === 'plan' ? '⚙️ Dimensionamento calculado' : '⚙️ Indicadores do realizado'}</td></tr></tbody>
       <tbody id="sim-derivados">${simHtmlDerivados(chave, cen)}</tbody>
     </table></div>
-    ${chave === 'sim_armazem' && cen === 'plan' ? '<div style="font-size:11.5px;color:#64748b;margin-top:6px;">🚚 / 🚛 = viagens trazidas automaticamente dos Simuladores de Entrega e Puxada do mesmo ano (digite no mês para sobrepor).</div>' : ''}`;
+    ${chave === 'sim_armazem' && cen === 'plan' ? '<div style="font-size:11.5px;color:#64748b;margin-top:6px;">🚚 / 🚛 = viagens trazidas automaticamente dos Simuladores de Entrega e Puxada do mesmo ano (digite no mês para sobrepor).</div>' : ''}
+    <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Valores aceitam vírgula (ex.: 1.250,50). ⇉ 12 meses copia o primeiro mês preenchido para todos os meses (ou pergunta o valor se a linha estiver vazia).</div>`;
+}
+function simCriarCusto(chave, cen) {
+  const nome = prompt(`Nome do novo custo (${cen === 'plan' ? 'Orçamento' : 'Realizado'}):`);
+  if (!nome || !nome.trim()) return;
+  const vlc = confirm('É um custo VARIÁVEL (entra no VLC/hl)?\nOK = variável · Cancelar = fixo');
+  const valor = prompt('Valor mensal para lançar em todos os meses (opcional, pode deixar vazio):');
+  const x = { id: fdId(), nome: nome.trim(), vlc };
+  fdLista('custos_extra_' + cen).push(x);
+  const v = fdParse(valor);
+  if (v !== '') simGarantirMeses(chave, cen).forEach(m => { m['x_' + x.id] = v; });
+  fdAgendarSalvar(); fdCorpoRender();
+}
+function simEditarCusto(cen, id) {
+  const x = fdLista('custos_extra_' + cen).find(c => c.id === id);
+  if (!x) return;
+  const nome = prompt('Novo nome do custo:', x.nome);
+  if (!nome || !nome.trim()) return;
+  x.nome = nome.trim(); x.vlc = confirm('É um custo VARIÁVEL (entra no VLC/hl)?\nOK = variável · Cancelar = fixo');
+  fdAgendarSalvar(); fdCorpoRender();
+}
+function simExcluirCusto(cen, id) {
+  if (!confirm('Excluir este custo e os valores lançados nos 12 meses?')) return;
+  const l = fdLista('custos_extra_' + cen), i = l.findIndex(c => c.id === id);
+  if (i >= 0) l.splice(i, 1);
+  (FD.dados[cen] || []).forEach(m => { if (m) delete m['x_' + id]; });
+  fdAgendarSalvar(); fdCorpoRender();
 }
 function simCopiarVolumeArmazem() {
   const arm = simDados('sim_armazem');
@@ -9802,23 +10104,71 @@ function simHtmlComparativo(chave) {
     const p = simCalc(chave, 'plan', i), r = simCalc(chave, 'real', i);
     const disp = p.rs_hl && r.rs_hl ? (r.rs_hl - p.rs_hl) / p.rs_hl : null;
     const cor = disp === null ? '' : disp > 0.05 ? 'background:#fee2e2;color:#991b1b;' : disp < -0.05 ? 'background:#dcfce7;color:#166534;' : 'background:#fef9c3;';
-    return `<tr><td><strong>${m}</strong></td>${cfg.comp.map(([, f, d]) => `<td>${fdFmt(f(p), d || 0)}</td><td>${fdFmt(f(r), d || 0)}</td>`).join('')}<td style="font-weight:800;${cor}">${fdPct(disp)}</td></tr>`;
+    return `<tr><td><strong>${m}</strong></td>${cfg.comp.map(([, f, d]) => `<td>${simFmt(f(p), d || 0)}</td><td>${simFmt(f(r), d || 0)}</td>`).join('')}<td style="font-weight:800;${cor}">${fdPct(disp)}</td></tr>`;
   }).join('');
   const aP = simAnual(chave, 'plan', FD.dados), aR = simAnual(chave, 'real', FD.dados);
   return `
     <div class="painel">
       <h3 style="margin-top:0;">${cfg.icone} ${cfg.titulo} — Plan x Real ${FD.ano}</h3>
       <div class="kpis" style="margin-bottom:10px;">
-        <div class="kpi-card"><div class="valor" style="font-size:22px;">${fdFmt(aP.rs_hl, 2)}</div><div class="rotulo">R$/hl orçado no ano</div></div>
-        <div class="kpi-card"><div class="valor" style="font-size:22px;">${fdFmt(aR.rs_hl, 2)}</div><div class="rotulo">R$/hl realizado (meses fechados)</div></div>
-        ${meta ? `<div class="kpi-card"><div class="valor" style="font-size:22px;">${fdFmt(meta, 2)}</div><div class="rotulo">Meta R$/hl</div></div>` : ''}
+        <div class="kpi-card"><div class="valor" style="font-size:22px;">${simFmt(aP.rs_hl, 'rs2')}</div><div class="rotulo">R$/hl orçado no ano</div></div>
+        <div class="kpi-card"><div class="valor" style="font-size:22px;">${simFmt(aR.rs_hl, 'rs2')}</div><div class="rotulo">R$/hl realizado (meses fechados)</div></div>
+        <div class="kpi-card"><div class="valor" style="font-size:22px;">${simFmt(aR.vlc_hl, 'rs2')}</div><div class="rotulo">VLC/hl realizado</div></div>
+        ${meta ? `<div class="kpi-card"><div class="valor" style="font-size:22px;">${simFmt(meta, 'rs2')}</div><div class="rotulo">Meta R$/hl</div></div>` : ''}
       </div>
       <div class="fd-tabela-wrap"><table class="fd-tabela ppr-comp">
         <thead><tr><th rowspan="2">Mês</th>${cfg.comp.map(([rot]) => `<th colspan="2" style="text-align:center;">${rot}</th>`).join('')}<th rowspan="2">Disp. R x P<br>(R$/hl)</th></tr>
           <tr>${cfg.comp.map(() => '<th>Plan</th><th>Real</th>').join('')}</tr></thead>
         <tbody>${linhas}</tbody>
       </table></div>
-      <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Disp. R x P = (R$/hl Real − R$/hl Plan) ÷ Plan · vermelho = custo acima do orçamento (+5%), verde = abaixo (−5%). Desvio fora da faixa → ação no PDCA de custos (pasta Orçamento).</div>
+      <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Disp. R x P = (R$/hl Real − R$/hl Plan) ÷ Plan · vermelho = custo acima do orçamento (+5%), verde = abaixo (−5%). Desvio fora da faixa → ação no PDCA de custos (pasta Orçamento). Detalhe linha a linha na aba 💰 OBZ.</div>
+    </div>`;
+}
+
+// ---- OBZ Plan x Real linha a linha (Planejamento 1.3 — Monitoramento de Custos) ----
+function simHtmlObz(chave) {
+  const cfg = SIMS_DPO[chave];
+  const reais = MESES_FD.map((_, i) => simCalc(chave, 'real', i)), plans = MESES_FD.map((_, i) => simCalc(chave, 'plan', i));
+  const fechados = reais.map((r, i) => r.custo_total ? i : -1).filter(i => i >= 0);
+  if (FD.obzMes === undefined) FD.obzMes = 'ytd';
+  const sel = FD.obzMes === 'ytd' ? fechados : [Number(FD.obzMes)];
+  const soma = (arr, f) => sel.reduce((s, i) => s + (f(arr[i]) || 0), 0);
+  const vol = arr => soma(arr, x => x.__vol);
+  const volP = vol(plans), volR = vol(reais);
+  const linha = (rot, fp, fr, cls, vlcTag) => {
+    const p = soma(plans, fp), r = soma(reais, fr), d = r - p, dp = p ? d / p : null;
+    const cor = !p && !r ? '' : dp === null ? '' : dp > 0.05 ? 'color:#991b1b;background:#fee2e2;' : dp < -0.05 ? 'color:#166534;background:#dcfce7;' : 'background:#fef9c3;';
+    return `<tr class="${cls || ''}"><td>${rot}${vlcTag ? ' <small class="obz-vlc">VLC</small>' : ''}</td><td>${simFmt(p || null, 'rs')}</td><td>${simFmt(r || null, 'rs')}</td><td style="${cor}font-weight:700;">${p || r ? simFmt(d, 'rs') : '—'}</td><td style="${cor}">${fdPct(dp)}</td><td>${simFmt(volP && p ? p / volP : null, 'rs2')}</td><td>${simFmt(volR && r ? r / volR : null, 'rs2')}</td></tr>`;
+  };
+  const extrasNomes = [...new Map([...simExtras(FD.dados, 'plan'), ...simExtras(FD.dados, 'real')].map(x => [x.nome, x])).values()];
+  const corpo = cfg.obz.map(c => linha(`<strong>${escapeHtml(c.rot)}</strong>`, x => x.cats && x.cats[c.k], x => x.cats && x.cats[c.k], 'obz-cat', c.vlc) + c.linhas.map(l => linha('&nbsp;&nbsp;' + escapeHtml(l[1]), x => x.linhas && x.linhas[l[0]], x => x.linhas && x.linhas[l[0]], 'obz-linha')).join('')).join('')
+    + (extrasNomes.length ? linha('<strong>Custos criados por você</strong>', x => x.cats && x.cats.__extra, x => x.cats && x.cats.__extra, 'obz-cat') : '')
+    + linha('<strong>CUSTO TOTAL OBZ</strong>', x => x.custo_total, x => x.custo_total, 'obz-total')
+    + linha('<strong>VLC — custo variável</strong>', x => x.vlc, x => x.vlc, 'obz-total');
+  const pT = soma(plans, x => x.custo_total), rT = soma(reais, x => x.custo_total);
+  const pV = soma(plans, x => x.vlc), rV = soma(reais, x => x.vlc);
+  return `
+    <div class="painel">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+        <div><h3 style="margin:0;">💰 OBZ ${cfg.titulo.replace('Simulador ', '')} — Plan x Real por pacote</h3>
+          <div style="font-size:12.5px;color:#64748b;">Rotina mensal de custos (Planejamento 1.3): compare cada linha do orçamento com o realizado, registre o desvio e abra ação no PDCA de custos. VLC/hl = custo variável por hl.</div></div>
+        <div><label style="margin:0;font-size:12px;">Período</label><select onchange="FD.obzMes = this.value; fdCorpoRender();" style="margin:0;">
+          <option value="ytd" ${FD.obzMes === 'ytd' ? 'selected' : ''}>Acumulado do ano (YTD — ${fechados.length} mês(es) com realizado)</option>
+          ${MESES_LONGOS_FD.map((m, i) => `<option value="${i}" ${String(FD.obzMes) === String(i) ? 'selected' : ''}>${m}${reais[i].custo_total ? '' : ' (sem realizado)'}</option>`).join('')}</select></div>
+      </div>
+      <div class="kpis" style="margin:12px 0;">
+        <div class="kpi-card"><div class="valor" style="font-size:20px;">${simFmt(pT || null, 'rs')}</div><div class="rotulo">Custo orçado</div></div>
+        <div class="kpi-card"><div class="valor" style="font-size:20px;">${simFmt(rT || null, 'rs')}</div><div class="rotulo">Custo realizado</div></div>
+        <div class="kpi-card"><div class="valor" style="font-size:20px;color:${rT > pT ? '#dc2626' : '#16a34a'};">${pT || rT ? simFmt(rT - pT, 'rs') : '—'}</div><div class="rotulo">Desvio (Real − Plan)</div></div>
+        <div class="kpi-card"><div class="valor" style="font-size:20px;">${simFmt(volP && pT ? pT / volP : null, 'rs2')} → ${simFmt(volR && rT ? rT / volR : null, 'rs2')}</div><div class="rotulo">R$/hl Plan → Real</div></div>
+        <div class="kpi-card"><div class="valor" style="font-size:20px;">${simFmt(volP && pV ? pV / volP : null, 'rs2')} → ${simFmt(volR && rV ? rV / volR : null, 'rs2')}</div><div class="rotulo">VLC/hl Plan → Real</div></div>
+      </div>
+      ${!sel.length ? '<div class="msg-vazio">Ainda não há realizado lançado. Preencha a aba 📈 Realizado linha a linha do OBZ.</div>' : `
+      <div class="fd-tabela-wrap"><table class="fd-tabela obz-tabela">
+        <thead><tr><th style="min-width:280px;">Pacote / linha</th><th>Plan</th><th>Real</th><th>Desvio R$</th><th>Desvio %</th><th>Plan R$/hl</th><th>Real R$/hl</th></tr></thead>
+        <tbody>${corpo}</tbody>
+      </table></div>
+      <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Vermelho = realizado acima do orçado (+5%) · verde = abaixo (−5%). ${FD.obzMes === 'ytd' ? 'No acumulado, o Plan considera só os meses que já têm realizado.' : ''}</div>`}
     </div>`;
 }
 
@@ -9925,7 +10275,7 @@ function desenharDimensionamentoDpo() {
       <div class="dim-pasta-icone">${cfg.icone}</div><div class="dim-pasta-titulo">${cfg.titulo}</div>
       <div class="dim-pasta-barras"><span>Orçamento</span><div class="dpo-barra"><div style="width:${mp / 12 * 100}%;background:${cfg.cor};"></div></div><b>${mp}/12</b></div>
       <div class="dim-pasta-barras"><span>Realizado</span><div class="dpo-barra"><div style="width:${mr / 12 * 100}%;background:#16a34a;"></div></div><b>${mr}/12</b></div>
-      <div class="dim-pasta-info">R$/hl orçado: <strong>${fdFmt(aP.rs_hl, 2)}</strong> · realizado: <strong>${fdFmt(aR.rs_hl, 2)}</strong></div>
+      <div class="dim-pasta-info">R$/hl orçado: <strong>${simFmt(aP.rs_hl, 'rs2')}</strong> · realizado: <strong>${simFmt(aR.rs_hl, 'rs2')}</strong></div>
       <div class="dim-pasta-rodape">📁 ${DIM.ano} · ${p.arquivos.length} arquivo(s)${p.updated_at ? ' · atualizado ' + new Date(String(p.updated_at).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : ''}</div></button>`;
   };
   // painel consolidado: custo logístico total (armazém + entrega + puxada) Plan x Real
@@ -9935,7 +10285,7 @@ function desenharDimensionamentoDpo() {
     const cp = soma('plan'), cr = soma('real'), vp = vol('plan'), vr = vol('real');
     const rp = cp && vp ? cp / vp : null, rr = cr && vr ? cr / vr : null;
     const disp = rp && rr ? (rr - rp) / rp : null;
-    return `<tr><td><strong>${m}</strong></td><td>${fdFmt(cp || null)}</td><td>${fdFmt(cr || null)}</td><td>${fdFmt(rp, 2)}</td><td>${fdFmt(rr, 2)}</td><td style="font-weight:800;${disp === null ? '' : disp > 0.05 ? 'color:#991b1b;' : disp < -0.05 ? 'color:#166534;' : ''}">${fdPct(disp)}</td></tr>`;
+    return `<tr><td><strong>${m}</strong></td><td>${simFmt(cp || null, 'rs')}</td><td>${simFmt(cr || null, 'rs')}</td><td>${simFmt(rp, 'rs2')}</td><td>${simFmt(rr, 'rs2')}</td><td style="font-weight:800;${disp === null ? '' : disp > 0.05 ? 'color:#991b1b;' : disp < -0.05 ? 'color:#166534;' : ''}">${fdPct(disp)}</td></tr>`;
   }).join('');
   const voltar = (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) ? 'renderCicloDpoAtual()' : 'renderDpoHome()';
   cont.innerHTML = `
@@ -9951,7 +10301,7 @@ function desenharDimensionamentoDpo() {
     <div class="painel" style="margin-top:16px;">
       <h3 style="margin-top:0;">📊 Custo logístico total — Armazém + Entrega + Puxada (${DIM.ano})</h3>
       <div class="fd-tabela-wrap"><table class="fd-tabela ppr-comp">
-        <thead><tr><th>Mês</th><th>Custo Plan (R$)</th><th>Custo Real (R$)</th><th>R$/hl Plan</th><th>R$/hl Real</th><th>Disp. R x P</th></tr></thead>
+        <thead><tr><th>Mês</th><th>Custo Plan</th><th>Custo Real</th><th>R$/hl Plan</th><th>R$/hl Real</th><th>Disp. R x P</th></tr></thead>
         <tbody>${consol}</tbody>
       </table></div>
     </div>
@@ -10257,7 +10607,8 @@ async function renderDpoAcompanhamentosMaster() {
   cont.innerHTML = '<h1>🚀 Acompanhamentos Impulsionar</h1><p>Carregando...</p>';
   try {
     if (!ACOMP_MASTER.catalogo) ACOMP_MASTER.catalogo = await api('/api/admin/dpo/acompanhamentos/catalogo');
-    ACOMP_MASTER.empresas = await api('/api/admin/dpo/companies?all=1');
+    ACOMP_MASTER.empresas = await api('/api/admin/dpo/companies');
+    if (ACOMP_MASTER.companyId && !ACOMP_MASTER.empresas.some(e => e.id === ACOMP_MASTER.companyId)) ACOMP_MASTER.companyId = null;
     if (!ACOMP_MASTER.companyId && ACOMP_MASTER.empresas[0]) ACOMP_MASTER.companyId = ACOMP_MASTER.empresas[0].id;
     if (ACOMP_MASTER.companyId) {
       const r = await api('/api/admin/dpo/acompanhamentos/liberacoes?company_id=' + ACOMP_MASTER.companyId);
@@ -10269,11 +10620,12 @@ async function renderDpoAcompanhamentosMaster() {
 function desenharAcompMaster() {
   const cont = document.getElementById('conteudo');
   const M = ACOMP_MASTER, busca = M.busca.toLowerCase();
-  const total = M.catalogo.reduce((s, p) => s + p.perguntas.length, 0);
+  const catalogo = M.catalogo.filter(p => M.ativos.includes(p.key));
+  const total = catalogo.reduce((s, p) => s + p.perguntas.length, 0);
   const cont3 = Object.values(M.resumos).filter(r => r.resumo && r.resumo.nota === '3').length;
   cont.innerHTML = `
     <h1>🚀 Acompanhamentos Impulsionar — liberações por revenda</h1>
-    <p style="color:#64748b;margin-top:-8px;">Cada pergunta do checklist tem um acompanhamento montado a partir da verificação (blocos 🗓️ reuniões, 📈 indicadores, 📄 padrões, 🎓 treinamentos, ⚙️ processos, 🚨 ocorrências, ⚠️ riscos, 🔍 inspeções, 🔁 plano de ação). Por enquanto eles ficam <strong>restritos por pergunta</strong>: libere aqui, revenda a revenda.</p>
+    <p style="color:#64748b;margin-top:-8px;">Cada pergunta do checklist tem um acompanhamento montado a partir da verificação (blocos 🗓️ reuniões, 📈 indicadores, 📄 padrões, 🎓 treinamentos, ⚙️ processos, 🚨 ocorrências, ⚠️ riscos, 🔍 inspeções, 🔁 plano de ação). Por enquanto eles ficam <strong>restritos por pergunta</strong>: libere aqui, revenda a revenda. Aparecem só as revendas e os pilares com pacote contratado.</p>
     <div class="painel" style="margin-bottom:14px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
       <div style="min-width:260px;"><label style="margin-top:0;">Revenda</label>
         <select onchange="ACOMP_MASTER.companyId = Number(this.value); renderDpoAcompanhamentosMaster();">${M.empresas.map(e => `<option value="${e.id}" ${e.id === M.companyId ? 'selected' : ''}>${escapeHtml(e.name)}</option>`).join('')}</select></div>
@@ -10282,11 +10634,11 @@ function desenharAcompMaster() {
       <div class="kpi-card" style="padding:10px 14px;"><div class="valor" style="font-size:22px;color:#16a34a;">${cont3}</div><div class="rotulo">com nota sugerida 3</div></div>
       <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">
         <input placeholder="🔎 Buscar pergunta..." value="${escapeHtml(M.busca)}" style="width:220px;margin:0;" oninput="ACOMP_MASTER.busca=this.value; clearTimeout(window.__tAc); window.__tAc=setTimeout(()=>{ desenharAcompMaster(); const el=document.querySelector('input[placeholder=&quot;🔎 Buscar pergunta...&quot;]'); if(el){el.focus(); el.setSelectionRange(el.value.length, el.value.length);} }, 300);">
-        <button class="btn-secundario btn-sm" onclick="acompMasterLiberarTodos(true)">Liberar pilares contratados</button>
+        <button class="btn-secundario btn-sm" onclick="acompMasterLiberarTodos(true)">Liberar tudo</button>
         <button class="btn-perigo btn-sm" onclick="acompMasterLiberarTodos(false)">Bloquear tudo</button>
       </div>
     </div>
-    ${!M.companyId ? '<div class="msg-vazio">Nenhuma revenda cadastrada.</div>' : M.catalogo.map(p => {
+    ${!M.companyId ? '<div class="msg-vazio">Nenhuma revenda com pacote DPO contratado.</div>' : catalogo.map(p => {
       const perguntas = p.perguntas.filter(q => !busca || (q.numero + ' ' + q.questao + ' ' + q.grupo).toLowerCase().includes(busca));
       if (!perguntas.length) return '';
       const lib = p.perguntas.filter(q => M.libs.has(q.questionKey)).length;
