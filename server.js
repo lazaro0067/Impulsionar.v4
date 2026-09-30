@@ -6611,9 +6611,9 @@ function ordemDasPerguntasDoPilarDpo(pilarKey) {
 }
 
 // ---------- Permissão por PASTA do DPO (Master libera por empresa) ----------
-const PASTAS_DPO = ['checklist', 'batepapo', 'material', 'ferramentas', 'autoavaliacao'];
-const PASTAS_DPO_PADRAO = { checklist: true, batepapo: false, material: false, ferramentas: false, autoavaliacao: true };
-const ROTULOS_PASTAS_DPO = { checklist: 'Gestão (Checklist)', batepapo: 'Perguntas Bate-Papo', material: 'Material do Pilar', ferramentas: 'Ferramentas Impulsionar', autoavaliacao: 'Autoavaliação Mensal' };
+const PASTAS_DPO = ['checklist', 'batepapo', 'material', 'ferramentas', 'autoavaliacao', 'gop'];
+const PASTAS_DPO_PADRAO = { checklist: true, batepapo: false, material: false, ferramentas: false, autoavaliacao: true, gop: true };
+const ROTULOS_PASTAS_DPO = { checklist: 'Gestão (Checklist)', batepapo: 'Perguntas Bate-Papo', material: 'Material do Pilar', ferramentas: 'Ferramentas Impulsionar', autoavaliacao: 'Autoavaliação Mensal', gop: 'Gerenciador GOP' };
 
 async function pastasLiberadasDaEmpresa(companyId) {
     const resultado = { ...PASTAS_DPO_PADRAO };
@@ -6660,7 +6660,7 @@ app.get('/api/dpo/pastas', requireRole('admin', 'client_admin'), async (req, res
             // Master enxerga todas as pastas (quando abre o ciclo de uma empresa),
             // mas também recebe o que está liberado para ela, se informar company_id.
             const liberadas = req.query.company_id ? await pastasLiberadasDaEmpresa(req.query.company_id) : null;
-            return res.json({ checklist: true, batepapo: true, material: true, ferramentas: true, autoavaliacao: true, liberadasParaEmpresa: liberadas });
+            return res.json({ checklist: true, batepapo: true, material: true, ferramentas: true, autoavaliacao: true, gop: true, liberadasParaEmpresa: liberadas });
         }
         res.json(await pastasLiberadasDaEmpresa(req.user.companyId));
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar as pastas liberadas.' }); }
@@ -8205,6 +8205,13 @@ async function resolverFerramentaDigitalDpo(req, res, chave, companyIdInformado)
         }
         return { pilar, pergunta: numero, titulo: `Acompanhamento Impulsionar — ${t.pilarLabel} ${numero} ${t.questao}`, companyId, template: t };
     }
+    if (chave === 'gop') {
+        const companyId = req.user.role === 'client_admin' ? req.user.companyId : companyIdInformado;
+        if (!companyId) { res.status(400).json({ error: 'Informe a empresa (company_id).' }); return null; }
+        if (req.user.role === 'client_admin' && !(await pilaresAtivosDaEmpresa(companyId)).length) { res.status(403).json({ error: 'Sua empresa ainda não tem o DPO contratado.' }); return null; }
+        if (!(await empresaTemPastaDpo(req, res, companyId, 'gop'))) return null;
+        return { titulo: 'Gerenciador GOP — Revendas', pilarLabel: 'GOP', pergunta: '', perguntaTexto: '', companyId, modeloGop: GOP_MODELO_DPO };
+    }
     const f = FERRAMENTAS_DIGITAIS_DPO[chave];
     if (!f) { res.status(404).json({ error: 'Ferramenta não encontrada.' }); return null; }
     const companyId = await resolverEmpresaPastaDpo(req, res, f.pilar, companyIdInformado, 'checklist');
@@ -8222,6 +8229,7 @@ async function carregarFerramentaDigitalDpo(companyId, chave, ano) {
 
 async function validacaoDaChaveDpo(companyId, chave, ano, dadosAtual) {
     if (String(chave).startsWith('acomp:')) return null; // calculada na tela (blocos do acompanhamento)
+    if (chave === 'gop') return null; // cobertura de planos calculada na tela
     if (chave === 'swot') return validarSwotDpo(dadosAtual, ano);
     const todos = {};
     for (const c of CHAVES_DIMENSIONAMENTO_DPO) todos[c] = c === chave && dadosAtual ? dadosAtual : (await carregarFerramentaDigitalDpo(companyId, c, ano)).dados;
@@ -8253,9 +8261,10 @@ async function migrarPprAntigoDpo(companyId) {
 async function respostaFerramentaDigitalDpo(f, chave, ano) {
     if (CHAVES_DIMENSIONAMENTO_DPO.includes(chave)) await migrarPprAntigoDpo(f.companyId);
     const r = await carregarFerramentaDigitalDpo(f.companyId, chave, ano);
-    const pergunta = perguntaDoPilarDpo(f.pilar, f.pergunta);
+    if (chave === 'gop') r.dados = garantirPlanosGopDpo(r.dados);
+    const pergunta = f.pilar ? perguntaDoPilarDpo(f.pilar, f.pergunta) : null;
     return {
-        chave, titulo: f.titulo, pilar: f.pilar, pilarLabel: DPO_AMBEV_DATA[f.pilar].label, pergunta: f.pergunta,
+        chave, titulo: f.titulo, pilar: f.pilar || null, pilarLabel: f.pilar ? DPO_AMBEV_DATA[f.pilar].label : (f.pilarLabel || ''), pergunta: f.pergunta, modeloGop: f.modeloGop || undefined,
         perguntaTexto: pergunta ? pergunta.pergunta.questao : '', verificacao: pergunta ? pergunta.pergunta.verificacao : '',
         companyId: Number(f.companyId), ano, anos: await anosDaChaveDpo(f.companyId, chave), ...r, template: f.template || null,
         validacao: await validacaoDaChaveDpo(f.companyId, chave, ano, r.dados)
@@ -8302,7 +8311,8 @@ app.put('/api/dpo/ferramentas-digitais/:chave', requireRole('admin', 'client_adm
         const f = await resolverFerramentaDigitalDpo(req, res, req.params.chave, req.body.company_id);
         if (!f) return;
         const ano = anoValidoDpo(req.body.ano);
-        const dados = req.body.dados && typeof req.body.dados === 'object' ? req.body.dados : {};
+        let dados = req.body.dados && typeof req.body.dados === 'object' ? req.body.dados : {};
+        if (req.params.chave === 'gop') dados = garantirPlanosGopDpo(dados);
         const json = JSON.stringify(dados);
         if (json.length > 1500000) return res.status(400).json({ error: 'Dados grandes demais para salvar.' });
         await new Promise((resolve, reject) => db.run(
@@ -8310,7 +8320,7 @@ app.put('/api/dpo/ferramentas-digitais/:chave', requireRole('admin', 'client_adm
              ON CONFLICT(company_id, chave, ano) DO UPDATE SET dados = excluded.dados, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP`,
             [f.companyId, req.params.chave, ano, json, req.user.userId], (err) => err ? reject(err) : resolve()
         ));
-        res.json({ message: 'Salvo!', validacao: await validacaoDaChaveDpo(f.companyId, req.params.chave, ano, dados) });
+        res.json({ message: 'Salvo!', validacao: await validacaoDaChaveDpo(f.companyId, req.params.chave, ano, dados), acoes: req.params.chave === 'gop' ? dados.acoes : undefined });
     } catch (e) {
         console.error('Erro ao salvar ferramenta digital DPO:', e.message);
         res.status(400).json({ error: 'Erro ao salvar.' });
@@ -8338,6 +8348,7 @@ app.post('/api/dpo/ferramentas-digitais/:chave/novo-ano', requireRole('admin', '
                 };
                 else if (chave === 'swot') base = { areas: origem.areas, sonho: origem.sonho, responsaveis: origem.responsaveis, vinculoDNMP: origem.vinculoDNMP, vinculoDNMPTexto: origem.vinculoDNMPTexto };
                 else if (chave === 'orcamento') base = { raci: origem.raci, kpis: origem.kpis, processo: origem.processo };
+                else if (chave === 'gop') { const o = prepararDadosGopDpo(origem); base = { gops: Object.fromEntries(Object.entries(o.gops).map(([k, g]) => [k, { titulo: g.titulo, area: g.area, meta: g.meta, itens: g.itens, resp: {} }])), acoes: o.acoes.filter(a => a.status !== 'Concluída' && !a.auto).map(a => ({ ...a, id: idGop() })) }; }
                 else base = { params: origem.params };
             }
             await new Promise((resolve, reject) => db.run(`INSERT INTO dpo_ferramentas_digitais (company_id, chave, ano, dados, updated_by) VALUES (?, ?, ?, ?, ?)`,
@@ -8373,6 +8384,178 @@ app.delete('/api/dpo/ferramentas-digitais/arquivos/:id', requireRole('admin', 'c
         res.json({ message: 'Arquivo removido!' });
     } catch (e) { res.status(400).json({ error: 'Erro ao remover o arquivo.' }); }
 });
+
+// ======================================================================
+// DPO — GERENCIADOR GOP (planilha "Gerenciador GOP Revendas")
+// Cada aba da planilha é uma GOP (Inventário, Obsolescence, TQI Armazém,
+// Rating, TQI Distribuição, OTIF): perguntas com peso e SIM/NÃO por mês.
+// % do mês = soma dos pesos SIM ÷ soma dos pesos (N/A fora); meta 80%.
+// Todo NÃO de um mês abre automaticamente um plano de ação daquele mês
+// (100% dos meses NOK com plano). Salvo por ano em dpo_ferramentas_digitais.
+// ======================================================================
+const GOP_MODELO_DPO = require('./dpo_gop_modelo.json');
+const STATUS_ACAO_GOP_DPO = ['Não iniciado', 'Em andamento', 'Concluída', 'Atrasado'];
+const semAcentoGop = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase();
+function normalizarRespostaGop(v) {
+    const t = semAcentoGop(v);
+    if (t === 'SIM' || t === 'S' || t === 'OK') return 'SIM';
+    if (t === 'NAO' || t === 'N' || t === 'NOK') return 'NÃO';
+    if (t === 'NA' || t === 'N/A' || t === 'N.A.') return 'N/A';
+    return '';
+}
+function idGop() { return crypto.randomBytes(5).toString('hex'); }
+function chaveGopPorNome(nome) {
+    const n = semAcentoGop(nome).replace(/[^A-Z0-9]/g, '');
+    const m = GOP_MODELO_DPO.find(g => semAcentoGop(g.aba).replace(/[^A-Z0-9]/g, '') === n || semAcentoGop(g.titulo).replace(/[^A-Z0-9]/g, '') === n);
+    return m ? m.chave : null;
+}
+// Garante a estrutura das 6 GOPs (a partir do modelo) sem apagar o que a revenda já tem.
+function prepararDadosGopDpo(dados) {
+    const d = dados && typeof dados === 'object' ? dados : {};
+    d.gops = d.gops && typeof d.gops === 'object' ? d.gops : {};
+    GOP_MODELO_DPO.forEach(m => {
+        if (!d.gops[m.chave]) d.gops[m.chave] = { titulo: m.titulo, area: m.area, meta: m.meta, itens: m.itens.map(i => ({ ...i })), resp: {} };
+        const g = d.gops[m.chave];
+        g.itens = Array.isArray(g.itens) ? g.itens : [];
+        g.resp = g.resp && typeof g.resp === 'object' ? g.resp : {};
+        if (g.meta === undefined || g.meta === null || g.meta === '') g.meta = m.meta;
+    });
+    d.acoes = Array.isArray(d.acoes) ? d.acoes.filter(a => a && typeof a === 'object') : [];
+    return d;
+}
+// Todo NÃO (item × mês) precisa de plano: cria o que falta; remove planos automáticos
+// ainda vazios cujo item voltou a SIM/N/A.
+function garantirPlanosGopDpo(dados) {
+    const d = prepararDadosGopDpo(dados);
+    const chaveAcao = a => `${a.gop}|${a.itemId}|${a.mes}`;
+    const existentes = new Set(d.acoes.filter(a => a.itemId).map(chaveAcao));
+    const nok = new Set();
+    Object.entries(d.gops).forEach(([gk, g]) => g.itens.forEach(it => (g.resp[it.id] || []).forEach((v, mes) => {
+        if (normalizarRespostaGop(v) !== 'NÃO') return;
+        const k = `${gk}|${it.id}|${mes}`;
+        nok.add(k);
+        if (!existentes.has(k)) { d.acoes.push({ id: idGop(), gop: gk, itemId: it.id, mes, acao: '', causa: '', responsavel: '', prevista: '', status: 'Não iniciado', realizada: '', obs: '', auto: true }); existentes.add(k); }
+    })));
+    d.acoes = d.acoes.filter(a => !(a.auto && a.itemId && !nok.has(chaveAcao(a)) && !String(a.acao || '').trim() && !String(a.responsavel || '').trim()));
+    return d;
+}
+function pctMesGopDpo(g, mes) {
+    let soma = 0, total = 0, respondidas = 0;
+    g.itens.forEach(it => {
+        const v = normalizarRespostaGop((g.resp[it.id] || [])[mes]);
+        const peso = Number(it.peso) || 100;
+        if (v === 'N/A') return;
+        if (v) respondidas++;
+        total += peso; if (v === 'SIM') soma += peso;
+    });
+    return respondidas && total ? soma / total : null;
+}
+function valorCelulaGop(v) {
+    if (v && typeof v === 'object' && !(v instanceof Date)) {
+        if (Array.isArray(v.richText)) return v.richText.map(t => t.text).join('');
+        if ('result' in v) return v.result;
+        if (v.text !== undefined) return v.text;
+        if (v.error) return null;
+    }
+    return v;
+}
+function dataCelulaGop(v) {
+    v = valorCelulaGop(v);
+    if (v instanceof Date) return v.toISOString().slice(0, 10);
+    if (typeof v === 'number' && v > 20000 && v < 80000) return new Date(Math.round((v - 25569) * 86400000)).toISOString().slice(0, 10);
+    const t = String(v || '').trim();
+    const br = t.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    return br ? `${br[3]}-${br[2]}-${br[1]}` : (/^\d{4}-\d{2}-\d{2}/.test(t) ? t.slice(0, 10) : '');
+}
+// Lê a planilha (xlsx/xlsm): uma aba por GOP + aba AÇÕES.
+function lerWorkbookGopDpo(wb) {
+    const gops = {}, acoes = [], avisos = [];
+    const MESES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+    wb.worksheets.forEach(ws => {
+        const cel = (r, c) => valorCelulaGop(ws.getRow(r).getCell(c).value);
+        const nomeAba = semAcentoGop(ws.name);
+        if (nomeAba === 'ACOES' || nomeAba === 'ACAO') {
+            let hdr = null;
+            for (let r = 1; r <= Math.min(ws.rowCount, 40) && !hdr; r++) for (let c = 1; c <= 12; c++) if (semAcentoGop(cel(r, c)) === 'ACAO') { hdr = { r, c }; break; }
+            if (!hdr) return;
+            for (let r = hdr.r + 1; r <= ws.rowCount; r++) {
+                const gopNome = cel(r, hdr.c - 1), acao = cel(r, hdr.c);
+                if (!acao || !String(acao).trim()) continue;
+                const gk = chaveGopPorNome(gopNome) || (gopNome ? String(gopNome).trim() : '');
+                const st = STATUS_ACAO_GOP_DPO.find(s => semAcentoGop(s) === semAcentoGop(cel(r, hdr.c + 3))) || 'Não iniciado';
+                acoes.push({ id: idGop(), gop: gk, itemId: null, mes: null, acao: String(acao).trim(), causa: '', responsavel: String(cel(r, hdr.c + 1) || '').trim(), prevista: dataCelulaGop(ws.getRow(r).getCell(hdr.c + 2).value), status: st, realizada: dataCelulaGop(ws.getRow(r).getCell(hdr.c + 4).value), obs: String(cel(r, hdr.c + 5) || '').trim(), origem: 'planilha' });
+            }
+            return;
+        }
+        let hdr = null;
+        for (let r = 1; r <= Math.min(ws.rowCount, 80) && !hdr; r++) for (let c = 1; c <= 8; c++) if (semAcentoGop(cel(r, c)) === 'PERGUNTAS') { hdr = { r, c }; break; }
+        if (!hdr) return;
+        let jan = null;
+        for (let c = hdr.c; c <= hdr.c + 8; c++) if (semAcentoGop(cel(hdr.r, c)) === 'JAN') { jan = c; break; }
+        if (!jan) { avisos.push(`Aba "${ws.name}": não achei a coluna JAN.`); return; }
+        const chave = chaveGopPorNome(ws.name) || ('gop_' + nomeAba.toLowerCase().replace(/[^a-z0-9]+/g, '_'));
+        const modelo = GOP_MODELO_DPO.find(m => m.chave === chave);
+        const titulo = String(cel(hdr.r - 2, hdr.c) || (modelo ? modelo.titulo : ws.name)).trim();
+        const itens = [], resp = {};
+        let meta = modelo ? modelo.meta : 80, n = 0;
+        for (let r = hdr.r + 1; r <= ws.rowCount; r++) {
+            const num = cel(r, hdr.c), txt = cel(r, hdr.c + 1);
+            if (semAcentoGop(txt) === 'META') { const mt = Number(cel(r, jan)); if (mt) meta = mt <= 1 ? Math.round(mt * 1000) / 10 : mt; break; }
+            if (num === null || num === undefined || num === '' || !txt || !String(txt).trim()) continue;
+            n++;
+            const id = modelo && modelo.itens[n - 1] ? modelo.itens[n - 1].id : `${chave}-${n}`;
+            itens.push({ id, num: n, texto: String(txt).replace(/\s+/g, ' ').trim(), peso: Number(cel(r, jan - 1)) || 100 });
+            resp[id] = MESES.map((_, i) => normalizarRespostaGop(cel(r, jan + i)));
+        }
+        if (!itens.length) { avisos.push(`Aba "${ws.name}": nenhuma pergunta encontrada.`); return; }
+        gops[chave] = { titulo, area: modelo ? modelo.area : '', meta, itens, resp, aba: ws.name };
+    });
+    return { gops, acoes, avisos };
+}
+
+app.post('/api/dpo/gop/importar', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { url, originalName } = req.body;
+    if (!/^\/uploads\/[\w.\-]+$/.test(String(url || ''))) return res.status(400).json({ error: 'Envie a planilha antes de importar.' });
+    try {
+        const f = await resolverFerramentaDigitalDpo(req, res, 'gop', req.body.company_id);
+        if (!f) return;
+        const ano = anoValidoDpo(req.body.ano);
+        const wb = new ExcelJS.Workbook();
+        await wb.xlsx.readFile(path.join(PASTA_UPLOADS, path.basename(url)));
+        const lido = lerWorkbookGopDpo(wb);
+        if (!Object.keys(lido.gops).length) return res.status(400).json({ error: 'Não encontrei nenhuma aba de GOP (cabeçalho "Perguntas" + meses JAN a DEZ).', avisos: lido.avisos });
+        const atual = prepararDadosGopDpo((await carregarFerramentaDigitalDpo(f.companyId, 'gop', ano)).dados);
+        Object.entries(lido.gops).forEach(([k, g]) => { atual.gops[k] = g; });
+        const jaTem = new Set(atual.acoes.map(a => `${a.gop}|${semAcentoGop(a.acao)}`));
+        lido.acoes.forEach(a => { if (!jaTem.has(`${a.gop}|${semAcentoGop(a.acao)}`)) atual.acoes.push(a); });
+        const dados = garantirPlanosGopDpo(atual);
+        await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_ferramentas_digitais (company_id, chave, ano, dados, updated_by, updated_at) VALUES (?, 'gop', ?, ?, ?, CURRENT_TIMESTAMP)
+             ON CONFLICT(company_id, chave, ano) DO UPDATE SET dados = excluded.dados, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP`,
+            [f.companyId, ano, JSON.stringify(dados), req.user.userId], (err) => err ? reject(err) : resolve()));
+        db.run(`INSERT INTO dpo_ferramentas_digitais_arquivos (company_id, chave, ano, tipo, url, original_name, comentario, created_by) VALUES (?, 'gop', ?, 'planilha_gop', ?, ?, ?, ?)`,
+            [f.companyId, ano, url, originalName || 'Gerenciador GOP.xlsm', 'Importada para o sistema', req.user.userId], () => {});
+        const planos = dados.acoes.filter(a => a.auto).length;
+        res.json({ message: `${Object.keys(lido.gops).length} GOP(s) importada(s) e ${lido.acoes.length} ação(ões) da aba AÇÕES. ${planos} plano(s) por mês abertos para os itens NÃO.`, dados, avisos: lido.avisos });
+    } catch (e) {
+        console.error('Erro ao importar GOP:', e.message);
+        res.status(400).json({ error: 'Não foi possível ler a planilha. Envie o Gerenciador GOP em .xlsx ou .xlsm.' });
+    }
+});
+
+function exportarGopDpo(add, dados) {
+    const d = prepararDadosGopDpo(dados);
+    const MESES = MESES_CURTOS_DPO;
+    Object.entries(d.gops).forEach(([k, g]) => {
+        const linhas = g.itens.map(it => ({ n: it.num, t: it.texto, p: it.peso, ...Object.fromEntries(MESES.map((m, i) => ['m' + i, (g.resp[it.id] || [])[i] || ''])) }));
+        linhas.push({ t: `% ${g.titulo}`, ...Object.fromEntries(MESES.map((m, i) => { const v = pctMesGopDpo(g, i); return ['m' + i, v === null ? '' : `${String(Math.round(v * 1000) / 10).replace('.', ',')}%`]; })) });
+        linhas.push({ t: 'Meta', ...Object.fromEntries(MESES.map((m, i) => ['m' + i, `${g.meta}%`])) });
+        add(String(g.titulo || k).slice(0, 28).replace(/[\\/*?:[\]]/g, '-'), [['Nº', 'n', 6], ['Pergunta', 't', 70], ['Peso', 'p', 8], ...MESES.map((m, i) => [m, 'm' + i, 8])], linhas);
+    });
+    const textoItem = a => { const g = d.gops[a.gop]; const it = g && g.itens.find(i => i.id === a.itemId); return it ? `${it.num}. ${it.texto}` : ''; };
+    add('Ações', [['GOP', 'gop', 18], ['Mês', 'mes', 8], ['Item NOK', 'item', 50], ['Causa', 'causa', 30], ['Ação', 'acao', 45], ['Responsável', 'responsavel', 18], ['Data prevista', 'prevista', 13], ['Status', 'status', 14], ['Data realizada', 'realizada', 13], ['Observação', 'obs', 40]],
+        d.acoes.map(a => ({ ...a, gop: d.gops[a.gop] ? d.gops[a.gop].titulo : a.gop, mes: a.mes === null || a.mes === undefined ? '' : MESES[a.mes], item: textoItem(a) })));
+}
 
 // Rótulos dos campos digitados em cada simulador (para o Excel).
 const CAMPOS_SIM_DPO = {
@@ -8429,6 +8612,8 @@ app.get('/api/dpo/ferramentas-digitais/:chave/export', requireRole('admin', 'cli
             add('Objetivos', [['Prioridade', 'prioridade', 10], ['Objetivo estratégico', 'texto', 50], ['Obstáculo ao Sonho', 'obstaculo', 40], ['Item SWOT relacionado', 'itemRelacionado', 40], ['Desdobramento', 'desdobramento', 18]], dados.objetivos);
             add('Cruzamentos', [['Força/Fraqueza', 'interno', 45], ['Oportunidade/Ameaça', 'externo', 45], ['Estratégia', 'estrategia', 22]], dados.cruzamentos);
             add('Planos de ação', [['O quê', 'oque', 45], ['Fator', 'fator', 14], ['Item', 'item', 35], ['Responsável', 'responsavel', 22], ['Área', 'area', 16], ['Início', 'inicio', 12], ['Fim', 'fim', 12], ['Andamento', 'andamento', 14], ['Desdobramento', 'desdobramento', 18]], dados.planos);
+        } else if (chave === 'gop') {
+            exportarGopDpo(add, dados);
         } else if (chave === 'orcamento') {
             add('RACI', [['Pacote orçamentário', 'pacote', 30], ['Área', 'area', 16], ['R - Responsável', 'r', 22], ['A - Aprovador', 'a', 22], ['C - Consultado', 'c', 22], ['I - Informado', 'i', 22], ['KPI / resultado', 'kpi', 28]], dados.raci);
             add('KPIs sustentabilidade', [['KPI', 'nome', 30], ['Unidade', 'unidade', 12], ['Meta', 'meta', 14], ['Ação / pacote ligado', 'acao', 40]], dados.kpis);
@@ -8450,7 +8635,7 @@ app.get('/api/dpo/ferramentas-digitais/:chave/export', requireRole('admin', 'cli
                 add(cen === 'plan' ? 'Orçamento (Plan)' : 'Realizado', [['Indicador', 'ind', 36], ...MESES_CURTOS_DPO.map((m, i) => [m, 'm' + i, 11])], linhas);
             });
         }
-        add('Validação checklist', [['Item', 'n', 8], ['Verificação', 't', 60], ['Atendido', 'ok', 10], ['O que falta', 'f', 70]],
+        if (chave !== 'gop') add('Validação checklist', [['Item', 'n', 8], ['Verificação', 't', 60], ['Atendido', 'ok', 10], ['O que falta', 'f', 70]],
             [...val.itens.map(i => ({ n: i.numero, t: i.texto, ok: i.ok ? 'Sim' : 'Não', f: i.faltas.join(' | ') })), { n: 'Nota', t: 'Nota sugerida pela ferramenta', ok: val.notaSugerida, f: val.regra }]);
         const buffer = await wb.xlsx.writeBuffer();
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

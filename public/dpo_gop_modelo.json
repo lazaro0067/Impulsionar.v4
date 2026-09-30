@@ -1,0 +1,500 @@
+[
+ {
+  "chave": "inventario",
+  "titulo": "Inventário",
+  "aba": "INVENTÁRIO",
+  "area": "Armazém",
+  "meta": 80.0,
+  "itens": [
+   {
+    "id": "inventario-1",
+    "num": 1,
+    "texto": "A contagem de estoque é realizada em todos os produtos ( Matéria prima, embalagens, retornáveis e produto acabado)",
+    "peso": 100
+   },
+   {
+    "id": "inventario-2",
+    "num": 2,
+    "texto": "A contagem de estoque inclui produtos fracionados (Lastros e caixas)",
+    "peso": 100
+   },
+   {
+    "id": "inventario-3",
+    "num": 3,
+    "texto": "A contagem de estoque abrange produtos em processo de reembalagem (Repack)",
+    "peso": 100
+   },
+   {
+    "id": "inventario-4",
+    "num": 4,
+    "texto": "A contagem de estoque cobre todos os armazéns pelos quais a unidade é responsável - incluindo armazéns de terceiros, armazéns de exportação e importação, caminhões carregados no local e em trânsito",
+    "peso": 100
+   },
+   {
+    "id": "inventario-5",
+    "num": 5,
+    "texto": "O Gerente de Logística e Gerente de Financeiro estão assinando todas as contagens de inventário.",
+    "peso": 100
+   },
+   {
+    "id": "inventario-6",
+    "num": 6,
+    "texto": "Segregam adequadamente as funções existentes entre o pessoal responsável pela contagem e recontagem de estoque.",
+    "peso": 100
+   },
+   {
+    "id": "inventario-7",
+    "num": 7,
+    "texto": "Existe um Padrão bem documentado para descrever adequadamente o processo de entrada de materiais (tanto da área de recebimento quanto da cervejaria)",
+    "peso": 100
+   },
+   {
+    "id": "inventario-8",
+    "num": 8,
+    "texto": "Há um Padrão bem documentado para descrever adequadamente o processo de captura de todas as perdas e quebras de mercadorias",
+    "peso": 100
+   },
+   {
+    "id": "inventario-9",
+    "num": 9,
+    "texto": "Há um Padrão bem documentado para descrever adequadamente o processo de inventário (cobrindo pré-reunião, processo real de tomada de inventário, pós-reunião) e processo de aprovação mensal.",
+    "peso": 100
+   },
+   {
+    "id": "inventario-10",
+    "num": 10,
+    "texto": "Existe um Padrão bem documentado para descrever adequadamente o processo de inventário enquanto as operações não são (totalmente) interrompidas.",
+    "peso": 100
+   },
+   {
+    "id": "inventario-11",
+    "num": 11,
+    "texto": "Há um Padrão bem documentado para descrever adequadamente o procedimento de recontagem",
+    "peso": 100
+   },
+   {
+    "id": "inventario-12",
+    "num": 12,
+    "texto": "Há um Padrão bem documentado para descrever adequadamente o sistema de gerenciamento de peças de reposição",
+    "peso": 100
+   },
+   {
+    "id": "inventario-13",
+    "num": 13,
+    "texto": "Calendário DTO esta em vigor e seguido para todos os Padrões mencionados acima.",
+    "peso": 100
+   },
+   {
+    "id": "inventario-14",
+    "num": 14,
+    "texto": "Existe um sistema integrado de contagem digital (WMS, tablets, handhelds) que está sendo utilizado para o controle de estoque e ciclos de contagem.",
+    "peso": 100
+   },
+   {
+    "id": "inventario-15",
+    "num": 15,
+    "texto": "Caso o WMS e o sistema contábil (Promax) não tenham interface automática, é realizada uma reconciliação diária entre os sistemas e os ajustes são registrados em tempo hábil para garantir o alinhamento total entre os dois sistemas.",
+    "peso": 100
+   },
+   {
+    "id": "inventario-16",
+    "num": 16,
+    "texto": "Não há estoque negativo registrado no sistema (Promax)",
+    "peso": 100
+   },
+   {
+    "id": "inventario-17",
+    "num": 17,
+    "texto": "Existe uma solução de backup - (Plano de Contingência) para os processos de gerenciamento de estoque em caso de falha do sistema PROMAX /WMS.",
+    "peso": 100
+   },
+   {
+    "id": "inventario-18",
+    "num": 18,
+    "texto": "Todos os registros de ajustes de estoque são mantidos - contendo data, usuários e perdas detalhadas por tipo de produto.",
+    "peso": 100
+   },
+   {
+    "id": "inventario-19",
+    "num": 19,
+    "texto": "Todas as perdas relacionadas são registradas corretamente de acordo com o plano de contas do SCL / Pacote de prejuízo (Supply Chain Loss)",
+    "peso": 100
+   },
+   {
+    "id": "inventario-20",
+    "num": 20,
+    "texto": "Todos os materiais são revisados para confirmar que ainda estão alinhados com a identidade da marca atual e, portanto, ainda podem ser usados. Caso contrário, eles são cancelados.",
+    "peso": 100
+   },
+   {
+    "id": "inventario-21",
+    "num": 21,
+    "texto": "Todas as peças sobressalentes obsoletas identificadas são baixadas de acordo com as regras definidas de qualidade",
+    "peso": 100
+   },
+   {
+    "id": "inventario-22",
+    "num": 22,
+    "texto": "O KPI de precisão do inventário (resultados financeiros e operacionais) está sendo rastreado no sistema de inventário oficial",
+    "peso": 100
+   },
+   {
+    "id": "inventario-23",
+    "num": 23,
+    "texto": "Pelo menos 4 vezes por ano, a contagem do inventário está sendo feita junto com a equipe do financeiro com uma contagem independente.",
+    "peso": 100
+   },
+   {
+    "id": "inventario-24",
+    "num": 24,
+    "texto": "O processo FEFO é medido e os resultados estão melhor que a meta",
+    "peso": 100
+   },
+   {
+    "id": "inventario-25",
+    "num": 25,
+    "texto": "A unidade possui o time necessário para garantir o controle de estoque",
+    "peso": 100
+   },
+   {
+    "id": "inventario-26",
+    "num": 26,
+    "texto": "Existem medidas extras para proteger o estoque contra roubo em momentos excepcionais.",
+    "peso": 100
+   },
+   {
+    "id": "inventario-27",
+    "num": 27,
+    "texto": "Treinamentos foram dados aos funcionários que irão participar do inventários e equipes de contagem.",
+    "peso": 100
+   },
+   {
+    "id": "inventario-28",
+    "num": 28,
+    "texto": "Os resultados do inventário acima do limite definido são escalados (Logística, Suprimento e Finanças)",
+    "peso": 100
+   },
+   {
+    "id": "inventario-29",
+    "num": 29,
+    "texto": "Para qualquer resultado de inventário acima do limite, relatórios estão sendo feitos para auxiliar na investigação.",
+    "peso": 100
+   }
+  ]
+ },
+ {
+  "chave": "obsolescence",
+  "titulo": "Obsolescence",
+  "aba": "OBSOLESCENCE",
+  "area": "Armazém",
+  "meta": 80.0,
+  "itens": [
+   {
+    "id": "obsolescence-1",
+    "num": 1,
+    "texto": "A unidade compartilha os objetivos de obsolescência com as áreas de vendas, marketing, logística e outras áreas relevantes para a unidade ?",
+    "peso": 100
+   },
+   {
+    "id": "obsolescence-2",
+    "num": 2,
+    "texto": "A unidade tem um orçamento de obsolescência alocado para cada inovação antes do lançamento e, em seguida, os valores atuais são monitorados em relação a eles?",
+    "peso": 100
+   },
+   {
+    "id": "obsolescence-3",
+    "num": 3,
+    "texto": "A equipe de vendas tem visibilidade para ver os estoques do armazém em tempo real?",
+    "peso": 100
+   },
+   {
+    "id": "obsolescence-4",
+    "num": 4,
+    "texto": "A equipe de vendas tem visibilidade para ver as datas previstas de chegada para SKUs fora de estoque?",
+    "peso": 100
+   },
+   {
+    "id": "obsolescence-5",
+    "num": 5,
+    "texto": "A equipe de vendas tem visibilidade semanal (no mínimo) para analisar as SKUs fora do intervalo acima em risco de obsolescência, com dias de vendas, contagem total de produtos e valor monetário em moeda local?",
+    "peso": 100
+   },
+   {
+    "id": "obsolescence-6",
+    "num": 6,
+    "texto": "A unidade tem uma rotina entre liderança de Vendas e Logística para caminhar fisicamente pelo armazém e observar SKUs novos e fora de alcance?",
+    "peso": 100
+   },
+   {
+    "id": "obsolescence-7",
+    "num": 7,
+    "texto": "Existem tarefas de check diário de idade dos produtos pela equipe do armazém?",
+    "peso": 100
+   },
+   {
+    "id": "obsolescence-8",
+    "num": 8,
+    "texto": "Existe um processo para prever ou encomendar novos SKUs que não tenham tendências históricas de vendas?",
+    "peso": 100
+   }
+  ]
+ },
+ {
+  "chave": "tqi_arm",
+  "titulo": "TQI - ARMAZÉM",
+  "aba": "TQI - ARM",
+  "area": "Armazém",
+  "meta": 80.0,
+  "itens": [
+   {
+    "id": "tqi_arm-1",
+    "num": 1,
+    "texto": "A unidade treinou os funcionários do armazém para completar várias habilidades/tarefas que poderiam ocorrer durante suas horas de trabalho para melhorar a flexibilidade do trabalho?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_arm-2",
+    "num": 2,
+    "texto": "A unidade concluiu uma avaliação do local com o fabricante de equipamento para determinar os tipos de equipamentos mais produtivos antes da compra de novos MHE (empilhadeira, paleteira...) ? Todas as novas compras da MHE ( (empilhadeira, paleteira...) estão de acordo com as Especificações Técnicas Globais?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_arm-3",
+    "num": 3,
+    "texto": "A unidade utilizou alguma Ferramenta de Otimização de espaço para analisar o layout do armazém em busca de oportunidades de melhoria de produtividade e testar diferentes cenários?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_arm-4",
+    "num": 4,
+    "texto": "A unidade fornece EPIs durante o processo de saída do caminhão ou de forma self service (ou seja, armários com código do funcionário) no caso de EPIs serem necessários durante o turno?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_arm-5",
+    "num": 5,
+    "texto": "Os funcionários do armazém podem visualizar seus IVs de produtividade em tempo real por meio de estações de trabalho do operador ou salas de equipe?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_arm-6",
+    "num": 6,
+    "texto": "A unidade utiliza intercalação de tarefas dentro de seus turnos?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_arm-7",
+    "num": 7,
+    "texto": "A unidade analisa a performance mais baixa para cada atividade/tarefa do armazém e conduz a análise de causa raiz para melhorar os resultados?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_arm-8",
+    "num": 8,
+    "texto": "A unidade rastreia os KPIs de complexidade da carga de saída (palete cheio, escolha manual, camada, tamanho da queda, caixas/palete, etc.) e revisa com as principais partes interessadas? As ações estão definidas para diminuir a complexidade da carga de saída e melhorar a produtividade?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_arm-9",
+    "num": 9,
+    "texto": "A unidade rastreia erros de carregamento que causam retrabalho e conduz a análise de causa raiz nos maiores contribuidores?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_arm-10",
+    "num": 10,
+    "texto": "A unidade utiliza o Sistema de Gerenciamento de Empilhadeira (FMS)/ Telemetria para monitorar os contribuintes de produtividade, como tempo ocioso e utilização? As horas de empilhadeira estão relacionadas com as horas de trabalho para avaliar oportunidades?",
+    "peso": 100
+   }
+  ]
+ },
+ {
+  "chave": "rating",
+  "titulo": "RATING",
+  "aba": "RATING",
+  "area": "Entrega",
+  "meta": 80.0,
+  "itens": [
+   {
+    "id": "rating-1",
+    "num": 1,
+    "texto": "A unidade tem um processo/sigla para ajudar a equipe de entrega a entender facilmente os passos para fornecer um atendimento de qualidade ao cliente da ABI? (ou seja, SERVIR)",
+    "peso": 100
+   },
+   {
+    "id": "rating-2",
+    "num": 2,
+    "texto": "A unidade utiliza feedback Rate my Delivery (RMD) para treinar equipes profissionais de entrega?",
+    "peso": 100
+   },
+   {
+    "id": "rating-3",
+    "num": 3,
+    "texto": "A unidade tem um treinamento para educar os clientes sobre RMD? (ou seja, finalidade para RMD, como completar, quando, etc.)",
+    "peso": 100
+   },
+   {
+    "id": "rating-4",
+    "num": 4,
+    "texto": "A unidade tem um treinamento para orientar os clientes sobre como verificar o status de seus pedidos? (ou seja, acessar o aplicativo/página da Web, comunicações esperadas vindas da unidade, como se inscrever para comunicação)",
+    "peso": 100
+   },
+   {
+    "id": "rating-5",
+    "num": 5,
+    "texto": "A unidade tem uma rotina para validar se os dados dos PDVs para entrega estão corretos? (ou seja, detalhes de contato, método de entrega, local de entrega)",
+    "peso": 100
+   },
+   {
+    "id": "rating-6",
+    "num": 6,
+    "texto": "A unidade tem uma maneira de comunicar a pesquisa RMD que reduz o viés dos clientes? (ou seja, o profissional de entrega não está na frente do entrevistado)",
+    "peso": 100
+   },
+   {
+    "id": "rating-7",
+    "num": 7,
+    "texto": "A equipe de gestão de entregas tem uma avaliação para orientar as observações sobre como os profissionais de entrega atendem os clientes?",
+    "peso": 100
+   },
+   {
+    "id": "rating-8",
+    "num": 8,
+    "texto": "A unidade analisa a taxa de resposta e tem um plano para aumentar as respostas? (ou seja, visitas aos PDVs, equipe de vendas, plano de comunicação, dia(s) de foco da linha de frente)",
+    "peso": 100
+   },
+   {
+    "id": "rating-9",
+    "num": 9,
+    "texto": "A unidade tem um incentivo ou reconhecimento mensal do profissional de entrega com a maior nota RMD?",
+    "peso": 100
+   }
+  ]
+ },
+ {
+  "chave": "tqi_dis",
+  "titulo": "TQI - Distribuição",
+  "aba": "TQI - DIS",
+  "area": "Entrega",
+  "meta": 80.0,
+  "itens": [
+   {
+    "id": "tqi_dis-1",
+    "num": 1,
+    "texto": "A unidade possui um mapeamento da quantidade de equipes de entrega (motoristas e ajudantes) necessários para executar as entregas em cada cliente (fator FTE médio)? A unidade tem um processo para negociar com a equipe de manutenção (ou seja, empilhadeira, paleteira) para aumentar a produtividade e reduzir os problemas de segurança?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_dis-2",
+    "num": 2,
+    "texto": "Os profissionais de entrega são designados para a mesma área/zona/setor mais de 75% do tempo, para que possam garantir o atendimento ao cliente e a produtividade das rotas?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_dis-3",
+    "num": 3,
+    "texto": "A equipe de entrega forneceu à equipe de armazém um cronograma de carregamento de caminhões de como priorizar o picking e o carregamento de caminhões? (ou seja, horários de início da rota, distância) Se houver problemas com caminhões que não estão prontos para uma saída de entrega no prazo, a unidade usa uma ANS para identificar a lacuna e trabalhar em conjunto para fechar?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_dis-4",
+    "num": 4,
+    "texto": "A unidade analisa as restrições realistas da unidade e cria horários de início escalonados/diferentes para a equipe de entrega? (ou seja, acesso ao estacionamento, tráfego para as instalações, horários de início do cliente, saída do portão do caminhão, validação de inventário).",
+    "peso": 100
+   },
+   {
+    "id": "tqi_dis-5",
+    "num": 5,
+    "texto": "A unidade tem os equipamentos necessários para execução da rotina de entrega das equipes liberados para uso, carregados, fidelizados por motorista e disponíveis antes do início da rota? A unidade possui backups desses equipamentos em caso de falha?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_dis-6",
+    "num": 6,
+    "texto": "A unidade tem um layout de estacionamento que é respeitado assim que os caminhões são devolvidos e depois que o armazém os carrega, para que os profissionais de entrega possam encontrar rapidamente seu caminhão antes da partida?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_dis-7",
+    "num": 7,
+    "texto": "A unidade fornece EPIs durante o processo de saída do caminhão ou de forma self service (ou seja, armários com código do funcionário) no caso de EPIs serem necessários antes da partida?",
+    "peso": 100
+   },
+   {
+    "id": "tqi_dis-8",
+    "num": 8,
+    "texto": "O time da liderança das equipes da unidade organiza algum mapa de rota ou documentação necessária antes do team room para garantir uma saída rápida do team room de entrega?",
+    "peso": 100
+   }
+  ]
+ },
+ {
+  "chave": "otif",
+  "titulo": "OTIF",
+  "aba": "OTIF",
+  "area": "Entrega",
+  "meta": 80.0,
+  "itens": [
+   {
+    "id": "otif-1",
+    "num": 1,
+    "texto": "A unidade só tem SKUs em estoque visíveis para os clientes dentro da plataforma de pedidos? Ao dar visibilidade de estoque aos clientes, a unidade está utilizando dados de precisão de estoque para fornecer a disponibilidade de nível de SKU mais precisa aos clientes?",
+    "peso": 100
+   },
+   {
+    "id": "otif-2",
+    "num": 2,
+    "texto": "A unidade permite que os motoristas alterem os tipos de pagamento com base em tipos aprovados, dividam os tipos de pagamento, apliquem créditos e/ou apliquem recompensas durante a entrega?",
+    "peso": 100
+   },
+   {
+    "id": "otif-3",
+    "num": 3,
+    "texto": "A equipe de operações fornece à equipe comercial visibilidade/notificação ao vivo de uma possível recusa, cronômetro como tempo para resolver a possível recusa e as etapas seguidas no processo para salvar uma possível recusa?",
+    "peso": 100
+   },
+   {
+    "id": "otif-4",
+    "num": 4,
+    "texto": "Existe um IP para monitorar o tempo desde a abertura até o fechamento de uma possível recusa? A equipe propõe melhores processos/rotinas de comunicação com diferentes equipes que possam acelerar esse processo de abertura para fechamento? (ou seja, WhatsApp com logística/comercial)",
+    "peso": 100
+   },
+   {
+    "id": "otif-5",
+    "num": 5,
+    "texto": "O profissional de entrega tem impacto salarial quando ocorrem recusas? (ou seja, não é pago por certos tipos de recusa relacionados à logística - janela de tempo perdida, quebra profissional de entrega, etc.)",
+    "peso": 100
+   },
+   {
+    "id": "otif-6",
+    "num": 6,
+    "texto": "A unidade tem uma maneira de informar o cliente de uma tentativa de entrega que não foi concluída, um motivo e carimbo de data/hora da tentativa? Se a unidade não tem essa tecnologia, eles deixam uma nota de estávamos aqui com as informações acima?",
+    "peso": 100
+   },
+   {
+    "id": "otif-7",
+    "num": 7,
+    "texto": "A unidade tem uma rotina semanal de se reunir com os 10% melhores profissionais de entrega da unidade com as principais recusas logísticas? (quebra, perda de janela de tempo, etc.)",
+    "peso": 100
+   },
+   {
+    "id": "otif-8",
+    "num": 8,
+    "texto": "A unidade tem uma rotina semanal com o time de vendas para tratar as devoluções que não são motivo logística e encontrarem juntos a causa raiz e criarem um plano de ação para tratarem?",
+    "peso": 100
+   },
+   {
+    "id": "otif-9",
+    "num": 9,
+    "texto": "A unidade tem um incentivo/reconhecimento mensal para as equipes e time de vendas com menor percentual de devolução?",
+    "peso": 100
+   },
+   {
+    "id": "otif-10",
+    "num": 10,
+    "texto": "A unidade tem um plano para visitar clientes críticos que possuem baixo resultado de OTIF e/ou devoluções reincidentes? (Quantidade de PDVs deve ser definida de acordo com o tamanho da unidade e análise do pareto com a criticidade)",
+    "peso": 100
+   }
+  ]
+ }
+]

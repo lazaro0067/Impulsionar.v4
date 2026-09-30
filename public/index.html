@@ -548,6 +548,22 @@
   .ppr-derivado td { background: #f8fafc; color: #0f172a; text-align: right; font-weight: 700; }
   .ppr-derivado td:first-child { text-align: left; color: #475569; font-style: italic; background: #f8fafc; }
   .ppr-total { text-align: right; font-weight: 800; white-space: nowrap; color: #334155; }
+  .gop-tabela td, .gop-tabela th { padding: 4px 5px; }
+  .gop-tabela .gop-texto { font-size: 12.5px; min-width: 320px; }
+  .gop-tabela th.gop-mes { text-align: center; white-space: nowrap; }
+  .gop-cel { text-align: center; white-space: nowrap; }
+  .gop-cel select { width: 62px; padding: 3px 2px; font-size: 11.5px; margin: 0; font-weight: 700; }
+  .gop-cel.sim select { background: #dcfce7; color: #166534; border-color: #86efac; }
+  .gop-cel.nao select { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+  .gop-cel.na select { background: #f1f5f9; color: #64748b; }
+  .gop-plano { border: none; background: none; cursor: pointer; font-size: 13px; padding: 0 0 0 2px; }
+  .gop-plano.pend { animation: gopPisca 1.4s infinite; }
+  @keyframes gopPisca { 50% { opacity: .35; } }
+  .gop-pct td { background: #f8fafc; }
+  .gop-badge { background: #dc2626; color: #fff; border-radius: 10px; padding: 0 6px; font-size: 11px; margin-left: 3px; }
+  .gop-pendente td { background: #fff1f2; }
+  .gop-plano-ref { background: #f8fafc; border-left: 4px solid #0f766e; border-radius: 8px; padding: 8px 10px; font-size: 13px; margin-bottom: 6px; }
+  .gop-painel td, .gop-painel th { white-space: nowrap; }
   .ppr-replicar { background: none; border: 1px solid var(--cinza-200); border-radius: 6px; cursor: pointer; font-size: 11px; padding: 0 5px; color: #64748b; }
   .ppr-comp td { text-align: right; white-space: nowrap; }
   .ppr-comp td:first-child { text-align: left; }
@@ -883,7 +899,7 @@ function sair(silencioso) {
   if (typeof VC_STREAM_TELA !== 'undefined' && VC_STREAM_TELA) { VC_STREAM_TELA.getTracks().forEach(t => t.stop()); VC_STREAM_TELA = null; }
   ESTADO.token = null;
   ESTADO.usuario = null;
-  HISTORICO_NAVEGACAO = [];
+  HISTORICO_NAVEGACAO = []; NAV.atual = null;
   localStorage.removeItem('impulsionar_token');
   localStorage.removeItem('impulsionar_usuario');
   sessionStorage.removeItem('impulsionar_token');
@@ -1028,7 +1044,7 @@ function grupoDaChave(role, chave) {
 function iniciarApp() {
   document.getElementById('tela-login').style.display = 'none';
   document.getElementById('app').classList.add('ativo');
-  HISTORICO_NAVEGACAO = [];
+  HISTORICO_NAVEGACAO = []; NAV.atual = null;
   ESTADO.abaAtual = null;
   atualizarBotaoVoltarGlobal();
   renderizarBarraVoltarMaster();
@@ -1202,16 +1218,43 @@ document.addEventListener('click', (ev) => {
   }
 });
 
-// Pilha simples de navegação — permite um botão "Voltar" global que funciona
-// em qualquer tela, sem precisar guardar estado específico de cada uma.
+// Pilha de navegação: guarda cada TELA visitada (aba do menu ou sub-tela
+// aberta por clique — pilar, pasta, ferramenta, acompanhamento...). O botão
+// "Voltar" volta sempre UMA fase: para a tela imediatamente anterior.
 let HISTORICO_NAVEGACAO = [];
+const NAV = { atual: null, profundidade: 0, voltando: false };
+function navMesmaTela(a, b) {
+  if (!a || !b || a.fn !== b.fn || a.args.length !== b.args.length) return false;
+  return a.args.every((x, i) => x === b.args[i] || (x && b.args[i] && typeof x === 'object' && x.id !== undefined && x.id === b.args[i].id));
+}
+function navRegistrar(fn, args) {
+  if (NAV.voltando) return;
+  const nova = { fn, args: Array.from(args || []) };
+  if (navMesmaTela(NAV.atual, nova)) { NAV.atual = nova; return; }
+  const topo = HISTORICO_NAVEGACAO[HISTORICO_NAVEGACAO.length - 1];
+  if (navMesmaTela(topo, nova)) HISTORICO_NAVEGACAO.pop(); // voltou pelo botão da própria tela
+  else if (NAV.atual) { HISTORICO_NAVEGACAO.push(NAV.atual); if (HISTORICO_NAVEGACAO.length > 40) HISTORICO_NAVEGACAO.shift(); }
+  NAV.atual = nova;
+  atualizarBotaoVoltarGlobal();
+}
+// Toda função que desenha uma tela (render*/abrir*/ver*) passa a registrar a
+// navegação quando é chamada por um clique do usuário.
+function navInstalar() {
+  Object.getOwnPropertyNames(window).filter(n => /^(render|abrir|ver)[A-Z]/.test(n) && !/^abrirModal|^renderGrafico|^verificar/.test(n) && typeof window[n] === 'function' && !window[n].__nav).forEach(n => {
+    const orig = window[n];
+    const emb = function (...args) {
+      const ev = window.event;
+      if (NAV.profundidade === 0 && ev && (ev.type === 'click' || ev.type === 'change')) navRegistrar(n, args);
+      NAV.profundidade++;
+      try { return orig.apply(this, args); } finally { NAV.profundidade--; }
+    };
+    emb.__nav = true;
+    window[n] = emb;
+  });
+}
 
 function irPara(aba, semHistorico) {
-  const abaAnterior = ESTADO.abaAtual;
-  if (!semHistorico && abaAnterior && abaAnterior !== aba) {
-    HISTORICO_NAVEGACAO.push(abaAnterior);
-    if (HISTORICO_NAVEGACAO.length > 30) HISTORICO_NAVEGACAO.shift();
-  }
+  if (!semHistorico) navRegistrar('irPara', [aba]);
   ESTADO.abaAtual = aba;
   atualizarBotaoVoltarGlobal();
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('ativo', b.dataset.aba === aba));
@@ -1239,7 +1282,8 @@ function irPara(aba, semHistorico) {
     dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster,
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster
   };
-  (renderizadores[aba] || renderDashboard)();
+  NAV.profundidade++;
+  try { (renderizadores[aba] || renderDashboard)(); } finally { NAV.profundidade--; }
 }
 
 // Volta para a tela anterior visitada (equivalente a um botão "voltar" do
@@ -1247,8 +1291,15 @@ function irPara(aba, semHistorico) {
 // telas de detalhe que preferem chamar isso em vez de um destino fixo.
 function voltarTela() {
   if (!HISTORICO_NAVEGACAO.length) return;
+  if (typeof FD_TIMER !== 'undefined' && FD_TIMER && typeof fdSalvar === 'function') fdSalvar();
   const alvo = HISTORICO_NAVEGACAO.pop();
-  irPara(alvo, true);
+  NAV.atual = alvo;
+  NAV.voltando = true;
+  try {
+    if (alvo.fn === 'irPara') irPara(alvo.args[0], true);
+    else if (typeof window[alvo.fn] === 'function') window[alvo.fn](...alvo.args);
+  } finally { NAV.voltando = false; }
+  atualizarBotaoVoltarGlobal();
 }
 
 function atualizarBotaoVoltarGlobal() {
@@ -6518,7 +6569,7 @@ async function renderDpoAgenda() {
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
             <div><strong style="font-size:15px;">${escapeHtml(emp.empresa)}</strong>
               <div style="font-size:12px;color:#64748b;">Pacotes: ${emp.pilaresAtivos.map(p => escapeHtml(dpoLabelDoPilar(p))).join(', ')}</div></div>
-            <button class="btn-secundario btn-sm" onclick="renderDpoAutoavaliacao(${emp.companyId})">📊 Abrir autoavaliações</button>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="btn-secundario btn-sm" onclick="abrirGopDpo(${emp.companyId})">📋 GOP</button><button class="btn-secundario btn-sm" onclick="renderDpoAutoavaliacao(${emp.companyId})">📊 Abrir autoavaliações</button></div>
           </div>
           ${!emp.avaliacoes.length ? '<div style="font-size:12.5px;color:#94a3b8;margin-top:8px;">Nenhuma autoavaliação feita ainda.</div>' : `
           <table style="margin-top:10px;">
@@ -6552,12 +6603,12 @@ async function renderDpoAgenda() {
       <h2 style="margin-top:32px;">🔐 Pastas liberadas por empresa</h2>
       <p style="color:#64748b;margin-top:-8px;">Escolha quais pastas do DPO cada empresa enxerga dentro dos pilares que ela comprou (a empresa recebe uma notificação quando uma pasta nova é liberada). Marque "1ª auditoria em 2026" para revendas que nunca foram auditadas — só elas podem ficar no selo Route Basic. Em "📊 Autoavaliações" você vê o resumo e as notas de cada mês da empresa.</p>
       <table>
-        <thead><tr><th>Empresa</th><th>📝 Gestão (Checklist)</th><th>📁 Perguntas Bate-Papo</th><th>📂 Material do Pilar</th><th>🧰 Ferramentas Impulsionar</th><th>📊 Autoavaliação Mensal</th><th title="Revenda que nunca foi auditada: pode receber o selo Route Basic">1ª auditoria em 2026</th><th></th></tr></thead>
+        <thead><tr><th>Empresa</th><th>📝 Gestão (Checklist)</th><th>📁 Perguntas Bate-Papo</th><th>📂 Material do Pilar</th><th>🧰 Ferramentas Impulsionar</th><th>📊 Autoavaliação Mensal</th><th>📋 Gerenciador GOP</th><th title="Revenda que nunca foi auditada: pode receber o selo Route Basic">1ª auditoria em 2026</th><th></th></tr></thead>
         <tbody>
           ${CONTRATADAS.map(e => `
             <tr>
               <td>${escapeHtml(e.name)}<div style="font-size:11px;color:#64748b;">${e.pilaresAtivos.map(p => escapeHtml(dpoLabelDoPilar(p))).join(', ')}</div></td>
-              ${['checklist', 'batepapo', 'material', 'ferramentas', 'autoavaliacao'].map(p => `<td style="text-align:center;"><input type="checkbox" id="dpo-pasta-${p}-${e.id}" style="width:auto;" ${e.pastas && e.pastas[p] ? 'checked' : ''}></td>`).join('')}
+              ${['checklist', 'batepapo', 'material', 'ferramentas', 'autoavaliacao', 'gop'].map(p => `<td style="text-align:center;"><input type="checkbox" id="dpo-pasta-${p}-${e.id}" style="width:auto;" ${e.pastas && e.pastas[p] ? 'checked' : ''}></td>`).join('')}
               <td style="text-align:center;"><input type="checkbox" id="dpo-primeira-${e.id}" style="width:auto;" ${e.primeiraAuditoria ? 'checked' : ''}></td>
               <td style="white-space:nowrap;"><button class="btn-secundario btn-sm" onclick="salvarPastasEmpresaDpo(${e.id})">Salvar</button>
                 <button class="btn-secundario btn-sm" onclick="renderDpoAutoavaliacao(${e.id})">📊 Autoavaliações</button></td>
@@ -6989,6 +7040,7 @@ async function renderDpoHome() {
       </div>
       <div class="barra-acoes"><div class="direita">
         ${pastasDpoHome.autoavaliacao ? `<button class="btn-primario" style="width:auto;" onclick="renderDpoAutoavaliacao()">📊 Autoavaliação Mensal</button>` : ''}
+        ${pastasDpoHome.gop !== false ? `<button class="btn-primario" style="width:auto;background:#0f766e;" onclick="abrirGopDpo()">📋 Gerenciador GOP</button>` : ''}
         ${acompsHome.length ? `<button class="btn-primario" style="width:auto;background:#dc4c4c;" onclick="renderAcompanhamentosEmpresa()">🚀 Acompanhamentos Impulsionar (${acompsHome.length})</button>` : ''}
         <button class="btn-secundario" onclick="renderDpoMeusPlanos()">📋 Meus Planos DPO</button>
         <button class="btn-secundario" onclick="irPara('chamados')">🎫 Chamados</button>
@@ -8045,7 +8097,7 @@ function baixarExcelMaterialDpo() {
 // ----- Master: libera as pastas do DPO (Checklist / Bate-Papo / Material) por empresa -----
 async function salvarPastasEmpresaDpo(companyId) {
   const corpo = {};
-  ['checklist', 'batepapo', 'material', 'ferramentas', 'autoavaliacao'].forEach(p => { corpo[p] = document.getElementById(`dpo-pasta-${p}-${companyId}`).checked; });
+  ['checklist', 'batepapo', 'material', 'ferramentas', 'autoavaliacao', 'gop'].forEach(p => { corpo[p] = document.getElementById(`dpo-pasta-${p}-${companyId}`).checked; });
   corpo.primeiraAuditoria = document.getElementById(`dpo-primeira-${companyId}`).checked;
   try { const r = await api('/api/admin/dpo/pastas/' + companyId, { method: 'PUT', body: JSON.stringify(corpo) }); mostrarToast(r.message); }
   catch (e) { mostrarToast(e.message, true); }
@@ -9015,9 +9067,10 @@ async function abrirFerramentaDigitalDpo(chave, companyId, ano, aba) {
     if (companyId) q.set('company_id', companyId);
     if (ano) q.set('ano', ano);
     const d = await api('/api/dpo/ferramentas-digitais/' + chave + '?' + q.toString());
-    FD = { chave, ano: d.ano, companyId: companyId || null, dados: d.dados || {}, validacao: d.validacao, arquivos: d.arquivos || [], aba: aba || (String(chave).startsWith('acomp:') ? 'itens' : 'inicio'), meta: d, salvoEm: d.updated_at, autor: d.autorNome };
+    FD = { chave, ano: d.ano, companyId: companyId || null, dados: d.dados || {}, validacao: d.validacao, arquivos: d.arquivos || [], aba: aba || (String(chave).startsWith('acomp:') ? 'itens' : chave === 'gop' ? 'painel' : 'inicio'), meta: d, salvoEm: d.updated_at, autor: d.autorNome };
     if (chave === 'swot') swotPrepararDados();
     if (acompEh()) { acompPrepararDados(); acompAtualizarResumo(); }
+    if (chave === 'gop') gopPreparar();
     fdDesenhar();
   } catch (e) { cont.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
@@ -9039,6 +9092,7 @@ async function fdSalvar() {
     if (FD.companyId) corpo.company_id = FD.companyId;
     const r = await api('/api/dpo/ferramentas-digitais/' + FD.chave, { method: 'PUT', body: JSON.stringify(corpo) });
     FD.validacao = acompEh() ? acompValidacao() : r.validacao;
+    if (gopEh()) { const nota = document.getElementById('fd-nota'); if (nota) nota.innerHTML = gopChip(); if (st) st.innerHTML = '✅ Salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); return; }
     if (DIM) DIM.validacao = r.validacao;
     if (st) st.innerHTML = '✅ Salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const nota = document.getElementById('fd-nota');
@@ -9056,6 +9110,7 @@ function fdChipNota(val, onclick) {
 
 function fdVoltar() {
   if (FD_TIMER) fdSalvar();
+  if (gopEh()) { FD = null; const f = GOP_VOLTAR || renderDpoHome; GOP_VOLTAR = null; f(); return; }
   if (acompEh()) { FD = null; if (ACOMP_VOLTAR) { const f = ACOMP_VOLTAR; ACOMP_VOLTAR = null; f(); return; } if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) renderCicloDpoAtual(); else renderDpoHome(); return; }
   if (FD && FD.chave !== 'swot') { const c = FD.companyId; FD = null; abrirDimensionamentoDpo(c, DIM ? DIM.ano : null); return; }
   FD = null;
@@ -9079,17 +9134,18 @@ function fdDesenhar() {
   const m = FD.meta;
   const ehSim = !!SIMS_DPO[FD.chave], ehOrc = FD.chave === 'orcamento';
   const ehAcomp = acompEh();
-  const abas = ehAcomp ? acompAbas() : FD.chave === 'swot'
+  const ehGop = gopEh();
+  const abas = ehGop ? gopAbas() : ehAcomp ? acompAbas() : FD.chave === 'swot'
     ? [['inicio', '🏁 Início e áreas'], ['forcas', '💪 Forças'], ['fraquezas', '⚠️ Fraquezas'], ['oportunidades', '🚀 Oportunidades'], ['ameacas', '🛑 Ameaças'], ['matriz', '🧮 Matriz SWOT'], ['cruzamentos', '🔀 Cruzamentos'], ['objetivos', '🎯 Objetivos estratégicos'], ['planos', '📋 Planos de ação'], ['validacao', '✅ Validação 1.3'], ['arquivos', '📎 Arquivos']]
     : ehSim ? [['parametros', '⚙️ Parâmetros'], ['plan', '📋 Orçamento (Plan)'], ['real', '📈 Realizado'], ['comparativo', '📊 Plan x Real'], ['obz', '💰 OBZ Plan x Real'], ['arquivos', '📎 Arquivos'], ['validacao', '✅ Validação 1.1']]
     : [['raci', '👥 RACI e processo'], ['kpis', '🌱 KPIs de sustentabilidade'], ['pdca', '🔁 PDCA de custos'], ['arquivos', '📎 Arquivos'], ['validacao', '✅ Validação 1.1']];
-  const titulo = ehAcomp ? `🚀 ${escapeHtml(m.template.numero)} ${escapeHtml(m.template.questao)}` : FD.chave === 'swot' ? '🧭 ' + escapeHtml(m.titulo) : ehSim ? `${SIMS_DPO[FD.chave].icone} ${SIMS_DPO[FD.chave].titulo}` : '📑 Orçamento, RACI e KPIs';
-  const anosHtml = FD.chave === 'swot' || ehAcomp
+  const titulo = ehGop ? '📋 Gerenciador GOP — Revendas' : ehAcomp ? `🚀 ${escapeHtml(m.template.numero)} ${escapeHtml(m.template.questao)}` : FD.chave === 'swot' ? '🧭 ' + escapeHtml(m.titulo) : ehSim ? `${SIMS_DPO[FD.chave].icone} ${SIMS_DPO[FD.chave].titulo}` : '📑 Orçamento, RACI e KPIs';
+  const anosHtml = FD.chave === 'swot' || ehAcomp || ehGop
     ? fdAnosHtml(m.anos, FD.ano, 'fdAbrirAnoSwot', 'fdNovoAnoSwot')
     : fdAnosHtml(DIM && DIM.pastas[FD.chave] ? DIM.pastas[FD.chave].anos : [], FD.ano, 'fdAbrirAnoPasta', 'fdNovoAnoPasta');
   cont.innerHTML = `
     <div class="barra-acoes">
-      <div><button class="btn-secundario btn-sm" onclick="fdVoltar()">← ${FD.chave === 'swot' || acompEh() ? 'Voltar' : 'Pastas do Simulador de Dimensionamento'}</button></div>
+      <div><button class="btn-secundario btn-sm" onclick="fdVoltar()">← ${FD.chave === 'swot' || acompEh() || ehGop ? 'Voltar' : 'Pastas do Simulador de Dimensionamento'}</button></div>
       <div class="direita">
         <span id="fd-status" style="font-size:12px;color:#64748b;">${FD.salvoEm ? 'Última gravação: ' + new Date(String(FD.salvoEm).replace(' ', 'T') + 'Z').toLocaleString('pt-BR') + (FD.autor ? ' por ' + escapeHtml(FD.autor) : '') : 'Pasta ainda não preenchida'}</span>
         <button class="btn-secundario btn-sm" onclick="fdSalvar()">💾 Salvar</button>
@@ -9098,8 +9154,8 @@ function fdDesenhar() {
     </div>
     <h1 style="margin-bottom:2px;">${titulo} <span style="color:#94a3b8;font-weight:600;">· ${FD.ano}</span></h1>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-      <span class="plano-meta">${ehAcomp ? `🚀 Acompanhamento Impulsionar · ${escapeHtml(m.template.pilarLabel)} · ${escapeHtml(m.template.grupo)}${m.template.mandatoria ? ' · <strong style="color:#dc2626;">Mandatória</strong>' : ''}` : `${escapeHtml(m.pilarLabel || '')} · pergunta <strong>${escapeHtml(m.pergunta || '')} ${escapeHtml(m.perguntaTexto || '')}</strong>${ehSim || ehOrc ? ' · pasta do Simulador de Dimensionamento' : ''}`}</span>
-      <span id="fd-nota">${fdChipNota(FD.validacao, ehAcomp ? "fdTrocarAba('itens')" : undefined)}</span>
+      <span class="plano-meta">${ehGop ? `GOPs da revenda — uma aba por GOP · plano de ação obrigatório em todo mês NOK` : ehAcomp ? `🚀 Acompanhamento Impulsionar · ${escapeHtml(m.template.pilarLabel)} · ${escapeHtml(m.template.grupo)}${m.template.mandatoria ? ' · <strong style="color:#dc2626;">Mandatória</strong>' : ''}` : `${escapeHtml(m.pilarLabel || '')} · pergunta <strong>${escapeHtml(m.pergunta || '')} ${escapeHtml(m.perguntaTexto || '')}</strong>${ehSim || ehOrc ? ' · pasta do Simulador de Dimensionamento' : ''}`}</span>
+      <span id="fd-nota">${ehGop ? gopChip() : fdChipNota(FD.validacao, ehAcomp ? "fdTrocarAba('itens')" : undefined)}</span>
     </div>
     ${anosHtml}
     <div class="fd-abas">${abas.map(([k, r]) => `<button class="fd-aba ${FD.aba === k ? 'ativa' : ''}" onclick="fdTrocarAba('${k}')">${r}</button>`).join('')}</div>
@@ -9113,6 +9169,7 @@ function fdHtmlAba() {
   if (a === 'validacao') return fdHtmlValidacao(FD.validacao, FD.meta);
   if (a === 'arquivos') return fdHtmlArquivos();
   if (acompEh()) return acompHtmlAba();
+  if (gopEh()) return gopHtmlAba();
   if (FD.chave === 'swot') {
     if (a === 'inicio') return swotHtmlInicio();
     if (QUADRANTES_SWOT_FRONT[a]) return swotHtmlQuadrante(a);
@@ -9202,7 +9259,7 @@ function fdHtmlValidacao(v, meta) {
 
 // ---- arquivos de atualização ----
 function fdHtmlArquivos() {
-  const tipos = acompEh() ? [['evidencia', 'Evidência'], ['ata', 'Ata / lista de presença'], ['padrao', 'Padrão / procedimento'], ['relatorio', 'Relatório de indicador'], ['foto', 'Foto'], ['outro', 'Outro']]
+  const tipos = gopEh() ? [['planilha_gop', 'Planilha Gerenciador GOP'], ['evidencia', 'Evidência de ação'], ['outro', 'Outro']] : acompEh() ? [['evidencia', 'Evidência'], ['ata', 'Ata / lista de presença'], ['padrao', 'Padrão / procedimento'], ['relatorio', 'Relatório de indicador'], ['foto', 'Foto'], ['outro', 'Outro']]
     : FD.chave === 'swot'
     ? [['swot', 'Planilha SWOT'], ['dn_mp', 'Descrição de Negócio / Mapeamento de Processo'], ['ata', 'Ata / evidência de priorização'], ['outro', 'Outro']]
     : SIMS_DPO[FD.chave] ? [['planilha', `Planilha ${SIMS_DPO[FD.chave].planilha} (.xlsm)`], ['evidencia', 'Evidência (e-mail, ata de revisão)'], ['outro', 'Outro']]
@@ -10674,6 +10731,291 @@ function acompMasterLiberarTodos(liberar) {
   if (!confirm(liberar ? `Liberar ${keys.length} acompanhamentos (pilares contratados) para esta revenda?` : 'Bloquear todos os acompanhamentos desta revenda?')) return;
   acompMasterToggle(keys, liberar);
 }
+
+// ======================= GERENCIADOR GOP (planilha "Gerenciador GOP Revendas") =======================
+// Uma aba por GOP. Cada NÃO num mês abre na hora o plano de ação daquele mês
+// (sem sugestão): 100% dos meses NOK precisam ter plano.
+const STATUS_ACAO_GOP = ['Não iniciado', 'Em andamento', 'Concluída', 'Atrasado'];
+const ICONES_GOP = { inventario: '📦', obsolescence: '🗑️', tqi_arm: '🏭', rating: '⭐', tqi_dis: '🚚', otif: '🎯' };
+let GOP_VOLTAR = null;
+function gopEh() { return FD && FD.chave === 'gop'; }
+function gopNorm(v) {
+  const t = String(v == null ? '' : v).normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase();
+  return t === 'SIM' || t === 'S' ? 'SIM' : t === 'NAO' || t === 'N' ? 'NÃO' : t === 'NA' || t === 'N/A' ? 'N/A' : '';
+}
+function gopPreparar() {
+  const d = FD.dados;
+  d.gops = d.gops && typeof d.gops === 'object' ? d.gops : {};
+  (FD.meta.modeloGop || []).forEach(m => {
+    if (!d.gops[m.chave]) d.gops[m.chave] = { titulo: m.titulo, area: m.area, meta: m.meta, itens: m.itens.map(i => ({ ...i })), resp: {} };
+    const g = d.gops[m.chave]; g.itens = g.itens || []; g.resp = g.resp || {};
+  });
+  d.acoes = Array.isArray(d.acoes) ? d.acoes : [];
+  gopGarantirPlanos();
+}
+function gopChaves() { return Object.keys(FD.dados.gops || {}); }
+function gopGarantirPlanos() {
+  const d = FD.dados, ch = a => `${a.gop}|${a.itemId}|${a.mes}`;
+  const existentes = new Set(d.acoes.filter(a => a.itemId).map(ch)), nok = new Set(), novos = [];
+  Object.entries(d.gops).forEach(([gk, g]) => g.itens.forEach(it => (g.resp[it.id] || []).forEach((v, mes) => {
+    if (gopNorm(v) !== 'NÃO') return;
+    const k = `${gk}|${it.id}|${mes}`; nok.add(k);
+    if (!existentes.has(k)) { const a = { id: fdId(), gop: gk, itemId: it.id, mes, acao: '', causa: '', responsavel: '', prevista: '', status: 'Não iniciado', realizada: '', obs: '', auto: true }; d.acoes.push(a); novos.push(a); existentes.add(k); }
+  })));
+  d.acoes = d.acoes.filter(a => !(a.auto && a.itemId && !nok.has(ch(a)) && !String(a.acao || '').trim() && !String(a.responsavel || '').trim()));
+  return novos;
+}
+function gopPct(g, mes) {
+  let soma = 0, total = 0, resp = 0;
+  g.itens.forEach(it => { const v = gopNorm((g.resp[it.id] || [])[mes]), p = Number(it.peso) || 100; if (v === 'N/A') return; if (v) resp++; total += p; if (v === 'SIM') soma += p; });
+  return resp && total ? soma / total : null;
+}
+function gopUltimoMes(g) { for (let m = 11; m >= 0; m--) if (gopPct(g, m) !== null) return m; return null; }
+function gopStatusAcao(a) {
+  if (a.status === 'Concluída') return 'Concluída';
+  if (a.prevista && a.prevista < new Date().toISOString().slice(0, 10)) return 'Atrasado';
+  return a.status || 'Não iniciado';
+}
+const COR_STATUS_GOP = { 'Concluída': '#16a34a', 'Em andamento': '#d97706', 'Não iniciado': '#64748b', 'Atrasado': '#dc2626' };
+function gopPlanoDefinido(a) { return !!(String(a.acao || '').trim() && String(a.responsavel || '').trim() && a.prevista); }
+function gopCobertura() {
+  const planos = FD.dados.acoes.filter(a => a.itemId && a.mes !== null && a.mes !== undefined);
+  const nok = planos.filter(a => { const g = FD.dados.gops[a.gop]; return g && gopNorm((g.resp[a.itemId] || [])[a.mes]) === 'NÃO'; });
+  return { total: nok.length, ok: nok.filter(gopPlanoDefinido).length };
+}
+function gopChip() {
+  const c = gopCobertura(), pct = c.total ? c.ok / c.total : 1;
+  const cor = pct >= 1 ? '#16a34a' : pct >= 0.5 ? '#d97706' : '#dc2626';
+  return `<span class="fd-nota" style="background:${cor};" onclick="GOP_FILTRO.pendentes = true; fdTrocarAba('acoes')" title="Ver planos pendentes">Planos dos meses NOK: ${c.ok}/${c.total} definidos</span>`;
+}
+function gopCorPct(v, meta) { return v === null ? '' : v * 100 >= meta ? 'background:#dcfce7;color:#166534;' : v * 100 >= meta - 10 ? 'background:#fef9c3;color:#854d0e;' : 'background:#fee2e2;color:#991b1b;'; }
+function gopAbas() {
+  const pend = FD.dados.acoes.filter(a => a.itemId && !gopPlanoDefinido(a) && (() => { const g = FD.dados.gops[a.gop]; return g && gopNorm((g.resp[a.itemId] || [])[a.mes]) === 'NÃO'; })()).length;
+  return [['painel', '📊 Painel GOP'], ...gopChaves().map(k => ['g:' + k, `${ICONES_GOP[k] || '📋'} ${FD.dados.gops[k].titulo}`]), ['acoes', `🔁 Planos de ação${pend ? ` <span class="gop-badge">${pend}</span>` : ''}`], ['arquivos', '📎 Planilhas']];
+}
+function gopHtmlAba() {
+  const a = FD.aba;
+  if (a === 'painel') return gopHtmlPainel();
+  if (a === 'acoes') return gopHtmlAcoes();
+  if (a.startsWith('g:')) return gopHtmlGop(a.slice(2));
+  return '';
+}
+
+// ---- Painel ----
+function gopHtmlPainel() {
+  const d = FD.dados, ks = gopChaves(), c = gopCobertura();
+  const ultimos = ks.map(k => { const g = d.gops[k], m = gopUltimoMes(g); return { k, g, m, v: m === null ? null : gopPct(g, m) }; });
+  const acima = ultimos.filter(u => u.v !== null && u.v * 100 >= u.g.meta).length;
+  const atrasadas = d.acoes.filter(a => gopStatusAcao(a) === 'Atrasado').length;
+  return `
+    <div class="painel" style="margin-bottom:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+      <div style="font-size:12.5px;color:#475569;max-width:760px;">Cada aba é uma GOP da planilha <strong>Gerenciador GOP Revendas</strong>. Marque SIM / NÃO / N/A por mês. <strong>Todo NÃO abre na hora o plano de ação daquele mês</strong> — os meses NOK precisam ter 100% de plano definido (ação, responsável e data). % do mês = pesos SIM ÷ pesos avaliados; meta padrão 80%.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <label class="btn-primario btn-sm" style="width:auto;cursor:pointer;margin:0;">📤 Importar planilha GOP (.xlsm)<input type="file" accept=".xlsm,.xlsx" style="display:none;" onchange="gopImportar(this)"></label>
+      </div>
+    </div>
+    <div class="kpis" style="margin-bottom:12px;">
+      <div class="kpi-card"><div class="valor">${acima}/${ks.length}</div><div class="rotulo">GOPs na meta (último mês avaliado)</div></div>
+      <div class="kpi-card"><div class="valor" style="color:${c.ok === c.total ? '#16a34a' : '#dc2626'};">${c.total ? Math.round(c.ok / c.total * 100) : 100}%</div><div class="rotulo">Meses NOK com plano definido (${c.ok}/${c.total})</div></div>
+      <div class="kpi-card"><div class="valor">${d.acoes.filter(a => gopStatusAcao(a) === 'Concluída').length}</div><div class="rotulo">Ações concluídas</div></div>
+      <div class="kpi-card"><div class="valor" style="color:${atrasadas ? '#dc2626' : ''};">${atrasadas}</div><div class="rotulo">Ações atrasadas</div></div>
+    </div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela gop-painel">
+      <thead><tr><th style="min-width:200px;">GOP</th><th>Área</th><th>Meta</th>${MESES_FD.map(m => `<th>${m}</th>`).join('')}<th>NOK no ano</th><th>Planos</th></tr></thead>
+      <tbody>${ultimos.map(({ k, g }) => {
+        const planos = d.acoes.filter(a => a.gop === k && a.itemId && gopNorm((g.resp[a.itemId] || [])[a.mes]) === 'NÃO');
+        const nokAno = g.itens.reduce((s, it) => s + (g.resp[it.id] || []).filter(v => gopNorm(v) === 'NÃO').length, 0);
+        return `<tr><td><a href="#" onclick="fdTrocarAba('g:${k}'); return false;"><strong>${ICONES_GOP[k] || '📋'} ${escapeHtml(g.titulo)}</strong></a></td><td>${escapeHtml(g.area || '')}</td><td>${fdFmt(Number(g.meta), 0)}%</td>
+          ${MESES_FD.map((_, m) => { const v = gopPct(g, m); return `<td style="text-align:center;font-weight:700;${gopCorPct(v, Number(g.meta))}">${v === null ? '—' : fdPct(v, 0)}</td>`; }).join('')}
+          <td style="text-align:center;">${nokAno}</td><td style="text-align:center;">${planos.filter(gopPlanoDefinido).length}/${planos.length}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>
+    <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Verde = na meta · amarelo = até 10 p.p. abaixo · vermelho = abaixo.</div>`;
+}
+
+// ---- Uma GOP ----
+function gopHtmlGop(k) {
+  const g = FD.dados.gops[k];
+  if (!g) return '<div class="msg-vazio">GOP não encontrada.</div>';
+  const planoDe = (it, m) => FD.dados.acoes.find(a => a.gop === k && a.itemId === it.id && a.mes === m);
+  const cel = (it, m) => {
+    const v = gopNorm((g.resp[it.id] || [])[m]);
+    const p = v === 'NÃO' ? planoDe(it, m) : null;
+    const cls = v === 'SIM' ? 'sim' : v === 'NÃO' ? 'nao' : v === 'N/A' ? 'na' : '';
+    return `<td class="gop-cel ${cls}"><select onchange="gopResponder('${k}', '${it.id}', ${m}, this.value)"><option value=""></option><option ${v === 'SIM' ? 'selected' : ''}>SIM</option><option ${v === 'NÃO' ? 'selected' : ''}>NÃO</option><option ${v === 'N/A' ? 'selected' : ''}>N/A</option></select>${p ? `<button class="gop-plano ${gopPlanoDefinido(p) ? 'ok' : 'pend'}" title="${gopPlanoDefinido(p) ? 'Plano definido — ' + escapeHtml(p.acao) : 'Plano pendente — clique para preencher'}" onclick="gopAbrirPlano('${p.id}')">${gopPlanoDefinido(p) ? '📝' : '⚠️'}</button>` : ''}</td>`;
+  };
+  return `
+    <div class="painel" style="margin-bottom:10px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;">
+      <div><strong style="font-size:16px;">${ICONES_GOP[k] || '📋'} ${escapeHtml(g.titulo)}</strong> <span class="plano-meta">· ${escapeHtml(g.area || '')} · ${g.itens.length} pergunta(s)</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <label style="margin:0;font-size:12px;">Meta</label>${simInp(g.meta, 'pct', `gopDefinirMeta('${k}', this.value)`, '80', 'width:90px;')}
+        <button class="btn-secundario btn-sm" onclick="gopNovaPergunta('${k}')">+ Pergunta</button>
+      </div>
+    </div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela gop-tabela">
+      <thead>
+        <tr><th style="width:34px;">Nº</th><th style="min-width:320px;">Pergunta</th><th style="width:56px;">Peso</th>${MESES_FD.map((mm, m) => `<th class="gop-mes">${mm}${m ? `<button class="ppr-replicar" title="Copiar as respostas de ${MESES_FD[m - 1]} para ${mm} (só as vazias)" onclick="gopCopiarMes('${k}', ${m})">⇐</button>` : ''}</th>`).join('')}</tr>
+        <tr class="gop-pct"><td></td><td><strong>% ${escapeHtml(g.titulo)}</strong> <small style="color:#64748b;">(meta ${fdFmt(Number(g.meta), 0)}%)</small></td><td></td>${MESES_FD.map((_, m) => { const v = gopPct(g, m); return `<td style="text-align:center;font-weight:800;${gopCorPct(v, Number(g.meta))}">${v === null ? '—' : fdPct(v, 0)}</td>`; }).join('')}</tr>
+      </thead>
+      <tbody>${g.itens.map(it => `<tr>
+        <td style="text-align:center;color:#94a3b8;">${it.num}</td>
+        <td class="gop-texto">${escapeHtml(it.texto)} <button class="ppr-replicar" title="Editar pergunta" onclick="gopEditarPergunta('${k}', '${it.id}')">✏️</button></td>
+        <td>${simInp(it.peso, 'num', `gopDefinirPeso('${k}', '${it.id}', this.value)`, '100', 'width:52px;')}</td>
+        ${MESES_FD.map((_, m) => cel(it, m)).join('')}</tr>`).join('')}</tbody>
+    </table></div>
+    <div style="font-size:11.5px;color:#64748b;margin-top:6px;">⚠️ = mês NOK com plano ainda não definido (clique para preencher) · 📝 = plano definido · ⇐ copia as respostas do mês anterior para as células vazias.</div>`;
+}
+function gopResponder(k, itemId, mes, valor) {
+  const g = FD.dados.gops[k];
+  const l = g.resp[itemId] = Array.isArray(g.resp[itemId]) ? g.resp[itemId] : [];
+  while (l.length < 12) l.push('');
+  l[mes] = valor;
+  const novos = gopGarantirPlanos();
+  fdAgendarSalvar();
+  gopRedesenhar();
+  if (valor === 'NÃO') {
+    const p = FD.dados.acoes.find(a => a.gop === k && a.itemId === itemId && a.mes === mes);
+    if (p && (novos.includes(p) || !gopPlanoDefinido(p))) gopAbrirPlano(p.id);
+  }
+}
+function gopRedesenhar() {
+  fdCorpoRender();
+  const chip = document.getElementById('fd-nota'); if (chip) chip.innerHTML = gopChip();
+  const abas = document.querySelector('.fd-abas');
+  if (abas) abas.innerHTML = gopAbas().map(([k, r]) => `<button class="fd-aba ${FD.aba === k ? 'ativa' : ''}" onclick="fdTrocarAba('${k}')">${r}</button>`).join('');
+}
+function gopCopiarMes(k, m) {
+  const g = FD.dados.gops[k]; let n = 0;
+  g.itens.forEach(it => { const l = g.resp[it.id] = g.resp[it.id] || []; while (l.length < 12) l.push(''); if (!l[m] && l[m - 1]) { l[m] = l[m - 1]; n++; } });
+  if (!n) { mostrarToast(`Nada para copiar de ${MESES_FD[m - 1]}.`, true); return; }
+  const novos = gopGarantirPlanos();
+  fdAgendarSalvar(); gopRedesenhar();
+  mostrarToast(`${n} resposta(s) copiada(s) para ${MESES_FD[m]}${novos.length ? ` · ${novos.length} plano(s) de ação aberto(s) para os NÃO` : ''}.`);
+}
+function gopDefinirMeta(k, v) { const n = fdParse(v); FD.dados.gops[k].meta = n === '' ? 80 : n; fdAgendarSalvar(); gopRedesenhar(); }
+function gopDefinirPeso(k, id, v) { const it = FD.dados.gops[k].itens.find(i => i.id === id); if (it) { const n = fdParse(v); it.peso = n === '' ? 100 : n; fdAgendarSalvar(); gopRedesenhar(); } }
+function gopNovaPergunta(k) {
+  const t = prompt('Texto da nova pergunta:'); if (!t || !t.trim()) return;
+  const g = FD.dados.gops[k];
+  g.itens.push({ id: k + '-' + fdId(), num: g.itens.length + 1, texto: t.trim(), peso: 100 });
+  fdAgendarSalvar(); gopRedesenhar();
+}
+function gopEditarPergunta(k, id) {
+  const g = FD.dados.gops[k], it = g.itens.find(i => i.id === id); if (!it) return;
+  const t = prompt('Editar pergunta (deixe vazio para EXCLUIR a pergunta):', it.texto);
+  if (t === null) return;
+  if (!t.trim()) {
+    if (!confirm('Excluir esta pergunta, as respostas e os planos ligados a ela?')) return;
+    g.itens = g.itens.filter(i => i.id !== id); delete g.resp[id];
+    FD.dados.acoes = FD.dados.acoes.filter(a => !(a.gop === k && a.itemId === id));
+    g.itens.forEach((i, n) => { i.num = n + 1; });
+  } else it.texto = t.trim();
+  fdAgendarSalvar(); gopRedesenhar();
+}
+
+// ---- Plano de ação (abre direto, sem sugestão) ----
+function gopAbrirPlano(id) {
+  const d = FD.dados, a = d.acoes.find(x => x.id === id); if (!a) return;
+  const g = d.gops[a.gop], it = g && a.itemId ? g.itens.find(i => i.id === a.itemId) : null;
+  const nomes = [...new Set(d.acoes.map(x => x.responsavel).filter(Boolean))];
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) gopFecharPlano()">
+      <div class="modal-caixa" style="max-width:640px;">
+        <h3 style="margin-top:0;">🔁 Plano de ação${a.mes !== null && a.mes !== undefined ? ` — ${MESES_LONGOS_FD[a.mes]}` : ''}</h3>
+        <div class="gop-plano-ref">${g ? `<strong>${ICONES_GOP[a.gop] || '📋'} ${escapeHtml(g.titulo)}</strong>` : ''}${it ? `<div>Item NOK ${it.num}: ${escapeHtml(it.texto)}</div>` : ''}</div>
+        <label>Causa (por que ficou NÃO?)</label><textarea id="gp-causa" rows="2">${escapeHtml(a.causa || '')}</textarea>
+        <label>Ação *</label><textarea id="gp-acao" rows="2" placeholder="O que será feito para o item voltar a SIM">${escapeHtml(a.acao || '')}</textarea>
+        <div class="linha" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <div style="flex:2;min-width:180px;"><label>Responsável *</label><input id="gp-resp" list="gp-nomes" value="${escapeHtml(a.responsavel || '')}"><datalist id="gp-nomes">${nomes.map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist></div>
+          <div style="flex:1;min-width:140px;"><label>Data prevista *</label><input id="gp-prev" type="date" value="${escapeHtml(a.prevista || '')}"></div>
+        </div>
+        <div class="linha" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:160px;"><label>Status</label><select id="gp-status">${STATUS_ACAO_GOP.map(s => `<option ${s === (a.status || 'Não iniciado') ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+          <div style="flex:1;min-width:140px;"><label>Data realizada</label><input id="gp-real" type="date" value="${escapeHtml(a.realizada || '')}"></div>
+        </div>
+        <label>Observação</label><textarea id="gp-obs" rows="2">${escapeHtml(a.obs || '')}</textarea>
+        <div class="acoes-form" style="justify-content:space-between;margin-top:12px;">
+          <div>${a.itemId ? '' : `<button class="btn-perigo btn-sm" onclick="gopExcluirAcao('${a.id}')">Excluir</button>`}</div>
+          <div style="display:flex;gap:8px;"><button class="btn-secundario" onclick="gopFecharPlano()">Fechar</button><button class="btn-primario" style="width:auto;" onclick="gopSalvarPlano('${a.id}')">💾 Salvar plano</button></div>
+        </div>
+      </div>
+    </div>`;
+  setTimeout(() => { const el = document.getElementById(a.causa ? 'gp-acao' : 'gp-causa'); if (el) el.focus(); }, 50);
+}
+function gopFecharPlano() { const m = document.getElementById('modal-area'); if (m) m.innerHTML = ''; }
+function gopSalvarPlano(id) {
+  const a = FD.dados.acoes.find(x => x.id === id); if (!a) return;
+  const v = i => (document.getElementById(i) || {}).value || '';
+  Object.assign(a, { causa: v('gp-causa').trim(), acao: v('gp-acao').trim(), responsavel: v('gp-resp').trim(), prevista: v('gp-prev'), status: v('gp-status'), realizada: v('gp-real'), obs: v('gp-obs').trim() });
+  if (a.status === 'Concluída' && !a.realizada) a.realizada = new Date().toISOString().slice(0, 10);
+  gopFecharPlano(); fdAgendarSalvar(); gopRedesenhar();
+  mostrarToast(gopPlanoDefinido(a) ? 'Plano salvo.' : 'Salvo — para o plano contar como definido, preencha ação, responsável e data prevista.', !gopPlanoDefinido(a));
+}
+function gopNovaAcao() {
+  const k = GOP_FILTRO.gop || gopChaves()[0];
+  const a = { id: fdId(), gop: k, itemId: null, mes: null, acao: '', causa: '', responsavel: '', prevista: '', status: 'Não iniciado', realizada: '', obs: '' };
+  FD.dados.acoes.push(a); gopAbrirPlano(a.id);
+}
+function gopExcluirAcao(id) {
+  if (!confirm('Excluir esta ação?')) return;
+  FD.dados.acoes = FD.dados.acoes.filter(a => a.id !== id);
+  gopFecharPlano(); fdAgendarSalvar(); gopRedesenhar();
+}
+
+// ---- Gerenciador de ações ----
+let GOP_FILTRO = { gop: '', mes: '', status: '', pendentes: false };
+function gopHtmlAcoes() {
+  const d = FD.dados, F = GOP_FILTRO;
+  const nokAtual = a => { const g = d.gops[a.gop]; return !a.itemId || (g && gopNorm((g.resp[a.itemId] || [])[a.mes]) === 'NÃO'); };
+  let l = d.acoes.filter(a => (!F.gop || a.gop === F.gop) && (F.mes === '' || String(a.mes) === String(F.mes)) && (!F.status || gopStatusAcao(a) === F.status) && (!F.pendentes || (!gopPlanoDefinido(a) && nokAtual(a))));
+  l = l.slice().sort((x, y) => (x.mes ?? 99) - (y.mes ?? 99) || String(x.gop).localeCompare(String(y.gop)));
+  const cont = s => d.acoes.filter(a => gopStatusAcao(a) === s).length;
+  return `
+    <div class="kpis" style="margin-bottom:10px;">${STATUS_ACAO_GOP.map(s => `<div class="kpi-card" style="cursor:pointer;" onclick="GOP_FILTRO.status = GOP_FILTRO.status === '${s}' ? '' : '${s}'; fdCorpoRender();"><div class="valor" style="color:${COR_STATUS_GOP[s]};">${cont(s)}</div><div class="rotulo">${s}</div></div>`).join('')}</div>
+    <div class="painel" style="margin-bottom:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div><label style="margin:0;font-size:12px;">GOP</label><select onchange="GOP_FILTRO.gop = this.value; fdCorpoRender();"><option value="">Todas</option>${gopChaves().map(k => `<option value="${k}" ${F.gop === k ? 'selected' : ''}>${escapeHtml(d.gops[k].titulo)}</option>`).join('')}</select></div>
+      <div><label style="margin:0;font-size:12px;">Mês</label><select onchange="GOP_FILTRO.mes = this.value; fdCorpoRender();"><option value="">Todos</option>${MESES_LONGOS_FD.map((m, i) => `<option value="${i}" ${String(F.mes) === String(i) ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+      <div><label style="margin:0;font-size:12px;">Status</label><select onchange="GOP_FILTRO.status = this.value; fdCorpoRender();"><option value="">Todos</option>${STATUS_ACAO_GOP.map(s => `<option ${F.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin:0 0 6px;"><input type="checkbox" style="width:auto;" ${F.pendentes ? 'checked' : ''} onchange="GOP_FILTRO.pendentes = this.checked; fdCorpoRender();"> Só planos pendentes</label>
+      <button class="btn-secundario btn-sm" style="margin-left:auto;" onclick="gopNovaAcao()">+ Nova ação (sem item)</button>
+    </div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela gop-acoes">
+      <thead><tr><th>GOP</th><th>Mês</th><th style="min-width:220px;">Item NOK</th><th style="min-width:160px;">Causa</th><th style="min-width:200px;">Ação</th><th>Responsável</th><th>Prevista</th><th>Status</th><th>Realizada</th><th></th></tr></thead>
+      <tbody>${l.map(a => {
+        const g = d.gops[a.gop], it = g && a.itemId ? g.itens.find(i => i.id === a.itemId) : null, st = gopStatusAcao(a), def = gopPlanoDefinido(a);
+        return `<tr class="${!def && nokAtual(a) ? 'gop-pendente' : ''}" style="cursor:pointer;" onclick="gopAbrirPlano('${a.id}')">
+          <td>${g ? `${ICONES_GOP[a.gop] || '📋'} ${escapeHtml(g.titulo)}` : escapeHtml(a.gop || '')}</td>
+          <td>${a.mes === null || a.mes === undefined ? '—' : MESES_FD[a.mes]}</td>
+          <td style="font-size:12px;">${it ? `${it.num}. ${escapeHtml(it.texto)}` : '<span style="color:#94a3b8;">Ação geral da GOP</span>'}${it && !nokAtual(a) ? ' <small style="color:#16a34a;">(item voltou a SIM)</small>' : ''}</td>
+          <td style="font-size:12px;">${escapeHtml(a.causa || '')}</td>
+          <td style="font-size:12px;">${a.acao ? escapeHtml(a.acao) : '<strong style="color:#dc2626;">⚠️ Definir ação</strong>'}</td>
+          <td>${escapeHtml(a.responsavel || '—')}</td>
+          <td>${a.prevista ? new Date(a.prevista + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+          <td><span class="dpo-chip-nivel" style="background:${COR_STATUS_GOP[st]};color:#fff;">${st}</span></td>
+          <td>${a.realizada ? new Date(a.realizada + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+          <td>✏️</td></tr>`;
+      }).join('') || '<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:14px;">Nenhuma ação com esses filtros.</td></tr>'}</tbody>
+    </table></div>
+    <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Os planos dos itens NÃO são abertos automaticamente, um por mês. Em vermelho: plano ainda sem ação, responsável ou data.</div>`;
+}
+
+// ---- Importar a planilha ----
+async function gopImportar(input) {
+  const arq = input.files && input.files[0]; if (!arq) return;
+  if (!confirm(`Importar "${arq.name}"? As GOPs das abas da planilha substituem as respostas do ano ${FD.ano} e as ações da aba AÇÕES são adicionadas.`)) { input.value = ''; return; }
+  try {
+    if (FD_TIMER) await fdSalvar();
+    const fd = new FormData(); fd.append('file', arq);
+    const up = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd });
+    const u = await up.json(); if (!up.ok) throw new Error(u.error || 'Falha no envio.');
+    const r = await api('/api/dpo/gop/importar', { method: 'POST', body: JSON.stringify({ url: u.url, originalName: u.originalName, ano: FD.ano, company_id: FD.companyId || undefined }) });
+    FD.dados = r.dados; gopPreparar();
+    mostrarToast(r.message + (r.avisos && r.avisos.length ? ' Avisos: ' + r.avisos.join(' ') : ''));
+    abrirFerramentaDigitalDpo('gop', FD.companyId, FD.ano, 'painel');
+  } catch (e) { mostrarToast(e.message, true); }
+  input.value = '';
+}
+function abrirGopDpo(companyId, ano) { GOP_VOLTAR = ESTADO.usuario.role === 'admin' ? renderDpoAgenda : renderDpoHome; abrirFerramentaDigitalDpo('gop', companyId || null, ano || null, 'painel'); }
 
 function classificarAbaVaga(v) {
   if (v.deleted_at) return 'excluidas';
@@ -12965,5 +13307,6 @@ function entrarSalaComoConvidado() {
   }
 })();
 </script>
+<script>navInstalar();</script>
 </body>
 </html>
