@@ -8009,15 +8009,20 @@ app.post('/api/dpo/ferramentas/:id/acesso', requireRole('admin', 'client_admin')
 
 // ======================================================================
 // DPO — FERRAMENTAS DIGITAIS por pergunta do checklist
-//   swot -> Gestão 1.3 (Definição de Objetivos Estratégicos)
-//   ppr  -> Planejamento 1.1 (Processo Orçamentário: simuladores Entrega e Armazém)
-// Os dados de cada empresa/ano ficam num JSON; a validação dos itens da
-// verificação (V.1, V.2...) é calculada aqui para sugerir a nota 3 / 1 / 0.
+//   swot         -> Gestão 1.3 (SWOT por área: Armazém, Distribuição, Frota, Gente)
+//   Simulador de Dimensionamento -> Planejamento 1.1, em pastas:
+//     sim_armazem, sim_entrega, sim_puxada (simuladores) + orcamento (RACI, KPIs, PDCA)
+// Cada pasta é salva por ANO (um registro JSON por empresa/pasta/ano).
 // ======================================================================
 const FERRAMENTAS_DIGITAIS_DPO = {
     swot: { pilar: 'gestao', pergunta: '1.3', titulo: 'Análise SWOT digital' },
-    ppr: { pilar: 'planejamento', pergunta: '1.1', titulo: 'Acompanhamento PPR — Simuladores Entrega e Armazém' }
+    sim_armazem: { pilar: 'planejamento', pergunta: '1.1', titulo: 'Simulador de Dimensionamento — Armazém' },
+    sim_entrega: { pilar: 'planejamento', pergunta: '1.1', titulo: 'Simulador de Dimensionamento — Entrega' },
+    sim_puxada: { pilar: 'planejamento', pergunta: '1.1', titulo: 'Simulador de Dimensionamento — Puxada' },
+    orcamento: { pilar: 'planejamento', pergunta: '1.1', titulo: 'Simulador de Dimensionamento — Orçamento, RACI e KPIs' }
 };
+const CHAVES_DIMENSIONAMENTO_DPO = ['sim_armazem', 'sim_entrega', 'sim_puxada', 'orcamento'];
+const AREAS_SWOT_PADRAO_DPO = ['Armazém', 'Distribuição', 'Frota', 'Gente'];
 
 // Escalas da planilha "Modelo SWOT 2026": pontuação = critério1 × critério2 × critério3 (1 a 125).
 const ESCALAS_SWOT_DPO = {
@@ -8039,21 +8044,27 @@ function pontuacaoItemSwotDpo(quadrante, item) {
     const a = ESCALAS_SWOT_DPO.importancia[item.c1], b = ESCALAS_SWOT_DPO[q.c2][item.c2], c = ESCALAS_SWOT_DPO[q.c3][item.c3];
     return a && b && c ? a * b * c : null;
 }
-
 const numDpo = v => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? null : Number(v);
 const temTexto = v => !!String(v || '').trim();
 
+function areasSwotDpo(d) { return (Array.isArray(d.areas) && d.areas.filter(temTexto).length) ? d.areas.filter(temTexto) : AREAS_SWOT_PADRAO_DPO.slice(); }
+// Itens da SWOT por área: { area: { forcas: [...], ... } } (versões antigas guardavam em d.itens com campo "area").
+function itensSwotPorAreaDpo(d) {
+    const porArea = {};
+    const add = (area, q, item) => { porArea[area] = porArea[area] || {}; (porArea[area][q] = porArea[area][q] || []).push({ ...item, area }); };
+    Object.entries(d.itensPorArea || {}).forEach(([area, qs]) => Object.keys(QUADRANTES_SWOT_DPO).forEach(q => (qs && qs[q] || []).forEach(i => add(area, q, i))));
+    Object.keys(QUADRANTES_SWOT_DPO).forEach(q => (d.itens && d.itens[q] || []).forEach(i => add(i.area || 'Sem área', q, i)));
+    return porArea;
+}
+
 function validarSwotDpo(d, ano) {
     d = d || {};
-    const itens = d.itens || {};
+    const areas = areasSwotDpo(d);
+    const porArea = itensSwotPorAreaDpo(d);
     const pontuados = {};
-    Object.keys(QUADRANTES_SWOT_DPO).forEach(k => { pontuados[k] = (itens[k] || []).filter(i => temTexto(i.texto) && pontuacaoItemSwotDpo(k, i)); });
+    Object.keys(QUADRANTES_SWOT_DPO).forEach(q => { pontuados[q] = Object.values(porArea).flatMap(a => (a[q] || [])).filter(i => temTexto(i.texto) && pontuacaoItemSwotDpo(q, i)); });
     const quadrantesOk = Object.keys(QUADRANTES_SWOT_DPO).filter(k => pontuados[k].length >= 1);
     const objetivos = (d.objetivos || []).filter(o => temTexto(o.texto));
-    const todosItens = Object.values(pontuados).flat();
-    const areas = (d.areas || []).filter(temTexto);
-    const itensComArea = todosItens.filter(i => temTexto(i.area));
-    const areasUsadas = new Set(itensComArea.map(i => i.area));
     const planos = (d.planos || []).filter(p => temTexto(p.oque));
     const desdobrados = [...objetivos, ...planos].filter(x => temTexto(x.desdobramento));
     const prazo = `${ano}-03-31`;
@@ -8063,26 +8074,28 @@ function validarSwotDpo(d, ano) {
     if (!objetivos.length) v1faltas.push('Cadastre os objetivos estratégicos definidos a partir da SWOT.');
     if (objetivos.length && objetivos.some(o => !numDpo(o.prioridade))) v1faltas.push('Defina a prioridade de todos os objetivos estratégicos.');
     const avisos1 = [];
-    Object.keys(QUADRANTES_SWOT_DPO).forEach(k => { if (pontuados[k].length && pontuados[k].length < 5) avisos1.push(`${QUADRANTES_SWOT_DPO[k].rotulo}: ${pontuados[k].length} item(ns) — o modelo trabalha com o Top 5.`); });
     if (!d.dataPriorizacao) avisos1.push('Informe a data da priorização (ciclo encerra até o fim de março).');
     else if (d.dataPriorizacao > prazo) avisos1.push(`Priorização em ${d.dataPriorizacao.split('-').reverse().join('/')} — depois do prazo do ciclo (31/03/${ano}).`);
 
     const v2faltas = [];
     if (!temTexto(d.sonho)) v2faltas.push('Escreva o Sonho da unidade.');
+    if (!objetivos.length) v2faltas.push('Sem objetivos estratégicos cadastrados.');
     if (objetivos.some(o => !temTexto(o.obstaculo))) v2faltas.push('Em cada objetivo, informe qual obstáculo ao Sonho ele ataca.');
     if (objetivos.some(o => !temTexto(o.itemRelacionado))) v2faltas.push('Relacione cada objetivo a um item da SWOT.');
-    if (!objetivos.length) v2faltas.push('Sem objetivos estratégicos cadastrados.');
 
-    const v3faltas = [];
-    if (areas.length < 2) v3faltas.push('Cadastre as áreas da unidade (pelo menos 2).');
-    if (todosItens.length && itensComArea.length < todosItens.length) v3faltas.push(`${todosItens.length - itensComArea.length} item(ns) da SWOT sem área definida.`);
-    if (areasUsadas.size < Math.min(2, areas.length || 2)) v3faltas.push('A SWOT precisa ser feita por áreas (itens de pelo menos 2 áreas).');
+    const v3faltas = [], avisos3 = [];
+    areas.forEach(area => {
+        const faltando = Object.keys(QUADRANTES_SWOT_DPO).filter(q => !((porArea[area] || {})[q] || []).some(i => temTexto(i.texto) && pontuacaoItemSwotDpo(q, i)));
+        if (faltando.length === 4) v3faltas.push(`${area}: SWOT da área ainda não preenchida.`);
+        else if (faltando.length) v3faltas.push(`${area}: falta pontuar ${faltando.map(q => QUADRANTES_SWOT_DPO[q].rotulo.toLowerCase()).join(', ')}.`);
+        else if (Object.keys(QUADRANTES_SWOT_DPO).some(q => ((porArea[area] || {})[q] || []).length < 3)) avisos3.push(`${area}: poucos itens em algum quadrante — o ideal é chegar no Top 5.`);
+    });
     if (!d.vinculoDNMP || !temTexto(d.vinculoDNMPTexto)) v3faltas.push('Marque e descreva o vínculo da SWOT com a Descrição de Negócio e o Mapeamento de Processo.');
 
     const itensV = [
         { numero: 'V.1', texto: 'Definição e priorização dos objetivos estratégicos usando a análise SWOT.', ok: !v1faltas.length, faltas: v1faltas, avisos: avisos1 },
         { numero: 'V.2', texto: 'Objetivos estratégicos relacionados e abordando os principais obstáculos para alcançar o Sonho.', ok: !v2faltas.length, faltas: v2faltas, avisos: [] },
-        { numero: 'V.3', texto: 'SWOT executada por áreas, com link claro com a Descrição de Negócio e o Mapeamento de Processo.', ok: !v3faltas.length, faltas: v3faltas, avisos: [] }
+        { numero: 'V.3', texto: `SWOT executada por áreas (${areas.join(', ')}), com link claro com a Descrição de Negócio e o Mapeamento de Processo.`, ok: !v3faltas.length, faltas: v3faltas, avisos: avisos3 }
     ];
     const complemento = { texto: 'How to check 3: os resultados da SWOT definem CAPEX, cascateamento de metas e/ou PDCA.', ok: desdobrados.length > 0, faltas: desdobrados.length ? [] : ['Indique o desdobramento (PDCA, Projeto, CAPEX ou Cascateamento de metas) nos objetivos ou planos de ação.'] };
     const notaSugerida = !itensV[0].ok ? '0' : (itensV[1].ok && itensV[2].ok ? '3' : '1');
@@ -8094,14 +8107,12 @@ function mesesPreenchidosDpo(lista, campos) {
     return (lista || []).filter(m => m && campos.every(c => numDpo(m[c]) !== null && numDpo(m[c]) > 0)).length;
 }
 
-function validarPprDpo(d) {
-    d = d || {};
-    const ent = d.entrega || {}, arm = d.armazem || {}, orc = d.orcamento || {};
-    const entPlan = (ent.plan || []), armPlan = (arm.plan || []);
+// Validação da pergunta Planejamento 1.1 lendo as 4 pastas do mesmo ano.
+function validarDimensionamentoDpo(t, arquivosOrc) {
+    const ent = t.sim_entrega || {}, arm = t.sim_armazem || {}, pux = t.sim_puxada || {}, orc = t.orcamento || {};
     const raci = (orc.raci || []).filter(r => temTexto(r.pacote));
     const kpis = (orc.kpis || []).filter(k => temTexto(k.nome));
     const pdca = (orc.pdca || []).filter(p => temTexto(p.oque));
-    const arquivos = d.__arquivos || [];
 
     const v1 = [];
     if (raci.length < 3) v1.push('Cadastre os pacotes orçamentários na matriz RACI (pelo menos 3).');
@@ -8111,20 +8122,17 @@ function validarPprDpo(d) {
     if (raci.length && !raci.some(r => temTexto(r.kpi))) v1.push('Conecte os pacotes ao DPO: informe o KPI/resultado de cada pacote.');
 
     const v2 = [];
-    if (!temTexto(orc.processo) && !arquivos.some(a => a.tipo === 'processo')) v2.push('Descreva (ou anexe) o processo orçamentário formalizado.');
-    const mktp = [...entPlan, ...armPlan].reduce((s, m) => s + (numDpo(m && m.volume_mktp_hl) || 0), 0);
-    if (!mktp) v2.push('Inclua o volume de Marketplace no orçamento (Entrega ou Armazém).');
-    const temHeadcount = entPlan.some(m => m && (numDpo(m.motoristas) || numDpo(m.ajudantes))) || armPlan.some(m => m && (numDpo(m.operadores) || numDpo(m.ajudantes) || numDpo(m.conferentes)));
-    const temEquip = entPlan.some(m => m && numDpo(m.ff_ativa)) || armPlan.some(m => m && numDpo(m.empilhadeiras));
-    if (!temHeadcount) v2.push('Planeje o headcount (QLP) no orçamento.');
-    if (!temEquip) v2.push('Planeje os equipamentos (frota e empilhadeiras) no orçamento.');
+    if (!temTexto(orc.processo) && !(arquivosOrc || []).some(a => a.tipo === 'processo')) v2.push('Descreva (ou anexe) o processo orçamentário formalizado.');
+    const mktp = [ent, arm, pux].reduce((s, b) => s + (b.plan || []).reduce((x, m) => x + (numDpo(m && m.volume_mktp_hl) || 0), 0), 0);
+    if (!mktp) v2.push('Inclua o volume de Marketplace no orçamento (em algum dos simuladores).');
+    if (!(ent.plan || []).some(m => m && numDpo(m.ff_ativa))) v2.push('Planeje a frota da entrega (headcount de motoristas e ajudantes sai dela).');
+    if (!(arm.plan || []).some(m => m && numDpo(m.volume_hl))) v2.push('Planeje o volume do armazém (QLP e empilhadeiras saem dele).');
 
     const v3 = [];
-    const mEntVol = mesesPreenchidosDpo(entPlan, ['volume_hl']), mEntFrota = mesesPreenchidosDpo(entPlan, ['ff_ativa']), mEntQlp = mesesPreenchidosDpo(entPlan, ['motoristas']);
-    const mArmVol = mesesPreenchidosDpo(armPlan, ['volume_hl']), mArmQlp = mesesPreenchidosDpo(armPlan, ['operadores']), mArmEmp = mesesPreenchidosDpo(armPlan, ['empilhadeiras']), mPux = mesesPreenchidosDpo(armPlan, ['viagens_puxada']);
-    if (mEntVol < 12 || mEntFrota < 12 || mEntQlp < 12) v3.push(`Simulador da Entrega (Plan): volume ${mEntVol}/12, frota ${mEntFrota}/12, QLP ${mEntQlp}/12 meses.`);
-    if (mArmVol < 12 || mArmQlp < 12 || mArmEmp < 12) v3.push(`Simulador do Armazém (Plan): volume ${mArmVol}/12, QLP ${mArmQlp}/12, empilhadeiras ${mArmEmp}/12 meses.`);
-    if (mPux < 12) v3.push(`Puxada (Plan): viagens de puxada em ${mPux}/12 meses.`);
+    const mEnt = mesesPreenchidosDpo(ent.plan, ['volume_hl', 'ff_ativa']), mArm = mesesPreenchidosDpo(arm.plan, ['volume_hl', 'dias_trab']), mPux = mesesPreenchidosDpo(pux.plan, ['volume_hl', 'carretas_ativas']);
+    if (mEnt < 12) v3.push(`Simulador da Entrega: volume e frota no orçamento em ${mEnt}/12 meses.`);
+    if (mArm < 12) v3.push(`Simulador do Armazém: volume e dias no orçamento em ${mArm}/12 meses.`);
+    if (mPux < 12) v3.push(`Simulador da Puxada: volume e carretas no orçamento em ${mPux}/12 meses.`);
 
     const v4 = [];
     if (!orc.dataNegociacao) v4.push('Informe a data da negociação final do orçamento.');
@@ -8133,8 +8141,9 @@ function validarPprDpo(d) {
     if (kpis.length && !kpis.some(k => temTexto(k.acao)) && !pdca.length) v4.push('Mostre a conexão orçamento × KPI × ações (ação ligada ao KPI ou PDCA).');
 
     const v5 = [];
-    const mEntReal = mesesPreenchidosDpo(ent.real, ['volume_hl']), mArmReal = mesesPreenchidosDpo(arm.real, ['volume_hl']);
-    if (!mEntReal || !mArmReal) v5.push(`Preencha o Realizado mensal (Entrega ${mEntReal} mês(es), Armazém ${mArmReal} mês(es)) — rotina de acompanhamento de custos.`);
+    const reais = { Entrega: mesesPreenchidosDpo(ent.real, ['volume_hl']), Armazém: mesesPreenchidosDpo(arm.real, ['volume_hl']), Puxada: mesesPreenchidosDpo(pux.real, ['volume_hl']) };
+    const semReal = Object.entries(reais).filter(([, n]) => !n).map(([k]) => k);
+    if (semReal.length) v5.push(`Preencha o Realizado mensal (rotina de custos) em: ${semReal.join(', ')}.`);
     const areas = new Set(raci.map(r => String(r.area || '').trim().toLowerCase()).filter(Boolean));
     if (areas.size < 2) v5.push('A RACI precisa envolver pelo menos 2 áreas.');
     const donosPdca = new Set(pdca.map(p => String(p.responsavel || '').trim().toLowerCase()).filter(Boolean));
@@ -8144,17 +8153,12 @@ function validarPprDpo(d) {
     const itensV = [
         { numero: 'V.1', texto: 'Responsáveis pelos pacotes orçamentários definidos em matriz RACI, não concentrados na gerência e conectados ao DPO.', ok: !v1.length, faltas: v1, avisos: [] },
         { numero: 'V.2', texto: 'Processo orçamentário estruturado e formalizado, com foco no Marketplace, headcount e equipamentos.', ok: !v2.length, faltas: v2, avisos: [] },
-        { numero: 'V.3', texto: 'Simulador financeiro/orçamentário com projeção de volume, QLP e frota para armazém, puxada e entrega.', ok: !v3.length, faltas: v3, avisos: [] },
+        { numero: 'V.3', texto: 'Simulador com projeção de volume, QLP e frota para armazém, puxada e entrega.', ok: !v3.length, faltas: v3, avisos: [] },
         { numero: 'V.4', texto: 'Orçamento feito após a negociação final e alinhado aos KPIs de sustentabilidade, com ações.', ok: !v4.length, faltas: v4, avisos: [] },
         { numero: 'V.5', texto: 'As áreas participam da construção e manutenção das rotinas de gestão de custos.', ok: !v5.length, faltas: v5, avisos: [] }
     ];
     const notaSugerida = (!itensV[0].ok || !itensV[1].ok || !itensV[2].ok) ? '0' : (itensV[3].ok && itensV[4].ok ? '3' : '1');
     return { itens: itensV, complementos: [], notaSugerida, regra: '3 = todas atendidas · 1 = V.1, V.2 e V.3 atendidas mas V.4 ou V.5 não · 0 = V.1, V.2 ou V.3 não atendidas' };
-}
-
-function validarFerramentaDigitalDpo(chave, dados, ano, arquivos) {
-    if (chave === 'swot') return validarSwotDpo(dados, ano);
-    return validarPprDpo({ ...(dados || {}), __arquivos: arquivos || [] });
 }
 
 async function resolverFerramentaDigitalDpo(req, res, chave, companyIdInformado) {
@@ -8170,27 +8174,82 @@ const anoValidoDpo = v => { const n = Number(v); return n >= 2020 && n <= 2100 ?
 async function carregarFerramentaDigitalDpo(companyId, chave, ano) {
     const reg = await dbGet(`SELECT fd.*, u.name as autorNome FROM dpo_ferramentas_digitais fd LEFT JOIN users u ON u.id = fd.updated_by WHERE fd.company_id = ? AND fd.chave = ? AND fd.ano = ?`, [companyId, chave, ano]);
     const arquivos = await dbAll(`SELECT a.*, u.name as autorNome FROM dpo_ferramentas_digitais_arquivos a LEFT JOIN users u ON u.id = a.created_by WHERE a.company_id = ? AND a.chave = ? AND a.ano = ? ORDER BY a.created_at DESC, a.id DESC`, [companyId, chave, ano]);
-    const dados = reg ? JSON.parse(reg.dados || '{}') : {};
-    return { dados, arquivos, updated_at: reg ? reg.updated_at : null, autorNome: reg ? reg.autorNome : null };
+    return { dados: reg ? JSON.parse(reg.dados || '{}') : {}, arquivos, updated_at: reg ? reg.updated_at : null, autorNome: reg ? reg.autorNome : null, existe: !!reg };
+}
+
+async function validacaoDaChaveDpo(companyId, chave, ano, dadosAtual) {
+    if (chave === 'swot') return validarSwotDpo(dadosAtual, ano);
+    const todos = {};
+    for (const c of CHAVES_DIMENSIONAMENTO_DPO) todos[c] = c === chave && dadosAtual ? dadosAtual : (await carregarFerramentaDigitalDpo(companyId, c, ano)).dados;
+    const arqs = await dbAll(`SELECT tipo FROM dpo_ferramentas_digitais_arquivos WHERE company_id = ? AND chave = 'orcamento' AND ano = ?`, [companyId, ano]);
+    return validarDimensionamentoDpo(todos, arqs);
+}
+
+async function anosDaChaveDpo(companyId, chave) {
+    const r = await dbAll(`SELECT ano FROM dpo_ferramentas_digitais WHERE company_id = ? AND chave = ? UNION SELECT ano FROM dpo_ferramentas_digitais_arquivos WHERE company_id = ? AND chave = ? ORDER BY ano DESC`, [companyId, chave, companyId, chave]);
+    return r.map(x => x.ano);
+}
+
+// Migração: versões anteriores guardavam tudo num registro "ppr" — separa nas pastas novas.
+async function migrarPprAntigoDpo(companyId) {
+    const antigos = await dbAll(`SELECT * FROM dpo_ferramentas_digitais WHERE company_id = ? AND chave = 'ppr'`, [companyId]);
+    for (const reg of antigos) {
+        const d = JSON.parse(reg.dados || '{}');
+        const partes = { sim_entrega: d.entrega, sim_armazem: d.armazem, orcamento: d.orcamento };
+        for (const [chave, dados] of Object.entries(partes)) {
+            if (!dados) continue;
+            await new Promise((resolve) => db.run(`INSERT OR IGNORE INTO dpo_ferramentas_digitais (company_id, chave, ano, dados, updated_by, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
+                [companyId, chave, reg.ano, JSON.stringify(dados), reg.updated_by, reg.updated_at], () => resolve()));
+        }
+        await new Promise((resolve) => db.run(`UPDATE dpo_ferramentas_digitais SET chave = 'ppr_legado' WHERE company_id = ? AND chave = 'ppr' AND ano = ?`, [companyId, reg.ano], () => resolve()));
+    }
+    await new Promise((resolve) => db.run(`UPDATE dpo_ferramentas_digitais_arquivos SET chave = CASE WHEN tipo = 'ppr_armazem' THEN 'sim_armazem' WHEN tipo = 'ppr_entrega' THEN 'sim_entrega' ELSE 'orcamento' END WHERE company_id = ? AND chave = 'ppr'`, [companyId], () => resolve()));
+}
+
+async function respostaFerramentaDigitalDpo(f, chave, ano) {
+    if (chave !== 'swot') await migrarPprAntigoDpo(f.companyId);
+    const r = await carregarFerramentaDigitalDpo(f.companyId, chave, ano);
+    const pergunta = perguntaDoPilarDpo(f.pilar, f.pergunta);
+    return {
+        chave, titulo: f.titulo, pilar: f.pilar, pilarLabel: DPO_AMBEV_DATA[f.pilar].label, pergunta: f.pergunta,
+        perguntaTexto: pergunta ? pergunta.pergunta.questao : '', verificacao: pergunta ? pergunta.pergunta.verificacao : '',
+        companyId: Number(f.companyId), ano, anos: await anosDaChaveDpo(f.companyId, chave), ...r,
+        validacao: await validacaoDaChaveDpo(f.companyId, chave, ano, r.dados)
+    };
 }
 
 app.get('/api/dpo/ferramentas-digitais/:chave', requireRole('admin', 'client_admin'), async (req, res) => {
     try {
         const f = await resolverFerramentaDigitalDpo(req, res, req.params.chave, req.query.company_id);
         if (!f) return;
-        const ano = anoValidoDpo(req.query.ano);
-        const r = await carregarFerramentaDigitalDpo(f.companyId, req.params.chave, ano);
-        const pergunta = perguntaDoPilarDpo(f.pilar, f.pergunta);
-        const anos = await dbAll(`SELECT DISTINCT ano FROM dpo_ferramentas_digitais WHERE company_id = ? AND chave = ? ORDER BY ano DESC`, [f.companyId, req.params.chave]);
-        res.json({
-            chave: req.params.chave, titulo: f.titulo, pilar: f.pilar, pilarLabel: DPO_AMBEV_DATA[f.pilar].label, pergunta: f.pergunta,
-            perguntaTexto: pergunta ? pergunta.pergunta.questao : '', verificacao: pergunta ? pergunta.pergunta.verificacao : '',
-            companyId: Number(f.companyId), ano, anos: anos.map(a => a.ano), ...r,
-            validacao: validarFerramentaDigitalDpo(req.params.chave, r.dados, ano, r.arquivos)
-        });
+        res.json(await respostaFerramentaDigitalDpo(f, req.params.chave, anoValidoDpo(req.query.ano)));
     } catch (e) {
         console.error('Erro ao carregar ferramenta digital DPO:', e.message);
         res.status(500).json({ error: 'Erro ao carregar a ferramenta.' });
+    }
+});
+
+// Visão das pastas do Simulador de Dimensionamento num ano (os 4 registros + anos de cada pasta).
+app.get('/api/dpo/dimensionamento', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const f = await resolverFerramentaDigitalDpo(req, res, 'orcamento', req.query.company_id);
+        if (!f) return;
+        await migrarPprAntigoDpo(f.companyId);
+        const ano = anoValidoDpo(req.query.ano);
+        const pastas = {};
+        for (const c of CHAVES_DIMENSIONAMENTO_DPO) {
+            const r = await carregarFerramentaDigitalDpo(f.companyId, c, ano);
+            pastas[c] = { ...r, anos: await anosDaChaveDpo(f.companyId, c), titulo: FERRAMENTAS_DIGITAIS_DPO[c].titulo };
+        }
+        const pergunta = perguntaDoPilarDpo('planejamento', '1.1');
+        res.json({
+            ano, companyId: Number(f.companyId), pastas, pilarLabel: DPO_AMBEV_DATA.planejamento.label, pergunta: '1.1',
+            perguntaTexto: pergunta ? pergunta.pergunta.questao : '', verificacao: pergunta ? pergunta.pergunta.verificacao : '',
+            validacao: validarDimensionamentoDpo(Object.fromEntries(Object.entries(pastas).map(([k, v]) => [k, v.dados])), pastas.orcamento.arquivos)
+        });
+    } catch (e) {
+        console.error('Erro ao carregar o Simulador de Dimensionamento:', e.message);
+        res.status(500).json({ error: 'Erro ao carregar o Simulador de Dimensionamento.' });
     }
 });
 
@@ -8207,12 +8266,38 @@ app.put('/api/dpo/ferramentas-digitais/:chave', requireRole('admin', 'client_adm
              ON CONFLICT(company_id, chave, ano) DO UPDATE SET dados = excluded.dados, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP`,
             [f.companyId, req.params.chave, ano, json, req.user.userId], (err) => err ? reject(err) : resolve()
         ));
-        const arquivos = await dbAll(`SELECT tipo FROM dpo_ferramentas_digitais_arquivos WHERE company_id = ? AND chave = ? AND ano = ?`, [f.companyId, req.params.chave, ano]);
-        res.json({ message: 'Salvo!', validacao: validarFerramentaDigitalDpo(req.params.chave, dados, ano, arquivos) });
+        res.json({ message: 'Salvo!', validacao: await validacaoDaChaveDpo(f.companyId, req.params.chave, ano, dados) });
     } catch (e) {
         console.error('Erro ao salvar ferramenta digital DPO:', e.message);
         res.status(400).json({ error: 'Erro ao salvar.' });
     }
+});
+
+// Abre a pasta de um ano novo. Copia do ano de origem só o que é "estrutura":
+// parâmetros dos simuladores; RACI e KPIs do orçamento; áreas, Sonho e responsáveis da SWOT.
+app.post('/api/dpo/ferramentas-digitais/:chave/novo-ano', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const chaves = req.params.chave === 'dimensionamento' ? CHAVES_DIMENSIONAMENTO_DPO : [req.params.chave];
+        const f = await resolverFerramentaDigitalDpo(req, res, chaves[0], req.body.company_id);
+        if (!f) return;
+        const ano = anoValidoDpo(req.body.ano);
+        const criados = [];
+        for (const chave of chaves) {
+            const existe = await dbGet(`SELECT 1 FROM dpo_ferramentas_digitais WHERE company_id = ? AND chave = ? AND ano = ?`, [f.companyId, chave, ano]);
+            if (existe) continue;
+            let base = {};
+            if (req.body.copiarDe) {
+                const origem = (await carregarFerramentaDigitalDpo(f.companyId, chave, anoValidoDpo(req.body.copiarDe))).dados;
+                if (chave === 'swot') base = { areas: origem.areas, sonho: origem.sonho, responsaveis: origem.responsaveis, vinculoDNMP: origem.vinculoDNMP, vinculoDNMPTexto: origem.vinculoDNMPTexto };
+                else if (chave === 'orcamento') base = { raci: origem.raci, kpis: origem.kpis, processo: origem.processo };
+                else base = { params: origem.params };
+            }
+            await new Promise((resolve, reject) => db.run(`INSERT INTO dpo_ferramentas_digitais (company_id, chave, ano, dados, updated_by) VALUES (?, ?, ?, ?, ?)`,
+                [f.companyId, chave, ano, JSON.stringify(base), req.user.userId], (err) => err ? reject(err) : resolve()));
+            criados.push(chave);
+        }
+        res.json({ message: criados.length ? `Pasta ${ano} criada${req.body.copiarDe ? ` (parâmetros copiados de ${req.body.copiarDe})` : ''}!` : `A pasta ${ano} já existe.`, criados });
+    } catch (e) { res.status(400).json({ error: 'Erro ao criar a pasta do ano.' }); }
 });
 
 app.post('/api/dpo/ferramentas-digitais/:chave/arquivos', requireRole('admin', 'client_admin'), async (req, res) => {
@@ -8241,14 +8326,29 @@ app.delete('/api/dpo/ferramentas-digitais/arquivos/:id', requireRole('admin', 'c
     } catch (e) { res.status(400).json({ error: 'Erro ao remover o arquivo.' }); }
 });
 
-// Excel com os dados da ferramenta (SWOT ou PPR).
+// Rótulos dos campos digitados em cada simulador (para o Excel).
+const CAMPOS_SIM_DPO = {
+    sim_entrega: {
+        plan: [['volume_hl', 'Volume (hl)'], ['volume_mktp_hl', 'Volume Marketplace (hl)'], ['dias_uteis', 'Dias úteis'], ['dias_extra', 'Feriados/domingos trabalhados'], ['ff_ativa', 'Frota fixa ativa'], ['ff_parada', 'Frota parada'], ['cap_media_cx', 'Capacidade média (cx)']],
+        real: [['volume_hl', 'Volume (hl)'], ['volume_mktp_hl', 'Volume Marketplace (hl)'], ['dias_uteis', 'Dias trabalhados'], ['ff_ativa', 'Frota fixa ativa'], ['viagens_ff', 'Viagens frota fixa'], ['viagens_spot', 'Viagens spot'], ['km_rodado', 'Km rodado'], ['motoristas', 'Motoristas'], ['ajudantes', 'Ajudantes'], ['custo_fixo', 'Custo fixo frota (R$)'], ['custo_pessoal', 'Custo pessoal (R$)'], ['custo_variavel', 'Custo variável (R$)'], ['custo_spot', 'Custo spot (R$)'], ['custo_outros', 'Outros custos (R$)']]
+    },
+    sim_armazem: {
+        plan: [['volume_hl', 'Volume (hl)'], ['volume_mktp_hl', 'Volume Marketplace (hl)'], ['dias_trab', 'Dias trabalhados'], ['viagens_rota', 'Viagens de rota (carregamento)'], ['viagens_puxada', 'Viagens de puxada (descarga)'], ['qlp_extra', 'QLP extra (limpeza, picking, repack)'], ['emp_alugadas', 'Empilhadeiras alugadas'], ['custo_prejuizos', 'Prejuízos (R$)'], ['custo_outros', 'Outros custos (R$)']],
+        real: [['volume_hl', 'Volume (hl)'], ['volume_mktp_hl', 'Volume Marketplace (hl)'], ['dias_trab', 'Dias trabalhados'], ['viagens_rota', 'Viagens de rota'], ['viagens_puxada', 'Viagens de puxada'], ['empilhadeiras', 'Empilhadeiras'], ['horimetro', 'Horímetro (h)'], ['operadores', 'Operadores'], ['conferentes', 'Conferentes'], ['ajudantes', 'Ajudantes'], ['qlp_extra', 'QLP extra'], ['qlp_adm', 'QLP administrativo'], ['custo_empilhadeiras', 'Custo empilhadeiras (R$)'], ['custo_pessoal', 'Custo pessoal (R$)'], ['custo_prejuizos', 'Prejuízos (R$)'], ['custo_outros', 'Outros custos (R$)']]
+    },
+    sim_puxada: {
+        plan: [['volume_hl', 'Volume puxado (hl)'], ['volume_mktp_hl', 'Volume Marketplace (hl)'], ['dias', 'Dias de operação'], ['carretas_ativas', 'Carretas próprias ativas']],
+        real: [['volume_hl', 'Volume puxado (hl)'], ['volume_mktp_hl', 'Volume Marketplace (hl)'], ['dias', 'Dias de operação'], ['carretas_ativas', 'Carretas ativas'], ['viagens_programadas', 'Viagens programadas'], ['viagens_ff', 'Viagens frota própria'], ['viagens_spot', 'Viagens spot'], ['viagens_furadas', 'Viagens furadas'], ['motoristas', 'Motoristas'], ['km_rodado', 'Km rodado'], ['custo_fixo', 'Custo fixo carretas (R$)'], ['custo_pessoal', 'Custo pessoal (R$)'], ['custo_variavel', 'Custo variável (R$)'], ['custo_spot', 'Custo spot (R$)']]
+    }
+};
+
 app.get('/api/dpo/ferramentas-digitais/:chave/export', requireRole('admin', 'client_admin'), async (req, res) => {
     try {
         const chave = req.params.chave;
         const f = await resolverFerramentaDigitalDpo(req, res, chave, req.query.company_id);
         if (!f) return;
         const ano = anoValidoDpo(req.query.ano);
-        const { dados, arquivos } = await carregarFerramentaDigitalDpo(f.companyId, chave, ano);
+        const { dados } = await carregarFerramentaDigitalDpo(f.companyId, chave, ano);
         const empresa = await dbGet(`SELECT name FROM companies WHERE id = ?`, [f.companyId]);
         const wb = new ExcelJS.Workbook();
         wb.creator = 'Impulsionar V4';
@@ -8256,34 +8356,34 @@ app.get('/api/dpo/ferramentas-digitais/:chave/export', requireRole('admin', 'cli
             const sh = wb.addWorksheet(nome, { views: [{ state: 'frozen', ySplit: 1 }] });
             sh.columns = colunas.map(([header, key, width]) => ({ header, key, width }));
             estilizarCabecalhoExcelDpo(sh, sh.getColumn(colunas.length).letter);
-            linhas.forEach(l => { sh.addRow(l).alignment = { vertical: 'top', wrapText: true }; });
+            (linhas || []).forEach(l => { sh.addRow(l).alignment = { vertical: 'top', wrapText: true }; });
             return sh;
         };
-        const val = validarFerramentaDigitalDpo(chave, dados, ano, arquivos);
+        const val = await validacaoDaChaveDpo(f.companyId, chave, ano, dados);
         if (chave === 'swot') {
+            const porArea = itensSwotPorAreaDpo(dados);
             const linhas = [];
-            Object.keys(QUADRANTES_SWOT_DPO).forEach(k => (dados.itens && dados.itens[k] || []).forEach(i => linhas.push({ q: QUADRANTES_SWOT_DPO[k].rotulo, item: i.texto, area: i.area, c1: i.c1, c2: i.c2, c3: i.c3, pts: pontuacaoItemSwotDpo(k, i) })));
-            linhas.sort((a, b) => a.q.localeCompare(b.q) || (b.pts || 0) - (a.pts || 0));
-            add('Itens SWOT', [['Fator', 'q', 14], ['Item', 'item', 50], ['Área', 'area', 18], ['Importância', 'c1', 20], ['Intensidade/Urgência', 'c2', 20], ['Tendência', 'c3', 16], ['Pontuação', 'pts', 11]], linhas);
-            add('Objetivos', [['Prioridade', 'prioridade', 10], ['Objetivo estratégico', 'texto', 50], ['Obstáculo ao Sonho', 'obstaculo', 40], ['Item SWOT relacionado', 'itemRelacionado', 40], ['Desdobramento', 'desdobramento', 18]], (dados.objetivos || []));
-            add('Cruzamentos', [['Força/Fraqueza', 'interno', 45], ['Oportunidade/Ameaça', 'externo', 45], ['Estratégia', 'estrategia', 22]], (dados.cruzamentos || []));
-            add('Planos de ação', [['O quê', 'oque', 45], ['Fator', 'fator', 14], ['Item', 'item', 35], ['Responsável', 'responsavel', 22], ['Área', 'area', 16], ['Início', 'inicio', 12], ['Fim', 'fim', 12], ['Andamento', 'andamento', 14], ['Desdobramento', 'desdobramento', 18]], (dados.planos || []));
+            Object.entries(porArea).forEach(([area, qs]) => Object.keys(QUADRANTES_SWOT_DPO).forEach(q => (qs[q] || []).forEach(i => linhas.push({ area, q: QUADRANTES_SWOT_DPO[q].rotulo, item: i.texto, c1: i.c1, c2: i.c2, c3: i.c3, pts: pontuacaoItemSwotDpo(q, i) }))));
+            linhas.sort((a, b) => a.area.localeCompare(b.area) || a.q.localeCompare(b.q) || (b.pts || 0) - (a.pts || 0));
+            add('Itens SWOT por área', [['Área', 'area', 16], ['Fator', 'q', 14], ['Item', 'item', 50], ['Importância', 'c1', 20], ['Intensidade/Urgência', 'c2', 20], ['Tendência', 'c3', 16], ['Pontuação', 'pts', 11]], linhas);
+            add('Objetivos', [['Prioridade', 'prioridade', 10], ['Objetivo estratégico', 'texto', 50], ['Obstáculo ao Sonho', 'obstaculo', 40], ['Item SWOT relacionado', 'itemRelacionado', 40], ['Desdobramento', 'desdobramento', 18]], dados.objetivos);
+            add('Cruzamentos', [['Força/Fraqueza', 'interno', 45], ['Oportunidade/Ameaça', 'externo', 45], ['Estratégia', 'estrategia', 22]], dados.cruzamentos);
+            add('Planos de ação', [['O quê', 'oque', 45], ['Fator', 'fator', 14], ['Item', 'item', 35], ['Responsável', 'responsavel', 22], ['Área', 'area', 16], ['Início', 'inicio', 12], ['Fim', 'fim', 12], ['Andamento', 'andamento', 14], ['Desdobramento', 'desdobramento', 18]], dados.planos);
+        } else if (chave === 'orcamento') {
+            add('RACI', [['Pacote orçamentário', 'pacote', 30], ['Área', 'area', 16], ['R - Responsável', 'r', 22], ['A - Aprovador', 'a', 22], ['C - Consultado', 'c', 22], ['I - Informado', 'i', 22], ['KPI / resultado', 'kpi', 28]], dados.raci);
+            add('KPIs sustentabilidade', [['KPI', 'nome', 30], ['Unidade', 'unidade', 12], ['Meta', 'meta', 14], ['Ação / pacote ligado', 'acao', 40]], dados.kpis);
+            add('PDCA custos', [['O quê', 'oque', 40], ['Como', 'como', 36], ['Resultado esperado', 'resultado', 30], ['Responsável', 'responsavel', 20], ['Área', 'area', 14], ['Início', 'inicio', 12], ['Fim', 'fim', 12], ['Status', 'status', 18]], dados.pdca);
         } else {
-            const grade = (nome, bloco, campos) => {
-                const linhas = [];
-                ['plan', 'real'].forEach(cen => campos.forEach(([rot, campo]) => {
-                    const l = { cen: cen === 'plan' ? 'Orçamento (Plan)' : 'Realizado', ind: rot };
-                    MESES_CURTOS_DPO.forEach((m, i) => { l['m' + i] = numDpo(((bloco || {})[cen] || [])[i] && bloco[cen][i][campo]); });
-                    linhas.push(l);
-                }));
-                add(nome, [['Cenário', 'cen', 18], ['Indicador', 'ind', 32], ...MESES_CURTOS_DPO.map((m, i) => [m, 'm' + i, 11])], linhas);
-            };
-            grade('Simulador Entrega', dados.entrega, [['Volume (hl)', 'volume_hl'], ['Volume Marketplace (hl)', 'volume_mktp_hl'], ['Dias úteis', 'dias_uteis'], ['Frota fixa ativa', 'ff_ativa'], ['Frota parada', 'ff_parada'], ['Capacidade média (cx)', 'cap_media_cx'], ['Viagens frota fixa', 'viagens_ff'], ['Viagens spot', 'viagens_spot'], ['Km rodado', 'km_rodado'], ['Motoristas', 'motoristas'], ['Ajudantes', 'ajudantes'], ['Custo fixo frota (R$)', 'custo_fixo'], ['Custo pessoal (R$)', 'custo_pessoal'], ['Custo variável (R$)', 'custo_variavel'], ['Custo spot (R$)', 'custo_spot'], ['Outros custos (R$)', 'custo_outros']]);
-            grade('Simulador Armazém', dados.armazem, [['Volume (hl)', 'volume_hl'], ['Volume Marketplace (hl)', 'volume_mktp_hl'], ['Dias trabalhados', 'dias_trab'], ['Viagens de puxada', 'viagens_puxada'], ['Empilhadeiras', 'empilhadeiras'], ['Horímetro (h)', 'horimetro'], ['Operadores', 'operadores'], ['Ajudantes', 'ajudantes'], ['Conferentes', 'conferentes'], ['Amarração', 'amarracao'], ['QLP administrativo', 'qlp_adm'], ['Custo empilhadeiras (R$)', 'custo_empilhadeiras'], ['Custo pessoal (R$)', 'custo_pessoal'], ['Prejuízos (R$)', 'custo_prejuizos'], ['Outros custos (R$)', 'custo_outros']]);
-            const orc = dados.orcamento || {};
-            add('RACI', [['Pacote orçamentário', 'pacote', 30], ['Área', 'area', 16], ['R - Responsável', 'r', 22], ['A - Aprovador', 'a', 22], ['C - Consultado', 'c', 22], ['I - Informado', 'i', 22], ['KPI / resultado', 'kpi', 28]], orc.raci || []);
-            add('KPIs sustentabilidade', [['KPI', 'nome', 30], ['Unidade', 'unidade', 12], ['Meta', 'meta', 14], ['Ação / pacote ligado', 'acao', 40]], orc.kpis || []);
-            add('PDCA custos', [['O quê', 'oque', 40], ['Como', 'como', 36], ['Resultado esperado', 'resultado', 30], ['Responsável', 'responsavel', 20], ['Área', 'area', 14], ['Início', 'inicio', 12], ['Fim', 'fim', 12], ['Status', 'status', 18]], orc.pdca || []);
+            const cfg = CAMPOS_SIM_DPO[chave];
+            add('Parâmetros', [['Parâmetro', 'k', 40], ['Valor', 'v', 16]], Object.entries(dados.params || {}).map(([k, v]) => ({ k, v })));
+            ['plan', 'real'].forEach(cen => {
+                const linhas = cfg[cen].map(([campo, rot]) => {
+                    const l = { ind: rot };
+                    MESES_CURTOS_DPO.forEach((m, i) => { l['m' + i] = numDpo(((dados[cen] || [])[i] || {})[campo]); });
+                    return l;
+                });
+                add(cen === 'plan' ? 'Orçamento (Plan)' : 'Realizado', [['Indicador', 'ind', 36], ...MESES_CURTOS_DPO.map((m, i) => [m, 'm' + i, 11])], linhas);
+            });
         }
         add('Validação checklist', [['Item', 'n', 8], ['Verificação', 't', 60], ['Atendido', 'ok', 10], ['O que falta', 'f', 70]],
             [...val.itens.map(i => ({ n: i.numero, t: i.texto, ok: i.ok ? 'Sim' : 'Não', f: i.faltas.join(' | ') })), { n: 'Nota', t: 'Nota sugerida pela ferramenta', ok: val.notaSugerida, f: val.regra }]);
