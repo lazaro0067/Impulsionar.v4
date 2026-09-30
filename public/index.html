@@ -403,6 +403,47 @@
   .dpo-material-evidencia a { color: #2563eb; word-break: break-all; }
   #dpo-material-area .btn-primario, #dpo-batepapo-area .btn-primario, .modal-caixa .ck-dpo-pergunta .btn-primario { width: auto; }
   .dpo-material-obs { margin: 10px 0 0 !important; font-size: 12.5px; }
+  .dpo-chip-nivel { display: inline-block; font-size: 11px; font-weight: 800; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
+  .dpo-selo { border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,.18); flex-shrink: 0; }
+  .dpo-selo-anel { width: 84%; height: 84%; border-radius: 50%; border: 2px dashed; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; text-align: center; }
+  .dpo-selo-nome { font-weight: 800; text-transform: uppercase; letter-spacing: .3px; max-width: 85%; }
+  .dpo-selo-dpo { font-weight: 900; letter-spacing: 1px; }
+  .dpo-selo-ano { font-weight: 700; letter-spacing: 1px; opacity: .9; }
+  .dpo-regua { margin-top: 20px; }
+  .dpo-regua-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .dpo-regua-item { border: 2px solid transparent; border-radius: 14px; padding: 12px 8px; text-align: center; }
+  .dpo-regua-item.atual { background: #f8fafc; }
+  .dpo-regua-item ul { list-style: none; padding: 0; margin: 10px 0 0; font-size: 12px; color: #334155; line-height: 1.6; }
+  .dpo-regua-nota { font-size: 10.5px; color: #b91c1c; margin-top: 4px; }
+  .dpo-regua-voce { font-size: 11px; font-weight: 800; color: #0f172a; margin-top: 6px; }
+  .dpo-legenda { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: #475569; margin-top: 14px; }
+  .dpo-banner-nivel { display: flex; gap: 16px; align-items: center; background: #fff; border: 1px solid var(--cinza-200); border-left: 6px solid; border-radius: 12px; padding: 12px 16px; margin: 10px 0 4px; flex-wrap: wrap; }
+  .dpo-meses { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 8px; }
+  .dpo-mes { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 150px; background: #fff; border: 2px solid var(--cinza-200); border-radius: 12px; padding: 8px 12px; cursor: pointer; font-size: 12px; text-align: left; }
+  .dpo-mes.ativo { box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+  .dpo-mes-bolinha { width: 10px; height: 10px; border-radius: 50%; }
+  .dpo-hero { display: flex; gap: 24px; align-items: center; background: #fff; border: 1px solid var(--cinza-200); border-top: 6px solid; border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; flex-wrap: wrap; }
+  .dpo-hero-cats { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .dpo-cat-card { background: #f8fafc; border-radius: 10px; padding: 12px 14px; }
+  .dpo-cat-rotulo { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .3px; }
+  .dpo-cat-valor { font-size: 28px; font-weight: 800; color: #0f172a; }
+  .dpo-cat-prox { font-size: 11.5px; color: #475569; margin-top: 4px; }
+  .dpo-barra { height: 10px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+  .dpo-barra > div { height: 100%; border-radius: 999px; }
+  .dpo-blocos-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .dpo-bloco-linha { display: grid; grid-template-columns: 1fr 90px 52px; gap: 8px; align-items: center; margin-bottom: 7px; font-size: 12px; }
+  .dpo-bloco-nome { color: #334155; }
+  .dpo-bloco-pct { font-weight: 800; text-align: right; }
+  .dpo-aba-pilar { background: #fff; border: 2px solid; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; color: #0f172a; }
+  .dpo-notas { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+  .dpo-nota { display: flex; gap: 10px; align-items: flex-start; text-align: left; background: #fff; border: 2px solid var(--cinza-200); border-radius: 10px; padding: 8px 10px; cursor: pointer; }
+  .dpo-nota:disabled { cursor: not-allowed; opacity: .75; }
+  .dpo-nota-valor { font-size: 18px; font-weight: 900; min-width: 34px; color: #0f172a; }
+  .dpo-nota-texto { font-size: 11.5px; color: #475569; }
+  .dpo-nota.selecionada.nota-3 { border-color: #16a34a; background: #f0fdf4; }
+  .dpo-nota.selecionada.nota-1 { border-color: #d97706; background: #fffbeb; }
+  .dpo-nota.selecionada.nota-0 { border-color: #dc2626; background: #fef2f2; }
+  .dpo-nota.selecionada.nota-na { border-color: #64748b; background: #f1f5f9; }
   .dpo-score-badge { font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
 </style>
 </head>
@@ -1219,7 +1260,7 @@ async function renderDashboardEmpresa() {
           <div class="kpi-card" style="background:#fef2f2;"><div class="valor" style="color:#dc2626;">${resumoDpo.acoes.vencida}</div><div class="rotulo" style="color:#dc2626;">Ações vencidas</div></div>
           <div class="kpi-card kpi-laranja"><div class="valor">${resumoDpo.acoes.emAndamento}</div><div class="rotulo">Em andamento</div></div>
           <div class="kpi-card kpi-verde"><div class="valor">${resumoDpo.acoes.concluida}</div><div class="rotulo">Concluídas</div></div>
-          ${resumoDpo.mediaGeral !== null ? `<div class="kpi-card kpi-roxo"><div class="valor">${resumoDpo.mediaGeral}</div><div class="rotulo">Pontuação média</div><div class="subrotulo">${resumoDpo.totalPerguntasRespondidas} pergunta(s) avaliada(s)</div></div>` : ''}
+          ${resumoDpo.mediaGeral !== null ? `<div class="kpi-card vivo" style="background:${visualSeloDpo(resumoDpo.nivelGeral).cor};"><div class="valor" style="color:${visualSeloDpo(resumoDpo.nivelGeral).texto};">${resumoDpo.mediaGeral}</div><div class="rotulo" style="color:${visualSeloDpo(resumoDpo.nivelGeral).texto};">${escapeHtml(resumoDpo.nivelGeralLabel || '')}</div><div class="subrotulo" style="color:${visualSeloDpo(resumoDpo.nivelGeral).texto};">Última autoavaliação · ${escapeHtml(resumoDpo.referenciaLabel || '')}</div></div>` : ''}
         </div>
       </div>` : ''}
 
@@ -6329,15 +6370,17 @@ async function renderDpoAgenda() {
       ${!CACHE_DPO_CICLOS_ADMIN.length ? '<div class="msg-vazio">Nenhum ciclo criado ainda.</div>' : ''}
 
       <h2 style="margin-top:32px;">🔐 Pastas liberadas por empresa</h2>
-      <p style="color:#64748b;margin-top:-8px;">Escolha quais pastas do DPO cada empresa enxerga dentro dos pilares que ela comprou. A empresa recebe uma notificação quando uma pasta nova é liberada.</p>
+      <p style="color:#64748b;margin-top:-8px;">Escolha quais pastas do DPO cada empresa enxerga dentro dos pilares que ela comprou (a empresa recebe uma notificação quando uma pasta nova é liberada). Marque "1ª auditoria em 2026" para revendas que nunca foram auditadas — só elas podem ficar no selo Route Basic. Em "📊 Autoavaliações" você vê o resumo e as notas de cada mês da empresa.</p>
       <table>
-        <thead><tr><th>Empresa</th><th>📝 Checklist</th><th>📁 Perguntas Bate-Papo</th><th>📂 Material do Pilar</th><th></th></tr></thead>
+        <thead><tr><th>Empresa</th><th>📝 Gestão (Checklist)</th><th>📁 Perguntas Bate-Papo</th><th>📂 Material do Pilar</th><th>📊 Autoavaliação Mensal</th><th title="Revenda que nunca foi auditada: pode receber o selo Route Basic">1ª auditoria em 2026</th><th></th></tr></thead>
         <tbody>
           ${CACHE_DPO_EMPRESAS_TODAS.map(e => `
             <tr>
               <td>${escapeHtml(e.name)}</td>
-              ${['checklist', 'batepapo', 'material'].map(p => `<td style="text-align:center;"><input type="checkbox" id="dpo-pasta-${p}-${e.id}" style="width:auto;" ${e.pastas && e.pastas[p] ? 'checked' : ''}></td>`).join('')}
-              <td><button class="btn-secundario btn-sm" onclick="salvarPastasEmpresaDpo(${e.id})">Salvar</button></td>
+              ${['checklist', 'batepapo', 'material', 'autoavaliacao'].map(p => `<td style="text-align:center;"><input type="checkbox" id="dpo-pasta-${p}-${e.id}" style="width:auto;" ${e.pastas && e.pastas[p] ? 'checked' : ''}></td>`).join('')}
+              <td style="text-align:center;"><input type="checkbox" id="dpo-primeira-${e.id}" style="width:auto;" ${e.primeiraAuditoria ? 'checked' : ''}></td>
+              <td style="white-space:nowrap;"><button class="btn-secundario btn-sm" onclick="salvarPastasEmpresaDpo(${e.id})">Salvar</button>
+                <button class="btn-secundario btn-sm" onclick="renderDpoAutoavaliacao(${e.id})">📊 Autoavaliações</button></td>
             </tr>
           `).join('')}
         </tbody>
@@ -6723,6 +6766,10 @@ async function renderDpoHome() {
   try {
     CACHE_DPO_PILARES = await api('/api/dpo/pillars');
     const ciclos = await api('/api/dpo/cycles');
+    // Cores dos pilares = nível da última autoavaliação mensal (régua de selos DPO 2026).
+    const niveisDpo = await api('/api/dpo/niveis').catch(() => ({ geral: null, pilares: {}, primeiraAuditoria: false }));
+    const pastasDpoHome = await api('/api/dpo/pastas').catch(() => ({ autoavaliacao: true }));
+    const geralDpo = niveisDpo.geral;
     const ciclosAbertos = ciclos.filter(c => c.status !== 'concluido');
     const cicloPorPilar = {};
     ciclosAbertos.forEach(c => { c.pilares.forEach(p => { if (!cicloPorPilar[p]) cicloPorPilar[p] = c; }); });
@@ -6745,7 +6792,21 @@ async function renderDpoHome() {
         🗓️ <strong>Auditoria Oficial Ambev marcada para ${new Date(minhaEmpresaDpo.dpo_auditoria_oficial_data + 'T00:00:00').toLocaleDateString('pt-BR')}</strong>
         ${minhaEmpresaDpo.dpo_auditoria_oficial_nota ? `<div style="font-size:13px;margin-top:4px;">${escapeHtml(minhaEmpresaDpo.dpo_auditoria_oficial_nota)}</div>` : ''}
       </div>` : ''}
+      <div class="dpo-banner-nivel" style="border-left-color:${visualSeloDpo(geralDpo && geralDpo.nivelGeral).cor};">
+        ${seloDpoHtml(geralDpo && geralDpo.nivelGeral, 70)}
+        <div style="flex:1;min-width:220px;">
+          ${geralDpo ? `
+            <div style="font-size:12px;color:#64748b;">Nível da operação na última autoavaliação (${escapeHtml(geralDpo.referenciaLabel)})</div>
+            <div style="font-size:20px;font-weight:800;color:#0f172a;">${escapeHtml(visualSeloDpo(geralDpo.nivelGeral).label)}</div>
+            <div style="font-size:12.5px;color:#475569;">Segurança ${fmtPctDpoFront(geralDpo.categorias.seg)} · Gente e Gestão ${fmtPctDpoFront(geralDpo.categorias.gg)} · Pilares técnicos ${fmtPctDpoFront(geralDpo.categorias.tec)}</div>
+          ` : `
+            <div style="font-size:16px;font-weight:800;color:#0f172a;">Nenhuma autoavaliação feita ainda</div>
+            <div style="font-size:12.5px;color:#475569;">Faça a autoavaliação mensal para ver o nível de cada pilar e o selo projetado da operação.</div>
+          `}
+        </div>
+      </div>
       <div class="barra-acoes"><div class="direita">
+        ${pastasDpoHome.autoavaliacao ? `<button class="btn-primario" style="width:auto;" onclick="renderDpoAutoavaliacao()">📊 Autoavaliação Mensal</button>` : ''}
         <button class="btn-secundario" onclick="renderDpoMeusPlanos()">📋 Meus Planos DPO</button>
         <button class="btn-primario" onclick="mostrarComprasDpo()">🛒 Comprar Pilares / Consultoria Completa</button>
       </div></div>
@@ -6757,12 +6818,16 @@ async function renderDpoHome() {
           if (!comprado) {
             return `<button class="dpo-pilar-botao bloqueado" onclick="mostrarComprasDpo()">${p.numero} - ${escapeHtml(p.label)}<span class="dpo-pilar-badge">🔒 Comprar</span></button>`;
           }
-          if (!ciclo) {
-            return `<button class="dpo-pilar-botao" onclick="abrirOuCriarPilarDpo('${p.key}')">${p.numero} - ${escapeHtml(p.label)}<span class="dpo-pilar-badge">Liberado · clique para responder</span></button>`;
-          }
-          return `<button class="dpo-pilar-botao" onclick="abrirCicloDpo(${ciclo.id}, '${p.key}')">${p.numero} - ${escapeHtml(p.label)}<span class="dpo-pilar-badge">${ROTULOS_STATUS_CICLO_DPO[ciclo.status].texto} · ${escapeHtml(ciclo.referencia || '')}</span></button>`;
+          // Botão do pilar = pasta de GESTÃO (planos, bate-papo, material); a cor e o
+          // subtítulo vêm do nível do pilar na última autoavaliação mensal.
+          const nv = niveisDpo.pilares[p.key];
+          const vis = visualSeloDpo(nv ? nv.nivel : null);
+          const sub = nv ? `${escapeHtml(vis.label)} · ${fmtPctDpoFront(nv.pct)} · ${escapeHtml(nv.referenciaLabel)}` : 'Sem autoavaliação · abrir gestão';
+          const acao = ciclo ? `abrirCicloDpo(${ciclo.id}, '${p.key}')` : `abrirOuCriarPilarDpo('${p.key}')`;
+          return `<button class="dpo-pilar-botao" style="background:${vis.cor};color:${vis.texto};" onclick="${acao}">${p.numero} - ${escapeHtml(p.label)}<span class="dpo-pilar-badge">${sub}</span></button>`;
         }).join('')}
       </div>
+      ${legendaNiveisDpoHtml(geralDpo && geralDpo.nivelGeral, niveisDpo.primeiraAuditoria)}
       ${CACHE_DPO_PILARES.pendentes && CACHE_DPO_PILARES.pendentes.length ? `
       <div style="margin-top:22px;">
         <h3>Pagamentos pendentes</h3>
@@ -6825,7 +6890,7 @@ async function renderDpoMeusPlanos() {
         <div></div>
         <div class="direita">
           <button class="btn-secundario" onclick="baixarExcelDpo('planos')">📊 Baixar Excel dos Planos</button>
-          <button class="btn-secundario" onclick="baixarExcelDpo('checklist')">📊 Baixar Excel do Checklist</button>
+          <button class="btn-secundario" onclick="baixarExcelDpo('checklist')">📊 Baixar Excel da Autoavaliação</button>
           <button class="btn-secundario" onclick="renderDpoHome()">← Voltar ao DPO Ambev</button>
         </div>
       </div>
@@ -6953,13 +7018,16 @@ async function abrirOuCriarPilarDpo(pillarKey) {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
-const ABAS_PILAR_DPO = { checklist: '📝 Checklist', batepapo: '📁 Perguntas Bate-Papo', material: '📂 Material do Pilar' };
+const ABAS_PILAR_DPO = { checklist: '📝 Gestão', batepapo: '📁 Perguntas Bate-Papo', material: '📂 Material do Pilar' };
 
 async function abrirVisualizacaoCicloDpo(ciclo, somenteLeitura, pilarKeyInicial) {
   let pastas = { checklist: true, batepapo: false, material: false };
   try { pastas = await api('/api/dpo/pastas'); } catch (e) { /* mantém o padrão */ }
+  // Notas da última autoavaliação de cada pilar (só leitura aqui na Gestão).
+  let niveis = { pilares: {} };
+  try { niveis = await api('/api/dpo/niveis' + (ESTADO.usuario.role === 'admin' && ciclo.company_id ? '?company_id=' + ciclo.company_id : '')); } catch (e) { /* sem notas */ }
   MATERIAL_DPO_ABERTAS.clear();
-  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key), aba: null, pastas };
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key), aba: null, pastas, niveis };
   renderCicloDpoAtual();
 }
 
@@ -6981,7 +7049,7 @@ function renderCicloDpoAtual() {
       <div><button class="btn-secundario btn-sm" onclick="${somenteLeitura ? 'renderDpoAgenda()' : 'renderDpoHome()'}">← Voltar</button></div>
       <div class="direita">
         <button class="btn-secundario btn-sm" onclick="baixarExcelDpo('planos', ${ciclo.company_id || 'null'})">📊 Excel dos Planos</button>
-        <button class="btn-secundario btn-sm" onclick="baixarExcelDpo('checklist', ${ciclo.company_id || 'null'})">📊 Excel do Checklist</button>
+        <button class="btn-secundario btn-sm" onclick="baixarExcelDpo('checklist', ${ciclo.company_id || 'null'})">📊 Excel da Autoavaliação</button>
       </div>
     </div>
     <h1>${ciclo.companyName ? escapeHtml(ciclo.companyName) + ' — ' : ''}${escapeHtml(ciclo.referencia || 'Ciclo de Autoavaliação')}</h1>
@@ -6995,7 +7063,12 @@ function renderCicloDpoAtual() {
     ${!aba ? `<div class="msg-vazio">Nenhuma pasta deste pilar foi liberada para sua empresa ainda. Fale com o Master.</div>`
       : aba === 'batepapo' ? `<div id="dpo-batepapo-area"><p>Carregando...</p></div>`
       : aba === 'material' ? `<div id="dpo-material-area"><p>Carregando...</p></div>` : `
-    <div class="plano-meta" style="margin-bottom:12px;">${respondidas}/${totalPerguntas} pergunta(s) respondida(s)${mediaScore !== null ? ` · Média: <strong>${mediaScore}</strong>` : ''}</div>
+    ${(() => {
+      const nv = ((ESTADO_DPO_VIEW.niveis && ESTADO_DPO_VIEW.niveis.pilares) || {})[pilar.key];
+      return nv
+        ? `<div class="plano-meta" style="margin-bottom:12px;">Última autoavaliação (${escapeHtml(nv.referenciaLabel)}): <strong>${fmtPctDpoFront(nv.pct)}</strong> ${chipNivelDpo(nv.nivel)} · ${nv.respondidas}/${nv.total} avaliada(s) — as notas são dadas na <strong>Autoavaliação Mensal</strong>; aqui é a gestão (planos de ação).</div>`
+        : `<div class="plano-meta" style="margin-bottom:12px;">Este pilar ainda não tem autoavaliação. As notas (3 / 1 / 0 / N/A) são dadas na <strong>Autoavaliação Mensal</strong>; aqui é a gestão (planos de ação).</div>`;
+    })()}
     ${pilar.grupos.map(g => `
       <div class="dpo-grupo">
         <div class="dpo-grupo-titulo">${escapeHtml(g.numero)} ${escapeHtml(g.titulo)}</div>
@@ -7191,7 +7264,11 @@ function trocarPilarCicloDpo(key) {
 
 function renderPerguntaDpo(p, somenteLeitura) {
   const opcoes = analisarOpcoesPontuacaoDpo(p.explicacao_pontos);
-  const cor = corBadgeDpo(p.score);
+  const nv = ((ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.niveis && ESTADO_DPO_VIEW.niveis.pilares) || {})[p.questionKey.split(':')[0]];
+  const nota = nv && nv.notas ? nv.notas[p.questionKey] : undefined;
+  const cor = nota === '3' ? '#16a34a' : nota === '1' ? '#d97706' : nota === '0' ? '#dc2626' : '#64748b';
+  const textoNota = nota === 'na' ? 'N/A' : nota ? 'Nota ' + nota : 'Não avaliada';
+  const explicacaoNota = nota && nota !== 'na' ? (opcoes.find(o => String(o.valor) === nota) || {}).texto : (nota === 'na' ? 'Não se aplica à operação' : '');
   const idSeguro = cssIdDpo(p.questionKey);
   MAPA_TEXTO_PERGUNTA_DPO[p.questionKey] = p.numero + '. ' + p.questao;
   return `
@@ -7202,16 +7279,16 @@ function renderPerguntaDpo(p, somenteLeitura) {
           ${p.mandatoria ? '<span style="color:#dc2626;font-size:11px;font-weight:700;"> · Mandatória</span>' : ''}
           <div style="font-size:11.5px;color:#94a3b8;">Peso ${p.peso || 0}${p.aplicabilidade ? ' · ' + escapeHtml(p.aplicabilidade) : ''}</div>
         </div>
-        <span class="dpo-score-badge" style="background:${cor}20;color:${cor};">${(p.score === null || p.score === undefined) ? 'Não avaliado' : 'Nota ' + p.score}</span>
+        <span class="dpo-score-badge" style="background:${cor}20;color:${cor};">${textoNota}</span>
       </div>
       <div class="dpo-pergunta-corpo">
         ${p.verificacao ? `<div style="font-size:12.5px;color:#334155;white-space:pre-line;margin-bottom:10px;"><strong>Verificação:</strong><br>${escapeHtml(p.verificacao)}</div>` : ''}
         <details style="margin-bottom:10px;"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#4338ca;">❓ How to Check (tirar dúvidas)</summary>
           <div style="font-size:12.5px;color:#334155;white-space:pre-line;margin-top:6px;">${escapeHtml(p.how_to_check || '')}</div>
         </details>
-        <label style="font-size:12px;">Pontuação</label>
-        <div class="dpo-pontuacao-opcoes">
-          ${opcoes.map(o => `<button class="dpo-pontuacao-opcao ${p.score === o.valor ? 'selecionada' : ''}" ${somenteLeitura ? 'disabled' : ''} onclick="salvarPontuacaoDpo('${p.questionKey}', ${o.valor})">${o.valor} — ${escapeHtml(o.texto)}</button>`).join('')}
+        <div style="font-size:12.5px;background:#f8fafc;border:1px solid var(--cinza-200);border-radius:8px;padding:8px 10px;">
+          <strong>Nota na última autoavaliação${nv ? ' (' + escapeHtml(nv.referenciaLabel) + ')' : ''}:</strong> <span style="color:${cor};font-weight:800;">${textoNota}</span>${explicacaoNota ? ' — ' + escapeHtml(explicacaoNota) : ''}
+          <div style="font-size:11.5px;color:#64748b;margin-top:2px;">Para dar ou mudar a nota, use a pasta 📊 Autoavaliação Mensal.</div>
         </div>
         <div style="margin-top:12px;">
           <label style="font-size:12px;">Plano de Ação</label>
@@ -7280,7 +7357,7 @@ async function recarregarCicloDpoAtual() {
   const pilarAtivo = ESTADO_DPO_VIEW.pilarAtivo;
   const somenteLeitura = ESTADO_DPO_VIEW.somenteLeitura;
   const ciclo = await api('/api/dpo/cycles/' + cicloId);
-  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo, aba: ESTADO_DPO_VIEW.aba, pastas: ESTADO_DPO_VIEW.pastas };
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo, aba: ESTADO_DPO_VIEW.aba, pastas: ESTADO_DPO_VIEW.pastas, niveis: ESTADO_DPO_VIEW.niveis };
   renderCicloDpoAtual();
 }
 
@@ -7768,8 +7845,374 @@ function baixarExcelMaterialDpo() {
 // ----- Master: libera as pastas do DPO (Checklist / Bate-Papo / Material) por empresa -----
 async function salvarPastasEmpresaDpo(companyId) {
   const corpo = {};
-  ['checklist', 'batepapo', 'material'].forEach(p => { corpo[p] = document.getElementById(`dpo-pasta-${p}-${companyId}`).checked; });
+  ['checklist', 'batepapo', 'material', 'autoavaliacao'].forEach(p => { corpo[p] = document.getElementById(`dpo-pasta-${p}-${companyId}`).checked; });
+  corpo.primeiraAuditoria = document.getElementById(`dpo-primeira-${companyId}`).checked;
   try { const r = await api('/api/admin/dpo/pastas/' + companyId, { method: 'PUT', body: JSON.stringify(corpo) }); mostrarToast(r.message); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+// ======================================================================
+// DPO Ambev — Régua de Selos 2026, cores por nível e AUTOAVALIAÇÃO MENSAL
+// ======================================================================
+const SELOS_DPO_VISUAL = {
+  sustainable: { label: 'Sustainable', cor: '#1f4e99', texto: '#ffffff' },
+  certified: { label: 'Certified', cor: '#e2b91f', texto: '#3a2c00' },
+  qualified: { label: 'Qualified', cor: '#6b8e23', texto: '#ffffff' },
+  route_basic: { label: 'Route Basic', cor: '#c8651b', texto: '#ffffff' },
+  not_qualified: { label: 'Not Qualified', cor: '#8e1c1c', texto: '#ffffff' },
+  sem: { label: 'Sem autoavaliação', cor: '#475569', texto: '#ffffff' }
+};
+const ORDEM_SELOS_DPO = ['not_qualified', 'route_basic', 'qualified', 'certified', 'sustainable'];
+const ROTULO_CATEGORIA_DPO_FRONT = { seg: 'Segurança', gg: 'Gente e Gestão', tec: 'Pilares técnicos', todos: 'Todos os pilares' };
+// Régua de selos (mesma do servidor) — critérios mostrados na régua "limpa".
+const REGUA_SELOS_DPO_FRONT = {
+  not_qualified: ['≤ 72,9% Segurança', '≤ 56,9% Gente e Gestão', '≤ 63,9% todos os pilares'],
+  route_basic: ['≥ 64,0% Segurança', '≥ 40,0% Gente e Gestão', '≥ 40,0% todos os pilares'],
+  qualified: ['≥ 73,0% Segurança', '≥ 57,0% Gente e Gestão', '≥ 64,0% pilares técnicos'],
+  certified: ['≥ 80,0% Segurança', '≥ 68,0% Gente e Gestão', '≥ 68,0% pilares técnicos'],
+  sustainable: ['≥ 85,0% Segurança', '≥ 73,0% Gente e Gestão', '≥ 73,0% pilares técnicos']
+};
+const LIMITES_SELOS_DPO_FRONT = {
+  route_basic: { seg: 64, gg: 40, tec: 40 }, qualified: { seg: 73, gg: 57, tec: 64 },
+  certified: { seg: 80, gg: 68, tec: 68 }, sustainable: { seg: 85, gg: 73, tec: 73 }
+};
+
+function visualSeloDpo(key) { return SELOS_DPO_VISUAL[key] || SELOS_DPO_VISUAL.sem; }
+function fmtPctDpoFront(v) { return v === null || v === undefined ? '—' : String(v).replace('.', ',') + '%'; }
+
+function chipNivelDpo(key) {
+  const v = visualSeloDpo(key);
+  return `<span class="dpo-chip-nivel" style="background:${v.cor};color:${v.texto};">${escapeHtml(v.label)}</span>`;
+}
+
+// Selo desenhado em CSS (versão "limpa" dos selos DPO 2026).
+function seloDpoHtml(key, tamanho) {
+  const v = visualSeloDpo(key);
+  const t = tamanho || 110;
+  return `
+    <div class="dpo-selo" style="width:${t}px;height:${t}px;background:${v.cor};color:${v.texto};">
+      <div class="dpo-selo-anel" style="border-color:${v.texto}55;">
+        <div class="dpo-selo-nome" style="font-size:${Math.max(8, t * 0.085)}px;">${escapeHtml(key ? v.label : '—')}</div>
+        <div class="dpo-selo-dpo" style="font-size:${t * 0.24}px;">DPO</div>
+        <div class="dpo-selo-ano" style="font-size:${Math.max(7, t * 0.075)}px;">2026</div>
+      </div>
+    </div>`;
+}
+
+function reguaSelosDpoHtml(nivelAtual, primeiraAuditoria) {
+  return `
+    <div class="painel dpo-regua">
+      <h3 style="margin-top:0;">🏅 Régua de Selos DPO 2026</h3>
+      <p style="font-size:12.5px;color:#64748b;margin-top:-6px;">O selo da operação é o maior nível em que <strong>todas</strong> as categorias batem o limite. Use para conferir a pontuação.</p>
+      <div class="dpo-regua-grade">
+        ${ORDEM_SELOS_DPO.map(k => `
+          <div class="dpo-regua-item ${k === nivelAtual ? 'atual' : ''}" style="${k === nivelAtual ? `border-color:${visualSeloDpo(k).cor};` : ''}">
+            ${seloDpoHtml(k, 96)}
+            <ul>${REGUA_SELOS_DPO_FRONT[k].map(c => `<li>${c}</li>`).join('')}</ul>
+            ${k === 'route_basic' ? `<div class="dpo-regua-nota">*Somente para revendas que nunca foram auditadas (1ª auditoria em 2026)${primeiraAuditoria ? ' — <strong>vale para esta empresa</strong>' : ''}.</div>` : ''}
+            ${k === nivelAtual ? '<div class="dpo-regua-voce">◀ nível atual</div>' : ''}
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function abrirReguaSelosDpo(nivelAtual, primeiraAuditoria) {
+  const area = document.getElementById('modal-area');
+  if (!area) return;
+  area.innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa" style="max-width:980px;max-height:92vh;overflow-y:auto;">
+        ${reguaSelosDpoHtml(nivelAtual, primeiraAuditoria)}
+        <div class="acoes-form"><button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button></div>
+      </div>
+    </div>`;
+}
+
+function legendaNiveisDpoHtml(nivelAtual, primeiraAuditoria) {
+  return `
+    <div class="dpo-legenda">
+      <span style="font-weight:700;">Cores = nível da última autoavaliação:</span>
+      ${[...ORDEM_SELOS_DPO].reverse().map(k => chipNivelDpo(k)).join('')}
+      ${chipNivelDpo(null)}
+      <button class="btn-secundario btn-sm" onclick="abrirReguaSelosDpo(${nivelAtual ? `'${nivelAtual}'` : 'null'}, ${!!primeiraAuditoria})">🏅 Ver régua de selos</button>
+    </div>`;
+}
+
+// Quanto falta para o próximo nível numa categoria.
+function proximoNivelCategoriaDpo(cat, pct, primeiraAuditoria) {
+  if (pct === null || pct === undefined || cat === 'todos') return '';
+  const ordem = (primeiraAuditoria ? ['route_basic'] : []).concat(['qualified', 'certified', 'sustainable']);
+  for (const k of ordem) {
+    const limite = LIMITES_SELOS_DPO_FRONT[k][cat];
+    if (pct < limite) return `Faltam ${String(Math.round((limite - pct) * 10) / 10).replace('.', ',')} p.p. para ${SELOS_DPO_VISUAL[k].label} (≥ ${String(limite).replace('.', ',')}%)`;
+  }
+  return 'No nível máximo (Sustainable) ✔';
+}
+
+function deltaDpoHtml(atual, anterior) {
+  if (atual === null || atual === undefined || anterior === null || anterior === undefined) return '';
+  const d = Math.round((atual - anterior) * 10) / 10;
+  if (d === 0) return '<span style="color:#64748b;font-size:11.5px;">= mês anterior</span>';
+  return `<span style="color:${d > 0 ? '#16a34a' : '#dc2626'};font-size:11.5px;font-weight:700;">${d > 0 ? '▲' : '▼'} ${String(Math.abs(d)).replace('.', ',')} p.p.</span>`;
+}
+
+// ---------- Tela da Autoavaliação Mensal ----------
+let ESTADO_AUTOAVAL = null; // { companyId, lista, atual, modo, pilar }
+
+async function renderDpoAutoavaliacao(companyId, assessmentId, modo) {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>Autoavaliação Mensal — DPO Ambev</h1><p>Carregando...</p>';
+  try {
+    const q = companyId ? '?company_id=' + companyId : '';
+    const lista = await api('/api/dpo/autoavaliacoes' + q);
+    const escolhida = assessmentId || (lista.lista[0] && lista.lista[0].id) || null;
+    const atual = escolhida ? await api('/api/dpo/autoavaliacoes/' + escolhida) : null;
+    ESTADO_AUTOAVAL = {
+      companyId: companyId || null, lista, atual,
+      modo: modo || (atual && atual.resumo.totalRespondidas === 0 ? 'responder' : 'resumo'),
+      pilar: (ESTADO_AUTOAVAL && ESTADO_AUTOAVAL.pilar && atual && atual.pilares.some(p => p.key === ESTADO_AUTOAVAL.pilar)) ? ESTADO_AUTOAVAL.pilar : (atual && atual.pilares[0] ? atual.pilares[0].key : null)
+    };
+    desenharAutoavaliacaoDpo();
+  } catch (e) { cont.innerHTML = `<h1>Autoavaliação Mensal — DPO Ambev</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+function desenharAutoavaliacaoDpo() {
+  const cont = document.getElementById('conteudo');
+  const { lista, atual, modo } = ESTADO_AUTOAVAL;
+  const ehMaster = ESTADO.usuario.role === 'admin';
+  cont.innerHTML = `
+    <div class="barra-acoes">
+      <div><button class="btn-secundario btn-sm" onclick="${ehMaster ? 'renderDpoAgenda()' : 'renderDpoHome()'}">← Voltar</button></div>
+      <div class="direita">
+        ${!lista.existeMesAtual ? `<button class="btn-primario btn-sm" style="width:auto;" onclick="iniciarAutoavaliacaoDpo()">+ Iniciar autoavaliação de ${escapeHtml(lista.referenciaAtualLabel)}</button>` : ''}
+      </div>
+    </div>
+    <h1>📊 Autoavaliação Mensal — DPO Ambev${lista.empresa ? ' · ' + escapeHtml(lista.empresa) : ''}</h1>
+    <p style="color:#64748b;margin-top:-8px;">Uma autoavaliação por mês, com todos os pilares liberados. Cada pergunta recebe <strong>3</strong>, <strong>1</strong>, <strong>0</strong> ou <strong>N/A</strong>. O resumo mostra a pontuação por bloco e pilar e o selo projetado da operação.</p>
+    ${lista.lista.length ? `
+    <div class="dpo-meses">
+      ${lista.lista.map(a => {
+        const v = visualSeloDpo(a.nivelGeral);
+        const sel = atual && a.id === atual.id;
+        return `<button class="dpo-mes ${sel ? 'ativo' : ''}" style="${sel ? `border-color:${v.cor};` : ''}" onclick="renderDpoAutoavaliacao(ESTADO_AUTOAVAL.companyId, ${a.id})">
+          <span class="dpo-mes-bolinha" style="background:${v.cor};"></span>
+          <strong>${escapeHtml(a.referenciaLabel)}</strong>
+          <span>${a.nivelGeral ? escapeHtml(v.label) + ' · ' + fmtPctDpoFront(a.categorias.todos) : 'sem notas'}</span>
+          <span style="font-size:10.5px;color:#64748b;">${a.status === 'concluida' ? '✔ concluída' : '✍️ em andamento'} · ${a.totalRespondidas}/${a.totalPerguntas}</span>
+        </button>`;
+      }).join('')}
+    </div>` : ''}
+    ${!atual ? `
+      <div class="msg-vazio" style="margin:18px 0;">Nenhuma autoavaliação feita ainda. Clique em <strong>+ Iniciar autoavaliação de ${escapeHtml(lista.referenciaAtualLabel)}</strong> para começar.</div>
+      ${reguaSelosDpoHtml(null, lista.primeiraAuditoria)}
+    ` : `
+      <div class="painel" style="margin:14px 0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div>
+            <strong style="font-size:16px;">${escapeHtml(atual.referenciaLabel)}</strong>
+            <span class="dpo-score-badge" style="margin-left:6px;background:${atual.status === 'concluida' ? '#dcfce7' : '#fef9c3'};color:${atual.status === 'concluida' ? '#166534' : '#854d0e'};">${atual.status === 'concluida' ? '✔ Concluída' : '✍️ Em andamento'}</span>
+            <div class="plano-meta" id="av-progresso-texto">${atual.resumo.totalRespondidas}/${atual.resumo.totalPerguntas} pergunta(s) avaliada(s)</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${atual.status === 'concluida'
+              ? `<button class="btn-secundario btn-sm" onclick="mudarStatusAutoavaliacaoDpo('em_andamento')">Reabrir</button>`
+              : `<button class="btn-primario btn-sm" style="width:auto;" onclick="mudarStatusAutoavaliacaoDpo('concluida')">✔ Concluir autoavaliação</button>`}
+            <button class="btn-secundario btn-sm" onclick="baixarArquivoDpo('/api/dpo/autoavaliacoes/${atual.id}/export', 'autoavaliacao-dpo-${atual.referencia}.xlsx')">📊 Baixar Excel</button>
+            ${ehMaster ? `<button class="btn-perigo btn-sm" onclick="excluirAutoavaliacaoDpo(${atual.id})">Excluir</button>` : ''}
+          </div>
+        </div>
+        <div class="dpo-progresso" style="margin-top:10px;"><div id="av-progresso-barra" style="width:${atual.resumo.totalPerguntas ? Math.round(atual.resumo.totalRespondidas * 100 / atual.resumo.totalPerguntas) : 0}%"></div></div>
+      </div>
+      <div class="dpo-subabas">
+        <button class="dpo-subaba ${modo === 'resumo' ? 'ativa' : ''}" onclick="ESTADO_AUTOAVAL.modo='resumo'; desenharAutoavaliacaoDpo();">📊 Resumo da operação</button>
+        <button class="dpo-subaba ${modo === 'responder' ? 'ativa' : ''}" onclick="ESTADO_AUTOAVAL.modo='responder'; desenharAutoavaliacaoDpo();">✍️ ${atual.status === 'concluida' ? 'Ver notas' : 'Responder'}</button>
+      </div>
+      <div id="av-corpo">${modo === 'responder' ? htmlResponderAutoavaliacaoDpo() : htmlResumoAutoavaliacaoDpo()}</div>
+    `}
+    <div id="modal-area"></div>
+  `;
+}
+
+function htmlResumoAutoavaliacaoDpo() {
+  const { atual, lista } = ESTADO_AUTOAVAL;
+  const r = atual.resumo;
+  const ant = atual.anterior ? atual.anterior.resumo : null;
+  if (!r.totalRespondidas) return `<div class="msg-vazio">Ainda não há notas nesta autoavaliação. Vá em <strong>✍️ Responder</strong> para começar.</div>${reguaSelosDpoHtml(null, lista.primeiraAuditoria)}`;
+  const v = visualSeloDpo(r.nivelGeral);
+  const pilarAnt = key => ant ? (ant.pilares.find(p => p.key === key) || {}).pct : null;
+  const barra = (pct, nivel) => `<div class="dpo-barra"><div style="width:${pct || 0}%;background:${visualSeloDpo(nivel).cor};"></div></div>`;
+  return `
+    <div class="dpo-hero" style="border-color:${v.cor};">
+      <div style="text-align:center;">
+        ${seloDpoHtml(r.nivelGeral, 132)}
+        <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Selo projetado da operação</div>
+      </div>
+      <div class="dpo-hero-cats">
+        ${['seg', 'gg', 'tec', 'todos'].map(c => `
+          <div class="dpo-cat-card">
+            <div class="dpo-cat-rotulo">${ROTULO_CATEGORIA_DPO_FRONT[c]}</div>
+            <div class="dpo-cat-valor">${fmtPctDpoFront(r.categorias[c])}</div>
+            ${deltaDpoHtml(r.categorias[c], ant ? ant.categorias[c] : null)}
+            <div class="dpo-cat-prox">${proximoNivelCategoriaDpo(c, r.categorias[c], r.primeiraAuditoria)}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    ${r.mandatoriasEm1.length ? `
+    <div class="painel" style="border-left:4px solid #dc2626;margin-bottom:16px;">
+      <h3 style="margin-top:0;color:#b91c1c;">⚠️ Mandatórias abaixo de 3 (${r.mandatoriasEm1.length})</h3>
+      ${r.mandatoriasEm1.map(m => `<div style="font-size:13px;margin-bottom:4px;">• <strong>${escapeHtml(m.pilar)}</strong> — ${escapeHtml(m.numero)} ${escapeHtml(m.questao)} <strong style="color:#b91c1c;">(nota ${escapeHtml(m.nota || '1')})</strong></div>`).join('')}
+    </div>` : ''}
+    <div class="painel" style="margin-bottom:16px;">
+      <h3 style="margin-top:0;">Pontuação por pilar${atual.anterior ? ` <span style="font-weight:400;font-size:12.5px;color:#64748b;">(comparado com ${escapeHtml(atual.anterior.referenciaLabel)})</span>` : ''}</h3>
+      <table>
+        <thead><tr><th>Pilar</th><th style="width:34%;">Pontuação</th><th>%</th><th>Nível</th><th>Avaliadas</th><th>N/A</th><th>Variação</th></tr></thead>
+        <tbody>
+          ${r.pilares.map(p => `
+            <tr>
+              <td><strong>${p.numero} - ${escapeHtml(p.label)}</strong><div style="font-size:11px;color:#94a3b8;">${ROTULO_CATEGORIA_DPO_FRONT[p.categoria]}</div></td>
+              <td>${barra(p.pct, p.nivel)}</td>
+              <td><strong>${fmtPctDpoFront(p.pct)}</strong></td>
+              <td>${p.pct === null ? '<span style="color:#94a3b8;font-size:12px;">sem notas</span>' : chipNivelDpo(p.nivel)}</td>
+              <td>${p.respondidas}/${p.total}</td>
+              <td>${p.na}</td>
+              <td>${deltaDpoHtml(p.pct, pilarAnt(p.key))}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <h3>Pontuação por bloco</h3>
+    <div class="dpo-blocos-grade">
+      ${r.pilares.map(p => `
+        <div class="painel dpo-bloco-card" style="border-top:4px solid ${visualSeloDpo(p.pct === null ? null : p.nivel).cor};">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+            <strong>${p.numero} - ${escapeHtml(p.label)}</strong>
+            <span style="font-weight:800;">${fmtPctDpoFront(p.pct)}</span>
+          </div>
+          ${p.grupos.map(g => `
+            <div class="dpo-bloco-linha">
+              <div class="dpo-bloco-nome">${escapeHtml(g.numero)} ${escapeHtml(g.titulo)}</div>
+              ${barra(g.pct, g.nivel)}
+              <div class="dpo-bloco-pct" style="color:${g.pct === null ? '#94a3b8' : visualSeloDpo(g.nivel).cor === '#e2b91f' ? '#8a6d00' : visualSeloDpo(g.nivel).cor};">${fmtPctDpoFront(g.pct)}</div>
+            </div>`).join('')}
+        </div>`).join('')}
+    </div>
+    ${reguaSelosDpoHtml(r.nivelGeral, r.primeiraAuditoria)}
+  `;
+}
+
+function htmlResponderAutoavaliacaoDpo() {
+  const { atual } = ESTADO_AUTOAVAL;
+  const pilar = atual.pilares.find(p => p.key === ESTADO_AUTOAVAL.pilar) || atual.pilares[0];
+  if (!pilar) return '<div class="msg-vazio">Nenhum pilar liberado para esta empresa.</div>';
+  return `
+    <div id="av-abas-pilares">${htmlAbasPilaresAutoavaliacaoDpo()}</div>
+    <div id="av-cabecalho-pilar">${htmlCabecalhoPilarAutoavaliacaoDpo(pilar.key)}</div>
+    ${atual.status === 'concluida' ? '<div class="msg-vazio" style="text-align:left;">Esta autoavaliação está concluída — clique em <strong>Reabrir</strong> para alterar notas.</div>' : ''}
+    ${pilar.grupos.map(g => `
+      <div class="dpo-grupo">
+        <div class="dpo-grupo-titulo">${escapeHtml(g.numero)} ${escapeHtml(g.titulo)}</div>
+        ${g.perguntas.map(q => `<div id="av-q-${cssIdDpo(q.questionKey)}">${htmlPerguntaAutoavaliacaoDpo(q)}</div>`).join('')}
+      </div>`).join('')}
+  `;
+}
+
+function htmlAbasPilaresAutoavaliacaoDpo() {
+  const { atual } = ESTADO_AUTOAVAL;
+  return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+    ${atual.pilares.map(p => {
+      const rp = atual.resumo.pilares.find(x => x.key === p.key) || {};
+      const v = visualSeloDpo(rp.pct === null || rp.pct === undefined ? null : rp.nivel);
+      const sel = p.key === ESTADO_AUTOAVAL.pilar;
+      return `<button class="dpo-aba-pilar ${sel ? 'ativa' : ''}" style="${sel ? `background:${v.cor};color:${v.texto};border-color:${v.cor};` : `border-color:${v.cor};`}" onclick="trocarPilarAutoavaliacaoDpo('${p.key}')">
+        ${p.numero} - ${escapeHtml(p.label)} <span style="opacity:.85;">· ${fmtPctDpoFront(rp.pct)} · ${rp.respondidas || 0}/${rp.total || 0}</span></button>`;
+    }).join('')}
+  </div>`;
+}
+
+function htmlCabecalhoPilarAutoavaliacaoDpo(pilarKey) {
+  const rp = ESTADO_AUTOAVAL.atual.resumo.pilares.find(x => x.key === pilarKey);
+  if (!rp) return '';
+  return `<div class="plano-meta" style="margin-bottom:10px;font-size:13px;">
+    <strong>${escapeHtml(rp.label)}</strong>: ${fmtPctDpoFront(rp.pct)} ${rp.pct === null ? '' : chipNivelDpo(rp.nivel)} · ${rp.respondidas}/${rp.total} avaliada(s) · ${rp.na} N/A
+  </div>`;
+}
+
+function htmlPerguntaAutoavaliacaoDpo(q) {
+  const travada = ESTADO_AUTOAVAL.atual.status === 'concluida';
+  const opcao = (valor, rotulo, texto) => `
+    <button class="dpo-nota ${q.valor === valor ? 'selecionada nota-' + valor : ''}" ${travada ? 'disabled' : ''} onclick="salvarNotaAutoavaliacaoDpo('${q.questionKey}', '${valor}')">
+      <span class="dpo-nota-valor">${rotulo}</span>${texto ? `<span class="dpo-nota-texto">${escapeHtml(texto)}</span>` : ''}
+    </button>`;
+  return `
+    <div class="dpo-pergunta" style="${q.valor ? '' : 'border-left:4px solid #cbd5e1;'}">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+        <div>
+          <span class="dpo-pergunta-titulo">${escapeHtml(q.numero)} ${escapeHtml(q.questao)}</span>
+          ${q.mandatoria ? '<span style="color:#dc2626;font-size:11px;font-weight:700;"> · Mandatória</span>' : ''}
+          <div style="font-size:11.5px;color:#94a3b8;">Peso ${q.peso || 0}</div>
+        </div>
+        <span class="dpo-score-badge" style="background:${q.valor === '3' ? '#dcfce7' : q.valor === '1' ? '#fef3c7' : q.valor === '0' ? '#fee2e2' : '#f1f5f9'};color:${q.valor === '3' ? '#166534' : q.valor === '1' ? '#92400e' : q.valor === '0' ? '#b91c1c' : '#64748b'};">${q.valor === 'na' ? 'N/A' : q.valor ? 'Nota ' + q.valor : 'Não avaliada'}</span>
+      </div>
+      <details style="margin:8px 0;"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#475569;">Verificação e how to check</summary>
+        <div style="font-size:12.5px;color:#334155;white-space:pre-line;margin-top:6px;"><strong>Verificação:</strong><br>${escapeHtml(q.verificacao)}</div>
+        ${q.how_to_check ? `<div style="font-size:12.5px;color:#334155;white-space:pre-line;margin-top:8px;"><strong>How to check:</strong><br>${escapeHtml(q.how_to_check)}</div>` : ''}
+      </details>
+      <div class="dpo-notas">
+        ${opcao('3', '3', q.texto3)}
+        ${opcao('1', '1', q.texto1)}
+        ${opcao('0', '0', q.texto0)}
+        ${opcao('na', 'N/A', 'Não se aplica à operação')}
+      </div>
+    </div>`;
+}
+
+function trocarPilarAutoavaliacaoDpo(key) {
+  ESTADO_AUTOAVAL.pilar = key;
+  document.getElementById('av-corpo').innerHTML = htmlResponderAutoavaliacaoDpo();
+}
+
+async function salvarNotaAutoavaliacaoDpo(questionKey, valor) {
+  const { atual } = ESTADO_AUTOAVAL;
+  let pergunta = null;
+  atual.pilares.forEach(p => p.grupos.forEach(g => g.perguntas.forEach(q => { if (q.questionKey === questionKey) pergunta = q; })));
+  if (!pergunta) return;
+  const novo = pergunta.valor === valor ? null : valor; // clicar de novo na mesma nota limpa
+  try {
+    const r = await api('/api/dpo/autoavaliacoes/' + atual.id + '/respostas', { method: 'PUT', body: JSON.stringify({ questionKey, valor: novo }) });
+    pergunta.valor = novo;
+    atual.resumo = r.resumo;
+    const card = document.getElementById('av-q-' + cssIdDpo(questionKey));
+    if (card) card.innerHTML = htmlPerguntaAutoavaliacaoDpo(pergunta);
+    document.getElementById('av-abas-pilares').innerHTML = htmlAbasPilaresAutoavaliacaoDpo();
+    document.getElementById('av-cabecalho-pilar').innerHTML = htmlCabecalhoPilarAutoavaliacaoDpo(ESTADO_AUTOAVAL.pilar);
+    document.getElementById('av-progresso-texto').textContent = `${r.resumo.totalRespondidas}/${r.resumo.totalPerguntas} pergunta(s) avaliada(s)`;
+    document.getElementById('av-progresso-barra').style.width = (r.resumo.totalPerguntas ? Math.round(r.resumo.totalRespondidas * 100 / r.resumo.totalPerguntas) : 0) + '%';
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function iniciarAutoavaliacaoDpo() {
+  try {
+    const corpo = ESTADO_AUTOAVAL && ESTADO_AUTOAVAL.companyId ? { company_id: ESTADO_AUTOAVAL.companyId } : {};
+    const r = await api('/api/dpo/autoavaliacoes', { method: 'POST', body: JSON.stringify(corpo) });
+    mostrarToast(r.message);
+    renderDpoAutoavaliacao(ESTADO_AUTOAVAL ? ESTADO_AUTOAVAL.companyId : null, r.id, 'responder');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function mudarStatusAutoavaliacaoDpo(status) {
+  const { atual } = ESTADO_AUTOAVAL;
+  if (status === 'concluida' && atual.resumo.totalRespondidas < atual.resumo.totalPerguntas &&
+      !confirm(`Ainda faltam ${atual.resumo.totalPerguntas - atual.resumo.totalRespondidas} pergunta(s) sem nota. Concluir mesmo assim?`)) return;
+  try {
+    const r = await api('/api/dpo/autoavaliacoes/' + atual.id, { method: 'PUT', body: JSON.stringify({ status }) });
+    mostrarToast(r.message);
+    renderDpoAutoavaliacao(ESTADO_AUTOAVAL.companyId, atual.id, status === 'concluida' ? 'resumo' : 'responder');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function excluirAutoavaliacaoDpo(id) {
+  if (!confirm('Excluir esta autoavaliação e todas as notas dela?')) return;
+  try { const r = await api('/api/dpo/autoavaliacoes/' + id, { method: 'DELETE' }); mostrarToast(r.message); renderDpoAutoavaliacao(ESTADO_AUTOAVAL.companyId); }
   catch (e) { mostrarToast(e.message, true); }
 }
 

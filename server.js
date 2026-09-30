@@ -420,7 +420,10 @@ function inicializarBase() {
          'enabled_modules TEXT', 'vaga_credito_dias INTEGER DEFAULT 0',
          // Data da Auditoria Oficial Ambev (o evento real de auditoria, marcado
          // pelo Master) e uma observação livre sobre esse agendamento.
-         'dpo_auditoria_oficial_data TEXT', 'dpo_auditoria_oficial_nota TEXT'].forEach(coluna => {
+         'dpo_auditoria_oficial_data TEXT', 'dpo_auditoria_oficial_nota TEXT',
+         // Revenda que nunca foi auditada (1ª auditoria em 2026) — só ela pode
+         // receber o selo "Route Basic" na régua de selos DPO 2026.
+         'dpo_primeira_auditoria INTEGER DEFAULT 0'].forEach(coluna => {
             db.run(`ALTER TABLE companies ADD COLUMN ${coluna}`, () => {});
         });
 
@@ -1242,6 +1245,28 @@ function inicializarBase() {
             updated_at DATETIME,
             FOREIGN KEY(company_id) REFERENCES companies(id)
         )`);
+        // Autoavaliação MENSAL (separada da gestão): uma por empresa por mês
+        // (referencia = 'AAAA-MM'), cobrindo todos os pilares liberados. Cada
+        // pergunta recebe 3, 1, 0 ou N/A.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_self_assessments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER NOT NULL,
+            referencia TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'em_andamento',
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            closed_at DATETIME,
+            UNIQUE(company_id, referencia)
+        )`);
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_self_answers (
+            assessment_id INTEGER NOT NULL,
+            question_key TEXT NOT NULL,
+            valor TEXT NOT NULL,
+            updated_by INTEGER,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (assessment_id, question_key)
+        )`);
+
         // Permissão por PASTA do DPO (Checklist / Perguntas Bate-Papo / Material
         // do Pilar), liberada pelo Master para cada empresa. Sem linha = padrão
         // (ver PASTAS_DPO_PADRAO: só o Checklist vem liberado).
@@ -6179,7 +6204,7 @@ app.get('/api/admin/dpo/companies', requireRole('admin'), async (req, res) => {
         // ?all=1 traz todas as empresas (usado na precificação negociada e na
         // agenda da Auditoria Oficial); sem o parâmetro, mantém o comportamento
         // original de só listar quem já tem algum pilar liberado (uso nos ciclos).
-        const empresas = await dbAll(`SELECT id, name, dpo_auditoria_oficial_data, dpo_auditoria_oficial_nota FROM companies ORDER BY name ASC`);
+        const empresas = await dbAll(`SELECT id, name, dpo_auditoria_oficial_data, dpo_auditoria_oficial_nota, dpo_primeira_auditoria FROM companies ORDER BY name ASC`);
         const resultado = [];
         for (const emp of empresas) {
             const ativos = await pilaresAtivosDaEmpresa(emp.id);
@@ -6191,7 +6216,8 @@ app.get('/api/admin/dpo/companies', requireRole('admin'), async (req, res) => {
                     auditoriaOficialData: emp.dpo_auditoria_oficial_data || null,
                     auditoriaOficialNota: emp.dpo_auditoria_oficial_nota || null,
                     trialsAtivos: trials.map(t => ({ id: t.id, scope: t.scope, pillarKey: t.pillar_key, expiraEm: t.trial_expires_at })),
-                    pastas: await pastasLiberadasDaEmpresa(emp.id)
+                    pastas: await pastasLiberadasDaEmpresa(emp.id),
+                    primeiraAuditoria: !!emp.dpo_primeira_auditoria
                 });
             }
         }
@@ -6375,18 +6401,18 @@ app.get('/api/dpo/resumo', requireRole('admin', 'client_admin'), async (req, res
             if (p.status === 'em_andamento') { acoes.emAndamento++; return; }
             acoes.noPrazo++;
         });
-        const mediaRow = await dbGet(`
-            SELECT AVG(da.score) as media, COUNT(*) as total
-            FROM dpo_answers da
-            JOIN dpo_audit_cycles dac ON dac.id = da.cycle_id
-            WHERE dac.company_id = ? AND da.score IS NOT NULL
-        `, [companyId]);
+        // Pontuação = última autoavaliação mensal (não mais o checklist dos ciclos).
+        const niveis = await niveisAtuaisDaEmpresaDpo(companyId);
         const pilaresAtivos = await pilaresAtivosDaEmpresa(companyId);
+        const geral = niveis.geral;
         res.json({
             totalPlanos: planos.length,
             acoes,
-            mediaGeral: mediaRow && mediaRow.total ? Number(mediaRow.media).toFixed(1) : null,
-            totalPerguntasRespondidas: mediaRow ? mediaRow.total : 0,
+            mediaGeral: geral && geral.categorias.todos !== null ? String(geral.categorias.todos).replace('.', ',') + '%' : null,
+            nivelGeral: geral ? geral.nivelGeral : null,
+            nivelGeralLabel: geral && geral.nivelGeral ? REGUA_SELOS_DPO.find(x => x.key === geral.nivelGeral).label : null,
+            referenciaLabel: geral ? geral.referenciaLabel : null,
+            totalPerguntasRespondidas: 0,
             pilaresAtivos: pilaresAtivos.length
         });
     } catch (e) {
@@ -6463,60 +6489,21 @@ app.get('/api/dpo/export/planos', requireRole('admin', 'client_admin'), async (r
 
 // Baixa em Excel (.xlsx) o checklist completo (todas as perguntas de todos os
 // pilares já liberados) com a pontuação dada em cada ciclo já respondido.
+// "Excel do Checklist": agora exporta a autoavaliação mensal mais recente
+// (resumo por categoria/pilar/bloco + todas as notas 3 / 1 / 0 / N/A).
 app.get('/api/dpo/export/checklist', requireRole('admin', 'client_admin'), async (req, res) => {
     try {
         const companyId = req.user.role === 'client_admin' ? req.user.companyId : (req.query.company_id || null);
         if (!companyId) return res.status(400).json({ error: 'Informe a empresa (company_id).' });
-        const empresa = await dbGet(`SELECT name FROM companies WHERE id = ?`, [companyId]);
-        const ciclos = await dbAll(`SELECT * FROM dpo_audit_cycles WHERE company_id = ? ORDER BY created_at ASC`, [companyId]);
-
-        const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet('Checklist DPO');
-        sheet.columns = [
-            { header: 'Ciclo', key: 'ciclo', width: 18 },
-            { header: 'Pilar', key: 'pilar', width: 22 },
-            { header: 'Grupo', key: 'grupo', width: 32 },
-            { header: 'Nº', key: 'numero', width: 8 },
-            { header: 'Pergunta', key: 'pergunta', width: 55 },
-            { header: 'Mandatória', key: 'mandatoria', width: 12 },
-            { header: 'Peso', key: 'peso', width: 8 },
-            { header: 'Pontuação', key: 'score', width: 14 }
-        ];
-        sheet.getRow(1).font = { bold: true };
-        for (const ciclo of ciclos) {
-            const pilaresCiclo = JSON.parse(ciclo.pilares || '[]');
-            const respostas = await dbAll(`SELECT question_key, score FROM dpo_answers WHERE cycle_id = ?`, [ciclo.id]);
-            const mapaRespostas = {};
-            respostas.forEach(r => { mapaRespostas[r.question_key] = r.score; });
-            pilaresCiclo.forEach(pilarKey => {
-                const pilarInfo = DPO_AMBEV_DATA[pilarKey];
-                if (!pilarInfo) return;
-                pilarInfo.grupos.forEach(g => {
-                    g.perguntas.forEach(q => {
-                        const key = `${pilarKey}:${q.numero}`;
-                        const scoreValor = mapaRespostas[key];
-                        sheet.addRow({
-                            ciclo: ciclo.referencia || '',
-                            pilar: pilarInfo.label,
-                            grupo: g.titulo || ('Grupo ' + g.numero),
-                            numero: q.numero,
-                            pergunta: q.questao,
-                            mandatoria: q.mandatoria ? 'Sim' : 'Não',
-                            peso: q.peso != null ? q.peso : '',
-                            score: (scoreValor === null || scoreValor === undefined) ? 'Não avaliado' : scoreValor
-                        });
-                    });
-                });
-            });
-        }
-        const buffer = await workbook.xlsx.writeBuffer();
-        const nomeArquivo = `checklist-dpo-${(empresa ? empresa.name : 'empresa').replace(/[^a-z0-9]+/gi, '-')}.xlsx`;
+        const av = await dbGet(`SELECT * FROM dpo_self_assessments WHERE company_id = ? ORDER BY referencia DESC LIMIT 1`, [companyId]);
+        if (!av) return res.status(404).json({ error: 'Nenhuma autoavaliação mensal feita ainda.' });
+        const { buffer, nome } = await gerarExcelAutoavaliacaoDpo(av);
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
+        res.setHeader('Content-Disposition', `attachment; filename="${nome}"`);
         res.send(Buffer.from(buffer));
     } catch (e) {
         console.error('Erro ao exportar checklist DPO em Excel:', e.message);
-        res.status(500).json({ error: 'Erro ao exportar o checklist em Excel.' });
+        res.status(500).json({ error: 'Erro ao exportar em Excel.' });
     }
 });
 
@@ -6533,9 +6520,9 @@ function ordemDasPerguntasDoPilarDpo(pilarKey) {
 }
 
 // ---------- Permissão por PASTA do DPO (Master libera por empresa) ----------
-const PASTAS_DPO = ['checklist', 'batepapo', 'material'];
-const PASTAS_DPO_PADRAO = { checklist: true, batepapo: false, material: false };
-const ROTULOS_PASTAS_DPO = { checklist: 'Checklist', batepapo: 'Perguntas Bate-Papo', material: 'Material do Pilar' };
+const PASTAS_DPO = ['checklist', 'batepapo', 'material', 'autoavaliacao'];
+const PASTAS_DPO_PADRAO = { checklist: true, batepapo: false, material: false, autoavaliacao: true };
+const ROTULOS_PASTAS_DPO = { checklist: 'Gestão (Checklist)', batepapo: 'Perguntas Bate-Papo', material: 'Material do Pilar', autoavaliacao: 'Autoavaliação Mensal' };
 
 async function pastasLiberadasDaEmpresa(companyId) {
     const resultado = { ...PASTAS_DPO_PADRAO };
@@ -6582,7 +6569,7 @@ app.get('/api/dpo/pastas', requireRole('admin', 'client_admin'), async (req, res
             // Master enxerga todas as pastas (quando abre o ciclo de uma empresa),
             // mas também recebe o que está liberado para ela, se informar company_id.
             const liberadas = req.query.company_id ? await pastasLiberadasDaEmpresa(req.query.company_id) : null;
-            return res.json({ checklist: true, batepapo: true, material: true, liberadasParaEmpresa: liberadas });
+            return res.json({ checklist: true, batepapo: true, material: true, autoavaliacao: true, liberadasParaEmpresa: liberadas });
         }
         res.json(await pastasLiberadasDaEmpresa(req.user.companyId));
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar as pastas liberadas.' }); }
@@ -6600,6 +6587,9 @@ app.put('/api/admin/dpo/pastas/:companyId', requireRole('admin'), async (req, re
                  ON CONFLICT(company_id, folder_key) DO UPDATE SET enabled = excluded.enabled, updated_at = CURRENT_TIMESTAMP`,
                 [empresa.id, pasta, req.body[pasta] ? 1 : 0], (err) => err ? reject(err) : resolve()
             ));
+        }
+        if (req.body.primeiraAuditoria !== undefined) {
+            await new Promise((resolve, reject) => db.run(`UPDATE companies SET dpo_primeira_auditoria = ? WHERE id = ?`, [req.body.primeiraAuditoria ? 1 : 0, empresa.id], (err) => err ? reject(err) : resolve()));
         }
         const depois = await pastasLiberadasDaEmpresa(empresa.id);
         const novas = PASTAS_DPO.filter(p => depois[p] && !antes[p]).map(p => ROTULOS_PASTAS_DPO[p]);
@@ -7188,6 +7178,346 @@ app.post('/api/public/retencao/:token', async (req, res) => {
         ));
         res.json({ message: 'Respostas enviadas! Obrigado.', acertos: totalObjetivas ? acertos : null, total: totalObjetivas || null });
     } catch (e) { res.status(400).json({ error: 'Erro ao enviar as respostas.' }); }
+});
+
+// ---------- DPO Ambev — AUTOAVALIAÇÃO MENSAL + régua de Selos DPO 2026 ----------
+// Cada pergunta recebe 3, 1, 0 ou N/A. % = Σ(nota × peso) / Σ(3 × peso), só com as
+// perguntas respondidas e que não são N/A.
+const VALORES_AUTOAVALIACAO_DPO = ['3', '1', '0', 'na'];
+const NOTA_MAXIMA_DPO = 3;
+const MESES_DPO = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+// Categorias da régua: Segurança; Gente e Gestão (juntos); pilares técnicos.
+const CATEGORIA_PILAR_DPO = { seguranca: 'seg', gente: 'gg', gestao: 'gg', planejamento: 'tec', armazem: 'tec', frota: 'tec', entrega: 'tec' };
+
+// Régua de Selos DPO 2026 (do mais alto para o mais baixo). "todos" = todos os
+// pilares juntos (usado só no Route Basic, que vale apenas para revendas que
+// nunca foram auditadas — 1ª auditoria em 2026).
+const REGUA_SELOS_DPO = [
+    { key: 'sustainable', label: 'Sustainable', seg: 85, gg: 73, tec: 73 },
+    { key: 'certified', label: 'Certified', seg: 80, gg: 68, tec: 68 },
+    { key: 'qualified', label: 'Qualified', seg: 73, gg: 57, tec: 64 },
+    { key: 'route_basic', label: 'Route Basic', seg: 64, gg: 40, todos: 40, somentePrimeiraAuditoria: true },
+    { key: 'not_qualified', label: 'Not Qualified' }
+];
+
+function referenciaAtualDpo() {
+    const partes = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit' }).formatToParts(new Date());
+    return `${partes.find(p => p.type === 'year').value}-${partes.find(p => p.type === 'month').value}`;
+}
+function rotuloReferenciaDpo(ref) {
+    const m = /^(\d{4})-(\d{2})$/.exec(String(ref || ''));
+    return m ? `${MESES_DPO[Number(m[2]) - 1]}/${m[1]}` : String(ref || '');
+}
+const pctDpo = (pontos, max) => max ? Math.round(pontos * 1000 / max) / 10 : null;
+
+// Nível de UM pilar: usa o limite da categoria dele (Segurança / Gente e Gestão /
+// técnicos). Para o Route Basic, pilar técnico usa o limite de "todos pilares".
+function nivelDoPilarDpo(pilarKey, pct, primeiraAuditoria) {
+    if (pct === null || pct === undefined) return null;
+    const cat = CATEGORIA_PILAR_DPO[pilarKey];
+    for (const selo of REGUA_SELOS_DPO) {
+        if (selo.key === 'not_qualified') return selo.key;
+        if (selo.somentePrimeiraAuditoria && !primeiraAuditoria) continue;
+        const limite = selo[cat] !== undefined ? selo[cat] : selo.todos;
+        if (pct >= limite) return selo.key;
+    }
+    return 'not_qualified';
+}
+
+// Selo da OPERAÇÃO: o maior nível em que TODAS as categorias avaliadas batem o limite.
+function nivelGeralDpo(cats, primeiraAuditoria) {
+    const avaliadas = ['seg', 'gg', 'tec'].filter(c => cats[c] !== null && cats[c] !== undefined);
+    if (!avaliadas.length) return null;
+    for (const selo of REGUA_SELOS_DPO) {
+        if (selo.key === 'not_qualified') return selo.key;
+        if (selo.somentePrimeiraAuditoria && !primeiraAuditoria) continue;
+        const criterios = selo.todos !== undefined ? ['seg', 'gg'].filter(c => avaliadas.includes(c)).map(c => cats[c] >= selo[c]).concat([cats.todos >= selo.todos])
+                                                  : avaliadas.map(c => cats[c] >= selo[c]);
+        if (criterios.every(Boolean)) return selo.key;
+    }
+    return 'not_qualified';
+}
+
+// Monta o resumo da operação (por pilar, por bloco e por categoria).
+// respostas: { 'pilar:numero': '1' | '3' | 'na' }
+function calcularResumoAutoavaliacaoDpo(respostas, pilares, primeiraAuditoria) {
+    const somaCat = { seg: [0, 0], gg: [0, 0], tec: [0, 0], todos: [0, 0] };
+    let totalPerguntas = 0, totalRespondidas = 0;
+    const mandatoriasEm1 = [];
+    const porPilar = pilares.filter(k => DPO_AMBEV_DATA[k]).map(pilarKey => {
+        const info = DPO_AMBEV_DATA[pilarKey];
+        let pontosP = 0, maxP = 0, respP = 0, naP = 0, totalP = 0;
+        const grupos = info.grupos.map(g => {
+            let pontos = 0, max = 0, resp = 0, na = 0;
+            g.perguntas.forEach(q => {
+                totalP++;
+                const v = respostas[`${pilarKey}:${q.numero}`];
+                if (v === undefined || v === null) return;
+                resp++;
+                if (v === 'na') { na++; return; }
+                const peso = Number(q.peso) || 1;
+                pontos += Number(v) * peso; max += NOTA_MAXIMA_DPO * peso;
+                if (q.mandatoria && (v === '1' || v === '0')) mandatoriasEm1.push({ pilarKey, pilar: info.label, numero: q.numero, questao: q.questao, nota: v });
+            });
+            pontosP += pontos; maxP += max; respP += resp; naP += na;
+            const pct = pctDpo(pontos, max);
+            return { numero: g.numero, titulo: g.titulo, pct, nivel: nivelDoPilarDpo(pilarKey, pct, primeiraAuditoria), respondidas: resp, na, total: g.perguntas.length };
+        });
+        const cat = CATEGORIA_PILAR_DPO[pilarKey];
+        somaCat[cat][0] += pontosP; somaCat[cat][1] += maxP;
+        somaCat.todos[0] += pontosP; somaCat.todos[1] += maxP;
+        totalPerguntas += totalP; totalRespondidas += respP;
+        const pct = pctDpo(pontosP, maxP);
+        return { key: pilarKey, numero: DPO_PILARES_ORDEM.indexOf(pilarKey) + 1, label: info.label, categoria: cat, pct, nivel: nivelDoPilarDpo(pilarKey, pct, primeiraAuditoria), respondidas: respP, na: naP, total: totalP, grupos };
+    });
+    const categorias = { seg: pctDpo(...somaCat.seg), gg: pctDpo(...somaCat.gg), tec: pctDpo(...somaCat.tec), todos: pctDpo(...somaCat.todos) };
+    return { pilares: porPilar, categorias, nivelGeral: nivelGeralDpo(categorias, primeiraAuditoria), primeiraAuditoria: !!primeiraAuditoria, totalPerguntas, totalRespondidas, mandatoriasEm1 };
+}
+
+async function respostasDaAutoavaliacaoDpo(assessmentId) {
+    const linhas = await dbAll(`SELECT question_key, valor FROM dpo_self_answers WHERE assessment_id = ?`, [assessmentId]);
+    const mapa = {}; linhas.forEach(l => { mapa[l.question_key] = l.valor; });
+    return mapa;
+}
+
+async function primeiraAuditoriaDaEmpresaDpo(companyId) {
+    const emp = await dbGet(`SELECT dpo_primeira_auditoria FROM companies WHERE id = ?`, [companyId]);
+    return !!(emp && emp.dpo_primeira_auditoria);
+}
+
+// Resolve a empresa para as rotas da autoavaliação (sem pilar específico).
+async function resolverEmpresaAutoavaliacaoDpo(req, res, companyIdInformado) {
+    const companyId = req.user.role === 'client_admin' ? req.user.companyId : companyIdInformado;
+    if (!companyId) { res.status(400).json({ error: 'Informe a empresa (company_id).' }); return null; }
+    if (!(await empresaTemPastaDpo(req, res, companyId, 'autoavaliacao'))) return null;
+    return companyId;
+}
+
+async function obterAutoavaliacaoComAcesso(req, res, id) {
+    const av = await dbGet(`SELECT * FROM dpo_self_assessments WHERE id = ?`, [id]);
+    if (!av) { res.status(404).json({ error: 'Autoavaliação não encontrada.' }); return null; }
+    if (req.user.role === 'client_admin' && String(av.company_id) !== String(req.user.companyId)) { res.status(403).json({ error: 'Esta autoavaliação não pertence à sua empresa.' }); return null; }
+    if (!(await empresaTemPastaDpo(req, res, av.company_id, 'autoavaliacao'))) return null;
+    return av;
+}
+
+// Nível de cada pilar pela ÚLTIMA autoavaliação em que ele foi avaliado (usado
+// nas cores dos botões dos pilares e na pasta de Gestão), + selo geral da última.
+async function niveisAtuaisDaEmpresaDpo(companyId) {
+    const ativos = await pilaresAtivosDaEmpresa(companyId);
+    const primeira = await primeiraAuditoriaDaEmpresaDpo(companyId);
+    const avaliacoes = await dbAll(`SELECT * FROM dpo_self_assessments WHERE company_id = ? ORDER BY referencia DESC`, [companyId]);
+    const pilares = {};
+    let geral = null;
+    for (const av of avaliacoes) {
+        const respostas = await respostasDaAutoavaliacaoDpo(av.id);
+        if (!Object.keys(respostas).length) continue;
+        const resumo = calcularResumoAutoavaliacaoDpo(respostas, ativos, primeira);
+        if (!geral) geral = { assessmentId: av.id, referencia: av.referencia, referenciaLabel: rotuloReferenciaDpo(av.referencia), status: av.status, nivelGeral: resumo.nivelGeral, categorias: resumo.categorias };
+        resumo.pilares.forEach(p => {
+            if (pilares[p.key] || p.respondidas === 0) return;
+            const notas = {};
+            Object.keys(respostas).filter(k => k.startsWith(p.key + ':')).forEach(k => { notas[k] = respostas[k]; });
+            pilares[p.key] = { pct: p.pct, nivel: p.nivel, respondidas: p.respondidas, total: p.total, referencia: av.referencia, referenciaLabel: rotuloReferenciaDpo(av.referencia), notas };
+        });
+        if (ativos.every(k => pilares[k])) break;
+    }
+    return { geral, pilares, primeiraAuditoria: primeira };
+}
+
+app.get('/api/dpo/niveis', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const companyId = req.user.role === 'client_admin' ? req.user.companyId : req.query.company_id;
+        if (!companyId) return res.status(400).json({ error: 'Informe a empresa (company_id).' });
+        res.json({ regua: REGUA_SELOS_DPO, ...(await niveisAtuaisDaEmpresaDpo(companyId)) });
+    } catch (e) {
+        console.error('Erro ao calcular níveis DPO:', e.message);
+        res.status(500).json({ error: 'Erro ao calcular os níveis dos pilares.' });
+    }
+});
+
+app.get('/api/dpo/autoavaliacoes', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const companyId = await resolverEmpresaAutoavaliacaoDpo(req, res, req.query.company_id);
+        if (!companyId) return;
+        const empresa = await dbGet(`SELECT name, dpo_primeira_auditoria FROM companies WHERE id = ?`, [companyId]);
+        const ativos = await pilaresAtivosDaEmpresa(companyId);
+        const primeira = !!(empresa && empresa.dpo_primeira_auditoria);
+        const avaliacoes = await dbAll(`SELECT * FROM dpo_self_assessments WHERE company_id = ? ORDER BY referencia DESC`, [companyId]);
+        const lista = [];
+        for (const av of avaliacoes) {
+            const r = calcularResumoAutoavaliacaoDpo(await respostasDaAutoavaliacaoDpo(av.id), ativos, primeira);
+            lista.push({
+                id: av.id, referencia: av.referencia, referenciaLabel: rotuloReferenciaDpo(av.referencia), status: av.status, closed_at: av.closed_at,
+                nivelGeral: r.nivelGeral, categorias: r.categorias, totalPerguntas: r.totalPerguntas, totalRespondidas: r.totalRespondidas,
+                pilares: r.pilares.map(p => ({ key: p.key, pct: p.pct, nivel: p.nivel }))
+            });
+        }
+        const refAtual = referenciaAtualDpo();
+        res.json({
+            companyId: Number(companyId), empresa: empresa ? empresa.name : '', primeiraAuditoria: primeira, pilaresAtivos: ativos, regua: REGUA_SELOS_DPO,
+            referenciaAtual: refAtual, referenciaAtualLabel: rotuloReferenciaDpo(refAtual), existeMesAtual: avaliacoes.some(a => a.referencia === refAtual), lista
+        });
+    } catch (e) {
+        console.error('Erro ao listar autoavaliações DPO:', e.message);
+        res.status(500).json({ error: 'Erro ao carregar as autoavaliações.' });
+    }
+});
+
+// Abre a autoavaliação do mês atual (ou devolve a que já existe).
+app.post('/api/dpo/autoavaliacoes', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const companyId = await resolverEmpresaAutoavaliacaoDpo(req, res, req.body.company_id);
+        if (!companyId) return;
+        const ativos = await pilaresAtivosDaEmpresa(companyId);
+        if (!ativos.length) return res.status(400).json({ error: 'A empresa ainda não tem nenhum pilar do DPO liberado.' });
+        const referencia = referenciaAtualDpo();
+        const existente = await dbGet(`SELECT id FROM dpo_self_assessments WHERE company_id = ? AND referencia = ?`, [companyId, referencia]);
+        if (existente) return res.json({ id: existente.id, message: 'A autoavaliação deste mês já existe — abrindo.' });
+        const id = await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_self_assessments (company_id, referencia, created_by) VALUES (?, ?, ?)`,
+            [companyId, referencia, req.user.userId], function (err) { err ? reject(err) : resolve(this.lastID); }
+        ));
+        res.json({ id, message: `Autoavaliação de ${rotuloReferenciaDpo(referencia)} aberta!` });
+    } catch (e) { res.status(400).json({ error: 'Erro ao abrir a autoavaliação.' }); }
+});
+
+function textosNotasDpo(explicacao) {
+    const textos = {};
+    String(explicacao || '').replace(/\r/g, '').split(/\n\s*\n/).forEach(bloco => {
+        const m = bloco.match(/^\s*(\d+)\s*[-.:)]\s*([\s\S]*)$/);
+        if (m) textos[m[1]] = m[2].replace(/\n/g, ' ').trim();
+    });
+    return textos;
+}
+
+app.get('/api/dpo/autoavaliacoes/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const av = await obterAutoavaliacaoComAcesso(req, res, req.params.id);
+        if (!av) return;
+        const ativos = await pilaresAtivosDaEmpresa(av.company_id);
+        const primeira = await primeiraAuditoriaDaEmpresaDpo(av.company_id);
+        const respostas = await respostasDaAutoavaliacaoDpo(av.id);
+        const resumo = calcularResumoAutoavaliacaoDpo(respostas, ativos, primeira);
+        const anterior = await dbGet(`SELECT id, referencia FROM dpo_self_assessments WHERE company_id = ? AND referencia < ? ORDER BY referencia DESC LIMIT 1`, [av.company_id, av.referencia]);
+        const resumoAnterior = anterior ? calcularResumoAutoavaliacaoDpo(await respostasDaAutoavaliacaoDpo(anterior.id), ativos, primeira) : null;
+        const empresa = await dbGet(`SELECT name FROM companies WHERE id = ?`, [av.company_id]);
+        const pilares = ativos.filter(k => DPO_AMBEV_DATA[k]).sort((a, b) => DPO_PILARES_ORDEM.indexOf(a) - DPO_PILARES_ORDEM.indexOf(b)).map(pilarKey => ({
+            key: pilarKey, numero: DPO_PILARES_ORDEM.indexOf(pilarKey) + 1, label: DPO_AMBEV_DATA[pilarKey].label,
+            grupos: DPO_AMBEV_DATA[pilarKey].grupos.map(g => ({
+                numero: g.numero, titulo: g.titulo,
+                perguntas: g.perguntas.map(q => {
+                    const t = textosNotasDpo(q.explicacao_pontos);
+                    return {
+                        questionKey: `${pilarKey}:${q.numero}`, numero: q.numero, questao: q.questao, mandatoria: !!q.mandatoria, peso: q.peso,
+                        verificacao: q.verificacao || '', how_to_check: q.how_to_check || '', texto0: t['0'] || '', texto1: t['1'] || '', texto3: t['3'] || '',
+                        valor: respostas[`${pilarKey}:${q.numero}`] || null
+                    };
+                })
+            }))
+        }));
+        res.json({
+            id: av.id, companyId: av.company_id, empresa: empresa ? empresa.name : '', referencia: av.referencia, referenciaLabel: rotuloReferenciaDpo(av.referencia),
+            status: av.status, closed_at: av.closed_at, regua: REGUA_SELOS_DPO, resumo, pilares,
+            anterior: anterior ? { id: anterior.id, referencia: anterior.referencia, referenciaLabel: rotuloReferenciaDpo(anterior.referencia), resumo: resumoAnterior } : null
+        });
+    } catch (e) {
+        console.error('Erro ao carregar autoavaliação DPO:', e.message);
+        res.status(500).json({ error: 'Erro ao carregar a autoavaliação.' });
+    }
+});
+
+app.put('/api/dpo/autoavaliacoes/:id/respostas', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { questionKey } = req.body;
+    const valor = req.body.valor === null || req.body.valor === '' || req.body.valor === undefined ? null : String(req.body.valor).toLowerCase();
+    if (valor !== null && !VALORES_AUTOAVALIACAO_DPO.includes(valor)) return res.status(400).json({ error: 'Nota inválida. Use 3, 1, 0 ou N/A.' });
+    try {
+        const av = await obterAutoavaliacaoComAcesso(req, res, req.params.id);
+        if (!av) return;
+        if (av.status === 'concluida') return res.status(400).json({ error: 'Esta autoavaliação já foi concluída. Reabra para alterar.' });
+        const [pilarKey, numero] = String(questionKey || '').split(':');
+        const ativos = await pilaresAtivosDaEmpresa(av.company_id);
+        if (!ativos.includes(pilarKey) || !perguntaDoPilarDpo(pilarKey, numero)) return res.status(400).json({ error: 'Pergunta inválida.' });
+        if (valor === null) {
+            await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_self_answers WHERE assessment_id = ? AND question_key = ?`, [av.id, questionKey], (err) => err ? reject(err) : resolve()));
+        } else {
+            await new Promise((resolve, reject) => db.run(
+                `INSERT INTO dpo_self_answers (assessment_id, question_key, valor, updated_by, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                 ON CONFLICT(assessment_id, question_key) DO UPDATE SET valor = excluded.valor, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP`,
+                [av.id, questionKey, valor, req.user.userId], (err) => err ? reject(err) : resolve()
+            ));
+        }
+        const resumo = calcularResumoAutoavaliacaoDpo(await respostasDaAutoavaliacaoDpo(av.id), ativos, await primeiraAuditoriaDaEmpresaDpo(av.company_id));
+        res.json({ message: 'Nota salva!', resumo });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar a nota.' }); }
+});
+
+app.put('/api/dpo/autoavaliacoes/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { status } = req.body;
+    if (!['em_andamento', 'concluida'].includes(status)) return res.status(400).json({ error: 'Situação inválida.' });
+    try {
+        const av = await obterAutoavaliacaoComAcesso(req, res, req.params.id);
+        if (!av) return;
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE dpo_self_assessments SET status = ?, closed_at = CASE WHEN ? = 'concluida' THEN CURRENT_TIMESTAMP ELSE NULL END WHERE id = ?`,
+            [status, status, av.id], (err) => err ? reject(err) : resolve()
+        ));
+        res.json({ message: status === 'concluida' ? 'Autoavaliação concluída!' : 'Autoavaliação reaberta!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar a autoavaliação.' }); }
+});
+
+app.delete('/api/dpo/autoavaliacoes/:id', requireRole('admin'), async (req, res) => {
+    try {
+        await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_self_answers WHERE assessment_id = ?`, [req.params.id], (err) => err ? reject(err) : resolve()));
+        await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_self_assessments WHERE id = ?`, [req.params.id], (err) => err ? reject(err) : resolve()));
+        res.json({ message: 'Autoavaliação excluída!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao excluir a autoavaliação.' }); }
+});
+
+// Excel de uma autoavaliação: resumo por categoria/pilar/bloco + todas as notas.
+const ROTULO_NIVEL_DPO = Object.fromEntries(REGUA_SELOS_DPO.map(s => [s.key, s.label]));
+const ROTULO_CATEGORIA_DPO = { seg: 'Segurança', gg: 'Gente e Gestão', tec: 'Pilares técnicos', todos: 'Todos os pilares' };
+const fmtPctDpo = v => v === null || v === undefined ? '—' : `${String(v).replace('.', ',')}%`;
+
+async function gerarExcelAutoavaliacaoDpo(av) {
+    const ativos = await pilaresAtivosDaEmpresa(av.company_id);
+    const respostas = await respostasDaAutoavaliacaoDpo(av.id);
+    const r = calcularResumoAutoavaliacaoDpo(respostas, ativos, await primeiraAuditoriaDaEmpresaDpo(av.company_id));
+    const empresa = await dbGet(`SELECT name FROM companies WHERE id = ?`, [av.company_id]);
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Impulsionar V4';
+    const resumo = workbook.addWorksheet('Resumo da Operação');
+    resumo.columns = [{ header: 'Nível', key: 'a', width: 34 }, { header: 'Item', key: 'b', width: 38 }, { header: '%', key: 'c', width: 12 }, { header: 'Selo / Nível', key: 'd', width: 18 }, { header: 'Respondidas', key: 'e', width: 13 }, { header: 'N/A', key: 'f', width: 8 }];
+    estilizarCabecalhoExcelDpo(resumo, 'F');
+    resumo.addRow({ a: 'Operação', b: `${empresa ? empresa.name : ''} — ${rotuloReferenciaDpo(av.referencia)}`, c: fmtPctDpo(r.categorias.todos), d: r.nivelGeral ? ROTULO_NIVEL_DPO[r.nivelGeral] : '—', e: `${r.totalRespondidas}/${r.totalPerguntas}` }).font = { bold: true };
+    ['seg', 'gg', 'tec'].forEach(c => resumo.addRow({ a: 'Categoria', b: ROTULO_CATEGORIA_DPO[c], c: fmtPctDpo(r.categorias[c]) }));
+    r.pilares.forEach(p => {
+        resumo.addRow({ a: 'Pilar', b: `${p.numero}. ${p.label}`, c: fmtPctDpo(p.pct), d: p.nivel ? ROTULO_NIVEL_DPO[p.nivel] : '—', e: `${p.respondidas}/${p.total}`, f: p.na }).font = { bold: true };
+        p.grupos.forEach(g => resumo.addRow({ a: `   Bloco — ${p.label}`, b: `${g.numero} ${g.titulo}`, c: fmtPctDpo(g.pct), d: g.nivel ? ROTULO_NIVEL_DPO[g.nivel] : '—', e: `${g.respondidas}/${g.total}`, f: g.na }));
+    });
+    const notas = workbook.addWorksheet('Notas', { views: [{ state: 'frozen', ySplit: 1 }] });
+    notas.columns = [{ header: 'Pilar', key: 'pilar', width: 22 }, { header: 'Bloco', key: 'bloco', width: 34 }, { header: 'Nº', key: 'numero', width: 8 }, { header: 'Pergunta', key: 'pergunta', width: 45 }, { header: 'Mandatória', key: 'mand', width: 12 }, { header: 'Peso', key: 'peso', width: 8 }, { header: 'Nota', key: 'nota', width: 10 }];
+    estilizarCabecalhoExcelDpo(notas, 'G');
+    ativos.filter(k => DPO_AMBEV_DATA[k]).forEach(k => DPO_AMBEV_DATA[k].grupos.forEach(g => g.perguntas.forEach(q => {
+        const v = respostas[`${k}:${q.numero}`];
+        notas.addRow({ pilar: DPO_AMBEV_DATA[k].label, bloco: `${g.numero} ${g.titulo}`, numero: q.numero, pergunta: q.questao, mand: q.mandatoria ? 'Sim' : 'Não', peso: q.peso, nota: v === 'na' ? 'N/A' : (v || 'Não avaliada') });
+    })));
+    return { buffer: await workbook.xlsx.writeBuffer(), nome: `autoavaliacao-dpo-${av.referencia}-${(empresa ? empresa.name : 'empresa').replace(/[^a-z0-9]+/gi, '-')}.xlsx` };
+}
+
+app.get('/api/dpo/autoavaliacoes/:id/export', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const av = await obterAutoavaliacaoComAcesso(req, res, req.params.id);
+        if (!av) return;
+        const { buffer, nome } = await gerarExcelAutoavaliacaoDpo(av);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${nome}"`);
+        res.send(Buffer.from(buffer));
+    } catch (e) {
+        console.error('Erro ao exportar autoavaliação DPO:', e.message);
+        res.status(500).json({ error: 'Erro ao exportar a autoavaliação.' });
+    }
 });
 
 app.put('/api/dpo/cycles/:id/answers', requireRole('admin', 'client_admin'), async (req, res) => {
