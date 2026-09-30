@@ -389,6 +389,10 @@
   .dpo-pontuacao-opcao { border: 2px solid var(--cinza-200); background: #fff; border-radius: 8px; padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer; max-width: 340px; text-align: left; }
   .dpo-pontuacao-opcao.selecionada { border-color: var(--verde, #16a34a); background: #f0fdf4; color: #166534; }
   .dpo-follow { background: #f8fafc; border: 1px dashed var(--cinza-200); border-radius: 8px; padding: 8px 10px; margin-top: 6px; font-size: 12.5px; }
+  .dpo-subabas { display: flex; gap: 4px; border-bottom: 2px solid #e2e8f0; margin-bottom: 14px; }
+  .dpo-subaba { background: none; border: none; border-bottom: 3px solid transparent; margin-bottom: -2px; padding: 9px 14px; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer; }
+  .dpo-subaba.ativa { color: #dc4c4c; border-bottom-color: #dc4c4c; }
+  .dpo-batepapo-resposta { margin-top: 6px; font-size: 13px; color: #334155; white-space: pre-wrap; background: #f8fafc; border-left: 3px solid #dc4c4c; padding: 6px 10px; border-radius: 0 6px 6px 0; }
   .dpo-score-badge { font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
 </style>
 </head>
@@ -6924,7 +6928,7 @@ async function abrirOuCriarPilarDpo(pillarKey) {
 }
 
 function abrirVisualizacaoCicloDpo(ciclo, somenteLeitura, pilarKeyInicial) {
-  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key) };
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key), aba: 'checklist' };
   renderCicloDpoAtual();
 }
 
@@ -6950,15 +6954,196 @@ function renderCicloDpoAtual() {
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
       ${ciclo.pilares.map(p => `<button class="btn-sm ${p.key === pilar.key ? 'btn-primario' : 'btn-secundario'}" onclick="trocarPilarCicloDpo('${p.key}')">${escapeHtml(p.label)}</button>`).join('')}
     </div>
+    <div class="dpo-subabas">
+      <button class="dpo-subaba ${ESTADO_DPO_VIEW.aba !== 'batepapo' ? 'ativa' : ''}" onclick="trocarAbaPilarDpo('checklist')">📝 Checklist</button>
+      <button class="dpo-subaba ${ESTADO_DPO_VIEW.aba === 'batepapo' ? 'ativa' : ''}" onclick="trocarAbaPilarDpo('batepapo')">📁 Perguntas Bate-Papo</button>
+    </div>
+    ${ESTADO_DPO_VIEW.aba === 'batepapo' ? `<div id="dpo-batepapo-area"><p>Carregando...</p></div>` : `
     <div class="plano-meta" style="margin-bottom:12px;">${respondidas}/${totalPerguntas} pergunta(s) respondida(s)${mediaScore !== null ? ` · Média: <strong>${mediaScore}</strong>` : ''}</div>
     ${pilar.grupos.map(g => `
       <div class="dpo-grupo">
         <div class="dpo-grupo-titulo">${escapeHtml(g.numero)} ${escapeHtml(g.titulo)}</div>
         ${g.perguntas.map(p => renderPerguntaDpo(p, somenteLeitura)).join('')}
       </div>
-    `).join('')}
+    `).join('')}`}
     <div id="modal-area"></div>
   `;
+  if (ESTADO_DPO_VIEW.aba === 'batepapo') carregarBatePapoDpo();
+}
+
+// ----- Pasta "Perguntas Bate-Papo" (dentro de cada pilar) -----
+// Perguntas e respostas registradas no bate-papo, sempre ligadas a uma pergunta
+// oficial do pilar e ordenadas por ela. Pertence à empresa + pilar (não ao
+// ciclo), então o histórico continua de um mês para o outro.
+let CACHE_BATE_PAPO_DPO = [];
+
+function trocarAbaPilarDpo(aba) {
+  ESTADO_DPO_VIEW.aba = aba;
+  renderCicloDpoAtual();
+}
+
+function pilarAtualDpo() {
+  const { ciclo, pilarAtivo } = ESTADO_DPO_VIEW;
+  return ciclo.pilares.find(p => p.key === pilarAtivo) || ciclo.pilares[0];
+}
+
+function queryEmpresaBatePapoDpo() {
+  const { ciclo } = ESTADO_DPO_VIEW;
+  return ESTADO.usuario.role === 'admin' && ciclo.company_id ? '?company_id=' + ciclo.company_id : '';
+}
+
+async function carregarBatePapoDpo() {
+  const area = document.getElementById('dpo-batepapo-area');
+  if (!area) return;
+  const pilar = pilarAtualDpo();
+  try {
+    CACHE_BATE_PAPO_DPO = await api('/api/dpo/bate-papo/' + pilar.key + queryEmpresaBatePapoDpo());
+    // Agrupa por pergunta do pilar (a lista já vem na ordem do checklist)
+    const grupos = [];
+    CACHE_BATE_PAPO_DPO.forEach(item => {
+      let g = grupos[grupos.length - 1];
+      if (!g || g.numero !== item.question_numero) { g = { numero: item.question_numero, texto: item.perguntaPilarTexto, itens: [] }; grupos.push(g); }
+      g.itens.push(item);
+    });
+    area.innerHTML = `
+      <div class="barra-acoes">
+        <div class="plano-meta">📁 ${escapeHtml(pilar.label)} · ${CACHE_BATE_PAPO_DPO.length} pergunta(s) registrada(s)</div>
+        <div class="direita">
+          <button class="btn-secundario btn-sm" onclick="baixarExcelBatePapoDpo()" ${CACHE_BATE_PAPO_DPO.length ? '' : 'disabled'}>📊 Baixar Excel</button>
+          <button class="btn-primario btn-sm" onclick="abrirModalBatePapoDpo()">+ Adicionar</button>
+        </div>
+      </div>
+      ${!grupos.length ? `<div class="msg-vazio">Nenhuma pergunta de bate-papo registrada neste pilar ainda. Clique em <strong>+ Adicionar</strong>, escolha a pergunta do pilar e registre as perguntas e respostas.</div>` : grupos.map(g => `
+        <div class="dpo-grupo">
+          <div class="dpo-grupo-titulo">${escapeHtml(g.numero)} ${escapeHtml(g.texto || '')} <span style="font-weight:600;color:#94a3b8;">(${g.itens.length})</span></div>
+          ${g.itens.map((item, i) => `
+            <div class="dpo-pergunta dpo-batepapo-item">
+              <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+                <div style="flex:1;min-width:0;">
+                  <div class="dpo-pergunta-titulo">❓ ${i + 1}. ${escapeHtml(item.pergunta)}</div>
+                  <div class="dpo-batepapo-resposta">${item.resposta ? '💬 ' + escapeHtml(item.resposta) : '<em style="color:#94a3b8;">Sem resposta ainda</em>'}</div>
+                  <div class="plano-meta" style="margin-top:6px;font-size:11px;">${item.autorNome ? escapeHtml(item.autorNome) + ' · ' : ''}${item.created_at ? new Date(String(item.created_at).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : ''}</div>
+                </div>
+                <div style="display:flex;gap:6px;flex-shrink:0;">
+                  <button class="btn-secundario btn-sm" onclick="abrirModalBatePapoDpo(${item.id})">Editar</button>
+                  <button class="btn-perigo btn-sm" onclick="excluirBatePapoDpo(${item.id})">Excluir</button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('')}
+    `;
+  } catch (e) { area.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+// Modal: escolhe a pergunta do pilar e registra uma ou mais perguntas/respostas.
+// Com id, edita uma pergunta já existente (uma só).
+function abrirModalBatePapoDpo(id) {
+  const area = document.getElementById('modal-area');
+  if (!area) return;
+  const pilar = pilarAtualDpo();
+  const existente = id ? CACHE_BATE_PAPO_DPO.find(x => x.id === id) : null;
+  const opcoes = pilar.grupos.map(g => `
+    <optgroup label="${escapeHtml(g.numero + ' ' + g.titulo)}">
+      ${g.perguntas.map(q => `<option value="${escapeHtml(q.numero)}" ${existente && existente.question_numero === q.numero ? 'selected' : ''}>${escapeHtml(q.numero)} — ${escapeHtml(q.questao)}</option>`).join('')}
+    </optgroup>`).join('');
+  area.innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) fecharModalBatePapoDpo()">
+      <div class="modal-caixa" style="max-width:620px;max-height:90vh;overflow-y:auto;">
+        <h3 style="margin-top:0;">${existente ? 'Editar Pergunta do Bate-Papo' : 'Adicionar Perguntas do Bate-Papo'}</h3>
+        <label>Pergunta do pilar (${escapeHtml(pilar.label)})</label>
+        <select id="bp-dpo-numero">
+          ${existente ? '' : '<option value="">Selecione a pergunta do pilar...</option>'}
+          ${opcoes}
+        </select>
+        <div id="bp-dpo-itens"></div>
+        ${existente ? '' : `<button class="btn-secundario btn-sm" style="margin-top:8px;" onclick="adicionarItemBatePapoDpo()">+ Adicionar outra pergunta</button>`}
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" onclick="salvarBatePapoDpo(${existente ? existente.id : 'null'})">Salvar</button>
+          <button class="btn-secundario" onclick="fecharModalBatePapoDpo()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  `;
+  adicionarItemBatePapoDpo(existente);
+}
+
+function adicionarItemBatePapoDpo(existente) {
+  const lista = document.getElementById('bp-dpo-itens');
+  if (!lista) return;
+  const n = lista.querySelectorAll('.bp-dpo-item').length + 1;
+  const div = document.createElement('div');
+  div.className = 'bp-dpo-item';
+  div.style.cssText = 'border:1px solid var(--cinza-200);border-radius:10px;padding:10px 12px;margin-top:12px;background:#f8fafc;';
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <strong style="font-size:13px;">Pergunta ${n}</strong>
+      ${n > 1 ? `<button class="btn-secundario btn-sm" onclick="this.closest('.bp-dpo-item').remove()">Remover</button>` : ''}
+    </div>
+    <label>Descreva a pergunta</label>
+    <textarea class="bp-dpo-pergunta" rows="2" placeholder="Qual foi a pergunta feita no bate-papo?">${existente ? escapeHtml(existente.pergunta || '') : ''}</textarea>
+    <label>Resposta</label>
+    <textarea class="bp-dpo-resposta" rows="3" placeholder="Qual foi a resposta?">${existente ? escapeHtml(existente.resposta || '') : ''}</textarea>
+  `;
+  lista.appendChild(div);
+}
+
+function fecharModalBatePapoDpo() {
+  const area = document.getElementById('modal-area');
+  if (area) area.innerHTML = '';
+}
+
+async function salvarBatePapoDpo(id) {
+  const pilar = pilarAtualDpo();
+  const questionNumero = document.getElementById('bp-dpo-numero').value;
+  if (!questionNumero) { mostrarToast('Escolha a pergunta do pilar.', true); return; }
+  const itens = Array.from(document.querySelectorAll('.bp-dpo-item')).map(el => ({
+    pergunta: el.querySelector('.bp-dpo-pergunta').value.trim(),
+    resposta: el.querySelector('.bp-dpo-resposta').value.trim()
+  })).filter(i => i.pergunta || i.resposta);
+  if (!itens.length || itens.some(i => !i.pergunta)) { mostrarToast('Descreva a pergunta (a resposta pode ficar para depois).', true); return; }
+  try {
+    let r;
+    if (id) {
+      r = await api('/api/dpo/bate-papo/' + id, { method: 'PUT', body: JSON.stringify({ questionNumero, pergunta: itens[0].pergunta, resposta: itens[0].resposta }) });
+    } else {
+      const corpo = { pillarKey: pilar.key, questionNumero, itens };
+      if (ESTADO.usuario.role === 'admin') corpo.company_id = ESTADO_DPO_VIEW.ciclo.company_id;
+      r = await api('/api/dpo/bate-papo', { method: 'POST', body: JSON.stringify(corpo) });
+    }
+    mostrarToast(r.message);
+    fecharModalBatePapoDpo();
+    carregarBatePapoDpo();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function excluirBatePapoDpo(id) {
+  if (!confirm('Excluir esta pergunta do bate-papo?')) return;
+  try {
+    const r = await api('/api/dpo/bate-papo/' + id, { method: 'DELETE' });
+    mostrarToast(r.message);
+    carregarBatePapoDpo();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function baixarExcelBatePapoDpo() {
+  const pilar = pilarAtualDpo();
+  try {
+    mostrarToast('Gerando Excel...');
+    const resp = await fetch('/api/dpo/bate-papo/' + pilar.key + '/export' + queryEmpresaBatePapoDpo(), { headers: { 'Authorization': 'Bearer ' + ESTADO.token } });
+    if (!resp.ok) {
+      const dados = await resp.json().catch(() => ({}));
+      throw new Error(dados.error || 'Erro ao gerar o Excel.');
+    }
+    const blob = await resp.blob();
+    const urlBlob = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = urlBlob;
+    a.download = 'perguntas-bate-papo-' + pilar.key + '.xlsx';
+    document.body.appendChild(a); a.click(); a.remove();
+    window.URL.revokeObjectURL(urlBlob);
+  } catch (e) { mostrarToast(e.message, true); }
 }
 
 function trocarPilarCicloDpo(key) {
