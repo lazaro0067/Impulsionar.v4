@@ -1258,6 +1258,50 @@ function inicializarBase() {
             closed_at DATETIME,
             UNIQUE(company_id, referencia)
         )`);
+        // Fluxo: em_andamento (empresa editando) -> salva -> aprovada. Depois de
+        // aprovada, só o Master altera (a empresa pede ajuste por chamado).
+        db.run(`ALTER TABLE dpo_self_assessments ADD COLUMN approved_by INTEGER`, () => {});
+        db.run(`ALTER TABLE dpo_self_assessments ADD COLUMN approved_at DATETIME`, () => {});
+        db.run(`UPDATE dpo_self_assessments SET status = 'aprovada' WHERE status = 'concluida'`, () => {});
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_self_assessment_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            assessment_id INTEGER NOT NULL,
+            acao TEXT NOT NULL,
+            detalhe TEXT,
+            user_id INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+        // Chamados (suporte): a empresa abre para o Master, com conversa,
+        // anexos, prioridade, status e avaliação do atendimento.
+        db.run(`CREATE TABLE IF NOT EXISTS chamados (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER NOT NULL,
+            created_by INTEGER,
+            categoria TEXT NOT NULL,
+            assunto TEXT NOT NULL,
+            prioridade TEXT NOT NULL DEFAULT 'media',
+            status TEXT NOT NULL DEFAULT 'aberto',
+            ref_tipo TEXT,
+            ref_id INTEGER,
+            nao_lido_master INTEGER NOT NULL DEFAULT 1,
+            nao_lido_empresa INTEGER NOT NULL DEFAULT 0,
+            avaliacao INTEGER,
+            avaliacao_comentario TEXT,
+            first_response_at DATETIME,
+            closed_at DATETIME,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+        db.run(`CREATE TABLE IF NOT EXISTS chamado_mensagens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            chamado_id INTEGER NOT NULL,
+            user_id INTEGER,
+            autor_papel TEXT NOT NULL,
+            texto TEXT,
+            anexo_url TEXT,
+            anexo_nome TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
         db.run(`CREATE TABLE IF NOT EXISTS dpo_self_answers (
             assessment_id INTEGER NOT NULL,
             question_key TEXT NOT NULL,
@@ -7272,7 +7316,16 @@ function calcularResumoAutoavaliacaoDpo(respostas, pilares, primeiraAuditoria) {
         return { key: pilarKey, numero: DPO_PILARES_ORDEM.indexOf(pilarKey) + 1, label: info.label, categoria: cat, pct, nivel: nivelDoPilarDpo(pilarKey, pct, primeiraAuditoria), respondidas: respP, na: naP, total: totalP, grupos };
     });
     const categorias = { seg: pctDpo(...somaCat.seg), gg: pctDpo(...somaCat.gg), tec: pctDpo(...somaCat.tec), todos: pctDpo(...somaCat.todos) };
-    return { pilares: porPilar, categorias, nivelGeral: nivelGeralDpo(categorias, primeiraAuditoria), primeiraAuditoria: !!primeiraAuditoria, totalPerguntas, totalRespondidas, mandatoriasEm1 };
+    // Selo da OPERAÇÃO = sempre o MENOR nível entre os pilares já avaliados.
+    const ordemNivel = k => REGUA_SELOS_DPO.findIndex(x => x.key === k); // 0 = mais alto
+    const avaliados = porPilar.filter(p => p.nivel);
+    const limitantes = avaliados.length ? avaliados.filter(p => ordemNivel(p.nivel) === Math.max(...avaliados.map(x => ordemNivel(x.nivel)))) : [];
+    const nivelGeral = limitantes.length ? limitantes[0].nivel : null;
+    return {
+        pilares: porPilar, categorias, nivelGeral, primeiraAuditoria: !!primeiraAuditoria, totalPerguntas, totalRespondidas, mandatoriasEm1,
+        pilaresLimitantes: limitantes.map(p => ({ key: p.key, label: p.label, pct: p.pct })),
+        pilaresAvaliados: avaliados.length, totalPilares: porPilar.length
+    };
 }
 
 async function respostasDaAutoavaliacaoDpo(assessmentId) {
@@ -7314,7 +7367,7 @@ async function niveisAtuaisDaEmpresaDpo(companyId) {
         const respostas = await respostasDaAutoavaliacaoDpo(av.id);
         if (!Object.keys(respostas).length) continue;
         const resumo = calcularResumoAutoavaliacaoDpo(respostas, ativos, primeira);
-        if (!geral) geral = { assessmentId: av.id, referencia: av.referencia, referenciaLabel: rotuloReferenciaDpo(av.referencia), status: av.status, nivelGeral: resumo.nivelGeral, categorias: resumo.categorias };
+        if (!geral) geral = { assessmentId: av.id, referencia: av.referencia, referenciaLabel: rotuloReferenciaDpo(av.referencia), status: av.status, nivelGeral: resumo.nivelGeral, categorias: resumo.categorias, pilaresLimitantes: resumo.pilaresLimitantes, pilaresAvaliados: resumo.pilaresAvaliados, totalPilares: resumo.totalPilares };
         resumo.pilares.forEach(p => {
             if (pilares[p.key] || p.respondidas === 0) return;
             const notas = {};
@@ -7403,6 +7456,9 @@ app.get('/api/dpo/autoavaliacoes/:id', requireRole('admin', 'client_admin'), asy
         const anterior = await dbGet(`SELECT id, referencia FROM dpo_self_assessments WHERE company_id = ? AND referencia < ? ORDER BY referencia DESC LIMIT 1`, [av.company_id, av.referencia]);
         const resumoAnterior = anterior ? calcularResumoAutoavaliacaoDpo(await respostasDaAutoavaliacaoDpo(anterior.id), ativos, primeira) : null;
         const empresa = await dbGet(`SELECT name FROM companies WHERE id = ?`, [av.company_id]);
+        const aprovador = av.approved_by ? await dbGet(`SELECT name FROM users WHERE id = ?`, [av.approved_by]) : null;
+        const eventos = await dbAll(`SELECT e.acao, e.detalhe, e.created_at, u.name as autorNome, u.role as autorPapel FROM dpo_self_assessment_events e LEFT JOIN users u ON u.id = e.user_id WHERE e.assessment_id = ? ORDER BY e.created_at DESC, e.id DESC LIMIT 60`, [av.id]);
+        const chamadoAberto = await dbGet(`SELECT id, status FROM chamados WHERE ref_tipo = 'autoavaliacao' AND ref_id = ? AND status NOT IN ('resolvido', 'fechado') ORDER BY id DESC LIMIT 1`, [av.id]);
         const pilares = ativos.filter(k => DPO_AMBEV_DATA[k]).sort((a, b) => DPO_PILARES_ORDEM.indexOf(a) - DPO_PILARES_ORDEM.indexOf(b)).map(pilarKey => ({
             key: pilarKey, numero: DPO_PILARES_ORDEM.indexOf(pilarKey) + 1, label: DPO_AMBEV_DATA[pilarKey].label,
             grupos: DPO_AMBEV_DATA[pilarKey].grupos.map(g => ({
@@ -7419,7 +7475,8 @@ app.get('/api/dpo/autoavaliacoes/:id', requireRole('admin', 'client_admin'), asy
         }));
         res.json({
             id: av.id, companyId: av.company_id, empresa: empresa ? empresa.name : '', referencia: av.referencia, referenciaLabel: rotuloReferenciaDpo(av.referencia),
-            status: av.status, closed_at: av.closed_at, regua: REGUA_SELOS_DPO, resumo, pilares,
+            status: av.status, closed_at: av.closed_at, approved_at: av.approved_at, aprovadoPor: aprovador ? aprovador.name : null,
+            eventos, chamadoAberto: chamadoAberto || null, regua: REGUA_SELOS_DPO, resumo, pilares,
             anterior: anterior ? { id: anterior.id, referencia: anterior.referencia, referenciaLabel: rotuloReferenciaDpo(anterior.referencia), resumo: resumoAnterior } : null
         });
     } catch (e) {
@@ -7435,7 +7492,12 @@ app.put('/api/dpo/autoavaliacoes/:id/respostas', requireRole('admin', 'client_ad
     try {
         const av = await obterAutoavaliacaoComAcesso(req, res, req.params.id);
         if (!av) return;
-        if (av.status === 'concluida') return res.status(400).json({ error: 'Esta autoavaliação já foi concluída. Reabra para alterar.' });
+        if (req.user.role !== 'admin' && av.status !== 'em_andamento') {
+            return res.status(400).json({ error: av.status === 'aprovada'
+                ? 'Esta autoavaliação já foi aprovada — só o Master pode alterar. Abra um chamado pedindo ajuste.'
+                : 'A autoavaliação está salva. Clique em "Editar" para alterar as notas.' });
+        }
+        if (req.user.role === 'admin' && av.status === 'salva') return res.status(400).json({ error: 'A autoavaliação está salva. Clique em "Editar" para alterar as notas.' });
         const [pilarKey, numero] = String(questionKey || '').split(':');
         const ativos = await pilaresAtivosDaEmpresa(av.company_id);
         if (!ativos.includes(pilarKey) || !perguntaDoPilarDpo(pilarKey, numero)) return res.status(400).json({ error: 'Pergunta inválida.' });
@@ -7448,23 +7510,78 @@ app.put('/api/dpo/autoavaliacoes/:id/respostas', requireRole('admin', 'client_ad
                 [av.id, questionKey, valor, req.user.userId], (err) => err ? reject(err) : resolve()
             ));
         }
+        if (av.status === 'aprovada') registrarEventoAutoavaliacaoDpo(av.id, 'ajuste_master', `${questionKey} → ${valor === null ? 'sem nota' : valor === 'na' ? 'N/A' : valor}`, req.user.userId);
         const resumo = calcularResumoAutoavaliacaoDpo(await respostasDaAutoavaliacaoDpo(av.id), ativos, await primeiraAuditoriaDaEmpresaDpo(av.company_id));
         res.json({ message: 'Nota salva!', resumo });
     } catch (e) { res.status(400).json({ error: 'Erro ao salvar a nota.' }); }
 });
 
-app.put('/api/dpo/autoavaliacoes/:id', requireRole('admin', 'client_admin'), async (req, res) => {
-    const { status } = req.body;
-    if (!['em_andamento', 'concluida'].includes(status)) return res.status(400).json({ error: 'Situação inválida.' });
+function registrarEventoAutoavaliacaoDpo(assessmentId, acao, detalhe, userId) {
+    db.run(`INSERT INTO dpo_self_assessment_events (assessment_id, acao, detalhe, user_id) VALUES (?, ?, ?, ?)`, [assessmentId, acao, detalhe || null, userId || null], () => {});
+}
+
+function notificarMasters(title, message, link) {
+    db.all(`SELECT id FROM users WHERE role = 'admin'`, [], (err, admins) => {
+        if (!err && admins) admins.forEach(a => notificar(a.id, title, message, link));
+    });
+}
+
+// Salvar (trava para conferência) / Editar (volta a editar) / Aprovar (final,
+// só o Master altera depois) / Reabrir (só Master, devolve para a empresa editar).
+app.post('/api/dpo/autoavaliacoes/:id/acao', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { acao } = req.body;
     try {
         const av = await obterAutoavaliacaoComAcesso(req, res, req.params.id);
         if (!av) return;
+        const ehMaster = req.user.role === 'admin';
+        const ref = rotuloReferenciaDpo(av.referencia);
+        let novo, msg;
+        if (acao === 'salvar') {
+            if (av.status !== 'em_andamento') return res.status(400).json({ error: 'Só dá para salvar uma autoavaliação em edição.' });
+            novo = 'salva'; msg = 'Autoavaliação salva!';
+        } else if (acao === 'editar') {
+            if (av.status === 'aprovada') return res.status(400).json({ error: ehMaster ? 'Use "Reabrir para a empresa".' : 'Autoavaliação aprovada — só o Master pode alterar. Abra um chamado pedindo ajuste.' });
+            if (av.status !== 'salva') return res.status(400).json({ error: 'A autoavaliação já está em edição.' });
+            novo = 'em_andamento'; msg = 'Autoavaliação liberada para edição.';
+        } else if (acao === 'aprovar') {
+            if (av.status === 'aprovada') return res.status(400).json({ error: 'Esta autoavaliação já está aprovada.' });
+            novo = 'aprovada'; msg = 'Autoavaliação aprovada!';
+        } else if (acao === 'reabrir') {
+            if (!ehMaster) return res.status(403).json({ error: 'Só o Master pode reabrir uma autoavaliação aprovada. Abra um chamado pedindo ajuste.' });
+            if (av.status !== 'aprovada') return res.status(400).json({ error: 'A autoavaliação não está aprovada.' });
+            novo = 'em_andamento'; msg = 'Autoavaliação reaberta para a empresa ajustar.';
+        } else return res.status(400).json({ error: 'Ação inválida.' });
+
         await new Promise((resolve, reject) => db.run(
-            `UPDATE dpo_self_assessments SET status = ?, closed_at = CASE WHEN ? = 'concluida' THEN CURRENT_TIMESTAMP ELSE NULL END WHERE id = ?`,
-            [status, status, av.id], (err) => err ? reject(err) : resolve()
+            `UPDATE dpo_self_assessments SET status = ?,
+                approved_by = CASE WHEN ? = 'aprovada' THEN ? ELSE (CASE WHEN ? = 'em_andamento' THEN NULL ELSE approved_by END) END,
+                approved_at = CASE WHEN ? = 'aprovada' THEN CURRENT_TIMESTAMP ELSE (CASE WHEN ? = 'em_andamento' THEN NULL ELSE approved_at END) END,
+                closed_at = CASE WHEN ? = 'aprovada' THEN CURRENT_TIMESTAMP ELSE closed_at END
+             WHERE id = ?`,
+            [novo, novo, req.user.userId, novo, novo, novo, novo, av.id], (err) => err ? reject(err) : resolve()
         ));
-        res.json({ message: status === 'concluida' ? 'Autoavaliação concluída!' : 'Autoavaliação reaberta!' });
-    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar a autoavaliação.' }); }
+        registrarEventoAutoavaliacaoDpo(av.id, acao, req.body.motivo || null, req.user.userId);
+
+        if (acao === 'aprovar' && !ehMaster) {
+            notificarMasters('DPO — autoavaliação aprovada', `A empresa aprovou a autoavaliação de ${ref}.`, 'dpoAgenda');
+        }
+        if (acao === 'reabrir') {
+            notificarPorCompanyAdmins(av.company_id, 'DPO — autoavaliação reaberta', `O Master reabriu a autoavaliação de ${ref} para ajuste.`, 'dpoHome');
+        }
+        // Chamados de ajuste ligados a esta autoavaliação acompanham o fluxo.
+        const chamadosAjuste = await dbAll(`SELECT id FROM chamados WHERE ref_tipo = 'autoavaliacao' AND ref_id = ? AND status NOT IN ('resolvido', 'fechado')`, [av.id]);
+        for (const c of chamadosAjuste) {
+            if (acao === 'reabrir') {
+                await registrarMensagemSistemaChamado(c.id, `🔓 O Master liberou a autoavaliação de ${ref} para ajuste. Faça as alterações e aprove novamente.`, 'aguardando_empresa');
+            } else if (acao === 'aprovar') {
+                await registrarMensagemSistemaChamado(c.id, `✅ A autoavaliação de ${ref} foi aprovada novamente após o ajuste.`, 'resolvido');
+            }
+        }
+        res.json({ message: msg, status: novo });
+    } catch (e) {
+        console.error('Erro na ação da autoavaliação DPO:', e.message);
+        res.status(400).json({ error: 'Erro ao atualizar a autoavaliação.' });
+    }
 });
 
 app.delete('/api/dpo/autoavaliacoes/:id', requireRole('admin'), async (req, res) => {
@@ -7518,6 +7635,239 @@ app.get('/api/dpo/autoavaliacoes/:id/export', requireRole('admin', 'client_admin
         console.error('Erro ao exportar autoavaliação DPO:', e.message);
         res.status(500).json({ error: 'Erro ao exportar a autoavaliação.' });
     }
+});
+
+// ---------- CHAMADOS (suporte da empresa para o Master) ----------
+const CATEGORIAS_CHAMADO = {
+    ajuste_autoavaliacao: 'Ajuste de autoavaliação DPO',
+    duvida_dpo: 'Dúvida sobre o DPO',
+    suporte_tecnico: 'Problema no sistema',
+    financeiro: 'Financeiro / pagamento',
+    sugestao: 'Sugestão de melhoria',
+    outro: 'Outro assunto'
+};
+const PRIORIDADES_CHAMADO = ['baixa', 'media', 'alta', 'urgente'];
+const STATUS_CHAMADO = { aberto: 'Aberto', em_atendimento: 'Em atendimento', aguardando_empresa: 'Aguardando empresa', resolvido: 'Resolvido', fechado: 'Fechado' };
+const numeroChamado = id => '#' + String(id).padStart(5, '0');
+
+async function registrarMensagemSistemaChamado(chamadoId, texto, novoStatus) {
+    await new Promise((resolve) => db.run(`INSERT INTO chamado_mensagens (chamado_id, autor_papel, texto) VALUES (?, 'sistema', ?)`, [chamadoId, texto], () => resolve()));
+    await new Promise((resolve) => db.run(
+        `UPDATE chamados SET updated_at = CURRENT_TIMESTAMP, nao_lido_empresa = 1, nao_lido_master = 1${novoStatus ? `, status = ?, closed_at = CASE WHEN ? IN ('resolvido', 'fechado') THEN CURRENT_TIMESTAMP ELSE NULL END` : ''} WHERE id = ?`,
+        novoStatus ? [novoStatus, novoStatus, chamadoId] : [chamadoId], () => resolve()));
+}
+
+async function obterChamadoComAcesso(req, res, id) {
+    const c = await dbGet(`SELECT * FROM chamados WHERE id = ?`, [id]);
+    if (!c) { res.status(404).json({ error: 'Chamado não encontrado.' }); return null; }
+    if (req.user.role === 'client_admin' && String(c.company_id) !== String(req.user.companyId)) { res.status(403).json({ error: 'Este chamado não pertence à sua empresa.' }); return null; }
+    return c;
+}
+
+async function descreverReferenciaChamado(c) {
+    if (c.ref_tipo === 'autoavaliacao' && c.ref_id) {
+        const av = await dbGet(`SELECT id, referencia, status FROM dpo_self_assessments WHERE id = ?`, [c.ref_id]);
+        if (av) return { tipo: 'autoavaliacao', id: av.id, rotulo: `Autoavaliação DPO — ${rotuloReferenciaDpo(av.referencia)}`, status: av.status };
+    }
+    return null;
+}
+
+app.get('/api/chamados', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const filtros = [], params = [];
+        if (req.user.role === 'client_admin') { filtros.push('c.company_id = ?'); params.push(req.user.companyId); }
+        else if (req.query.company_id) { filtros.push('c.company_id = ?'); params.push(req.query.company_id); }
+        if (req.query.categoria && CATEGORIAS_CHAMADO[req.query.categoria]) { filtros.push('c.categoria = ?'); params.push(req.query.categoria); }
+        const lista = await dbAll(`
+            SELECT c.*, e.name as empresaNome, u.name as autorNome,
+                   (SELECT COUNT(*) FROM chamado_mensagens m WHERE m.chamado_id = c.id AND m.autor_papel != 'sistema') as totalMensagens
+            FROM chamados c
+            LEFT JOIN companies e ON e.id = c.company_id
+            LEFT JOIN users u ON u.id = c.created_by
+            ${filtros.length ? 'WHERE ' + filtros.join(' AND ') : ''}
+            ORDER BY CASE c.status WHEN 'aberto' THEN 0 WHEN 'em_atendimento' THEN 1 WHEN 'aguardando_empresa' THEN 2 WHEN 'resolvido' THEN 3 ELSE 4 END,
+                     CASE c.prioridade WHEN 'urgente' THEN 0 WHEN 'alta' THEN 1 WHEN 'media' THEN 2 ELSE 3 END,
+                     c.updated_at DESC`, params);
+        const contagem = { aberto: 0, em_atendimento: 0, aguardando_empresa: 0, resolvido: 0, fechado: 0 };
+        lista.forEach(c => { contagem[c.status] = (contagem[c.status] || 0) + 1; });
+        const resolvidos = lista.filter(c => c.closed_at);
+        const horas = (a, b) => (new Date(String(b).replace(' ', 'T') + 'Z') - new Date(String(a).replace(' ', 'T') + 'Z')) / 36e5;
+        const comResposta = lista.filter(c => c.first_response_at);
+        const avaliados = lista.filter(c => c.avaliacao);
+        res.json({
+            categorias: CATEGORIAS_CHAMADO, statusRotulos: STATUS_CHAMADO,
+            indicadores: {
+                ...contagem,
+                naoLidos: lista.filter(c => req.user.role === 'admin' ? c.nao_lido_master : c.nao_lido_empresa).length,
+                horasPrimeiraResposta: comResposta.length ? Math.round(comResposta.reduce((s, c) => s + horas(c.created_at, c.first_response_at), 0) / comResposta.length * 10) / 10 : null,
+                horasResolucao: resolvidos.length ? Math.round(resolvidos.reduce((s, c) => s + horas(c.created_at, c.closed_at), 0) / resolvidos.length * 10) / 10 : null,
+                satisfacao: avaliados.length ? Math.round(avaliados.reduce((s, c) => s + c.avaliacao, 0) / avaliados.length * 10) / 10 : null
+            },
+            lista: lista.map(c => ({ ...c, numero: numeroChamado(c.id), categoriaRotulo: CATEGORIAS_CHAMADO[c.categoria] || c.categoria, naoLido: !!(req.user.role === 'admin' ? c.nao_lido_master : c.nao_lido_empresa) }))
+        });
+    } catch (e) {
+        console.error('Erro ao listar chamados:', e.message);
+        res.status(500).json({ error: 'Erro ao carregar os chamados.' });
+    }
+});
+
+app.post('/api/chamados/upload', requireRole('admin', 'client_admin'), (req, res) => {
+    uploadMaterialDpo.single('file')(req, res, (err) => {
+        if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Arquivo muito grande (máximo 100MB).' : err.message });
+        if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo recebido.' });
+        res.json({ url: '/uploads/' + req.file.filename, originalName: req.file.originalname });
+    });
+});
+
+const anexoValidoChamado = url => !url || /^\/uploads\/[\w.\-]+$/.test(String(url));
+
+app.post('/api/chamados', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { categoria, prioridade, ref_tipo, ref_id, anexo_url, anexo_nome } = req.body;
+    const assunto = String(req.body.assunto || '').trim().slice(0, 200);
+    const descricao = String(req.body.descricao || '').trim().slice(0, 5000);
+    const companyId = req.user.role === 'client_admin' ? req.user.companyId : req.body.company_id;
+    if (!companyId) return res.status(400).json({ error: 'Informe a empresa.' });
+    if (!CATEGORIAS_CHAMADO[categoria]) return res.status(400).json({ error: 'Escolha a categoria do chamado.' });
+    if (!assunto) return res.status(400).json({ error: 'Informe o assunto.' });
+    if (!descricao) return res.status(400).json({ error: 'Descreva o que você precisa.' });
+    if (!anexoValidoChamado(anexo_url)) return res.status(400).json({ error: 'Anexo inválido.' });
+    try {
+        let refTipo = null, refId = null;
+        if (categoria === 'ajuste_autoavaliacao') {
+            const av = ref_id ? await dbGet(`SELECT * FROM dpo_self_assessments WHERE id = ? AND company_id = ?`, [ref_id, companyId]) : null;
+            if (!av) return res.status(400).json({ error: 'Escolha qual autoavaliação precisa de ajuste.' });
+            const jaAberto = await dbGet(`SELECT id FROM chamados WHERE ref_tipo = 'autoavaliacao' AND ref_id = ? AND status NOT IN ('resolvido', 'fechado')`, [av.id]);
+            if (jaAberto) return res.status(400).json({ error: `Já existe o chamado ${numeroChamado(jaAberto.id)} aberto para esta autoavaliação.` });
+            refTipo = 'autoavaliacao'; refId = av.id;
+        }
+        const id = await new Promise((resolve, reject) => db.run(
+            `INSERT INTO chamados (company_id, created_by, categoria, assunto, prioridade, ref_tipo, ref_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [companyId, req.user.userId, categoria, assunto, PRIORIDADES_CHAMADO.includes(prioridade) ? prioridade : 'media', refTipo, refId],
+            function (err) { err ? reject(err) : resolve(this.lastID); }
+        ));
+        await new Promise((resolve, reject) => db.run(
+            `INSERT INTO chamado_mensagens (chamado_id, user_id, autor_papel, texto, anexo_url, anexo_nome) VALUES (?, ?, ?, ?, ?, ?)`,
+            [id, req.user.userId, req.user.role === 'admin' ? 'master' : 'empresa', descricao, anexo_url || null, anexo_nome ? String(anexo_nome).slice(0, 200) : null],
+            (err) => err ? reject(err) : resolve()
+        ));
+        const empresa = await dbGet(`SELECT name FROM companies WHERE id = ?`, [companyId]);
+        if (req.user.role === 'client_admin') notificarMasters(`Novo chamado ${numeroChamado(id)}`, `${empresa ? empresa.name : 'Empresa'}: ${assunto}`, 'chamados');
+        else notificarPorCompanyAdmins(companyId, `Novo chamado ${numeroChamado(id)}`, assunto, 'chamados');
+        res.json({ message: `Chamado ${numeroChamado(id)} aberto!`, id });
+    } catch (e) {
+        console.error('Erro ao abrir chamado:', e.message);
+        res.status(400).json({ error: 'Erro ao abrir o chamado.' });
+    }
+});
+
+app.get('/api/chamados/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const c = await obterChamadoComAcesso(req, res, req.params.id);
+        if (!c) return;
+        const mensagens = await dbAll(`SELECT m.*, u.name as autorNome FROM chamado_mensagens m LEFT JOIN users u ON u.id = m.user_id WHERE m.chamado_id = ? ORDER BY m.created_at ASC, m.id ASC`, [c.id]);
+        const empresa = await dbGet(`SELECT name FROM companies WHERE id = ?`, [c.company_id]);
+        const autor = c.created_by ? await dbGet(`SELECT name FROM users WHERE id = ?`, [c.created_by]) : null;
+        db.run(`UPDATE chamados SET ${req.user.role === 'admin' ? 'nao_lido_master' : 'nao_lido_empresa'} = 0 WHERE id = ?`, [c.id], () => {});
+        res.json({
+            ...c, numero: numeroChamado(c.id), categoriaRotulo: CATEGORIAS_CHAMADO[c.categoria] || c.categoria, statusRotulos: STATUS_CHAMADO,
+            empresaNome: empresa ? empresa.name : '', autorNome: autor ? autor.name : '', referencia: await descreverReferenciaChamado(c), mensagens
+        });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar o chamado.' }); }
+});
+
+app.post('/api/chamados/:id/mensagens', requireRole('admin', 'client_admin'), async (req, res) => {
+    const texto = String(req.body.texto || '').trim().slice(0, 5000);
+    const { anexo_url, anexo_nome } = req.body;
+    if (!texto && !anexo_url) return res.status(400).json({ error: 'Escreva uma mensagem ou anexe um arquivo.' });
+    if (!anexoValidoChamado(anexo_url)) return res.status(400).json({ error: 'Anexo inválido.' });
+    try {
+        const c = await obterChamadoComAcesso(req, res, req.params.id);
+        if (!c) return;
+        if (c.status === 'fechado' && req.user.role !== 'admin') return res.status(400).json({ error: 'Este chamado está fechado. Reabra para responder.' });
+        const ehMaster = req.user.role === 'admin';
+        await new Promise((resolve, reject) => db.run(
+            `INSERT INTO chamado_mensagens (chamado_id, user_id, autor_papel, texto, anexo_url, anexo_nome) VALUES (?, ?, ?, ?, ?, ?)`,
+            [c.id, req.user.userId, ehMaster ? 'master' : 'empresa', texto || null, anexo_url || null, anexo_nome ? String(anexo_nome).slice(0, 200) : null],
+            (err) => err ? reject(err) : resolve()
+        ));
+        // Master respondendo um chamado novo -> "em atendimento"; empresa
+        // respondendo um que aguardava ela (ou já resolvido) -> volta pro Master.
+        let novoStatus = c.status;
+        if (ehMaster && c.status === 'aberto') novoStatus = 'em_atendimento';
+        if (!ehMaster && ['aguardando_empresa', 'resolvido'].includes(c.status)) novoStatus = 'em_atendimento';
+        if (ehMaster && req.body.aguardarEmpresa) novoStatus = 'aguardando_empresa';
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE chamados SET status = ?, updated_at = CURRENT_TIMESTAMP, ${ehMaster ? 'nao_lido_empresa = 1' : 'nao_lido_master = 1'},
+                first_response_at = CASE WHEN ? = 1 AND first_response_at IS NULL THEN CURRENT_TIMESTAMP ELSE first_response_at END,
+                closed_at = CASE WHEN ? IN ('resolvido', 'fechado') THEN closed_at ELSE NULL END
+             WHERE id = ?`,
+            [novoStatus, ehMaster ? 1 : 0, novoStatus, c.id], (err) => err ? reject(err) : resolve()
+        ));
+        if (ehMaster) notificarPorCompanyAdmins(c.company_id, `Resposta no chamado ${numeroChamado(c.id)}`, c.assunto, 'chamados');
+        else notificarMasters(`Nova mensagem no chamado ${numeroChamado(c.id)}`, c.assunto, 'chamados');
+        res.json({ message: 'Mensagem enviada!', status: novoStatus });
+    } catch (e) { res.status(400).json({ error: 'Erro ao enviar a mensagem.' }); }
+});
+
+// Master: muda status/prioridade. Empresa: fecha (com avaliação) ou reabre.
+app.put('/api/chamados/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const c = await obterChamadoComAcesso(req, res, req.params.id);
+        if (!c) return;
+        const ehMaster = req.user.role === 'admin';
+        const { status, prioridade } = req.body;
+        const mudancas = [];
+        if (prioridade !== undefined) {
+            if (!ehMaster) return res.status(403).json({ error: 'Só o Master altera a prioridade.' });
+            if (!PRIORIDADES_CHAMADO.includes(prioridade)) return res.status(400).json({ error: 'Prioridade inválida.' });
+            if (prioridade !== c.prioridade) {
+                await new Promise((resolve) => db.run(`UPDATE chamados SET prioridade = ? WHERE id = ?`, [prioridade, c.id], () => resolve()));
+                mudancas.push(`Prioridade alterada para ${prioridade}.`);
+            }
+        }
+        if (status !== undefined && status !== c.status) {
+            if (!STATUS_CHAMADO[status]) return res.status(400).json({ error: 'Status inválido.' });
+            if (!ehMaster && !['fechado', 'aberto'].includes(status)) return res.status(403).json({ error: 'A empresa só pode fechar ou reabrir o chamado.' });
+            if (!ehMaster && status === 'aberto' && !['resolvido', 'fechado'].includes(c.status)) return res.status(400).json({ error: 'O chamado já está aberto.' });
+            const nota = req.body.avaliacao ? Math.max(1, Math.min(5, Number(req.body.avaliacao))) : null;
+            if (!ehMaster && status === 'fechado' && nota) {
+                await new Promise((resolve) => db.run(`UPDATE chamados SET avaliacao = ?, avaliacao_comentario = ? WHERE id = ?`, [nota, String(req.body.comentario || '').slice(0, 1000) || null, c.id], () => resolve()));
+            }
+            const quem = ehMaster ? 'Master' : 'Empresa';
+            await registrarMensagemSistemaChamado(c.id, `${quem} alterou o status para "${STATUS_CHAMADO[status]}".${nota ? ` Avaliação do atendimento: ${'★'.repeat(nota)}${'☆'.repeat(5 - nota)}` : ''}`, status);
+            if (ehMaster) notificarPorCompanyAdmins(c.company_id, `Chamado ${numeroChamado(c.id)}: ${STATUS_CHAMADO[status]}`, c.assunto, 'chamados');
+            else notificarMasters(`Chamado ${numeroChamado(c.id)}: ${STATUS_CHAMADO[status]}`, c.assunto, 'chamados');
+        }
+        if (mudancas.length) await registrarMensagemSistemaChamado(c.id, mudancas.join(' '));
+        res.json({ message: 'Chamado atualizado!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o chamado.' }); }
+});
+
+// Master libera o ajuste pedido: reabre a autoavaliação ligada ao chamado.
+app.post('/api/chamados/:id/liberar-ajuste', requireRole('admin'), async (req, res) => {
+    try {
+        const c = await obterChamadoComAcesso(req, res, req.params.id);
+        if (!c) return;
+        if (c.ref_tipo !== 'autoavaliacao' || !c.ref_id) return res.status(400).json({ error: 'Este chamado não está ligado a uma autoavaliação.' });
+        const av = await dbGet(`SELECT * FROM dpo_self_assessments WHERE id = ?`, [c.ref_id]);
+        if (!av) return res.status(404).json({ error: 'Autoavaliação não encontrada.' });
+        if (av.status !== 'aprovada') return res.status(400).json({ error: 'A autoavaliação já está liberada para edição.' });
+        await new Promise((resolve, reject) => db.run(`UPDATE dpo_self_assessments SET status = 'em_andamento', approved_by = NULL, approved_at = NULL WHERE id = ?`, [av.id], (err) => err ? reject(err) : resolve()));
+        registrarEventoAutoavaliacaoDpo(av.id, 'reabrir', `Chamado ${numeroChamado(c.id)}`, req.user.userId);
+        await registrarMensagemSistemaChamado(c.id, `🔓 O Master liberou a autoavaliação de ${rotuloReferenciaDpo(av.referencia)} para ajuste. Faça as alterações e aprove novamente.`, 'aguardando_empresa');
+        db.run(`UPDATE chamados SET first_response_at = COALESCE(first_response_at, CURRENT_TIMESTAMP) WHERE id = ?`, [c.id], () => {});
+        notificarPorCompanyAdmins(c.company_id, `Ajuste liberado — chamado ${numeroChamado(c.id)}`, `A autoavaliação de ${rotuloReferenciaDpo(av.referencia)} foi reaberta para ajuste.`, 'chamados');
+        res.json({ message: 'Autoavaliação liberada para a empresa ajustar!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao liberar o ajuste.' }); }
+});
+
+app.get('/api/chamados-contagem', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const r = req.user.role === 'admin'
+            ? await dbGet(`SELECT COUNT(*) as naoLidos FROM chamados WHERE nao_lido_master = 1 AND status != 'fechado'`)
+            : await dbGet(`SELECT COUNT(*) as naoLidos FROM chamados WHERE company_id = ? AND nao_lido_empresa = 1`, [req.user.companyId]);
+        res.json(r);
+    } catch (e) { res.json({ naoLidos: 0 }); }
 });
 
 app.put('/api/dpo/cycles/:id/answers', requireRole('admin', 'client_admin'), async (req, res) => {

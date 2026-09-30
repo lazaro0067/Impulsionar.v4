@@ -444,6 +444,30 @@
   .dpo-nota.selecionada.nota-1 { border-color: #d97706; background: #fffbeb; }
   .dpo-nota.selecionada.nota-0 { border-color: #dc2626; background: #fef2f2; }
   .dpo-nota.selecionada.nota-na { border-color: #64748b; background: #f1f5f9; }
+  .dpo-aovivo-fixo { position: sticky; top: 0; z-index: 5; padding: 6px 0; background: #f4f6fb; }
+  .dpo-aovivo { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; background: #fff; border: 1px solid var(--cinza-200); border-left: 6px solid; border-radius: 12px; padding: 8px 14px; box-shadow: 0 4px 12px rgba(15,23,42,.08); }
+  .dpo-aovivo .dpo-selo { margin: 0; }
+  .dpo-aovivo-rotulo { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+  .dpo-aovivo-valor { font-size: 26px; font-weight: 900; color: #0f172a; line-height: 1.1; }
+  .dpo-aovivo-cats { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: #475569; }
+  .dpo-aovivo-selo { font-size: 12.5px; margin-left: auto; }
+  .dpo-acoes-av { position: sticky; bottom: 0; z-index: 5; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: #fff; border: 1px solid var(--cinza-200); border-radius: 12px; padding: 12px 16px; margin-top: 16px; box-shadow: 0 -4px 12px rgba(15,23,42,.08); }
+  .dpo-acoes-av button { width: auto; }
+  .chamados-lista { display: flex; flex-direction: column; gap: 8px; }
+  .chamado-linha { display: flex; gap: 12px; align-items: center; width: 100%; background: #fff; border: 1px solid var(--cinza-200); border-radius: 12px; padding: 12px 14px; cursor: pointer; font: inherit; }
+  .chamado-linha:hover { border-color: #94a3b8; }
+  .chamado-linha.nao-lido { border-left: 4px solid #2563eb; }
+  .chamado-novo { font-size: 10.5px; font-weight: 800; color: #fff; background: #2563eb; border-radius: 999px; padding: 1px 8px; }
+  .chamado-conversa { display: flex; flex-direction: column; gap: 10px; }
+  .chamado-msg { max-width: 78%; background: #fff; border: 1px solid var(--cinza-200); border-radius: 12px; padding: 10px 12px; }
+  .chamado-msg.minha { align-self: flex-end; background: #eff6ff; border-color: #bfdbfe; }
+  .chamado-msg.master:not(.minha) { background: #f8fafc; }
+  .chamado-msg-autor { font-size: 11.5px; font-weight: 700; color: #334155; margin-bottom: 4px; }
+  .chamado-msg-autor span { font-weight: 400; color: #94a3b8; margin-left: 4px; }
+  .chamado-msg-texto { font-size: 13.5px; color: #0f172a; white-space: pre-wrap; }
+  .chamado-anexo { display: inline-block; margin-top: 6px; font-size: 12.5px; color: #2563eb; }
+  .chamado-msg-sistema { align-self: center; font-size: 12px; color: #475569; background: #f1f5f9; border-radius: 999px; padding: 4px 12px; text-align: center; }
+  .chamado-msg-sistema span { color: #94a3b8; }
   .dpo-score-badge { font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
 </style>
 </head>
@@ -779,6 +803,9 @@ const MENU_POR_PERFIL = {
     { group: 'Teste DISC', items: [
         ['discTesteMaster', 'Testar & Enviar Teste DISC']
     ]},
+    { group: 'Suporte', items: [
+        ['chamados', 'Chamados das Empresas']
+    ]},
     { group: 'Administração', items: [
         ['plans', 'Planos'], ['engagement', 'Painel de Engajamento'], ['contracts', 'Contratos'],
         ['automacao', 'Painel de Automação'], ['assistenteIA', 'Assistente IA']
@@ -808,7 +835,7 @@ const MENU_POR_PERFIL = {
         ['dpoHome', 'DPO Ambev']
     ]},
     { group: 'Empresa', items: [
-        ['engagement', 'Painel de Engajamento'], ['contracts', 'Meu Contrato'], ['planosEmpresa', 'Planos Disponíveis'], ['minhaEmpresa', 'Minha Empresa']
+        ['engagement', 'Painel de Engajamento'], ['contracts', 'Meu Contrato'], ['planosEmpresa', 'Planos Disponíveis'], ['minhaEmpresa', 'Minha Empresa'], ['chamados', 'Chamados (Suporte)']
     ]}
   ],
   // moduleKey em cada grupo: filtrado pelo enabledModules do PRÓPRIO
@@ -1082,7 +1109,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores,
+    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados,
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster
   };
   (renderizadores[aba] || renderDashboard)();
@@ -6798,7 +6825,8 @@ async function renderDpoHome() {
           ${geralDpo ? `
             <div style="font-size:12px;color:#64748b;">Nível da operação na última autoavaliação (${escapeHtml(geralDpo.referenciaLabel)})</div>
             <div style="font-size:20px;font-weight:800;color:#0f172a;">${escapeHtml(visualSeloDpo(geralDpo.nivelGeral).label)}</div>
-            <div style="font-size:12.5px;color:#475569;">Segurança ${fmtPctDpoFront(geralDpo.categorias.seg)} · Gente e Gestão ${fmtPctDpoFront(geralDpo.categorias.gg)} · Pilares técnicos ${fmtPctDpoFront(geralDpo.categorias.tec)}</div>
+            <div style="font-size:12.5px;color:#475569;">Revenda ${fmtPctDpoFront(geralDpo.categorias.todos)} · Segurança ${fmtPctDpoFront(geralDpo.categorias.seg)} · Gente e Gestão ${fmtPctDpoFront(geralDpo.categorias.gg)} · Pilares técnicos ${fmtPctDpoFront(geralDpo.categorias.tec)}</div>
+            <div style="font-size:12px;color:#0f172a;">Selo = menor pilar · ${limitanteDpoTexto(geralDpo)}${geralDpo.pilaresAvaliados < geralDpo.totalPilares ? ` · <span style="color:#b45309;">parcial: ${geralDpo.pilaresAvaliados}/${geralDpo.totalPilares} pilares avaliados</span>` : ''}</div>
           ` : `
             <div style="font-size:16px;font-weight:800;color:#0f172a;">Nenhuma autoavaliação feita ainda</div>
             <div style="font-size:12.5px;color:#475569;">Faça a autoavaliação mensal para ver o nível de cada pilar e o selo projetado da operação.</div>
@@ -6808,6 +6836,7 @@ async function renderDpoHome() {
       <div class="barra-acoes"><div class="direita">
         ${pastasDpoHome.autoavaliacao ? `<button class="btn-primario" style="width:auto;" onclick="renderDpoAutoavaliacao()">📊 Autoavaliação Mensal</button>` : ''}
         <button class="btn-secundario" onclick="renderDpoMeusPlanos()">📋 Meus Planos DPO</button>
+        <button class="btn-secundario" onclick="irPara('chamados')">🎫 Chamados</button>
         <button class="btn-primario" onclick="mostrarComprasDpo()">🛒 Comprar Pilares / Consultoria Completa</button>
       </div></div>
       <div id="modal-area"></div>
@@ -7903,7 +7932,7 @@ function reguaSelosDpoHtml(nivelAtual, primeiraAuditoria) {
   return `
     <div class="painel dpo-regua">
       <h3 style="margin-top:0;">🏅 Régua de Selos DPO 2026</h3>
-      <p style="font-size:12.5px;color:#64748b;margin-top:-6px;">O selo da operação é o maior nível em que <strong>todas</strong> as categorias batem o limite. Use para conferir a pontuação.</p>
+      <p style="font-size:12.5px;color:#64748b;margin-top:-6px;">Cada pilar recebe o nível pelo limite da sua categoria (Segurança, Gente e Gestão ou pilares técnicos). O <strong>selo da operação é sempre o menor nível entre os pilares</strong>. Use para conferir a pontuação.</p>
       <div class="dpo-regua-grade">
         ${ORDEM_SELOS_DPO.map(k => `
           <div class="dpo-regua-item ${k === nivelAtual ? 'atual' : ''}" style="${k === nivelAtual ? `border-color:${visualSeloDpo(k).cor};` : ''}">
@@ -7957,6 +7986,118 @@ function deltaDpoHtml(atual, anterior) {
 }
 
 // ---------- Tela da Autoavaliação Mensal ----------
+const STATUS_AV_DPO = {
+  em_andamento: { texto: '✍️ Em edição', fundo: '#fef9c3', cor: '#854d0e' },
+  salva: { texto: '💾 Salva', fundo: '#dbeafe', cor: '#1e40af' },
+  aprovada: { texto: '✅ Aprovada', fundo: '#dcfce7', cor: '#166534' }
+};
+const ROTULOS_ACAO_AV_DPO = { salvar: '💾 Salvou', editar: '✏️ Liberou para edição', aprovar: '✅ Aprovou', reabrir: '🔓 Reabriu para ajuste', ajuste_master: '🛠️ Master alterou nota' };
+
+function podeEditarNotasAutoavaliacaoDpo() {
+  const st = ESTADO_AUTOAVAL.atual.status;
+  return ESTADO.usuario.role === 'admin' ? (st === 'em_andamento' || st === 'aprovada') : st === 'em_andamento';
+}
+
+function limitanteDpoTexto(r) {
+  if (!r || !r.pilaresLimitantes || !r.pilaresLimitantes.length) return '';
+  return 'Menor pilar: ' + r.pilaresLimitantes.map(p => `${escapeHtml(p.label)} (${fmtPctDpoFront(p.pct)})`).join(', ');
+}
+
+// Barra fixa com o percentual da revenda, atualizada a cada nota dada.
+function htmlAoVivoAutoavaliacaoDpo() {
+  const r = ESTADO_AUTOAVAL.atual.resumo;
+  const v = visualSeloDpo(r.nivelGeral);
+  return `
+    <div class="dpo-aovivo" style="border-left-color:${v.cor};">
+      ${seloDpoHtml(r.nivelGeral, 54)}
+      <div class="dpo-aovivo-total"><div class="dpo-aovivo-rotulo">Revenda (todos os pilares)</div><div class="dpo-aovivo-valor">${fmtPctDpoFront(r.categorias.todos)}</div></div>
+      <div class="dpo-aovivo-cats">
+        <span>Segurança <strong>${fmtPctDpoFront(r.categorias.seg)}</strong></span>
+        <span>Gente e Gestão <strong>${fmtPctDpoFront(r.categorias.gg)}</strong></span>
+        <span>Técnicos <strong>${fmtPctDpoFront(r.categorias.tec)}</strong></span>
+      </div>
+      <div class="dpo-aovivo-selo">
+        <div>Selo projetado: <strong>${r.nivelGeral ? escapeHtml(v.label) : '—'}</strong>${r.pilaresAvaliados < r.totalPilares ? ` <span style="color:#b45309;">(parcial: ${r.pilaresAvaliados}/${r.totalPilares} pilares)</span>` : ''}</div>
+        <div style="font-size:11px;color:#64748b;">${limitanteDpoTexto(r)}</div>
+        <div style="font-size:11px;color:#64748b;">${r.totalRespondidas}/${r.totalPerguntas} perguntas avaliadas</div>
+      </div>
+    </div>`;
+}
+
+function htmlAcoesAutoavaliacaoDpo() {
+  const { atual } = ESTADO_AUTOAVAL;
+  const ehMaster = ESTADO.usuario.role === 'admin';
+  const st = atual.status;
+  let botoes = '';
+  if (st === 'em_andamento') botoes = `
+      <button class="btn-secundario" onclick="acaoAutoavaliacaoDpo('salvar')">💾 Salvar</button>
+      <button class="btn-primario" style="width:auto;" onclick="acaoAutoavaliacaoDpo('aprovar')">✅ Aprovar</button>`;
+  else if (st === 'salva') botoes = `
+      <button class="btn-secundario" onclick="acaoAutoavaliacaoDpo('editar')">✏️ Editar</button>
+      <button class="btn-primario" style="width:auto;" onclick="acaoAutoavaliacaoDpo('aprovar')">✅ Aprovar</button>`;
+  else botoes = ehMaster
+      ? `<button class="btn-secundario" onclick="acaoAutoavaliacaoDpo('reabrir')">🔓 Reabrir para a empresa</button>`
+      : (atual.chamadoAberto
+          ? `<button class="btn-secundario" onclick="abrirChamado(${atual.chamadoAberto.id})">🎫 Ver chamado de ajuste aberto</button>`
+          : `<button class="btn-primario" style="width:auto;" onclick="solicitarAjusteAutoavaliacaoDpo()">🎫 Solicitar ajuste ao Master (abrir chamado)</button>`);
+  const aviso = st === 'em_andamento' ? 'As notas são gravadas a cada clique. <strong>Salvar</strong> trava para conferência; <strong>Aprovar</strong> finaliza o mês.'
+    : st === 'salva' ? 'Autoavaliação salva e travada. Clique em <strong>Editar</strong> para alterar ou <strong>Aprovar</strong> para finalizar.'
+    : ehMaster ? 'Aprovada. Como Master, você pode alterar notas direto aqui (fica registrado no histórico) ou reabrir para a empresa.'
+    : 'Aprovada — só o Master pode alterar. Para corrigir alguma nota, abra um chamado pedindo ajuste.';
+  return `
+    <div class="dpo-acoes-av">
+      <div style="font-size:12.5px;color:#475569;flex:1;min-width:220px;">${aviso}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">${botoes}</div>
+    </div>`;
+}
+
+async function acaoAutoavaliacaoDpo(acao) {
+  const { atual } = ESTADO_AUTOAVAL;
+  const faltam = atual.resumo.totalPerguntas - atual.resumo.totalRespondidas;
+  if (acao === 'aprovar' && !confirm((faltam > 0 ? `Ainda faltam ${faltam} pergunta(s) sem nota.\n` : '') + (ESTADO.usuario.role === 'admin' ? 'Aprovar esta autoavaliação?' : 'Depois de aprovada, só o Master poderá alterar (via chamado). Aprovar?'))) return;
+  if (acao === 'reabrir' && !confirm('Reabrir a autoavaliação para a empresa editar?')) return;
+  try {
+    const r = await api('/api/dpo/autoavaliacoes/' + atual.id + '/acao', { method: 'POST', body: JSON.stringify({ acao }) });
+    mostrarToast(r.message);
+    renderDpoAutoavaliacao(ESTADO_AUTOAVAL.companyId, atual.id, acao === 'aprovar' ? 'resumo' : 'responder');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+function solicitarAjusteAutoavaliacaoDpo() {
+  const { atual } = ESTADO_AUTOAVAL;
+  abrirModalNovoChamado({ categoria: 'ajuste_autoavaliacao', refId: atual.id, refRotulo: 'Autoavaliação DPO — ' + atual.referenciaLabel,
+    assunto: 'Ajuste na autoavaliação de ' + atual.referenciaLabel, aoCriar: () => renderDpoAutoavaliacao(ESTADO_AUTOAVAL.companyId, atual.id, 'responder') });
+}
+
+function htmlHistoricoAutoavaliacaoDpo() {
+  const ev = ESTADO_AUTOAVAL.atual.eventos || [];
+  if (!ev.length) return '';
+  return `
+    <details class="painel" style="margin-top:16px;">
+      <summary style="cursor:pointer;font-weight:700;">🕓 Histórico desta autoavaliação (${ev.length})</summary>
+      <div style="margin-top:10px;">
+        ${ev.map(e => `<div style="font-size:12.5px;padding:4px 0;border-bottom:1px solid #f1f5f9;">
+          <strong>${ROTULOS_ACAO_AV_DPO[e.acao] || escapeHtml(e.acao)}</strong> — ${escapeHtml(e.autorNome || '')}${e.autorPapel === 'admin' ? ' (Master)' : ''}
+          <span style="color:#94a3b8;"> · ${e.created_at ? new Date(String(e.created_at).replace(' ', 'T') + 'Z').toLocaleString('pt-BR') : ''}</span>
+          ${e.detalhe ? `<div style="color:#64748b;">${escapeHtml(e.detalhe)}</div>` : ''}</div>`).join('')}
+      </div>
+    </details>`;
+}
+
+function htmlMesesAutoavaliacaoDpo() {
+  const { lista, atual } = ESTADO_AUTOAVAL;
+  return lista.lista.map(a => {
+    const v = visualSeloDpo(a.nivelGeral);
+    const sel = atual && a.id === atual.id;
+    const st = STATUS_AV_DPO[a.status] || STATUS_AV_DPO.em_andamento;
+    return `<button class="dpo-mes ${sel ? 'ativo' : ''}" style="${sel ? `border-color:${v.cor};` : ''}" onclick="renderDpoAutoavaliacao(ESTADO_AUTOAVAL.companyId, ${a.id})">
+      <span class="dpo-mes-bolinha" style="background:${v.cor};"></span>
+      <strong>${escapeHtml(a.referenciaLabel)}</strong>
+      <span>${a.nivelGeral ? escapeHtml(v.label) + ' · ' + fmtPctDpoFront(a.categorias.todos) : 'sem notas'}</span>
+      <span style="font-size:10.5px;color:#64748b;">${st.texto} · ${a.totalRespondidas}/${a.totalPerguntas}</span>
+    </button>`;
+  }).join('');
+}
 let ESTADO_AUTOAVAL = null; // { companyId, lista, atual, modo, pilar }
 
 async function renderDpoAutoavaliacao(companyId, assessmentId, modo) {
@@ -7990,18 +8131,7 @@ function desenharAutoavaliacaoDpo() {
     <h1>📊 Autoavaliação Mensal — DPO Ambev${lista.empresa ? ' · ' + escapeHtml(lista.empresa) : ''}</h1>
     <p style="color:#64748b;margin-top:-8px;">Uma autoavaliação por mês, com todos os pilares liberados. Cada pergunta recebe <strong>3</strong>, <strong>1</strong>, <strong>0</strong> ou <strong>N/A</strong>. O resumo mostra a pontuação por bloco e pilar e o selo projetado da operação.</p>
     ${lista.lista.length ? `
-    <div class="dpo-meses">
-      ${lista.lista.map(a => {
-        const v = visualSeloDpo(a.nivelGeral);
-        const sel = atual && a.id === atual.id;
-        return `<button class="dpo-mes ${sel ? 'ativo' : ''}" style="${sel ? `border-color:${v.cor};` : ''}" onclick="renderDpoAutoavaliacao(ESTADO_AUTOAVAL.companyId, ${a.id})">
-          <span class="dpo-mes-bolinha" style="background:${v.cor};"></span>
-          <strong>${escapeHtml(a.referenciaLabel)}</strong>
-          <span>${a.nivelGeral ? escapeHtml(v.label) + ' · ' + fmtPctDpoFront(a.categorias.todos) : 'sem notas'}</span>
-          <span style="font-size:10.5px;color:#64748b;">${a.status === 'concluida' ? '✔ concluída' : '✍️ em andamento'} · ${a.totalRespondidas}/${a.totalPerguntas}</span>
-        </button>`;
-      }).join('')}
-    </div>` : ''}
+    <div class="dpo-meses" id="av-meses">${htmlMesesAutoavaliacaoDpo()}</div>` : ''}
     ${!atual ? `
       <div class="msg-vazio" style="margin:18px 0;">Nenhuma autoavaliação feita ainda. Clique em <strong>+ Iniciar autoavaliação de ${escapeHtml(lista.referenciaAtualLabel)}</strong> para começar.</div>
       ${reguaSelosDpoHtml(null, lista.primeiraAuditoria)}
@@ -8010,13 +8140,12 @@ function desenharAutoavaliacaoDpo() {
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
           <div>
             <strong style="font-size:16px;">${escapeHtml(atual.referenciaLabel)}</strong>
-            <span class="dpo-score-badge" style="margin-left:6px;background:${atual.status === 'concluida' ? '#dcfce7' : '#fef9c3'};color:${atual.status === 'concluida' ? '#166534' : '#854d0e'};">${atual.status === 'concluida' ? '✔ Concluída' : '✍️ Em andamento'}</span>
+            <span class="dpo-score-badge" style="margin-left:6px;background:${(STATUS_AV_DPO[atual.status] || STATUS_AV_DPO.em_andamento).fundo};color:${(STATUS_AV_DPO[atual.status] || STATUS_AV_DPO.em_andamento).cor};">${(STATUS_AV_DPO[atual.status] || STATUS_AV_DPO.em_andamento).texto}</span>
+            ${atual.status === 'aprovada' && atual.approved_at ? `<span style="font-size:12px;color:#166534;margin-left:6px;">em ${new Date(String(atual.approved_at).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR')}${atual.aprovadoPor ? ' por ' + escapeHtml(atual.aprovadoPor) : ''}</span>` : ''}
+            ${atual.chamadoAberto ? `<a href="#" style="font-size:12px;margin-left:6px;" onclick="abrirChamado(${atual.chamadoAberto.id});return false;">🎫 chamado de ajuste aberto</a>` : ''}
             <div class="plano-meta" id="av-progresso-texto">${atual.resumo.totalRespondidas}/${atual.resumo.totalPerguntas} pergunta(s) avaliada(s)</div>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            ${atual.status === 'concluida'
-              ? `<button class="btn-secundario btn-sm" onclick="mudarStatusAutoavaliacaoDpo('em_andamento')">Reabrir</button>`
-              : `<button class="btn-primario btn-sm" style="width:auto;" onclick="mudarStatusAutoavaliacaoDpo('concluida')">✔ Concluir autoavaliação</button>`}
             <button class="btn-secundario btn-sm" onclick="baixarArquivoDpo('/api/dpo/autoavaliacoes/${atual.id}/export', 'autoavaliacao-dpo-${atual.referencia}.xlsx')">📊 Baixar Excel</button>
             ${ehMaster ? `<button class="btn-perigo btn-sm" onclick="excluirAutoavaliacaoDpo(${atual.id})">Excluir</button>` : ''}
           </div>
@@ -8025,7 +8154,7 @@ function desenharAutoavaliacaoDpo() {
       </div>
       <div class="dpo-subabas">
         <button class="dpo-subaba ${modo === 'resumo' ? 'ativa' : ''}" onclick="ESTADO_AUTOAVAL.modo='resumo'; desenharAutoavaliacaoDpo();">📊 Resumo da operação</button>
-        <button class="dpo-subaba ${modo === 'responder' ? 'ativa' : ''}" onclick="ESTADO_AUTOAVAL.modo='responder'; desenharAutoavaliacaoDpo();">✍️ ${atual.status === 'concluida' ? 'Ver notas' : 'Responder'}</button>
+        <button class="dpo-subaba ${modo === 'responder' ? 'ativa' : ''}" onclick="ESTADO_AUTOAVAL.modo='responder'; desenharAutoavaliacaoDpo();">✍️ ${podeEditarNotasAutoavaliacaoDpo() ? 'Responder' : 'Ver notas'}</button>
       </div>
       <div id="av-corpo">${modo === 'responder' ? htmlResponderAutoavaliacaoDpo() : htmlResumoAutoavaliacaoDpo()}</div>
     `}
@@ -8045,7 +8174,9 @@ function htmlResumoAutoavaliacaoDpo() {
     <div class="dpo-hero" style="border-color:${v.cor};">
       <div style="text-align:center;">
         ${seloDpoHtml(r.nivelGeral, 132)}
-        <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Selo projetado da operação</div>
+        <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Selo projetado da operação<br><span style="font-size:11px;">(sempre o menor pilar)</span></div>
+        <div style="font-size:11.5px;color:#0f172a;margin-top:4px;max-width:170px;">${limitanteDpoTexto(r)}</div>
+        ${r.pilaresAvaliados < r.totalPilares ? `<div style="font-size:11px;color:#b45309;">Parcial: ${r.pilaresAvaliados}/${r.totalPilares} pilares avaliados</div>` : ''}
       </div>
       <div class="dpo-hero-cats">
         ${['seg', 'gg', 'tec', 'todos'].map(c => `
@@ -8097,6 +8228,7 @@ function htmlResumoAutoavaliacaoDpo() {
         </div>`).join('')}
     </div>
     ${reguaSelosDpoHtml(r.nivelGeral, r.primeiraAuditoria)}
+    ${htmlHistoricoAutoavaliacaoDpo()}
   `;
 }
 
@@ -8105,14 +8237,17 @@ function htmlResponderAutoavaliacaoDpo() {
   const pilar = atual.pilares.find(p => p.key === ESTADO_AUTOAVAL.pilar) || atual.pilares[0];
   if (!pilar) return '<div class="msg-vazio">Nenhum pilar liberado para esta empresa.</div>';
   return `
+    <div id="av-aovivo" class="dpo-aovivo-fixo">${htmlAoVivoAutoavaliacaoDpo()}</div>
     <div id="av-abas-pilares">${htmlAbasPilaresAutoavaliacaoDpo()}</div>
     <div id="av-cabecalho-pilar">${htmlCabecalhoPilarAutoavaliacaoDpo(pilar.key)}</div>
-    ${atual.status === 'concluida' ? '<div class="msg-vazio" style="text-align:left;">Esta autoavaliação está concluída — clique em <strong>Reabrir</strong> para alterar notas.</div>' : ''}
     ${pilar.grupos.map(g => `
       <div class="dpo-grupo">
         <div class="dpo-grupo-titulo">${escapeHtml(g.numero)} ${escapeHtml(g.titulo)}</div>
         ${g.perguntas.map(q => `<div id="av-q-${cssIdDpo(q.questionKey)}">${htmlPerguntaAutoavaliacaoDpo(q)}</div>`).join('')}
       </div>`).join('')}
+    ${(() => { const idx = atual.pilares.findIndex(p => p.key === pilar.key); const prox = atual.pilares[idx + 1];
+      return prox ? `<div style="text-align:right;margin:10px 0;"><button class="btn-secundario btn-sm" onclick="trocarPilarAutoavaliacaoDpo('${prox.key}'); window.scrollTo(0,0); document.getElementById('conteudo').scrollTop = 0;">Próximo pilar: ${escapeHtml(prox.label)} →</button></div>` : ''; })()}
+    <div id="av-acoes">${htmlAcoesAutoavaliacaoDpo()}</div>
   `;
 }
 
@@ -8138,7 +8273,7 @@ function htmlCabecalhoPilarAutoavaliacaoDpo(pilarKey) {
 }
 
 function htmlPerguntaAutoavaliacaoDpo(q) {
-  const travada = ESTADO_AUTOAVAL.atual.status === 'concluida';
+  const travada = !podeEditarNotasAutoavaliacaoDpo();
   const opcao = (valor, rotulo, texto) => `
     <button class="dpo-nota ${q.valor === valor ? 'selecionada nota-' + valor : ''}" ${travada ? 'disabled' : ''} onclick="salvarNotaAutoavaliacaoDpo('${q.questionKey}', '${valor}')">
       <span class="dpo-nota-valor">${rotulo}</span>${texto ? `<span class="dpo-nota-texto">${escapeHtml(texto)}</span>` : ''}
@@ -8187,6 +8322,12 @@ async function salvarNotaAutoavaliacaoDpo(questionKey, valor) {
     document.getElementById('av-cabecalho-pilar').innerHTML = htmlCabecalhoPilarAutoavaliacaoDpo(ESTADO_AUTOAVAL.pilar);
     document.getElementById('av-progresso-texto').textContent = `${r.resumo.totalRespondidas}/${r.resumo.totalPerguntas} pergunta(s) avaliada(s)`;
     document.getElementById('av-progresso-barra').style.width = (r.resumo.totalPerguntas ? Math.round(r.resumo.totalRespondidas * 100 / r.resumo.totalPerguntas) : 0) + '%';
+    const aoVivo = document.getElementById('av-aovivo');
+    if (aoVivo) aoVivo.innerHTML = htmlAoVivoAutoavaliacaoDpo();
+    const item = ESTADO_AUTOAVAL.lista.lista.find(a => a.id === atual.id);
+    if (item) { item.totalRespondidas = r.resumo.totalRespondidas; item.nivelGeral = r.resumo.nivelGeral; item.categorias = r.resumo.categorias; }
+    const meses = document.getElementById('av-meses');
+    if (meses) meses.innerHTML = htmlMesesAutoavaliacaoDpo();
   } catch (e) { mostrarToast(e.message, true); }
 }
 
@@ -8199,20 +8340,292 @@ async function iniciarAutoavaliacaoDpo() {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
-async function mudarStatusAutoavaliacaoDpo(status) {
-  const { atual } = ESTADO_AUTOAVAL;
-  if (status === 'concluida' && atual.resumo.totalRespondidas < atual.resumo.totalPerguntas &&
-      !confirm(`Ainda faltam ${atual.resumo.totalPerguntas - atual.resumo.totalRespondidas} pergunta(s) sem nota. Concluir mesmo assim?`)) return;
-  try {
-    const r = await api('/api/dpo/autoavaliacoes/' + atual.id, { method: 'PUT', body: JSON.stringify({ status }) });
-    mostrarToast(r.message);
-    renderDpoAutoavaliacao(ESTADO_AUTOAVAL.companyId, atual.id, status === 'concluida' ? 'resumo' : 'responder');
-  } catch (e) { mostrarToast(e.message, true); }
-}
-
 async function excluirAutoavaliacaoDpo(id) {
   if (!confirm('Excluir esta autoavaliação e todas as notas dela?')) return;
   try { const r = await api('/api/dpo/autoavaliacoes/' + id, { method: 'DELETE' }); mostrarToast(r.message); renderDpoAutoavaliacao(ESTADO_AUTOAVAL.companyId); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+// ======================================================================
+// CHAMADOS — a empresa abre para o Master (suporte com gestão completa)
+// ======================================================================
+const STATUS_CHAMADO_VISUAL = {
+  aberto: { texto: 'Aberto', cor: '#1d4ed8', fundo: '#dbeafe' },
+  em_atendimento: { texto: 'Em atendimento', cor: '#b45309', fundo: '#fef3c7' },
+  aguardando_empresa: { texto: 'Aguardando empresa', cor: '#7c3aed', fundo: '#ede9fe' },
+  resolvido: { texto: 'Resolvido', cor: '#15803d', fundo: '#dcfce7' },
+  fechado: { texto: 'Fechado', cor: '#475569', fundo: '#e2e8f0' }
+};
+const PRIORIDADE_CHAMADO_VISUAL = {
+  baixa: { texto: 'Baixa', cor: '#64748b' }, media: { texto: 'Média', cor: '#2563eb' },
+  alta: { texto: 'Alta', cor: '#d97706' }, urgente: { texto: 'Urgente', cor: '#dc2626' }
+};
+const CATEGORIAS_CHAMADO_FRONT = {
+  ajuste_autoavaliacao: '🛠️ Ajuste de autoavaliação DPO', duvida_dpo: '❓ Dúvida sobre o DPO', suporte_tecnico: '💻 Problema no sistema',
+  financeiro: '💳 Financeiro / pagamento', sugestao: '💡 Sugestão de melhoria', outro: '📌 Outro assunto'
+};
+let ESTADO_CHAMADOS = { filtro: 'ativos', empresa: '', dados: null };
+
+function chipStatusChamado(st) {
+  const v = STATUS_CHAMADO_VISUAL[st] || STATUS_CHAMADO_VISUAL.aberto;
+  return `<span class="dpo-chip-nivel" style="background:${v.fundo};color:${v.cor};">${v.texto}</span>`;
+}
+function chipPrioridadeChamado(p) {
+  const v = PRIORIDADE_CHAMADO_VISUAL[p] || PRIORIDADE_CHAMADO_VISUAL.media;
+  return `<span style="font-size:11px;font-weight:800;color:${v.cor};">● ${v.texto}</span>`;
+}
+function dataHoraBr(v) { return v ? new Date(String(v).replace(' ', 'T') + (String(v).includes('Z') ? '' : 'Z')).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''; }
+function idadeChamado(v) {
+  const h = (Date.now() - new Date(String(v).replace(' ', 'T') + 'Z')) / 36e5;
+  return h < 1 ? 'agora há pouco' : h < 24 ? `há ${Math.floor(h)}h` : `há ${Math.floor(h / 24)} dia(s)`;
+}
+
+async function renderChamados() {
+  const cont = document.getElementById('conteudo');
+  const ehMaster = ESTADO.usuario.role === 'admin';
+  cont.innerHTML = '<h1>🎫 Chamados</h1><p>Carregando...</p>';
+  try {
+    const d = await api('/api/chamados' + (ehMaster && ESTADO_CHAMADOS.empresa ? '?company_id=' + ESTADO_CHAMADOS.empresa : ''));
+    ESTADO_CHAMADOS.dados = d;
+    const ind = d.indicadores;
+    const filtros = {
+      ativos: c => !['resolvido', 'fechado'].includes(c.status), aberto: c => c.status === 'aberto', em_atendimento: c => c.status === 'em_atendimento',
+      aguardando_empresa: c => c.status === 'aguardando_empresa', resolvido: c => c.status === 'resolvido', fechado: c => c.status === 'fechado', todos: () => true
+    };
+    const lista = d.lista.filter(filtros[ESTADO_CHAMADOS.filtro] || filtros.ativos);
+    const empresas = ehMaster ? [...new Map(d.lista.map(c => [c.company_id, c.empresaNome])).entries()] : [];
+    const horas = h => h === null ? '—' : h < 24 ? String(h).replace('.', ',') + 'h' : String(Math.round(h / 24 * 10) / 10).replace('.', ',') + ' dia(s)';
+    cont.innerHTML = `
+      <div class="barra-acoes">
+        <div><h1 style="margin:0;">🎫 Chamados ${ehMaster ? 'das Empresas' : ''}</h1></div>
+        <div class="direita">${!ehMaster ? `<button class="btn-primario" style="width:auto;" onclick="abrirModalNovoChamado()">+ Abrir chamado</button>` : ''}</div>
+      </div>
+      <p style="color:#64748b;margin-top:4px;">${ehMaster ? 'Todos os chamados abertos pelas empresas. Responda, mude o status e a prioridade, e libere ajustes de autoavaliação.' : 'Fale com o Master: dúvidas, ajuste de autoavaliação aprovada, problemas no sistema e mais. Acompanhe tudo por aqui.'}</p>
+      <div class="kpis" style="margin-bottom:14px;">
+        <div class="kpi-card"><div class="valor" style="color:#1d4ed8;">${ind.aberto}</div><div class="rotulo">Abertos</div></div>
+        <div class="kpi-card"><div class="valor" style="color:#b45309;">${ind.em_atendimento}</div><div class="rotulo">Em atendimento</div></div>
+        <div class="kpi-card"><div class="valor" style="color:#7c3aed;">${ind.aguardando_empresa}</div><div class="rotulo">Aguardando empresa</div></div>
+        <div class="kpi-card"><div class="valor" style="color:#15803d;">${ind.resolvido + ind.fechado}</div><div class="rotulo">Resolvidos / fechados</div></div>
+        ${ehMaster ? `
+        <div class="kpi-card"><div class="valor" style="font-size:22px;">${horas(ind.horasPrimeiraResposta)}</div><div class="rotulo">Tempo médio 1ª resposta</div></div>
+        <div class="kpi-card"><div class="valor" style="font-size:22px;">${horas(ind.horasResolucao)}</div><div class="rotulo">Tempo médio de resolução</div></div>
+        <div class="kpi-card"><div class="valor" style="font-size:22px;">${ind.satisfacao === null ? '—' : String(ind.satisfacao).replace('.', ',') + ' ★'}</div><div class="rotulo">Satisfação média</div></div>` : ''}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+        ${[['ativos', 'Em aberto'], ['aberto', 'Abertos'], ['em_atendimento', 'Em atendimento'], ['aguardando_empresa', 'Aguardando empresa'], ['resolvido', 'Resolvidos'], ['fechado', 'Fechados'], ['todos', 'Todos']].map(([k, r]) =>
+          `<button class="btn-sm ${ESTADO_CHAMADOS.filtro === k ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="ESTADO_CHAMADOS.filtro='${k}'; renderChamados();">${r}</button>`).join('')}
+        ${ehMaster ? `<select style="width:auto;margin:0 0 0 auto;" onchange="ESTADO_CHAMADOS.empresa=this.value; renderChamados();">
+          <option value="">Todas as empresas</option>
+          ${empresas.map(([id, nome]) => `<option value="${id}" ${String(ESTADO_CHAMADOS.empresa) === String(id) ? 'selected' : ''}>${escapeHtml(nome || '')}</option>`).join('')}
+        </select>` : ''}
+      </div>
+      ${!lista.length ? `<div class="msg-vazio">Nenhum chamado neste filtro.</div>` : `
+      <div class="chamados-lista">
+        ${lista.map(c => `
+          <button class="chamado-linha ${c.naoLido ? 'nao-lido' : ''}" onclick="abrirChamado(${c.id})">
+            <div style="flex:1;min-width:0;text-align:left;">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <strong style="color:#64748b;">${c.numero}</strong>
+                ${c.naoLido ? '<span class="chamado-novo">nova atualização</span>' : ''}
+                <strong style="color:#0f172a;">${escapeHtml(c.assunto)}</strong>
+              </div>
+              <div style="font-size:12px;color:#64748b;margin-top:2px;">
+                ${CATEGORIAS_CHAMADO_FRONT[c.categoria] || escapeHtml(c.categoriaRotulo)}${ehMaster ? ' · <strong>' + escapeHtml(c.empresaNome || '') + '</strong>' : ''} · aberto por ${escapeHtml(c.autorNome || '')} ${idadeChamado(c.created_at)} · ${c.totalMensagens} mensagem(ns)
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              ${chipStatusChamado(c.status)}
+              ${chipPrioridadeChamado(c.prioridade)}
+            </div>
+          </button>`).join('')}
+      </div>`}
+      <div id="modal-area"></div>
+    `;
+  } catch (e) { cont.innerHTML = `<h1>🎫 Chamados</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+// opts: { categoria, refId, refRotulo, assunto, aoCriar }
+async function abrirModalNovoChamado(opts) {
+  opts = opts || {};
+  let area = document.getElementById('modal-area');
+  if (!area) { area = document.createElement('div'); area.id = 'modal-area'; document.getElementById('conteudo').appendChild(area); }
+  let avaliacoes = [];
+  try { avaliacoes = (await api('/api/dpo/autoavaliacoes')).lista || []; } catch (e) { avaliacoes = []; }
+  window.CTX_NOVO_CHAMADO = opts;
+  area.innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa" style="max-width:600px;max-height:92vh;overflow-y:auto;">
+        <h3 style="margin-top:0;">🎫 Abrir chamado para o Master</h3>
+        <label>Categoria</label>
+        <select id="ch-categoria" onchange="document.getElementById('ch-ref-area').style.display = this.value === 'ajuste_autoavaliacao' ? '' : 'none'">
+          <option value="">Selecione...</option>
+          ${Object.entries(CATEGORIAS_CHAMADO_FRONT).map(([k, r]) => `<option value="${k}" ${opts.categoria === k ? 'selected' : ''}>${r}</option>`).join('')}
+        </select>
+        <div id="ch-ref-area" style="${opts.categoria === 'ajuste_autoavaliacao' ? '' : 'display:none;'}">
+          <label>Qual autoavaliação precisa de ajuste?</label>
+          <select id="ch-ref">
+            <option value="">Selecione...</option>
+            ${avaliacoes.map(a => `<option value="${a.id}" ${String(opts.refId) === String(a.id) ? 'selected' : ''}>${escapeHtml(a.referenciaLabel)} — ${a.status === 'aprovada' ? 'aprovada' : a.status === 'salva' ? 'salva' : 'em edição'}</option>`).join('')}
+          </select>
+          <div style="font-size:11.5px;color:#64748b;">Diga no texto quais perguntas e notas precisam mudar e por quê.</div>
+        </div>
+        <label>Prioridade</label>
+        <select id="ch-prioridade">
+          ${Object.entries(PRIORIDADE_CHAMADO_VISUAL).map(([k, v]) => `<option value="${k}" ${k === 'media' ? 'selected' : ''}>${v.texto}</option>`).join('')}
+        </select>
+        <label>Assunto</label>
+        <input id="ch-assunto" maxlength="200" placeholder="Resumo em poucas palavras" value="${escapeHtml(opts.assunto || '')}">
+        <label>Descrição</label>
+        <textarea id="ch-descricao" rows="5" placeholder="Explique o que você precisa. Ex.: pergunta 2.1 de Segurança está com nota 1, mas o padrão foi atualizado — pedimos alterar para 3."></textarea>
+        <label>Anexo (opcional)</label>
+        <input id="ch-anexo" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,image/*,video/*">
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" id="ch-enviar" onclick="enviarNovoChamado()">Abrir chamado</button>
+          <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function enviarAnexoChamado(inputId) {
+  const el = document.getElementById(inputId);
+  const arquivo = el && el.files[0];
+  if (!arquivo) return { anexo_url: null, anexo_nome: null };
+  const formData = new FormData();
+  formData.append('file', arquivo);
+  const resp = await fetch('/api/chamados/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: formData });
+  const dados = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(dados.error || 'Erro ao enviar o anexo.');
+  return { anexo_url: dados.url, anexo_nome: dados.originalName };
+}
+
+async function enviarNovoChamado() {
+  const botao = document.getElementById('ch-enviar');
+  const categoria = document.getElementById('ch-categoria').value;
+  const corpo = {
+    categoria, prioridade: document.getElementById('ch-prioridade').value,
+    assunto: document.getElementById('ch-assunto').value.trim(), descricao: document.getElementById('ch-descricao').value.trim(),
+    ref_id: categoria === 'ajuste_autoavaliacao' ? document.getElementById('ch-ref').value : null
+  };
+  if (!categoria) { mostrarToast('Escolha a categoria.', true); return; }
+  if (categoria === 'ajuste_autoavaliacao' && !corpo.ref_id) { mostrarToast('Escolha a autoavaliação.', true); return; }
+  if (!corpo.assunto || !corpo.descricao) { mostrarToast('Preencha assunto e descrição.', true); return; }
+  try {
+    botao.disabled = true; botao.textContent = 'Enviando...';
+    Object.assign(corpo, await enviarAnexoChamado('ch-anexo'));
+    const r = await api('/api/chamados', { method: 'POST', body: JSON.stringify(corpo) });
+    mostrarToast(r.message);
+    document.getElementById('modal-area').innerHTML = '';
+    const ctx = window.CTX_NOVO_CHAMADO || {};
+    if (ctx.aoCriar) ctx.aoCriar(); else abrirChamado(r.id);
+  } catch (e) { mostrarToast(e.message, true); botao.disabled = false; botao.textContent = 'Abrir chamado'; }
+}
+
+async function abrirChamado(id) {
+  const cont = document.getElementById('conteudo');
+  const ehMaster = ESTADO.usuario.role === 'admin';
+  try {
+    const c = await api('/api/chamados/' + id);
+    const fechado = c.status === 'fechado';
+    const ref = c.referencia;
+    cont.innerHTML = `
+      <div class="barra-acoes">
+        <div><button class="btn-secundario btn-sm" onclick="renderChamados()">← Voltar aos chamados</button></div>
+        <div class="direita">
+          ${ehMaster ? `
+            <label style="margin:0;font-size:12px;">Status</label>
+            <select style="width:auto;margin:0;" onchange="atualizarChamado(${c.id}, { status: this.value })">
+              ${Object.entries(STATUS_CHAMADO_VISUAL).map(([k, v]) => `<option value="${k}" ${k === c.status ? 'selected' : ''}>${v.texto}</option>`).join('')}
+            </select>
+            <label style="margin:0;font-size:12px;">Prioridade</label>
+            <select style="width:auto;margin:0;" onchange="atualizarChamado(${c.id}, { prioridade: this.value })">
+              ${Object.entries(PRIORIDADE_CHAMADO_VISUAL).map(([k, v]) => `<option value="${k}" ${k === c.prioridade ? 'selected' : ''}>${v.texto}</option>`).join('')}
+            </select>` : (['resolvido', 'fechado'].includes(c.status)
+              ? `<button class="btn-secundario btn-sm" onclick="atualizarChamado(${c.id}, { status: 'aberto' })">↩️ Reabrir chamado</button>` : '')
+            + (!fechado ? `<button class="btn-secundario btn-sm" onclick="fecharChamadoComAvaliacao(${c.id})">✔ Encerrar chamado</button>` : '')}
+        </div>
+      </div>
+      <h1 style="margin-bottom:4px;">${c.numero} · ${escapeHtml(c.assunto)}</h1>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:#64748b;margin-bottom:12px;">
+        ${chipStatusChamado(c.status)} ${chipPrioridadeChamado(c.prioridade)}
+        <span>${CATEGORIAS_CHAMADO_FRONT[c.categoria] || escapeHtml(c.categoriaRotulo)}</span>
+        ${ehMaster ? `<span>· <strong>${escapeHtml(c.empresaNome)}</strong></span>` : ''}
+        <span>· aberto por ${escapeHtml(c.autorNome || '')} em ${dataHoraBr(c.created_at)}</span>
+        ${c.avaliacao ? `<span>· avaliação: ${'★'.repeat(c.avaliacao)}${'☆'.repeat(5 - c.avaliacao)}</span>` : ''}
+      </div>
+      ${ref ? `
+      <div class="painel" style="border-left:4px solid #2563eb;margin-bottom:14px;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div><strong>🔗 ${escapeHtml(ref.rotulo)}</strong><div style="font-size:12px;color:#64748b;">Situação atual: ${ref.status === 'aprovada' ? '✅ aprovada' : ref.status === 'salva' ? '💾 salva' : '✍️ em edição'}</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn-secundario btn-sm" onclick="renderDpoAutoavaliacao(${ehMaster ? c.company_id : 'null'}, ${ref.id}, 'responder')">Abrir autoavaliação</button>
+          ${ehMaster && ref.status === 'aprovada' ? `<button class="btn-primario btn-sm" style="width:auto;" onclick="liberarAjusteChamado(${c.id})">🔓 Liberar ajuste para a empresa</button>` : ''}
+        </div>
+      </div>` : ''}
+      <div class="chamado-conversa">
+        ${c.mensagens.map(m => m.autor_papel === 'sistema' ? `
+          <div class="chamado-msg-sistema">${escapeHtml(m.texto || '')} <span>· ${dataHoraBr(m.created_at)}</span></div>` : `
+          <div class="chamado-msg ${m.autor_papel === 'master' ? 'master' : 'empresa'} ${((m.autor_papel === 'master') === ehMaster) ? 'minha' : ''}">
+            <div class="chamado-msg-autor">${escapeHtml(m.autorNome || '')} ${m.autor_papel === 'master' ? '· Master' : '· Empresa'} <span>${dataHoraBr(m.created_at)}</span></div>
+            ${m.texto ? `<div class="chamado-msg-texto">${escapeHtml(m.texto)}</div>` : ''}
+            ${m.anexo_url ? `<a href="${escapeHtml(m.anexo_url)}" target="_blank" rel="noopener" class="chamado-anexo">📎 ${escapeHtml(m.anexo_nome || 'Anexo')}</a>` : ''}
+          </div>`).join('')}
+      </div>
+      ${fechado && !ehMaster ? `<div class="msg-vazio">Este chamado está fechado. Clique em <strong>Reabrir chamado</strong> se precisar continuar.</div>` : `
+      <div class="painel" style="margin-top:14px;">
+        <label style="margin-top:0;">Responder</label>
+        <textarea id="ch-resposta" rows="3" placeholder="Escreva sua mensagem..."></textarea>
+        <input id="ch-resposta-anexo" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,image/*,video/*" style="margin-top:6px;">
+        <div class="acoes-form" style="margin-top:10px;">
+          <button class="btn-primario" style="width:auto;" id="ch-responder" onclick="responderChamado(${c.id}, false)">Enviar</button>
+          ${ehMaster ? `<button class="btn-secundario" id="ch-responder-aguardar" onclick="responderChamado(${c.id}, true)">Enviar e aguardar empresa</button>` : ''}
+        </div>
+      </div>`}
+      <div id="modal-area"></div>
+    `;
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function responderChamado(id, aguardarEmpresa) {
+  const texto = document.getElementById('ch-resposta').value.trim();
+  const botao = document.getElementById('ch-responder');
+  try {
+    botao.disabled = true;
+    const anexo = await enviarAnexoChamado('ch-resposta-anexo');
+    if (!texto && !anexo.anexo_url) { mostrarToast('Escreva uma mensagem ou anexe um arquivo.', true); botao.disabled = false; return; }
+    const r = await api('/api/chamados/' + id + '/mensagens', { method: 'POST', body: JSON.stringify({ texto, aguardarEmpresa, ...anexo }) });
+    mostrarToast(r.message);
+    abrirChamado(id);
+  } catch (e) { mostrarToast(e.message, true); botao.disabled = false; }
+}
+
+async function atualizarChamado(id, corpo) {
+  try { const r = await api('/api/chamados/' + id, { method: 'PUT', body: JSON.stringify(corpo) }); mostrarToast(r.message); abrirChamado(id); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+function fecharChamadoComAvaliacao(id) {
+  if (ESTADO.usuario.role === 'admin') { atualizarChamado(id, { status: 'fechado' }); return; }
+  const area = document.getElementById('modal-area');
+  window.NOTA_CHAMADO = 5;
+  area.innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa" style="max-width:440px;">
+        <h3 style="margin-top:0;">Encerrar chamado</h3>
+        <p style="font-size:13px;color:#475569;">Como foi o atendimento?</p>
+        <div id="ch-estrelas" style="font-size:30px;cursor:pointer;letter-spacing:4px;">${[1, 2, 3, 4, 5].map(n => `<span onclick="window.NOTA_CHAMADO=${n}; document.querySelectorAll('#ch-estrelas span').forEach((s,i)=>s.textContent = i < ${n} ? '★' : '☆');">★</span>`).join('')}</div>
+        <label>Comentário (opcional)</label>
+        <textarea id="ch-comentario" rows="2"></textarea>
+        <div class="acoes-form" style="margin-top:12px;">
+          <button class="btn-primario" onclick="atualizarChamado(${id}, { status: 'fechado', avaliacao: window.NOTA_CHAMADO, comentario: document.getElementById('ch-comentario').value })">Encerrar</button>
+          <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function liberarAjusteChamado(id) {
+  if (!confirm('Reabrir a autoavaliação para a empresa ajustar as notas?')) return;
+  try { const r = await api('/api/chamados/' + id + '/liberar-ajuste', { method: 'POST' }); mostrarToast(r.message); abrirChamado(id); }
   catch (e) { mostrarToast(e.message, true); }
 }
 
