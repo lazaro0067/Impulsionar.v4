@@ -560,6 +560,27 @@
   .ppr-cenario-rot { font-size: 12.5px; color: #334155; font-weight: 600; }
   .ppr-grupo.calc td { background: #ecfeff !important; color: #0e7490; }
   .ppr-derivado.destaque td { background: #fef9c3; font-weight: 900; }
+  .acomp-bloco-chip { border: none; border-radius: 999px; padding: 3px 10px; font-size: 11.5px; font-weight: 800; cursor: pointer; }
+  .acomp-item-texto { font-size: 12.5px; color: #334155; white-space: pre-line; margin: 6px 0; max-height: 120px; overflow: auto; }
+  .acomp-item-conf { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12px; }
+  .acomp-item-conf select, .acomp-item-conf input { width: auto; margin: 0; padding: 5px 8px; font-size: 12px; }
+  .acomp-item-conf input { flex: 1; min-width: 220px; }
+  .acomp-ind input { padding: 5px 6px; }
+  .acomp-ind-val { width: 58px !important; text-align: right; }
+  .acomp-ind td { padding-left: 3px; padding-right: 3px; }
+  .acomp-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+  .acomp-cartao { text-align: left; background: #fff; border: 1px solid var(--cinza-200); border-left: 5px solid; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; font: inherit; }
+  .acomp-cartao:hover { box-shadow: 0 6px 16px rgba(15,23,42,.08); }
+  .acomp-pilar summary { cursor: pointer; list-style: none; padding: 2px 0; }
+  .acomp-lista-master { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .acomp-linha-master { display: flex; gap: 12px; align-items: center; border: 1px solid var(--cinza-200); border-radius: 10px; padding: 8px 12px; background: #fff; }
+  .acomp-linha-master.on { border-color: #86efac; background: #f0fdf4; }
+  .acomp-switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; margin: 0; }
+  .acomp-switch input { opacity: 0; width: 0; height: 0; }
+  .acomp-switch span { position: absolute; inset: 0; background: #cbd5e1; border-radius: 999px; cursor: pointer; transition: .2s; }
+  .acomp-switch span::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+  .acomp-switch input:checked + span { background: #16a34a; }
+  .acomp-switch input:checked + span::before { transform: translateX(18px); }
   .dpo-score-badge { font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
 </style>
 </head>
@@ -890,7 +911,7 @@ const MENU_POR_PERFIL = {
         ['candidatesApproval', 'Aprovar Currículos'], ['vagaPlans', 'Planos de Vaga'], ['closingFeePlans', 'Planos de Fechamento']
     ]},
     { group: 'Impulsionar V4 DPO Ambev', items: [
-        ['dpoPrecos', 'Preços por Pilar'], ['dpoAgenda', 'Agenda de Consultorias'], ['dpoConsultores', 'Cadastro de Consultor']
+        ['dpoPrecos', 'Preços por Pilar'], ['dpoAgenda', 'Agenda de Consultorias'], ['dpoConsultores', 'Cadastro de Consultor'], ['dpoAcompanhamentos', 'Acompanhamentos Impulsionar']
     ]},
     { group: 'Teste DISC', items: [
         ['discTesteMaster', 'Testar & Enviar Teste DISC']
@@ -1201,7 +1222,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados,
+    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster,
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster
   };
   (renderizadores[aba] || renderDashboard)();
@@ -6888,6 +6909,7 @@ async function renderDpoHome() {
     // Cores dos pilares = nível da última autoavaliação mensal (régua de selos DPO 2026).
     const niveisDpo = await api('/api/dpo/niveis').catch(() => ({ geral: null, pilares: {}, primeiraAuditoria: false }));
     const pastasDpoHome = await api('/api/dpo/pastas').catch(() => ({ autoavaliacao: true }));
+    const acompsHome = await api('/api/dpo/acompanhamentos').catch(() => []);
     const geralDpo = niveisDpo.geral;
     const ciclosAbertos = ciclos.filter(c => c.status !== 'concluido');
     const cicloPorPilar = {};
@@ -6927,6 +6949,7 @@ async function renderDpoHome() {
       </div>
       <div class="barra-acoes"><div class="direita">
         ${pastasDpoHome.autoavaliacao ? `<button class="btn-primario" style="width:auto;" onclick="renderDpoAutoavaliacao()">📊 Autoavaliação Mensal</button>` : ''}
+        ${acompsHome.length ? `<button class="btn-primario" style="width:auto;background:#dc4c4c;" onclick="renderAcompanhamentosEmpresa()">🚀 Acompanhamentos Impulsionar (${acompsHome.length})</button>` : ''}
         <button class="btn-secundario" onclick="renderDpoMeusPlanos()">📋 Meus Planos DPO</button>
         <button class="btn-secundario" onclick="irPara('chamados')">🎫 Chamados</button>
         <button class="btn-primario" onclick="mostrarComprasDpo()">🛒 Comprar Pilares / Consultoria Completa</button>
@@ -7147,8 +7170,10 @@ async function abrirVisualizacaoCicloDpo(ciclo, somenteLeitura, pilarKeyInicial)
   // Notas da última autoavaliação de cada pilar (só leitura aqui na Gestão).
   let niveis = { pilares: {} };
   try { niveis = await api('/api/dpo/niveis' + (ESTADO.usuario.role === 'admin' && ciclo.company_id ? '?company_id=' + ciclo.company_id : '')); } catch (e) { /* sem notas */ }
+  let acomps = [];
+  try { acomps = (await api('/api/dpo/acompanhamentos' + (ESTADO.usuario.role === 'admin' && ciclo.company_id ? '?company_id=' + ciclo.company_id : ''))).map(a => a.questionKey); } catch (e) { acomps = []; }
   MATERIAL_DPO_ABERTAS.clear();
-  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key), aba: null, pastas, niveis };
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key), aba: null, pastas, niveis, acomps };
   renderCicloDpoAtual();
 }
 
@@ -7409,6 +7434,12 @@ function renderPerguntaDpo(p, somenteLeitura) {
         <details style="margin-bottom:10px;"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#4338ca;">❓ How to Check (tirar dúvidas)</summary>
           <div style="font-size:12.5px;color:#334155;white-space:pre-line;margin-top:6px;">${escapeHtml(p.how_to_check || '')}</div>
         </details>
+        ${((ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.acomps) || []).includes(p.questionKey) || ESTADO.usuario.role === 'admin' ? `
+        <div class="fd-caixa-pergunta" style="background:linear-gradient(90deg,#fef2f2,#fff);border-color:#fca5a5;">
+          <div><strong>🚀 Acompanhamento Impulsionar${((ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.acomps) || []).includes(p.questionKey) ? '' : ' <span style="font-size:11px;color:#b45309;">(prévia do Master — não liberado para a revenda)</span>'}</strong>
+            <div style="font-size:12px;color:#475569;">Acompanhe esta pergunta item a item: reuniões, indicadores, padrões, treinamentos, ocorrências, riscos e plano de ação, com nota sugerida.</div></div>
+          <button class="btn-primario btn-sm" style="width:auto;background:#dc4c4c;" onclick="abrirFerramentaDigitalDpo('acomp:${p.questionKey}', ${ESTADO.usuario.role === 'admin' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo ? ESTADO_DPO_VIEW.ciclo.company_id : 'null'})">Abrir acompanhamento</button>
+        </div>` : ''}
         ${FD_PERGUNTAS[p.questionKey] ? `
         <div class="fd-caixa-pergunta">
           <div><strong>🧩 Ferramenta digital Impulsionar desta pergunta</strong>
@@ -7486,7 +7517,7 @@ async function recarregarCicloDpoAtual() {
   const pilarAtivo = ESTADO_DPO_VIEW.pilarAtivo;
   const somenteLeitura = ESTADO_DPO_VIEW.somenteLeitura;
   const ciclo = await api('/api/dpo/cycles/' + cicloId);
-  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo, aba: ESTADO_DPO_VIEW.aba, pastas: ESTADO_DPO_VIEW.pastas, niveis: ESTADO_DPO_VIEW.niveis };
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo, aba: ESTADO_DPO_VIEW.aba, pastas: ESTADO_DPO_VIEW.pastas, niveis: ESTADO_DPO_VIEW.niveis, acomps: ESTADO_DPO_VIEW.acomps };
   renderCicloDpoAtual();
 }
 
@@ -8939,8 +8970,9 @@ async function abrirFerramentaDigitalDpo(chave, companyId, ano, aba) {
     if (companyId) q.set('company_id', companyId);
     if (ano) q.set('ano', ano);
     const d = await api('/api/dpo/ferramentas-digitais/' + chave + '?' + q.toString());
-    FD = { chave, ano: d.ano, companyId: companyId || null, dados: d.dados || {}, validacao: d.validacao, arquivos: d.arquivos || [], aba: aba || 'inicio', meta: d, salvoEm: d.updated_at, autor: d.autorNome };
+    FD = { chave, ano: d.ano, companyId: companyId || null, dados: d.dados || {}, validacao: d.validacao, arquivos: d.arquivos || [], aba: aba || (String(chave).startsWith('acomp:') ? 'itens' : 'inicio'), meta: d, salvoEm: d.updated_at, autor: d.autorNome };
     if (chave === 'swot') swotPrepararDados();
+    if (acompEh()) { acompPrepararDados(); acompAtualizarResumo(); }
     fdDesenhar();
   } catch (e) { cont.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
@@ -8957,14 +8989,15 @@ async function fdSalvar() {
   if (!FD) return;
   const st = document.getElementById('fd-status');
   try {
+    if (acompEh()) acompAtualizarResumo();
     const corpo = { ano: FD.ano, dados: FD.dados };
     if (FD.companyId) corpo.company_id = FD.companyId;
     const r = await api('/api/dpo/ferramentas-digitais/' + FD.chave, { method: 'PUT', body: JSON.stringify(corpo) });
-    FD.validacao = r.validacao;
+    FD.validacao = acompEh() ? acompValidacao() : r.validacao;
     if (DIM) DIM.validacao = r.validacao;
     if (st) st.innerHTML = '✅ Salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const nota = document.getElementById('fd-nota');
-    if (nota) nota.innerHTML = fdChipNota(FD.validacao);
+    if (nota) nota.innerHTML = fdChipNota(FD.validacao, acompEh() ? "fdTrocarAba('itens')" : undefined);
     if (FD.aba === 'validacao') fdCorpoRender();
   } catch (e) { if (st) st.innerHTML = '<span style="color:#dc2626;">⚠️ ' + escapeHtml(e.message) + '</span>'; }
 }
@@ -8978,6 +9011,7 @@ function fdChipNota(val, onclick) {
 
 function fdVoltar() {
   if (FD_TIMER) fdSalvar();
+  if (acompEh()) { FD = null; if (ACOMP_VOLTAR) { const f = ACOMP_VOLTAR; ACOMP_VOLTAR = null; f(); return; } if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) renderCicloDpoAtual(); else renderDpoHome(); return; }
   if (FD && FD.chave !== 'swot') { const c = FD.companyId; FD = null; abrirDimensionamentoDpo(c, DIM ? DIM.ano : null); return; }
   FD = null;
   if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) renderCicloDpoAtual(); else renderDpoHome();
@@ -8999,17 +9033,18 @@ function fdDesenhar() {
   const cont = document.getElementById('conteudo');
   const m = FD.meta;
   const ehSim = !!SIMS_DPO[FD.chave], ehOrc = FD.chave === 'orcamento';
-  const abas = FD.chave === 'swot'
+  const ehAcomp = acompEh();
+  const abas = ehAcomp ? acompAbas() : FD.chave === 'swot'
     ? [['inicio', '🏁 Início e áreas'], ['forcas', '💪 Forças'], ['fraquezas', '⚠️ Fraquezas'], ['oportunidades', '🚀 Oportunidades'], ['ameacas', '🛑 Ameaças'], ['matriz', '🧮 Matriz SWOT'], ['cruzamentos', '🔀 Cruzamentos'], ['objetivos', '🎯 Objetivos estratégicos'], ['planos', '📋 Planos de ação'], ['validacao', '✅ Validação 1.3'], ['arquivos', '📎 Arquivos']]
     : ehSim ? [['parametros', '⚙️ Parâmetros'], ['plan', '📋 Orçamento (Plan)'], ['real', '📈 Realizado'], ['comparativo', '📊 Plan x Real'], ['arquivos', '📎 Arquivos'], ['validacao', '✅ Validação 1.1']]
     : [['raci', '👥 RACI e processo'], ['kpis', '🌱 KPIs de sustentabilidade'], ['pdca', '🔁 PDCA de custos'], ['arquivos', '📎 Arquivos'], ['validacao', '✅ Validação 1.1']];
-  const titulo = FD.chave === 'swot' ? '🧭 ' + escapeHtml(m.titulo) : ehSim ? `${SIMS_DPO[FD.chave].icone} ${SIMS_DPO[FD.chave].titulo}` : '📑 Orçamento, RACI e KPIs';
-  const anosHtml = FD.chave === 'swot'
+  const titulo = ehAcomp ? `🚀 ${escapeHtml(m.template.numero)} ${escapeHtml(m.template.questao)}` : FD.chave === 'swot' ? '🧭 ' + escapeHtml(m.titulo) : ehSim ? `${SIMS_DPO[FD.chave].icone} ${SIMS_DPO[FD.chave].titulo}` : '📑 Orçamento, RACI e KPIs';
+  const anosHtml = FD.chave === 'swot' || ehAcomp
     ? fdAnosHtml(m.anos, FD.ano, 'fdAbrirAnoSwot', 'fdNovoAnoSwot')
     : fdAnosHtml(DIM && DIM.pastas[FD.chave] ? DIM.pastas[FD.chave].anos : [], FD.ano, 'fdAbrirAnoPasta', 'fdNovoAnoPasta');
   cont.innerHTML = `
     <div class="barra-acoes">
-      <div><button class="btn-secundario btn-sm" onclick="fdVoltar()">← ${FD.chave === 'swot' ? 'Voltar' : 'Pastas do Simulador de Dimensionamento'}</button></div>
+      <div><button class="btn-secundario btn-sm" onclick="fdVoltar()">← ${FD.chave === 'swot' || acompEh() ? 'Voltar' : 'Pastas do Simulador de Dimensionamento'}</button></div>
       <div class="direita">
         <span id="fd-status" style="font-size:12px;color:#64748b;">${FD.salvoEm ? 'Última gravação: ' + new Date(String(FD.salvoEm).replace(' ', 'T') + 'Z').toLocaleString('pt-BR') + (FD.autor ? ' por ' + escapeHtml(FD.autor) : '') : 'Pasta ainda não preenchida'}</span>
         <button class="btn-secundario btn-sm" onclick="fdSalvar()">💾 Salvar</button>
@@ -9018,8 +9053,8 @@ function fdDesenhar() {
     </div>
     <h1 style="margin-bottom:2px;">${titulo} <span style="color:#94a3b8;font-weight:600;">· ${FD.ano}</span></h1>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-      <span class="plano-meta">${escapeHtml(m.pilarLabel || '')} · pergunta <strong>${escapeHtml(m.pergunta || '')} ${escapeHtml(m.perguntaTexto || '')}</strong>${ehSim || ehOrc ? ' · pasta do Simulador de Dimensionamento' : ''}</span>
-      <span id="fd-nota">${fdChipNota(FD.validacao)}</span>
+      <span class="plano-meta">${ehAcomp ? `🚀 Acompanhamento Impulsionar · ${escapeHtml(m.template.pilarLabel)} · ${escapeHtml(m.template.grupo)}${m.template.mandatoria ? ' · <strong style="color:#dc2626;">Mandatória</strong>' : ''}` : `${escapeHtml(m.pilarLabel || '')} · pergunta <strong>${escapeHtml(m.pergunta || '')} ${escapeHtml(m.perguntaTexto || '')}</strong>${ehSim || ehOrc ? ' · pasta do Simulador de Dimensionamento' : ''}`}</span>
+      <span id="fd-nota">${fdChipNota(FD.validacao, ehAcomp ? "fdTrocarAba('itens')" : undefined)}</span>
     </div>
     ${anosHtml}
     <div class="fd-abas">${abas.map(([k, r]) => `<button class="fd-aba ${FD.aba === k ? 'ativa' : ''}" onclick="fdTrocarAba('${k}')">${r}</button>`).join('')}</div>
@@ -9032,6 +9067,7 @@ function fdHtmlAba() {
   const a = FD.aba;
   if (a === 'validacao') return fdHtmlValidacao(FD.validacao, FD.meta);
   if (a === 'arquivos') return fdHtmlArquivos();
+  if (acompEh()) return acompHtmlAba();
   if (FD.chave === 'swot') {
     if (a === 'inicio') return swotHtmlInicio();
     if (QUADRANTES_SWOT_FRONT[a]) return swotHtmlQuadrante(a);
@@ -9119,7 +9155,8 @@ function fdHtmlValidacao(v, meta) {
 
 // ---- arquivos de atualização ----
 function fdHtmlArquivos() {
-  const tipos = FD.chave === 'swot'
+  const tipos = acompEh() ? [['evidencia', 'Evidência'], ['ata', 'Ata / lista de presença'], ['padrao', 'Padrão / procedimento'], ['relatorio', 'Relatório de indicador'], ['foto', 'Foto'], ['outro', 'Outro']]
+    : FD.chave === 'swot'
     ? [['swot', 'Planilha SWOT'], ['dn_mp', 'Descrição de Negócio / Mapeamento de Processo'], ['ata', 'Ata / evidência de priorização'], ['outro', 'Outro']]
     : SIMS_DPO[FD.chave] ? [['planilha', `Planilha ${SIMS_DPO[FD.chave].planilha} (.xlsm)`], ['evidencia', 'Evidência (e-mail, ata de revisão)'], ['outro', 'Outro']]
     : [['processo', 'Processo orçamentário formalizado'], ['raci', 'Matriz RACI'], ['negociacao', 'Evidência da negociação final'], ['outro', 'Outro']];
@@ -9173,7 +9210,7 @@ async function fdRemoverArquivo(id) {
 }
 
 // Pastas por ano
-function fdAbrirAnoSwot(ano) { if (FD_TIMER) fdSalvar(); abrirFerramentaDigitalDpo('swot', FD.companyId, ano, FD.aba); }
+function fdAbrirAnoSwot(ano) { if (FD_TIMER) fdSalvar(); abrirFerramentaDigitalDpo(FD.chave, FD.companyId, ano, FD.aba); }
 function fdAbrirAnoPasta(ano) { if (FD_TIMER) fdSalvar(); abrirPastaDimensionamentoDpo(FD.chave, FD.companyId, ano, FD.aba); }
 async function fdCriarAno(chaveApi, companyId, anosExistentes, aoCriar) {
   const sugestao = Math.max(new Date().getFullYear(), ...(anosExistentes || [])) + ((anosExistentes || []).includes(new Date().getFullYear()) ? 1 : 0);
@@ -9190,7 +9227,7 @@ async function fdCriarAno(chaveApi, companyId, anosExistentes, aoCriar) {
     aoCriar(ano);
   } catch (e) { mostrarToast(e.message, true); }
 }
-function fdNovoAnoSwot() { fdCriarAno('swot', FD.companyId, FD.meta.anos, ano => abrirFerramentaDigitalDpo('swot', FD.companyId, ano, 'inicio')); }
+function fdNovoAnoSwot() { const c = FD.chave; fdCriarAno(c, FD.companyId, FD.meta.anos, ano => abrirFerramentaDigitalDpo(c, FD.companyId, ano)); }
 function fdNovoAnoPasta() { const c = FD.chave; fdCriarAno(c, FD.companyId, DIM && DIM.pastas[c] ? DIM.pastas[c].anos : [], ano => abrirPastaDimensionamentoDpo(c, FD.companyId, ano, SIMS_DPO[c] ? 'parametros' : 'raci')); }
 
 // ======================= SWOT por área (Gestão 1.3) =======================
@@ -9923,6 +9960,368 @@ function desenharDimensionamentoDpo() {
 }
 function dimAbrirAno(ano) { abrirDimensionamentoDpo(DIM.companyIdParam, ano); }
 function dimNovoAno() { fdCriarAno('dimensionamento', DIM.companyIdParam, dimAnosTodos(), ano => abrirDimensionamentoDpo(DIM.companyIdParam, ano)); }
+
+
+// ======================= ACOMPANHAMENTOS IMPULSIONAR (um por pergunta) =======================
+const BLOCOS_ACOMP = {
+  reunioes: { icone: '🗓️', rotulo: 'Reuniões e rotinas' },
+  indicadores: { icone: '📈', rotulo: 'Indicadores' },
+  padroes: { icone: '📄', rotulo: 'Padrões' },
+  treinamentos: { icone: '🎓', rotulo: 'Treinamentos' },
+  processos: { icone: '⚙️', rotulo: 'Processos' },
+  acoes: { icone: '🔁', rotulo: 'Plano de ação' },
+  ocorrencias: { icone: '🚨', rotulo: 'Ocorrências' },
+  riscos: { icone: '⚠️', rotulo: 'Riscos' },
+  inspecoes: { icone: '🔍', rotulo: 'Inspeções e auditorias' }
+};
+const STATUS_BLOCO_VIS = { ok: ['✅', '#16a34a', '#dcfce7'], parcial: ['🟡', '#b45309', '#fef3c7'], pendente: ['⭕', '#dc2626', '#fee2e2'], manual: ['✍️', '#475569', '#f1f5f9'] };
+let ACOMP_VOLTAR = null;
+
+function acompEh() { return FD && String(FD.chave).startsWith('acomp:'); }
+function acompDiasDesde(data) { if (!data) return null; const d = new Date(data + 'T00:00:00'); return isNaN(d) ? null : Math.floor((Date.now() - d) / 864e5); }
+function acompHoje() { return new Date().toISOString().slice(0, 10); }
+function acompChip(st, txt) { const v = STATUS_BLOCO_VIS[st] || STATUS_BLOCO_VIS.pendente; return `<span class="dpo-chip-nivel" style="background:${v[2]};color:${v[1]};">${v[0]} ${escapeHtml(txt || '')}</span>`; }
+
+// Semeia o acompanhamento com o que o texto da Ambev já cita (reuniões, KPIs, padrões).
+function acompPrepararDados() {
+  const d = FD.dados, t = FD.meta.template;
+  if (d.__seeded) return;
+  if (t.blocos.includes('reunioes') && !(d.reunioes || []).length) d.reunioes = t.sugestoes.reunioes.map(n => ({ id: fdId(), nome: n }));
+  if (t.blocos.includes('indicadores') && !(d.indicadores || []).length) d.indicadores = t.sugestoes.indicadores.map(n => ({ id: fdId(), nome: n, sentido: /turnover|absente|acident|lti|mdi|mti|sif|tri|avaria|devolu|refugo|quebra|perda|custo|multa|atraso|tml|tma|dpmo|ruptura|reclama|falta|inciden|horas? extra/i.test(n) ? 'menor' : 'maior', valores: [] }));
+  if (t.blocos.includes('padroes') && !(d.padroes || []).length) d.padroes = t.sugestoes.padroes.map(n => ({ id: fdId(), nome: n }));
+  d.__seeded = true;
+  fdAgendarSalvar();
+}
+
+const JANELA_FREQ = { 'Diária': 3, 'Semanal': 10, 'Quinzenal': 20, 'Mensal': 40, 'Trimestral': 100 };
+function acompIndicadorOk(ind) {
+  const meta = fdNum(ind.meta);
+  const vals = (ind.valores || []).map(fdNum);
+  const preenchidos = vals.map((v, i) => [v, i]).filter(([v]) => v !== null);
+  if (meta === null || !preenchidos.length) return preenchidos.length ? 'parcial' : 'pendente';
+  const menor = ind.sentido === 'menor';
+  const bate = v => menor ? v <= meta : v >= meta;
+  const ult = preenchidos[preenchidos.length - 1][0];
+  if (bate(ult)) return 'ok';
+  if (preenchidos.length >= 4) { const ant = preenchidos[preenchidos.length - 4][0]; if (menor ? ult < ant : ult > ant) return 'ok'; }
+  return 'parcial';
+}
+// Situação de cada bloco pelo que foi preenchido.
+function acompStatusBloco(b) {
+  const d = FD.dados, com = (l, k) => (l || []).filter(x => x && String(x[k] || '').trim());
+  const res = (lista, okFn, vazio, rotulo) => {
+    if (!lista.length) return { st: 'pendente', msg: vazio };
+    const ok = lista.filter(okFn).length;
+    return { st: ok === lista.length ? 'ok' : ok ? 'parcial' : 'pendente', msg: `${ok}/${lista.length} ${rotulo}` };
+  };
+  if (b === 'reunioes') {
+    const reals = d.realizacoes || [];
+    return res(com(d.reunioes, 'nome'), r => {
+      const ult = reals.filter(x => x.reuniao === r.nome && x.data).sort((a, c) => c.data.localeCompare(a.data))[0];
+      const dias = ult ? acompDiasDesde(ult.data) : null;
+      return ult && dias !== null && dias <= (JANELA_FREQ[r.frequencia] || 40) && (String(ult.ata || '').trim() || String(ult.decisoes || '').trim());
+    }, 'Cadastre as reuniões da rotina e registre as realizações com ata.', 'reunião(ões) em dia com ata');
+  }
+  if (b === 'indicadores') {
+    const l = com(d.indicadores, 'nome');
+    if (!l.length) return { st: 'pendente', msg: 'Cadastre os indicadores com meta e lance os valores mensais.' };
+    const st = l.map(acompIndicadorOk), ok = st.filter(s => s === 'ok').length;
+    return { st: ok === l.length ? 'ok' : st.some(s => s !== 'pendente') ? 'parcial' : 'pendente', msg: `${ok}/${l.length} indicador(es) na meta ou melhorando` };
+  }
+  if (b === 'padroes') return res(com(d.padroes, 'nome'), p => p.publicado === 'Sim' && acompDiasDesde(p.dataRevisao) !== null && acompDiasDesde(p.dataRevisao) <= 365, 'Cadastre os padrões com data de revisão.', 'padrão(ões) publicado(s) e revisado(s) há menos de 12 meses');
+  if (b === 'treinamentos') {
+    const l = com(d.treinamentos, 'tema');
+    if (!l.length) return { st: 'pendente', msg: 'Registre os treinamentos (público-alvo e treinados).' };
+    const pub = l.reduce((s, t) => s + (fdNum(t.publico) || 0), 0), tr = l.reduce((s, t) => s + (fdNum(t.treinados) || 0), 0);
+    const pct = pub ? tr / pub : 0;
+    return { st: pct >= 0.9 ? 'ok' : pct > 0 ? 'parcial' : 'pendente', msg: `${fdPct(pct, 0)} do público-alvo treinado` };
+  }
+  if (b === 'processos') return res(com(d.processos, 'nome'), p => p.formalizado === 'Sim' && acompDiasDesde(p.ultimaExecucao) !== null && acompDiasDesde(p.ultimaExecucao) <= (JANELA_FREQ[p.frequencia] || 60), 'Cadastre os processos (formalização e última execução).', 'processo(s) formalizado(s) e em dia');
+  if (b === 'acoes') {
+    const l = com(d.acoes, 'oque');
+    if (!l.length) return { st: 'pendente', msg: 'Registre as ações do plano.' };
+    const atras = l.filter(a => a.status !== 'Concluída' && a.prazo && a.prazo < acompHoje()).length;
+    const naoEf = l.filter(a => a.eficacia === 'Não eficaz').length;
+    return { st: atras || naoEf ? 'parcial' : 'ok', msg: `${l.length} ação(ões) · ${atras} atrasada(s)${naoEf ? ` · ${naoEf} não eficaz(es)` : ''}` };
+  }
+  if (b === 'ocorrencias') {
+    const l = com(d.ocorrencias, 'descricao');
+    if (!l.length) return { st: 'parcial', msg: 'Nenhuma ocorrência registrada no ano — confirme no item se não houve.' };
+    return res(l, o => o.investigada === 'Sim' && String(o.acao || '').trim() && o.status === 'Encerrada', '', 'ocorrência(s) investigada(s), com ação e encerrada(s)');
+  }
+  if (b === 'riscos') return res(com(d.riscos, 'perigo'), r => ((fdNum(r.probabilidade) || 0) * (fdNum(r.severidade) || 0) < 12 || String(r.controle || '').trim()) && String(r.responsavel || '').trim(), 'Cadastre os riscos (probabilidade × severidade) e os controles.', 'risco(s) com controle e responsável');
+  if (b === 'inspecoes') {
+    const l = com(d.inspecoes, 'data');
+    if (!l.length) return { st: 'pendente', msg: 'Registre as inspeções/auditorias realizadas.' };
+    const ult = l.map(i => i.data).sort().reverse()[0], dias = acompDiasDesde(ult);
+    return { st: dias !== null && dias <= 40 ? 'ok' : 'parcial', msg: `${l.length} registro(s) · última há ${dias} dia(s)` };
+  }
+  return { st: 'manual', msg: '' };
+}
+function acompStatusItem(item) {
+  if (!item.blocos.length) return 'manual';
+  const st = item.blocos.map(b => acompStatusBloco(b).st);
+  return st.every(s => s === 'ok') ? 'ok' : st.some(s => s === 'ok' || s === 'parcial') ? 'parcial' : 'pendente';
+}
+function acompItemOk(item) {
+  const man = ((FD.dados.itens || {})[item.numero] || {}).status || '';
+  if (man === 'atende') return true;
+  if (man === 'nao' || man === 'parcial') return false;
+  return acompStatusItem(item) === 'ok';
+}
+function acompValidacao() {
+  const t = FD.meta.template;
+  const itens = t.itens.map(i => ({ numero: i.numero, ok: acompItemOk(i) }));
+  const okSet = new Set(itens.filter(i => i.ok).map(i => i.numero));
+  const req1 = t.regra.req1.length ? t.regra.req1 : ['V.1'];
+  const nota = itens.length && itens.every(i => i.ok) ? '3' : req1.every(v => okSet.has(v)) ? '1' : '0';
+  return { notaSugerida: nota, itens, regra: t.explicacao };
+}
+function acompAtualizarResumo() {
+  const v = acompValidacao();
+  FD.validacao = v;
+  FD.dados.__resumo = { nota: v.notaSugerida, ok: v.itens.filter(i => i.ok).length, total: v.itens.length, atualizado: new Date().toISOString() };
+  const chip = document.getElementById('fd-nota');
+  if (chip) chip.innerHTML = fdChipNota(v, "fdTrocarAba('itens')");
+}
+
+function acompAbas() {
+  const t = FD.meta.template;
+  return [['itens', '✅ Itens da verificação'], ...t.blocos.map(b => [b, `${BLOCOS_ACOMP[b].icone} ${BLOCOS_ACOMP[b].rotulo}`]), ['arquivos', '📎 Evidências'], ['sobre', '📖 Pergunta e how to check']];
+}
+function acompHtmlAba() {
+  const a = FD.aba;
+  if (a === 'itens') return acompHtmlItens();
+  if (a === 'sobre') return acompHtmlSobre();
+  if (BLOCOS_ACOMP[a]) return acompHtmlBloco(a);
+  return '';
+}
+function acompCabecalhoBloco(b) {
+  const s = acompStatusBloco(b), itens = FD.meta.template.itens.filter(i => i.blocos.includes(b)).map(i => i.numero);
+  return `<div class="fd-quadrante-topo" style="border-left-color:${(STATUS_BLOCO_VIS[s.st] || STATUS_BLOCO_VIS.pendente)[1]};">
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;"><div style="font-size:17px;font-weight:800;">${BLOCOS_ACOMP[b].icone} ${BLOCOS_ACOMP[b].rotulo}</div>${acompChip(s.st, s.msg)}</div>
+    <div style="font-size:12px;color:#64748b;margin-top:4px;">${itens.length ? 'Sustenta os itens ' + itens.join(', ') + ' da verificação.' : 'Plano de ação para tratar os itens que ainda não atendem.'}</div></div>`;
+}
+function acompRecarregar() { acompAtualizarResumo(); fdCorpoRender(); }
+
+function acompHtmlItens() {
+  const t = FD.meta.template, v = acompValidacao();
+  const n = v.notaSugerida, cor = n === '3' ? '#16a34a' : n === '1' ? '#d97706' : '#dc2626';
+  const especial = t.especial ? `<div class="fd-caixa-pergunta" style="margin-bottom:12px;"><div><strong>🧩 Esta pergunta também tem ferramenta digital dedicada</strong><div style="font-size:12px;color:#475569;">${t.especial === 'swot' ? 'Análise SWOT digital por área.' : 'Simulador de Dimensionamento (Armazém, Entrega, Puxada e Orçamento).'}</div></div><button class="btn-primario btn-sm" style="width:auto;" onclick="abrirFerramentaDigitalDpo('${t.especial}', ${FD.companyId || 'null'})">Abrir</button></div>` : '';
+  return `${especial}
+    <div class="fd-validacao-topo" style="border-color:${cor};">
+      <div class="fd-validacao-nota" style="background:${cor};">${n}</div>
+      <div><div style="font-size:16px;font-weight:800;">Nota sugerida: ${n} · ${v.itens.filter(i => i.ok).length}/${v.itens.length} itens atendidos</div>
+        <div style="font-size:12.5px;color:#475569;white-space:pre-line;">${escapeHtml(t.explicacao)}</div>
+        <div style="font-size:12px;color:#64748b;margin-top:4px;">O status automático vem dos blocos preenchidos. Você pode confirmar cada item manualmente com a evidência. A nota oficial continua na 📊 Autoavaliação Mensal.</div></div>
+    </div>
+    ${t.itens.map(i => {
+      const auto = acompStatusItem(i), man = ((FD.dados.itens || {})[i.numero] || {});
+      const ok = acompItemOk(i), noReq1 = (t.regra.req1.length ? t.regra.req1 : ['V.1']).includes(i.numero);
+      return `<div class="fd-valid-item ${ok ? 'ok' : 'nok'}">
+        <div class="fd-valid-icone">${ok ? '✔' : '✖'}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><strong>${i.numero}</strong>${noReq1 ? '<span class="fd-top" title="Obrigatório para a nota 1">base da nota 1</span>' : ''}
+            ${i.blocos.map(b => { const s = acompStatusBloco(b); return `<button class="acomp-bloco-chip" style="background:${STATUS_BLOCO_VIS[s.st][2]};color:${STATUS_BLOCO_VIS[s.st][1]};" onclick="fdTrocarAba('${b}')" title="${escapeHtml(s.msg)}">${BLOCOS_ACOMP[b].icone} ${BLOCOS_ACOMP[b].rotulo}</button>`; }).join('') || '<span style="font-size:11.5px;color:#64748b;">confirmação manual com evidência</span>'}</div>
+          <div class="acomp-item-texto">${escapeHtml(i.texto)}</div>
+          <div class="acomp-item-conf">
+            <span>Automático: ${acompChip(auto, auto === 'manual' ? 'sem bloco' : auto === 'ok' ? 'atende' : auto === 'parcial' ? 'parcial' : 'pendente')}</span>
+            <select onchange="fdDefinir('itens.${i.numero.replace('.', '_')}', null); FD.dados.itens = FD.dados.itens || {}; FD.dados.itens['${i.numero}'] = { ...(FD.dados.itens['${i.numero}'] || {}), status: this.value }; delete FD.dados.itens['${i.numero.replace('.', '_')}']; fdAgendarSalvar(); acompRecarregar();">
+              <option value="" ${!man.status ? 'selected' : ''}>Usar o automático</option>
+              <option value="atende" ${man.status === 'atende' ? 'selected' : ''}>✅ Confirmo: atende</option>
+              <option value="parcial" ${man.status === 'parcial' ? 'selected' : ''}>🟡 Atende parcialmente</option>
+              <option value="nao" ${man.status === 'nao' ? 'selected' : ''}>❌ Não atende</option>
+            </select>
+            <input placeholder="Evidência (onde está, quem confirma...)" value="${escapeHtml(man.evidencia || '')}" onchange="FD.dados.itens = FD.dados.itens || {}; FD.dados.itens['${i.numero}'] = { ...(FD.dados.itens['${i.numero}'] || {}), evidencia: this.value }; fdAgendarSalvar();">
+          </div>
+        </div></div>`;
+    }).join('')}`;
+}
+function acompHtmlSobre() {
+  const t = FD.meta.template;
+  return `<div class="painel"><h3 style="margin-top:0;">${escapeHtml(t.pilarLabel)} · ${escapeHtml(t.grupo)}</h3>
+    <div style="font-size:15px;font-weight:800;">${escapeHtml(t.numero)} ${escapeHtml(t.questao)}${t.mandatoria ? ' <span style="color:#dc2626;font-size:12px;">● Mandatória</span>' : ''}</div>
+    <h4>Verificação</h4><div style="white-space:pre-line;font-size:13px;color:#334155;">${escapeHtml(t.verificacao)}</div>
+    <h4>How to check</h4><div style="white-space:pre-line;font-size:13px;color:#334155;">${escapeHtml(t.how_to_check)}</div>
+    <h4>Pontuação</h4><div style="white-space:pre-line;font-size:13px;color:#334155;">${escapeHtml(t.explicacao)}</div></div>`;
+}
+
+const OP_SIMNAO = ['Sim', 'Não'];
+function acompHtmlBloco(b) {
+  FD_AO_EDITAR = () => acompAtualizarResumo();
+  const cab = acompCabecalhoBloco(b);
+  const nomesReunioes = () => fdLista('reunioes').map(r => r.nome).filter(Boolean);
+  const itensV = FD.meta.template.itens.map(i => i.numero);
+  if (b === 'reunioes') {
+    const reals = fdLista('realizacoes');
+    const ultima = nome => reals.filter(x => x.reuniao === nome && x.data).map(x => x.data).sort().reverse()[0];
+    return `${cab}
+      <div class="painel" style="margin-bottom:12px;"><h4 style="margin:0 0 6px;">Reuniões da rotina</h4>
+      ${fdTabela('reunioes', [
+        { campo: 'nome', rotulo: 'Reunião', largura: 200 }, { campo: 'frequencia', rotulo: 'Frequência', tipo: 'select', opcoes: Object.keys(JANELA_FREQ), largura: 120, recarregar: true },
+        { campo: 'responsavel', rotulo: 'Responsável', largura: 140 }, { campo: 'participantes', rotulo: 'Participantes', largura: 200 },
+        { campo: 'tor', rotulo: 'TOR definido', tipo: 'select', opcoes: OP_SIMNAO, largura: 90 },
+        { campo: 'st', rotulo: 'Última realização', tipo: 'calc', valor: l => { const u = ultima(l.nome); const dias = acompDiasDesde(u); const ok = u && dias <= (JANELA_FREQ[l.frequencia] || 40); return u ? acompChip(ok ? 'ok' : 'parcial', u.split('-').reverse().join('/')) : acompChip('pendente', 'nunca'); } }
+      ], { botao: 'Adicionar reunião' })}</div>
+      <div class="painel"><h4 style="margin:0 0 6px;">Registro das reuniões realizadas (atas)</h4>
+      ${fdTabela('realizacoes', [
+        { campo: 'reuniao', rotulo: 'Reunião', tipo: 'select', opcoes: nomesReunioes, largura: 170, recarregar: true }, { campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130, recarregar: true },
+        { campo: 'presentes', rotulo: 'Presentes', tipo: 'number', largura: 80 }, { campo: 'decisoes', rotulo: 'Pauta, decisões e resultados', tipo: 'textarea', largura: 260 },
+        { campo: 'ata', rotulo: 'Ata (link ou local)', largura: 170, recarregar: true }, { campo: 'acoes', rotulo: 'Ações geradas', largura: 160 }
+      ], { botao: 'Registrar reunião' })}</div>`;
+  }
+  if (b === 'indicadores') {
+    const l = fdLista('indicadores');
+    return `${cab}
+      <div class="fd-tabela-wrap"><table class="fd-tabela acomp-ind">
+        <thead><tr><th style="min-width:170px;">Indicador</th><th>Unid.</th><th>Meta</th><th>Sentido</th>${MESES_FD.map(m => `<th>${m}</th>`).join('')}<th>Situação</th><th></th></tr></thead>
+        <tbody>${l.map((ind, i) => `<tr>
+          <td><input value="${escapeHtml(ind.nome || '')}" onchange="acompEditarInd(${i}, 'nome', this.value)"></td>
+          <td><input style="width:60px;" value="${escapeHtml(ind.unidade || '')}" onchange="acompEditarInd(${i}, 'unidade', this.value)"></td>
+          <td><input style="width:70px;" type="number" step="any" value="${escapeHtml(ind.meta ?? '')}" onchange="acompEditarInd(${i}, 'meta', this.value, true)"></td>
+          <td><select style="width:128px;" onchange="acompEditarInd(${i}, 'sentido', this.value, true)"><option value="maior" ${ind.sentido !== 'menor' ? 'selected' : ''}>↑ maior melhor</option><option value="menor" ${ind.sentido === 'menor' ? 'selected' : ''}>↓ menor melhor</option></select></td>
+          ${MESES_FD.map((_, m) => `<td><input id="ind-${i}-${m}" class="acomp-ind-val" type="number" step="any" style="${acompCorValor(ind, m)}" value="${escapeHtml((ind.valores || [])[m] ?? '')}" onchange="acompEditarValor(${i}, ${m}, this.value)"></td>`).join('')}
+          <td id="ind-st-${i}">${acompChip(acompIndicadorOk(ind), acompIndicadorOk(ind) === 'ok' ? 'ok' : acompIndicadorOk(ind))}</td>
+          <td><button class="fd-remover" onclick="fdRemoverLinha('indicadores', ${i})">✕</button></td></tr>`).join('') || '<tr><td colspan="18" style="text-align:center;color:#94a3b8;padding:14px;">Nenhum indicador ainda.</td></tr>'}</tbody>
+      </table></div>
+      <button class="btn-secundario btn-sm" style="margin-top:8px;" onclick="fdLista('indicadores').push({ id: fdId(), sentido: 'maior', valores: [] }); fdAgendarSalvar(); acompRecarregar();">+ Adicionar indicador</button>
+      <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Verde = mês na meta · vermelho = fora. O indicador fica "ok" quando o último mês bate a meta ou melhora em relação a 3 meses antes (tendência dos últimos 4 meses).</div>`;
+  }
+  const defs = {
+    padroes: [{ campo: 'nome', rotulo: 'Padrão', largura: 220 }, { campo: 'codigo', rotulo: 'Código', largura: 90 }, { campo: 'versao', rotulo: 'Versão', largura: 70 }, { campo: 'dataRevisao', rotulo: 'Última revisão', tipo: 'date', largura: 130, recarregar: true }, { campo: 'responsavel', rotulo: 'Responsável', largura: 140 }, { campo: 'publicado', rotulo: 'Publicado', tipo: 'select', opcoes: OP_SIMNAO, largura: 90, recarregar: true },
+      { campo: 'st', rotulo: 'Situação', tipo: 'calc', valor: l => { const d = acompDiasDesde(l.dataRevisao); return l.publicado === 'Sim' && d !== null && d <= 365 ? acompChip('ok', 'em dia') : d !== null && d > 365 ? acompChip('parcial', 'revisão vencida') : acompChip('pendente', 'pendente'); } }],
+    treinamentos: [{ campo: 'tema', rotulo: 'Tema / treinamento', largura: 200 }, { campo: 'padrao', rotulo: 'Padrão ligado', tipo: 'select', opcoes: () => fdLista('padroes').map(p => p.nome).filter(Boolean), largura: 160 }, { campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'publico', rotulo: 'Público-alvo', tipo: 'number', largura: 90, recarregar: true }, { campo: 'treinados', rotulo: 'Treinados', tipo: 'number', largura: 90, recarregar: true }, { campo: 'instrutor', rotulo: 'Instrutor', largura: 130 }, { campo: 'lista', rotulo: 'Lista de presença (link)', largura: 160 },
+      { campo: 'pct', rotulo: '% treinado', tipo: 'calc', valor: l => { const p = fdNum(l.publico) ? (fdNum(l.treinados) || 0) / fdNum(l.publico) : null; return p === null ? '—' : acompChip(p >= 0.9 ? 'ok' : 'parcial', fdPct(p, 0)); } }],
+    processos: [{ campo: 'nome', rotulo: 'Processo / rotina', largura: 220 }, { campo: 'responsavel', rotulo: 'Responsável', largura: 140 }, { campo: 'frequencia', rotulo: 'Frequência', tipo: 'select', opcoes: Object.keys(JANELA_FREQ), largura: 120, recarregar: true }, { campo: 'formalizado', rotulo: 'Formalizado', tipo: 'select', opcoes: OP_SIMNAO, largura: 90, recarregar: true }, { campo: 'ultimaExecucao', rotulo: 'Última execução', tipo: 'date', largura: 130, recarregar: true }, { campo: 'evidencia', rotulo: 'Evidência', largura: 180 }],
+    acoes: [{ campo: 'oque', rotulo: 'Ação (o quê)', largura: 220 }, { campo: 'item', rotulo: 'Item', tipo: 'select', opcoes: itensV, largura: 70 }, { campo: 'causa', rotulo: 'Causa / motivo', largura: 160 }, { campo: 'responsavel', rotulo: 'Responsável', largura: 130 }, { campo: 'prazo', rotulo: 'Prazo', tipo: 'date', largura: 130, recarregar: true }, { campo: 'status', rotulo: 'Status', tipo: 'select', opcoes: ['Não iniciada', 'Em andamento', 'Concluída'], largura: 120, recarregar: true }, { campo: 'eficacia', rotulo: 'Eficácia', tipo: 'select', opcoes: ['Não verificada', 'Eficaz', 'Não eficaz'], largura: 120, recarregar: true },
+      { campo: 'st', rotulo: 'Situação', tipo: 'calc', valor: l => l.status === 'Concluída' ? acompChip('ok', 'concluída') : l.prazo && l.prazo < acompHoje() ? acompChip('pendente', 'atrasada') : acompChip('parcial', 'no prazo') }],
+    ocorrencias: [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'tipo', rotulo: 'Tipo', tipo: 'select', opcoes: ['Acidente com afastamento', 'Acidente sem afastamento', 'Quase acidente', 'Incidente', 'Desvio', 'Reclamação', 'Avaria', 'Outro'], largura: 160 }, { campo: 'descricao', rotulo: 'Descrição', largura: 200 }, { campo: 'gravidade', rotulo: 'Gravidade', tipo: 'select', opcoes: ['Baixa', 'Média', 'Alta', 'Crítica'], largura: 90 }, { campo: 'notificada', rotulo: 'Notificada 24h', tipo: 'select', opcoes: OP_SIMNAO, largura: 90 }, { campo: 'investigada', rotulo: 'Investigada', tipo: 'select', opcoes: OP_SIMNAO, largura: 90, recarregar: true }, { campo: 'causaRaiz', rotulo: 'Causa raiz (5 porquês)', largura: 180 }, { campo: 'acao', rotulo: 'Ação', largura: 160, recarregar: true }, { campo: 'status', rotulo: 'Status', tipo: 'select', opcoes: ['Aberta', 'Em tratativa', 'Encerrada'], largura: 110, recarregar: true }],
+    riscos: [{ campo: 'atividade', rotulo: 'Atividade / área', largura: 170 }, { campo: 'perigo', rotulo: 'Perigo', largura: 180 }, { campo: 'probabilidade', rotulo: 'Probab. (1-5)', tipo: 'select', opcoes: ['1', '2', '3', '4', '5'], largura: 80, recarregar: true }, { campo: 'severidade', rotulo: 'Sever. (1-5)', tipo: 'select', opcoes: ['1', '2', '3', '4', '5'], largura: 80, recarregar: true },
+      { campo: 'nivel', rotulo: 'Nível', tipo: 'calc', valor: l => { const n = (fdNum(l.probabilidade) || 0) * (fdNum(l.severidade) || 0); return n ? acompChip(n >= 12 ? 'pendente' : n >= 6 ? 'parcial' : 'ok', `${n} ${n >= 12 ? 'alto' : n >= 6 ? 'médio' : 'baixo'}`) : '—'; } },
+      { campo: 'controle', rotulo: 'Controle / medida', largura: 200, recarregar: true }, { campo: 'responsavel', rotulo: 'Responsável', largura: 130, recarregar: true }],
+    inspecoes: [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130, recarregar: true }, { campo: 'tipo', rotulo: 'Tipo (inspeção, auditoria, blitz...)', largura: 180 }, { campo: 'area', rotulo: 'Área', largura: 120 }, { campo: 'responsavel', rotulo: 'Responsável', largura: 130 }, { campo: 'conformidade', rotulo: '% conformidade', tipo: 'number', largura: 100 }, { campo: 'desvios', rotulo: 'Desvios encontrados', largura: 180 }, { campo: 'acao', rotulo: 'Ação', largura: 160 }]
+  };
+  const extra = b === 'treinamentos' ? `<div style="font-size:11.5px;color:#64748b;margin-top:6px;">💡 Para o check de retenção do treinamento, use a pasta 📂 Material do Pilar (cria o link para as pessoas responderem).</div>` : '';
+  return `${cab}${fdTabela(b, defs[b], { numerar: true, botao: 'Adicionar' })}${extra}`;
+}
+function acompCorValor(ind, m) {
+  const v = fdNum((ind.valores || [])[m]), meta = fdNum(ind.meta);
+  if (v === null || meta === null) return '';
+  const ok = ind.sentido === 'menor' ? v <= meta : v >= meta;
+  return ok ? 'background:#dcfce7;border-color:#86efac;' : 'background:#fee2e2;border-color:#fca5a5;';
+}
+function acompEditarInd(i, campo, valor, recolorir) {
+  const ind = fdLista('indicadores')[i]; if (!ind) return;
+  ind[campo] = valor; fdAgendarSalvar(); acompAtualizarResumo();
+  if (recolorir) fdCorpoRender();
+}
+function acompEditarValor(i, m, valor) {
+  const ind = fdLista('indicadores')[i]; if (!ind) return;
+  ind.valores = Array.isArray(ind.valores) ? ind.valores : [];
+  ind.valores[m] = valor === '' ? '' : Number(String(valor).replace(',', '.'));
+  fdAgendarSalvar(); acompAtualizarResumo();
+  const el = document.getElementById(`ind-${i}-${m}`); if (el) el.setAttribute('style', acompCorValor(ind, m));
+  const st = document.getElementById(`ind-st-${i}`); if (st) { const s = acompIndicadorOk(ind); st.innerHTML = acompChip(s, s === 'ok' ? 'ok' : s); }
+}
+
+// ---- Empresa: lista dos acompanhamentos liberados ----
+async function renderAcompanhamentosEmpresa() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>🚀 Acompanhamentos Impulsionar</h1><p>Carregando...</p>';
+  try {
+    const lista = await api('/api/dpo/acompanhamentos');
+    const porPilar = {};
+    lista.forEach(a => { (porPilar[a.pilar] = porPilar[a.pilar] || { label: a.pilarLabel, itens: [] }).itens.push(a); });
+    cont.innerHTML = `
+      <div class="barra-acoes"><div><button class="btn-secundario btn-sm" onclick="renderDpoHome()">← DPO Ambev</button></div></div>
+      <h1>🚀 Acompanhamentos Impulsionar</h1>
+      <p style="color:#64748b;margin-top:-8px;">Ferramentas de acompanhamento montadas a partir de cada pergunta do checklist, liberadas pela Impulsionar para a sua revenda. Preencha os blocos (reuniões, indicadores, padrões, treinamentos...) e veja quais itens da verificação já estão atendidos.</p>
+      ${!lista.length ? '<div class="msg-vazio">Nenhum acompanhamento liberado ainda. Fale com a Impulsionar.</div>' : Object.values(porPilar).map(p => `
+        <h3 style="margin:18px 0 8px;">${escapeHtml(p.label)}</h3>
+        <div class="acomp-grade">${p.itens.map(a => acompCartao(a, `ACOMP_VOLTAR = renderAcompanhamentosEmpresa; abrirFerramentaDigitalDpo('acomp:${a.questionKey}')`)).join('')}</div>`).join('')}`;
+  } catch (e) { cont.innerHTML = `<h1>🚀 Acompanhamentos Impulsionar</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+function acompCartao(a, onclick) {
+  const r = a.resumo, n = r ? r.nota : null, cor = n === '3' ? '#16a34a' : n === '1' ? '#d97706' : n === '0' ? '#dc2626' : '#94a3b8';
+  return `<button class="acomp-cartao" style="border-left-color:${cor};" onclick="${onclick}">
+    <div style="display:flex;justify-content:space-between;gap:8px;"><strong>${escapeHtml(a.numero)} ${escapeHtml(a.questao)}</strong>${n ? `<span class="fd-nota" style="background:${cor};">${n}</span>` : ''}</div>
+    <div style="font-size:15px;letter-spacing:2px;">${a.blocos.map(b => `<span title="${BLOCOS_ACOMP[b].rotulo}">${BLOCOS_ACOMP[b].icone}</span>`).join('')}</div>
+    <div style="font-size:11.5px;color:#64748b;">${r ? `${r.ok}/${r.total} itens atendidos · ${a.ano}` : 'Ainda não preenchido'}${a.mandatoria ? ' · <strong style="color:#dc2626;">Mandatória</strong>' : ''}</div>
+  </button>`;
+}
+
+// ---- Master: pasta de liberações por revenda ----
+let ACOMP_MASTER = { companyId: null, catalogo: null, empresas: [], libs: new Set(), resumos: {}, ativos: [], busca: '' };
+async function renderDpoAcompanhamentosMaster() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>🚀 Acompanhamentos Impulsionar</h1><p>Carregando...</p>';
+  try {
+    if (!ACOMP_MASTER.catalogo) ACOMP_MASTER.catalogo = await api('/api/admin/dpo/acompanhamentos/catalogo');
+    ACOMP_MASTER.empresas = await api('/api/admin/dpo/companies?all=1');
+    if (!ACOMP_MASTER.companyId && ACOMP_MASTER.empresas[0]) ACOMP_MASTER.companyId = ACOMP_MASTER.empresas[0].id;
+    if (ACOMP_MASTER.companyId) {
+      const r = await api('/api/admin/dpo/acompanhamentos/liberacoes?company_id=' + ACOMP_MASTER.companyId);
+      ACOMP_MASTER.libs = new Set(r.liberacoes.map(l => l.question_key)); ACOMP_MASTER.resumos = r.resumos; ACOMP_MASTER.ativos = r.pilaresAtivos;
+    }
+    desenharAcompMaster();
+  } catch (e) { cont.innerHTML = `<h1>🚀 Acompanhamentos Impulsionar</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+function desenharAcompMaster() {
+  const cont = document.getElementById('conteudo');
+  const M = ACOMP_MASTER, busca = M.busca.toLowerCase();
+  const total = M.catalogo.reduce((s, p) => s + p.perguntas.length, 0);
+  const cont3 = Object.values(M.resumos).filter(r => r.resumo && r.resumo.nota === '3').length;
+  cont.innerHTML = `
+    <h1>🚀 Acompanhamentos Impulsionar — liberações por revenda</h1>
+    <p style="color:#64748b;margin-top:-8px;">Cada pergunta do checklist tem um acompanhamento montado a partir da verificação (blocos 🗓️ reuniões, 📈 indicadores, 📄 padrões, 🎓 treinamentos, ⚙️ processos, 🚨 ocorrências, ⚠️ riscos, 🔍 inspeções, 🔁 plano de ação). Por enquanto eles ficam <strong>restritos por pergunta</strong>: libere aqui, revenda a revenda.</p>
+    <div class="painel" style="margin-bottom:14px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="min-width:260px;"><label style="margin-top:0;">Revenda</label>
+        <select onchange="ACOMP_MASTER.companyId = Number(this.value); renderDpoAcompanhamentosMaster();">${M.empresas.map(e => `<option value="${e.id}" ${e.id === M.companyId ? 'selected' : ''}>${escapeHtml(e.name)}</option>`).join('')}</select></div>
+      <div class="kpi-card" style="padding:10px 14px;"><div class="valor" style="font-size:22px;">${M.libs.size}/${total}</div><div class="rotulo">perguntas liberadas</div></div>
+      <div class="kpi-card" style="padding:10px 14px;"><div class="valor" style="font-size:22px;">${Object.keys(M.resumos).length}</div><div class="rotulo">em uso pela revenda</div></div>
+      <div class="kpi-card" style="padding:10px 14px;"><div class="valor" style="font-size:22px;color:#16a34a;">${cont3}</div><div class="rotulo">com nota sugerida 3</div></div>
+      <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">
+        <input placeholder="🔎 Buscar pergunta..." value="${escapeHtml(M.busca)}" style="width:220px;margin:0;" oninput="ACOMP_MASTER.busca=this.value; clearTimeout(window.__tAc); window.__tAc=setTimeout(()=>{ desenharAcompMaster(); const el=document.querySelector('input[placeholder=&quot;🔎 Buscar pergunta...&quot;]'); if(el){el.focus(); el.setSelectionRange(el.value.length, el.value.length);} }, 300);">
+        <button class="btn-secundario btn-sm" onclick="acompMasterLiberarTodos(true)">Liberar pilares contratados</button>
+        <button class="btn-perigo btn-sm" onclick="acompMasterLiberarTodos(false)">Bloquear tudo</button>
+      </div>
+    </div>
+    ${!M.companyId ? '<div class="msg-vazio">Nenhuma revenda cadastrada.</div>' : M.catalogo.map(p => {
+      const perguntas = p.perguntas.filter(q => !busca || (q.numero + ' ' + q.questao + ' ' + q.grupo).toLowerCase().includes(busca));
+      if (!perguntas.length) return '';
+      const lib = p.perguntas.filter(q => M.libs.has(q.questionKey)).length;
+      const contratado = M.ativos.includes(p.key);
+      return `<details class="painel acomp-pilar" ${busca || lib ? 'open' : ''} style="margin-bottom:10px;">
+        <summary><strong>${p.numero} - ${escapeHtml(p.label)}</strong> <span style="color:#64748b;font-size:12.5px;">· ${lib}/${p.perguntas.length} liberadas${contratado ? '' : ' · <span style="color:#b45309;">pilar não contratado pela revenda</span>'}</span>
+          <span style="float:right;display:flex;gap:6px;"><button class="btn-secundario btn-sm" onclick="event.preventDefault(); acompMasterToggle(${JSON.stringify(p.perguntas.map(q => q.questionKey)).replace(/"/g, '&quot;')}, true)">Liberar pilar</button><button class="btn-secundario btn-sm" onclick="event.preventDefault(); acompMasterToggle(${JSON.stringify(p.perguntas.map(q => q.questionKey)).replace(/"/g, '&quot;')}, false)">Bloquear pilar</button></span></summary>
+        <div class="acomp-lista-master">${perguntas.map(q => {
+          const r = M.resumos['acomp:' + q.questionKey], n = r && r.resumo ? r.resumo.nota : null;
+          const on = M.libs.has(q.questionKey);
+          return `<div class="acomp-linha-master ${on ? 'on' : ''}">
+            <label class="acomp-switch"><input type="checkbox" ${on ? 'checked' : ''} onchange="acompMasterToggle(['${q.questionKey}'], this.checked)"><span></span></label>
+            <div style="flex:1;min-width:0;"><strong>${escapeHtml(q.numero)} ${escapeHtml(q.questao)}</strong>${q.mandatoria ? ' <span style="color:#dc2626;font-size:11px;font-weight:700;">● Mandatória</span>' : ''}${q.especial ? ` <span class="dpo-chip-nivel" style="background:#fff7ed;color:#9a3412;">+ ${q.especial === 'swot' ? 'SWOT digital' : 'Simulador de Dimensionamento'}</span>` : ''}
+              <div style="font-size:11.5px;color:#64748b;">${escapeHtml(q.grupo)} · ${q.itens} itens · ${q.blocos.map(b => BLOCOS_ACOMP[b].icone + ' ' + BLOCOS_ACOMP[b].rotulo).join(' · ')}</div></div>
+            ${n ? `<span class="fd-nota" style="background:${n === '3' ? '#16a34a' : n === '1' ? '#d97706' : '#dc2626'};">nota ${n} · ${r.resumo.ok}/${r.resumo.total}</span>` : ''}
+            <button class="btn-secundario btn-sm" onclick="ACOMP_VOLTAR = renderDpoAcompanhamentosMaster; abrirFerramentaDigitalDpo('acomp:${q.questionKey}', ${M.companyId})">👁 Abrir</button>
+          </div>`;
+        }).join('')}</div>
+      </details>`;
+    }).join('')}`;
+}
+async function acompMasterToggle(keys, liberado) {
+  try {
+    const r = await api('/api/admin/dpo/acompanhamentos/liberacoes', { method: 'PUT', body: JSON.stringify({ company_id: ACOMP_MASTER.companyId, keys, liberado }) });
+    keys.forEach(k => liberado ? ACOMP_MASTER.libs.add(k) : ACOMP_MASTER.libs.delete(k));
+    mostrarToast(r.message); desenharAcompMaster();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+function acompMasterLiberarTodos(liberar) {
+  const M = ACOMP_MASTER;
+  const keys = M.catalogo.filter(p => !liberar || M.ativos.includes(p.key)).flatMap(p => p.perguntas.map(q => q.questionKey));
+  if (!keys.length) { mostrarToast('A revenda não tem pilares contratados.', true); return; }
+  if (!confirm(liberar ? `Liberar ${keys.length} acompanhamentos (pilares contratados) para esta revenda?` : 'Bloquear todos os acompanhamentos desta revenda?')) return;
+  acompMasterToggle(keys, liberar);
+}
 
 function classificarAbaVaga(v) {
   if (v.deleted_at) return 'excluidas';

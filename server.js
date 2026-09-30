@@ -1341,6 +1341,14 @@ function inicializarBase() {
             created_by INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
+        // Acompanhamentos Impulsionar liberados pelo Master por revenda e pergunta.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_acomp_liberacoes (
+            company_id INTEGER NOT NULL,
+            question_key TEXT NOT NULL,
+            liberado_por INTEGER,
+            liberado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (company_id, question_key)
+        )`);
         db.run(`CREATE TABLE IF NOT EXISTS dpo_self_answers (
             assessment_id INTEGER NOT NULL,
             question_key TEXT NOT NULL,
@@ -8162,6 +8170,18 @@ function validarDimensionamentoDpo(t, arquivosOrc) {
 }
 
 async function resolverFerramentaDigitalDpo(req, res, chave, companyIdInformado) {
+    if (String(chave).startsWith('acomp:')) {
+        const [, pilar, numero] = String(chave).split(':');
+        const t = montarTemplateAcompDpo(pilar, numero);
+        if (!t) { res.status(404).json({ error: 'Pergunta não encontrada.' }); return null; }
+        const companyId = await resolverEmpresaPastaDpo(req, res, pilar, companyIdInformado, 'checklist');
+        if (!companyId) return null;
+        if (req.user.role === 'client_admin' && !(await acompLiberadoDpo(companyId, `${pilar}:${numero}`))) {
+            res.status(403).json({ error: 'Este Acompanhamento Impulsionar ainda não foi liberado para sua empresa. Fale com o Master.' });
+            return null;
+        }
+        return { pilar, pergunta: numero, titulo: `Acompanhamento Impulsionar — ${t.pilarLabel} ${numero} ${t.questao}`, companyId, template: t };
+    }
     const f = FERRAMENTAS_DIGITAIS_DPO[chave];
     if (!f) { res.status(404).json({ error: 'Ferramenta não encontrada.' }); return null; }
     const companyId = await resolverEmpresaPastaDpo(req, res, f.pilar, companyIdInformado, 'checklist');
@@ -8178,6 +8198,7 @@ async function carregarFerramentaDigitalDpo(companyId, chave, ano) {
 }
 
 async function validacaoDaChaveDpo(companyId, chave, ano, dadosAtual) {
+    if (String(chave).startsWith('acomp:')) return null; // calculada na tela (blocos do acompanhamento)
     if (chave === 'swot') return validarSwotDpo(dadosAtual, ano);
     const todos = {};
     for (const c of CHAVES_DIMENSIONAMENTO_DPO) todos[c] = c === chave && dadosAtual ? dadosAtual : (await carregarFerramentaDigitalDpo(companyId, c, ano)).dados;
@@ -8207,13 +8228,13 @@ async function migrarPprAntigoDpo(companyId) {
 }
 
 async function respostaFerramentaDigitalDpo(f, chave, ano) {
-    if (chave !== 'swot') await migrarPprAntigoDpo(f.companyId);
+    if (CHAVES_DIMENSIONAMENTO_DPO.includes(chave)) await migrarPprAntigoDpo(f.companyId);
     const r = await carregarFerramentaDigitalDpo(f.companyId, chave, ano);
     const pergunta = perguntaDoPilarDpo(f.pilar, f.pergunta);
     return {
         chave, titulo: f.titulo, pilar: f.pilar, pilarLabel: DPO_AMBEV_DATA[f.pilar].label, pergunta: f.pergunta,
         perguntaTexto: pergunta ? pergunta.pergunta.questao : '', verificacao: pergunta ? pergunta.pergunta.verificacao : '',
-        companyId: Number(f.companyId), ano, anos: await anosDaChaveDpo(f.companyId, chave), ...r,
+        companyId: Number(f.companyId), ano, anos: await anosDaChaveDpo(f.companyId, chave), ...r, template: f.template || null,
         validacao: await validacaoDaChaveDpo(f.companyId, chave, ano, r.dados)
     };
 }
@@ -8288,7 +8309,11 @@ app.post('/api/dpo/ferramentas-digitais/:chave/novo-ano', requireRole('admin', '
             let base = {};
             if (req.body.copiarDe) {
                 const origem = (await carregarFerramentaDigitalDpo(f.companyId, chave, anoValidoDpo(req.body.copiarDe))).dados;
-                if (chave === 'swot') base = { areas: origem.areas, sonho: origem.sonho, responsaveis: origem.responsaveis, vinculoDNMP: origem.vinculoDNMP, vinculoDNMPTexto: origem.vinculoDNMPTexto };
+                if (String(chave).startsWith('acomp:')) base = {
+                    reunioes: origem.reunioes, padroes: origem.padroes, riscos: origem.riscos, processos: origem.processos, __seeded: true,
+                    indicadores: (origem.indicadores || []).map(i => ({ id: i.id, nome: i.nome, unidade: i.unidade, meta: i.meta, sentido: i.sentido }))
+                };
+                else if (chave === 'swot') base = { areas: origem.areas, sonho: origem.sonho, responsaveis: origem.responsaveis, vinculoDNMP: origem.vinculoDNMP, vinculoDNMPTexto: origem.vinculoDNMPTexto };
                 else if (chave === 'orcamento') base = { raci: origem.raci, kpis: origem.kpis, processo: origem.processo };
                 else base = { params: origem.params };
             }
@@ -8359,8 +8384,20 @@ app.get('/api/dpo/ferramentas-digitais/:chave/export', requireRole('admin', 'cli
             (linhas || []).forEach(l => { sh.addRow(l).alignment = { vertical: 'top', wrapText: true }; });
             return sh;
         };
-        const val = await validacaoDaChaveDpo(f.companyId, chave, ano, dados);
-        if (chave === 'swot') {
+        const val = (await validacaoDaChaveDpo(f.companyId, chave, ano, dados)) || (dados.__resumo ? { itens: [], notaSugerida: dados.__resumo.nota, regra: 'Nota sugerida calculada pelos blocos do acompanhamento' } : { itens: [], notaSugerida: '—', regra: '' });
+        if (String(chave).startsWith('acomp:')) {
+            const t = f.template;
+            add('Itens da verificação', [['Item', 'n', 8], ['Verificação', 't', 70], ['Blocos', 'b', 30], ['Autoavaliação', 's', 16], ['Evidência', 'e', 50]],
+                t.itens.map(i => ({ n: i.numero, t: i.texto, b: i.blocos.join(', '), s: ((dados.itens || {})[i.numero] || {}).status || '', e: ((dados.itens || {})[i.numero] || {}).evidencia || '' })));
+            ['reunioes', 'realizacoes', 'processos', 'padroes', 'treinamentos', 'ocorrencias', 'riscos', 'inspecoes', 'acoes'].forEach(b => {
+                const l = (dados[b] || []).filter(x => x && Object.keys(x).length > 1);
+                if (!l.length) return;
+                const cols = [...new Set(l.flatMap(x => Object.keys(x)))].filter(k => k !== 'id');
+                add(b.charAt(0).toUpperCase() + b.slice(1), cols.map(c => [c, c, 22]), l);
+            });
+            if ((dados.indicadores || []).length) add('Indicadores', [['Indicador', 'nome', 30], ['Unidade', 'unidade', 10], ['Meta', 'meta', 10], ['Sentido', 'sentido', 12], ...MESES_CURTOS_DPO.map((m, i) => [m, 'm' + i, 10])],
+                dados.indicadores.map(i => ({ ...i, ...Object.fromEntries(MESES_CURTOS_DPO.map((m, k) => ['m' + k, numDpo((i.valores || [])[k])])) })));
+        } else if (chave === 'swot') {
             const porArea = itensSwotPorAreaDpo(dados);
             const linhas = [];
             Object.entries(porArea).forEach(([area, qs]) => Object.keys(QUADRANTES_SWOT_DPO).forEach(q => (qs[q] || []).forEach(i => linhas.push({ area, q: QUADRANTES_SWOT_DPO[q].rotulo, item: i.texto, c1: i.c1, c2: i.c2, c3: i.c3, pts: pontuacaoItemSwotDpo(q, i) }))));
@@ -8395,6 +8432,140 @@ app.get('/api/dpo/ferramentas-digitais/:chave/export', requireRole('admin', 'cli
         console.error('Erro ao exportar ferramenta digital DPO:', e.message);
         res.status(500).json({ error: 'Erro ao exportar.' });
     }
+});
+
+// ======================================================================
+// DPO — ACOMPANHAMENTOS IMPULSIONAR (um por pergunta do checklist)
+// Montados automaticamente a partir dos itens da verificação (V.1, V.2...):
+// cada item vira blocos de acompanhamento (reuniões, indicadores, padrões,
+// treinamentos, processos, ocorrências, riscos, inspeções, plano de ação).
+// Liberados pelo Master por REVENDA e por PERGUNTA. Salvos por ano.
+// ======================================================================
+const BLOCOS_ACOMP_DPO = {
+    reunioes: /reuni|comit[êe]|\brps\b|matinal|kick ?off|\bdds\b|di[áa]logo di[áa]rio|f[óo]rum|rotina de reuni/i,
+    indicadores: /indicador|\bkpi|\bmeta\b|\bmetas\b|%|[íi]ndice|\btaxa|tempo m[ée]dio|\bytd\b|[úu]ltimos \d|tend[êe]ncia|dispers|\bnps\b|turnover|rotatividade|absente[íi]smo|produtividade|r\$\/hl|acuracidade|n[íi]vel de servi/i,
+    padroes: /padr[ãa]o|padr[õo]es|procedimento|\bpop\b|\bsop\b|instru[çc][ãa]o de trabalho|pol[íi]tica/i,
+    treinamentos: /treina|capacita|reciclag|qualifica[çc]/i,
+    processos: /existe (um )?processo|processo (em vigor|formal|estruturado|definido)|sistem[áa]tica|cronograma|fluxo |respons[áa]veis (claros|definidos)|crit[ée]rios definidos|rotina (de|estruturada|definida)/i,
+    acoes: /plano de a[çc]|planos de a[çc]|\bpdca\b|contramedida|tratativa|a[çc][õo]es corretivas|a[çc][õo]es preventivas/i,
+    ocorrencias: /acidente|incidente|ocorr[êe]ncia|investiga|quase.acidente|\bdesvios?\b|reclama[çc]|avaria|sinistro|\blti\b|\bsif\b/i,
+    riscos: /\briscos?\b|perigo|\bapr\b|mapa de risco/i,
+    inspecoes: /inspe[çc]|auditoria|checklist|check-list|ronda|gemba|blitz|observa[çc][ãa]o comportamental|sinaliza[çc]/i
+};
+const ORDEM_BLOCOS_ACOMP_DPO = Object.keys(BLOCOS_ACOMP_DPO);
+const ACOMP_ESPECIAIS_DPO = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento' };
+const KPIS_CONHECIDOS_DPO = ['TML', 'TMA', 'NPS', 'eNPS', 'OTIF', 'LTI', 'MDI', 'MTI', 'SIF', 'TRI', 'TRIFR', 'PNP', 'FNP', 'VMI', 'EFC', 'OEE', 'DPMO', 'IRL', 'GPS'];
+
+function sugestoesAcompDpo(texto) {
+    const t = String(texto || '');
+    const conectores = /\s+(de|do|da|dos|das|e|a|o|ao|aos|no|na|com|para|que|é|são|está|estão|foi|deve|inclui|rastreada|revisad[ao]|executad[ao]|\(|-)$/i;
+    const limpar = s => { let x = s.replace(/\s+/g, ' ').trim().split(/\s+(?:é|são|está|estão|foi|deve|inclui|rastread[ao]|revisad[ao]|executad[ao]|com|para|que|onde)\s/i)[0]; x = x.split(' ').slice(0, 7).join(' '); while (conectores.test(x)) x = x.replace(conectores, ''); return x; };
+    const uniq = arr => [...new Set(arr.map(limpar).filter(s => s.length > 2))];
+    const nome = '[A-ZÀ-Ú][\\wÀ-ú]*(?:\\s+(?:de|do|da|dos|das|e|[A-ZÀ-Ú][\\wÀ-ú]*)){0,5}';
+    const reunioes = uniq([
+        ...(t.match(/Comit[êe] de [A-ZÀ-Úa-zà-ú]+(?: [A-ZÀ-Ú][a-zà-ú]+)?/g) || []),
+        ...(t.match(/\b(RPS|Supermatinal|Kick ?off|Kickoff|DDS|Matinal|Team Room|Semana d[ae] [A-ZÀ-Ú][a-zà-ú]+)\b/g) || []),
+        ...(t.match(/Reuni[ãa]o (?:de|do|da|mensal|semanal|di[áa]ria) [a-zà-ú ]{3,28}/gi) || [])
+    ]).slice(0, 6);
+    const kpis = uniq([
+        ...KPIS_CONHECIDOS_DPO.filter(k => new RegExp('\\b' + k + '\\b').test(t)),
+        ...(t.match(new RegExp('Tempo M[ée]dio de ' + nome, 'g')) || []),
+        ...(t.match(/(?:[ÍI]ndice|Taxa|% de) [a-zà-ú][a-zà-ú ]{3,45}/gi) || []),
+        ...(/absente[íi]smo/i.test(t) ? ['Absenteísmo'] : []), ...(/turnover|rotatividade/i.test(t) ? ['Turnover'] : []),
+        ...(/acuracidade/i.test(t) ? ['Acuracidade de estoque'] : []), ...(/n[íi]vel de servi/i.test(t) ? ['Nível de serviço'] : []),
+        ...(/devolu/i.test(t) ? ['% Devolução'] : []), ...(/produtividade/i.test(t) ? ['Produtividade'] : [])
+    ]).slice(0, 6);
+    const padroes = uniq(t.match(new RegExp('Padr[ãa]o (?:de |do |da )?' + nome, 'g')) || []).slice(0, 6);
+    return { reunioes, indicadores: kpis, padroes };
+}
+
+function montarTemplateAcompDpo(pilarKey, numero) {
+    const achou = perguntaDoPilarDpo(pilarKey, numero);
+    if (!achou) return null;
+    const q = achou.pergunta;
+    const itens = itensDaVerificacaoDpo(q.verificacao).map(it => ({
+        numero: 'V.' + it.numero, texto: it.texto,
+        blocos: ORDEM_BLOCOS_ACOMP_DPO.filter(b => BLOCOS_ACOMP_DPO[b].test(it.texto))
+    }));
+    const blocos = ORDEM_BLOCOS_ACOMP_DPO.filter(b => itens.some(i => i.blocos.includes(b)));
+    if (!blocos.includes('acoes')) blocos.push('acoes'); // todo acompanhamento tem plano de ação
+    // Regra da nota 1: itens citados antes do "MAS" na explicação da pontuação 1.
+    const linha1 = String(q.explicacao_pontos || '').split(/\n\s*\n/).find(l => /^\s*1\s*[-.:)]/.test(l)) || '';
+    const req1 = [...new Set((linha1.split(/\bMAS\b/i)[0].match(/V\.?\s*\d+/gi) || []).map(v => 'V.' + v.replace(/\D/g, '')))];
+    return {
+        chave: `acomp:${pilarKey}:${numero}`, pilar: pilarKey, pilarLabel: DPO_AMBEV_DATA[pilarKey].label, grupo: `${achou.grupo.numero} ${achou.grupo.titulo}`,
+        numero, questao: q.questao, mandatoria: !!q.mandatoria, verificacao: q.verificacao || '', how_to_check: q.how_to_check || '', explicacao: q.explicacao_pontos || '',
+        itens, blocos, sugestoes: sugestoesAcompDpo(q.verificacao + '\n' + (q.how_to_check || '')), regra: { req1 }, especial: ACOMP_ESPECIAIS_DPO[`${pilarKey}:${numero}`] || null
+    };
+}
+
+async function acompLiberadoDpo(companyId, questionKey) {
+    return !!(await dbGet(`SELECT 1 FROM dpo_acomp_liberacoes WHERE company_id = ? AND question_key = ?`, [companyId, questionKey]));
+}
+
+// Catálogo (Master): todas as perguntas com os blocos que o acompanhamento terá.
+app.get('/api/admin/dpo/acompanhamentos/catalogo', requireRole('admin'), (req, res) => {
+    res.json(DPO_PILARES_ORDEM.map(k => ({
+        key: k, label: DPO_AMBEV_DATA[k].label, numero: DPO_PILARES_ORDEM.indexOf(k) + 1,
+        perguntas: DPO_AMBEV_DATA[k].grupos.flatMap(g => g.perguntas.map(q => {
+            const t = montarTemplateAcompDpo(k, q.numero);
+            return { questionKey: `${k}:${q.numero}`, numero: q.numero, questao: q.questao, grupo: `${g.numero} ${g.titulo}`, mandatoria: !!q.mandatoria, blocos: t.blocos, itens: t.itens.length, especial: t.especial };
+        }))
+    })));
+});
+
+async function resumosAcompDpo(companyId) {
+    const regs = await dbAll(`SELECT chave, ano, dados, updated_at FROM dpo_ferramentas_digitais WHERE company_id = ? AND chave LIKE 'acomp:%' ORDER BY ano DESC`, [companyId]);
+    const porChave = {};
+    regs.forEach(r => { if (porChave[r.chave]) return; const d = JSON.parse(r.dados || '{}'); porChave[r.chave] = { ano: r.ano, updated_at: r.updated_at, resumo: d.__resumo || null }; });
+    return porChave;
+}
+
+app.get('/api/admin/dpo/acompanhamentos/liberacoes', requireRole('admin'), async (req, res) => {
+    try {
+        if (!req.query.company_id) return res.status(400).json({ error: 'Informe a revenda.' });
+        const libs = await dbAll(`SELECT l.question_key, l.liberado_em, u.name as liberadoPor FROM dpo_acomp_liberacoes l LEFT JOIN users u ON u.id = l.liberado_por WHERE l.company_id = ?`, [req.query.company_id]);
+        res.json({ liberacoes: libs, resumos: await resumosAcompDpo(req.query.company_id), pilaresAtivos: await pilaresAtivosDaEmpresa(req.query.company_id) });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar as liberações.' }); }
+});
+
+app.put('/api/admin/dpo/acompanhamentos/liberacoes', requireRole('admin'), async (req, res) => {
+    const { company_id, keys, liberado } = req.body;
+    if (!company_id || !Array.isArray(keys) || !keys.length) return res.status(400).json({ error: 'Informe a revenda e as perguntas.' });
+    try {
+        const empresa = await dbGet(`SELECT id FROM companies WHERE id = ?`, [company_id]);
+        if (!empresa) return res.status(404).json({ error: 'Revenda não encontrada.' });
+        const validas = keys.filter(k => { const [p, n] = String(k).split(':'); return !!perguntaDoPilarDpo(p, n); });
+        for (const k of validas) {
+            if (liberado) await new Promise((resolve) => db.run(`INSERT OR IGNORE INTO dpo_acomp_liberacoes (company_id, question_key, liberado_por) VALUES (?, ?, ?)`, [company_id, k, req.user.userId], () => resolve()));
+            else await new Promise((resolve) => db.run(`DELETE FROM dpo_acomp_liberacoes WHERE company_id = ? AND question_key = ?`, [company_id, k], () => resolve()));
+        }
+        if (liberado && validas.length) {
+            const nomes = validas.slice(0, 3).map(k => { const [p, n] = k.split(':'); return `${DPO_AMBEV_DATA[p].label} ${n}`; }).join(', ');
+            notificarPorCompanyAdmins(company_id, 'DPO — novo Acompanhamento Impulsionar liberado', `${validas.length} acompanhamento(s) liberado(s): ${nomes}${validas.length > 3 ? '...' : ''}.`, 'dpoHome');
+        }
+        res.json({ message: liberado ? `${validas.length} acompanhamento(s) liberado(s)!` : `${validas.length} acompanhamento(s) bloqueado(s).` });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar as liberações.' }); }
+});
+
+// Empresa: acompanhamentos liberados para ela (Master pode consultar com company_id).
+app.get('/api/dpo/acompanhamentos', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const companyId = req.user.role === 'client_admin' ? req.user.companyId : req.query.company_id;
+        if (!companyId) return res.status(400).json({ error: 'Informe a empresa.' });
+        const ativos = await pilaresAtivosDaEmpresa(companyId);
+        const libs = await dbAll(`SELECT question_key, liberado_em FROM dpo_acomp_liberacoes WHERE company_id = ?`, [companyId]);
+        const resumos = await resumosAcompDpo(companyId);
+        const lista = libs.map(l => {
+            const [p, n] = l.question_key.split(':');
+            if (req.user.role === 'client_admin' && !ativos.includes(p)) return null;
+            const t = montarTemplateAcompDpo(p, n);
+            if (!t) return null;
+            const r = resumos[`acomp:${l.question_key}`];
+            return { questionKey: l.question_key, pilar: p, pilarLabel: t.pilarLabel, numero: n, questao: t.questao, mandatoria: t.mandatoria, blocos: t.blocos, especial: t.especial, liberado_em: l.liberado_em, resumo: r ? r.resumo : null, ano: r ? r.ano : null, updated_at: r ? r.updated_at : null };
+        }).filter(Boolean).sort((a, b) => DPO_PILARES_ORDEM.indexOf(a.pilar) - DPO_PILARES_ORDEM.indexOf(b.pilar) || String(a.numero).localeCompare(String(b.numero), undefined, { numeric: true }));
+        res.json(lista);
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar os acompanhamentos.' }); }
 });
 
 app.put('/api/dpo/cycles/:id/answers', requireRole('admin', 'client_admin'), async (req, res) => {
