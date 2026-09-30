@@ -1302,6 +1302,23 @@ function inicializarBase() {
             anexo_nome TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
+        // "Ferramentas Impulsionar": biblioteca que o Master publica por pilar
+        // (e opcionalmente por pergunta) — planilhas, modelos, treinamentos, links.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_ferramentas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pillar_key TEXT NOT NULL,
+            question_numero TEXT,
+            tipo TEXT NOT NULL,
+            titulo TEXT NOT NULL,
+            descricao TEXT,
+            url TEXT NOT NULL,
+            original_name TEXT,
+            ativo INTEGER NOT NULL DEFAULT 1,
+            acessos INTEGER NOT NULL DEFAULT 0,
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME
+        )`);
         db.run(`CREATE TABLE IF NOT EXISTS dpo_self_answers (
             assessment_id INTEGER NOT NULL,
             question_key TEXT NOT NULL,
@@ -6564,9 +6581,9 @@ function ordemDasPerguntasDoPilarDpo(pilarKey) {
 }
 
 // ---------- Permissão por PASTA do DPO (Master libera por empresa) ----------
-const PASTAS_DPO = ['checklist', 'batepapo', 'material', 'autoavaliacao'];
-const PASTAS_DPO_PADRAO = { checklist: true, batepapo: false, material: false, autoavaliacao: true };
-const ROTULOS_PASTAS_DPO = { checklist: 'Gestão (Checklist)', batepapo: 'Perguntas Bate-Papo', material: 'Material do Pilar', autoavaliacao: 'Autoavaliação Mensal' };
+const PASTAS_DPO = ['checklist', 'batepapo', 'material', 'ferramentas', 'autoavaliacao'];
+const PASTAS_DPO_PADRAO = { checklist: true, batepapo: false, material: false, ferramentas: false, autoavaliacao: true };
+const ROTULOS_PASTAS_DPO = { checklist: 'Gestão (Checklist)', batepapo: 'Perguntas Bate-Papo', material: 'Material do Pilar', ferramentas: 'Ferramentas Impulsionar', autoavaliacao: 'Autoavaliação Mensal' };
 
 async function pastasLiberadasDaEmpresa(companyId) {
     const resultado = { ...PASTAS_DPO_PADRAO };
@@ -6613,7 +6630,7 @@ app.get('/api/dpo/pastas', requireRole('admin', 'client_admin'), async (req, res
             // Master enxerga todas as pastas (quando abre o ciclo de uma empresa),
             // mas também recebe o que está liberado para ela, se informar company_id.
             const liberadas = req.query.company_id ? await pastasLiberadasDaEmpresa(req.query.company_id) : null;
-            return res.json({ checklist: true, batepapo: true, material: true, autoavaliacao: true, liberadasParaEmpresa: liberadas });
+            return res.json({ checklist: true, batepapo: true, material: true, ferramentas: true, autoavaliacao: true, liberadasParaEmpresa: liberadas });
         }
         res.json(await pastasLiberadasDaEmpresa(req.user.companyId));
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar as pastas liberadas.' }); }
@@ -7868,6 +7885,102 @@ app.get('/api/chamados-contagem', requireRole('admin', 'client_admin'), async (r
             : await dbGet(`SELECT COUNT(*) as naoLidos FROM chamados WHERE company_id = ? AND nao_lido_empresa = 1`, [req.user.companyId]);
         res.json(r);
     } catch (e) { res.json({ naoLidos: 0 }); }
+});
+
+// ---------- DPO — "Ferramentas Impulsionar" (biblioteca do Master por pilar) ----------
+const TIPOS_FERRAMENTA_DPO = ['planilha', 'modelo_padrao', 'treinamento', 'checklist', 'apresentacao', 'link', 'outro'];
+
+function validarFerramentaDpo(body, parcial) {
+    const erros = [];
+    const dados = {};
+    if (!parcial || body.pillarKey !== undefined) {
+        if (!DPO_PILARES_ORDEM.includes(body.pillarKey)) erros.push('Pilar inválido.');
+        dados.pillar_key = body.pillarKey;
+    }
+    if (!parcial || body.questionNumero !== undefined) {
+        const q = body.questionNumero ? String(body.questionNumero) : null;
+        if (q && !perguntaDoPilarDpo(body.pillarKey || dados.pillar_key, q)) erros.push('Pergunta do pilar inválida.');
+        dados.question_numero = q;
+    }
+    if (!parcial || body.tipo !== undefined) {
+        if (!TIPOS_FERRAMENTA_DPO.includes(body.tipo)) erros.push('Tipo inválido.');
+        dados.tipo = body.tipo;
+    }
+    if (!parcial || body.titulo !== undefined) {
+        const t = String(body.titulo || '').trim().slice(0, 200);
+        if (!t) erros.push('Informe o título.');
+        dados.titulo = t;
+    }
+    if (body.descricao !== undefined) dados.descricao = String(body.descricao || '').trim().slice(0, 2000) || null;
+    if (!parcial || body.url !== undefined) {
+        const u = String(body.url || '').trim();
+        if (!/^https?:\/\/\S+$/i.test(u) && !/^\/uploads\/[\w.\-]+$/.test(u)) erros.push('Envie um arquivo ou informe um link válido (http/https).');
+        dados.url = u;
+        dados.original_name = body.originalName ? String(body.originalName).slice(0, 200) : null;
+    }
+    if (body.ativo !== undefined) dados.ativo = body.ativo ? 1 : 0;
+    return { erros, dados };
+}
+
+app.get('/api/dpo/ferramentas/:pillarKey', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const pilarKey = req.params.pillarKey;
+        if (req.user.role === 'client_admin') {
+            const ok = await resolverEmpresaPastaDpo(req, res, pilarKey, null, 'ferramentas');
+            if (!ok) return;
+        } else if (!DPO_PILARES_ORDEM.includes(pilarKey)) return res.status(400).json({ error: 'Pilar inválido.' });
+        const lista = await dbAll(`SELECT * FROM dpo_ferramentas WHERE pillar_key = ? ${req.user.role === 'admin' ? '' : 'AND ativo = 1'} ORDER BY created_at DESC`, [pilarKey]);
+        const ordem = ordemDasPerguntasDoPilarDpo(pilarKey);
+        lista.sort((a, b) => {
+            const oa = a.question_numero ? (ordem[a.question_numero] ?? 9999) : -1;
+            const ob = b.question_numero ? (ordem[b.question_numero] ?? 9999) : -1;
+            return oa - ob || String(b.created_at).localeCompare(String(a.created_at));
+        });
+        res.json(lista.map(f => ({ ...f, perguntaTexto: f.question_numero ? textoDaPerguntaDpo(pilarKey, f.question_numero) : null })));
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar as ferramentas.' }); }
+});
+
+app.post('/api/admin/dpo/ferramentas', requireRole('admin'), async (req, res) => {
+    const { erros, dados } = validarFerramentaDpo(req.body, false);
+    if (erros.length) return res.status(400).json({ error: erros[0] });
+    try {
+        await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_ferramentas (pillar_key, question_numero, tipo, titulo, descricao, url, original_name, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [dados.pillar_key, dados.question_numero, dados.tipo, dados.titulo, dados.descricao || null, dados.url, dados.original_name, req.user.userId],
+            (err) => err ? reject(err) : resolve()
+        ));
+        res.json({ message: 'Ferramenta publicada!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao publicar a ferramenta.' }); }
+});
+
+app.put('/api/admin/dpo/ferramentas/:id', requireRole('admin'), async (req, res) => {
+    try {
+        const atual = await dbGet(`SELECT * FROM dpo_ferramentas WHERE id = ?`, [req.params.id]);
+        if (!atual) return res.status(404).json({ error: 'Ferramenta não encontrada.' });
+        const { erros, dados } = validarFerramentaDpo({ pillarKey: atual.pillar_key, ...req.body }, true);
+        if (erros.length) return res.status(400).json({ error: erros[0] });
+        delete dados.pillar_key;
+        const campos = Object.keys(dados);
+        if (!campos.length) return res.json({ message: 'Nada para alterar.' });
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE dpo_ferramentas SET ${campos.map(c => c + ' = ?').join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            [...campos.map(c => dados[c]), atual.id], (err) => err ? reject(err) : resolve()
+        ));
+        res.json({ message: 'Ferramenta atualizada!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar a ferramenta.' }); }
+});
+
+app.delete('/api/admin/dpo/ferramentas/:id', requireRole('admin'), async (req, res) => {
+    try {
+        await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_ferramentas WHERE id = ?`, [req.params.id], (err) => err ? reject(err) : resolve()));
+        res.json({ message: 'Ferramenta removida!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao remover a ferramenta.' }); }
+});
+
+// Conta quantas vezes cada ferramenta foi aberta/baixada (para o Master ver o uso).
+app.post('/api/dpo/ferramentas/:id/acesso', requireRole('admin', 'client_admin'), (req, res) => {
+    if (req.user.role === 'admin') return res.json({ ok: true });
+    db.run(`UPDATE dpo_ferramentas SET acessos = acessos + 1 WHERE id = ?`, [req.params.id], () => res.json({ ok: true }));
 });
 
 app.put('/api/dpo/cycles/:id/answers', requireRole('admin', 'client_admin'), async (req, res) => {

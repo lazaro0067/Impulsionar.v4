@@ -468,6 +468,14 @@
   .chamado-anexo { display: inline-block; margin-top: 6px; font-size: 12.5px; color: #2563eb; }
   .chamado-msg-sistema { align-self: center; font-size: 12px; color: #475569; background: #f1f5f9; border-radius: 999px; padding: 4px 12px; text-align: center; }
   .chamado-msg-sistema span { color: #94a3b8; }
+  .ferr-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
+  .ferr-card { display: flex; gap: 12px; background: #fff; border: 1px solid var(--cinza-200); border-radius: 12px; padding: 12px 14px; }
+  .ferr-card.inativa { opacity: .6; border-style: dashed; }
+  .ferr-icone { font-size: 28px; width: 46px; height: 46px; border-radius: 10px; background: #fef2f2; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .ferr-tipo { font-size: 11px; font-weight: 700; color: #dc4c4c; text-transform: uppercase; letter-spacing: .3px; }
+  .ferr-titulo { font-size: 14px; font-weight: 800; color: #0f172a; }
+  .ferr-desc { font-size: 12.5px; color: #475569; white-space: pre-wrap; margin-top: 2px; }
+  .ferr-botao { width: auto; text-decoration: none; display: inline-block; }
   .dpo-score-badge { font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
 </style>
 </head>
@@ -6399,12 +6407,12 @@ async function renderDpoAgenda() {
       <h2 style="margin-top:32px;">🔐 Pastas liberadas por empresa</h2>
       <p style="color:#64748b;margin-top:-8px;">Escolha quais pastas do DPO cada empresa enxerga dentro dos pilares que ela comprou (a empresa recebe uma notificação quando uma pasta nova é liberada). Marque "1ª auditoria em 2026" para revendas que nunca foram auditadas — só elas podem ficar no selo Route Basic. Em "📊 Autoavaliações" você vê o resumo e as notas de cada mês da empresa.</p>
       <table>
-        <thead><tr><th>Empresa</th><th>📝 Gestão (Checklist)</th><th>📁 Perguntas Bate-Papo</th><th>📂 Material do Pilar</th><th>📊 Autoavaliação Mensal</th><th title="Revenda que nunca foi auditada: pode receber o selo Route Basic">1ª auditoria em 2026</th><th></th></tr></thead>
+        <thead><tr><th>Empresa</th><th>📝 Gestão (Checklist)</th><th>📁 Perguntas Bate-Papo</th><th>📂 Material do Pilar</th><th>🧰 Ferramentas Impulsionar</th><th>📊 Autoavaliação Mensal</th><th title="Revenda que nunca foi auditada: pode receber o selo Route Basic">1ª auditoria em 2026</th><th></th></tr></thead>
         <tbody>
           ${CACHE_DPO_EMPRESAS_TODAS.map(e => `
             <tr>
               <td>${escapeHtml(e.name)}</td>
-              ${['checklist', 'batepapo', 'material', 'autoavaliacao'].map(p => `<td style="text-align:center;"><input type="checkbox" id="dpo-pasta-${p}-${e.id}" style="width:auto;" ${e.pastas && e.pastas[p] ? 'checked' : ''}></td>`).join('')}
+              ${['checklist', 'batepapo', 'material', 'ferramentas', 'autoavaliacao'].map(p => `<td style="text-align:center;"><input type="checkbox" id="dpo-pasta-${p}-${e.id}" style="width:auto;" ${e.pastas && e.pastas[p] ? 'checked' : ''}></td>`).join('')}
               <td style="text-align:center;"><input type="checkbox" id="dpo-primeira-${e.id}" style="width:auto;" ${e.primeiraAuditoria ? 'checked' : ''}></td>
               <td style="white-space:nowrap;"><button class="btn-secundario btn-sm" onclick="salvarPastasEmpresaDpo(${e.id})">Salvar</button>
                 <button class="btn-secundario btn-sm" onclick="renderDpoAutoavaliacao(${e.id})">📊 Autoavaliações</button></td>
@@ -7047,10 +7055,10 @@ async function abrirOuCriarPilarDpo(pillarKey) {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
-const ABAS_PILAR_DPO = { checklist: '📝 Gestão', batepapo: '📁 Perguntas Bate-Papo', material: '📂 Material do Pilar' };
+const ABAS_PILAR_DPO = { checklist: '📝 Gestão', batepapo: '📁 Perguntas Bate-Papo', material: '📂 Material do Pilar', ferramentas: '🧰 Ferramentas Impulsionar' };
 
 async function abrirVisualizacaoCicloDpo(ciclo, somenteLeitura, pilarKeyInicial) {
-  let pastas = { checklist: true, batepapo: false, material: false };
+  let pastas = { checklist: true, batepapo: false, material: false, ferramentas: false };
   try { pastas = await api('/api/dpo/pastas'); } catch (e) { /* mantém o padrão */ }
   // Notas da última autoavaliação de cada pilar (só leitura aqui na Gestão).
   let niveis = { pilares: {} };
@@ -7069,7 +7077,7 @@ function renderCicloDpoAtual() {
   const respondidas = pilar.grupos.reduce((s, g) => s + g.perguntas.filter(p => p.score !== null && p.score !== undefined).length, 0);
   const validos = pilar.grupos.flatMap(g => g.perguntas).filter(p => p.score !== null && p.score !== undefined);
   const mediaScore = validos.length ? (validos.reduce((s, p) => s + p.score, 0) / validos.length).toFixed(1) : null;
-  const pastas = ESTADO_DPO_VIEW.pastas || { checklist: true, batepapo: false, material: false };
+  const pastas = ESTADO_DPO_VIEW.pastas || { checklist: true, batepapo: false, material: false, ferramentas: false };
   const abasLiberadas = Object.keys(ABAS_PILAR_DPO).filter(a => pastas[a]);
   if (!abasLiberadas.includes(ESTADO_DPO_VIEW.aba)) ESTADO_DPO_VIEW.aba = abasLiberadas[0] || null;
   const aba = ESTADO_DPO_VIEW.aba;
@@ -7091,7 +7099,8 @@ function renderCicloDpoAtual() {
     </div>` : ''}
     ${!aba ? `<div class="msg-vazio">Nenhuma pasta deste pilar foi liberada para sua empresa ainda. Fale com o Master.</div>`
       : aba === 'batepapo' ? `<div id="dpo-batepapo-area"><p>Carregando...</p></div>`
-      : aba === 'material' ? `<div id="dpo-material-area"><p>Carregando...</p></div>` : `
+      : aba === 'material' ? `<div id="dpo-material-area"><p>Carregando...</p></div>`
+      : aba === 'ferramentas' ? `<div id="dpo-ferramentas-area"><p>Carregando...</p></div>` : `
     ${(() => {
       const nv = ((ESTADO_DPO_VIEW.niveis && ESTADO_DPO_VIEW.niveis.pilares) || {})[pilar.key];
       return nv
@@ -7108,6 +7117,7 @@ function renderCicloDpoAtual() {
   `;
   if (aba === 'batepapo') carregarBatePapoDpo();
   if (aba === 'material') carregarMaterialDpo();
+  if (aba === 'ferramentas') carregarFerramentasDpo();
 }
 
 // ----- Pasta "Perguntas Bate-Papo" (dentro de cada pilar) -----
@@ -7874,7 +7884,7 @@ function baixarExcelMaterialDpo() {
 // ----- Master: libera as pastas do DPO (Checklist / Bate-Papo / Material) por empresa -----
 async function salvarPastasEmpresaDpo(companyId) {
   const corpo = {};
-  ['checklist', 'batepapo', 'material', 'autoavaliacao'].forEach(p => { corpo[p] = document.getElementById(`dpo-pasta-${p}-${companyId}`).checked; });
+  ['checklist', 'batepapo', 'material', 'ferramentas', 'autoavaliacao'].forEach(p => { corpo[p] = document.getElementById(`dpo-pasta-${p}-${companyId}`).checked; });
   corpo.primeiraAuditoria = document.getElementById(`dpo-primeira-${companyId}`).checked;
   try { const r = await api('/api/admin/dpo/pastas/' + companyId, { method: 'PUT', body: JSON.stringify(corpo) }); mostrarToast(r.message); }
   catch (e) { mostrarToast(e.message, true); }
@@ -8626,6 +8636,178 @@ function fecharChamadoComAvaliacao(id) {
 async function liberarAjusteChamado(id) {
   if (!confirm('Reabrir a autoavaliação para a empresa ajustar as notas?')) return;
   try { const r = await api('/api/chamados/' + id + '/liberar-ajuste', { method: 'POST' }); mostrarToast(r.message); abrirChamado(id); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+// ----- Pasta "Ferramentas Impulsionar" (biblioteca do Master por pilar) -----
+const TIPOS_FERRAMENTA_DPO_FRONT = {
+  planilha: { icone: '📊', rotulo: 'Planilha / Controle' },
+  modelo_padrao: { icone: '📄', rotulo: 'Modelo de Padrão' },
+  treinamento: { icone: '🎓', rotulo: 'Treinamento / Vídeo' },
+  checklist: { icone: '✅', rotulo: 'Checklist' },
+  apresentacao: { icone: '📽️', rotulo: 'Apresentação' },
+  link: { icone: '🔗', rotulo: 'Link / Sistema' },
+  outro: { icone: '🧰', rotulo: 'Outro' }
+};
+let CACHE_FERRAMENTAS_DPO = [];
+let FILTRO_FERRAMENTAS_DPO = { tipo: '', busca: '' };
+
+async function carregarFerramentasDpo() {
+  const area = document.getElementById('dpo-ferramentas-area');
+  if (!area) return;
+  try {
+    CACHE_FERRAMENTAS_DPO = await api('/api/dpo/ferramentas/' + pilarAtualDpo().key);
+    desenharFerramentasDpo();
+  } catch (e) { area.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+function desenharFerramentasDpo() {
+  const area = document.getElementById('dpo-ferramentas-area');
+  if (!area) return;
+  const ehMaster = ESTADO.usuario.role === 'admin';
+  const busca = FILTRO_FERRAMENTAS_DPO.busca.toLowerCase();
+  const lista = CACHE_FERRAMENTAS_DPO.filter(f =>
+    (!FILTRO_FERRAMENTAS_DPO.tipo || f.tipo === FILTRO_FERRAMENTAS_DPO.tipo) &&
+    (!busca || [f.titulo, f.descricao, f.perguntaTexto, f.question_numero].join(' ').toLowerCase().includes(busca)));
+  const grupos = [];
+  lista.forEach(f => {
+    const chave = f.question_numero || '';
+    let g = grupos.find(x => x.chave === chave);
+    if (!g) { g = { chave, titulo: f.question_numero ? `${f.question_numero} ${f.perguntaTexto || ''}` : 'Ferramentas gerais do pilar', itens: [] }; grupos.push(g); }
+    g.itens.push(f);
+  });
+  area.innerHTML = `
+    <div class="barra-acoes">
+      <div class="plano-meta">🧰 Ferramentas da Impulsionar para ${escapeHtml(pilarAtualDpo().label)} — modelos, planilhas, treinamentos e links para usar no dia a dia do pilar.</div>
+      <div class="direita">${ehMaster ? `<button class="btn-primario btn-sm" style="width:auto;" onclick="abrirModalFerramentaDpo()">+ Nova ferramenta</button>` : ''}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+      <button class="btn-sm ${!FILTRO_FERRAMENTAS_DPO.tipo ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="FILTRO_FERRAMENTAS_DPO.tipo=''; desenharFerramentasDpo();">Todas (${CACHE_FERRAMENTAS_DPO.length})</button>
+      ${Object.entries(TIPOS_FERRAMENTA_DPO_FRONT).filter(([k]) => CACHE_FERRAMENTAS_DPO.some(f => f.tipo === k)).map(([k, v]) =>
+        `<button class="btn-sm ${FILTRO_FERRAMENTAS_DPO.tipo === k ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="FILTRO_FERRAMENTAS_DPO.tipo='${k}'; desenharFerramentasDpo();">${v.icone} ${v.rotulo}</button>`).join('')}
+      <input placeholder="🔎 Buscar ferramenta..." value="${escapeHtml(FILTRO_FERRAMENTAS_DPO.busca)}" style="width:220px;margin:0 0 0 auto;" oninput="FILTRO_FERRAMENTAS_DPO.busca=this.value; clearTimeout(window.__tFerr); window.__tFerr=setTimeout(()=>{ desenharFerramentasDpo(); const el=document.querySelector('#dpo-ferramentas-area input'); if(el){el.focus(); el.setSelectionRange(el.value.length, el.value.length);} }, 250);">
+    </div>
+    ${!CACHE_FERRAMENTAS_DPO.length ? `<div class="msg-vazio">${ehMaster ? 'Nenhuma ferramenta publicada neste pilar ainda. Clique em <strong>+ Nova ferramenta</strong>.' : 'A Impulsionar ainda não publicou ferramentas para este pilar.'}</div>`
+      : !lista.length ? '<div class="msg-vazio">Nenhuma ferramenta neste filtro.</div>'
+      : grupos.map(g => `
+        <div class="dpo-grupo">
+          <div class="dpo-grupo-titulo">${escapeHtml(g.titulo)}</div>
+          <div class="ferr-grade">
+            ${g.itens.map(f => {
+              const t = TIPOS_FERRAMENTA_DPO_FRONT[f.tipo] || TIPOS_FERRAMENTA_DPO_FRONT.outro;
+              const ehLink = /^https?:/i.test(f.url);
+              return `
+              <div class="ferr-card ${f.ativo ? '' : 'inativa'}">
+                <div class="ferr-icone">${t.icone}</div>
+                <div style="flex:1;min-width:0;">
+                  <div class="ferr-tipo">${t.rotulo}${!f.ativo ? ' · <strong style="color:#dc2626;">oculta para as empresas</strong>' : ''}</div>
+                  <div class="ferr-titulo">${escapeHtml(f.titulo)}</div>
+                  ${f.descricao ? `<div class="ferr-desc">${escapeHtml(f.descricao)}</div>` : ''}
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+                    <a class="btn-primario btn-sm ferr-botao" href="${escapeHtml(f.url)}" target="_blank" rel="noopener" ${ehLink ? '' : `download="${escapeHtml(f.original_name || '')}"`} onclick="registrarAcessoFerramentaDpo(${f.id})">${ehLink ? '↗ Abrir' : '⬇ Baixar'}</a>
+                    ${ehMaster ? `
+                      <button class="btn-secundario btn-sm" onclick="abrirModalFerramentaDpo(${f.id})">Editar</button>
+                      <button class="btn-secundario btn-sm" onclick="alternarFerramentaDpo(${f.id}, ${!f.ativo})">${f.ativo ? 'Ocultar' : 'Mostrar'}</button>
+                      <button class="btn-perigo btn-sm" onclick="excluirFerramentaDpo(${f.id})">Excluir</button>
+                      <span class="plano-meta" style="font-size:11px;align-self:center;">${f.acessos} acesso(s) das empresas</span>` : ''}
+                  </div>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`).join('')}
+  `;
+}
+
+function registrarAcessoFerramentaDpo(id) { api('/api/dpo/ferramentas/' + id + '/acesso', { method: 'POST' }).catch(() => {}); }
+
+function abrirModalFerramentaDpo(id) {
+  const area = document.getElementById('modal-area');
+  const pilar = pilarAtualDpo();
+  const f = id ? CACHE_FERRAMENTAS_DPO.find(x => x.id === id) : null;
+  window.CTX_FERRAMENTA_DPO = { id: f ? f.id : null, url: f ? f.url : null, originalName: f ? f.original_name : null };
+  const ehLink = f && /^https?:/i.test(f.url);
+  area.innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa" style="max-width:580px;max-height:92vh;overflow-y:auto;">
+        <h3 style="margin-top:0;">🧰 ${f ? 'Editar' : 'Nova'} ferramenta — ${escapeHtml(pilar.label)}</h3>
+        <label>Tipo</label>
+        <select id="fe-tipo">${Object.entries(TIPOS_FERRAMENTA_DPO_FRONT).map(([k, v]) => `<option value="${k}" ${f && f.tipo === k ? 'selected' : ''}>${v.icone} ${v.rotulo}</option>`).join('')}</select>
+        <label>Pergunta do pilar (opcional)</label>
+        <select id="fe-pergunta">
+          <option value="">Geral do pilar (todas as perguntas)</option>
+          ${pilar.grupos.map(g => `<optgroup label="${escapeHtml(g.numero + ' ' + g.titulo)}">${g.perguntas.map(q => `<option value="${escapeHtml(q.numero)}" ${f && f.question_numero === q.numero ? 'selected' : ''}>${escapeHtml(q.numero)} — ${escapeHtml(q.questao)}</option>`).join('')}</optgroup>`).join('')}
+        </select>
+        <label>Título</label>
+        <input id="fe-titulo" maxlength="200" placeholder="ex: Planilha de controle de TML" value="${escapeHtml(f ? f.titulo : '')}">
+        <label>Descrição / como usar</label>
+        <textarea id="fe-descricao" rows="3" placeholder="Para que serve e como a empresa deve usar">${escapeHtml(f && f.descricao ? f.descricao : '')}</textarea>
+        <label>Conteúdo</label>
+        <select id="fe-origem" onchange="document.getElementById('fe-arquivo-area').style.display = this.value === 'arquivo' ? '' : 'none'; document.getElementById('fe-link-area').style.display = this.value === 'link' ? '' : 'none';">
+          <option value="arquivo" ${!ehLink ? 'selected' : ''}>Enviar arquivo</option>
+          <option value="link" ${ehLink ? 'selected' : ''}>Link (site, vídeo, sistema)</option>
+        </select>
+        <div id="fe-arquivo-area" style="${ehLink ? 'display:none;' : ''}">
+          <input id="fe-arquivo" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,image/*,video/*">
+          ${f && !ehLink ? `<div class="plano-meta" style="font-size:11.5px;">Arquivo atual: ${escapeHtml(f.original_name || f.url)} (deixe vazio para manter)</div>` : ''}
+        </div>
+        <div id="fe-link-area" style="${ehLink ? '' : 'display:none;'}">
+          <input id="fe-link" placeholder="https://..." value="${ehLink ? escapeHtml(f.url) : ''}">
+        </div>
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" id="fe-salvar" onclick="salvarFerramentaDpo()">${f ? 'Salvar' : 'Publicar'}</button>
+          <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function salvarFerramentaDpo() {
+  const ctx = window.CTX_FERRAMENTA_DPO;
+  const botao = document.getElementById('fe-salvar');
+  const corpo = {
+    pillarKey: pilarAtualDpo().key, tipo: document.getElementById('fe-tipo').value,
+    questionNumero: document.getElementById('fe-pergunta').value || null,
+    titulo: document.getElementById('fe-titulo').value.trim(), descricao: document.getElementById('fe-descricao').value.trim()
+  };
+  if (!corpo.titulo) { mostrarToast('Informe o título.', true); return; }
+  try {
+    botao.disabled = true;
+    if (document.getElementById('fe-origem').value === 'link') {
+      let u = document.getElementById('fe-link').value.trim();
+      if (!u) { mostrarToast('Informe o link.', true); botao.disabled = false; return; }
+      if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+      corpo.url = u; corpo.originalName = null;
+    } else {
+      const arquivo = document.getElementById('fe-arquivo').files[0];
+      if (arquivo) {
+        botao.textContent = 'Enviando...';
+        const fd = new FormData(); fd.append('file', arquivo);
+        const resp = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: fd });
+        const dados = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(dados.error || 'Erro ao enviar o arquivo.');
+        corpo.url = dados.url; corpo.originalName = dados.originalName;
+      } else if (ctx.id && ctx.url && !/^https?:/i.test(ctx.url)) {
+        corpo.url = ctx.url; corpo.originalName = ctx.originalName;
+      } else { mostrarToast('Escolha o arquivo.', true); botao.disabled = false; return; }
+    }
+    const r = ctx.id
+      ? await api('/api/admin/dpo/ferramentas/' + ctx.id, { method: 'PUT', body: JSON.stringify(corpo) })
+      : await api('/api/admin/dpo/ferramentas', { method: 'POST', body: JSON.stringify(corpo) });
+    mostrarToast(r.message);
+    document.getElementById('modal-area').innerHTML = '';
+    carregarFerramentasDpo();
+  } catch (e) { mostrarToast(e.message, true); botao.disabled = false; botao.textContent = ctx.id ? 'Salvar' : 'Publicar'; }
+}
+
+async function alternarFerramentaDpo(id, ativo) {
+  try { await api('/api/admin/dpo/ferramentas/' + id, { method: 'PUT', body: JSON.stringify({ ativo }) }); mostrarToast(ativo ? 'Ferramenta visível para as empresas.' : 'Ferramenta oculta para as empresas.'); carregarFerramentasDpo(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+async function excluirFerramentaDpo(id) {
+  if (!confirm('Excluir esta ferramenta?')) return;
+  try { const r = await api('/api/admin/dpo/ferramentas/' + id, { method: 'DELETE' }); mostrarToast(r.message); carregarFerramentasDpo(); }
   catch (e) { mostrarToast(e.message, true); }
 }
 
