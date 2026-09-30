@@ -476,6 +476,67 @@
   .ferr-titulo { font-size: 14px; font-weight: 800; color: #0f172a; }
   .ferr-desc { font-size: 12.5px; color: #475569; white-space: pre-wrap; margin-top: 2px; }
   .ferr-botao { width: auto; text-decoration: none; display: inline-block; }
+  .fd-caixa-pergunta { display: flex; gap: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; background: linear-gradient(90deg, #fff7ed, #fff); border: 1.5px solid #fdba74; border-radius: 10px; padding: 10px 14px; margin-bottom: 10px; }
+  .fd-nota { display: inline-block; color: #fff; font-size: 12px; font-weight: 800; border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .fd-abas { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 2px solid #e2e8f0; margin-bottom: 14px; }
+  .fd-aba { background: none; border: none; border-bottom: 3px solid transparent; margin-bottom: -2px; padding: 8px 12px; font-size: 12.5px; font-weight: 700; color: #64748b; cursor: pointer; }
+  .fd-aba.ativa { color: #dc4c4c; border-bottom-color: #dc4c4c; }
+  .fd-tabela-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--cinza-200); border-radius: 10px; }
+  .fd-tabela { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .fd-tabela th { background: #f8fafc; text-align: left; padding: 7px 8px; font-size: 11.5px; color: #475569; white-space: nowrap; border-bottom: 1px solid var(--cinza-200); }
+  .fd-tabela td { padding: 4px 6px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  .fd-tabela input, .fd-tabela select, .fd-tabela textarea { margin: 0; padding: 6px 8px; font-size: 12.5px; }
+  .fd-remover { background: none; border: none; color: #dc2626; cursor: pointer; font-size: 14px; }
+  .fd-calc { font-weight: 800; color: #0f172a; }
+  .fd-top { font-size: 10px; font-weight: 800; color: #fff; background: #dc4c4c; border-radius: 999px; padding: 1px 6px; margin-left: 4px; }
+  .fd-chip { display: inline-flex; gap: 6px; align-items: center; background: #f1f5f9; border-radius: 999px; padding: 4px 10px; font-size: 12.5px; font-weight: 700; }
+  .fd-chip button { background: none; border: none; color: #dc2626; cursor: pointer; padding: 0; }
+  .fd-passos { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 14px; }
+  .fd-passo { background: #fff; border: 1px solid var(--cinza-200); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; font-size: 12.5px; }
+  .fd-passo span { width: 22px; height: 22px; border-radius: 50%; background: #dc4c4c; color: #fff; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-bottom: 4px; }
+  .fd-passo small { color: #64748b; }
+  .fd-quadrante-topo { background: #fff; border: 1px solid var(--cinza-200); border-left: 6px solid; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
+  .fd-fav { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; background: #fff; border: 2px solid; border-radius: 14px; padding: 14px 18px; margin-bottom: 14px; }
+  .fd-fav-rot { font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: #64748b; }
+  .fd-fav-val { font-size: 32px; font-weight: 900; }
+  .fd-fav-barra { position: relative; height: 12px; border-radius: 999px; background: linear-gradient(90deg, #991b1b, #dc2626, #f59e0b, #16a34a, #15803d); }
+  .fd-fav-barra div { position: absolute; top: -4px; width: 4px; height: 20px; background: #0f172a; border-radius: 2px; transform: translateX(-2px); }
+  .fd-dist { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; }
+  .fd-dist span { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+  .fd-matriz { display: grid; grid-template-columns: 70px 1fr 1fr; gap: 10px; }
+  .fd-matriz-cab { text-align: center; font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; }
+  .fd-matriz-lado { writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; }
+  .fd-matriz-q { background: #fff; border: 1px solid var(--cinza-200); border-top: 5px solid; border-radius: 10px; padding: 10px 12px; min-height: 150px; }
+  .fd-matriz-t { font-weight: 800; font-size: 13.5px; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .fd-matriz-t span { color: #64748b; font-size: 12px; }
+  .fd-matriz-i { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; padding: 3px 0; border-bottom: 1px dashed #f1f5f9; }
+  .fd-matriz-i small { color: #94a3b8; }
+  .fd-estrategias { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-top: 8px; }
+  .fd-estrategias div { background: #f8fafc; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+  .fd-estrategias small { color: #dc4c4c; font-weight: 700; }
+  .fd-validacao-topo { display: flex; gap: 16px; align-items: center; background: #fff; border: 2px solid; border-radius: 14px; padding: 14px 18px; margin-bottom: 12px; }
+  .fd-validacao-nota { width: 64px; height: 64px; border-radius: 50%; color: #fff; font-size: 30px; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .fd-valid-item { display: flex; gap: 12px; background: #fff; border: 1px solid var(--cinza-200); border-left: 5px solid; border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; }
+  .fd-valid-item.ok { border-left-color: #16a34a; } .fd-valid-item.nok { border-left-color: #dc2626; }
+  .fd-valid-icone { font-size: 18px; font-weight: 900; }
+  .fd-valid-item.ok .fd-valid-icone { color: #16a34a; } .fd-valid-item.nok .fd-valid-icone { color: #dc2626; }
+  .fd-valid-lista { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; color: #991b1b; }
+  .fd-valid-lista.aviso { color: #92400e; }
+  .ppr-params { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-top: 8px; }
+  .ppr-params label { font-size: 11.5px; margin: 0; }
+  .ppr-params input { margin: 2px 0 0; }
+  .ppr-cenarios { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .ppr-cenarios button { background: #fff; border: 2px solid var(--cinza-200); border-radius: 999px; padding: 7px 14px; font-weight: 800; cursor: pointer; font-size: 12.5px; }
+  .ppr-cenarios button.ativo { background: #0b1329; color: #fff; border-color: #0b1329; }
+  .ppr-grade td:first-child { white-space: nowrap; font-weight: 600; position: sticky; left: 0; background: #fff; z-index: 1; }
+  .ppr-grade input { width: 86px; text-align: right; }
+  .ppr-grupo td { background: #fef2f2 !important; color: #b91c1c; font-weight: 800; font-size: 11.5px; text-transform: uppercase; letter-spacing: .3px; }
+  .ppr-derivado td { background: #f8fafc; color: #0f172a; text-align: right; font-weight: 700; }
+  .ppr-derivado td:first-child { text-align: left; color: #475569; font-style: italic; background: #f8fafc; }
+  .ppr-total { text-align: right; font-weight: 800; white-space: nowrap; color: #334155; }
+  .ppr-replicar { background: none; border: 1px solid var(--cinza-200); border-radius: 6px; cursor: pointer; font-size: 11px; padding: 0 5px; color: #64748b; }
+  .ppr-comp td { text-align: right; white-space: nowrap; }
+  .ppr-comp td:first-child { text-align: left; }
   .dpo-score-badge { font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
 </style>
 </head>
@@ -7325,6 +7386,12 @@ function renderPerguntaDpo(p, somenteLeitura) {
         <details style="margin-bottom:10px;"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#4338ca;">❓ How to Check (tirar dúvidas)</summary>
           <div style="font-size:12.5px;color:#334155;white-space:pre-line;margin-top:6px;">${escapeHtml(p.how_to_check || '')}</div>
         </details>
+        ${FD_PERGUNTAS[p.questionKey] ? `
+        <div class="fd-caixa-pergunta">
+          <div><strong>🧩 Ferramenta digital Impulsionar desta pergunta</strong>
+            <div style="font-size:12px;color:#475569;">${FD_PERGUNTAS[p.questionKey] === 'swot' ? 'Análise SWOT digital (modelo SWOT 2026): áreas, fatores, matriz, cruzamentos, objetivos e planos — com validação dos itens V.1 a V.3.' : 'Acompanhamento dos simuladores PPR Entrega e Armazém/Puxada (Plan x Real), RACI, KPIs e PDCA — com validação dos itens V.1 a V.5.'}</div></div>
+          <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirFerramentaDigitalDpo('${FD_PERGUNTAS[p.questionKey]}', ${ESTADO.usuario.role === 'admin' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo ? ESTADO_DPO_VIEW.ciclo.company_id : 'null'})">${FD_PERGUNTAS[p.questionKey] === 'swot' ? '🧭 Abrir Análise SWOT' : '📈 Abrir Simuladores PPR'}</button>
+        </div>` : ''}
         <div style="font-size:12.5px;background:#f8fafc;border:1px solid var(--cinza-200);border-radius:8px;padding:8px 10px;">
           <strong>Nota na última autoavaliação${nv ? ' (' + escapeHtml(nv.referenciaLabel) + ')' : ''}:</strong> <span style="color:${cor};font-weight:800;">${textoNota}</span>${explicacaoNota ? ' — ' + escapeHtml(explicacaoNota) : ''}
           <div style="font-size:11.5px;color:#64748b;margin-top:2px;">Para dar ou mudar a nota, use a pasta 📊 Autoavaliação Mensal.</div>
@@ -8687,6 +8754,12 @@ function desenharFerramentasDpo() {
         `<button class="btn-sm ${FILTRO_FERRAMENTAS_DPO.tipo === k ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="FILTRO_FERRAMENTAS_DPO.tipo='${k}'; desenharFerramentasDpo();">${v.icone} ${v.rotulo}</button>`).join('')}
       <input placeholder="🔎 Buscar ferramenta..." value="${escapeHtml(FILTRO_FERRAMENTAS_DPO.busca)}" style="width:220px;margin:0 0 0 auto;" oninput="FILTRO_FERRAMENTAS_DPO.busca=this.value; clearTimeout(window.__tFerr); window.__tFerr=setTimeout(()=>{ desenharFerramentasDpo(); const el=document.querySelector('#dpo-ferramentas-area input'); if(el){el.focus(); el.setSelectionRange(el.value.length, el.value.length);} }, 250);">
     </div>
+    ${Object.entries(FD_PERGUNTAS).filter(([k]) => k.startsWith(pilarAtualDpo().key + ':')).map(([k, chave]) => `
+      <div class="fd-caixa-pergunta" style="margin-bottom:14px;">
+        <div><strong>🧩 Ferramenta digital · pergunta ${escapeHtml(k.split(':')[1])}</strong>
+          <div style="font-size:12px;color:#475569;">${chave === 'swot' ? 'Análise SWOT digital para preencher e validar a pergunta 1.3.' : 'Simuladores PPR Entrega e Armazém/Puxada para preencher, subir as planilhas e validar a pergunta 1.1.'}</div></div>
+        <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirFerramentaDigitalDpo('${chave}', ${ehMaster && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo ? ESTADO_DPO_VIEW.ciclo.company_id : 'null'})">Abrir</button>
+      </div>`).join('')}
     ${!CACHE_FERRAMENTAS_DPO.length ? `<div class="msg-vazio">${ehMaster ? 'Nenhuma ferramenta publicada neste pilar ainda. Clique em <strong>+ Nova ferramenta</strong>.' : 'A Impulsionar ainda não publicou ferramentas para este pilar.'}</div>`
       : !lista.length ? '<div class="msg-vazio">Nenhuma ferramenta neste filtro.</div>'
       : grupos.map(g => `
@@ -8809,6 +8882,675 @@ async function excluirFerramentaDpo(id) {
   if (!confirm('Excluir esta ferramenta?')) return;
   try { const r = await api('/api/admin/dpo/ferramentas/' + id, { method: 'DELETE' }); mostrarToast(r.message); carregarFerramentasDpo(); }
   catch (e) { mostrarToast(e.message, true); }
+}
+
+// ======================================================================
+// DPO — FERRAMENTAS DIGITAIS (SWOT da Gestão 1.3 · PPR do Planejamento 1.1)
+// ======================================================================
+let FD = null; // { chave, ano, companyId, dados, validacao, arquivos, aba, meta }
+const FD_PERGUNTAS = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'ppr' };
+
+function fdNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? null : Number(v); }
+function fdFmt(v, dec) { return v === null || v === undefined || !isFinite(v) ? '—' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 }); }
+function fdPct(v, dec) { return v === null || v === undefined || !isFinite(v) ? '—' : (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: dec === undefined ? 1 : dec, maximumFractionDigits: dec === undefined ? 1 : dec }) + '%'; }
+function fdId() { return Math.random().toString(36).slice(2, 10); }
+function fdObter(path) { return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), FD.dados); }
+function fdDefinir(path, valor) {
+  const partes = path.split('.');
+  let o = FD.dados;
+  partes.forEach((k, i) => {
+    if (i === partes.length - 1) { o[k] = valor; return; }
+    if (o[k] === null || typeof o[k] !== 'object') o[k] = /^\d+$/.test(partes[i + 1]) ? [] : {};
+    o = o[k];
+  });
+  fdAgendarSalvar();
+}
+function fdLista(path) { let l = fdObter(path); if (!Array.isArray(l)) { fdDefinirSemSalvar(path, []); l = fdObter(path); } return l; }
+function fdDefinirSemSalvar(path, valor) {
+  const partes = path.split('.'); let o = FD.dados;
+  partes.forEach((k, i) => { if (i === partes.length - 1) o[k] = valor; else { if (!o[k] || typeof o[k] !== 'object') o[k] = {}; o = o[k]; } });
+}
+
+async function abrirFerramentaDigitalDpo(chave, companyId, ano, aba) {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<p>Carregando ferramenta...</p>';
+  try {
+    const q = new URLSearchParams();
+    if (companyId) q.set('company_id', companyId);
+    if (ano) q.set('ano', ano);
+    const d = await api('/api/dpo/ferramentas-digitais/' + chave + '?' + q.toString());
+    FD = { chave, ano: d.ano, companyId: companyId || null, dados: d.dados || {}, validacao: d.validacao, arquivos: d.arquivos || [], aba: aba || (chave === 'swot' ? 'inicio' : 'entrega'), meta: d, salvoEm: d.updated_at, autor: d.autorNome };
+    fdDesenhar();
+  } catch (e) { cont.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+let FD_TIMER = null;
+function fdAgendarSalvar() {
+  const st = document.getElementById('fd-status');
+  if (st) st.innerHTML = '✍️ Alterações não salvas...';
+  clearTimeout(FD_TIMER);
+  FD_TIMER = setTimeout(fdSalvar, 700);
+}
+async function fdSalvar() {
+  clearTimeout(FD_TIMER);
+  const st = document.getElementById('fd-status');
+  try {
+    const corpo = { ano: FD.ano, dados: FD.dados };
+    if (FD.companyId) corpo.company_id = FD.companyId;
+    const r = await api('/api/dpo/ferramentas-digitais/' + FD.chave, { method: 'PUT', body: JSON.stringify(corpo) });
+    FD.validacao = r.validacao;
+    if (st) st.innerHTML = '✅ Salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const nota = document.getElementById('fd-nota');
+    if (nota) nota.innerHTML = fdChipNota();
+    if (FD.aba === 'validacao') document.getElementById('fd-corpo').innerHTML = fdHtmlValidacao();
+  } catch (e) { if (st) st.innerHTML = '<span style="color:#dc2626;">⚠️ ' + escapeHtml(e.message) + '</span>'; }
+}
+
+function fdChipNota() {
+  const n = FD.validacao ? FD.validacao.notaSugerida : null;
+  const cor = n === '3' ? '#16a34a' : n === '1' ? '#d97706' : '#dc2626';
+  const ok = FD.validacao ? FD.validacao.itens.filter(i => i.ok).length : 0;
+  return `<span class="fd-nota" style="background:${cor};" onclick="fdTrocarAba('validacao')" title="Ver validação">Nota sugerida: ${n || '—'} · ${ok}/${FD.validacao ? FD.validacao.itens.length : 0} itens atendidos</span>`;
+}
+
+function fdVoltar() {
+  if (FD_TIMER) fdSalvar();
+  if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) renderCicloDpoAtual(); else renderDpoHome();
+}
+
+function fdTrocarAba(aba) { FD.aba = aba; fdDesenhar(); }
+
+function fdDesenhar() {
+  const cont = document.getElementById('conteudo');
+  const m = FD.meta;
+  const abas = FD.chave === 'swot'
+    ? [['inicio', '🏁 Início'], ['forcas', '💪 Forças'], ['fraquezas', '⚠️ Fraquezas'], ['oportunidades', '🚀 Oportunidades'], ['ameacas', '🛑 Ameaças'], ['matriz', '🧮 Matriz SWOT'], ['cruzamentos', '🔀 Cruzamentos'], ['objetivos', '🎯 Objetivos estratégicos'], ['planos', '📋 Planos de ação'], ['validacao', '✅ Validação 1.3'], ['arquivos', '📎 Arquivos']]
+    : [['entrega', '🚚 Simulador Entrega'], ['armazem', '🏭 Simulador Armazém / Puxada'], ['comparativo', '📊 Plan x Real'], ['orcamento', '📑 Orçamento, RACI e KPIs'], ['validacao', '✅ Validação 1.1'], ['arquivos', '📎 Arquivos de atualização']];
+  const anoAtual = new Date().getFullYear();
+  const anos = [...new Set([anoAtual - 1, anoAtual, anoAtual + 1, ...(m.anos || [])])].sort();
+  cont.innerHTML = `
+    <div class="barra-acoes">
+      <div><button class="btn-secundario btn-sm" onclick="fdVoltar()">← Voltar</button></div>
+      <div class="direita">
+        <span id="fd-status" style="font-size:12px;color:#64748b;">${FD.salvoEm ? 'Última gravação: ' + new Date(String(FD.salvoEm).replace(' ', 'T') + 'Z').toLocaleString('pt-BR') + (FD.autor ? ' por ' + escapeHtml(FD.autor) : '') : 'Ainda não preenchido'}</span>
+        <select style="width:auto;margin:0;" onchange="abrirFerramentaDigitalDpo(FD.chave, FD.companyId, this.value, FD.aba)">${anos.map(a => `<option value="${a}" ${a === FD.ano ? 'selected' : ''}>${a}</option>`).join('')}</select>
+        <button class="btn-secundario btn-sm" onclick="fdSalvar()">💾 Salvar</button>
+        <button class="btn-secundario btn-sm" onclick="baixarArquivoDpo('/api/dpo/ferramentas-digitais/${FD.chave}/export?ano=${FD.ano}${FD.companyId ? '&company_id=' + FD.companyId : ''}', '${FD.chave}-${FD.ano}.xlsx')">📊 Excel</button>
+      </div>
+    </div>
+    <h1 style="margin-bottom:2px;">${FD.chave === 'swot' ? '🧭' : '📈'} ${escapeHtml(m.titulo)}</h1>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+      <span class="plano-meta">${escapeHtml(m.pilarLabel)} · pergunta <strong>${escapeHtml(m.pergunta)} ${escapeHtml(m.perguntaTexto)}</strong> · ${FD.ano}</span>
+      <span id="fd-nota">${fdChipNota()}</span>
+    </div>
+    <div class="fd-abas">${abas.map(([k, r]) => `<button class="fd-aba ${FD.aba === k ? 'ativa' : ''}" onclick="fdTrocarAba('${k}')">${r}</button>`).join('')}</div>
+    <div id="fd-corpo">${fdHtmlAba()}</div>
+    <div id="modal-area"></div>
+  `;
+}
+
+function fdHtmlAba() {
+  const a = FD.aba;
+  if (a === 'validacao') return fdHtmlValidacao();
+  if (a === 'arquivos') return fdHtmlArquivos();
+  if (FD.chave === 'swot') {
+    if (a === 'inicio') return swotHtmlInicio();
+    if (QUADRANTES_SWOT_FRONT[a]) return swotHtmlQuadrante(a);
+    if (a === 'matriz') return swotHtmlMatriz();
+    if (a === 'cruzamentos') return swotHtmlCruzamentos();
+    if (a === 'objetivos') return swotHtmlObjetivos();
+    if (a === 'planos') return swotHtmlPlanos();
+  } else {
+    if (a === 'entrega' || a === 'armazem') return pprHtmlSimulador(a);
+    if (a === 'comparativo') return pprHtmlComparativo();
+    if (a === 'orcamento') return pprHtmlOrcamento();
+  }
+  return '';
+}
+
+// ---- tabela editável genérica (listas de objetos) ----
+// colunas: [{ campo, rotulo, tipo: text|number|date|select|textarea, opcoes: [..] | fn(linha), largura, recarregar }]
+function fdTabela(path, colunas, opts) {
+  opts = opts || {};
+  const linhas = fdLista(path);
+  const cel = (c, l, i) => {
+    const v = l[c.campo] === undefined || l[c.campo] === null ? '' : l[c.campo];
+    const on = `onchange="fdEditarLinha('${path}', ${i}, '${c.campo}', this.value, ${!!c.recarregar})"`;
+    if (c.tipo === 'select') {
+      const ops = typeof c.opcoes === 'function' ? c.opcoes(l) : c.opcoes;
+      return `<select ${on}><option value=""></option>${ops.map(o => `<option value="${escapeHtml(o)}" ${String(o) === String(v) ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('')}${v && !ops.includes(v) ? `<option selected>${escapeHtml(v)}</option>` : ''}</select>`;
+    }
+    if (c.tipo === 'textarea') return `<textarea rows="2" ${on}>${escapeHtml(v)}</textarea>`;
+    if (c.tipo === 'calc') return `<span id="${c.id ? c.id(i) : ''}" class="fd-calc">${c.valor(l, i)}</span>`;
+    return `<input type="${c.tipo || 'text'}" ${c.tipo === 'number' ? 'step="any"' : ''} value="${escapeHtml(v)}" ${on}>`;
+  };
+  return `
+    <div class="fd-tabela-wrap"><table class="fd-tabela">
+      <thead><tr>${opts.numerar ? '<th style="width:34px;">#</th>' : ''}${colunas.map(c => `<th style="${c.largura ? 'min-width:' + c.largura + 'px;' : ''}">${escapeHtml(c.rotulo)}</th>`).join('')}<th style="width:40px;"></th></tr></thead>
+      <tbody>
+        ${linhas.map((l, i) => `<tr>${opts.numerar ? `<td style="text-align:center;color:#94a3b8;">${i + 1}</td>` : ''}${colunas.map(c => `<td>${cel(c, l, i)}</td>`).join('')}<td><button class="fd-remover" title="Remover" onclick="fdRemoverLinha('${path}', ${i})">✕</button></td></tr>`).join('')}
+        ${!linhas.length ? `<tr><td colspan="${colunas.length + 2}" style="text-align:center;color:#94a3b8;padding:14px;">Nenhuma linha ainda.</td></tr>` : ''}
+      </tbody>
+    </table></div>
+    <button class="btn-secundario btn-sm" style="margin-top:8px;" onclick="fdAdicionarLinha('${path}')">+ ${escapeHtml(opts.botao || 'Adicionar linha')}</button>`;
+}
+function fdEditarLinha(path, i, campo, valor, recarregar) {
+  const l = fdLista(path);
+  if (!l[i]) return;
+  l[i][campo] = valor;
+  if (typeof FD_AO_EDITAR === 'function') FD_AO_EDITAR(path, i, campo);
+  fdAgendarSalvar();
+  if (recarregar) document.getElementById('fd-corpo').innerHTML = fdHtmlAba();
+}
+let FD_AO_EDITAR = null;
+function fdAdicionarLinha(path) { fdLista(path).push({ id: fdId() }); fdAgendarSalvar(); document.getElementById('fd-corpo').innerHTML = fdHtmlAba(); }
+function fdRemoverLinha(path, i) { if (!confirm('Remover esta linha?')) return; fdLista(path).splice(i, 1); fdAgendarSalvar(); document.getElementById('fd-corpo').innerHTML = fdHtmlAba(); }
+
+// ---- validação do checklist ----
+function fdHtmlValidacao() {
+  const v = FD.validacao;
+  if (!v) return '';
+  const n = v.notaSugerida;
+  const cor = n === '3' ? '#16a34a' : n === '1' ? '#d97706' : '#dc2626';
+  return `
+    <div class="fd-validacao-topo" style="border-color:${cor};">
+      <div class="fd-validacao-nota" style="background:${cor};">${n}</div>
+      <div>
+        <div style="font-size:16px;font-weight:800;">Nota sugerida para a pergunta ${escapeHtml(FD.meta.pergunta)} ${escapeHtml(FD.meta.perguntaTexto)}</div>
+        <div style="font-size:12.5px;color:#475569;">${escapeHtml(v.regra)}</div>
+        <div style="font-size:12px;color:#64748b;margin-top:4px;">A validação lê o que foi preenchido nesta ferramenta. A nota oficial continua sendo dada na 📊 Autoavaliação Mensal.
+          <a href="#" onclick="renderDpoAutoavaliacao(${FD.companyId || 'null'}); return false;">Ir para a autoavaliação →</a></div>
+      </div>
+    </div>
+    ${v.itens.concat(v.complementos || []).map(i => `
+      <div class="fd-valid-item ${i.ok ? 'ok' : 'nok'}">
+        <div class="fd-valid-icone">${i.ok ? '✔' : '✖'}</div>
+        <div style="flex:1;">
+          <div style="font-weight:800;font-size:13.5px;">${i.numero ? escapeHtml(i.numero) + ' — ' : '💡 '}${escapeHtml(i.texto)}</div>
+          ${i.faltas.length ? `<ul class="fd-valid-lista">${i.faltas.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul>` : '<div style="font-size:12.5px;color:#166534;">Atendido pelo que foi preenchido.</div>'}
+          ${(i.avisos || []).length ? `<ul class="fd-valid-lista aviso">${i.avisos.map(f => `<li>⚠️ ${escapeHtml(f)}</li>`).join('')}</ul>` : ''}
+        </div>
+      </div>`).join('')}
+    <details class="painel" style="margin-top:12px;"><summary style="cursor:pointer;font-weight:700;">Texto oficial da verificação</summary>
+      <div style="white-space:pre-line;font-size:12.5px;color:#334155;margin-top:8px;">${escapeHtml(FD.meta.verificacao || '')}</div></details>`;
+}
+
+// ---- arquivos de atualização ----
+function fdHtmlArquivos() {
+  const tipos = FD.chave === 'swot'
+    ? [['swot', 'Planilha SWOT'], ['dn_mp', 'Descrição de Negócio / Mapeamento de Processo'], ['ata', 'Ata / evidência de priorização'], ['outro', 'Outro']]
+    : [['ppr_entrega', 'PPR Entrega (.xlsm)'], ['ppr_armazem', 'PPR Armazém (.xlsm)'], ['processo', 'Processo orçamentário formalizado'], ['raci', 'Matriz RACI'], ['outro', 'Outro']];
+  const rot = Object.fromEntries(tipos);
+  const porTipo = {};
+  FD.arquivos.forEach(a => { (porTipo[a.tipo] = porTipo[a.tipo] || []).push(a); });
+  return `
+    <div class="painel" style="margin-bottom:14px;">
+      <h3 style="margin-top:0;">📤 Subir arquivo de atualização</h3>
+      <p style="font-size:12.5px;color:#64748b;margin-top:-6px;">Suba aqui a versão atualizada da planilha sempre que ela mudar. Fica o histórico de versões, e a mais recente de cada tipo aparece em destaque para a auditoria.</p>
+      <div class="grid-3">
+        <div><label>Tipo</label><select id="fd-arq-tipo">${tipos.map(([k, r]) => `<option value="${k}">${escapeHtml(r)}</option>`).join('')}</select></div>
+        <div><label>Comentário (o que mudou)</label><input id="fd-arq-coment" placeholder="ex: atualização da tendência de setembro"></div>
+        <div><label>Arquivo</label><input id="fd-arq-arquivo" type="file" accept=".xlsm,.xlsx,.xls,.csv,.pdf,.doc,.docx,.ppt,.pptx,image/*"></div>
+      </div>
+      <div class="acoes-form"><button class="btn-primario" style="width:auto;" id="fd-arq-enviar" onclick="fdEnviarArquivo()">Enviar</button></div>
+    </div>
+    ${!FD.arquivos.length ? '<div class="msg-vazio">Nenhum arquivo enviado neste ano ainda.</div>' : Object.keys(porTipo).map(t => `
+      <div class="painel" style="margin-bottom:10px;">
+        <h4 style="margin:0 0 8px;">${escapeHtml(rot[t] || t)} <span style="font-weight:400;color:#64748b;font-size:12px;">(${porTipo[t].length} versão(ões))</span></h4>
+        ${porTipo[t].map((a, i) => `
+          <div class="dpo-material-evidencia" style="${i === 0 ? 'border-color:#16a34a;background:#f0fdf4;' : ''}">
+            <span>${i === 0 ? '<strong style="color:#16a34a;">● Versão atual</strong> · ' : `v${porTipo[t].length - i} · `}<a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">${escapeHtml(a.original_name || 'arquivo')}</a>
+              <span class="plano-meta" style="font-size:11px;"> · ${new Date(String(a.created_at).replace(' ', 'T') + 'Z').toLocaleString('pt-BR')}${a.autorNome ? ' · ' + escapeHtml(a.autorNome) : ''}</span>
+              ${a.comentario ? `<div style="font-size:12px;color:#475569;">${escapeHtml(a.comentario)}</div>` : ''}</span>
+            <button class="btn-perigo btn-sm" onclick="fdRemoverArquivo(${a.id})">Remover</button>
+          </div>`).join('')}
+      </div>`).join('')}`;
+}
+async function fdEnviarArquivo() {
+  const arq = document.getElementById('fd-arq-arquivo').files[0];
+  if (!arq) { mostrarToast('Escolha o arquivo.', true); return; }
+  const botao = document.getElementById('fd-arq-enviar');
+  try {
+    botao.disabled = true; botao.textContent = 'Enviando...';
+    const fdata = new FormData(); fdata.append('file', arq);
+    const resp = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: fdata });
+    const up = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(up.error || 'Erro ao enviar o arquivo.');
+    const corpo = { ano: FD.ano, url: up.url, originalName: up.originalName, tipo: document.getElementById('fd-arq-tipo').value, comentario: document.getElementById('fd-arq-coment').value };
+    if (FD.companyId) corpo.company_id = FD.companyId;
+    const r = await api('/api/dpo/ferramentas-digitais/' + FD.chave + '/arquivos', { method: 'POST', body: JSON.stringify(corpo) });
+    mostrarToast(r.message);
+    abrirFerramentaDigitalDpo(FD.chave, FD.companyId, FD.ano, 'arquivos');
+  } catch (e) { mostrarToast(e.message, true); botao.disabled = false; botao.textContent = 'Enviar'; }
+}
+async function fdRemoverArquivo(id) {
+  if (!confirm('Remover este arquivo?')) return;
+  try { const r = await api('/api/dpo/ferramentas-digitais/arquivos/' + id, { method: 'DELETE' }); mostrarToast(r.message); abrirFerramentaDigitalDpo(FD.chave, FD.companyId, FD.ano, 'arquivos'); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+// ======================= SWOT (Gestão 1.3) =======================
+const ESCALAS_SWOT_FRONT = {
+  importancia: ['Sem importância', 'Pouco importante', 'Importante', 'Muito importante', 'Totalmente importante'],
+  intensidade: ['Muito fraca', 'Fraca', 'Média', 'Forte', 'Muito forte'],
+  urgencia: ['Nada urgente', 'Pouco urgente', 'Urgente', 'Muito urgente', 'Pra ontem'],
+  tendencia: ['Piora muito', 'Piora', 'Mantém', 'Melhora', 'Melhora muito']
+};
+const QUADRANTES_SWOT_FRONT = {
+  forcas: { rotulo: 'Força', plural: 'Forças', icone: '💪', cor: '#16a34a', interno: true, c2: 'intensidade', c2rot: 'Intensidade', inv2: false, inv3: false, dica: 'Fatores INTERNOS positivos: o que a operação faz bem e que ajuda a chegar no Sonho.' },
+  fraquezas: { rotulo: 'Fraqueza', plural: 'Fraquezas', icone: '⚠️', cor: '#dc2626', interno: true, c2: 'intensidade', c2rot: 'Intensidade', inv2: true, inv3: true, dica: 'Fatores INTERNOS negativos: o que atrapalha a operação e está sob controle da unidade.' },
+  oportunidades: { rotulo: 'Oportunidade', plural: 'Oportunidades', icone: '🚀', cor: '#2563eb', interno: false, c2: 'urgencia', c2rot: 'Urgência', inv2: false, inv3: false, dica: 'Fatores EXTERNOS positivos: mudanças do mercado/ambiente que a unidade pode aproveitar.' },
+  ameacas: { rotulo: 'Ameaça', plural: 'Ameaças', icone: '🛑', cor: '#d97706', interno: false, c2: 'urgencia', c2rot: 'Urgência', inv2: false, inv3: true, dica: 'Fatores EXTERNOS negativos: o que vem de fora e pode prejudicar os resultados.' }
+};
+const ESTRATEGIAS_SWOT = {
+  'Força|Oportunidade': ['Estratégia ofensiva', 'Procure criar planos de ação para desenvolver as vantagens competitivas.'],
+  'Força|Ameaça': ['Estratégia de confronto', 'Procure elaborar planos de ação para modificar o ambiente a favor do seu negócio.'],
+  'Fraqueza|Oportunidade': ['Estratégia de reforço', 'Procure criar planos de ação para aproveitar melhor as oportunidades que o ambiente proporciona.'],
+  'Fraqueza|Ameaça': ['Estratégia defensiva', 'Pode ser sinal de que serão necessárias mudanças profundas para proteger a operação. Deve virar prioridade na Descrição de Negócio e no Mapeamento de Processo.']
+};
+function swotValor(escala, rotulo, inverter) { const i = ESCALAS_SWOT_FRONT[escala].indexOf(rotulo); return i < 0 ? null : (inverter ? 5 - i : i + 1); }
+function swotPontos(q, item) {
+  const cfg = QUADRANTES_SWOT_FRONT[q];
+  const a = swotValor('importancia', item.c1, false), b = swotValor(cfg.c2, item.c2, cfg.inv2), c = swotValor('tendencia', item.c3, cfg.inv3);
+  return a && b && c ? a * b * c : null;
+}
+function swotItensPontuados(q) { return (fdObter('itens.' + q) || []).filter(i => String(i.texto || '').trim() && swotPontos(q, i)).map(i => ({ ...i, pontos: swotPontos(q, i) })).sort((x, y) => y.pontos - x.pontos); }
+function swotTop5(q) { return swotItensPontuados(q).slice(0, 5); }
+function swotTotal(q) { return swotItensPontuados(q).reduce((s, i) => s + i.pontos, 0); }
+
+function swotHtmlInicio() {
+  const d = FD.dados;
+  const areas = fdLista('areas');
+  return `
+    <div class="fd-passos">
+      ${[['1', 'Cadastros', 'Sonho, áreas e responsáveis'], ['2', 'Fatores internos', 'Forças e fraquezas por área'], ['3', 'Fatores externos', 'Oportunidades e ameaças'], ['4', 'Matriz SWOT', 'Top 5 de cada fator'], ['5', 'Cruzamentos', 'Estratégias'], ['6', 'Objetivos e planos', 'Priorização até março']].map(([n, t, s]) => `<div class="fd-passo"><span>${n}</span><strong>${t}</strong><small>${s}</small></div>`).join('')}
+    </div>
+    <div class="painel" style="margin-bottom:14px;">
+      <label style="margin-top:0;">🌟 Sonho da unidade</label>
+      <textarea rows="2" placeholder="Qual é o Sonho da unidade? Os objetivos estratégicos devem atacar os obstáculos para chegar nele." onchange="fdDefinir('sonho', this.value)">${escapeHtml(d.sonho || '')}</textarea>
+      <div class="grid-3">
+        <div><label>Data da priorização (Fev–Mar)</label><input type="date" value="${escapeHtml(d.dataPriorizacao || '')}" onchange="fdDefinir('dataPriorizacao', this.value)"></div>
+      </div>
+      <label>Resumindo a SWOT</label>
+      <textarea rows="2" placeholder="Em poucas linhas: o que a SWOT mostrou?" onchange="fdDefinir('resumo', this.value)">${escapeHtml(d.resumo || '')}</textarea>
+    </div>
+    <div class="painel" style="margin-bottom:14px;">
+      <h3 style="margin-top:0;">🏢 Áreas da unidade</h3>
+      <p style="font-size:12.5px;color:#64748b;margin-top:-6px;">A SWOT é feita por área (V.3). Cadastre as áreas e depois indique a área de cada item.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        ${areas.map((a, i) => `<span class="fd-chip">${escapeHtml(a)} <button onclick="fdLista('areas').splice(${i},1); fdAgendarSalvar(); document.getElementById('fd-corpo').innerHTML = fdHtmlAba();">✕</button></span>`).join('') || '<span style="color:#94a3b8;font-size:12.5px;">Nenhuma área ainda.</span>'}
+      </div>
+      <div style="display:flex;gap:6px;"><input id="fd-nova-area" placeholder="ex: Distribuição, Roteirização, Armazém..." style="margin:0;"><button class="btn-secundario btn-sm" onclick="const v=document.getElementById('fd-nova-area').value.trim(); if(v){ fdLista('areas').push(v); fdAgendarSalvar(); document.getElementById('fd-corpo').innerHTML = fdHtmlAba(); }">Adicionar</button></div>
+    </div>
+    <div class="painel" style="margin-bottom:14px;">
+      <h3 style="margin-top:0;">👥 Responsáveis</h3>
+      ${fdTabela('responsaveis', [{ campo: 'nome', rotulo: 'Nome', largura: 220 }, { campo: 'area', rotulo: 'Área', tipo: 'select', opcoes: () => fdLista('areas'), largura: 160 }], { botao: 'Adicionar responsável' })}
+    </div>
+    <div class="painel">
+      <h3 style="margin-top:0;">🔗 Vínculo com Descrição de Negócio e Mapeamento de Processo</h3>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:0;"><input type="checkbox" style="width:auto;margin:0;" ${d.vinculoDNMP ? 'checked' : ''} onchange="fdDefinir('vinculoDNMP', this.checked)"> A SWOT por área está ligada à DN e ao MP da unidade</label>
+      <textarea rows="2" placeholder="Explique o link: quais processos/indicadores da DN e do MP estão ligados aos itens da SWOT." onchange="fdDefinir('vinculoDNMPTexto', this.value)">${escapeHtml(d.vinculoDNMPTexto || '')}</textarea>
+    </div>`;
+}
+
+function swotHtmlQuadrante(q) {
+  const cfg = QUADRANTES_SWOT_FRONT[q];
+  const top = swotTop5(q).map(i => i.id);
+  FD_AO_EDITAR = (path, i, campo) => {
+    if (!path.startsWith('itens.')) return;
+    const quad = path.split('.')[1];
+    const item = fdLista(path)[i];
+    const el = document.getElementById('sw-pts-' + i);
+    if (el) el.textContent = swotPontos(quad, item) || '—';
+  };
+  return `
+    <div class="fd-quadrante-topo" style="border-left-color:${cfg.cor};">
+      <div style="font-size:18px;font-weight:800;">${cfg.icone} ${cfg.plural}</div>
+      <div style="font-size:12.5px;color:#475569;">${cfg.dica}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px;">Pontuação = Importância × ${cfg.c2rot} × Tendência (1 a 125). Os 5 maiores vão para a Matriz SWOT. Total do quadrante: <strong>${swotTotal(q)}</strong></div>
+    </div>
+    ${fdTabela('itens.' + q, [
+      { campo: 'texto', rotulo: 'Item', largura: 260 },
+      { campo: 'area', rotulo: 'Área', tipo: 'select', opcoes: () => fdLista('areas'), largura: 130 },
+      { campo: 'c1', rotulo: 'Importância', tipo: 'select', opcoes: ESCALAS_SWOT_FRONT.importancia, largura: 150 },
+      { campo: 'c2', rotulo: cfg.c2rot, tipo: 'select', opcoes: ESCALAS_SWOT_FRONT[cfg.c2], largura: 130 },
+      { campo: 'c3', rotulo: 'Tendência', tipo: 'select', opcoes: ESCALAS_SWOT_FRONT.tendencia, largura: 130 },
+      { campo: 'pontos', rotulo: 'Pontuação', tipo: 'calc', id: i => 'sw-pts-' + i, valor: l => `${swotPontos(q, l) || '—'}${top.includes(l.id) ? ' <span class="fd-top">TOP 5</span>' : ''}` }
+    ], { numerar: true, botao: 'Adicionar ' + cfg.rotulo.toLowerCase() })}`;
+}
+
+function swotIndiceFavorabilidade() {
+  const f = swotTotal('forcas'), o = swotTotal('oportunidades'), fr = swotTotal('fraquezas'), a = swotTotal('ameacas');
+  const pos = f + o, neg = fr + a;
+  if (!pos && !neg) return null;
+  return ((pos - neg) / (pos + neg)) * 2;
+}
+function swotClassificacao(ix) {
+  if (ix === null) return ['—', '#64748b', 'Preencha os quatro quadrantes para calcular.'];
+  if (ix <= -1) return ['Muito desfavorável', '#991b1b', 'O cenário para crescimento é muito desfavorável — talvez seja o momento de uma mudança estratégica drástica.'];
+  if (ix < -0.5) return ['Desfavorável', '#dc2626', 'Não é para desistir, mas é importante criar planos para mitigar as principais ameaças e diminuir o peso das fraquezas.'];
+  if (ix <= 0.5) return ['Equilíbrio', '#d97706', 'Com um cenário equilibrado, vale investir mais tempo de análise para decidir se o foco será interno ou externo.'];
+  if (ix < 1) return ['Favorável', '#16a34a', 'Se a análise está correta, continue fazendo o que faz, adicionando melhorias nas forças/oportunidades e contenção de fraquezas/ameaças.'];
+  return ['Muito favorável', '#15803d', 'Se a análise está correta, vale muito continuar exatamente o que está fazendo, com melhorias e medidas de contenção.'];
+}
+
+function swotHtmlMatriz() {
+  const ix = swotIndiceFavorabilidade();
+  const [cls, cor, txt] = swotClassificacao(ix);
+  const tot = { forcas: swotTotal('forcas'), fraquezas: swotTotal('fraquezas'), oportunidades: swotTotal('oportunidades'), ameacas: swotTotal('ameacas') };
+  const soma = Object.values(tot).reduce((s, v) => s + v, 0) || 1;
+  const quadro = q => {
+    const cfg = QUADRANTES_SWOT_FRONT[q], t = swotTop5(q);
+    return `<div class="fd-matriz-q" style="border-top-color:${cfg.cor};">
+      <div class="fd-matriz-t" style="color:${cfg.cor};">${cfg.icone} Top 5 ${cfg.plural} <span>${t.reduce((s, i) => s + i.pontos, 0)} pts</span></div>
+      ${t.length ? t.map((i, n) => `<div class="fd-matriz-i"><span>${n + 1}. ${escapeHtml(i.texto)}${i.area ? ` <small>(${escapeHtml(i.area)})</small>` : ''}</span><strong>${i.pontos}</strong></div>`).join('') : '<div style="color:#94a3b8;font-size:12.5px;">Sem itens pontuados.</div>'}
+    </div>`;
+  };
+  const msg = [
+    tot.forcas < tot.fraquezas ? 'Suas forças estão mais baixas que as fraquezas — crie planos de ação para melhorar esses itens.' : 'Suas forças superam as fraquezas — use-as para sustentar os objetivos.',
+    tot.oportunidades < tot.ameacas ? 'As ameaças estão maiores ou iguais às oportunidades — crie planos para reduzir o risco delas acontecerem.' : 'As oportunidades superam as ameaças — priorize ações para aproveitá-las.'
+  ];
+  return `
+    <div class="fd-fav" style="border-color:${cor};">
+      <div><div class="fd-fav-rot">Índice de favorabilidade</div><div class="fd-fav-val" style="color:${cor};">${ix === null ? '—' : fdPct(ix, 1)}</div><div style="font-weight:800;color:${cor};">${cls}</div></div>
+      <div style="flex:1;min-width:240px;">
+        <div class="fd-fav-barra"><div style="left:${ix === null ? 50 : Math.max(0, Math.min(100, (ix + 2) / 4 * 100))}%;"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8;"><span>-200%</span><span>0</span><span>+200%</span></div>
+        <div style="font-size:12.5px;color:#334155;margin-top:6px;">${escapeHtml(txt)}</div>
+        <div style="font-size:11.5px;color:#64748b;margin-top:4px;">(Forças + Oportunidades − Fraquezas − Ameaças) ÷ total × 2, com as pontuações de todos os itens.</div>
+      </div>
+      <div class="fd-dist">${Object.keys(tot).map(q => `<div><span style="background:${QUADRANTES_SWOT_FRONT[q].cor};"></span>${QUADRANTES_SWOT_FRONT[q].plural} <strong>${fdPct(tot[q] / soma, 0)}</strong></div>`).join('')}</div>
+    </div>
+    <div class="fd-matriz">
+      <div class="fd-matriz-cab"></div><div class="fd-matriz-cab">Positivo</div><div class="fd-matriz-cab">Negativo</div>
+      <div class="fd-matriz-lado">Interno</div>${quadro('forcas')}${quadro('fraquezas')}
+      <div class="fd-matriz-lado">Externo</div>${quadro('oportunidades')}${quadro('ameacas')}
+    </div>
+    <div class="painel" style="margin-top:14px;">${msg.map(m => `<div style="font-size:13px;margin-bottom:4px;">• ${escapeHtml(m)}</div>`).join('')}
+      ${FD.dados.resumo ? `<div style="margin-top:8px;font-size:13px;"><strong>Resumindo a SWOT:</strong> ${escapeHtml(FD.dados.resumo)}</div>` : ''}</div>`;
+}
+
+function swotOpcoesInternas() { return [...swotTop5('forcas').map(i => 'Força: ' + i.texto), ...swotTop5('fraquezas').map(i => 'Fraqueza: ' + i.texto)]; }
+function swotOpcoesExternas() { return [...swotTop5('oportunidades').map(i => 'Oportunidade: ' + i.texto), ...swotTop5('ameacas').map(i => 'Ameaça: ' + i.texto)]; }
+function swotEstrategia(l) {
+  const ti = String(l.interno || '').split(':')[0], te = String(l.externo || '').split(':')[0];
+  return ESTRATEGIAS_SWOT[ti + '|' + te] || null;
+}
+function swotHtmlCruzamentos() {
+  FD_AO_EDITAR = (path, i) => { if (path === 'cruzamentos') { const l = fdLista(path)[i]; const e = swotEstrategia(l); l.estrategia = e ? e[0] : ''; } };
+  return `
+    <div class="painel" style="margin-bottom:12px;font-size:12.5px;color:#475569;">Cruze os itens do Top 5 internos (forças/fraquezas) com os externos (oportunidades/ameaças). O tipo de estratégia sai automático:
+      <div class="fd-estrategias">${Object.entries(ESTRATEGIAS_SWOT).map(([k, [n, t]]) => `<div><strong>${n}</strong><small>${k.replace('|', ' + ')}</small>${escapeHtml(t)}</div>`).join('')}</div></div>
+    ${fdTabela('cruzamentos', [
+      { campo: 'interno', rotulo: 'Força / Fraqueza (Top 5)', tipo: 'select', opcoes: swotOpcoesInternas, largura: 260, recarregar: true },
+      { campo: 'externo', rotulo: 'Oportunidade / Ameaça (Top 5)', tipo: 'select', opcoes: swotOpcoesExternas, largura: 260, recarregar: true },
+      { campo: 'estrategia', rotulo: 'Estratégia / recomendação', tipo: 'calc', valor: l => { const e = swotEstrategia(l); return e ? `<strong>${e[0]}</strong><div style="font-size:11.5px;color:#475569;">${escapeHtml(e[1])}</div>` : '—'; } }
+    ], { numerar: true, botao: 'Adicionar cruzamento' })}`;
+}
+
+const DESDOBRAMENTOS_SWOT = ['PDCA', 'Projeto', 'CAPEX', 'Cascateamento de metas'];
+function swotTodosItens() { return Object.keys(QUADRANTES_SWOT_FRONT).flatMap(q => swotItensPontuados(q).map(i => QUADRANTES_SWOT_FRONT[q].rotulo + ': ' + i.texto)); }
+function swotHtmlObjetivos() {
+  FD_AO_EDITAR = null;
+  return `
+    <div class="painel" style="margin-bottom:12px;font-size:12.5px;color:#475569;">
+      ${FD.dados.sonho ? `<div style="font-size:13.5px;color:#0f172a;margin-bottom:6px;">🌟 <strong>Sonho:</strong> ${escapeHtml(FD.dados.sonho)}</div>` : '<div style="color:#b45309;">⚠️ Escreva o Sonho na aba Início.</div>'}
+      Defina e priorize os objetivos estratégicos a partir da SWOT. Cada objetivo deve atacar um obstáculo para chegar no Sonho (V.2) e pode virar PDCA, Projeto, CAPEX ou cascateamento de metas.
+    </div>
+    ${fdTabela('objetivos', [
+      { campo: 'prioridade', rotulo: 'Prioridade', tipo: 'number', largura: 80 },
+      { campo: 'texto', rotulo: 'Objetivo estratégico', largura: 240 },
+      { campo: 'obstaculo', rotulo: 'Obstáculo ao Sonho que ataca', largura: 220 },
+      { campo: 'itemRelacionado', rotulo: 'Item da SWOT relacionado', tipo: 'select', opcoes: swotTodosItens, largura: 230 },
+      { campo: 'desdobramento', rotulo: 'Desdobra em', tipo: 'select', opcoes: DESDOBRAMENTOS_SWOT, largura: 150 }
+    ], { botao: 'Adicionar objetivo' })}`;
+}
+
+function swotStatusPlano(p) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  if (p.andamento === 'Concluído') return ['Concluído', '#16a34a'];
+  if (p.fim && p.fim < hoje) return ['Atrasado', '#dc2626'];
+  if (p.andamento === 'Em andamento') return ['Em andamento', '#d97706'];
+  if (p.inicio && p.inicio < hoje) return ['Atrasado', '#dc2626'];
+  return ['Aguardando', '#64748b'];
+}
+function swotHtmlPlanos() {
+  FD_AO_EDITAR = null;
+  const planos = fdLista('planos');
+  const cont = {};
+  planos.forEach(p => { const s = swotStatusPlano(p)[0]; cont[s] = (cont[s] || 0) + 1; });
+  const fatores = Object.values(QUADRANTES_SWOT_FRONT).map(c => c.rotulo);
+  const itensDoFator = l => { const q = Object.keys(QUADRANTES_SWOT_FRONT).find(k => QUADRANTES_SWOT_FRONT[k].rotulo === l.fator); return q ? swotItensPontuados(q).map(i => i.texto) : []; };
+  const nomes = fdLista('responsaveis').map(r => r.nome).filter(Boolean);
+  return `
+    <div class="kpis" style="margin-bottom:12px;">${['Aguardando', 'Em andamento', 'Atrasado', 'Concluído'].map(s => `<div class="kpi-card"><div class="valor">${cont[s] || 0}</div><div class="rotulo">${s}</div></div>`).join('')}</div>
+    ${fdTabela('planos', [
+      { campo: 'oque', rotulo: 'Plano de ação (o quê)', largura: 230 },
+      { campo: 'fator', rotulo: 'Fator', tipo: 'select', opcoes: fatores, largura: 120, recarregar: true },
+      { campo: 'item', rotulo: 'Item da SWOT', tipo: 'select', opcoes: itensDoFator, largura: 200 },
+      { campo: 'responsavel', rotulo: 'Responsável', tipo: nomes.length ? 'select' : 'text', opcoes: nomes, largura: 150 },
+      { campo: 'area', rotulo: 'Área', tipo: 'select', opcoes: () => fdLista('areas'), largura: 120 },
+      { campo: 'inicio', rotulo: 'Início', tipo: 'date', largura: 130 },
+      { campo: 'fim', rotulo: 'Fim', tipo: 'date', largura: 130 },
+      { campo: 'andamento', rotulo: 'Andamento', tipo: 'select', opcoes: ['Não iniciado', 'Em andamento', 'Concluído'], largura: 130, recarregar: true },
+      { campo: 'desdobramento', rotulo: 'Desdobra em', tipo: 'select', opcoes: DESDOBRAMENTOS_SWOT, largura: 140 },
+      { campo: 'status', rotulo: 'Status', tipo: 'calc', valor: l => { const [s, c] = swotStatusPlano(l); return `<span class="dpo-chip-nivel" style="background:${c};color:#fff;">${s}</span>`; } }
+    ], { numerar: true, botao: 'Adicionar plano de ação' })}`;
+}
+
+// ======================= PPR (Planejamento 1.1) =======================
+const PPR_CAMPOS = {
+  entrega: {
+    titulo: '🚚 Simulador da Entrega', desc: 'Mesmo conceito do PPR Entrega: volume projetado → viagens de frota fixa e spot → QLP de motoristas e ajudantes → custo OBZ e R$/hl. Preencha o Orçamento (Plan) no início do ano e o Realizado todo mês.',
+    params: [['fator_cx_hl', 'Fator caixas por hl', 5.88], ['cx_viagem_spot', 'Caixas por viagem spot', 144], ['absenteismo', '% absenteísmo', 1], ['rs_hl_meta', 'Meta R$/hl (orçamento)', '']],
+    campos: [
+      ['Volume', [['volume_hl', 'Volume (hl)'], ['volume_mktp_hl', 'Volume Marketplace (hl)'], ['dias_uteis', 'Dias úteis + trabalhados']]],
+      ['Frota', [['ff_ativa', 'Frota fixa ativa (veículos)'], ['ff_parada', 'Frota parada'], ['cap_media_cx', 'Capacidade média (cx/veículo)'], ['viagens_ff', 'Viagens frota fixa (mês)'], ['viagens_spot', 'Viagens spot (mês)'], ['km_rodado', 'Km rodado (mês)']]],
+      ['QLP', [['motoristas', 'Motoristas'], ['ajudantes', 'Ajudantes']]],
+      ['Custos OBZ (R$)', [['custo_fixo', 'Fixo frota (seguro, IPVA, rastreador, depreciação)'], ['custo_pessoal', 'Pessoal (salários, encargos, RV, HE)'], ['custo_variavel', 'Variável (diesel, manutenção, pneus)'], ['custo_spot', 'Spot / fretes'], ['custo_outros', 'Outros (pedágio, diárias, balsa)']]]
+    ]
+  },
+  armazem: {
+    titulo: '🏭 Simulador do Armazém e Puxada', desc: 'Mesmo conceito do PPR Armazém: volume puxado → viagens de puxada, horímetro e empilhadeiras → QLP por função → custo por pacote (empilhadeira, pessoal, prejuízo, outros), PNP e R$/hl.',
+    params: [['fator_cx_hl', 'Fator caixas por hl', 5.88], ['pnp_meta', 'Meta PNP (hl/h-homem)', 5.42], ['jornada_h', 'Jornada (h/dia)', 7.33], ['horas_emp_dia', 'Horas disponíveis por empilhadeira/dia', 14], ['absenteismo', '% absenteísmo', 4], ['rs_hl_meta', 'Meta R$/hl (orçamento)', '']],
+    campos: [
+      ['Volume e puxada', [['volume_hl', 'Volume puxado (hl)'], ['volume_mktp_hl', 'Volume Marketplace (hl)'], ['dias_trab', 'Dias trabalhados'], ['viagens_puxada', 'Viagens de puxada (mês)']]],
+      ['Equipamentos', [['empilhadeiras', 'Empilhadeiras (próprias + alugadas)'], ['horimetro', 'Horímetro (h no mês)']]],
+      ['QLP', [['operadores', 'Operadores de empilhadeira'], ['ajudantes', 'Ajudantes'], ['conferentes', 'Conferentes'], ['amarracao', 'Ajudantes de amarração'], ['qlp_adm', 'QLP administrativo']]],
+      ['Custos por pacote (R$)', [['custo_empilhadeiras', 'Empilhadeiras (aluguel, manutenção, gás)'], ['custo_pessoal', 'Pessoal (salários, RV, HE, rescisões)'], ['custo_prejuizos', 'Prejuízos (refugo, inventário, quebras)'], ['custo_outros', 'Outros (instalações, stretch, software...)']]]
+    ]
+  }
+};
+const PPR_CUSTOS = { entrega: ['custo_fixo', 'custo_pessoal', 'custo_variavel', 'custo_spot', 'custo_outros'], armazem: ['custo_empilhadeiras', 'custo_pessoal', 'custo_prejuizos', 'custo_outros'] };
+const MESES_FD = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+function pprParam(bloco, chave) {
+  const def = PPR_CAMPOS[bloco].params.find(p => p[0] === chave);
+  const v = fdNum(fdObter(bloco + '.params.' + chave));
+  return v !== null ? v : (def && def[2] !== '' ? Number(def[2]) : null);
+}
+function pprMes(bloco, cen, i) { const l = fdObter(bloco + '.' + cen); return (Array.isArray(l) && l[i]) || {}; }
+function pprCalcular(bloco, m) {
+  const n = k => fdNum(m[k]) || 0;
+  const r = {};
+  const custo = PPR_CUSTOS[bloco].reduce((s, k) => s + n(k), 0);
+  r.custo_total = custo || null;
+  r.rs_hl = n('volume_hl') && custo ? custo / n('volume_hl') : null;
+  const fator = pprParam(bloco, 'fator_cx_hl') || 5.88;
+  r.caixas = n('volume_hl') ? n('volume_hl') * fator : null;
+  const abs = (pprParam(bloco, 'absenteismo') || 0) / 100;
+  if (bloco === 'entrega') {
+    const viagens = n('viagens_ff') + n('viagens_spot');
+    r.viagens = viagens || null;
+    r.cx_viagem = viagens && r.caixas ? r.caixas / viagens : null;
+    r.utilizacao_ff = n('ff_ativa') && n('dias_uteis') ? n('viagens_ff') / (n('ff_ativa') * n('dias_uteis')) : null;
+    r.ocupacao = r.cx_viagem && n('cap_media_cx') ? r.cx_viagem / n('cap_media_cx') : null;
+    r.pct_spot = r.caixas ? Math.min(1, n('viagens_spot') * (pprParam('entrega', 'cx_viagem_spot') || 144) / r.caixas) : null;
+    r.qlp = n('motoristas') + n('ajudantes') || null;
+    r.qlp_cobertura = r.qlp ? n('motoristas') + n('ajudantes') + Math.ceil(n('motoristas') * abs) + Math.ceil(n('motoristas') / 12) + Math.ceil(n('ajudantes') * abs) + Math.ceil(n('ajudantes') / 12) : null;
+    r.km_viagem = n('viagens_ff') && n('km_rodado') ? n('km_rodado') / n('viagens_ff') : null;
+    r.rs_cx = r.caixas && custo ? custo / r.caixas : null;
+    r.equip = n('ff_ativa') || null;
+  } else {
+    const jornada = pprParam('armazem', 'jornada_h') || 7.33;
+    r.paletes = r.caixas ? r.caixas / 42 : null;
+    r.qlp_oper = n('operadores') + n('ajudantes') + n('conferentes') + n('amarracao') || null;
+    r.qlp = (r.qlp_oper || 0) + n('qlp_adm') || null;
+    r.pnp = r.qlp && n('dias_trab') && n('volume_hl') ? n('volume_hl') / (r.qlp * jornada * n('dias_trab')) : null;
+    r.fnp = n('horimetro') && n('volume_hl') ? n('volume_hl') / n('horimetro') : null;
+    const pnpMeta = pprParam('armazem', 'pnp_meta');
+    r.qlp_nec = pnpMeta && n('dias_trab') && n('volume_hl') ? Math.ceil(n('volume_hl') / (pnpMeta * jornada * n('dias_trab'))) : null;
+    r.emp_nec = n('horimetro') && n('dias_trab') ? Math.ceil(n('horimetro') / (n('dias_trab') * (pprParam('armazem', 'horas_emp_dia') || 14))) : null;
+    r.puxada_dia = n('viagens_puxada') && n('dias_trab') ? n('viagens_puxada') / n('dias_trab') : null;
+    r.equip = n('empilhadeiras') || null;
+  }
+  return r;
+}
+const PPR_DERIVADOS = {
+  entrega: [['caixas', 'Caixas', v => fdFmt(v)], ['viagens', 'Viagens totais', v => fdFmt(v)], ['cx_viagem', 'Caixas por viagem', v => fdFmt(v)], ['utilizacao_ff', 'Utilização da frota fixa', v => fdPct(v)], ['ocupacao', '% ocupação do veículo', v => fdPct(v)], ['pct_spot', '% volume no spot', v => fdPct(v)], ['km_viagem', 'Km por viagem', v => fdFmt(v, 1)], ['qlp', 'QLP (motoristas + ajudantes)', v => fdFmt(v)], ['qlp_cobertura', 'QLP com reserva e feristas', v => fdFmt(v)], ['custo_total', 'Custo total OBZ (R$)', v => fdFmt(v)], ['rs_hl', 'R$/hl', v => fdFmt(v, 2)], ['rs_cx', 'R$/caixa', v => fdFmt(v, 2)]],
+  armazem: [['caixas', 'Caixas', v => fdFmt(v)], ['paletes', 'Paletes (cx ÷ 42)', v => fdFmt(v)], ['puxada_dia', 'Viagens de puxada por dia', v => fdFmt(v, 1)], ['qlp_oper', 'QLP operacional', v => fdFmt(v)], ['qlp', 'QLP total', v => fdFmt(v)], ['qlp_nec', 'QLP necessário (pela meta PNP)', v => fdFmt(v)], ['emp_nec', 'Empilhadeiras necessárias (horímetro)', v => fdFmt(v)], ['pnp', 'PNP (hl por hora-homem)', v => fdFmt(v, 2)], ['fnp', 'FNP (hl por hora de empilhadeira)', v => fdFmt(v, 1)], ['custo_total', 'Custo total (R$)', v => fdFmt(v)], ['rs_hl', 'R$/hl', v => fdFmt(v, 2)]]
+};
+let PPR_CENARIO = 'plan';
+
+function pprGarantirMeses(bloco, cen) {
+  let l = fdObter(bloco + '.' + cen);
+  if (!Array.isArray(l)) { fdDefinirSemSalvar(bloco + '.' + cen, []); l = fdObter(bloco + '.' + cen); }
+  for (let i = 0; i < 12; i++) if (!l[i] || typeof l[i] !== 'object') l[i] = {};
+  return l;
+}
+function pprEditarCelula(bloco, cen, i, campo, valor) {
+  pprGarantirMeses(bloco, cen)[i][campo] = valor === '' ? '' : Number(String(valor).replace(',', '.'));
+  fdAgendarSalvar();
+  const tot = document.getElementById(`ppr-tot-${campo}`);
+  if (tot) tot.textContent = pprTotalCampo(bloco, cen, campo);
+  const der = document.getElementById('ppr-derivados');
+  if (der) der.innerHTML = pprHtmlDerivados(bloco, cen);
+}
+function pprReplicar(bloco, cen, campo) {
+  const l = pprGarantirMeses(bloco, cen);
+  const v = l[0][campo];
+  if (v === undefined || v === '') { mostrarToast('Preencha janeiro primeiro.', true); return; }
+  l.forEach(m => { m[campo] = v; });
+  fdAgendarSalvar();
+  document.getElementById('fd-corpo').innerHTML = fdHtmlAba();
+}
+const PPR_MEDIA = ['dias_uteis', 'dias_trab', 'ff_ativa', 'ff_parada', 'cap_media_cx', 'motoristas', 'ajudantes', 'empilhadeiras', 'operadores', 'conferentes', 'amarracao', 'qlp_adm'];
+function pprTotalCampo(bloco, cen, campo) {
+  const vals = pprGarantirMeses(bloco, cen).map(m => fdNum(m[campo])).filter(v => v !== null);
+  if (!vals.length) return '—';
+  const s = vals.reduce((a, b) => a + b, 0);
+  return PPR_MEDIA.includes(campo) ? 'média ' + fdFmt(s / vals.length, 1) : fdFmt(s);
+}
+function pprHtmlDerivados(bloco, cen) {
+  const calcs = MESES_FD.map((_, i) => pprCalcular(bloco, pprMes(bloco, cen, i)));
+  const anual = (() => {
+    const soma = {};
+    pprGarantirMeses(bloco, cen).forEach(m => Object.keys(m).forEach(k => { const v = fdNum(m[k]); if (v !== null) soma[k] = (soma[k] || 0) + v; }));
+    return soma;
+  })();
+  const calcAnual = pprCalcular(bloco, anual);
+  return PPR_DERIVADOS[bloco].map(([k, rot, f]) => `<tr class="ppr-derivado"><td>${rot}</td>${calcs.map(c => `<td>${f(c[k])}</td>`).join('')}<td>${['custo_total', 'caixas', 'paletes', 'viagens'].includes(k) ? f(calcAnual[k]) : k === 'rs_hl' || k === 'rs_cx' ? f(calcAnual[k]) : ''}</td></tr>`).join('');
+}
+function pprHtmlSimulador(bloco) {
+  const cfg = PPR_CAMPOS[bloco];
+  const cen = PPR_CENARIO;
+  pprGarantirMeses(bloco, cen);
+  return `
+    <div class="painel" style="margin-bottom:12px;">
+      <div style="font-size:16px;font-weight:800;">${cfg.titulo}</div>
+      <div style="font-size:12.5px;color:#475569;">${cfg.desc}</div>
+      <div class="ppr-params">${cfg.params.map(([k, r, def]) => `<div><label>${r}</label><input type="number" step="any" value="${escapeHtml(fdObter(bloco + '.params.' + k) ?? '')}" placeholder="${def === '' ? '' : 'padrão ' + def}" onchange="fdDefinir('${bloco}.params.${k}', this.value === '' ? '' : Number(this.value)); document.getElementById('ppr-derivados').innerHTML = pprHtmlDerivados('${bloco}', PPR_CENARIO);"></div>`).join('')}</div>
+    </div>
+    <div class="ppr-cenarios">
+      <button class="${cen === 'plan' ? 'ativo' : ''}" onclick="PPR_CENARIO='plan'; document.getElementById('fd-corpo').innerHTML = fdHtmlAba();">📋 Orçamento (Plan)</button>
+      <button class="${cen === 'real' ? 'ativo' : ''}" onclick="PPR_CENARIO='real'; document.getElementById('fd-corpo').innerHTML = fdHtmlAba();">📈 Realizado / Tendência</button>
+      <span style="font-size:12px;color:#64748b;">${cen === 'plan' ? 'Orçamento do ano, feito após a negociação final.' : 'Preencha todo mês após o fechamento — base da rotina de custos e da dispersão Real x Plan.'}</span>
+    </div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela ppr-grade">
+      <thead><tr><th style="min-width:230px;">${cen === 'plan' ? 'Orçamento' : 'Realizado'}</th>${MESES_FD.map(m => `<th>${m}</th>`).join('')}<th>Ano</th></tr></thead>
+      ${cfg.campos.map(([grupo, campos]) => `
+        <tbody><tr class="ppr-grupo"><td colspan="14">${grupo}</td></tr>
+        ${campos.map(([k, r]) => `<tr><td>${r} <button class="ppr-replicar" title="Replicar janeiro para os 12 meses" onclick="pprReplicar('${bloco}', '${cen}', '${k}')">⇉</button></td>
+          ${MESES_FD.map((_, i) => `<td><input type="number" step="any" value="${escapeHtml(pprMes(bloco, cen, i)[k] ?? '')}" onchange="pprEditarCelula('${bloco}', '${cen}', ${i}, '${k}', this.value)"></td>`).join('')}
+          <td id="ppr-tot-${k}" class="ppr-total">${pprTotalCampo(bloco, cen, k)}</td></tr>`).join('')}
+        </tbody>`).join('')}
+      <tbody><tr class="ppr-grupo"><td colspan="14">Calculados automaticamente</td></tr></tbody>
+      <tbody id="ppr-derivados">${pprHtmlDerivados(bloco, cen)}</tbody>
+    </table></div>`;
+}
+
+function pprHtmlComparativo() {
+  const bloco = (b) => {
+    const meta = pprParam(b, 'rs_hl_meta');
+    const linhas = MESES_FD.map((m, i) => {
+      const p = pprMes(b, 'plan', i), r = pprMes(b, 'real', i);
+      const cp = pprCalcular(b, p), cr = pprCalcular(b, r);
+      const disp = cp.rs_hl && cr.rs_hl ? (cr.rs_hl - cp.rs_hl) / cp.rs_hl : null;
+      const dispVol = fdNum(p.volume_hl) && fdNum(r.volume_hl) ? (fdNum(r.volume_hl) - fdNum(p.volume_hl)) / fdNum(p.volume_hl) : null;
+      const cor = disp === null ? '' : disp > 0.05 ? 'background:#fee2e2;color:#991b1b;' : disp < -0.05 ? 'background:#dcfce7;color:#166534;' : 'background:#fef9c3;';
+      return `<tr><td><strong>${m}</strong></td><td>${fdFmt(fdNum(p.volume_hl))}</td><td>${fdFmt(fdNum(r.volume_hl))}</td><td>${fdPct(dispVol)}</td>
+        <td>${fdFmt(cp.equip)}</td><td>${fdFmt(cr.equip)}</td><td>${fdFmt(cp.qlp)}</td><td>${fdFmt(cr.qlp)}</td>
+        <td>${fdFmt(cp.custo_total)}</td><td>${fdFmt(cr.custo_total)}</td><td>${fdFmt(cp.rs_hl, 2)}</td><td>${fdFmt(cr.rs_hl, 2)}</td><td style="font-weight:800;${cor}">${fdPct(disp)}</td></tr>`;
+    }).join('');
+    return `
+      <div class="painel" style="margin-bottom:14px;">
+        <h3 style="margin-top:0;">${PPR_CAMPOS[b].titulo} — Plan x Real</h3>
+        ${meta ? `<div class="plano-meta">Meta de R$/hl do orçamento: <strong>${fdFmt(meta, 2)}</strong></div>` : ''}
+        <div class="fd-tabela-wrap"><table class="fd-tabela ppr-comp">
+          <thead><tr><th>Mês</th><th>Volume Plan</th><th>Volume Real</th><th>Disp. volume</th><th>${b === 'entrega' ? 'Frota' : 'Empilh.'} Plan</th><th>${b === 'entrega' ? 'Frota' : 'Empilh.'} Real</th><th>QLP Plan</th><th>QLP Real</th><th>Custo Plan</th><th>Custo Real</th><th>R$/hl Plan</th><th>R$/hl Real</th><th>Disp. R x P</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table></div>
+        <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Disp. R x P = (R$/hl Real − R$/hl Plan) ÷ Plan · vermelho = custo acima do orçamento (+5%), verde = abaixo (−5%). Desvios fora da faixa devem ter ação no PDCA de custos.</div>
+      </div>`;
+  };
+  return bloco('entrega') + bloco('armazem');
+}
+
+const PACOTES_PADRAO_PPR = [['Pessoal Entrega', 'Entrega'], ['Frota própria (fixo e variável)', 'Entrega'], ['Spot / Fretes', 'Entrega'], ['Pessoal Armazém', 'Armazém'], ['Empilhadeiras', 'Armazém'], ['Prejuízos / Quebras', 'Armazém'], ['Puxada', 'Puxada'], ['Administrativo', 'Gestão']];
+function pprSugerirPacotes() {
+  const l = fdLista('orcamento.raci');
+  PACOTES_PADRAO_PPR.forEach(([p, a]) => { if (!l.some(x => x.pacote === p)) l.push({ id: fdId(), pacote: p, area: a }); });
+  fdAgendarSalvar(); document.getElementById('fd-corpo').innerHTML = fdHtmlAba();
+}
+function pprHtmlOrcamento() {
+  FD_AO_EDITAR = null;
+  const o = FD.dados.orcamento || {};
+  return `
+    <div class="painel" style="margin-bottom:14px;">
+      <h3 style="margin-top:0;">👥 Matriz RACI dos pacotes orçamentários (V.1)</h3>
+      <p style="font-size:12.5px;color:#64748b;margin-top:-6px;">R = responsável pelo pacote · A = aprova · C = consultado · I = informado. Distribua os pacotes (não concentre na gerência) e ligue cada um ao KPI/resultado do DPO.</p>
+      ${fdTabela('orcamento.raci', [
+        { campo: 'pacote', rotulo: 'Pacote orçamentário', largura: 200 }, { campo: 'area', rotulo: 'Área', largura: 110 },
+        { campo: 'r', rotulo: 'R — Responsável', largura: 150 }, { campo: 'a', rotulo: 'A — Aprovador', largura: 150 },
+        { campo: 'c', rotulo: 'C — Consultado', largura: 140 }, { campo: 'i', rotulo: 'I — Informado', largura: 140 },
+        { campo: 'kpi', rotulo: 'KPI / resultado ligado', largura: 180 }
+      ], { botao: 'Adicionar pacote' })}
+      <button class="btn-secundario btn-sm" style="margin-top:8px;margin-left:6px;" onclick="pprSugerirPacotes()">✨ Sugerir pacotes padrão</button>
+    </div>
+    <div class="painel" style="margin-bottom:14px;">
+      <h3 style="margin-top:0;">🗂️ Processo orçamentário (V.2) e negociação final (V.4)</h3>
+      <label style="margin-top:0;">Como é o processo orçamentário da unidade?</label>
+      <textarea rows="3" placeholder="Etapas, calendário, quem participa, como o Marketplace, o aumento de headcount e a compra de equipamentos entram no orçamento..." onchange="fdDefinir('orcamento.processo', this.value)">${escapeHtml(o.processo || '')}</textarea>
+      <div class="grid-3">
+        <div><label>Data da negociação final</label><input type="date" value="${escapeHtml(o.dataNegociacao || '')}" onchange="fdDefinir('orcamento.dataNegociacao', this.value)"></div>
+        <div><label style="display:flex;gap:8px;align-items:center;margin-top:26px;"><input type="checkbox" style="width:auto;margin:0;" ${o.versaoFinal ? 'checked' : ''} onchange="fdDefinir('orcamento.versaoFinal', this.checked)"> O Plan é a versão final pós-negociação</label></div>
+        <div><label>Observação</label><input value="${escapeHtml(o.obsNegociacao || '')}" onchange="fdDefinir('orcamento.obsNegociacao', this.value)"></div>
+      </div>
+    </div>
+    <div class="painel" style="margin-bottom:14px;">
+      <h3 style="margin-top:0;">🌱 KPIs de sustentabilidade ligados ao orçamento (V.4)</h3>
+      ${fdTabela('orcamento.kpis', [{ campo: 'nome', rotulo: 'KPI', largura: 200 }, { campo: 'unidade', rotulo: 'Unidade', largura: 90 }, { campo: 'meta', rotulo: 'Meta', largura: 100 }, { campo: 'acao', rotulo: 'Ação / pacote que sustenta a meta', largura: 280 }], { botao: 'Adicionar KPI' })}
+    </div>
+    <div class="painel">
+      <h3 style="margin-top:0;">🔁 PDCA de custos (V.5)</h3>
+      <p style="font-size:12.5px;color:#64748b;margin-top:-6px;">Ações das áreas para corrigir desvios de custo e de dimensionamento (como na aba PDCA dos PPRs).</p>
+      ${fdTabela('orcamento.pdca', [
+        { campo: 'oque', rotulo: 'O quê', largura: 200 }, { campo: 'como', rotulo: 'Como', largura: 180 }, { campo: 'resultado', rotulo: 'Resultado esperado', largura: 160 },
+        { campo: 'responsavel', rotulo: 'Responsável', largura: 140 }, { campo: 'area', rotulo: 'Área', tipo: 'select', opcoes: ['Entrega', 'Armazém', 'Puxada', 'Gestão', 'Gente', 'Frota'], largura: 110 },
+        { campo: 'inicio', rotulo: 'Início', tipo: 'date', largura: 130 }, { campo: 'fim', rotulo: 'Fim', tipo: 'date', largura: 130 },
+        { campo: 'status', rotulo: 'Status', tipo: 'select', opcoes: ['Não iniciado', 'Em andamento', 'Concluído', 'Abortado'], largura: 130 }
+      ], { numerar: true, botao: 'Adicionar ação' })}
+    </div>`;
 }
 
 function classificarAbaVaga(v) {
