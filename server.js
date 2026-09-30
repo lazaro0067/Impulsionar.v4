@@ -6344,6 +6344,21 @@ app.post('/api/admin/dpo/cycles', requireRole('admin'), async (req, res) => {
 // de verdade, não para travar o acesso da empresa ao autoatendimento.
 // Esta rota reaproveita um ciclo aberto que já cubra o pilar ou cria um novo
 // automaticamente (em 'em_andamento', sem precisar de agendamento prévio).
+// Master exclui um ciclo (histórico) com as notas e os planos de ação ligados a ele.
+app.delete('/api/admin/dpo/cycles/:id', requireRole('admin'), async (req, res) => {
+    try {
+        const ciclo = await dbGet(`SELECT id FROM dpo_audit_cycles WHERE id = ?`, [req.params.id]);
+        if (!ciclo) return res.status(404).json({ error: 'Ciclo não encontrado.' });
+        for (const q of [`DELETE FROM dpo_action_plans WHERE cycle_id = ?`, `DELETE FROM dpo_answers WHERE cycle_id = ?`, `DELETE FROM dpo_audit_cycles WHERE id = ?`]) {
+            await new Promise((resolve, reject) => db.run(q, [ciclo.id], (err) => err ? reject(err) : resolve()));
+        }
+        res.json({ message: 'Ciclo excluído do histórico.' });
+    } catch (e) {
+        console.error('Erro ao excluir ciclo DPO:', e.message);
+        res.status(400).json({ error: 'Erro ao excluir o ciclo.' });
+    }
+});
+
 app.post('/api/dpo/cycles/auto-open', requireRole('client_admin'), async (req, res) => {
     const { pillarKey } = req.body;
     if (!pillarKey || !DPO_PILARES_ORDEM.includes(pillarKey)) return res.status(400).json({ error: 'Pilar inválido.' });
@@ -8205,6 +8220,11 @@ async function resolverFerramentaDigitalDpo(req, res, chave, companyIdInformado)
         }
         return { pilar, pergunta: numero, titulo: `Acompanhamento Impulsionar — ${t.pilarLabel} ${numero} ${t.questao}`, companyId, template: t };
     }
+    if (chave === 'cinco_s') {
+        const companyId = await resolverEmpresaPastaDpo(req, res, 'gestao', companyIdInformado, null);
+        if (!companyId) return null;
+        return { titulo: 'Gerenciador 5S', pilarLabel: 'Gestão Revenda', pergunta: '3.1', perguntaTexto: '5S', companyId, modelo5s: CINCO_S_MODELO_DPO };
+    }
     if (chave === 'gop') {
         const companyId = req.user.role === 'client_admin' ? req.user.companyId : companyIdInformado;
         if (!companyId) { res.status(400).json({ error: 'Informe a empresa (company_id).' }); return null; }
@@ -8229,7 +8249,7 @@ async function carregarFerramentaDigitalDpo(companyId, chave, ano) {
 
 async function validacaoDaChaveDpo(companyId, chave, ano, dadosAtual) {
     if (String(chave).startsWith('acomp:')) return null; // calculada na tela (blocos do acompanhamento)
-    if (chave === 'gop') return null; // cobertura de planos calculada na tela
+    if (chave === 'gop' || chave === 'cinco_s') return null; // calculada na tela
     if (chave === 'swot') return validarSwotDpo(dadosAtual, ano);
     const todos = {};
     for (const c of CHAVES_DIMENSIONAMENTO_DPO) todos[c] = c === chave && dadosAtual ? dadosAtual : (await carregarFerramentaDigitalDpo(companyId, c, ano)).dados;
@@ -8262,9 +8282,10 @@ async function respostaFerramentaDigitalDpo(f, chave, ano) {
     if (CHAVES_DIMENSIONAMENTO_DPO.includes(chave)) await migrarPprAntigoDpo(f.companyId);
     const r = await carregarFerramentaDigitalDpo(f.companyId, chave, ano);
     if (chave === 'gop') r.dados = garantirPlanosGopDpo(r.dados);
+    if (chave === 'cinco_s') r.dados = garantirPlanos5sDpo(r.dados);
     const pergunta = f.pilar ? perguntaDoPilarDpo(f.pilar, f.pergunta) : null;
     return {
-        chave, titulo: f.titulo, pilar: f.pilar || null, pilarLabel: f.pilar ? DPO_AMBEV_DATA[f.pilar].label : (f.pilarLabel || ''), pergunta: f.pergunta, modeloGop: f.modeloGop || undefined,
+        chave, titulo: f.titulo, pilar: f.pilar || null, pilarLabel: f.pilar ? DPO_AMBEV_DATA[f.pilar].label : (f.pilarLabel || ''), pergunta: f.pergunta, modeloGop: f.modeloGop || undefined, modelo5s: f.modelo5s || undefined,
         perguntaTexto: pergunta ? pergunta.pergunta.questao : '', verificacao: pergunta ? pergunta.pergunta.verificacao : '',
         companyId: Number(f.companyId), ano, anos: await anosDaChaveDpo(f.companyId, chave), ...r, template: f.template || null,
         validacao: await validacaoDaChaveDpo(f.companyId, chave, ano, r.dados)
@@ -8313,6 +8334,7 @@ app.put('/api/dpo/ferramentas-digitais/:chave', requireRole('admin', 'client_adm
         const ano = anoValidoDpo(req.body.ano);
         let dados = req.body.dados && typeof req.body.dados === 'object' ? req.body.dados : {};
         if (req.params.chave === 'gop') dados = garantirPlanosGopDpo(dados);
+        if (req.params.chave === 'cinco_s') dados = garantirPlanos5sDpo(dados);
         const json = JSON.stringify(dados);
         if (json.length > 1500000) return res.status(400).json({ error: 'Dados grandes demais para salvar.' });
         await new Promise((resolve, reject) => db.run(
@@ -8320,7 +8342,7 @@ app.put('/api/dpo/ferramentas-digitais/:chave', requireRole('admin', 'client_adm
              ON CONFLICT(company_id, chave, ano) DO UPDATE SET dados = excluded.dados, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP`,
             [f.companyId, req.params.chave, ano, json, req.user.userId], (err) => err ? reject(err) : resolve()
         ));
-        res.json({ message: 'Salvo!', validacao: await validacaoDaChaveDpo(f.companyId, req.params.chave, ano, dados), acoes: req.params.chave === 'gop' ? dados.acoes : undefined });
+        res.json({ message: 'Salvo!', validacao: await validacaoDaChaveDpo(f.companyId, req.params.chave, ano, dados), acoes: req.params.chave === 'gop' || req.params.chave === 'cinco_s' ? dados.acoes : undefined });
     } catch (e) {
         console.error('Erro ao salvar ferramenta digital DPO:', e.message);
         res.status(400).json({ error: 'Erro ao salvar.' });
@@ -8348,6 +8370,7 @@ app.post('/api/dpo/ferramentas-digitais/:chave/novo-ano', requireRole('admin', '
                 };
                 else if (chave === 'swot') base = { areas: origem.areas, sonho: origem.sonho, responsaveis: origem.responsaveis, vinculoDNMP: origem.vinculoDNMP, vinculoDNMPTexto: origem.vinculoDNMPTexto };
                 else if (chave === 'orcamento') base = { raci: origem.raci, kpis: origem.kpis, processo: origem.processo };
+                else if (chave === 'cinco_s') { const o = prepararDados5sDpo(origem); base = { modelo: o.modelo, areas: o.areas, auditorias: [], acoes: o.acoes.filter(a => a.status !== 'Concluída' && !a.auto).map(a => ({ ...a, id: idGop() })) }; }
                 else if (chave === 'gop') { const o = prepararDadosGopDpo(origem); base = { gops: Object.fromEntries(Object.entries(o.gops).map(([k, g]) => [k, { titulo: g.titulo, area: g.area, meta: g.meta, itens: g.itens, resp: {} }])), acoes: o.acoes.filter(a => a.status !== 'Concluída' && !a.auto).map(a => ({ ...a, id: idGop() })) }; }
                 else base = { params: origem.params };
             }
@@ -8558,6 +8581,172 @@ function exportarGopDpo(add, dados) {
         d.acoes.map(a => ({ ...a, gop: d.gops[a.gop] ? d.gops[a.gop].titulo : a.gop, mes: a.mes === null || a.mes === undefined ? '' : MESES[a.mes], item: textoItem(a) })));
 }
 
+// ======================================================================
+// DPO — GERENCIADOR 5S (planilha "5S Armazém e ADM") — Gestão 3.1
+// Áreas com dono e auditor; auditoria mensal por área com as perguntas dos
+// 5 sensos (S / N / NA). % do senso = S ÷ (S + N); 5S da área = média dos
+// sensos avaliados; revenda = média das áreas. Meta 85%. Todo N abre na hora
+// um plano de ação (dono da área como responsável).
+// ======================================================================
+const CINCO_S_MODELO_DPO = {"meta": 85, "sensos": [{"chave": "selecao", "titulo": "Seleção", "numero": 1, "perguntas": [{"id": "selecao-1", "num": "1.1", "texto": "A área está livre de equipamentos e/ou objetos (ex. máquinas, cadeiras, mesas, trava paletes, cones de sinalização, quadros de gestão à vista) quebrados e/ou sem utilização na área? Todos os equipamentos e/ou objetos são necessários?"}, {"id": "selecao-2", "num": "1.2", "texto": "A área está livre de Cópias desnecessárias (Padrões vencidos, Books sem utilização) de materiais de consulta?"}, {"id": "selecao-3", "num": "1.3", "texto": "A área está livre de objetos desnecessários nos armários, gavetas equipamentos?"}, {"id": "selecao-4", "num": "1.4", "texto": "Os objetos pessoais estão nos lugares corretos? (Não deve ter objetos pessoais nos postos de trabalho)"}]}, {"chave": "organizacao", "titulo": "Organização", "numero": 2, "perguntas": [{"id": "organizacao-1", "num": "2.1", "texto": "Existe identificação de materiais (mesas, salas, cadeiras, armarios)"}, {"id": "organizacao-2", "num": "2.2", "texto": "Os telefones estão identificados com o número do ramal?"}, {"id": "organizacao-3", "num": "2.3", "texto": "Os arquivos da Rede (Pastas de trabalho) estão organizados e de fácil acesso. Mostrando uma organização lógica, com nomes, para que todos consigam acessar (respeitando os limites de acesso)?"}, {"id": "organizacao-4", "num": "2.4", "texto": "O desktop do funcionário está devidamente organizado?"}, {"id": "organizacao-5", "num": "2.5", "texto": "Os padrões da área se encontram em local de fácil acesso, conhecido por todos? Os padrões estão organizados, quaisquer padrões podem ser encontrados facilmente?"}, {"id": "organizacao-6", "num": "2.6", "texto": "Os itens da area estão nos seus locais destinados? Existem placas/identificações para todos os itens?"}]}, {"chave": "limpeza", "titulo": "Limpeza", "numero": 3, "perguntas": [{"id": "limpeza-1", "num": "3.1", "texto": "Existe cronograma de limpeza na área? Está sendo cumprido?"}, {"id": "limpeza-2", "num": "3.2", "texto": "O lixo é recolhido com frequência?"}, {"id": "limpeza-3", "num": "3.3", "texto": "As mesas e o piso estão limpos?"}, {"id": "limpeza-4", "num": "3.4", "texto": "De modo geral a área passa a impressão de ser um ambiente limpo?"}, {"id": "limpeza-5", "num": "3.5", "texto": "A área está livre de alimentos ou restos de alimentos?"}]}, {"chave": "conservacao", "titulo": "Conservação", "numero": 4, "perguntas": [{"id": "conservacao-1", "num": "4.1", "texto": "Os equipamentos, utensílios, ferramentas e materiais estão em bom estado de conservação?"}, {"id": "conservacao-2", "num": "4.2", "texto": "As luminárias estão funcionando e estão em bom estado de conservação?"}, {"id": "conservacao-3", "num": "4.3", "texto": "Existem cabos de energia ou outros tipo de cabos soltos pela area?"}, {"id": "conservacao-4", "num": "4.4", "texto": "O piso da área está em bom estado? (sem buracos, cerâmica faltando e/ou quebradas, etc). As paredes da área estão em bom estado (pintura não deve estar descascando, não deve ter azulejos faltando ou quebrados, não deve ter manchas)? O telhado da área está em bom estado? As tubulações e escadas estão em bom estado?"}, {"id": "conservacao-5", "num": "4.5", "texto": "As tomadas e interruptores estão em bom estado e funcionando?"}]}, {"chave": "autodisciplina", "titulo": "Auto-Disciplina", "numero": 5, "perguntas": [{"id": "autodisciplina-1", "num": "5.1", "texto": "A operação conhece a sua responsabilidade na área? Sabe explicar o quadro de 5S? Qual a área sob sua responsabilidade e quais as atividades de 5S que precisa executar?"}, {"id": "autodisciplina-2", "num": "5.2", "texto": "Existe um quadro de gestão à vista com o resultado da ultima auditoria de 5s e ele esta atualizado?"}, {"id": "autodisciplina-3", "num": "5.3", "texto": "Todos os quadros de gestão à vista estão preenchidos e atualizados?"}, {"id": "autodisciplina-4", "num": "5.4", "texto": "As não conformidades levantadas nas auditorias passadas foram tratadas? (Só pontuar se houve não conformidade na auditoria anterior)"}, {"id": "autodisciplina-5", "num": "5.5", "texto": "As ações da ultima auditoria de 5s estão escritas no quadro de 5s da area e estão atualizadas?"}]}]};
+const MESES_LONGOS_5S_DPO = ['JANEIRO', 'FEVEREIRO', 'MARCO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+function resp5sDpo(v) { const t = semAcentoGop(v); return t === 'S' || t === 'SIM' ? 'S' : t === 'N' || t === 'NAO' ? 'N' : t === 'NA' || t === 'N/A' ? 'NA' : ''; }
+function prepararDados5sDpo(dados) {
+    const d = dados && typeof dados === 'object' ? dados : {};
+    if (!d.modelo || !Array.isArray(d.modelo.sensos)) d.modelo = JSON.parse(JSON.stringify(CINCO_S_MODELO_DPO));
+    d.areas = Array.isArray(d.areas) ? d.areas.filter(a => a && a.id) : [];
+    d.auditorias = Array.isArray(d.auditorias) ? d.auditorias.filter(a => a && a.id) : [];
+    d.acoes = Array.isArray(d.acoes) ? d.acoes.filter(a => a && a.id) : [];
+    return d;
+}
+function garantirPlanos5sDpo(dados) {
+    const d = prepararDados5sDpo(dados);
+    const chave = a => `${a.auditoriaId}|${a.qid}`;
+    const existentes = new Set(d.acoes.filter(a => a.auditoriaId).map(chave)), nok = new Set();
+    const sensoDe = qid => { const s = d.modelo.sensos.find(x => x.perguntas.some(p => p.id === qid)); return s ? s.chave : ''; };
+    // Auditorias antigas importadas da planilha: só a última de cada área abre plano automático.
+    const ultimoMes = {};
+    d.auditorias.forEach(au => { if (ultimoMes[au.areaId] === undefined || au.mes > ultimoMes[au.areaId]) ultimoMes[au.areaId] = au.mes; });
+    d.auditorias.forEach(au => Object.entries(au.resp || {}).forEach(([qid, v]) => {
+        if (resp5sDpo(v) !== 'N') return;
+        if (au.origem === 'planilha' && au.mes !== ultimoMes[au.areaId]) return;
+        const k = `${au.id}|${qid}`; nok.add(k);
+        if (existentes.has(k)) return;
+        const area = d.areas.find(a => a.id === au.areaId);
+        d.acoes.push({ id: idGop(), auditoriaId: au.id, areaId: au.areaId, mes: au.mes, senso: sensoDe(qid), qid, acao: '', dono: area ? area.dono || '' : '', prevista: '', tratativa: '', status: 'Não iniciado', auto: true });
+        existentes.add(k);
+    }));
+    d.acoes = d.acoes.filter(a => !(a.auto && a.auditoriaId && !nok.has(chave(a)) && !String(a.acao || '').trim()));
+    return d;
+}
+// Lê a planilha 5S (xlsx/xlsm): "Donos de área", "Resultado Geral" (departamento), "Base" (auditorias) e "Gerenciador de Ações".
+function lerWorkbook5sDpo(wb, ano) {
+    const d = prepararDados5sDpo({}), avisos = [];
+    const aba = nome => wb.worksheets.find(w => semAcentoGop(w.name).replace(/\s+/g, '') === semAcentoGop(nome).replace(/\s+/g, ''));
+    const val = (ws, r, c) => valorCelulaGop(ws.getRow(r).getCell(c).value);
+    const acharCab = (ws, rotulo, maxL) => { for (let r = 1; r <= Math.min(ws.rowCount, maxL || 30); r++) for (let c = 1; c <= 30; c++) if (semAcentoGop(val(ws, r, c)) === semAcentoGop(rotulo)) return { r, c }; return null; };
+    const areaPorNome = {};
+    const addArea = (nome, extra) => { const n = String(nome || '').trim(); if (!n || /^TOTAL$|^REVENDA$/i.test(n)) return null; const k = semAcentoGop(n); if (!areaPorNome[k]) { areaPorNome[k] = { id: idGop(), nome: n, depto: '', dono: '', auditor: '' }; d.areas.push(areaPorNome[k]); } Object.entries(extra || {}).forEach(([c, v]) => { if (v && String(v).trim()) areaPorNome[k][c] = String(v).trim(); }); return areaPorNome[k]; };
+    const donos = aba('Donos de área');
+    if (donos) { const h = acharCab(donos, 'Area'); if (h) for (let r = h.r + 1; r <= donos.rowCount; r++) addArea(val(donos, r, h.c), { dono: val(donos, r, h.c + 1), auditor: val(donos, r, h.c + 3) }); }
+    else avisos.push('Aba "Donos de área" não encontrada.');
+    const rg = aba('Resultado Geral');
+    if (rg) { const h = acharCab(rg, 'Departamento'); if (h) for (let r = h.r + 1; r <= rg.rowCount; r++) { const a = areaPorNome[semAcentoGop(val(rg, r, h.c))]; if (a && val(rg, r, h.c + 1)) a.depto = String(val(rg, r, h.c + 1)).trim(); } }
+    const base = aba('Base');
+    const qids = {};
+    d.modelo.sensos.forEach(s => s.perguntas.forEach((p, i) => { qids[semAcentoGop(`${i + 1} - ${s.titulo}`).replace(/[^A-Z0-9]/g, '')] = p.id; }));
+    if (base) {
+        const h = acharCab(base, 'Auditor');
+        if (h) {
+            const cols = {};
+            for (let c = h.c; c <= h.c + 200; c++) { const t = semAcentoGop(val(base, h.r, c)).replace(/[^A-Z0-9]/g, ''); if (qids[t] && cols[qids[t]] === undefined) cols[qids[t]] = c; }
+            for (let r = h.r + 1; r <= base.rowCount; r++) {
+                const nomeArea = val(base, r, h.c + 1), mesTxt = semAcentoGop(val(base, r, h.c + 2));
+                const mes = MESES_LONGOS_5S_DPO.indexOf(mesTxt);
+                if (!nomeArea || mes < 0) continue;
+                const area = addArea(nomeArea);
+                const resp = {};
+                Object.entries(cols).forEach(([qid, c]) => { const v = resp5sDpo(val(base, r, c)); if (v) resp[qid] = v; });
+                if (!Object.keys(resp).length) continue;
+                const ja = d.auditorias.find(a => a.areaId === area.id && a.mes === mes);
+                const au = { id: ja ? ja.id : idGop(), areaId: area.id, mes, auditor: String(val(base, r, h.c) || '').trim(), resp, origem: 'planilha' };
+                if (ja) Object.assign(ja, au); else d.auditorias.push(au);
+            }
+        }
+    } else avisos.push('Aba "Base" não encontrada — auditorias não importadas.');
+    // Resultado Geral: nota do mês informada na planilha (vale como resultado oficial da área naquele mês).
+    if (rg) {
+        const h = acharCab(rg, 'Departamento');
+        if (h) {
+            const colMes = {};
+            for (let c = h.c; c <= h.c + 40; c++) { const m = MESES_LONGOS_5S_DPO.indexOf(semAcentoGop(val(rg, h.r, c))); if (m >= 0 && colMes[m] === undefined) colMes[m] = c; }
+            for (let r = h.r + 1; r <= rg.rowCount; r++) {
+                const area = areaPorNome[semAcentoGop(val(rg, r, h.c))];
+                if (!area) continue;
+                Object.entries(colMes).forEach(([m, c]) => {
+                    const v = Number(val(rg, r, c));
+                    if (!isFinite(v) || v <= 0 || v > 1.0001 || val(rg, r, c) === null || val(rg, r, c) === '') return;
+                    let au = d.auditorias.find(a => a.areaId === area.id && a.mes === Number(m));
+                    if (!au) { au = { id: idGop(), areaId: area.id, mes: Number(m), auditor: area.auditor || '', resp: {}, origem: 'planilha' }; d.auditorias.push(au); }
+                    au.notaInformada = Math.round(v * 10000) / 100;
+                });
+            }
+        }
+    }
+    const ga = aba('Gerenciador de Ações');
+    if (ga) {
+        const h = acharCab(ga, 'Dono');
+        const sensoPorTexto = t => { const n = semAcentoGop(t).replace(/[^A-Z]/g, ''); const s = d.modelo.sensos.find(x => n.includes(semAcentoGop(x.titulo).replace(/[^A-Z]/g, ''))); return s ? s.chave : ''; };
+        if (h) for (let r = h.r + 1; r <= ga.rowCount; r++) {
+            const acao = val(ga, r, h.c + 2);
+            if (!acao || !String(acao).trim()) continue;
+            const dt = dataCelulaGop(ga.getRow(r).getCell(h.c - 1).value);
+            const st = semAcentoGop(val(ga, r, h.c + 4));
+            d.acoes.push({ id: idGop(), auditoriaId: null, areaId: null, mes: dt && Number(dt.slice(5, 7)) ? Number(dt.slice(5, 7)) - 1 : null, senso: sensoPorTexto(val(ga, r, h.c + 1)), qid: null, acao: String(acao).trim(), dono: String(val(ga, r, h.c) || '').trim(), prevista: dt || '', tratativa: String(val(ga, r, h.c + 3) || '').trim(), status: /CONCL|CONLC/.test(st) ? 'Concluída' : /ANDAM/.test(st) ? 'Em andamento' : 'Não iniciado', origem: 'planilha' });
+        }
+    }
+    return { dados: garantirPlanos5sDpo(d), avisos };
+}
+async function lerArquivoPlanilhaDpo(caminho) {
+    let arquivo = caminho;
+    if (/\.xlsb$/i.test(caminho)) {
+        // .xlsb (binário) — converte com o LibreOffice do servidor, se existir.
+        const { execFile } = require('child_process');
+        const saida = path.join(require('os').tmpdir(), 'conv-' + Date.now());
+        fs.mkdirSync(saida, { recursive: true });
+        await new Promise((resolve, reject) => execFile('soffice', ['--headless', '--convert-to', 'xlsx', '--outdir', saida, caminho], { timeout: 120000 }, err => err ? reject(new Error('xlsb')) : resolve()));
+        arquivo = path.join(saida, path.basename(caminho).replace(/\.xlsb$/i, '.xlsx'));
+    }
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(arquivo);
+    return wb;
+}
+app.post('/api/dpo/cinco-s/importar', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { url, originalName } = req.body;
+    if (!/^\/uploads\/[\w.\-]+$/.test(String(url || ''))) return res.status(400).json({ error: 'Envie a planilha antes de importar.' });
+    try {
+        const f = await resolverFerramentaDigitalDpo(req, res, 'cinco_s', req.body.company_id);
+        if (!f) return;
+        const ano = anoValidoDpo(req.body.ano);
+        let wb;
+        try { wb = await lerArquivoPlanilhaDpo(path.join(PASTA_UPLOADS, path.basename(url))); }
+        catch (e) { return res.status(400).json({ error: /xlsb/.test(e.message) || /\.xlsb$/i.test(url) ? 'Não consegui ler o formato .xlsb aqui. Abra a planilha no Excel, use "Salvar como" → Pasta de Trabalho do Excel (.xlsx) e importe de novo.' : 'Não foi possível ler a planilha.' }); }
+        const lido = lerWorkbook5sDpo(wb, ano);
+        if (!lido.dados.areas.length) return res.status(400).json({ error: 'Não encontrei as áreas (aba "Donos de área").', avisos: lido.avisos });
+        const atual = prepararDados5sDpo((await carregarFerramentaDigitalDpo(f.companyId, 'cinco_s', ano)).dados);
+        // mescla: áreas por nome, auditorias por área+mês, ações novas
+        const mapa = {};
+        lido.dados.areas.forEach(a => { const ex = atual.areas.find(x => semAcentoGop(x.nome) === semAcentoGop(a.nome)); if (ex) { mapa[a.id] = ex.id; ['depto', 'dono', 'auditor'].forEach(c => { if (a[c]) ex[c] = a[c]; }); } else { atual.areas.push(a); mapa[a.id] = a.id; } });
+        lido.dados.auditorias.forEach(au => { au.areaId = mapa[au.areaId] || au.areaId; const ex = atual.auditorias.find(x => x.areaId === au.areaId && x.mes === au.mes); if (ex) { ex.resp = au.resp; ex.auditor = au.auditor || ex.auditor; } else atual.auditorias.push(au); });
+        const jaTem = new Set(atual.acoes.map(a => semAcentoGop(a.acao)));
+        lido.dados.acoes.filter(a => !a.auditoriaId && !jaTem.has(semAcentoGop(a.acao))).forEach(a => atual.acoes.push(a));
+        const dados = garantirPlanos5sDpo(atual);
+        await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_ferramentas_digitais (company_id, chave, ano, dados, updated_by, updated_at) VALUES (?, 'cinco_s', ?, ?, ?, CURRENT_TIMESTAMP)
+             ON CONFLICT(company_id, chave, ano) DO UPDATE SET dados = excluded.dados, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP`,
+            [f.companyId, ano, JSON.stringify(dados), req.user.userId], (err) => err ? reject(err) : resolve()));
+        db.run(`INSERT INTO dpo_ferramentas_digitais_arquivos (company_id, chave, ano, tipo, url, original_name, comentario, created_by) VALUES (?, 'cinco_s', ?, 'planilha_5s', ?, ?, ?, ?)`,
+            [f.companyId, ano, url, originalName || 'Planilha 5S', 'Importada para o sistema', req.user.userId], () => {});
+        res.json({ message: `${lido.dados.areas.length} área(s), ${lido.dados.auditorias.length} auditoria(s) e ${lido.dados.acoes.filter(a => !a.auditoriaId).length} ação(ões) importadas. ${dados.acoes.filter(a => a.auto && !String(a.acao || '').trim()).length} plano(s) aberto(s) para os itens N.`, dados, avisos: lido.avisos });
+    } catch (e) {
+        console.error('Erro ao importar 5S:', e.message);
+        res.status(400).json({ error: 'Não foi possível importar a planilha 5S.' });
+    }
+});
+function exportar5sDpo(add, dados) {
+    const d = prepararDados5sDpo(dados), M = MESES_CURTOS_DPO;
+    const pctSenso = (au, s) => { let S = 0, N = 0; s.perguntas.forEach(p => { const v = resp5sDpo((au.resp || {})[p.id]); if (v === 'S') S++; if (v === 'N') N++; }); return S + N ? S / (S + N) : null; };
+    const pctAud = au => { const v = d.modelo.sensos.map(s => pctSenso(au, s)).filter(x => x !== null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+    const fmt = v => v === null || v === undefined ? '' : `${String(Math.round(v * 1000) / 10).replace('.', ',')}%`;
+    add('Donos de área', [['Área', 'nome', 26], ['Departamento', 'depto', 18], ['Dono', 'dono', 20], ['Auditor', 'auditor', 20]], d.areas);
+    add('Resultado Geral', [['Área', 'a', 26], ['Departamento', 'dep', 16], ...M.map((m, i) => [m, 'm' + i, 9])], d.areas.map(a => ({ a: a.nome, dep: a.depto, ...Object.fromEntries(M.map((m, i) => { const au = d.auditorias.find(x => x.areaId === a.id && x.mes === i); return ['m' + i, au ? fmt(pctAud(au)) : '']; })) })));
+    const linhas = [];
+    d.auditorias.forEach(au => { const a = d.areas.find(x => x.id === au.areaId); d.modelo.sensos.forEach(s => s.perguntas.forEach(p => linhas.push({ area: a ? a.nome : '', mes: M[au.mes], auditor: au.auditor, senso: s.titulo, q: `${p.num} ${p.texto}`, r: (au.resp || {})[p.id] || '' }))); });
+    add('Base', [['Área', 'area', 22], ['Mês', 'mes', 8], ['Auditor', 'auditor', 18], ['Senso', 'senso', 14], ['Pergunta', 'q', 60], ['Resposta', 'r', 10]], linhas);
+    add('Gerenciador de Ações', [['Mês', 'mes', 8], ['Área', 'area', 22], ['Senso', 'senso', 16], ['Item', 'item', 50], ['Ação', 'acao', 45], ['Dono', 'dono', 18], ['Prevista', 'prevista', 12], ['Tratativa', 'tratativa', 40], ['Status', 'status', 14]],
+        d.acoes.map(a => { const ar = d.areas.find(x => x.id === a.areaId), s = d.modelo.sensos.find(x => x.chave === a.senso), p = s && a.qid ? s.perguntas.find(x => x.id === a.qid) : null; return { ...a, mes: a.mes === null || a.mes === undefined ? '' : M[a.mes], area: ar ? ar.nome : '', senso: s ? s.titulo : a.senso, item: p ? `${p.num} ${p.texto}` : '' }; }));
+}
+
 // Rótulos dos campos digitados em cada simulador (para o Excel).
 const CAMPOS_SIM_DPO = {
     sim_entrega: {
@@ -8615,6 +8804,8 @@ app.get('/api/dpo/ferramentas-digitais/:chave/export', requireRole('admin', 'cli
             add('Planos de ação', [['O quê', 'oque', 45], ['Fator', 'fator', 14], ['Item', 'item', 35], ['Responsável', 'responsavel', 22], ['Área', 'area', 16], ['Início', 'inicio', 12], ['Fim', 'fim', 12], ['Andamento', 'andamento', 14], ['Desdobramento', 'desdobramento', 18]], dados.planos);
         } else if (chave === 'gop') {
             exportarGopDpo(add, dados);
+        } else if (chave === 'cinco_s') {
+            exportar5sDpo(add, dados);
         } else if (chave === 'orcamento') {
             add('RACI', [['Pacote orçamentário', 'pacote', 30], ['Área', 'area', 16], ['R - Responsável', 'r', 22], ['A - Aprovador', 'a', 22], ['C - Consultado', 'c', 22], ['I - Informado', 'i', 22], ['KPI / resultado', 'kpi', 28]], dados.raci);
             add('KPIs sustentabilidade', [['KPI', 'nome', 30], ['Unidade', 'unidade', 12], ['Meta', 'meta', 14], ['Ação / pacote ligado', 'acao', 40]], dados.kpis);
@@ -8636,7 +8827,7 @@ app.get('/api/dpo/ferramentas-digitais/:chave/export', requireRole('admin', 'cli
                 add(cen === 'plan' ? 'Orçamento (Plan)' : 'Realizado', [['Indicador', 'ind', 36], ...MESES_CURTOS_DPO.map((m, i) => [m, 'm' + i, 11])], linhas);
             });
         }
-        if (chave !== 'gop') add('Validação checklist', [['Item', 'n', 8], ['Verificação', 't', 60], ['Atendido', 'ok', 10], ['O que falta', 'f', 70]],
+        if (chave !== 'gop' && chave !== 'cinco_s') add('Validação checklist', [['Item', 'n', 8], ['Verificação', 't', 60], ['Atendido', 'ok', 10], ['O que falta', 'f', 70]],
             [...val.itens.map(i => ({ n: i.numero, t: i.texto, ok: i.ok ? 'Sim' : 'Não', f: i.faltas.join(' | ') })), { n: 'Nota', t: 'Nota sugerida pela ferramenta', ok: val.notaSugerida, f: val.regra }]);
         const buffer = await wb.xlsx.writeBuffer();
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -8667,7 +8858,7 @@ const BLOCOS_ACOMP_DPO = {
     inspecoes: /inspe[çc]|auditoria|checklist|check-list|ronda|gemba|blitz|observa[çc][ãa]o comportamental|sinaliza[çc]/i
 };
 const ORDEM_BLOCOS_ACOMP_DPO = Object.keys(BLOCOS_ACOMP_DPO);
-const ACOMP_ESPECIAIS_DPO = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop' };
+const ACOMP_ESPECIAIS_DPO = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop', 'gestao:3.1': 'cinco_s' };
 const KPIS_CONHECIDOS_DPO = ['TML', 'TMA', 'NPS', 'eNPS', 'OTIF', 'LTI', 'MDI', 'MTI', 'SIF', 'TRI', 'TRIFR', 'PNP', 'FNP', 'VMI', 'EFC', 'OEE', 'DPMO', 'IRL', 'GPS'];
 
 function sugestoesAcompDpo(texto) {

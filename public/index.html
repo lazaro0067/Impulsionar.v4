@@ -548,6 +548,14 @@
   .ppr-derivado td { background: #f8fafc; color: #0f172a; text-align: right; font-weight: 700; }
   .ppr-derivado td:first-child { text-align: left; color: #475569; font-style: italic; background: #f8fafc; }
   .ppr-total { text-align: right; font-weight: 800; white-space: nowrap; color: #334155; }
+  .c5-pergunta { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 7px 8px; border-top: 1px solid var(--cinza-200); }
+  .c5-pergunta.nok { background: #fff1f2; }
+  .c5-texto { font-size: 13px; flex: 1; }
+  .c5-botoes { display: flex; gap: 4px; flex-shrink: 0; }
+  .c5-resp { border: 1.5px solid var(--cinza-200); background: #fff; border-radius: 8px; padding: 4px 10px; font-weight: 800; font-size: 12px; cursor: pointer; color: #64748b; min-width: 40px; }
+  .c5-resp.ativo.sim { background: #16a34a; border-color: #16a34a; color: #fff; }
+  .c5-resp.ativo.nao { background: #dc2626; border-color: #dc2626; color: #fff; }
+  .c5-resp.ativo.na { background: #64748b; border-color: #64748b; color: #fff; }
   .gop-tabela td, .gop-tabela th { padding: 4px 5px; }
   .gop-tabela .gop-texto { font-size: 12.5px; min-width: 320px; }
   .gop-tabela th.gop-mes { text-align: center; white-space: nowrap; }
@@ -2441,6 +2449,22 @@ async function acessarComoGestor(companyId, memberId) {
 
 // Restaura a sessão do Master guardada quando "Acessar como Gestor" foi usado,
 // e recarrega a página já de volta na conta principal.
+// Master logado — ou Master dando suporte "acessando como" o gestor da empresa.
+function ehMasterOuSuporte() { return (ESTADO.usuario && ESTADO.usuario.role === 'admin') || !!sessionStorage.getItem('impulsionar_master_backup'); }
+function tokenMaster() {
+  if (ESTADO.usuario && ESTADO.usuario.role === 'admin') return ESTADO.token;
+  try { return JSON.parse(sessionStorage.getItem('impulsionar_master_backup') || '{}').token || null; } catch (e) { return null; }
+}
+async function excluirCicloDpo(id, depois) {
+  if (!confirm('Excluir este ciclo do histórico? As notas e os planos de ação ligados a ele também serão apagados.')) return;
+  try {
+    const resp = await fetch('/api/admin/dpo/cycles/' + id, { method: 'DELETE', headers: { Authorization: 'Bearer ' + tokenMaster() } });
+    const r = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(r.error || 'Não foi possível excluir.');
+    mostrarToast(r.message); if (depois) depois();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
 function voltarParaMaster() {
   const backup = sessionStorage.getItem('impulsionar_master_backup');
   if (!backup) return;
@@ -6595,7 +6619,7 @@ async function renderDpoAgenda() {
             <div class="plano-meta">Pilares: ${c.pilares.map(p => escapeHtml(dpoLabelDoPilar(p))).join(', ')}</div>
             <div class="plano-meta">Status: <strong style="color:${ROTULOS_STATUS_CICLO_DPO[c.status]?.cor}">${ROTULOS_STATUS_CICLO_DPO[c.status]?.texto || c.status}</strong></div>
             <div class="plano-meta">${c.totalRespondidas}/${c.totalPerguntas} pergunta(s) respondida(s)</div>
-            <div class="acoes-form" style="flex-wrap:wrap;"><button class="btn-secundario btn-sm" onclick="verDetalheCicloDpoAdmin(${c.id})">👁️ Abrir gestão</button></div>
+            <div class="acoes-form" style="flex-wrap:wrap;"><button class="btn-secundario btn-sm" onclick="verDetalheCicloDpoAdmin(${c.id})">👁️ Abrir gestão</button><button class="btn-perigo btn-sm" onclick="excluirCicloDpo(${c.id}, renderDpoAgenda)">🗑 Excluir</button></div>
           </div>`).join('')}
         </div></details>` : ''}
       <div id="form-area"></div>
@@ -7000,7 +7024,6 @@ async function renderDpoHome() {
     // Cores dos pilares = nível da última autoavaliação mensal (régua de selos DPO 2026).
     const niveisDpo = await api('/api/dpo/niveis').catch(() => ({ geral: null, pilares: {}, primeiraAuditoria: false }));
     const pastasDpoHome = await api('/api/dpo/pastas').catch(() => ({ autoavaliacao: true }));
-    const acompsHome = await api('/api/dpo/acompanhamentos').catch(() => []);
     const geralDpo = niveisDpo.geral;
     const ciclosAbertos = ciclos.filter(c => c.status !== 'concluido');
     const cicloPorPilar = {};
@@ -7040,8 +7063,6 @@ async function renderDpoHome() {
       </div>
       <div class="barra-acoes"><div class="direita">
         ${pastasDpoHome.autoavaliacao ? `<button class="btn-primario" style="width:auto;" onclick="renderDpoAutoavaliacao()">📊 Autoavaliação Mensal</button>` : ''}
-        ${pastasDpoHome.gop !== false ? `<button class="btn-primario" style="width:auto;background:#0f766e;" onclick="abrirGopDpo()">📋 Gerenciador GOP</button>` : ''}
-        ${acompsHome.length ? `<button class="btn-primario" style="width:auto;background:#dc4c4c;" onclick="renderAcompanhamentosEmpresa()">🚀 Acompanhamentos Impulsionar (${acompsHome.length})</button>` : ''}
         <button class="btn-secundario" onclick="renderDpoMeusPlanos()">📋 Meus Planos DPO</button>
         <button class="btn-secundario" onclick="irPara('chamados')">🎫 Chamados</button>
         <button class="btn-primario" onclick="mostrarComprasDpo()">🛒 Comprar Pilares / Consultoria Completa</button>
@@ -7086,7 +7107,7 @@ async function renderDpoHome() {
               <div class="plano-meta">Pilares: ${c.pilares.map(p => escapeHtml(dpoLabelDoPilar(p))).join(', ')}</div>
               <div class="plano-meta">Status: <strong style="color:${ROTULOS_STATUS_CICLO_DPO[c.status]?.cor}">${ROTULOS_STATUS_CICLO_DPO[c.status]?.texto}</strong></div>
               <div class="plano-meta">${c.totalRespondidas}/${c.totalPerguntas} respondida(s)</div>
-              <div class="acoes-form"><button class="btn-secundario btn-sm" onclick="abrirCicloDpo(${c.id}, '${c.pilares[0]}')">Abrir</button></div>
+              <div class="acoes-form"><button class="btn-secundario btn-sm" onclick="abrirCicloDpo(${c.id}, '${c.pilares[0]}')">Abrir</button>${ehMasterOuSuporte() ? `<button class="btn-perigo btn-sm" onclick="excluirCicloDpo(${c.id}, renderDpoHome)">🗑 Excluir</button>` : ''}</div>
             </div>
           `).join('')}
         </div>
@@ -7528,12 +7549,6 @@ function renderPerguntaDpo(p, somenteLeitura) {
         <details style="margin-bottom:10px;"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#4338ca;">❓ How to Check (tirar dúvidas)</summary>
           <div style="font-size:12.5px;color:#334155;white-space:pre-line;margin-top:6px;">${escapeHtml(p.how_to_check || '')}</div>
         </details>
-        ${((ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.acomps) || []).includes(p.questionKey) || ESTADO.usuario.role === 'admin' ? `
-        <div class="fd-caixa-pergunta" style="background:linear-gradient(90deg,#fef2f2,#fff);border-color:#fca5a5;">
-          <div><strong>🚀 Acompanhamento Impulsionar${((ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.acomps) || []).includes(p.questionKey) ? '' : ' <span style="font-size:11px;color:#b45309;">(prévia do Master — não liberado para a revenda)</span>'}</strong>
-            <div style="font-size:12px;color:#475569;">Acompanhe esta pergunta item a item: reuniões, indicadores, padrões, treinamentos, ocorrências, riscos e plano de ação, com nota sugerida.</div></div>
-          <button class="btn-primario btn-sm" style="width:auto;background:#dc4c4c;" onclick="abrirFerramentaDigitalDpo('acomp:${p.questionKey}', ${ESTADO.usuario.role === 'admin' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo ? ESTADO_DPO_VIEW.ciclo.company_id : 'null'})">Abrir acompanhamento</button>
-        </div>` : ''}
         ${FD_PERGUNTAS[p.questionKey] ? `
         <div class="fd-caixa-pergunta">
           <div><strong>🧩 Ferramenta digital Impulsionar desta pergunta</strong>
@@ -9053,10 +9068,11 @@ async function excluirFerramentaDpo(id) {
 // ======================================================================
 let FD = null; // pasta aberta: { chave, ano, companyId, dados, validacao, arquivos, aba, meta }
 let DIM = null; // visão das pastas do Simulador de Dimensionamento num ano
-const FD_PERGUNTAS = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop' };
+const FD_PERGUNTAS = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop', 'gestao:3.1': 'cinco_s' };
 const FD_DESCRICOES = {
   swot: ['Análise SWOT digital por área (Armazém, Distribuição, Frota, Gente): fatores, matriz, cruzamentos, objetivos e planos — com validação dos itens V.1 a V.3.', '🧭 Abrir Análise SWOT'],
   dimensionamento: ['Simulador de Dimensionamento em pastas por ano: Armazém, Entrega e Puxada (orçamento calculado × realizado), RACI, KPIs e PDCA — com validação dos itens V.1 a V.5.', '📐 Abrir Simulador de Dimensionamento'],
+  cinco_s: ['Gerenciador 5S: donos de área e auditores, auditoria cruzada mensal dos 5 sensos (S / N / NA), resultado por área, departamento e senso com meta de 85%, plano de ação obrigatório em todo item N e importação da planilha 5S.', '🧹 Abrir Gerenciador 5S'],
   gop: ['Gerenciador GOP: Inventário, Obsolescence, TQI Armazém, Rating, TQI Distribuição e OTIF — SIM/NÃO por mês, plano de ação obrigatório em todo mês NOK e importação da planilha Gerenciador GOP.', '📋 Abrir Gerenciador GOP']
 };
 
@@ -9084,11 +9100,13 @@ async function abrirFerramentaDigitalDpo(chave, companyId, ano, aba) {
     if (companyId) q.set('company_id', companyId);
     if (ano) q.set('ano', ano);
     const d = await api('/api/dpo/ferramentas-digitais/' + chave + '?' + q.toString());
-    FD = { chave, ano: d.ano, companyId: companyId || null, dados: d.dados || {}, validacao: d.validacao, arquivos: d.arquivos || [], aba: aba || (String(chave).startsWith('acomp:') ? 'itens' : chave === 'gop' ? 'painel' : 'inicio'), meta: d, salvoEm: d.updated_at, autor: d.autorNome };
+    FD = { chave, ano: d.ano, companyId: companyId || null, dados: d.dados || {}, validacao: d.validacao, arquivos: d.arquivos || [], aba: aba || (String(chave).startsWith('acomp:') ? 'itens' : chave === 'gop' || chave === 'cinco_s' ? 'painel' : 'inicio'), meta: d, salvoEm: d.updated_at, autor: d.autorNome };
     if (chave === 'swot') swotPrepararDados();
     if (acompEh() && d.template && d.template.especial === 'gop') await acompCarregarGop();
+    if (acompEh() && d.template && d.template.especial === 'cinco_s') await acompCarregar5s();
     if (acompEh()) { acompPrepararDados(); acompAtualizarResumo(); }
     if (chave === 'gop') gopPreparar();
+    if (chave === 'cinco_s') c5Preparar();
     fdDesenhar();
   } catch (e) { cont.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
@@ -9110,7 +9128,7 @@ async function fdSalvar() {
     if (FD.companyId) corpo.company_id = FD.companyId;
     const r = await api('/api/dpo/ferramentas-digitais/' + FD.chave, { method: 'PUT', body: JSON.stringify(corpo) });
     FD.validacao = acompEh() ? acompValidacao() : r.validacao;
-    if (gopEh()) { const nota = document.getElementById('fd-nota'); if (nota) nota.innerHTML = gopChip(); if (st) st.innerHTML = '✅ Salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); return; }
+    if (gopEh() || c5Eh()) { const nota = document.getElementById('fd-nota'); if (nota) nota.innerHTML = c5Eh() ? c5Chip() : gopChip(); if (st) st.innerHTML = '✅ Salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); return; }
     if (DIM) DIM.validacao = r.validacao;
     if (st) st.innerHTML = '✅ Salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const nota = document.getElementById('fd-nota');
@@ -9128,6 +9146,7 @@ function fdChipNota(val, onclick) {
 
 function fdVoltar() {
   if (FD_TIMER) fdSalvar();
+  if (c5Eh()) { FD = null; const f = C5_VOLTAR; C5_VOLTAR = null; if (f) { f(); return; } if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) renderCicloDpoAtual(); else renderDpoHome(); return; }
   if (gopEh()) { FD = null; const f = GOP_VOLTAR; GOP_VOLTAR = null; if (f) { f(); return; } if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) renderCicloDpoAtual(); else renderDpoHome(); return; }
   if (acompEh()) { FD = null; if (ACOMP_VOLTAR) { const f = ACOMP_VOLTAR; ACOMP_VOLTAR = null; f(); return; } if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) renderCicloDpoAtual(); else renderDpoHome(); return; }
   if (FD && FD.chave !== 'swot') { const c = FD.companyId; FD = null; abrirDimensionamentoDpo(c, DIM ? DIM.ano : null); return; }
@@ -9152,18 +9171,18 @@ function fdDesenhar() {
   const m = FD.meta;
   const ehSim = !!SIMS_DPO[FD.chave], ehOrc = FD.chave === 'orcamento';
   const ehAcomp = acompEh();
-  const ehGop = gopEh();
-  const abas = ehGop ? gopAbas() : ehAcomp ? acompAbas() : FD.chave === 'swot'
+  const ehGop = gopEh(), eh5s = c5Eh();
+  const abas = eh5s ? c5Abas() : ehGop ? gopAbas() : ehAcomp ? acompAbas() : FD.chave === 'swot'
     ? [['inicio', '🏁 Início e áreas'], ['forcas', '💪 Forças'], ['fraquezas', '⚠️ Fraquezas'], ['oportunidades', '🚀 Oportunidades'], ['ameacas', '🛑 Ameaças'], ['matriz', '🧮 Matriz SWOT'], ['cruzamentos', '🔀 Cruzamentos'], ['objetivos', '🎯 Objetivos estratégicos'], ['planos', '📋 Planos de ação'], ['validacao', '✅ Validação 1.3'], ['arquivos', '📎 Arquivos']]
     : ehSim ? [['parametros', '⚙️ Parâmetros'], ['plan', '📋 Orçamento (Plan)'], ['real', '📈 Realizado'], ['comparativo', '📊 Plan x Real'], ['obz', '💰 OBZ Plan x Real'], ['arquivos', '📎 Arquivos'], ['validacao', '✅ Validação 1.1']]
     : [['raci', '👥 RACI e processo'], ['kpis', '🌱 KPIs de sustentabilidade'], ['pdca', '🔁 PDCA de custos'], ['arquivos', '📎 Arquivos'], ['validacao', '✅ Validação 1.1']];
-  const titulo = ehGop ? '📋 Gerenciador GOP — Revendas' : ehAcomp ? `🚀 ${escapeHtml(m.template.numero)} ${escapeHtml(m.template.questao)}` : FD.chave === 'swot' ? '🧭 ' + escapeHtml(m.titulo) : ehSim ? `${SIMS_DPO[FD.chave].icone} ${SIMS_DPO[FD.chave].titulo}` : '📑 Orçamento, RACI e KPIs';
-  const anosHtml = FD.chave === 'swot' || ehAcomp || ehGop
+  const titulo = eh5s ? '🧹 Gerenciador 5S' : ehGop ? '📋 Gerenciador GOP — Revendas' : ehAcomp ? `🚀 ${escapeHtml(m.template.numero)} ${escapeHtml(m.template.questao)}` : FD.chave === 'swot' ? '🧭 ' + escapeHtml(m.titulo) : ehSim ? `${SIMS_DPO[FD.chave].icone} ${SIMS_DPO[FD.chave].titulo}` : '📑 Orçamento, RACI e KPIs';
+  const anosHtml = FD.chave === 'swot' || ehAcomp || ehGop || eh5s
     ? fdAnosHtml(m.anos, FD.ano, 'fdAbrirAnoSwot', 'fdNovoAnoSwot')
     : fdAnosHtml(DIM && DIM.pastas[FD.chave] ? DIM.pastas[FD.chave].anos : [], FD.ano, 'fdAbrirAnoPasta', 'fdNovoAnoPasta');
   cont.innerHTML = `
     <div class="barra-acoes">
-      <div><button class="btn-secundario btn-sm" onclick="fdVoltar()">← ${FD.chave === 'swot' || acompEh() || ehGop ? 'Voltar' : 'Pastas do Simulador de Dimensionamento'}</button></div>
+      <div><button class="btn-secundario btn-sm" onclick="fdVoltar()">← ${FD.chave === 'swot' || acompEh() || ehGop || eh5s ? 'Voltar' : 'Pastas do Simulador de Dimensionamento'}</button></div>
       <div class="direita">
         <span id="fd-status" style="font-size:12px;color:#64748b;">${FD.salvoEm ? 'Última gravação: ' + new Date(String(FD.salvoEm).replace(' ', 'T') + 'Z').toLocaleString('pt-BR') + (FD.autor ? ' por ' + escapeHtml(FD.autor) : '') : 'Pasta ainda não preenchida'}</span>
         <button class="btn-secundario btn-sm" onclick="fdSalvar()">💾 Salvar</button>
@@ -9172,8 +9191,8 @@ function fdDesenhar() {
     </div>
     <h1 style="margin-bottom:2px;">${titulo} <span style="color:#94a3b8;font-weight:600;">· ${FD.ano}</span></h1>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-      <span class="plano-meta">${ehGop ? `GOPs da revenda — uma aba por GOP · plano de ação obrigatório em todo mês NOK` : ehAcomp ? `🚀 Acompanhamento Impulsionar · ${escapeHtml(m.template.pilarLabel)} · ${escapeHtml(m.template.grupo)}${m.template.mandatoria ? ' · <strong style="color:#dc2626;">Mandatória</strong>' : ''}` : `${escapeHtml(m.pilarLabel || '')} · pergunta <strong>${escapeHtml(m.pergunta || '')} ${escapeHtml(m.perguntaTexto || '')}</strong>${ehSim || ehOrc ? ' · pasta do Simulador de Dimensionamento' : ''}`}</span>
-      <span id="fd-nota">${ehGop ? gopChip() : fdChipNota(FD.validacao, ehAcomp ? "fdTrocarAba('itens')" : undefined)}</span>
+      <span class="plano-meta">${eh5s ? `Gestão Revenda · pergunta <strong>3.1 5S</strong> · auditoria cruzada mensal por área · plano obrigatório em todo item N` : ehGop ? `GOPs da revenda — uma aba por GOP · plano de ação obrigatório em todo mês NOK` : ehAcomp ? `🚀 Acompanhamento Impulsionar · ${escapeHtml(m.template.pilarLabel)} · ${escapeHtml(m.template.grupo)}${m.template.mandatoria ? ' · <strong style="color:#dc2626;">Mandatória</strong>' : ''}` : `${escapeHtml(m.pilarLabel || '')} · pergunta <strong>${escapeHtml(m.pergunta || '')} ${escapeHtml(m.perguntaTexto || '')}</strong>${ehSim || ehOrc ? ' · pasta do Simulador de Dimensionamento' : ''}`}</span>
+      <span id="fd-nota">${eh5s ? c5Chip() : ehGop ? gopChip() : fdChipNota(FD.validacao, ehAcomp ? "fdTrocarAba('itens')" : undefined)}</span>
     </div>
     ${anosHtml}
     <div class="fd-abas">${abas.map(([k, r]) => `<button class="fd-aba ${FD.aba === k ? 'ativa' : ''}" onclick="fdTrocarAba('${k}')">${r}</button>`).join('')}</div>
@@ -9188,6 +9207,7 @@ function fdHtmlAba() {
   if (a === 'arquivos') return fdHtmlArquivos();
   if (acompEh()) return acompHtmlAba();
   if (gopEh()) return gopHtmlAba();
+  if (c5Eh()) return c5HtmlAba();
   if (FD.chave === 'swot') {
     if (a === 'inicio') return swotHtmlInicio();
     if (QUADRANTES_SWOT_FRONT[a]) return swotHtmlQuadrante(a);
@@ -9277,7 +9297,7 @@ function fdHtmlValidacao(v, meta) {
 
 // ---- arquivos de atualização ----
 function fdHtmlArquivos() {
-  const tipos = gopEh() ? [['planilha_gop', 'Planilha Gerenciador GOP'], ['evidencia', 'Evidência de ação'], ['outro', 'Outro']] : acompEh() ? [['evidencia', 'Evidência'], ['ata', 'Ata / lista de presença'], ['padrao', 'Padrão / procedimento'], ['relatorio', 'Relatório de indicador'], ['foto', 'Foto'], ['outro', 'Outro']]
+  const tipos = c5Eh() ? [['planilha_5s', 'Planilha 5S'], ['foto', 'Foto antes / depois'], ['quadro', 'Quadro de gestão à vista'], ['outro', 'Outro']] : gopEh() ? [['planilha_gop', 'Planilha Gerenciador GOP'], ['evidencia', 'Evidência de ação'], ['outro', 'Outro']] : acompEh() ? [['evidencia', 'Evidência'], ['ata', 'Ata / lista de presença'], ['padrao', 'Padrão / procedimento'], ['relatorio', 'Relatório de indicador'], ['foto', 'Foto'], ['outro', 'Outro']]
     : FD.chave === 'swot'
     ? [['swot', 'Planilha SWOT'], ['dn_mp', 'Descrição de Negócio / Mapeamento de Processo'], ['ata', 'Ata / evidência de priorização'], ['outro', 'Outro']]
     : SIMS_DPO[FD.chave] ? [['planilha', `Planilha ${SIMS_DPO[FD.chave].planilha} (.xlsm)`], ['evidencia', 'Evidência (e-mail, ata de revisão)'], ['outro', 'Outro']]
@@ -10402,6 +10422,31 @@ const BLOCOS_ACOMP = {
 const STATUS_BLOCO_VIS = { ok: ['✅', '#16a34a', '#dcfce7'], parcial: ['🟡', '#b45309', '#fef3c7'], pendente: ['⭕', '#dc2626', '#fee2e2'], manual: ['✍️', '#475569', '#f1f5f9'] };
 let ACOMP_VOLTAR = null;
 
+// Pergunta Gestão 3.1 (5S): V.3, V.4, V.5 e V.6 saem do Gerenciador 5S do mesmo ano (V.1 e V.2 ficam na confirmação manual).
+async function acompCarregar5s() {
+  try {
+    const q = new URLSearchParams(); if (FD.companyId) q.set('company_id', FD.companyId); q.set('ano', FD.ano);
+    const g = await api('/api/dpo/ferramentas-digitais/cinco_s?' + q.toString());
+    const d = g.dados || {}, areas = d.areas || [], auds = d.auditorias || [], acoes = d.acoes || [], modelo = d.modelo || g.modelo5s, meta = Number((modelo || {}).meta) || 85;
+    const pctS = (au, s) => { let S = 0, N = 0; s.perguntas.forEach(p => { const v = c5Norm((au.resp || {})[p.id]); if (v === 'S') S++; if (v === 'N') N++; }); return S + N ? S / (S + N) : null; };
+    const pct = au => { const v = modelo.sensos.map(s => pctS(au, s)).filter(x => x !== null); const c = v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; return c !== null && !(au.origem === 'planilha' && au.notaInformada !== undefined) ? c : au.notaInformada !== undefined ? au.notaInformada / 100 : c; };
+    const hoje = new Date(), limite = FD.ano < hoje.getFullYear() ? 11 : Math.max(0, hoje.getMonth() - 1);
+    const ultimoMes = auds.length ? Math.max(...auds.map(a => a.mes)) : null;
+    const audLimite = areas.filter(a => auds.some(x => x.areaId === a.id && x.mes >= limite)).length;
+    const cruzadas = areas.filter(a => a.auditor && a.dono && a.auditor.trim().toLowerCase() !== a.dono.trim().toLowerCase()).length;
+    const notasUlt = ultimoMes === null ? [] : areas.map(a => { const au = auds.find(x => x.areaId === a.id && x.mes === ultimoMes); return au ? pct(au) : null; }).filter(x => x !== null);
+    const naMeta = notasUlt.filter(v => v * 100 >= meta).length, media = notasUlt.length ? notasUlt.reduce((a, b) => a + b, 0) / notasUlt.length : null;
+    const planos = acoes.filter(a => a.auditoriaId), def = planos.filter(a => String(a.acao || '').trim() && String(a.dono || '').trim() && a.prevista).length, concl = acoes.filter(a => a.status === 'Concluída').length;
+    const recs = (d.reconhecimentos || []).filter(r => r && r.area && r.mes);
+    const st = (ok, parcial) => ok ? 'ok' : parcial ? 'parcial' : 'pendente';
+    FD.gopResumo = { nota: `V.3, V.4, V.5 e V.6 são avaliados automaticamente pelo Gerenciador 5S de ${FD.ano}; V.1 e V.2 continuam com confirmação manual e evidência.`, linhas: [
+      { v: 'V.3', st: st(areas.length && audLimite === areas.length && cruzadas === areas.length, audLimite > 0), txt: `Auditoria cruzada mensal na ferramenta digital — ${audLimite}/${areas.length} área(s) auditadas até ${MESES_FD[limite]}; ${cruzadas}/${areas.length} com auditor diferente do dono.` },
+      { v: 'V.4', st: st(notasUlt.length && naMeta === notasUlt.length, media !== null && media * 100 >= meta), txt: `Meta ${meta}% nas áreas — ${naMeta}/${notasUlt.length} área(s) na meta${ultimoMes !== null ? ` em ${MESES_FD[ultimoMes]}` : ''}${media !== null ? ` (média ${fdPct(media, 1)})` : ''}.` },
+      { v: 'V.5', st: st(planos.length ? def === planos.length && concl > 0 : concl > 0, def > 0 || concl > 0), txt: `Planos de ação — ${def}/${planos.length} plano(s) dos itens N definidos, ${concl} ação(ões) concluída(s).` },
+      { v: 'V.6', st: st(recs.length > 0, false), txt: `Reconhecimento por área — ${recs.length} reconhecimento(s) registrado(s) no Gerenciador 5S.` }
+    ] };
+  } catch (e) { FD.gopResumo = null; }
+}
 // Pergunta Gestão 4.6 (GOPs): os itens V.1–V.4 saem do Gerenciador GOP do mesmo ano.
 async function acompCarregarGop() {
   try {
@@ -10507,7 +10552,7 @@ function acompStatusBloco(b) {
   return { st: 'manual', msg: '' };
 }
 function acompStatusItem(item) {
-  if (FD.gopResumo && FD.meta.template.especial === 'gop') { const l = FD.gopResumo.linhas.find(x => x.v === item.numero); if (l) return l.st; }
+  if (FD.gopResumo && (FD.meta.template.especial === 'gop' || FD.meta.template.especial === 'cinco_s')) { const l = FD.gopResumo.linhas.find(x => x.v === item.numero); if (l) return l.st; }
   if (!item.blocos.length) return 'manual';
   const st = item.blocos.map(b => acompStatusBloco(b).st);
   return st.every(s => s === 'ok') ? 'ok' : st.some(s => s === 'ok' || s === 'parcial') ? 'parcial' : 'pendente';
@@ -10557,8 +10602,8 @@ function acompHtmlItens() {
   const t = FD.meta.template, v = acompValidacao();
   const n = v.notaSugerida, cor = n === '3' ? '#16a34a' : n === '1' ? '#d97706' : '#dc2626';
   const cidEsp = FD.companyId || 'null';
-  const gr = t.especial === 'gop' ? FD.gopResumo : null;
-  const especial = t.especial ? `<div class="fd-caixa-pergunta" style="margin-bottom:12px;${t.especial === 'gop' ? 'border-color:#0f766e;background:linear-gradient(90deg,#f0fdfa,#fff);' : ''}"><div><strong>🧩 ${t.especial === 'gop' ? 'Esta pergunta é resolvida no Gerenciador GOP' : 'Esta pergunta também tem ferramenta digital dedicada'}</strong><div style="font-size:12px;color:#475569;">${FD_DESCRICOES[t.especial][0]}</div>${gr ? `<div style="font-size:12px;margin-top:6px;">${gr.linhas.map(l => `<div>${l.st === 'ok' ? '✅' : l.st === 'parcial' ? '🟡' : '⭕'} <strong>${l.v}</strong> ${escapeHtml(l.txt)}</div>`).join('')}<div style="color:#64748b;margin-top:4px;">Os itens V.1 a V.4 são avaliados automaticamente pelo que está no Gerenciador GOP de ${FD.ano}.</div></div>` : ''}</div><button class="btn-primario btn-sm" style="width:auto;${t.especial === 'gop' ? 'background:#0f766e;' : ''}" onclick="${t.especial === 'gop' ? `GOP_VOLTAR = () => abrirFerramentaDigitalDpo('${FD.chave}', ${cidEsp}, ${FD.ano}); ` : ''}abrirFerramentaDigitalDpo('${t.especial}', ${cidEsp}${t.especial === 'gop' ? ', ' + FD.ano : ''})">${FD_DESCRICOES[t.especial][1]}</button></div>` : '';
+  const gr = t.especial === 'gop' || t.especial === 'cinco_s' ? FD.gopResumo : null;
+  const especial = t.especial ? `<div class="fd-caixa-pergunta" style="margin-bottom:12px;${t.especial === 'gop' ? 'border-color:#0f766e;background:linear-gradient(90deg,#f0fdfa,#fff);' : ''}"><div><strong>🧩 ${t.especial === 'gop' ? 'Esta pergunta é resolvida no Gerenciador GOP' : t.especial === 'cinco_s' ? 'Esta pergunta é resolvida no Gerenciador 5S' : 'Esta pergunta também tem ferramenta digital dedicada'}</strong><div style="font-size:12px;color:#475569;">${FD_DESCRICOES[t.especial][0]}</div>${gr ? `<div style="font-size:12px;margin-top:6px;">${gr.linhas.map(l => `<div>${l.st === 'ok' ? '✅' : l.st === 'parcial' ? '🟡' : '⭕'} <strong>${l.v}</strong> ${escapeHtml(l.txt)}</div>`).join('')}<div style="color:#64748b;margin-top:4px;">${gr.nota || `Os itens V.1 a V.4 são avaliados automaticamente pelo que está no Gerenciador GOP de ${FD.ano}.`}</div></div>` : ''}</div><button class="btn-primario btn-sm" style="width:auto;${t.especial === 'gop' ? 'background:#0f766e;' : ''}" onclick="${t.especial === 'gop' ? `GOP_VOLTAR = () => abrirFerramentaDigitalDpo('${FD.chave}', ${cidEsp}, ${FD.ano}); ` : t.especial === 'cinco_s' ? `C5_VOLTAR = () => abrirFerramentaDigitalDpo('${FD.chave}', ${cidEsp}, ${FD.ano}); ` : ''}abrirFerramentaDigitalDpo('${t.especial}', ${cidEsp}${t.especial === 'gop' || t.especial === 'cinco_s' ? ', ' + FD.ano : ''})">${FD_DESCRICOES[t.especial][1]}</button></div>` : '';
   return `${especial}
     <div class="fd-validacao-topo" style="border-color:${cor};">
       <div class="fd-validacao-nota" style="background:${cor};">${n}</div>
@@ -10573,7 +10618,7 @@ function acompHtmlItens() {
         <div class="fd-valid-icone">${ok ? '✔' : '✖'}</div>
         <div style="flex:1;min-width:0;">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><strong>${i.numero}</strong>${noReq1 ? '<span class="fd-top" title="Obrigatório para a nota 1">base da nota 1</span>' : ''}
-            ${i.blocos.map(b => { const s = acompStatusBloco(b); return `<button class="acomp-bloco-chip" style="background:${STATUS_BLOCO_VIS[s.st][2]};color:${STATUS_BLOCO_VIS[s.st][1]};" onclick="fdTrocarAba('${b}')" title="${escapeHtml(s.msg)}">${BLOCOS_ACOMP[b].icone} ${BLOCOS_ACOMP[b].rotulo}</button>`; }).join('') || (FD.gopResumo && t.especial === 'gop' ? '<span style="font-size:11.5px;color:#0f766e;font-weight:700;">📋 avaliado pelo Gerenciador GOP</span>' : '<span style="font-size:11.5px;color:#64748b;">confirmação manual com evidência</span>')}</div>
+            ${i.blocos.map(b => { const s = acompStatusBloco(b); return `<button class="acomp-bloco-chip" style="background:${STATUS_BLOCO_VIS[s.st][2]};color:${STATUS_BLOCO_VIS[s.st][1]};" onclick="fdTrocarAba('${b}')" title="${escapeHtml(s.msg)}">${BLOCOS_ACOMP[b].icone} ${BLOCOS_ACOMP[b].rotulo}</button>`; }).join('') || (FD.gopResumo && t.especial === 'gop' ? '<span style="font-size:11.5px;color:#0f766e;font-weight:700;">📋 avaliado pelo Gerenciador GOP</span>' : FD.gopResumo && t.especial === 'cinco_s' && FD.gopResumo.linhas.some(l => l.v === i.numero) ? '<span style="font-size:11.5px;color:#0f766e;font-weight:700;">🧹 avaliado pelo Gerenciador 5S</span>' : '<span style="font-size:11.5px;color:#64748b;">confirmação manual com evidência</span>')}</div>
           <div class="acomp-item-texto">${escapeHtml(i.texto)}</div>
           <div class="acomp-item-conf">
             <span>Automático: ${acompChip(auto, auto === 'manual' ? 'sem bloco' : auto === 'ok' ? 'atende' : auto === 'parcial' ? 'parcial' : 'pendente')}</span>
@@ -11060,6 +11105,286 @@ async function gopImportar(input) {
   input.value = '';
 }
 function abrirGopDpo(companyId, ano) { GOP_VOLTAR = ESTADO.usuario.role === 'admin' ? renderDpoAgenda : renderDpoHome; abrirFerramentaDigitalDpo('gop', companyId || null, ano || null, 'painel'); }
+
+// ======================= GERENCIADOR 5S (Gestão 3.1 — base "5S Armazém e ADM") =======================
+const ICONES_SENSO = { selecao: '🗂️', organizacao: '📐', limpeza: '🧹', conservacao: '🛠️', autodisciplina: '🎖️' };
+let C5_VOLTAR = null;
+let C5_SEL = { areaId: null, mes: null };
+let C5_FILTRO = { area: '', senso: '', status: '', pendentes: false, mes: '' };
+function c5Eh() { return FD && FD.chave === 'cinco_s'; }
+function c5Norm(v) { const t = String(v == null ? '' : v).normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase(); return t === 'S' || t === 'SIM' ? 'S' : t === 'N' || t === 'NAO' ? 'N' : t === 'NA' || t === 'N/A' ? 'NA' : ''; }
+function c5Preparar() {
+  const d = FD.dados;
+  if (!d.modelo || !Array.isArray(d.modelo.sensos)) d.modelo = JSON.parse(JSON.stringify(FD.meta.modelo5s));
+  if (!d.modelo.meta) d.modelo.meta = 85;
+  d.areas = Array.isArray(d.areas) ? d.areas : [];
+  d.auditorias = Array.isArray(d.auditorias) ? d.auditorias : [];
+  d.acoes = Array.isArray(d.acoes) ? d.acoes : [];
+  c5GarantirPlanos();
+  if (C5_SEL.mes === null) C5_SEL.mes = FD.ano === new Date().getFullYear() ? new Date().getMonth() : 11;
+}
+function c5Senso(qid) { return FD.dados.modelo.sensos.find(s => s.perguntas.some(p => p.id === qid)); }
+function c5GarantirPlanos() {
+  const d = FD.dados, ch = a => `${a.auditoriaId}|${a.qid}`;
+  const existentes = new Set(d.acoes.filter(a => a.auditoriaId).map(ch)), nok = new Set(), novos = [];
+  const ultimo = {};
+  d.auditorias.forEach(au => { if (ultimo[au.areaId] === undefined || au.mes > ultimo[au.areaId]) ultimo[au.areaId] = au.mes; });
+  d.auditorias.forEach(au => Object.entries(au.resp || {}).forEach(([qid, v]) => {
+    if (c5Norm(v) !== 'N' || (au.origem === 'planilha' && au.mes !== ultimo[au.areaId])) return;
+    const k = `${au.id}|${qid}`; nok.add(k);
+    if (existentes.has(k)) return;
+    const area = d.areas.find(a => a.id === au.areaId), s = c5Senso(qid);
+    const a = { id: fdId(), auditoriaId: au.id, areaId: au.areaId, mes: au.mes, senso: s ? s.chave : '', qid, acao: '', dono: area ? area.dono || '' : '', prevista: '', tratativa: '', status: 'Não iniciado', auto: true };
+    d.acoes.push(a); novos.push(a); existentes.add(k);
+  }));
+  d.acoes = d.acoes.filter(a => !(a.auto && a.auditoriaId && !nok.has(ch(a)) && !String(a.acao || '').trim()));
+  return novos;
+}
+function c5PctSenso(au, s) { let S = 0, N = 0; s.perguntas.forEach(p => { const v = c5Norm((au.resp || {})[p.id]); if (v === 'S') S++; if (v === 'N') N++; }); return S + N ? S / (S + N) : null; }
+function c5PctCalc(au) { const v = FD.dados.modelo.sensos.map(s => c5PctSenso(au, s)).filter(x => x !== null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }
+function c5Pct(au) { if (!au) return null; const c = c5PctCalc(au); return c !== null && Object.keys(au.resp || {}).length && !(au.origem === 'planilha' && au.notaInformada !== undefined) ? c : (au.notaInformada !== undefined ? au.notaInformada / 100 : c); }
+function c5Aud(areaId, mes) { return FD.dados.auditorias.find(a => a.areaId === areaId && a.mes === mes); }
+function c5Revenda(mes) { const v = FD.dados.areas.map(a => c5Pct(c5Aud(a.id, mes))).filter(x => x !== null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }
+function c5Ytd(areaId) { const v = MESES_FD.map((_, m) => c5Pct(c5Aud(areaId, m))).filter(x => x !== null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }
+function c5Cor(v) { const meta = Number(FD.dados.modelo.meta) || 85; return v === null ? '' : v * 100 >= meta ? 'background:#dcfce7;color:#166534;' : v * 100 >= meta - 10 ? 'background:#fef9c3;color:#854d0e;' : 'background:#fee2e2;color:#991b1b;'; }
+function c5PlanoDefinido(a) { return !!(String(a.acao || '').trim() && String(a.dono || '').trim() && a.prevista); }
+function c5Pendentes() { return FD.dados.acoes.filter(a => a.auditoriaId && !c5PlanoDefinido(a)); }
+function c5Chip() {
+  const t = FD.dados.acoes.filter(a => a.auditoriaId).length, p = c5Pendentes().length, ok = t - p;
+  const cor = !t || ok === t ? '#16a34a' : ok / t >= 0.5 ? '#d97706' : '#dc2626';
+  return `<span class="fd-nota" style="background:${cor};" onclick="C5_FILTRO.pendentes = true; fdTrocarAba('acoes')">Planos dos itens N: ${ok}/${t} definidos</span>`;
+}
+function c5Abas() {
+  const p = c5Pendentes().length;
+  return [['painel', '📊 Resultado'], ['auditoria', '📝 Lançar auditoria'], ['areas', '👥 Donos de área'], ['acoes', `🔁 Gerenciador de ações${p ? ` <span class="gop-badge">${p}</span>` : ''}`], ['arquivos', '📎 Planilhas e fotos']];
+}
+function c5HtmlAba() {
+  const a = FD.aba;
+  if (a === 'painel') return c5HtmlPainel();
+  if (a === 'auditoria') return c5HtmlAuditoria();
+  if (a === 'areas') return c5HtmlAreas();
+  if (a === 'acoes') return c5HtmlAcoes();
+  return '';
+}
+function c5Redesenhar() {
+  fdCorpoRender();
+  const chip = document.getElementById('fd-nota'); if (chip) chip.innerHTML = c5Chip();
+  const abas = document.querySelector('.fd-abas');
+  if (abas) abas.innerHTML = c5Abas().map(([k, r]) => `<button class="fd-aba ${FD.aba === k ? 'ativa' : ''}" onclick="fdTrocarAba('${k}')">${r}</button>`).join('');
+}
+
+// ---- Resultado ----
+function c5HtmlPainel() {
+  const d = FD.dados, meta = Number(d.modelo.meta) || 85;
+  const meses = MESES_FD.map((_, m) => m).filter(m => d.auditorias.some(a => a.mes === m));
+  const ultimo = meses.length ? meses[meses.length - 1] : null;
+  const ytd = (() => { const v = meses.map(c5Revenda).filter(x => x !== null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; })();
+  const naMeta = ultimo === null ? 0 : d.areas.filter(a => { const v = c5Pct(c5Aud(a.id, ultimo)); return v !== null && v * 100 >= meta; }).length;
+  const auditadas = ultimo === null ? 0 : d.areas.filter(a => c5Aud(a.id, ultimo)).length;
+  const deptos = [...new Set(d.areas.map(a => a.depto).filter(Boolean))];
+  const ranking = d.areas.map(a => ({ a, ytd: c5Ytd(a.id) })).sort((x, y) => (y.ytd ?? -1) - (x.ytd ?? -1));
+  const porSenso = d.modelo.sensos.map(s => ({ s, v: MESES_FD.map((_, m) => { const l = d.auditorias.filter(a => a.mes === m).map(a => c5PctSenso(a, s)).filter(x => x !== null); return l.length ? l.reduce((x, y) => x + y, 0) / l.length : null; }) }));
+  return `
+    <div class="painel" style="margin-bottom:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+      <div style="font-size:12.5px;color:#475569;max-width:780px;">Auditoria cruzada mensal de 5S por área (dono × auditor). % do senso = S ÷ (S + N); 5S da área = média dos sensos; revenda = média das áreas. Meta ${meta}% (pergunta Gestão 3.1). <strong>Todo N abre na hora o plano de ação</strong> com o dono da área.</div>
+      <label class="btn-primario btn-sm" style="width:auto;cursor:pointer;margin:0;">📤 Importar planilha 5S (.xlsx / .xlsm / .xlsb)<input type="file" accept=".xlsx,.xlsm,.xlsb" style="display:none;" onchange="c5Importar(this)"></label>
+    </div>
+    <div class="kpis" style="margin-bottom:12px;">
+      <div class="kpi-card"><div class="valor" style="${c5Cor(ytd)}border-radius:8px;padding:0 6px;display:inline-block;">${ytd === null ? '—' : fdPct(ytd, 1)}</div><div class="rotulo">5S da revenda — YTD ${FD.ano}</div></div>
+      <div class="kpi-card"><div class="valor">${ultimo === null ? '—' : fdPct(c5Revenda(ultimo), 1)}</div><div class="rotulo">Revenda em ${ultimo === null ? '—' : MESES_LONGOS_FD[ultimo]}</div></div>
+      <div class="kpi-card"><div class="valor">${naMeta}/${auditadas}</div><div class="rotulo">Áreas na meta no último mês</div></div>
+      <div class="kpi-card"><div class="valor" style="color:${c5Pendentes().length ? '#dc2626' : '#16a34a'};">${c5Pendentes().length}</div><div class="rotulo">Planos de itens N pendentes</div></div>
+    </div>
+    ${!d.areas.length ? '<div class="msg-vazio">Cadastre as áreas em <strong>👥 Donos de área</strong> ou importe a planilha 5S.</div>' : `
+    <div class="painel" style="margin-bottom:12px;"><h3 style="margin-top:0;">🏆 Resultado geral por área</h3>
+    <div class="fd-tabela-wrap"><table class="fd-tabela gop-painel">
+      <thead><tr><th>#</th><th style="min-width:170px;">Área</th><th>Departamento</th><th>Dono</th><th>YTD</th>${MESES_FD.map(m => `<th>${m}</th>`).join('')}</tr></thead>
+      <tbody>${ranking.map(({ a, ytd }, i) => `<tr><td style="color:#94a3b8;">${i + 1}</td><td><strong>${escapeHtml(a.nome)}</strong></td><td>${escapeHtml(a.depto || '')}</td><td>${escapeHtml(a.dono || '')}</td><td style="text-align:center;font-weight:800;${c5Cor(ytd)}">${ytd === null ? '—' : fdPct(ytd, 1)}</td>
+        ${MESES_FD.map((_, m) => { const au = c5Aud(a.id, m), v = c5Pct(au), ant = m ? c5Pct(c5Aud(a.id, m - 1)) : null; return `<td style="text-align:center;cursor:pointer;${c5Cor(v)}" title="${au ? 'Abrir auditoria' : 'Lançar auditoria'}" onclick="C5_SEL = { areaId: '${a.id}', mes: ${m} }; fdTrocarAba('auditoria')">${v === null ? '—' : fdPct(v, 0)}${v !== null && ant !== null && Math.abs(v - ant) >= 0.005 ? `<small style="display:block;font-size:9.5px;color:${v > ant ? '#166534' : '#991b1b'};">${v > ant ? '▲' : '▼'}${fdFmt(Math.abs(v - ant) * 100, 0)}</small>` : ''}</td>`; }).join('')}</tr>`).join('')}
+        <tr style="background:#f8fafc;font-weight:800;"><td></td><td>REVENDA</td><td></td><td></td><td style="text-align:center;${c5Cor(ytd)}">${ytd === null ? '—' : fdPct(ytd, 1)}</td>${MESES_FD.map((_, m) => { const v = c5Revenda(m); return `<td style="text-align:center;${c5Cor(v)}">${v === null ? '—' : fdPct(v, 0)}</td>`; }).join('')}</tr>
+        ${deptos.map(dp => `<tr style="font-size:12px;"><td></td><td colspan="3">↳ ${escapeHtml(dp)}</td><td></td>${MESES_FD.map((_, m) => { const l = d.areas.filter(a => a.depto === dp).map(a => c5Pct(c5Aud(a.id, m))).filter(x => x !== null); const v = l.length ? l.reduce((x, y) => x + y, 0) / l.length : null; return `<td style="text-align:center;">${v === null ? '' : fdPct(v, 0)}</td>`; }).join('')}</tr>`).join('')}
+      </tbody></table></div>
+      <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Clique num mês para abrir ou lançar a auditoria da área. ▲▼ = evolução em relação ao mês anterior.</div></div>
+    <div class="painel"><h3 style="margin-top:0;">🧩 Resultado por senso (média das áreas)</h3>
+    <div class="fd-tabela-wrap"><table class="fd-tabela gop-painel">
+      <thead><tr><th>Senso</th>${MESES_FD.map(m => `<th>${m}</th>`).join('')}<th>YTD</th></tr></thead>
+      <tbody>${porSenso.map(({ s, v }) => { const l = v.filter(x => x !== null), y = l.length ? l.reduce((a, b) => a + b, 0) / l.length : null; return `<tr><td><strong>${ICONES_SENSO[s.chave] || ''} ${s.numero} - ${escapeHtml(s.titulo)}</strong></td>${v.map(x => `<td style="text-align:center;${c5Cor(x)}">${x === null ? '—' : fdPct(x, 0)}</td>`).join('')}<td style="text-align:center;font-weight:800;${c5Cor(y)}">${y === null ? '—' : fdPct(y, 0)}</td></tr>`; }).join('')}</tbody>
+    </table></div></div>
+    <div class="painel" style="margin-top:12px;"><h3 style="margin-top:0;">🏅 Reconhecimento 5S por área</h3>
+      <div style="font-size:12.5px;color:#64748b;margin:-6px 0 8px;">Registre o reconhecimento do mês (área destaque, evolução, prêmio) — evidência da verificação V.6.</div>
+      ${fdTabela('reconhecimentos', [{ campo: 'mes', rotulo: 'Mês', tipo: 'select', opcoes: MESES_LONGOS_FD, largura: 120 }, { campo: 'area', rotulo: 'Área reconhecida', tipo: 'select', opcoes: d.areas.map(a => a.nome), largura: 180 }, { campo: 'motivo', rotulo: 'Motivo / resultado ligado', largura: 320 }, { campo: 'forma', rotulo: 'Como foi reconhecida', largura: 200 }], { botao: 'Registrar reconhecimento' })}
+    </div>`}`;
+}
+
+// ---- Lançar auditoria ----
+function c5HtmlAuditoria() {
+  const d = FD.dados;
+  if (!d.areas.length) return '<div class="msg-vazio">Cadastre as áreas em <strong>👥 Donos de área</strong> primeiro (ou importe a planilha 5S).</div>';
+  if (!C5_SEL.areaId || !d.areas.some(a => a.id === C5_SEL.areaId)) C5_SEL.areaId = d.areas[0].id;
+  const area = d.areas.find(a => a.id === C5_SEL.areaId), au = c5Aud(area.id, C5_SEL.mes);
+  const planoDe = qid => au && d.acoes.find(a => a.auditoriaId === au.id && a.qid === qid);
+  const tot = au ? c5Pct(au) : null;
+  const btn = (qid, v, atual) => `<button class="c5-resp ${atual === v ? 'ativo ' + (v === 'S' ? 'sim' : v === 'N' ? 'nao' : 'na') : ''}" onclick="c5Responder('${qid}', '${v}')">${v}</button>`;
+  return `
+    <div class="painel" style="margin-bottom:12px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="min-width:220px;"><label style="margin:0;font-size:12px;">Área</label><select onchange="C5_SEL.areaId = this.value; fdCorpoRender();">${d.areas.map(a => `<option value="${a.id}" ${a.id === area.id ? 'selected' : ''}>${escapeHtml(a.nome)}${c5Aud(a.id, C5_SEL.mes) ? ' ✓' : ''}</option>`).join('')}</select></div>
+      <div><label style="margin:0;font-size:12px;">Mês</label><select onchange="C5_SEL.mes = Number(this.value); fdCorpoRender();">${MESES_LONGOS_FD.map((m, i) => `<option value="${i}" ${i === C5_SEL.mes ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+      <div style="font-size:12.5px;color:#475569;">Dono: <strong>${escapeHtml(area.dono || '—')}</strong> · Auditor: <strong>${escapeHtml((au && au.auditor) || area.auditor || '—')}</strong>${area.depto ? ` · ${escapeHtml(area.depto)}` : ''}</div>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+        <span class="fd-nota" style="background:${tot === null ? '#94a3b8' : tot * 100 >= (Number(d.modelo.meta) || 85) ? '#16a34a' : '#dc2626'};">5S da área: ${tot === null ? '—' : fdPct(tot, 1)}</span>
+        ${au ? `<button class="btn-perigo btn-sm" onclick="c5ExcluirAuditoria('${au.id}')">Excluir auditoria</button>` : ''}
+      </div>
+    </div>
+    ${au && au.notaInformada !== undefined ? `<div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#854d0e;background:#fffbeb;">Resultado informado na planilha importada: <strong>${fdFmt(au.notaInformada, 1)}%</strong>${Object.keys(au.resp || {}).length ? ' — ao alterar alguma resposta, o resultado passa a ser calculado pelas respostas.' : ' — sem respostas por pergunta.'}</div>` : ''}
+    ${d.modelo.sensos.map(s => { const v = au ? c5PctSenso(au, s) : null; return `
+      <div class="painel c5-senso" style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><h4 style="margin:0;">${ICONES_SENSO[s.chave] || ''} Senso ${s.numero} — ${escapeHtml(s.titulo)}</h4><span class="dpo-chip-nivel" style="${c5Cor(v)}">${v === null ? 'sem avaliação' : fdPct(v, 0)}</span></div>
+        ${s.perguntas.map(p => { const r = au ? c5Norm((au.resp || {})[p.id]) : '', pl = r === 'N' ? planoDe(p.id) : null; return `
+          <div class="c5-pergunta ${r === 'N' ? 'nok' : ''}">
+            <div class="c5-texto"><strong>${p.num}</strong> ${escapeHtml(p.texto)}${pl ? ` <button class="gop-plano ${c5PlanoDefinido(pl) ? 'ok' : 'pend'}" title="${c5PlanoDefinido(pl) ? 'Plano definido' : 'Plano pendente — clique para preencher'}" onclick="c5AbrirPlano('${pl.id}')">${c5PlanoDefinido(pl) ? '📝' : '⚠️'}</button>` : ''}</div>
+            <div class="c5-botoes">${btn(p.id, 'S', r)}${btn(p.id, 'N', r)}${btn(p.id, 'NA', r)}</div>
+          </div>`; }).join('')}
+      </div>`; }).join('')}
+    <div style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;">
+      <button class="btn-secundario btn-sm" onclick="c5CopiarAnterior()">⇐ Copiar respostas do mês anterior desta área</button>
+      <button class="btn-secundario btn-sm" onclick="c5ProximaArea()">Próxima área →</button>
+    </div>`;
+}
+function c5GarantirAuditoria() {
+  const d = FD.dados, area = d.areas.find(a => a.id === C5_SEL.areaId);
+  let au = c5Aud(C5_SEL.areaId, C5_SEL.mes);
+  if (!au) { au = { id: fdId(), areaId: C5_SEL.areaId, mes: C5_SEL.mes, auditor: area ? area.auditor || '' : '', resp: {}, data: new Date().toISOString().slice(0, 10) }; d.auditorias.push(au); }
+  return au;
+}
+function c5Responder(qid, v) {
+  const au = c5GarantirAuditoria();
+  au.resp = au.resp || {};
+  au.resp[qid] = au.resp[qid] === v ? '' : v;
+  if (au.origem === 'planilha') delete au.origem; // passa a valer o lançamento do sistema
+  delete au.notaInformada;
+  const novos = c5GarantirPlanos();
+  fdAgendarSalvar(); c5Redesenhar();
+  if (au.resp[qid] === 'N') { const pl = FD.dados.acoes.find(a => a.auditoriaId === au.id && a.qid === qid); if (pl && (novos.includes(pl) || !c5PlanoDefinido(pl))) c5AbrirPlano(pl.id); }
+}
+function c5CopiarAnterior() {
+  if (!C5_SEL.mes) { mostrarToast('Janeiro não tem mês anterior.', true); return; }
+  const ant = c5Aud(C5_SEL.areaId, C5_SEL.mes - 1);
+  if (!ant || !Object.keys(ant.resp || {}).length) { mostrarToast('A área não tem respostas no mês anterior.', true); return; }
+  const au = c5GarantirAuditoria(); let n = 0;
+  Object.entries(ant.resp).forEach(([q, v]) => { if (!au.resp[q] && v) { au.resp[q] = v; n++; } });
+  delete au.origem; delete au.notaInformada;
+  const novos = c5GarantirPlanos();
+  fdAgendarSalvar(); c5Redesenhar();
+  mostrarToast(`${n} resposta(s) copiada(s)${novos.length ? ` · ${novos.length} plano(s) aberto(s) para os itens N` : ''}. Revise na área antes de fechar.`);
+}
+function c5ProximaArea() { const l = FD.dados.areas, i = l.findIndex(a => a.id === C5_SEL.areaId); C5_SEL.areaId = l[(i + 1) % l.length].id; fdCorpoRender(); window.scrollTo(0, 0); }
+function c5ExcluirAuditoria(id) {
+  if (!confirm('Excluir esta auditoria e os planos automáticos ainda vazios ligados a ela?')) return;
+  FD.dados.auditorias = FD.dados.auditorias.filter(a => a.id !== id);
+  FD.dados.acoes = FD.dados.acoes.filter(a => !(a.auditoriaId === id && !String(a.acao || '').trim()));
+  fdAgendarSalvar(); c5Redesenhar();
+}
+
+// ---- Donos de área ----
+function c5HtmlAreas() {
+  FD_AO_EDITAR = null;
+  const nomes = FD.dados.areas.map(a => a.dono).concat(FD.dados.areas.map(a => a.auditor)).filter(Boolean);
+  const cont = {}; FD.dados.areas.forEach(a => { if (a.auditor) cont[a.auditor] = (cont[a.auditor] || 0) + 1; });
+  const repetidos = Object.entries(cont).filter(([, n]) => n > 1);
+  return `
+    <div class="painel" style="margin-bottom:12px;font-size:12.5px;color:#475569;">Cada área tem um <strong>dono</strong> (responsável pelo 5S e pelos planos) e um <strong>auditor</strong> de outra área (auditoria cruzada). ${repetidos.length ? `<span style="color:#b45309;">Auditores com mais de uma área: ${repetidos.map(([n, q]) => `${escapeHtml(n)} (${q})`).join(', ')}.</span>` : ''}</div>
+    ${fdTabela('areas', [
+      { campo: 'nome', rotulo: 'Área', largura: 200 },
+      { campo: 'depto', rotulo: 'Departamento', tipo: 'select', opcoes: [...new Set(['Armazém', 'Administrativo', 'Entrega', 'Frota', ...FD.dados.areas.map(a => a.depto).filter(Boolean)])], largura: 140 },
+      { campo: 'dono', rotulo: 'Dono da área', largura: 160 },
+      { campo: 'auditor', rotulo: 'Auditor', largura: 160 },
+      { campo: 'aud', rotulo: 'Cruzada?', tipo: 'calc', valor: l => l.auditor && l.dono && l.auditor.trim().toLowerCase() === l.dono.trim().toLowerCase() ? '<span style="color:#dc2626;font-weight:700;">⚠️ dono = auditor</span>' : l.auditor ? '✅' : '' }
+    ], { numerar: true, botao: 'Adicionar área' })}
+    <datalist id="c5-nomes">${[...new Set(nomes)].map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist>`;
+}
+
+// ---- Plano de ação ----
+function c5AbrirPlano(id) {
+  const d = FD.dados, a = d.acoes.find(x => x.id === id); if (!a) return;
+  const area = d.areas.find(x => x.id === a.areaId), s = d.modelo.sensos.find(x => x.chave === a.senso), p = s && a.qid ? s.perguntas.find(x => x.id === a.qid) : null;
+  const donos = [...new Set(d.areas.map(x => x.dono).concat(d.acoes.map(x => x.dono)).filter(Boolean))];
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) gopFecharPlano()">
+      <div class="modal-caixa" style="max-width:640px;">
+        <h3 style="margin-top:0;">🔁 Plano de ação 5S${a.mes !== null && a.mes !== undefined ? ` — ${MESES_LONGOS_FD[a.mes]}` : ''}</h3>
+        <div class="gop-plano-ref">${area ? `<strong>${escapeHtml(area.nome)}</strong> · dono ${escapeHtml(area.dono || '—')}` : ''}${s ? `<div>${ICONES_SENSO[s.chave] || ''} Senso ${s.numero} — ${escapeHtml(s.titulo)}</div>` : ''}${p ? `<div>Item N ${p.num}: ${escapeHtml(p.texto)}</div>` : ''}</div>
+        ${!a.auditoriaId ? `<div class="linha" style="display:flex;gap:10px;flex-wrap:wrap;"><div style="flex:1;min-width:160px;"><label>Área</label><select id="c5p-area"><option value=""></option>${d.areas.map(x => `<option value="${x.id}" ${x.id === a.areaId ? 'selected' : ''}>${escapeHtml(x.nome)}</option>`).join('')}</select></div>
+          <div style="flex:1;min-width:160px;"><label>Senso</label><select id="c5p-senso"><option value=""></option>${d.modelo.sensos.map(x => `<option value="${x.chave}" ${x.chave === a.senso ? 'selected' : ''}>${x.numero} - ${escapeHtml(x.titulo)}</option>`).join('')}</select></div></div>` : ''}
+        <label>Ação *</label><textarea id="c5p-acao" rows="2" placeholder="O que será feito para o item voltar a S">${escapeHtml(a.acao || '')}</textarea>
+        <div class="linha" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <div style="flex:2;min-width:180px;"><label>Dono *</label><input id="c5p-dono" list="c5p-donos" value="${escapeHtml(a.dono || '')}"><datalist id="c5p-donos">${donos.map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist></div>
+          <div style="flex:1;min-width:140px;"><label>Prazo *</label><input id="c5p-prev" type="date" value="${escapeHtml(a.prevista || '')}"></div>
+          <div style="flex:1;min-width:150px;"><label>Status</label><select id="c5p-status">${STATUS_ACAO_GOP.map(x => `<option ${x === (a.status || 'Não iniciado') ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
+        </div>
+        <label>Tratativa (o que foi feito / validação da área)</label><textarea id="c5p-trat" rows="2">${escapeHtml(a.tratativa || '')}</textarea>
+        <div class="acoes-form" style="justify-content:space-between;margin-top:12px;">
+          <div>${a.auditoriaId ? '' : `<button class="btn-perigo btn-sm" onclick="c5ExcluirAcao('${a.id}')">Excluir</button>`}</div>
+          <div style="display:flex;gap:8px;"><button class="btn-secundario" onclick="gopFecharPlano()">Fechar</button><button class="btn-primario" style="width:auto;" onclick="c5SalvarPlano('${a.id}')">💾 Salvar plano</button></div>
+        </div>
+      </div>
+    </div>`;
+  setTimeout(() => { const el = document.getElementById('c5p-acao'); if (el) el.focus(); }, 50);
+}
+function c5SalvarPlano(id) {
+  const a = FD.dados.acoes.find(x => x.id === id); if (!a) return;
+  const v = i => (document.getElementById(i) || {}).value;
+  Object.assign(a, { acao: (v('c5p-acao') || '').trim(), dono: (v('c5p-dono') || '').trim(), prevista: v('c5p-prev') || '', status: v('c5p-status'), tratativa: (v('c5p-trat') || '').trim() });
+  if (!a.auditoriaId) { if (v('c5p-area') !== undefined) a.areaId = v('c5p-area') || null; if (v('c5p-senso') !== undefined) a.senso = v('c5p-senso') || ''; }
+  gopFecharPlano(); fdAgendarSalvar(); c5Redesenhar();
+  mostrarToast(c5PlanoDefinido(a) ? 'Plano salvo.' : 'Salvo — para contar como definido, preencha ação, dono e prazo.', !c5PlanoDefinido(a));
+}
+function c5NovaAcao() { const a = { id: fdId(), auditoriaId: null, areaId: C5_FILTRO.area || null, mes: new Date().getMonth(), senso: C5_FILTRO.senso || '', qid: null, acao: '', dono: '', prevista: '', tratativa: '', status: 'Não iniciado' }; FD.dados.acoes.push(a); c5AbrirPlano(a.id); }
+function c5ExcluirAcao(id) { if (!confirm('Excluir esta ação?')) return; FD.dados.acoes = FD.dados.acoes.filter(a => a.id !== id); gopFecharPlano(); fdAgendarSalvar(); c5Redesenhar(); }
+
+// ---- Gerenciador de ações ----
+function c5HtmlAcoes() {
+  const d = FD.dados, F = C5_FILTRO;
+  let l = d.acoes.filter(a => (!F.area || a.areaId === F.area) && (!F.senso || a.senso === F.senso) && (F.mes === '' || String(a.mes) === String(F.mes)) && (!F.status || gopStatusAcao(a) === F.status) && (!F.pendentes || (a.auditoriaId && !c5PlanoDefinido(a))));
+  l = l.slice().sort((x, y) => (y.mes ?? -1) - (x.mes ?? -1));
+  const cont = s => d.acoes.filter(a => gopStatusAcao(a) === s).length;
+  return `
+    <div class="kpis" style="margin-bottom:10px;">${STATUS_ACAO_GOP.map(s => `<div class="kpi-card" style="cursor:pointer;" onclick="C5_FILTRO.status = C5_FILTRO.status === '${s}' ? '' : '${s}'; fdCorpoRender();"><div class="valor" style="color:${COR_STATUS_GOP[s]};">${cont(s)}</div><div class="rotulo">${s}</div></div>`).join('')}</div>
+    <div class="painel" style="margin-bottom:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div><label style="margin:0;font-size:12px;">Área</label><select onchange="C5_FILTRO.area = this.value; fdCorpoRender();"><option value="">Todas</option>${d.areas.map(a => `<option value="${a.id}" ${F.area === a.id ? 'selected' : ''}>${escapeHtml(a.nome)}</option>`).join('')}</select></div>
+      <div><label style="margin:0;font-size:12px;">Senso</label><select onchange="C5_FILTRO.senso = this.value; fdCorpoRender();"><option value="">Todos</option>${d.modelo.sensos.map(s => `<option value="${s.chave}" ${F.senso === s.chave ? 'selected' : ''}>${s.numero} - ${escapeHtml(s.titulo)}</option>`).join('')}</select></div>
+      <div><label style="margin:0;font-size:12px;">Mês</label><select onchange="C5_FILTRO.mes = this.value; fdCorpoRender();"><option value="">Todos</option>${MESES_LONGOS_FD.map((m, i) => `<option value="${i}" ${String(F.mes) === String(i) ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin:0 0 6px;"><input type="checkbox" style="width:auto;" ${F.pendentes ? 'checked' : ''} onchange="C5_FILTRO.pendentes = this.checked; fdCorpoRender();"> Só planos pendentes</label>
+      <button class="btn-secundario btn-sm" style="margin-left:auto;" onclick="c5NovaAcao()">+ Nova ação</button>
+    </div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela gop-acoes">
+      <thead><tr><th>Mês</th><th>Área</th><th>Senso</th><th style="min-width:220px;">Item N</th><th style="min-width:200px;">Ação</th><th>Dono</th><th>Prazo</th><th style="min-width:160px;">Tratativa</th><th>Status</th></tr></thead>
+      <tbody>${l.map(a => {
+        const ar = d.areas.find(x => x.id === a.areaId), s = d.modelo.sensos.find(x => x.chave === a.senso), p = s && a.qid ? s.perguntas.find(x => x.id === a.qid) : null, st = gopStatusAcao(a), def = c5PlanoDefinido(a);
+        return `<tr class="${a.auditoriaId && !def ? 'gop-pendente' : ''}" style="cursor:pointer;" onclick="c5AbrirPlano('${a.id}')">
+          <td>${a.mes === null || a.mes === undefined ? '—' : MESES_FD[a.mes]}</td><td>${escapeHtml(ar ? ar.nome : '—')}</td><td>${s ? `${ICONES_SENSO[s.chave] || ''} ${escapeHtml(s.titulo)}` : '—'}</td>
+          <td style="font-size:12px;">${p ? `${p.num} ${escapeHtml(p.texto)}` : '<span style="color:#94a3b8;">Ação geral</span>'}</td>
+          <td style="font-size:12px;">${a.acao ? escapeHtml(a.acao) : '<strong style="color:#dc2626;">⚠️ Definir ação</strong>'}</td>
+          <td>${escapeHtml(a.dono || '—')}</td><td>${a.prevista ? new Date(a.prevista + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+          <td style="font-size:12px;">${escapeHtml(a.tratativa || '')}</td>
+          <td><span class="dpo-chip-nivel" style="background:${COR_STATUS_GOP[st]};color:#fff;">${st}</span></td></tr>`;
+      }).join('') || '<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:14px;">Nenhuma ação com esses filtros.</td></tr>'}</tbody>
+    </table></div>`;
+}
+
+async function c5Importar(input) {
+  const arq = input.files && input.files[0]; if (!arq) return;
+  if (!confirm(`Importar "${arq.name}" para ${FD.ano}? Áreas e donos são atualizados, as auditorias da aba Base e o Resultado Geral entram por área e mês, e as ações do Gerenciador de Ações são adicionadas.`)) { input.value = ''; return; }
+  try {
+    if (FD_TIMER) await fdSalvar();
+    const fd = new FormData(); fd.append('file', arq);
+    const up = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd });
+    const u = await up.json(); if (!up.ok) throw new Error(u.error || 'Falha no envio.');
+    const r = await api('/api/dpo/cinco-s/importar', { method: 'POST', body: JSON.stringify({ url: u.url, originalName: u.originalName, ano: FD.ano, company_id: FD.companyId || undefined }) });
+    mostrarToast(r.message + (r.avisos && r.avisos.length ? ' ' + r.avisos.join(' ') : ''));
+    abrirFerramentaDigitalDpo('cinco_s', FD.companyId, FD.ano, 'painel');
+  } catch (e) { mostrarToast(e.message, true); }
+  input.value = '';
+}
 
 function classificarAbaVaga(v) {
   if (v.deleted_at) return 'excluidas';
