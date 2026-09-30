@@ -7263,9 +7263,10 @@ async function abrirVisualizacaoCicloDpo(ciclo, somenteLeitura, pilarKeyInicial)
   let niveis = { pilares: {} };
   try { niveis = await api('/api/dpo/niveis' + (ESTADO.usuario.role === 'admin' && ciclo.company_id ? '?company_id=' + ciclo.company_id : '')); } catch (e) { /* sem notas */ }
   let acomps = [];
-  try { acomps = (await api('/api/dpo/acompanhamentos' + (ESTADO.usuario.role === 'admin' && ciclo.company_id ? '?company_id=' + ciclo.company_id : ''))).map(a => a.questionKey); } catch (e) { acomps = []; }
+  let acompsLista = [];
+  try { acompsLista = await api('/api/dpo/acompanhamentos' + (ESTADO.usuario.role === 'admin' && ciclo.company_id ? '?company_id=' + ciclo.company_id : '')); acomps = acompsLista.map(a => a.questionKey); } catch (e) { acomps = []; }
   MATERIAL_DPO_ABERTAS.clear();
-  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key), aba: null, pastas, niveis, acomps };
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key), aba: null, pastas, niveis, acomps, acompsLista };
   renderCicloDpoAtual();
 }
 
@@ -7279,7 +7280,8 @@ function renderCicloDpoAtual() {
   const validos = pilar.grupos.flatMap(g => g.perguntas).filter(p => p.score !== null && p.score !== undefined);
   const mediaScore = validos.length ? (validos.reduce((s, p) => s + p.score, 0) / validos.length).toFixed(1) : null;
   const pastas = ESTADO_DPO_VIEW.pastas || { checklist: true, batepapo: false, material: false, ferramentas: false };
-  const abasLiberadas = Object.keys(ABAS_PILAR_DPO).filter(a => pastas[a]);
+  const temAcompPilar = (ESTADO_DPO_VIEW.acomps || []).some(k => k.startsWith(pilar.key + ':'));
+  const abasLiberadas = Object.keys(ABAS_PILAR_DPO).filter(a => pastas[a] || (a === 'ferramentas' && temAcompPilar));
   if (!abasLiberadas.includes(ESTADO_DPO_VIEW.aba)) ESTADO_DPO_VIEW.aba = abasLiberadas[0] || null;
   const aba = ESTADO_DPO_VIEW.aba;
   cont.innerHTML = `
@@ -7535,8 +7537,8 @@ function renderPerguntaDpo(p, somenteLeitura) {
         ${FD_PERGUNTAS[p.questionKey] ? `
         <div class="fd-caixa-pergunta">
           <div><strong>🧩 Ferramenta digital Impulsionar desta pergunta</strong>
-            <div style="font-size:12px;color:#475569;">${FD_PERGUNTAS[p.questionKey] === 'swot' ? 'Análise SWOT digital por área (Armazém, Distribuição, Frota, Gente): fatores, matriz, cruzamentos, objetivos e planos — com validação dos itens V.1 a V.3.' : 'Simulador de Dimensionamento em pastas por ano: Armazém, Entrega e Puxada (orçamento calculado × realizado), RACI, KPIs e PDCA — com validação dos itens V.1 a V.5.'}</div></div>
-          <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirFerramentaDigitalDpo('${FD_PERGUNTAS[p.questionKey]}', ${ESTADO.usuario.role === 'admin' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo ? ESTADO_DPO_VIEW.ciclo.company_id : 'null'})">${FD_PERGUNTAS[p.questionKey] === 'swot' ? '🧭 Abrir Análise SWOT' : '📐 Abrir Simulador de Dimensionamento'}</button>
+            <div style="font-size:12px;color:#475569;">${FD_DESCRICOES[FD_PERGUNTAS[p.questionKey]][0]}</div></div>
+          <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirFerramentaDigitalDpo('${FD_PERGUNTAS[p.questionKey]}', ${ESTADO.usuario.role === 'admin' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo ? ESTADO_DPO_VIEW.ciclo.company_id : 'null'})">${FD_DESCRICOES[FD_PERGUNTAS[p.questionKey]][1]}</button>
         </div>` : ''}
         <div style="font-size:12.5px;background:#f8fafc;border:1px solid var(--cinza-200);border-radius:8px;padding:8px 10px;">
           <strong>Nota na última autoavaliação${nv ? ' (' + escapeHtml(nv.referenciaLabel) + ')' : ''}:</strong> <span style="color:${cor};font-weight:800;">${textoNota}</span>${explicacaoNota ? ' — ' + escapeHtml(explicacaoNota) : ''}
@@ -7609,7 +7611,7 @@ async function recarregarCicloDpoAtual() {
   const pilarAtivo = ESTADO_DPO_VIEW.pilarAtivo;
   const somenteLeitura = ESTADO_DPO_VIEW.somenteLeitura;
   const ciclo = await api('/api/dpo/cycles/' + cicloId);
-  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo, aba: ESTADO_DPO_VIEW.aba, pastas: ESTADO_DPO_VIEW.pastas, niveis: ESTADO_DPO_VIEW.niveis, acomps: ESTADO_DPO_VIEW.acomps };
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo, aba: ESTADO_DPO_VIEW.aba, pastas: ESTADO_DPO_VIEW.pastas, niveis: ESTADO_DPO_VIEW.niveis, acomps: ESTADO_DPO_VIEW.acomps, acompsLista: ESTADO_DPO_VIEW.acompsLista };
   renderCicloDpoAtual();
 }
 
@@ -8874,7 +8876,8 @@ async function carregarFerramentasDpo() {
   const area = document.getElementById('dpo-ferramentas-area');
   if (!area) return;
   try {
-    CACHE_FERRAMENTAS_DPO = await api('/api/dpo/ferramentas/' + pilarAtualDpo().key);
+    const pastaLiberada = ESTADO.usuario.role === 'admin' || (ESTADO_DPO_VIEW.pastas || {}).ferramentas;
+    CACHE_FERRAMENTAS_DPO = pastaLiberada ? await api('/api/dpo/ferramentas/' + pilarAtualDpo().key).catch(() => []) : [];
     desenharFerramentasDpo();
   } catch (e) { area.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
@@ -8905,13 +8908,22 @@ function desenharFerramentasDpo() {
         `<button class="btn-sm ${FILTRO_FERRAMENTAS_DPO.tipo === k ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="FILTRO_FERRAMENTAS_DPO.tipo='${k}'; desenharFerramentasDpo();">${v.icone} ${v.rotulo}</button>`).join('')}
       <input placeholder="🔎 Buscar ferramenta..." value="${escapeHtml(FILTRO_FERRAMENTAS_DPO.busca)}" style="width:220px;margin:0 0 0 auto;" oninput="FILTRO_FERRAMENTAS_DPO.busca=this.value; clearTimeout(window.__tFerr); window.__tFerr=setTimeout(()=>{ desenharFerramentasDpo(); const el=document.querySelector('#dpo-ferramentas-area input'); if(el){el.focus(); el.setSelectionRange(el.value.length, el.value.length);} }, 250);">
     </div>
-    ${Object.entries(FD_PERGUNTAS).filter(([k]) => k.startsWith(pilarAtualDpo().key + ':')).map(([k, chave]) => `
+    ${(() => {
+      const cid = ehMaster && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo ? ESTADO_DPO_VIEW.ciclo.company_id : 'null';
+      const l = ((ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.acompsLista) || []).filter(a => a.pilar === pilarAtualDpo().key);
+      if (!l.length) return '';
+      return `<div class="painel" style="margin-bottom:14px;border-left:4px solid #dc4c4c;">
+        <h3 style="margin:0 0 4px;">🚀 Acompanhamentos Impulsionar liberados</h3>
+        <div style="font-size:12.5px;color:#64748b;margin-bottom:10px;">Liberados pela Impulsionar para ${escapeHtml(pilarAtualDpo().label)}. Preencha os blocos de cada pergunta e acompanhe a nota sugerida.</div>
+        <div class="acomp-grade">${l.map(a => acompCartao(a, `ACOMP_VOLTAR = renderCicloDpoAtual; abrirFerramentaDigitalDpo('acomp:${a.questionKey}', ${cid})`)).join('')}</div></div>`;
+    })()}
+    ${Object.entries(FD_PERGUNTAS).filter(([k, chave]) => k.startsWith(pilarAtualDpo().key + ':') && (chave !== 'gop' || ehMaster || (ESTADO_DPO_VIEW.acomps || []).includes(k) || (ESTADO_DPO_VIEW.pastas || {}).gop !== false)).map(([k, chave]) => `
       <div class="fd-caixa-pergunta" style="margin-bottom:14px;">
         <div><strong>🧩 Ferramenta digital · pergunta ${escapeHtml(k.split(':')[1])}</strong>
-          <div style="font-size:12px;color:#475569;">${chave === 'swot' ? 'Análise SWOT digital por área para preencher e validar a pergunta 1.3.' : 'Simulador de Dimensionamento (pastas Armazém, Entrega e Puxada por ano) para preencher, subir as planilhas e validar a pergunta 1.1.'}</div></div>
+          <div style="font-size:12px;color:#475569;">${FD_DESCRICOES[chave][0]}</div></div>
         <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirFerramentaDigitalDpo('${chave}', ${ehMaster && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo ? ESTADO_DPO_VIEW.ciclo.company_id : 'null'})">Abrir</button>
       </div>`).join('')}
-    ${!CACHE_FERRAMENTAS_DPO.length ? `<div class="msg-vazio">${ehMaster ? 'Nenhuma ferramenta publicada neste pilar ainda. Clique em <strong>+ Nova ferramenta</strong>.' : 'A Impulsionar ainda não publicou ferramentas para este pilar.'}</div>`
+    ${!CACHE_FERRAMENTAS_DPO.length ? (!ehMaster && !(ESTADO_DPO_VIEW.pastas || {}).ferramentas ? '' : `<div class="msg-vazio">${ehMaster ? 'Nenhuma ferramenta publicada neste pilar ainda. Clique em <strong>+ Nova ferramenta</strong>.' : 'A Impulsionar ainda não publicou ferramentas para este pilar.'}</div>`)
       : !lista.length ? '<div class="msg-vazio">Nenhuma ferramenta neste filtro.</div>'
       : grupos.map(g => `
         <div class="dpo-grupo">
@@ -9041,7 +9053,12 @@ async function excluirFerramentaDpo(id) {
 // ======================================================================
 let FD = null; // pasta aberta: { chave, ano, companyId, dados, validacao, arquivos, aba, meta }
 let DIM = null; // visão das pastas do Simulador de Dimensionamento num ano
-const FD_PERGUNTAS = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento' };
+const FD_PERGUNTAS = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop' };
+const FD_DESCRICOES = {
+  swot: ['Análise SWOT digital por área (Armazém, Distribuição, Frota, Gente): fatores, matriz, cruzamentos, objetivos e planos — com validação dos itens V.1 a V.3.', '🧭 Abrir Análise SWOT'],
+  dimensionamento: ['Simulador de Dimensionamento em pastas por ano: Armazém, Entrega e Puxada (orçamento calculado × realizado), RACI, KPIs e PDCA — com validação dos itens V.1 a V.5.', '📐 Abrir Simulador de Dimensionamento'],
+  gop: ['Gerenciador GOP: Inventário, Obsolescence, TQI Armazém, Rating, TQI Distribuição e OTIF — SIM/NÃO por mês, plano de ação obrigatório em todo mês NOK e importação da planilha Gerenciador GOP.', '📋 Abrir Gerenciador GOP']
+};
 
 function fdNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? null : Number(v); }
 function fdFmt(v, dec) { return v === null || v === undefined || !isFinite(v) ? '—' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 }); }
@@ -9069,6 +9086,7 @@ async function abrirFerramentaDigitalDpo(chave, companyId, ano, aba) {
     const d = await api('/api/dpo/ferramentas-digitais/' + chave + '?' + q.toString());
     FD = { chave, ano: d.ano, companyId: companyId || null, dados: d.dados || {}, validacao: d.validacao, arquivos: d.arquivos || [], aba: aba || (String(chave).startsWith('acomp:') ? 'itens' : chave === 'gop' ? 'painel' : 'inicio'), meta: d, salvoEm: d.updated_at, autor: d.autorNome };
     if (chave === 'swot') swotPrepararDados();
+    if (acompEh() && d.template && d.template.especial === 'gop') await acompCarregarGop();
     if (acompEh()) { acompPrepararDados(); acompAtualizarResumo(); }
     if (chave === 'gop') gopPreparar();
     fdDesenhar();
@@ -9110,7 +9128,7 @@ function fdChipNota(val, onclick) {
 
 function fdVoltar() {
   if (FD_TIMER) fdSalvar();
-  if (gopEh()) { FD = null; const f = GOP_VOLTAR || renderDpoHome; GOP_VOLTAR = null; f(); return; }
+  if (gopEh()) { FD = null; const f = GOP_VOLTAR; GOP_VOLTAR = null; if (f) { f(); return; } if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) renderCicloDpoAtual(); else renderDpoHome(); return; }
   if (acompEh()) { FD = null; if (ACOMP_VOLTAR) { const f = ACOMP_VOLTAR; ACOMP_VOLTAR = null; f(); return; } if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) renderCicloDpoAtual(); else renderDpoHome(); return; }
   if (FD && FD.chave !== 'swot') { const c = FD.companyId; FD = null; abrirDimensionamentoDpo(c, DIM ? DIM.ano : null); return; }
   FD = null;
@@ -10384,6 +10402,29 @@ const BLOCOS_ACOMP = {
 const STATUS_BLOCO_VIS = { ok: ['✅', '#16a34a', '#dcfce7'], parcial: ['🟡', '#b45309', '#fef3c7'], pendente: ['⭕', '#dc2626', '#fee2e2'], manual: ['✍️', '#475569', '#f1f5f9'] };
 let ACOMP_VOLTAR = null;
 
+// Pergunta Gestão 4.6 (GOPs): os itens V.1–V.4 saem do Gerenciador GOP do mesmo ano.
+async function acompCarregarGop() {
+  try {
+    const q = new URLSearchParams(); if (FD.companyId) q.set('company_id', FD.companyId); q.set('ano', FD.ano);
+    const g = await api('/api/dpo/ferramentas-digitais/gop?' + q.toString());
+    const d = g.dados || {}, gops = Object.values(d.gops || {}), acoes = d.acoes || [];
+    const hoje = new Date(), limite = FD.ano < hoje.getFullYear() ? 11 : Math.max(0, hoje.getMonth() - 1);
+    const ultimo = gp => { for (let m = 11; m >= 0; m--) if (gopPct(gp, m) !== null) return m; return null; };
+    const atual = gops.filter(gp => { const u = ultimo(gp); return u !== null && u >= limite; }).length;
+    const nok = acoes.filter(a => { const gp = (d.gops || {})[a.gop]; return a.itemId && gp && gopNorm(((gp.resp || {})[a.itemId] || [])[a.mes]) === 'NÃO'; });
+    const nokOk = nok.filter(gopPlanoDefinido).length;
+    const respondeu = gops.some(gp => ultimo(gp) !== null);
+    const concl = acoes.filter(a => a.status === 'Concluída').length;
+    const melhorou = gops.filter(gp => { const ms = MESES_FD.map((_, m) => gopPct(gp, m)).filter(v => v !== null); return ms.length > 1 && ms[ms.length - 1] > ms[0]; }).length;
+    const st = (ok, parcial) => ok ? 'ok' : parcial ? 'parcial' : 'pendente';
+    FD.gopResumo = { linhas: [
+      { v: 'V.1', st: st(acoes.some(gopPlanoDefinido), acoes.length > 0), txt: `GOPs usadas para resolver desvios — ${acoes.filter(gopPlanoDefinido).length} plano(s) definido(s).` },
+      { v: 'V.2', st: st(gops.length && atual === gops.length, atual > 0), txt: `Atualização mensal — ${atual}/${gops.length} GOP(s) avaliadas até ${MESES_FD[limite]}/${FD.ano}.` },
+      { v: 'V.3', st: st(respondeu && nokOk === nok.length, nokOk > 0), txt: `Ações para todas as respostas NÃO — ${nokOk}/${nok.length} mês(es) NOK com plano definido.` },
+      { v: 'V.4', st: st(concl > 0 && melhorou > 0, concl > 0 || melhorou > 0), txt: `Conexão ações × evolução — ${concl} ação(ões) concluída(s), ${melhorou} GOP(s) com % melhor que no início do ano.` }
+    ] };
+  } catch (e) { FD.gopResumo = null; }
+}
 function acompEh() { return FD && String(FD.chave).startsWith('acomp:'); }
 function acompDiasDesde(data) { if (!data) return null; const d = new Date(data + 'T00:00:00'); return isNaN(d) ? null : Math.floor((Date.now() - d) / 864e5); }
 function acompHoje() { return new Date().toISOString().slice(0, 10); }
@@ -10466,6 +10507,7 @@ function acompStatusBloco(b) {
   return { st: 'manual', msg: '' };
 }
 function acompStatusItem(item) {
+  if (FD.gopResumo && FD.meta.template.especial === 'gop') { const l = FD.gopResumo.linhas.find(x => x.v === item.numero); if (l) return l.st; }
   if (!item.blocos.length) return 'manual';
   const st = item.blocos.map(b => acompStatusBloco(b).st);
   return st.every(s => s === 'ok') ? 'ok' : st.some(s => s === 'ok' || s === 'parcial') ? 'parcial' : 'pendente';
@@ -10514,7 +10556,9 @@ function acompRecarregar() { acompAtualizarResumo(); fdCorpoRender(); }
 function acompHtmlItens() {
   const t = FD.meta.template, v = acompValidacao();
   const n = v.notaSugerida, cor = n === '3' ? '#16a34a' : n === '1' ? '#d97706' : '#dc2626';
-  const especial = t.especial ? `<div class="fd-caixa-pergunta" style="margin-bottom:12px;"><div><strong>🧩 Esta pergunta também tem ferramenta digital dedicada</strong><div style="font-size:12px;color:#475569;">${t.especial === 'swot' ? 'Análise SWOT digital por área.' : 'Simulador de Dimensionamento (Armazém, Entrega, Puxada e Orçamento).'}</div></div><button class="btn-primario btn-sm" style="width:auto;" onclick="abrirFerramentaDigitalDpo('${t.especial}', ${FD.companyId || 'null'})">Abrir</button></div>` : '';
+  const cidEsp = FD.companyId || 'null';
+  const gr = t.especial === 'gop' ? FD.gopResumo : null;
+  const especial = t.especial ? `<div class="fd-caixa-pergunta" style="margin-bottom:12px;${t.especial === 'gop' ? 'border-color:#0f766e;background:linear-gradient(90deg,#f0fdfa,#fff);' : ''}"><div><strong>🧩 ${t.especial === 'gop' ? 'Esta pergunta é resolvida no Gerenciador GOP' : 'Esta pergunta também tem ferramenta digital dedicada'}</strong><div style="font-size:12px;color:#475569;">${FD_DESCRICOES[t.especial][0]}</div>${gr ? `<div style="font-size:12px;margin-top:6px;">${gr.linhas.map(l => `<div>${l.st === 'ok' ? '✅' : l.st === 'parcial' ? '🟡' : '⭕'} <strong>${l.v}</strong> ${escapeHtml(l.txt)}</div>`).join('')}<div style="color:#64748b;margin-top:4px;">Os itens V.1 a V.4 são avaliados automaticamente pelo que está no Gerenciador GOP de ${FD.ano}.</div></div>` : ''}</div><button class="btn-primario btn-sm" style="width:auto;${t.especial === 'gop' ? 'background:#0f766e;' : ''}" onclick="${t.especial === 'gop' ? `GOP_VOLTAR = () => abrirFerramentaDigitalDpo('${FD.chave}', ${cidEsp}, ${FD.ano}); ` : ''}abrirFerramentaDigitalDpo('${t.especial}', ${cidEsp}${t.especial === 'gop' ? ', ' + FD.ano : ''})">${FD_DESCRICOES[t.especial][1]}</button></div>` : '';
   return `${especial}
     <div class="fd-validacao-topo" style="border-color:${cor};">
       <div class="fd-validacao-nota" style="background:${cor};">${n}</div>
@@ -10529,7 +10573,7 @@ function acompHtmlItens() {
         <div class="fd-valid-icone">${ok ? '✔' : '✖'}</div>
         <div style="flex:1;min-width:0;">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><strong>${i.numero}</strong>${noReq1 ? '<span class="fd-top" title="Obrigatório para a nota 1">base da nota 1</span>' : ''}
-            ${i.blocos.map(b => { const s = acompStatusBloco(b); return `<button class="acomp-bloco-chip" style="background:${STATUS_BLOCO_VIS[s.st][2]};color:${STATUS_BLOCO_VIS[s.st][1]};" onclick="fdTrocarAba('${b}')" title="${escapeHtml(s.msg)}">${BLOCOS_ACOMP[b].icone} ${BLOCOS_ACOMP[b].rotulo}</button>`; }).join('') || '<span style="font-size:11.5px;color:#64748b;">confirmação manual com evidência</span>'}</div>
+            ${i.blocos.map(b => { const s = acompStatusBloco(b); return `<button class="acomp-bloco-chip" style="background:${STATUS_BLOCO_VIS[s.st][2]};color:${STATUS_BLOCO_VIS[s.st][1]};" onclick="fdTrocarAba('${b}')" title="${escapeHtml(s.msg)}">${BLOCOS_ACOMP[b].icone} ${BLOCOS_ACOMP[b].rotulo}</button>`; }).join('') || (FD.gopResumo && t.especial === 'gop' ? '<span style="font-size:11.5px;color:#0f766e;font-weight:700;">📋 avaliado pelo Gerenciador GOP</span>' : '<span style="font-size:11.5px;color:#64748b;">confirmação manual com evidência</span>')}</div>
           <div class="acomp-item-texto">${escapeHtml(i.texto)}</div>
           <div class="acomp-item-conf">
             <span>Automático: ${acompChip(auto, auto === 'manual' ? 'sem bloco' : auto === 'ok' ? 'atende' : auto === 'parcial' ? 'parcial' : 'pendente')}</span>

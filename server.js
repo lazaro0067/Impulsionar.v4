@@ -8209,7 +8209,7 @@ async function resolverFerramentaDigitalDpo(req, res, chave, companyIdInformado)
         const companyId = req.user.role === 'client_admin' ? req.user.companyId : companyIdInformado;
         if (!companyId) { res.status(400).json({ error: 'Informe a empresa (company_id).' }); return null; }
         if (req.user.role === 'client_admin' && !(await pilaresAtivosDaEmpresa(companyId)).length) { res.status(403).json({ error: 'Sua empresa ainda não tem o DPO contratado.' }); return null; }
-        if (!(await empresaTemPastaDpo(req, res, companyId, 'gop'))) return null;
+        if (req.user.role === 'client_admin' && !(await acompLiberadoDpo(companyId, 'gestao:4.6')) && !(await empresaTemPastaDpo(req, res, companyId, 'gop'))) return null;
         return { titulo: 'Gerenciador GOP — Revendas', pilarLabel: 'GOP', pergunta: '', perguntaTexto: '', companyId, modeloGop: GOP_MODELO_DPO };
     }
     const f = FERRAMENTAS_DIGITAIS_DPO[chave];
@@ -8667,7 +8667,7 @@ const BLOCOS_ACOMP_DPO = {
     inspecoes: /inspe[çc]|auditoria|checklist|check-list|ronda|gemba|blitz|observa[çc][ãa]o comportamental|sinaliza[çc]/i
 };
 const ORDEM_BLOCOS_ACOMP_DPO = Object.keys(BLOCOS_ACOMP_DPO);
-const ACOMP_ESPECIAIS_DPO = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento' };
+const ACOMP_ESPECIAIS_DPO = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop' };
 const KPIS_CONHECIDOS_DPO = ['TML', 'TMA', 'NPS', 'eNPS', 'OTIF', 'LTI', 'MDI', 'MTI', 'SIF', 'TRI', 'TRIFR', 'PNP', 'FNP', 'VMI', 'EFC', 'OEE', 'DPMO', 'IRL', 'GPS'];
 
 function sugestoesAcompDpo(texto) {
