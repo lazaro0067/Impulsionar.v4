@@ -393,6 +393,16 @@
   .dpo-subaba { background: none; border: none; border-bottom: 3px solid transparent; margin-bottom: -2px; padding: 9px 14px; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer; }
   .dpo-subaba.ativa { color: #dc4c4c; border-bottom-color: #dc4c4c; }
   .dpo-batepapo-resposta { margin-top: 6px; font-size: 13px; color: #334155; white-space: pre-wrap; background: #f8fafc; border-left: 3px solid #dc4c4c; padding: 6px 10px; border-radius: 0 6px 6px 0; }
+  .dpo-progresso { height: 10px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+  .dpo-progresso > div { height: 100%; background: #16a34a; border-radius: 999px; transition: width .3s; }
+  .dpo-material-item { background: #fff; border: 1px solid var(--cinza-200); border-left: 4px solid #dc2626; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+  .dpo-material-status { width: auto; margin: 0; padding: 4px 8px; font-size: 12px; font-weight: 700; border: 1.5px solid; border-radius: 999px; }
+  .dpo-tag { font-size: 11px; font-weight: 700; background: #fef2f2; color: #b91c1c; border-radius: 999px; padding: 2px 9px; }
+  .dpo-material-lista { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .dpo-material-evidencia { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; background: #f8fafc; border: 1px solid var(--cinza-200); border-radius: 8px; padding: 6px 10px; font-size: 12.5px; }
+  .dpo-material-evidencia a { color: #2563eb; word-break: break-all; }
+  #dpo-material-area .btn-primario, #dpo-batepapo-area .btn-primario, .modal-caixa .ck-dpo-pergunta .btn-primario { width: auto; }
+  .dpo-material-obs { margin: 10px 0 0 !important; font-size: 12.5px; }
   .dpo-score-badge { font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
 </style>
 </head>
@@ -6318,6 +6328,22 @@ async function renderDpoAgenda() {
       </div>
       ${!CACHE_DPO_CICLOS_ADMIN.length ? '<div class="msg-vazio">Nenhum ciclo criado ainda.</div>' : ''}
 
+      <h2 style="margin-top:32px;">🔐 Pastas liberadas por empresa</h2>
+      <p style="color:#64748b;margin-top:-8px;">Escolha quais pastas do DPO cada empresa enxerga dentro dos pilares que ela comprou. A empresa recebe uma notificação quando uma pasta nova é liberada.</p>
+      <table>
+        <thead><tr><th>Empresa</th><th>📝 Checklist</th><th>📁 Perguntas Bate-Papo</th><th>📂 Material do Pilar</th><th></th></tr></thead>
+        <tbody>
+          ${CACHE_DPO_EMPRESAS_TODAS.map(e => `
+            <tr>
+              <td>${escapeHtml(e.name)}</td>
+              ${['checklist', 'batepapo', 'material'].map(p => `<td style="text-align:center;"><input type="checkbox" id="dpo-pasta-${p}-${e.id}" style="width:auto;" ${e.pastas && e.pastas[p] ? 'checked' : ''}></td>`).join('')}
+              <td><button class="btn-secundario btn-sm" onclick="salvarPastasEmpresaDpo(${e.id})">Salvar</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      ${!CACHE_DPO_EMPRESAS_TODAS.length ? '<div class="msg-vazio">Nenhuma empresa cadastrada ainda.</div>' : ''}
+
       <h2 style="margin-top:32px;">🗓️ Auditoria Oficial Ambev</h2>
       <p style="color:#64748b;margin-top:-8px;">Esta é a data do evento real de auditoria da Ambev (diferente da autoavaliação mensal). Marque aqui a data combinada com cada empresa — ela também aparece na tela da própria empresa.</p>
       <table>
@@ -6927,8 +6953,13 @@ async function abrirOuCriarPilarDpo(pillarKey) {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
-function abrirVisualizacaoCicloDpo(ciclo, somenteLeitura, pilarKeyInicial) {
-  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key), aba: 'checklist' };
+const ABAS_PILAR_DPO = { checklist: '📝 Checklist', batepapo: '📁 Perguntas Bate-Papo', material: '📂 Material do Pilar' };
+
+async function abrirVisualizacaoCicloDpo(ciclo, somenteLeitura, pilarKeyInicial) {
+  let pastas = { checklist: true, batepapo: false, material: false };
+  try { pastas = await api('/api/dpo/pastas'); } catch (e) { /* mantém o padrão */ }
+  MATERIAL_DPO_ABERTAS.clear();
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key), aba: null, pastas };
   renderCicloDpoAtual();
 }
 
@@ -6941,6 +6972,10 @@ function renderCicloDpoAtual() {
   const respondidas = pilar.grupos.reduce((s, g) => s + g.perguntas.filter(p => p.score !== null && p.score !== undefined).length, 0);
   const validos = pilar.grupos.flatMap(g => g.perguntas).filter(p => p.score !== null && p.score !== undefined);
   const mediaScore = validos.length ? (validos.reduce((s, p) => s + p.score, 0) / validos.length).toFixed(1) : null;
+  const pastas = ESTADO_DPO_VIEW.pastas || { checklist: true, batepapo: false, material: false };
+  const abasLiberadas = Object.keys(ABAS_PILAR_DPO).filter(a => pastas[a]);
+  if (!abasLiberadas.includes(ESTADO_DPO_VIEW.aba)) ESTADO_DPO_VIEW.aba = abasLiberadas[0] || null;
+  const aba = ESTADO_DPO_VIEW.aba;
   cont.innerHTML = `
     <div class="barra-acoes">
       <div><button class="btn-secundario btn-sm" onclick="${somenteLeitura ? 'renderDpoAgenda()' : 'renderDpoHome()'}">← Voltar</button></div>
@@ -6954,11 +6989,12 @@ function renderCicloDpoAtual() {
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
       ${ciclo.pilares.map(p => `<button class="btn-sm ${p.key === pilar.key ? 'btn-primario' : 'btn-secundario'}" onclick="trocarPilarCicloDpo('${p.key}')">${escapeHtml(p.label)}</button>`).join('')}
     </div>
-    <div class="dpo-subabas">
-      <button class="dpo-subaba ${ESTADO_DPO_VIEW.aba !== 'batepapo' ? 'ativa' : ''}" onclick="trocarAbaPilarDpo('checklist')">📝 Checklist</button>
-      <button class="dpo-subaba ${ESTADO_DPO_VIEW.aba === 'batepapo' ? 'ativa' : ''}" onclick="trocarAbaPilarDpo('batepapo')">📁 Perguntas Bate-Papo</button>
-    </div>
-    ${ESTADO_DPO_VIEW.aba === 'batepapo' ? `<div id="dpo-batepapo-area"><p>Carregando...</p></div>` : `
+    ${abasLiberadas.length ? `<div class="dpo-subabas">
+      ${abasLiberadas.map(a => `<button class="dpo-subaba ${aba === a ? 'ativa' : ''}" onclick="trocarAbaPilarDpo('${a}')">${ABAS_PILAR_DPO[a]}</button>`).join('')}
+    </div>` : ''}
+    ${!aba ? `<div class="msg-vazio">Nenhuma pasta deste pilar foi liberada para sua empresa ainda. Fale com o Master.</div>`
+      : aba === 'batepapo' ? `<div id="dpo-batepapo-area"><p>Carregando...</p></div>`
+      : aba === 'material' ? `<div id="dpo-material-area"><p>Carregando...</p></div>` : `
     <div class="plano-meta" style="margin-bottom:12px;">${respondidas}/${totalPerguntas} pergunta(s) respondida(s)${mediaScore !== null ? ` · Média: <strong>${mediaScore}</strong>` : ''}</div>
     ${pilar.grupos.map(g => `
       <div class="dpo-grupo">
@@ -6968,7 +7004,8 @@ function renderCicloDpoAtual() {
     `).join('')}`}
     <div id="modal-area"></div>
   `;
-  if (ESTADO_DPO_VIEW.aba === 'batepapo') carregarBatePapoDpo();
+  if (aba === 'batepapo') carregarBatePapoDpo();
+  if (aba === 'material') carregarMaterialDpo();
 }
 
 // ----- Pasta "Perguntas Bate-Papo" (dentro de cada pilar) -----
@@ -7148,6 +7185,7 @@ async function baixarExcelBatePapoDpo() {
 
 function trocarPilarCicloDpo(key) {
   ESTADO_DPO_VIEW.pilarAtivo = key;
+  MATERIAL_DPO_ABERTAS.clear();
   renderCicloDpoAtual();
 }
 
@@ -7242,7 +7280,7 @@ async function recarregarCicloDpoAtual() {
   const pilarAtivo = ESTADO_DPO_VIEW.pilarAtivo;
   const somenteLeitura = ESTADO_DPO_VIEW.somenteLeitura;
   const ciclo = await api('/api/dpo/cycles/' + cicloId);
-  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo };
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo, aba: ESTADO_DPO_VIEW.aba, pastas: ESTADO_DPO_VIEW.pastas };
   renderCicloDpoAtual();
 }
 
@@ -7303,6 +7341,437 @@ const ROTULOS_STATUS_VAGA = {
   fechada: { texto: 'Fechada', cor: '#334155' }
 };
 let ABA_VAGAS_OFERTADAS = 'abertas';
+
+// ----- Pasta "Material do Pilar" (evidências para defender na auditoria) -----
+// Aberta por pergunta do pilar e, dentro dela, por item da verificação. Em cada
+// item: padrão, ata de treinamento + check de retenção (link), outras
+// evidências e links para sistemas externos.
+let CACHE_MATERIAL_DPO = null;
+const MATERIAL_DPO_ABERTAS = new Set();
+const ROTULOS_STATUS_ITEM_MATERIAL = {
+  pendente: { texto: 'Pendente', cor: '#dc2626', fundo: '#fef2f2' },
+  em_andamento: { texto: 'Em andamento', cor: '#b45309', fundo: '#fffbeb' },
+  pronto: { texto: 'Pronto p/ auditoria', cor: '#16a34a', fundo: '#f0fdf4' }
+};
+const TIPOS_EVIDENCIA_MATERIAL = {
+  padrao: { icone: '📄', rotulo: 'Padrão', botao: 'Subir Padrão' },
+  ata: { icone: '🎓', rotulo: 'Ata de treinamento', botao: 'Subir Ata de Treinamento' },
+  evidencia: { icone: '📎', rotulo: 'Outra evidência', botao: 'Outra evidência' },
+  link: { icone: '🔗', rotulo: 'Link sistema externo', botao: 'Link sistema externo' }
+};
+
+function corpoComEmpresaDpo(obj) {
+  if (ESTADO.usuario.role === 'admin' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo.company_id) obj.company_id = ESTADO_DPO_VIEW.ciclo.company_id;
+  return obj;
+}
+
+function itemMaterialDpo(questionNumero, itemNumero) {
+  if (!CACHE_MATERIAL_DPO) return null;
+  for (const g of CACHE_MATERIAL_DPO.grupos) {
+    const q = g.perguntas.find(x => x.numero === questionNumero);
+    if (q) return { pergunta: q, item: q.itens.find(i => i.numero === String(itemNumero)) };
+  }
+  return null;
+}
+
+async function carregarMaterialDpo() {
+  const area = document.getElementById('dpo-material-area');
+  if (!area) return;
+  const pilar = pilarAtualDpo();
+  try {
+    CACHE_MATERIAL_DPO = await api('/api/dpo/material/' + pilar.key + queryEmpresaBatePapoDpo());
+    renderMaterialDpo();
+  } catch (e) { area.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+function renderMaterialDpo() {
+  const area = document.getElementById('dpo-material-area');
+  if (!area || !CACHE_MATERIAL_DPO) return;
+  const r = CACHE_MATERIAL_DPO.resumo;
+  const pct = r.totalItens ? Math.round(r.pronto * 100 / r.totalItens) : 0;
+  area.innerHTML = `
+    <div class="barra-acoes">
+      <div class="plano-meta">📂 ${escapeHtml(CACHE_MATERIAL_DPO.label)} · abra cada pergunta e suba o material de cada item da verificação.</div>
+      <div class="direita">
+        <button class="btn-secundario btn-sm" onclick="alternarTodasMaterialDpo(true)">Abrir todas</button>
+        <button class="btn-secundario btn-sm" onclick="alternarTodasMaterialDpo(false)">Fechar todas</button>
+        <button class="btn-secundario btn-sm" onclick="baixarExcelMaterialDpo()">📊 Baixar Excel (dossiê)</button>
+      </div>
+    </div>
+    <div class="kpis" style="margin-bottom:10px;">
+      <div class="kpi-card vivo kpi-verde"><div class="valor">${r.pronto}</div><div class="rotulo">Prontos p/ auditoria</div></div>
+      <div class="kpi-card vivo kpi-laranja"><div class="valor">${r.em_andamento}</div><div class="rotulo">Em andamento</div></div>
+      <div class="kpi-card" style="background:#fef2f2;"><div class="valor" style="color:#dc2626;">${r.pendente}</div><div class="rotulo" style="color:#dc2626;">Pendentes</div></div>
+      <div class="kpi-card vivo kpi-azul"><div class="valor">${r.totalEvidencias + r.totalChecks}</div><div class="rotulo">Evidências</div><div class="subrotulo">${r.totalChecks} check(s) de retenção</div></div>
+    </div>
+    <div class="dpo-progresso"><div style="width:${pct}%"></div></div>
+    <div class="plano-meta" style="margin:4px 0 6px;">${pct}% dos ${r.totalItens} itens prontos para a auditoria</div>
+    ${CACHE_MATERIAL_DPO.grupos.map(g => `
+      <div class="dpo-grupo">
+        <div class="dpo-grupo-titulo">${escapeHtml(g.numero)} ${escapeHtml(g.titulo)}</div>
+        ${g.perguntas.map(q => renderPerguntaMaterialDpo(q)).join('')}
+      </div>
+    `).join('')}
+  `;
+}
+
+function renderPerguntaMaterialDpo(q) {
+  const aberta = MATERIAL_DPO_ABERTAS.has(q.numero);
+  const completo = q.itens.length && q.prontos === q.itens.length;
+  return `
+    <div class="dpo-pergunta ${aberta ? 'aberta' : ''}">
+      <div class="dpo-pergunta-cabecalho" onclick="alternarPerguntaMaterialDpo('${escapeHtml(q.numero)}')">
+        <div>
+          <div class="dpo-pergunta-titulo">${aberta ? '📂' : '📁'} ${escapeHtml(q.numero)} ${escapeHtml(q.questao)}${q.mandatoria ? ' <span style="color:#dc2626;font-size:11px;">● Mandatória</span>' : ''}</div>
+          <div class="plano-meta" style="font-size:11.5px;">${q.itens.length} item(ns) de verificação</div>
+        </div>
+        <span class="dpo-score-badge" style="background:${completo ? '#dcfce7' : '#f1f5f9'};color:${completo ? '#166534' : '#475569'};">${q.prontos}/${q.itens.length} pronto(s)</span>
+      </div>
+      ${aberta ? `<div class="dpo-pergunta-corpo" style="display:block;">
+        ${q.how_to_check ? `<details style="margin-bottom:10px;"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:#475569;">Como o auditor verifica (how to check)</summary><div style="font-size:12.5px;white-space:pre-wrap;color:#475569;margin-top:6px;">${escapeHtml(q.how_to_check)}</div></details>` : ''}
+        ${q.itens.map(it => renderItemMaterialDpo(q, it)).join('')}
+      </div>` : ''}
+    </div>
+  `;
+}
+
+function renderItemMaterialDpo(q, it) {
+  const st = ROTULOS_STATUS_ITEM_MATERIAL[it.status] || ROTULOS_STATUS_ITEM_MATERIAL.pendente;
+  const qn = escapeHtml(q.numero), inum = escapeHtml(it.numero);
+  const botao = (tipo, sugerido) => `<button class="${sugerido ? 'btn-primario' : 'btn-secundario'} btn-sm" onclick="abrirModalEvidenciaDpo('${qn}','${inum}','${tipo}')">${TIPOS_EVIDENCIA_MATERIAL[tipo].icone} ${TIPOS_EVIDENCIA_MATERIAL[tipo].botao}</button>`;
+  return `
+    <div class="dpo-material-item" style="border-left-color:${st.cor};">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+        <strong style="font-size:13px;">Item ${inum}</strong>
+        <select class="dpo-material-status" style="color:${st.cor};background:${st.fundo};border-color:${st.cor};" onchange="salvarStatusItemMaterialDpo('${qn}','${inum}', this.value)">
+          ${Object.entries(ROTULOS_STATUS_ITEM_MATERIAL).map(([k, v]) => `<option value="${k}" ${k === it.status ? 'selected' : ''}>${v.texto}</option>`).join('')}
+        </select>
+      </div>
+      <div style="font-size:13px;color:#334155;white-space:pre-wrap;margin:6px 0 8px;">${escapeHtml(it.texto)}</div>
+      ${it.pedePadrao || it.pedeTreinamento ? `<div style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap;">
+        ${it.pedePadrao ? '<span class="dpo-tag">📄 Pede padrão</span>' : ''}
+        ${it.pedeTreinamento ? '<span class="dpo-tag">🎓 Pede treinamento + check de retenção</span>' : ''}
+      </div>` : ''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${botao('padrao', it.pedePadrao)}
+        ${botao('ata', it.pedeTreinamento)}
+        <button class="${it.pedeTreinamento ? 'btn-primario' : 'btn-secundario'} btn-sm" onclick="abrirModalCheckRetencaoDpo('${qn}','${inum}')">✅ Criar Check de Retenção</button>
+        ${botao('evidencia', false)}
+        ${botao('link', false)}
+      </div>
+      ${it.evidencias.length || it.checks.length ? `<div class="dpo-material-lista">
+        ${it.evidencias.map(e => `
+          <div class="dpo-material-evidencia">
+            <span>${TIPOS_EVIDENCIA_MATERIAL[e.tipo] ? TIPOS_EVIDENCIA_MATERIAL[e.tipo].icone : '📎'} <strong>${escapeHtml(TIPOS_EVIDENCIA_MATERIAL[e.tipo] ? TIPOS_EVIDENCIA_MATERIAL[e.tipo].rotulo : e.tipo)}:</strong>
+              <a href="${escapeHtml(e.url)}" target="_blank" rel="noopener">${escapeHtml(e.titulo || e.original_name || e.url)}</a>
+              <span class="plano-meta" style="font-size:11px;">${e.autorNome ? ' · ' + escapeHtml(e.autorNome) : ''}${e.created_at ? ' · ' + dataBrDpoFront(e.created_at) : ''}</span></span>
+            <button class="btn-perigo btn-sm" onclick="excluirEvidenciaDpo(${e.id})">Remover</button>
+          </div>`).join('')}
+        ${it.checks.map(c => `
+          <div class="dpo-material-evidencia">
+            <span>✅ <strong>Check de retenção:</strong> ${escapeHtml(c.titulo)}
+              <span class="plano-meta" style="font-size:11px;"> · ${c.perguntas.length} pergunta(s) · ${c.totalRespostas} resposta(s)${c.mediaAcerto !== null ? ' · ' + c.mediaAcerto + '% de acerto' : ''}${c.ativo ? '' : ' · <strong style="color:#dc2626;">encerrado</strong>'}</span></span>
+            <span style="display:flex;gap:4px;flex-wrap:wrap;">
+              <button class="btn-secundario btn-sm" onclick="copiarLinkCheckDpo('${escapeHtml(c.link)}')">🔗 Copiar link</button>
+              <button class="btn-secundario btn-sm" onclick="verRespostasCheckDpo(${c.id})">Respostas</button>
+              <button class="btn-secundario btn-sm" onclick="abrirModalCheckRetencaoDpo('${qn}','${inum}', ${c.id})">Editar</button>
+              <button class="btn-secundario btn-sm" onclick="alternarAtivoCheckDpo(${c.id}, ${!c.ativo})">${c.ativo ? 'Encerrar' : 'Reabrir'}</button>
+              <button class="btn-perigo btn-sm" onclick="excluirCheckDpo(${c.id})">Excluir</button>
+            </span>
+          </div>`).join('')}
+      </div>` : ''}
+      <input class="dpo-material-obs" placeholder="Observação para o auditor (opcional)" value="${escapeHtml(it.observacao || '')}" onchange="salvarObsItemMaterialDpo('${qn}','${inum}', this.value)">
+    </div>
+  `;
+}
+
+function dataBrDpoFront(valor) {
+  const d = new Date(String(valor).replace(' ', 'T') + (String(valor).includes('Z') ? '' : 'Z'));
+  return isNaN(d) ? '' : d.toLocaleDateString('pt-BR');
+}
+
+function alternarPerguntaMaterialDpo(numero) {
+  if (MATERIAL_DPO_ABERTAS.has(numero)) MATERIAL_DPO_ABERTAS.delete(numero); else MATERIAL_DPO_ABERTAS.add(numero);
+  renderMaterialDpo();
+}
+
+function alternarTodasMaterialDpo(abrir) {
+  CACHE_MATERIAL_DPO.grupos.forEach(g => g.perguntas.forEach(q => { if (abrir) MATERIAL_DPO_ABERTAS.add(q.numero); else MATERIAL_DPO_ABERTAS.delete(q.numero); }));
+  renderMaterialDpo();
+}
+
+async function salvarStatusItemMaterialDpo(questionNumero, itemNumero, status) {
+  try {
+    await api('/api/dpo/material/status', { method: 'PUT', body: JSON.stringify(corpoComEmpresaDpo({ pillarKey: pilarAtualDpo().key, questionNumero, itemNumero, status })) });
+    mostrarToast('Situação do item atualizada!');
+    carregarMaterialDpo();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function salvarObsItemMaterialDpo(questionNumero, itemNumero, observacao) {
+  try {
+    await api('/api/dpo/material/status', { method: 'PUT', body: JSON.stringify(corpoComEmpresaDpo({ pillarKey: pilarAtualDpo().key, questionNumero, itemNumero, observacao })) });
+    mostrarToast('Observação salva!');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+function fecharModalMaterialDpo() {
+  const area = document.getElementById('modal-area');
+  if (area) area.innerHTML = '';
+}
+
+function abrirModalEvidenciaDpo(questionNumero, itemNumero, tipo) {
+  const area = document.getElementById('modal-area');
+  const ctx = itemMaterialDpo(questionNumero, itemNumero);
+  if (!area || !ctx) return;
+  const cfg = TIPOS_EVIDENCIA_MATERIAL[tipo];
+  window.CTX_EVIDENCIA_DPO = { questionNumero, itemNumero, tipo };
+  area.innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) fecharModalMaterialDpo()">
+      <div class="modal-caixa" style="max-width:540px;">
+        <h3 style="margin-top:0;">${cfg.icone} ${cfg.botao}</h3>
+        <div class="plano-meta" style="margin-bottom:8px;">${escapeHtml(ctx.pergunta.numero)} ${escapeHtml(ctx.pergunta.questao)} · Item ${escapeHtml(itemNumero)}</div>
+        <div style="font-size:12.5px;background:#f8fafc;border:1px solid var(--cinza-200);border-radius:8px;padding:8px 10px;white-space:pre-wrap;max-height:120px;overflow:auto;">${escapeHtml(ctx.item.texto)}</div>
+        <label>${tipo === 'link' ? 'Nome do sistema / descrição' : 'Título do documento'}</label>
+        <input id="ev-dpo-titulo" placeholder="${tipo === 'padrao' ? 'ex: Padrão Pré Rota — rev. 03' : tipo === 'ata' ? 'ex: Ata treinamento Pré Rota — 15/09' : tipo === 'link' ? 'ex: Painel de TML no Power BI' : 'ex: Foto do quadro de gestão'}">
+        ${tipo === 'link' ? `
+          <label>Link (URL)</label>
+          <input id="ev-dpo-url" placeholder="https://...">
+        ` : `
+          <label>Arquivo</label>
+          <input id="ev-dpo-arquivo" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,image/*,video/*">
+          <div class="plano-meta" style="font-size:11px;">PDF, Word, Excel, PowerPoint, imagem ou vídeo (até 100MB).</div>
+        `}
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" id="ev-dpo-salvar" onclick="salvarEvidenciaDpo()">Salvar</button>
+          <button class="btn-secundario" onclick="fecharModalMaterialDpo()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function salvarEvidenciaDpo() {
+  const ctx = window.CTX_EVIDENCIA_DPO;
+  if (!ctx) return;
+  const titulo = document.getElementById('ev-dpo-titulo').value.trim();
+  const botao = document.getElementById('ev-dpo-salvar');
+  try {
+    let url, originalName = null;
+    if (ctx.tipo === 'link') {
+      url = document.getElementById('ev-dpo-url').value.trim();
+      if (!url) { mostrarToast('Informe o link.', true); return; }
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    } else {
+      const arquivo = document.getElementById('ev-dpo-arquivo').files[0];
+      if (!arquivo) { mostrarToast('Escolha o arquivo.', true); return; }
+      botao.disabled = true; botao.textContent = 'Enviando...';
+      const formData = new FormData();
+      formData.append('file', arquivo);
+      const resposta = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: formData });
+      const dados = await resposta.json().catch(() => ({}));
+      if (!resposta.ok) throw new Error(dados.error || 'Erro ao enviar o arquivo.');
+      url = dados.url; originalName = dados.originalName;
+    }
+    const r = await api('/api/dpo/material/evidencias', { method: 'POST', body: JSON.stringify(corpoComEmpresaDpo({
+      pillarKey: pilarAtualDpo().key, questionNumero: ctx.questionNumero, itemNumero: ctx.itemNumero, tipo: ctx.tipo, titulo, url, originalName
+    })) });
+    mostrarToast(r.message);
+    fecharModalMaterialDpo();
+    carregarMaterialDpo();
+  } catch (e) {
+    mostrarToast(e.message, true);
+    if (botao) { botao.disabled = false; botao.textContent = 'Salvar'; }
+  }
+}
+
+async function excluirEvidenciaDpo(id) {
+  if (!confirm('Remover esta evidência?')) return;
+  try { const r = await api('/api/dpo/material/evidencias/' + id, { method: 'DELETE' }); mostrarToast(r.message); carregarMaterialDpo(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+// ----- Check de retenção: cria só as perguntas e o sistema gera o link -----
+function abrirModalCheckRetencaoDpo(questionNumero, itemNumero, checkId) {
+  const area = document.getElementById('modal-area');
+  const ctx = itemMaterialDpo(questionNumero, itemNumero);
+  if (!area || !ctx) return;
+  const existente = checkId ? ctx.item.checks.find(c => c.id === checkId) : null;
+  window.CTX_CHECK_DPO = { questionNumero, itemNumero, checkId: existente ? existente.id : null };
+  area.innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) fecharModalMaterialDpo()">
+      <div class="modal-caixa" style="max-width:660px;max-height:90vh;overflow-y:auto;">
+        <h3 style="margin-top:0;">✅ ${existente ? 'Editar' : 'Criar'} Check de Retenção</h3>
+        <div class="plano-meta" style="margin-bottom:8px;">${escapeHtml(ctx.pergunta.numero)} ${escapeHtml(ctx.pergunta.questao)} · Item ${escapeHtml(itemNumero)}</div>
+        <p style="font-size:12.5px;color:#64748b;margin-top:0;">Cadastre as perguntas do treinamento. Ao salvar, o sistema gera um link para enviar às pessoas treinadas. Elas respondem sem precisar de login.</p>
+        <label>Título do check (nome do treinamento)</label>
+        <input id="ck-dpo-titulo" placeholder="ex: Treinamento Padrão Pré Rota" value="${escapeHtml(existente ? existente.titulo : '')}">
+        <div id="ck-dpo-perguntas"></div>
+        <button class="btn-secundario btn-sm" style="margin-top:8px;" onclick="adicionarPerguntaCheckDpo()">+ Adicionar pergunta</button>
+        ${existente && existente.totalRespostas ? `<div class="msg-vazio" style="text-align:left;margin-top:10px;font-size:12px;">⚠️ Este check já tem ${existente.totalRespostas} resposta(s). Mudar as perguntas pode deixar as respostas antigas desalinhadas.</div>` : ''}
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" onclick="salvarCheckRetencaoDpo()">${existente ? 'Salvar' : 'Salvar e gerar link'}</button>
+          <button class="btn-secundario" onclick="fecharModalMaterialDpo()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  `;
+  const perguntas = existente ? existente.perguntas : [{ texto: '', tipo: 'aberta', opcoes: [], correta: null }];
+  perguntas.forEach(p => adicionarPerguntaCheckDpo(p));
+}
+
+function adicionarPerguntaCheckDpo(p) {
+  const lista = document.getElementById('ck-dpo-perguntas');
+  if (!lista) return;
+  p = p || { texto: '', tipo: 'aberta', opcoes: [], correta: null };
+  const div = document.createElement('div');
+  div.className = 'ck-dpo-pergunta';
+  div.style.cssText = 'border:1px solid var(--cinza-200);border-radius:10px;padding:10px 12px;margin-top:12px;background:#f8fafc;';
+  const opcoes = p.opcoes && p.opcoes.length ? p.opcoes : ['', '', '', ''];
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+      <strong class="ck-dpo-num" style="font-size:13px;">Pergunta</strong>
+      <span style="display:flex;gap:6px;align-items:center;">
+        <select class="ck-dpo-tipo" onchange="this.closest('.ck-dpo-pergunta').querySelector('.ck-dpo-opcoes').style.display = this.value === 'multipla' ? '' : 'none'">
+          <option value="aberta" ${p.tipo !== 'multipla' ? 'selected' : ''}>Resposta aberta</option>
+          <option value="multipla" ${p.tipo === 'multipla' ? 'selected' : ''}>Múltipla escolha</option>
+        </select>
+        <button class="btn-secundario btn-sm" onclick="this.closest('.ck-dpo-pergunta').remove(); renumerarPerguntasCheckDpo();">Remover</button>
+      </span>
+    </div>
+    <textarea class="ck-dpo-texto" rows="2" placeholder="Escreva a pergunta...">${escapeHtml(p.texto || '')}</textarea>
+    <div class="ck-dpo-opcoes" style="${p.tipo === 'multipla' ? '' : 'display:none;'}">
+      <div class="plano-meta" style="font-size:11.5px;margin-top:6px;">Alternativas — marque a correta (opcional, para calcular o % de acerto):</div>
+      ${opcoes.map((o, i) => `
+        <div style="display:flex;gap:6px;align-items:center;margin-top:4px;">
+          <input type="radio" class="ck-dpo-correta" value="${i}" ${p.correta === i ? 'checked' : ''} style="width:auto;">
+          <input class="ck-dpo-opcao" placeholder="Alternativa ${String.fromCharCode(65 + i)}" value="${escapeHtml(o)}" style="margin:0;">
+        </div>`).join('')}
+    </div>
+  `;
+  const nomeRadio = 'ck-correta-' + Math.random().toString(36).slice(2);
+  div.querySelectorAll('.ck-dpo-correta').forEach(r => { r.name = nomeRadio; });
+  lista.appendChild(div);
+  renumerarPerguntasCheckDpo();
+}
+
+function renumerarPerguntasCheckDpo() {
+  document.querySelectorAll('.ck-dpo-pergunta .ck-dpo-num').forEach((el, i) => { el.textContent = 'Pergunta ' + (i + 1); });
+}
+
+async function salvarCheckRetencaoDpo() {
+  const ctx = window.CTX_CHECK_DPO;
+  if (!ctx) return;
+  const titulo = document.getElementById('ck-dpo-titulo').value.trim();
+  if (!titulo) { mostrarToast('Dê um título ao check.', true); return; }
+  const perguntas = [];
+  for (const el of document.querySelectorAll('.ck-dpo-pergunta')) {
+    const texto = el.querySelector('.ck-dpo-texto').value.trim();
+    if (!texto) continue;
+    const tipo = el.querySelector('.ck-dpo-tipo').value;
+    if (tipo === 'multipla') {
+      const campos = Array.from(el.querySelectorAll('.ck-dpo-opcao'));
+      const marcada = el.querySelector('.ck-dpo-correta:checked');
+      const opcoes = [], mapa = {};
+      campos.forEach((c, i) => { if (c.value.trim()) { mapa[i] = opcoes.length; opcoes.push(c.value.trim()); } });
+      if (opcoes.length < 2) { mostrarToast('Perguntas de múltipla escolha precisam de pelo menos 2 alternativas.', true); return; }
+      const correta = marcada && mapa[Number(marcada.value)] !== undefined ? mapa[Number(marcada.value)] : null;
+      perguntas.push({ texto, tipo, opcoes, correta });
+    } else perguntas.push({ texto, tipo: 'aberta', opcoes: [], correta: null });
+  }
+  if (!perguntas.length) { mostrarToast('Cadastre pelo menos uma pergunta.', true); return; }
+  try {
+    if (ctx.checkId) {
+      const r = await api('/api/dpo/material/checks/' + ctx.checkId, { method: 'PUT', body: JSON.stringify({ titulo, perguntas }) });
+      mostrarToast(r.message);
+    } else {
+      const r = await api('/api/dpo/material/checks', { method: 'POST', body: JSON.stringify(corpoComEmpresaDpo({
+        pillarKey: pilarAtualDpo().key, questionNumero: ctx.questionNumero, itemNumero: ctx.itemNumero, titulo, perguntas
+      })) });
+      mostrarToast(r.message);
+      if (r.link) copiarLinkCheckDpo(r.link, true);
+    }
+    fecharModalMaterialDpo();
+    carregarMaterialDpo();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function copiarLinkCheckDpo(link, silencioso) {
+  try {
+    await navigator.clipboard.writeText(link);
+    mostrarToast(silencioso ? 'Link do check copiado — é só colar no WhatsApp/e-mail!' : 'Link copiado!');
+  } catch (e) { prompt('Copie o link do check de retenção:', link); }
+}
+
+async function alternarAtivoCheckDpo(id, ativo) {
+  try { const r = await api('/api/dpo/material/checks/' + id, { method: 'PUT', body: JSON.stringify({ ativo }) }); mostrarToast(ativo ? 'Check reaberto!' : 'Check encerrado — o link não aceita mais respostas.'); carregarMaterialDpo(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+async function excluirCheckDpo(id) {
+  if (!confirm('Excluir este check de retenção e todas as respostas dele?')) return;
+  try { const r = await api('/api/dpo/material/checks/' + id, { method: 'DELETE' }); mostrarToast(r.message); carregarMaterialDpo(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+async function verRespostasCheckDpo(id) {
+  const area = document.getElementById('modal-area');
+  if (!area) return;
+  try {
+    const d = await api('/api/dpo/material/checks/' + id + '/respostas');
+    const valorResposta = (p, v) => p.tipo === 'multipla' ? (v !== null && v !== undefined && p.opcoes[v] !== undefined ? p.opcoes[v] + (p.correta !== null && p.correta !== undefined ? (v === p.correta ? ' ✔️' : ' ❌') : '') : '—') : (v || '—');
+    area.innerHTML = `
+      <div class="modal-fundo" onclick="if(event.target===this) fecharModalMaterialDpo()">
+        <div class="modal-caixa" style="max-width:760px;max-height:90vh;overflow-y:auto;">
+          <h3 style="margin-top:0;">✅ ${escapeHtml(d.titulo)} — Respostas</h3>
+          <div class="barra-acoes">
+            <div class="plano-meta">${d.respostas.length} resposta(s)</div>
+            <div class="direita">
+              <button class="btn-secundario btn-sm" onclick="copiarLinkCheckDpo('${escapeHtml(d.link)}')">🔗 Copiar link</button>
+              <button class="btn-secundario btn-sm" onclick="baixarExcelCheckDpo(${d.id})" ${d.respostas.length ? '' : 'disabled'}>📊 Baixar Excel</button>
+            </div>
+          </div>
+          ${!d.respostas.length ? '<div class="msg-vazio">Ninguém respondeu ainda. Envie o link para as pessoas treinadas.</div>' : d.respostas.map(r => `
+            <details class="dpo-pergunta" style="padding:10px 14px;">
+              <summary style="cursor:pointer;font-size:13px;"><strong>${escapeHtml(r.nome)}</strong>${r.matricula ? ' · Matrícula ' + escapeHtml(r.matricula) : ''} · ${dataBrDpoFront(r.created_at)}${r.total_objetivas ? ` · <strong>${r.acertos}/${r.total_objetivas}</strong> acerto(s)` : ''}</summary>
+              <div style="margin-top:8px;">
+                ${d.perguntas.map((p, i) => `<div style="font-size:12.5px;margin-bottom:6px;"><strong>${i + 1}. ${escapeHtml(p.texto)}</strong><div style="white-space:pre-wrap;color:#334155;">${escapeHtml(String(valorResposta(p, r.respostas[i])))}</div></div>`).join('')}
+              </div>
+            </details>`).join('')}
+          <div class="acoes-form" style="margin-top:12px;"><button class="btn-secundario" onclick="fecharModalMaterialDpo()">Fechar</button></div>
+        </div>
+      </div>
+    `;
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+async function baixarArquivoDpo(url, nome) {
+  try {
+    mostrarToast('Gerando Excel...');
+    const resp = await fetch(url, { headers: { 'Authorization': 'Bearer ' + ESTADO.token } });
+    if (!resp.ok) { const dados = await resp.json().catch(() => ({})); throw new Error(dados.error || 'Erro ao gerar o Excel.'); }
+    const blob = await resp.blob();
+    const urlBlob = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = urlBlob; a.download = nome;
+    document.body.appendChild(a); a.click(); a.remove();
+    window.URL.revokeObjectURL(urlBlob);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+function baixarExcelCheckDpo(id) { baixarArquivoDpo('/api/dpo/material/checks/' + id + '/export', 'check-retencao-' + id + '.xlsx'); }
+function baixarExcelMaterialDpo() {
+  const pilar = pilarAtualDpo();
+  baixarArquivoDpo('/api/dpo/material/' + pilar.key + '/export' + queryEmpresaBatePapoDpo(), 'material-pilar-' + pilar.key + '.xlsx');
+}
+
+// ----- Master: libera as pastas do DPO (Checklist / Bate-Papo / Material) por empresa -----
+async function salvarPastasEmpresaDpo(companyId) {
+  const corpo = {};
+  ['checklist', 'batepapo', 'material'].forEach(p => { corpo[p] = document.getElementById(`dpo-pasta-${p}-${companyId}`).checked; });
+  try { const r = await api('/api/admin/dpo/pastas/' + companyId, { method: 'PUT', body: JSON.stringify(corpo) }); mostrarToast(r.message); }
+  catch (e) { mostrarToast(e.message, true); }
+}
 
 function classificarAbaVaga(v) {
   if (v.deleted_at) return 'excluidas';

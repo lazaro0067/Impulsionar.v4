@@ -1242,6 +1242,72 @@ function inicializarBase() {
             updated_at DATETIME,
             FOREIGN KEY(company_id) REFERENCES companies(id)
         )`);
+        // Permissão por PASTA do DPO (Checklist / Perguntas Bate-Papo / Material
+        // do Pilar), liberada pelo Master para cada empresa. Sem linha = padrão
+        // (ver PASTAS_DPO_PADRAO: só o Checklist vem liberado).
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_company_folders (
+            company_id INTEGER NOT NULL,
+            folder_key TEXT NOT NULL,
+            enabled INTEGER NOT NULL DEFAULT 0,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (company_id, folder_key)
+        )`);
+
+        // "Material do Pilar" — evidências para defender na auditoria, organizadas
+        // por pergunta do pilar e, dentro dela, por ITEM da verificação.
+        // Situação de cada item (pendente / em andamento / pronto p/ auditoria):
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_material_status (
+            company_id INTEGER NOT NULL,
+            pillar_key TEXT NOT NULL,
+            question_numero TEXT NOT NULL,
+            item_numero TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pendente',
+            observacao TEXT,
+            updated_by INTEGER,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (company_id, pillar_key, question_numero, item_numero)
+        )`);
+        // Evidências de cada item: padrão, ata de treinamento, outra evidência
+        // (arquivos enviados) ou link para sistema externo.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_material_evidencias (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER NOT NULL,
+            pillar_key TEXT NOT NULL,
+            question_numero TEXT NOT NULL,
+            item_numero TEXT NOT NULL,
+            tipo TEXT NOT NULL,
+            titulo TEXT,
+            url TEXT NOT NULL,
+            original_name TEXT,
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+        // Check de retenção de treinamento: a empresa cria só as perguntas e o
+        // sistema gera um link público (token) para as pessoas treinadas responderem.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_retention_checks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER NOT NULL,
+            pillar_key TEXT NOT NULL,
+            question_numero TEXT NOT NULL,
+            item_numero TEXT NOT NULL,
+            titulo TEXT NOT NULL,
+            token TEXT UNIQUE NOT NULL,
+            perguntas TEXT NOT NULL,
+            ativo INTEGER NOT NULL DEFAULT 1,
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_retention_responses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            check_id INTEGER NOT NULL,
+            nome TEXT NOT NULL,
+            matricula TEXT,
+            respostas TEXT NOT NULL,
+            acertos INTEGER,
+            total_objetivas INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(check_id) REFERENCES dpo_retention_checks(id)
+        )`);
 
         db.get(`SELECT COUNT(*) as total FROM vaga_plans`, [], (err, row) => {
             if (!err && row && row.total === 0) {
@@ -6124,7 +6190,8 @@ app.get('/api/admin/dpo/companies', requireRole('admin'), async (req, res) => {
                     compraCompleta: ativos.length === DPO_PILARES_ORDEM.length,
                     auditoriaOficialData: emp.dpo_auditoria_oficial_data || null,
                     auditoriaOficialNota: emp.dpo_auditoria_oficial_nota || null,
-                    trialsAtivos: trials.map(t => ({ id: t.id, scope: t.scope, pillarKey: t.pillar_key, expiraEm: t.trial_expires_at }))
+                    trialsAtivos: trials.map(t => ({ id: t.id, scope: t.scope, pillarKey: t.pillar_key, expiraEm: t.trial_expires_at })),
+                    pastas: await pastasLiberadasDaEmpresa(emp.id)
                 });
             }
         }
@@ -6465,19 +6532,81 @@ function ordemDasPerguntasDoPilarDpo(pilarKey) {
     return ordem;
 }
 
+// ---------- Permissão por PASTA do DPO (Master libera por empresa) ----------
+const PASTAS_DPO = ['checklist', 'batepapo', 'material'];
+const PASTAS_DPO_PADRAO = { checklist: true, batepapo: false, material: false };
+const ROTULOS_PASTAS_DPO = { checklist: 'Checklist', batepapo: 'Perguntas Bate-Papo', material: 'Material do Pilar' };
+
+async function pastasLiberadasDaEmpresa(companyId) {
+    const resultado = { ...PASTAS_DPO_PADRAO };
+    const linhas = await dbAll(`SELECT folder_key, enabled FROM dpo_company_folders WHERE company_id = ?`, [companyId]);
+    linhas.forEach(l => { if (PASTAS_DPO.includes(l.folder_key)) resultado[l.folder_key] = !!l.enabled; });
+    return resultado;
+}
+
 // Resolve de qual empresa é a pasta: client_admin sempre a própria; Master
-// informa ?company_id= (ou company_id no corpo). Também confere que o pilar
-// está liberado para a empresa. Retorna null (e já responde o erro) se não pode.
-async function resolverEmpresaBatePapoDpo(req, res, pilarKey, companyIdInformado) {
+// informa ?company_id= (ou company_id no corpo). Para a empresa, também confere
+// que o pilar está liberado e que o Master liberou ESTA pasta para ela.
+// Retorna null (e já responde o erro) se não pode.
+async function resolverEmpresaPastaDpo(req, res, pilarKey, companyIdInformado, pasta) {
     if (!DPO_PILARES_ORDEM.includes(pilarKey)) { res.status(400).json({ error: 'Pilar inválido.' }); return null; }
     const companyId = req.user.role === 'client_admin' ? req.user.companyId : companyIdInformado;
     if (!companyId) { res.status(400).json({ error: 'Informe a empresa (company_id).' }); return null; }
     if (req.user.role === 'client_admin') {
         const ativos = await pilaresAtivosDaEmpresa(companyId);
         if (!ativos.includes(pilarKey)) { res.status(403).json({ error: 'Sua empresa ainda não tem este pilar liberado.' }); return null; }
+        if (pasta) {
+            const pastas = await pastasLiberadasDaEmpresa(companyId);
+            if (!pastas[pasta]) { res.status(403).json({ error: `A pasta "${ROTULOS_PASTAS_DPO[pasta]}" ainda não foi liberada para sua empresa. Fale com o Master.` }); return null; }
+        }
     }
     return companyId;
 }
+
+async function resolverEmpresaBatePapoDpo(req, res, pilarKey, companyIdInformado) {
+    return resolverEmpresaPastaDpo(req, res, pilarKey, companyIdInformado, 'batepapo');
+}
+
+// Garante que a empresa (client_admin) pode mexer na pasta de um registro já
+// existente (edição/exclusão). Master sempre pode.
+async function empresaTemPastaDpo(req, res, companyId, pasta) {
+    if (req.user.role !== 'client_admin') return true;
+    const pastas = await pastasLiberadasDaEmpresa(companyId);
+    if (!pastas[pasta]) { res.status(403).json({ error: `A pasta "${ROTULOS_PASTAS_DPO[pasta]}" não está liberada para sua empresa.` }); return false; }
+    return true;
+}
+
+app.get('/api/dpo/pastas', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        if (req.user.role === 'admin') {
+            // Master enxerga todas as pastas (quando abre o ciclo de uma empresa),
+            // mas também recebe o que está liberado para ela, se informar company_id.
+            const liberadas = req.query.company_id ? await pastasLiberadasDaEmpresa(req.query.company_id) : null;
+            return res.json({ checklist: true, batepapo: true, material: true, liberadasParaEmpresa: liberadas });
+        }
+        res.json(await pastasLiberadasDaEmpresa(req.user.companyId));
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar as pastas liberadas.' }); }
+});
+
+app.put('/api/admin/dpo/pastas/:companyId', requireRole('admin'), async (req, res) => {
+    try {
+        const empresa = await dbGet(`SELECT id, name FROM companies WHERE id = ?`, [req.params.companyId]);
+        if (!empresa) return res.status(404).json({ error: 'Empresa não encontrada.' });
+        const antes = await pastasLiberadasDaEmpresa(empresa.id);
+        for (const pasta of PASTAS_DPO) {
+            if (req.body[pasta] === undefined) continue;
+            await new Promise((resolve, reject) => db.run(
+                `INSERT INTO dpo_company_folders (company_id, folder_key, enabled, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                 ON CONFLICT(company_id, folder_key) DO UPDATE SET enabled = excluded.enabled, updated_at = CURRENT_TIMESTAMP`,
+                [empresa.id, pasta, req.body[pasta] ? 1 : 0], (err) => err ? reject(err) : resolve()
+            ));
+        }
+        const depois = await pastasLiberadasDaEmpresa(empresa.id);
+        const novas = PASTAS_DPO.filter(p => depois[p] && !antes[p]).map(p => ROTULOS_PASTAS_DPO[p]);
+        if (novas.length) notificarGestoresDaEmpresa(empresa.id, 'DPO Ambev — nova pasta liberada', `O Master liberou para sua empresa: ${novas.join(', ')}.`);
+        res.json({ message: 'Pastas atualizadas!', pastas: depois });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar as pastas da empresa.' }); }
+});
 
 async function listarBatePapoDpo(companyId, pilarKey) {
     const linhas = await dbAll(`
@@ -6537,6 +6666,7 @@ async function obterBatePapoComAcesso(req, res, id) {
         res.status(403).json({ error: 'Esta pergunta não pertence à sua empresa.' });
         return null;
     }
+    if (!(await empresaTemPastaDpo(req, res, item.company_id, 'batepapo'))) return null;
     return item;
 }
 
@@ -6632,6 +6762,434 @@ app.get('/api/dpo/bate-papo/:pillarKey/export', requireRole('admin', 'client_adm
     }
 });
 
+// ---------- DPO Ambev — pasta "Material do Pilar" (evidências p/ auditoria) ----------
+// Aberta por PERGUNTA do pilar e, dentro dela, por ITEM da verificação (os
+// "1.", "2."... do texto de verificação). Em cada item a empresa sobe o que o
+// auditor vai pedir: padrão, ata de treinamento + check de retenção, outras
+// evidências e links para sistemas externos.
+const STATUS_ITEM_MATERIAL_DPO = ['pendente', 'em_andamento', 'pronto'];
+const ROTULOS_STATUS_ITEM_MATERIAL_DPO = { pendente: 'Pendente', em_andamento: 'Em andamento', pronto: 'Pronto p/ auditoria' };
+const TIPOS_EVIDENCIA_DPO = ['padrao', 'ata', 'evidencia', 'link'];
+const ROTULOS_TIPO_EVIDENCIA_DPO = { padrao: 'Padrão', ata: 'Ata de treinamento', evidencia: 'Outra evidência', link: 'Link sistema externo' };
+
+// Quebra o texto de verificação nos itens numerados ("1. ...", "2. ...").
+function itensDaVerificacaoDpo(texto) {
+    const t = String(texto || '').replace(/\r/g, '');
+    const marcas = [];
+    const re = /(^|\n)\s*(\d{1,2})\s*[.)\-]\s+/g;
+    let m;
+    while ((m = re.exec(t))) marcas.push({ numero: m[2], inicio: m.index + m[1].length, corpo: m.index + m[0].length });
+    if (!marcas.length) return t.trim() ? [{ numero: '1', texto: t.trim() }] : [];
+    return marcas.map((mk, i) => ({ numero: mk.numero, texto: t.slice(mk.corpo, i + 1 < marcas.length ? marcas[i + 1].inicio : t.length).trim() }));
+}
+
+// Sugere o que o item pede, pelo texto: padrão e/ou treinamento.
+function sugestoesDoItemDpo(texto) {
+    return {
+        pedePadrao: /padr[ãa]o|padr[õo]es|padroniz|procedimento|\bPOP\b|\bSOP\b|\bTOR\b/i.test(texto),
+        pedeTreinamento: /treinad|treinament|capacita|reciclage|qualifica[çc]/i.test(texto)
+    };
+}
+
+function perguntaDoPilarDpo(pilarKey, numero) {
+    const pilarInfo = DPO_AMBEV_DATA[pilarKey];
+    if (!pilarInfo) return null;
+    for (const g of pilarInfo.grupos) {
+        const q = g.perguntas.find(x => x.numero === numero);
+        if (q) return { grupo: g, pergunta: q };
+    }
+    return null;
+}
+
+function itemValidoDpo(pilarKey, questionNumero, itemNumero) {
+    const achou = perguntaDoPilarDpo(pilarKey, questionNumero);
+    if (!achou) return false;
+    return itensDaVerificacaoDpo(achou.pergunta.verificacao).some(i => i.numero === String(itemNumero));
+}
+
+// Endereço público do sistema: a URL configurada pelo Master (ou APP_BASE_URL),
+// senão o próprio endereço da requisição (respeitando o https do Railway).
+function baseUrlPublicaDpo(req) {
+    if (urlPublicaValida(appBaseUrlAtiva)) return appBaseUrlAtiva.replace(/\/$/, '');
+    const proto = String(req.get('x-forwarded-proto') || req.protocol || 'https').split(',')[0].trim();
+    return `${proto}://${req.get('host')}`;
+}
+
+function urlPublicaDoCheckDpo(req, token) {
+    return `${baseUrlPublicaDpo(req)}/retencao.html?t=${token}`;
+}
+
+async function montarMaterialDoPilarDpo(req, companyId, pilarKey) {
+    const pilarInfo = DPO_AMBEV_DATA[pilarKey];
+    const status = await dbAll(`SELECT * FROM dpo_material_status WHERE company_id = ? AND pillar_key = ?`, [companyId, pilarKey]);
+    const evidencias = await dbAll(`
+        SELECT e.*, u.name as autorNome FROM dpo_material_evidencias e
+        LEFT JOIN users u ON u.id = e.created_by
+        WHERE e.company_id = ? AND e.pillar_key = ? ORDER BY e.created_at ASC, e.id ASC`, [companyId, pilarKey]);
+    const checks = await dbAll(`
+        SELECT c.*, (SELECT COUNT(*) FROM dpo_retention_responses r WHERE r.check_id = c.id) as totalRespostas,
+               (SELECT SUM(acertos) FROM dpo_retention_responses r WHERE r.check_id = c.id) as somaAcertos,
+               (SELECT SUM(total_objetivas) FROM dpo_retention_responses r WHERE r.check_id = c.id) as somaObjetivas
+        FROM dpo_retention_checks c WHERE c.company_id = ? AND c.pillar_key = ? ORDER BY c.created_at ASC`, [companyId, pilarKey]);
+    const chave = (q, i) => `${q}|${i}`;
+    const mapaStatus = {}; status.forEach(s => { mapaStatus[chave(s.question_numero, s.item_numero)] = s; });
+    const mapaEvid = {}; evidencias.forEach(e => { (mapaEvid[chave(e.question_numero, e.item_numero)] = mapaEvid[chave(e.question_numero, e.item_numero)] || []).push(e); });
+    const mapaChecks = {}; checks.forEach(c => {
+        const perguntas = JSON.parse(c.perguntas || '[]');
+        (mapaChecks[chave(c.question_numero, c.item_numero)] = mapaChecks[chave(c.question_numero, c.item_numero)] || []).push({
+            id: c.id, titulo: c.titulo, ativo: !!c.ativo, created_at: c.created_at, perguntas,
+            link: urlPublicaDoCheckDpo(req, c.token),
+            totalRespostas: c.totalRespostas || 0,
+            mediaAcerto: c.somaObjetivas ? Math.round((c.somaAcertos || 0) * 100 / c.somaObjetivas) : null
+        });
+    });
+    const resumo = { totalItens: 0, pendente: 0, em_andamento: 0, pronto: 0, totalEvidencias: evidencias.length, totalChecks: checks.length };
+    const grupos = pilarInfo.grupos.map(g => ({
+        numero: g.numero, titulo: g.titulo,
+        perguntas: g.perguntas.map(q => {
+            const itens = itensDaVerificacaoDpo(q.verificacao).map(it => {
+                const st = mapaStatus[chave(q.numero, it.numero)];
+                const situacao = st ? st.status : 'pendente';
+                resumo.totalItens++; resumo[situacao] = (resumo[situacao] || 0) + 1;
+                return {
+                    numero: it.numero, texto: it.texto, ...sugestoesDoItemDpo(it.texto),
+                    status: situacao, observacao: st ? st.observacao : null,
+                    evidencias: mapaEvid[chave(q.numero, it.numero)] || [],
+                    checks: mapaChecks[chave(q.numero, it.numero)] || []
+                };
+            });
+            return {
+                numero: q.numero, questao: q.questao, mandatoria: !!q.mandatoria, how_to_check: q.how_to_check || '',
+                itens, prontos: itens.filter(i => i.status === 'pronto').length
+            };
+        })
+    }));
+    return { key: pilarKey, label: pilarInfo.label, resumo, grupos };
+}
+
+app.get('/api/dpo/material/:pillarKey', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const companyId = await resolverEmpresaPastaDpo(req, res, req.params.pillarKey, req.query.company_id, 'material');
+        if (!companyId) return;
+        res.json(await montarMaterialDoPilarDpo(req, companyId, req.params.pillarKey));
+    } catch (e) {
+        console.error('Erro ao carregar Material do Pilar:', e.message);
+        res.status(500).json({ error: 'Erro ao carregar o material do pilar.' });
+    }
+});
+
+app.put('/api/dpo/material/status', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { pillarKey, questionNumero, itemNumero, status, observacao, company_id } = req.body;
+    try {
+        const companyId = await resolverEmpresaPastaDpo(req, res, pillarKey, company_id, 'material');
+        if (!companyId) return;
+        if (!itemValidoDpo(pillarKey, questionNumero, itemNumero)) return res.status(400).json({ error: 'Item inválido.' });
+        const atual = await dbGet(`SELECT * FROM dpo_material_status WHERE company_id = ? AND pillar_key = ? AND question_numero = ? AND item_numero = ?`, [companyId, pillarKey, questionNumero, String(itemNumero)]);
+        const novoStatus = STATUS_ITEM_MATERIAL_DPO.includes(status) ? status : (atual ? atual.status : 'pendente');
+        const novaObs = observacao !== undefined ? (String(observacao).trim() || null) : (atual ? atual.observacao : null);
+        await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_material_status (company_id, pillar_key, question_numero, item_numero, status, observacao, updated_by, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+             ON CONFLICT(company_id, pillar_key, question_numero, item_numero) DO UPDATE SET status = excluded.status, observacao = excluded.observacao, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP`,
+            [companyId, pillarKey, questionNumero, String(itemNumero), novoStatus, novaObs, req.user.userId], (err) => err ? reject(err) : resolve()
+        ));
+        res.json({ message: 'Item atualizado!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o item.' }); }
+});
+
+// Upload próprio do Material do Pilar — aceita também Excel e PowerPoint
+// (padrões e atas costumam vir nesses formatos), além de PDF, Word, imagem e vídeo.
+const uploadMaterialDpo = multer({
+    storage: armazenamentoUpload,
+    limits: { fileSize: 100 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const permitidos = /video\/|image\/|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.(wordprocessingml|spreadsheetml|presentationml)|application\/vnd\.ms-excel|application\/vnd\.ms-powerpoint|text\/csv|text\/plain/;
+        if (permitidos.test(file.mimetype)) return cb(null, true);
+        cb(new Error('Tipo de arquivo não permitido. Envie PDF, Word, Excel, PowerPoint, imagem ou vídeo.'));
+    }
+});
+
+app.post('/api/dpo/material/upload', requireRole('admin', 'client_admin'), (req, res) => {
+    uploadMaterialDpo.single('file')(req, res, (err) => {
+        if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Arquivo muito grande (máximo 100MB).' : err.message });
+        if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo recebido.' });
+        res.json({ url: '/uploads/' + req.file.filename, originalName: req.file.originalname });
+    });
+});
+
+app.post('/api/dpo/material/evidencias', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { pillarKey, questionNumero, itemNumero, tipo, titulo, url, originalName, company_id } = req.body;
+    if (!TIPOS_EVIDENCIA_DPO.includes(tipo)) return res.status(400).json({ error: 'Tipo de evidência inválido.' });
+    const urlLimpa = String(url || '').trim();
+    if (tipo === 'link') {
+        if (!/^https?:\/\/\S+$/i.test(urlLimpa)) return res.status(400).json({ error: 'Informe um link válido (começando com http:// ou https://).' });
+    } else if (!/^\/uploads\/[\w.\-]+$/.test(urlLimpa)) {
+        return res.status(400).json({ error: 'Envie o arquivo antes de salvar.' });
+    }
+    try {
+        const companyId = await resolverEmpresaPastaDpo(req, res, pillarKey, company_id, 'material');
+        if (!companyId) return;
+        if (!itemValidoDpo(pillarKey, questionNumero, itemNumero)) return res.status(400).json({ error: 'Item inválido.' });
+        await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_material_evidencias (company_id, pillar_key, question_numero, item_numero, tipo, titulo, url, original_name, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [companyId, pillarKey, questionNumero, String(itemNumero), tipo, String(titulo || '').trim().slice(0, 200) || null, urlLimpa, originalName ? String(originalName).slice(0, 200) : null, req.user.userId],
+            (err) => err ? reject(err) : resolve()
+        ));
+        // Primeira evidência num item pendente já o coloca "em andamento".
+        db.run(`INSERT INTO dpo_material_status (company_id, pillar_key, question_numero, item_numero, status, updated_by) VALUES (?, ?, ?, ?, 'em_andamento', ?)
+                ON CONFLICT(company_id, pillar_key, question_numero, item_numero) DO UPDATE SET status = CASE WHEN status = 'pendente' THEN 'em_andamento' ELSE status END`,
+            [companyId, pillarKey, questionNumero, String(itemNumero), req.user.userId], () => {});
+        res.json({ message: `${ROTULOS_TIPO_EVIDENCIA_DPO[tipo]} adicionado(a)!` });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar a evidência.' }); }
+});
+
+app.delete('/api/dpo/material/evidencias/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const ev = await dbGet(`SELECT * FROM dpo_material_evidencias WHERE id = ?`, [req.params.id]);
+        if (!ev) return res.status(404).json({ error: 'Evidência não encontrada.' });
+        if (req.user.role === 'client_admin' && String(ev.company_id) !== String(req.user.companyId)) return res.status(403).json({ error: 'Esta evidência não pertence à sua empresa.' });
+        if (!(await empresaTemPastaDpo(req, res, ev.company_id, 'material'))) return;
+        await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_material_evidencias WHERE id = ?`, [ev.id], (err) => err ? reject(err) : resolve()));
+        res.json({ message: 'Removido!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao remover a evidência.' }); }
+});
+
+// ----- Check de retenção (perguntas + link público) -----
+// Cada pergunta: { texto, tipo: 'aberta' | 'multipla', opcoes: [..], correta: índice | null }
+function normalizarPerguntasCheckDpo(lista) {
+    if (!Array.isArray(lista)) return [];
+    return lista.slice(0, 50).map(p => {
+        const texto = String((p && p.texto) || '').trim().slice(0, 500);
+        const tipo = p && p.tipo === 'multipla' ? 'multipla' : 'aberta';
+        let opcoes = tipo === 'multipla' && Array.isArray(p.opcoes) ? p.opcoes.map(o => String(o || '').trim().slice(0, 300)).filter(Boolean).slice(0, 8) : [];
+        let correta = tipo === 'multipla' && p.correta !== null && p.correta !== undefined && p.correta !== '' ? Number(p.correta) : null;
+        if (correta !== null && !(correta >= 0 && correta < opcoes.length)) correta = null;
+        return { texto, tipo: opcoes.length >= 2 ? tipo : 'aberta', opcoes: opcoes.length >= 2 ? opcoes : [], correta: opcoes.length >= 2 ? correta : null };
+    }).filter(p => p.texto);
+}
+
+async function obterCheckDpoComAcesso(req, res, id) {
+    const check = await dbGet(`SELECT * FROM dpo_retention_checks WHERE id = ?`, [id]);
+    if (!check) { res.status(404).json({ error: 'Check de retenção não encontrado.' }); return null; }
+    if (req.user.role === 'client_admin' && String(check.company_id) !== String(req.user.companyId)) { res.status(403).json({ error: 'Este check não pertence à sua empresa.' }); return null; }
+    if (!(await empresaTemPastaDpo(req, res, check.company_id, 'material'))) return null;
+    return check;
+}
+
+app.post('/api/dpo/material/checks', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { pillarKey, questionNumero, itemNumero, titulo, company_id } = req.body;
+    const perguntas = normalizarPerguntasCheckDpo(req.body.perguntas);
+    if (!String(titulo || '').trim()) return res.status(400).json({ error: 'Dê um título ao check (ex.: nome do treinamento).' });
+    if (!perguntas.length) return res.status(400).json({ error: 'Cadastre pelo menos uma pergunta.' });
+    try {
+        const companyId = await resolverEmpresaPastaDpo(req, res, pillarKey, company_id, 'material');
+        if (!companyId) return;
+        if (!itemValidoDpo(pillarKey, questionNumero, itemNumero)) return res.status(400).json({ error: 'Item inválido.' });
+        const token = crypto.randomBytes(16).toString('hex');
+        await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_retention_checks (company_id, pillar_key, question_numero, item_numero, titulo, token, perguntas, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [companyId, pillarKey, questionNumero, String(itemNumero), String(titulo).trim().slice(0, 200), token, JSON.stringify(perguntas), req.user.userId],
+            (err) => err ? reject(err) : resolve()
+        ));
+        res.json({ message: 'Check de retenção criado — link gerado!', link: urlPublicaDoCheckDpo(req, token) });
+    } catch (e) { res.status(400).json({ error: 'Erro ao criar o check de retenção.' }); }
+});
+
+app.put('/api/dpo/material/checks/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const check = await obterCheckDpoComAcesso(req, res, req.params.id);
+        if (!check) return;
+        const titulo = req.body.titulo !== undefined ? String(req.body.titulo).trim().slice(0, 200) : check.titulo;
+        if (!titulo) return res.status(400).json({ error: 'Dê um título ao check.' });
+        let perguntas = check.perguntas;
+        if (req.body.perguntas !== undefined) {
+            const novas = normalizarPerguntasCheckDpo(req.body.perguntas);
+            if (!novas.length) return res.status(400).json({ error: 'Cadastre pelo menos uma pergunta.' });
+            perguntas = JSON.stringify(novas);
+        }
+        const ativo = req.body.ativo !== undefined ? (req.body.ativo ? 1 : 0) : check.ativo;
+        await new Promise((resolve, reject) => db.run(`UPDATE dpo_retention_checks SET titulo = ?, perguntas = ?, ativo = ? WHERE id = ?`, [titulo, perguntas, ativo, check.id], (err) => err ? reject(err) : resolve()));
+        res.json({ message: 'Check atualizado!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o check.' }); }
+});
+
+app.delete('/api/dpo/material/checks/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const check = await obterCheckDpoComAcesso(req, res, req.params.id);
+        if (!check) return;
+        await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_retention_responses WHERE check_id = ?`, [check.id], (err) => err ? reject(err) : resolve()));
+        await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_retention_checks WHERE id = ?`, [check.id], (err) => err ? reject(err) : resolve()));
+        res.json({ message: 'Check excluído!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao excluir o check.' }); }
+});
+
+app.get('/api/dpo/material/checks/:id/respostas', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const check = await obterCheckDpoComAcesso(req, res, req.params.id);
+        if (!check) return;
+        const respostas = await dbAll(`SELECT * FROM dpo_retention_responses WHERE check_id = ? ORDER BY created_at DESC`, [check.id]);
+        res.json({
+            id: check.id, titulo: check.titulo, perguntas: JSON.parse(check.perguntas || '[]'), link: urlPublicaDoCheckDpo(req, check.token),
+            respostas: respostas.map(r => ({ ...r, respostas: JSON.parse(r.respostas || '[]') }))
+        });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar as respostas.' }); }
+});
+
+function estilizarCabecalhoExcelDpo(sheet, ultimaColuna) {
+    const cabecalho = sheet.getRow(1);
+    cabecalho.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    cabecalho.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC4C4C' } };
+    cabecalho.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    cabecalho.height = 30;
+    sheet.autoFilter = { from: 'A1', to: `${ultimaColuna}1` };
+}
+
+function dataBrDpo(valor) {
+    if (!valor) return '';
+    const d = new Date(String(valor).replace(' ', 'T') + (String(valor).includes('Z') ? '' : 'Z'));
+    return isNaN(d) ? '' : d.toLocaleDateString('pt-BR');
+}
+
+app.get('/api/dpo/material/checks/:id/export', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const check = await obterCheckDpoComAcesso(req, res, req.params.id);
+        if (!check) return;
+        const perguntas = JSON.parse(check.perguntas || '[]');
+        const respostas = await dbAll(`SELECT * FROM dpo_retention_responses WHERE check_id = ? ORDER BY created_at ASC`, [check.id]);
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Check de Retenção', { views: [{ state: 'frozen', ySplit: 1 }] });
+        sheet.columns = [
+            { header: 'Nome', key: 'nome', width: 28 },
+            { header: 'Matrícula', key: 'matricula', width: 14 },
+            { header: 'Data', key: 'data', width: 13 },
+            { header: 'Acertos', key: 'acertos', width: 12 },
+            ...perguntas.map((p, i) => ({ header: `${i + 1}. ${p.texto}`, key: 'p' + i, width: 40 }))
+        ];
+        respostas.forEach(r => {
+            const lista = JSON.parse(r.respostas || '[]');
+            const linha = { nome: r.nome, matricula: r.matricula || '', data: dataBrDpo(r.created_at), acertos: r.total_objetivas ? `${r.acertos}/${r.total_objetivas}` : '-' };
+            perguntas.forEach((p, i) => {
+                const v = lista[i];
+                linha['p' + i] = p.tipo === 'multipla' ? (v !== null && v !== undefined && p.opcoes[v] !== undefined ? p.opcoes[v] : '') : (v || '');
+            });
+            sheet.addRow(linha).alignment = { vertical: 'top', wrapText: true };
+        });
+        estilizarCabecalhoExcelDpo(sheet, sheet.getColumn(sheet.columns.length).letter);
+        const buffer = await workbook.xlsx.writeBuffer();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="check-retencao-${check.id}.xlsx"`);
+        res.send(Buffer.from(buffer));
+    } catch (e) {
+        console.error('Erro ao exportar check de retenção:', e.message);
+        res.status(500).json({ error: 'Erro ao exportar as respostas.' });
+    }
+});
+
+// Dossiê do pilar para a auditoria: cada pergunta/item com situação e todas as
+// evidências (arquivos com link, links externos, checks de retenção).
+app.get('/api/dpo/material/:pillarKey/export', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const pilarKey = req.params.pillarKey;
+        const companyId = await resolverEmpresaPastaDpo(req, res, pilarKey, req.query.company_id, 'material');
+        if (!companyId) return;
+        const empresa = await dbGet(`SELECT name FROM companies WHERE id = ?`, [companyId]);
+        const material = await montarMaterialDoPilarDpo(req, companyId, pilarKey);
+        const base = baseUrlPublicaDpo(req);
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'Impulsionar V4';
+        const sheet = workbook.addWorksheet('Material do Pilar', { views: [{ state: 'frozen', ySplit: 1 }] });
+        sheet.columns = [
+            { header: 'Pilar', key: 'pilar', width: 20 },
+            { header: 'Grupo', key: 'grupo', width: 28 },
+            { header: 'Nº Pergunta', key: 'numero', width: 11 },
+            { header: 'Pergunta do Pilar', key: 'pergunta', width: 30 },
+            { header: 'Item', key: 'item', width: 7 },
+            { header: 'O que o item pede', key: 'texto', width: 60 },
+            { header: 'Situação', key: 'status', width: 18 },
+            { header: 'Observação', key: 'obs', width: 30 },
+            { header: 'Tipo de evidência', key: 'tipo', width: 20 },
+            { header: 'Evidência', key: 'evidencia', width: 40 },
+            { header: 'Link', key: 'link', width: 50 }
+        ];
+        material.grupos.forEach(g => g.perguntas.forEach(q => q.itens.forEach(it => {
+            const base_ = { pilar: material.label, grupo: `${g.numero} ${g.titulo}`, numero: q.numero, pergunta: q.questao, item: it.numero, texto: it.texto, status: ROTULOS_STATUS_ITEM_MATERIAL_DPO[it.status] || it.status, obs: it.observacao || '' };
+            const linhas = [
+                ...it.evidencias.map(e => ({ tipo: ROTULOS_TIPO_EVIDENCIA_DPO[e.tipo] || e.tipo, evidencia: e.titulo || e.original_name || '', link: e.tipo === 'link' ? e.url : base + e.url })),
+                ...it.checks.map(c => ({ tipo: 'Check de retenção', evidencia: `${c.titulo} — ${c.totalRespostas} resposta(s)${c.mediaAcerto !== null ? ` · ${c.mediaAcerto}% de acerto` : ''}`, link: c.link }))
+            ];
+            if (!linhas.length) linhas.push({ tipo: '', evidencia: 'Sem evidência cadastrada', link: '' });
+            linhas.forEach(l => {
+                const row = sheet.addRow({ ...base_, ...l });
+                row.alignment = { vertical: 'top', wrapText: true };
+                if (l.link) row.getCell('link').value = { text: l.link, hyperlink: l.link };
+                const cor = it.status === 'pronto' ? 'FFDCFCE7' : it.status === 'em_andamento' ? 'FFFEF9C3' : 'FFFEE2E2';
+                row.getCell('status').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: cor } };
+            });
+        })));
+        estilizarCabecalhoExcelDpo(sheet, 'K');
+        const buffer = await workbook.xlsx.writeBuffer();
+        const nomeArquivo = `material-pilar-${pilarKey}-${(empresa ? empresa.name : 'empresa').replace(/[^a-z0-9]+/gi, '-')}.xlsx`;
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
+        res.send(Buffer.from(buffer));
+    } catch (e) {
+        console.error('Erro ao exportar Material do Pilar:', e.message);
+        res.status(500).json({ error: 'Erro ao exportar o material do pilar.' });
+    }
+});
+
+// ----- Página pública do check de retenção (sem login) -----
+app.get('/api/public/retencao/:token', async (req, res) => {
+    try {
+        const check = await dbGet(`SELECT * FROM dpo_retention_checks WHERE token = ?`, [String(req.params.token || '')]);
+        if (!check) return res.status(404).json({ error: 'Check de retenção não encontrado.' });
+        if (!check.ativo) return res.status(410).json({ error: 'Este check de retenção foi encerrado.' });
+        const empresa = await dbGet(`SELECT name, logo_url FROM companies WHERE id = ?`, [check.company_id]);
+        const achou = perguntaDoPilarDpo(check.pillar_key, check.question_numero);
+        res.json({
+            titulo: check.titulo,
+            empresa: empresa ? empresa.name : '',
+            logo: empresa ? empresa.logo_url : null,
+            pilar: DPO_AMBEV_DATA[check.pillar_key] ? DPO_AMBEV_DATA[check.pillar_key].label : '',
+            perguntaPilar: achou ? `${check.question_numero} ${achou.pergunta.questao}` : check.question_numero,
+            // Sem o gabarito: quem responde não vê qual é a alternativa correta.
+            perguntas: JSON.parse(check.perguntas || '[]').map(p => ({ texto: p.texto, tipo: p.tipo, opcoes: p.opcoes }))
+        });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar o check.' }); }
+});
+
+app.post('/api/public/retencao/:token', async (req, res) => {
+    try {
+        const check = await dbGet(`SELECT * FROM dpo_retention_checks WHERE token = ?`, [String(req.params.token || '')]);
+        if (!check) return res.status(404).json({ error: 'Check de retenção não encontrado.' });
+        if (!check.ativo) return res.status(410).json({ error: 'Este check de retenção foi encerrado.' });
+        const nome = String(req.body.nome || '').trim().slice(0, 120);
+        const matricula = String(req.body.matricula || '').trim().slice(0, 40);
+        if (!nome) return res.status(400).json({ error: 'Informe seu nome.' });
+        const perguntas = JSON.parse(check.perguntas || '[]');
+        const enviadas = Array.isArray(req.body.respostas) ? req.body.respostas : [];
+        let acertos = 0, totalObjetivas = 0;
+        const respostas = perguntas.map((p, i) => {
+            const v = enviadas[i];
+            if (p.tipo === 'multipla') {
+                const idx = v === null || v === undefined || v === '' ? null : Number(v);
+                const valido = idx !== null && idx >= 0 && idx < p.opcoes.length ? idx : null;
+                if (p.correta !== null && p.correta !== undefined) { totalObjetivas++; if (valido === p.correta) acertos++; }
+                return valido;
+            }
+            return String(v || '').trim().slice(0, 2000);
+        });
+        const faltando = perguntas.findIndex((p, i) => p.tipo === 'multipla' ? respostas[i] === null : !respostas[i]);
+        if (faltando >= 0) return res.status(400).json({ error: `Responda a pergunta ${faltando + 1}.` });
+        await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_retention_responses (check_id, nome, matricula, respostas, acertos, total_objetivas) VALUES (?, ?, ?, ?, ?, ?)`,
+            [check.id, nome, matricula || null, JSON.stringify(respostas), totalObjetivas ? acertos : null, totalObjetivas || null],
+            (err) => err ? reject(err) : resolve()
+        ));
+        res.json({ message: 'Respostas enviadas! Obrigado.', acertos: totalObjetivas ? acertos : null, total: totalObjetivas || null });
+    } catch (e) { res.status(400).json({ error: 'Erro ao enviar as respostas.' }); }
+});
+
 app.put('/api/dpo/cycles/:id/answers', requireRole('admin', 'client_admin'), async (req, res) => {
     const { questionKey, score } = req.body;
     if (!questionKey) return res.status(400).json({ error: 'Informe a pergunta.' });
@@ -6639,6 +7197,7 @@ app.put('/api/dpo/cycles/:id/answers', requireRole('admin', 'client_admin'), asy
         const ciclo = await obterCicloComAcesso(req, res, req.params.id);
         if (!ciclo) return;
         if (ciclo.status === 'concluido') return res.status(400).json({ error: 'Este ciclo já foi encerrado e não pode mais ser editado.' });
+        if (!(await empresaTemPastaDpo(req, res, ciclo.company_id, 'checklist'))) return;
         const valor = (score === null || score === '') ? null : Number(score);
         await new Promise((resolve, reject) => db.run(
             `INSERT INTO dpo_answers (cycle_id, question_key, score, updated_by) VALUES (?, ?, ?, ?)
@@ -6674,6 +7233,7 @@ app.post('/api/dpo/action-plans', requireRole('admin', 'client_admin'), async (r
         const ciclo = await obterCicloComAcesso(req, res, cycle_id);
         if (!ciclo) return;
         if (ciclo.status === 'concluido') return res.status(400).json({ error: 'Este ciclo já foi encerrado.' });
+        if (!(await empresaTemPastaDpo(req, res, ciclo.company_id, 'checklist'))) return;
         const resultado = await new Promise((resolve, reject) => db.run(
             `INSERT INTO dpo_action_plans (cycle_id, question_key, texto, created_by, verificacao_numero, owner, status, data_prevista) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [cycle_id, questionKey, texto, req.user.userId, verificacao_numero || null, owner || null, statusFinal, data_prevista || null], function (err) { err ? reject(err) : resolve(this.lastID); }
