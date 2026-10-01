@@ -645,6 +645,7 @@
   .rc-cel { width:58px; height:30px; border:1px dashed #cbd5e1; border-radius:6px; background:#fff; font-size:11px; font-weight:700; cursor:pointer; }
   .rc-resp summary::-webkit-details-marker { display:none; }
   @media (max-width:800px) { .rc-duas { grid-template-columns:1fr !important; } }
+  .c5-foto-falta { color:#dc2626; font-weight:800; font-size:12px; cursor:pointer; border:1px dashed #fca5a5; border-radius:6px; padding:1px 6px; background:#fff; }
   .p3a-trava { padding:9px 10px; background:#f1f5f9; border-radius:8px; font-weight:700; color:#334155; }
   .capex-pipeline { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-bottom:12px; }
   .capex-pipeline > div { background:#fff; border:1px solid var(--cinza-200); border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:2px; }
@@ -2563,11 +2564,12 @@ async function carregarMembrosEmpresa(companyId, prefixo) {
             <tr>
               <td>${escapeHtml(m.name)}</td>
               <td>${escapeHtml(m.email)}</td>
-              <td style="font-size:12px;color:${Array.isArray(restrito) ? '#c9a227' : '#16a34a'};">${Array.isArray(restrito) ? `Restrito (${qtdModulos} módulo(s))` : 'Acesso completo'}</td>
+              <td style="font-size:12px;color:${Number(m.aprovacao_pendente) === 1 ? '#dc2626' : Array.isArray(restrito) ? '#c9a227' : '#16a34a'};">${Number(m.aprovacao_pendente) === 1 ? '⏳ Aguardando aprovação da Impulsionar' : Array.isArray(restrito) ? (qtdModulos ? `Restrito (${qtdModulos} módulo(s))` : 'Sem permissões') : 'Acesso completo'}</td>
               <td>${m.principal ? `<span style="font-weight:800;color:#b45309;">⭐ Principal</span>${prefixo === 'ne' ? ` <button type="button" class="btn-secundario btn-sm" onclick="definirGestorPrincipal(${companyId}, null, '${prefixo}')">Remover</button>` : ''}` : prefixo === 'ne' ? `<button type="button" class="btn-secundario btn-sm" onclick="definirGestorPrincipal(${companyId}, ${m.id}, '${prefixo}')">☆ Marcar</button>` : ''}</td>
               <td>
                 <button type="button" class="btn-secundario btn-sm" onclick="abrirEditarMembroEmpresa(${companyId}, ${m.id}, '${prefixo}')">✏️ Editar</button>
-                <button type="button" class="btn-secundario btn-sm" onclick="abrirPermissoesMembroEmpresa(${companyId}, ${m.id}, '${prefixo}')">🔒 Permissões</button>
+                ${prefixo === 'ne' && Number(m.aprovacao_pendente) === 1 ? `<button type="button" class="btn-primario btn-sm" style="width:auto;background:#16a34a;" onclick="aprovarMembroEmpresa(${companyId}, ${m.id}, '${prefixo}')">✅ Aprovar</button>` : ''}
+                ${prefixo === 'ne' ? `<button type="button" class="btn-secundario btn-sm" onclick="abrirPermissoesMembroEmpresa(${companyId}, ${m.id}, '${prefixo}')">🔒 Permissões</button>` : ''}
                 ${prefixo === 'ne' ? `<button type="button" class="btn-secundario btn-sm" onclick="acessarComoGestor(${companyId}, ${m.id})">🔑 Acessar</button>` : ''}
                 <button type="button" class="btn-perigo btn-sm" onclick="removerMembroEmpresa(${companyId}, ${m.id}, '${prefixo}')" ${membros.length <= 1 ? 'disabled title="Cadastre outro acesso antes de remover este"' : ''}>Remover</button>
               </td>
@@ -2586,6 +2588,10 @@ async function carregarMembrosEmpresa(companyId, prefixo) {
   }
 }
 
+async function aprovarMembroEmpresa(companyId, memberId, prefixo) {
+  try { const r = await api('/api/companies/' + companyId + '/members/' + memberId + '/aprovar', { method: 'PUT' }); mostrarToast(r.message); carregarMembrosEmpresa(companyId, prefixo); abrirPermissoesMembroEmpresa(companyId, memberId, prefixo); }
+  catch (e) { mostrarToast(e.message, true); }
+}
 async function definirGestorPrincipal(companyId, userId, prefixo) {
   try { const r = await api('/api/companies/' + companyId + '/gestor-principal', { method: 'PUT', body: JSON.stringify({ userId }) }); mostrarToast(r.message); carregarMembrosEmpresa(companyId, prefixo); }
   catch (e) { mostrarToast(e.message, true); }
@@ -2714,7 +2720,7 @@ async function renderMinhaEmpresa() {
       </div>
       <div class="formulario" style="margin-top:16px;">
         <label>Acessos da Empresa</label>
-        <p style="font-size:12px;color:#64748b;margin-top:-4px;">Cadastre outros membros da sua equipe para que cada um entre com o e-mail e a senha próprios dele, em vez de dividir um único login.</p>
+        <p style="font-size:12px;color:#64748b;margin-top:-4px;">Cadastre outros membros da sua equipe para que cada um entre com o e-mail e a senha próprios dele. O novo acesso entra <strong>sem permissões</strong> e só consegue logar depois que a <strong>Impulsionar aprovar</strong> e liberar os módulos.</p>
         <div id="me-membros-area"><p style="font-size:12px;color:#94a3b8;">Carregando...</p></div>
         <div id="modal-area-membro"></div>
       </div>
@@ -9158,7 +9164,7 @@ async function abrirFerramentaDigitalDpo(chave, companyId, ano, aba) {
     if (acompEh() && d.template && d.template.especial === 'cinco_s') await acompCarregar5s();
     if (acompEh()) { acompPrepararDados(); acompAtualizarResumo(); }
     if (chave === 'gop') gopPreparar();
-    if (chave === 'cinco_s') c5Preparar();
+    if (chave === 'cinco_s') { c5Preparar(); c5Sincronizar(false); }
     if (EXCL[chave]) exPreparar();
     if (chave === 'manutencao') manSincronizarCelular();
     fdDesenhar();
@@ -11288,18 +11294,20 @@ function c5HtmlAuditoria() {
       <div style="min-width:220px;"><label style="margin:0;font-size:12px;">Área</label><select onchange="C5_SEL.areaId = this.value; fdCorpoRender();">${d.areas.map(a => `<option value="${a.id}" ${a.id === area.id ? 'selected' : ''}>${escapeHtml(a.nome)}${c5Aud(a.id, C5_SEL.mes) ? ' ✓' : ''}</option>`).join('')}</select></div>
       <div><label style="margin:0;font-size:12px;">Mês</label><select onchange="C5_SEL.mes = Number(this.value); fdCorpoRender();">${MESES_LONGOS_FD.map((m, i) => `<option value="${i}" ${i === C5_SEL.mes ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
       <div style="font-size:12.5px;color:#475569;">Dono: <strong>${escapeHtml(area.dono || '—')}</strong> · Auditor: <strong>${escapeHtml((au && au.auditor) || area.auditor || '—')}</strong>${area.depto ? ` · ${escapeHtml(area.depto)}` : ''}</div>
-      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-primario btn-sm" style="width:auto;background:#0f766e;" onclick="c5GerarLink()">📱 Link da auditoria (celular)</button><button class="btn-secundario btn-sm" onclick="c5Sincronizar(true)">↻ Lançamentos do celular</button>
         <span class="fd-nota" style="background:${tot === null ? '#94a3b8' : tot * 100 >= (Number(d.modelo.meta) || 85) ? '#16a34a' : '#dc2626'};">5S da área: ${tot === null ? '—' : fdPct(tot, 1)}</span>
         ${au ? `<button class="btn-perigo btn-sm" onclick="c5ExcluirAuditoria('${au.id}')">Excluir auditoria</button>` : ''}
       </div>
     </div>
+    <div id="c5-link"></div>${c5FotosFaltando() ? `<div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#991b1b;background:#fef2f2;">📷 ${c5FotosFaltando()} item(ns) N sem foto — a foto é obrigatória em todo N.</div>` : ''}
     ${au && au.notaInformada !== undefined ? `<div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#854d0e;background:#fffbeb;">Resultado informado na planilha importada: <strong>${fdFmt(au.notaInformada, 1)}%</strong>${Object.keys(au.resp || {}).length ? ' — ao alterar alguma resposta, o resultado passa a ser calculado pelas respostas.' : ' — sem respostas por pergunta.'}</div>` : ''}
     ${d.modelo.sensos.map(s => { const v = au ? c5PctSenso(au, s) : null; return `
       <div class="painel c5-senso" style="margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><h4 style="margin:0;">${ICONES_SENSO[s.chave] || ''} Senso ${s.numero} — ${escapeHtml(s.titulo)}</h4><span class="dpo-chip-nivel" style="${c5Cor(v)}">${v === null ? 'sem avaliação' : fdPct(v, 0)}</span></div>
         ${s.perguntas.map(p => { const r = au ? c5Norm((au.resp || {})[p.id]) : '', pl = r === 'N' ? planoDe(p.id) : null; return `
           <div class="c5-pergunta ${r === 'N' ? 'nok' : ''}">
-            <div class="c5-texto"><strong>${p.num}</strong> ${escapeHtml(p.texto)}${pl ? ` <button class="gop-plano ${c5PlanoDefinido(pl) ? 'ok' : 'pend'}" title="${c5PlanoDefinido(pl) ? 'Plano definido' : 'Plano pendente — clique para preencher'}" onclick="c5AbrirPlano('${pl.id}')">${c5PlanoDefinido(pl) ? '📝' : '⚠️'}</button>` : ''}</div>
+            <div class="c5-texto"><strong>${p.num}</strong> ${escapeHtml(p.texto)}${r === 'N' ? ((au.fotos || {})[p.id] ? ` <a href="${escapeHtml(au.fotos[p.id])}" target="_blank" title="Foto do item N">📷</a>` : ` <label class="c5-foto-falta" title="Foto obrigatória no item N">📷 tirar foto<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="c5EnviarFoto('${au.id}', '${p.id}', this)"></label>`) : ''}${pl ? ` <button class="gop-plano ${c5PlanoDefinido(pl) ? 'ok' : 'pend'}" title="${c5PlanoDefinido(pl) ? 'Plano definido' : 'Plano pendente — clique para preencher'}" onclick="c5AbrirPlano('${pl.id}')">${c5PlanoDefinido(pl) ? '📝' : '⚠️'}</button>` : ''}</div>
             <div class="c5-botoes">${btn(p.id, 'S', r)}${btn(p.id, 'N', r)}${btn(p.id, 'NA', r)}</div>
           </div>`; }).join('')}
       </div>`; }).join('')}
@@ -11318,6 +11326,7 @@ function c5Responder(qid, v) {
   const au = c5GarantirAuditoria();
   au.resp = au.resp || {};
   au.resp[qid] = au.resp[qid] === v ? '' : v;
+  au.respEm = au.respEm || {}; au.respEm[qid] = new Date().toISOString();
   if (au.origem === 'planilha') delete au.origem; // passa a valer o lançamento do sistema
   delete au.notaInformada;
   const novos = c5GarantirPlanos();
@@ -11343,23 +11352,165 @@ function c5ExcluirAuditoria(id) {
   fdAgendarSalvar(); c5Redesenhar();
 }
 
-// ---- Donos de área ----
+// ---- Donos de área (departamento primeiro; Entrega pede placa, motorista, supervisor e auditor) + base de motoristas ----
+const DEPTOS_5S_PADRAO = ['Armazém', 'Administrativo', 'Entrega', 'Frota', 'Puxada'];
+function c5Deptos() { const d = FD.dados; if (!Array.isArray(d.departamentos) || !d.departamentos.length) d.departamentos = [...new Set([...DEPTOS_5S_PADRAO, ...d.areas.map(a => a.depto).filter(Boolean)])]; return d.departamentos; }
+function c5EhEntrega(depto) { return /^entrega/i.test(String(depto || '').trim()); }
+function c5Motoristas() { const d = FD.dados; d.motoristas = Array.isArray(d.motoristas) ? d.motoristas : []; return d.motoristas; }
+function c5Supervisores() { const d = FD.dados; return [...new Set(c5Motoristas().map(m => m.supervisor).concat(d.areas.map(a => a.supervisor)).filter(Boolean))].sort(); }
 function c5HtmlAreas() {
   FD_AO_EDITAR = null;
-  const nomes = FD.dados.areas.map(a => a.dono).concat(FD.dados.areas.map(a => a.auditor)).filter(Boolean);
-  const cont = {}; FD.dados.areas.forEach(a => { if (a.auditor) cont[a.auditor] = (cont[a.auditor] || 0) + 1; });
+  const d = FD.dados, deps = c5Deptos(), mot = c5Motoristas();
+  const cont = {}; d.areas.forEach(a => { if (a.auditor) cont[a.auditor] = (cont[a.auditor] || 0) + 1; });
   const repetidos = Object.entries(cont).filter(([, n]) => n > 1);
   return `
-    <div class="painel" style="margin-bottom:12px;font-size:12.5px;color:#475569;">Cada área tem um <strong>dono</strong> (responsável pelo 5S e pelos planos) e um <strong>auditor</strong> de outra área (auditoria cruzada). ${repetidos.length ? `<span style="color:#b45309;">Auditores com mais de uma área: ${repetidos.map(([n, q]) => `${escapeHtml(n)} (${q})`).join(', ')}.</span>` : ''}</div>
-    ${fdTabela('areas', [
-      { campo: 'nome', rotulo: 'Área', largura: 200 },
-      { campo: 'depto', rotulo: 'Departamento', tipo: 'select', opcoes: [...new Set(['Armazém', 'Administrativo', 'Entrega', 'Frota', ...FD.dados.areas.map(a => a.depto).filter(Boolean)])], largura: 140 },
-      { campo: 'dono', rotulo: 'Dono da área', largura: 160 },
-      { campo: 'auditor', rotulo: 'Auditor', largura: 160 },
-      { campo: 'aud', rotulo: 'Cruzada?', tipo: 'calc', valor: l => l.auditor && l.dono && l.auditor.trim().toLowerCase() === l.dono.trim().toLowerCase() ? '<span style="color:#dc2626;font-weight:700;">⚠️ dono = auditor</span>' : l.auditor ? '✅' : '' }
-    ], { numerar: true, botao: 'Adicionar área' })}
-    <datalist id="c5-nomes">${[...new Set(nomes)].map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist>`;
+    <div class="painel" style="margin-bottom:12px;font-size:12.5px;color:#475569;">Cada área tem um <strong>dono</strong> e um <strong>auditor</strong> de outra área (auditoria cruzada). Escolha primeiro o <strong>departamento</strong>; em <strong>Entrega</strong> a área é o caminhão: placa, motorista (puxa o supervisor da base de motoristas) e auditor. ${repetidos.length ? `<span style="color:#b45309;">Auditores com mais de uma área: ${repetidos.map(([n, q]) => `${escapeHtml(n)} (${q})`).join(', ')}.</span>` : ''}</div>
+    <div class="painel" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;"><h3 style="margin:0;">👥 Áreas e donos (${d.areas.length})</h3><button class="btn-primario btn-sm" style="width:auto;" onclick="c5EditarArea(null)">+ Adicionar área</button></div>
+      <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th>#</th><th>Departamento</th><th style="min-width:160px;">Área</th><th>Placa</th><th>Dono / motorista</th><th>Supervisor</th><th>Auditor</th><th>Cruzada?</th><th></th></tr></thead><tbody>
+        ${d.areas.map((a, i) => `<tr><td style="color:#94a3b8;">${i + 1}</td><td>${escapeHtml(a.depto || '—')}</td><td><strong>${escapeHtml(a.nome || '')}</strong></td><td>${escapeHtml(a.placa || '')}</td><td>${escapeHtml(a.dono || '—')}</td><td>${escapeHtml(a.supervisor || '')}</td><td>${escapeHtml(a.auditor || '—')}</td>
+          <td>${a.auditor && a.dono && a.auditor.trim().toLowerCase() === a.dono.trim().toLowerCase() ? '<span style="color:#dc2626;font-weight:700;">⚠️ dono = auditor</span>' : a.auditor ? '✅' : ''}</td>
+          <td style="white-space:nowrap;"><button class="btn-secundario btn-sm" onclick="c5EditarArea('${a.id}')">✏️ Editar</button> <button class="btn-perigo btn-sm" onclick="c5ExcluirArea('${a.id}')">🗑️</button></td></tr>`).join('') || '<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:12px;">Nenhuma área cadastrada.</td></tr>'}
+      </tbody></table></div></div>
+    <div style="display:grid;grid-template-columns:minmax(320px,2fr) minmax(240px,1fr);gap:12px;" class="rc-duas">
+      <div class="painel"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;"><h3 style="margin:0;">🚚 Base de motoristas (${mot.length})</h3><button class="btn-secundario btn-sm" onclick="c5AbrirMotorista()">+ Motorista</button></div>
+        <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th>Motorista</th><th>Supervisor</th><th>Placa</th><th>Telefone</th><th></th></tr></thead><tbody>
+          ${mot.map(m => `<tr><td><strong>${escapeHtml(m.nome || '')}</strong></td><td>${escapeHtml(m.supervisor || '—')}</td><td>${escapeHtml(m.placa || '')}</td><td>${escapeHtml(m.telefone || '')}</td><td style="white-space:nowrap;"><button class="btn-secundario btn-sm" onclick="c5AbrirMotorista('${m.id}')">✏️</button> <button class="btn-perigo btn-sm" onclick="c5ExcluirMotorista('${m.id}')">🗑️</button></td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px;">Cadastre os motoristas com o supervisor de cada um.</td></tr>'}
+        </tbody></table></div></div>
+      <div class="painel"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;"><h3 style="margin:0;">🏷️ Departamentos</h3><button class="btn-secundario btn-sm" onclick="c5NovoDepto()">+ Novo</button></div>
+        ${deps.map((x, k) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--cinza-200);font-size:13px;"><span>${escapeHtml(x)} <small style="color:#94a3b8;">${d.areas.filter(a => a.depto === x).length} área(s)</small></span><span style="white-space:nowrap;"><button class="btn-secundario btn-sm" onclick="c5EditarDepto(${k})">✏️</button> <button class="btn-perigo btn-sm" onclick="c5ExcluirDepto(${k})">🗑️</button></span></div>`).join('')}</div>
+    </div>`;
 }
+function c5EditarArea(id) { C5_AREA_ID = id; C5_AREA_DEPTO = null; C5_AREA_TMP = {}; c5AbrirArea(); }
+function c5AbrirArea() {
+  const id = C5_AREA_ID;
+  const d = FD.dados, a = id ? d.areas.find(x => x.id === id) : { depto: '' }, mot = c5Motoristas();
+  const depto = C5_AREA_DEPTO !== null ? C5_AREA_DEPTO : a.depto || '';
+  const ent = c5EhEntrega(depto), nomes = [...new Set(d.areas.map(x => x.dono).concat(d.areas.map(x => x.auditor), mot.map(m => m.nome)).filter(Boolean))];
+  document.getElementById('modal-area').innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) c5FecharArea()"><div class="modal-caixa" style="max-width:560px;">
+    <h3 style="margin-top:0;">${id ? '✏️ Editar área' : '➕ Nova área'}</h3>
+    <label>1. Departamento *</label><select id="c5a-depto" onchange="C5_AREA_DEPTO = this.value; c5LerArea(); c5AbrirArea()"><option value="">Escolha o departamento…</option>${c5Deptos().map(x => `<option ${x === depto ? 'selected' : ''}>${escapeHtml(x)}</option>`).join('')}</select>
+    ${!depto ? '<div style="font-size:12.5px;color:#64748b;margin-top:8px;">Escolha o departamento para continuar.</div>' : ent ? `
+      <div class="cx-grid" style="margin-top:6px;">
+        <div><label>Placa *</label><input id="c5a-placa" list="c5a-placas" value="${escapeHtml(C5_AREA_TMP.placa ?? a.placa ?? '')}" placeholder="ABC1D23" style="text-transform:uppercase;"><datalist id="c5a-placas">${[...new Set(mot.map(m => m.placa).filter(Boolean))].map(p => `<option value="${escapeHtml(p)}">`).join('')}</datalist></div>
+        <div><label>Motorista *</label><select id="c5a-mot" onchange="c5MotoristaEscolhido(this.value)"><option value="">Escolha…</option>${mot.map(m => `<option value="${m.id}" ${(C5_AREA_TMP.motoristaId ?? a.motoristaId) === m.id ? 'selected' : ''}>${escapeHtml(m.nome)}</option>`).join('')}</select><small><a href="#" onclick="c5LerArea(); c5AbrirMotorista(null, true); return false;">+ cadastrar motorista</a></small></div>
+        <div><label>Supervisor</label><input id="c5a-sup" list="c5a-sups" value="${escapeHtml(C5_AREA_TMP.supervisor ?? a.supervisor ?? '')}"><datalist id="c5a-sups">${c5Supervisores().map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist><small style="color:#64748b;">puxa automático do motorista</small></div>
+        <div><label>Auditor *</label><input id="c5a-aud" list="c5a-nomes" value="${escapeHtml(C5_AREA_TMP.auditor ?? a.auditor ?? '')}"></div>
+        <div style="grid-column:1/-1;"><label>Nome da área</label><input id="c5a-nome" value="${escapeHtml(C5_AREA_TMP.nome ?? a.nome ?? '')}" placeholder="Automático: Caminhão + placa"></div>
+      </div>` : `
+      <div class="cx-grid" style="margin-top:6px;">
+        <div style="grid-column:1/-1;"><label>Nome da área *</label><input id="c5a-nome" value="${escapeHtml(C5_AREA_TMP.nome ?? a.nome ?? '')}" placeholder="Ex.: Doca, Picking, Refeitório"></div>
+        <div><label>Dono da área *</label><input id="c5a-dono" list="c5a-nomes" value="${escapeHtml(C5_AREA_TMP.dono ?? a.dono ?? '')}"></div>
+        <div><label>Auditor *</label><input id="c5a-aud" list="c5a-nomes" value="${escapeHtml(C5_AREA_TMP.auditor ?? a.auditor ?? '')}"></div>
+      </div>`}
+    <datalist id="c5a-nomes">${nomes.map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist>
+    <div class="acoes-form" style="justify-content:space-between;margin-top:14px;"><div>${id ? `<button class="btn-perigo btn-sm" onclick="c5ExcluirArea('${id}')">Excluir área</button>` : ''}</div>
+      <div style="display:flex;gap:8px;"><button class="btn-secundario" onclick="c5FecharArea()">Cancelar</button><button class="btn-primario" style="width:auto;" ${depto ? '' : 'disabled'} onclick="c5SalvarArea()">💾 Salvar</button></div></div>
+  </div></div>`;
+}
+let C5_AREA_DEPTO = null, C5_AREA_TMP = {}, C5_AREA_ID = null;
+function c5LerArea() { const dep = document.getElementById('c5a-depto'); if (dep) C5_AREA_DEPTO = dep.value; const g = k => { const el = document.getElementById('c5a-' + k); return el ? el.value : undefined; }; const t = { placa: g('placa'), motoristaId: g('mot'), supervisor: g('sup'), auditor: g('aud'), nome: g('nome'), dono: g('dono') }; Object.keys(t).forEach(k => { if (t[k] === undefined) delete t[k]; }); C5_AREA_TMP = { ...C5_AREA_TMP, ...t }; }
+function c5FecharArea() { C5_AREA_DEPTO = null; C5_AREA_TMP = {}; gopFecharPlano(); }
+function c5MotoristaEscolhido(mid) {
+  const m = c5Motoristas().find(x => x.id === mid); c5LerArea(); C5_AREA_TMP.motoristaId = mid;
+  if (m) { C5_AREA_TMP.supervisor = m.supervisor || ''; if (m.placa) C5_AREA_TMP.placa = m.placa; }
+  const dep = document.getElementById('c5a-depto'); C5_AREA_DEPTO = dep ? dep.value : C5_AREA_DEPTO;
+  c5AbrirArea();
+}
+function c5SalvarArea() {
+  const id = C5_AREA_ID; c5LerArea(); const d = FD.dados, t = C5_AREA_TMP, depto = (document.getElementById('c5a-depto') || {}).value || '';
+  if (!depto) { mostrarToast('Escolha o departamento.', true); return; }
+  let dados;
+  if (c5EhEntrega(depto)) {
+    const placa = String(t.placa || '').trim().toUpperCase(), m = c5Motoristas().find(x => x.id === t.motoristaId);
+    if (!placa || !m) { mostrarToast('Informe a placa e o motorista.', true); return; }
+    dados = { depto, placa, motoristaId: m.id, dono: m.nome, supervisor: String(t.supervisor || '').trim(), auditor: String(t.auditor || '').trim(), nome: String(t.nome || '').trim() || `Caminhão ${placa}` };
+  } else {
+    if (!String(t.nome || '').trim()) { mostrarToast('Informe o nome da área.', true); return; }
+    dados = { depto, nome: t.nome.trim(), dono: String(t.dono || '').trim(), auditor: String(t.auditor || '').trim(), placa: '', motoristaId: '', supervisor: '' };
+  }
+  if (!dados.auditor) { mostrarToast('Informe o auditor.', true); return; }
+  if (id) Object.assign(d.areas.find(x => x.id === id), dados); else d.areas.push({ id: fdId(), ...dados });
+  c5FecharArea(); fdAgendarSalvar(); c5Redesenhar(); mostrarToast('Área salva.');
+}
+function c5ExcluirArea(id) {
+  const d = FD.dados, n = d.auditorias.filter(a => a.areaId === id).length;
+  if (!confirm(`Excluir esta área?${n ? ` Ela tem ${n} auditoria(s) lançada(s), que também serão excluídas.` : ''}`)) return;
+  d.areas = d.areas.filter(a => a.id !== id); const ids = new Set(d.auditorias.filter(a => a.areaId === id).map(a => a.id));
+  d.auditorias = d.auditorias.filter(a => a.areaId !== id); d.acoes = d.acoes.filter(a => !(ids.has(a.auditoriaId) && !String(a.acao || '').trim()));
+  c5FecharArea(); fdAgendarSalvar(); c5Redesenhar();
+}
+function c5AbrirMotorista(id, voltarArea) {
+  const m = id ? c5Motoristas().find(x => x.id === id) : {};
+  document.getElementById('modal-area').innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) gopFecharPlano()"><div class="modal-caixa" style="max-width:480px;">
+    <h3 style="margin-top:0;">${id ? '✏️ Editar motorista' : '➕ Novo motorista'}</h3>
+    <label>Nome *</label><input id="c5m-nome" value="${escapeHtml(m.nome || '')}">
+    <label>Supervisor *</label><input id="c5m-sup" list="c5m-sups" value="${escapeHtml(m.supervisor || '')}"><datalist id="c5m-sups">${c5Supervisores().map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist>
+    <div style="display:flex;gap:10px;"><div style="flex:1;"><label>Placa habitual</label><input id="c5m-placa" value="${escapeHtml(m.placa || '')}" style="text-transform:uppercase;"></div><div style="flex:1;"><label>Telefone</label><input id="c5m-tel" inputmode="tel" value="${escapeHtml(m.telefone || '')}"></div></div>
+    <div class="acoes-form" style="justify-content:flex-end;margin-top:14px;"><button class="btn-secundario" onclick="${voltarArea ? `c5AbrirArea()` : 'gopFecharPlano()'}">Cancelar</button><button class="btn-primario" style="width:auto;" onclick="c5SalvarMotorista(${id ? `'${id}'` : 'null'}, ${!!voltarArea})">💾 Salvar</button></div>
+  </div></div>`;
+}
+function c5SalvarMotorista(id, voltarArea) {
+  const g = k => (document.getElementById('c5m-' + k) || {}).value || '', nome = g('nome').trim(), sup = g('sup').trim();
+  if (!nome || !sup) { mostrarToast('Informe o nome e o supervisor.', true); return; }
+  const dados = { nome, supervisor: sup, placa: g('placa').trim().toUpperCase(), telefone: g('tel').trim() }, l = c5Motoristas();
+  let m;
+  if (id) { m = l.find(x => x.id === id); Object.assign(m, dados); FD.dados.areas.filter(a => a.motoristaId === id).forEach(a => { a.dono = nome; a.supervisor = sup; }); }
+  else { m = { id: fdId(), ...dados }; l.push(m); }
+  fdAgendarSalvar();
+  if (voltarArea) { C5_AREA_TMP.motoristaId = m.id; C5_AREA_TMP.supervisor = sup; if (dados.placa) C5_AREA_TMP.placa = dados.placa; c5AbrirArea(); }
+  else { gopFecharPlano(); c5Redesenhar(); }
+  mostrarToast('Motorista salvo.');
+}
+function c5ExcluirMotorista(id) {
+  const n = FD.dados.areas.filter(a => a.motoristaId === id).length;
+  if (!confirm(`Excluir este motorista?${n ? ` Ele é dono de ${n} área(s) — elas continuam, mas sem vínculo com a base.` : ''}`)) return;
+  FD.dados.motoristas = c5Motoristas().filter(m => m.id !== id); FD.dados.areas.forEach(a => { if (a.motoristaId === id) a.motoristaId = ''; });
+  fdAgendarSalvar(); c5Redesenhar();
+}
+function c5NovoDepto() { const n = (prompt('Nome do novo departamento:') || '').trim(); if (!n) return; const l = c5Deptos(); if (l.some(x => x.toLowerCase() === n.toLowerCase())) { mostrarToast('Departamento já existe.', true); return; } l.push(n); fdAgendarSalvar(); c5Redesenhar(); }
+function c5EditarDepto(k) { const l = c5Deptos(), velho = l[k], n = (prompt('Novo nome do departamento:', velho) || '').trim(); if (!n || n === velho) return; l[k] = n; FD.dados.areas.forEach(a => { if (a.depto === velho) a.depto = n; }); fdAgendarSalvar(); c5Redesenhar(); }
+function c5ExcluirDepto(k) { const l = c5Deptos(), x = l[k], n = FD.dados.areas.filter(a => a.depto === x).length; if (n) { mostrarToast(`"${x}" tem ${n} área(s). Mude o departamento delas antes de excluir.`, true); return; } if (!confirm(`Excluir o departamento "${x}"?`)) return; l.splice(k, 1); fdAgendarSalvar(); c5Redesenhar(); }
+// ---- foto obrigatória no item N ----
+async function c5EnviarFoto(auId, qid, input) {
+  const arq = input.files && input.files[0]; if (!arq) return;
+  try {
+    const fd = new FormData(); fd.append('file', arq);
+    const up = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd });
+    const u = await up.json(); if (!up.ok) throw new Error(u.error || 'Falha no envio.');
+    const au = FD.dados.auditorias.find(a => a.id === auId); au.fotos = au.fotos || {}; au.fotos[qid] = u.url;
+    fdAgendarSalvar(); mostrarToast('Foto do item N salva.');
+    const pl = FD.dados.acoes.find(a => a.auditoriaId === auId && a.qid === qid); if (pl && document.getElementById('c5p-acao')) c5AbrirPlano(pl.id); else c5Redesenhar();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+function c5FotosFaltando() { let n = 0; FD.dados.auditorias.forEach(au => Object.entries(au.resp || {}).forEach(([q, v]) => { if (c5Norm(v) === 'N' && au.origem !== 'planilha' && !(au.fotos || {})[q]) n++; })); return n; }
+// ---- auditoria pelo celular (link) ----
+async function c5GerarLink() {
+  try {
+    const r = await api('/api/dpo/cinco-s/link', { method: 'POST', body: JSON.stringify({ ano: FD.ano, company_id: FD.companyId || undefined }) });
+    const el = document.getElementById('c5-link');
+    if (el) el.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;"><input readonly value="${escapeHtml(r.url)}" style="flex:1;min-width:260px;margin:0;" onclick="this.select()"><button class="btn-secundario btn-sm" onclick="navigator.clipboard && navigator.clipboard.writeText('${escapeHtml(r.url)}'); mostrarToast('Link copiado.');">📋 Copiar</button><a class="btn-secundario btn-sm" target="_blank" href="https://wa.me/?text=${encodeURIComponent('Auditoria 5S — abra no celular: ' + r.url)}">WhatsApp</a><a class="btn-secundario btn-sm" target="_blank" href="${escapeHtml(r.url)}">Abrir</a></div>`;
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function c5Sincronizar(avisar) {
+  try {
+    const q = new URLSearchParams(); q.set('ano', FD.ano); if (FD.companyId) q.set('company_id', FD.companyId);
+    const l = await api('/api/dpo/cinco-s/celular?' + q.toString()); if (!FD || FD.chave !== 'cinco_s') return;
+    const d = FD.dados; let n = 0;
+    l.forEach(x => {
+      if (!d.areas.some(a => a.id === x.area_id)) return;
+      let au = d.auditorias.find(a => a.areaId === x.area_id && a.mes === x.mes);
+      const area = d.areas.find(a => a.id === x.area_id);
+      if (!au) { au = { id: fdId(), areaId: x.area_id, mes: x.mes, auditor: x.autor || (area && area.auditor) || '', resp: {}, data: String(x.updated_at).slice(0, 10), origemCelular: true }; d.auditorias.push(au); }
+      au.resp = au.resp || {}; au.respEm = au.respEm || {}; au.fotos = au.fotos || {};
+      if (x.foto && au.fotos[x.qid] !== x.foto) { au.fotos[x.qid] = x.foto; n++; }
+      if (x.resp !== null && x.resp !== undefined && (!au.respEm[x.qid] || String(x.updated_at) > String(au.respEm[x.qid]))) { if (String(au.resp[x.qid] || '') !== String(x.resp)) { au.resp[x.qid] = x.resp; n++; } au.respEm[x.qid] = x.updated_at; delete au.origem; delete au.notaInformada; }
+    });
+    if (n) { c5GarantirPlanos(); fdAgendarSalvar(); c5Redesenhar(); }
+    if (avisar || n) mostrarToast(n ? `${n} lançamento(s) do celular aplicado(s).` : 'Nada novo do celular.');
+  } catch (e) { if (avisar) mostrarToast(e.message, true); }
+}
+
 
 // ---- Plano de ação ----
 function c5AbrirPlano(id) {
@@ -11373,6 +11524,7 @@ function c5AbrirPlano(id) {
         <div class="gop-plano-ref">${area ? `<strong>${escapeHtml(area.nome)}</strong> · dono ${escapeHtml(area.dono || '—')}` : ''}${s ? `<div>${ICONES_SENSO[s.chave] || ''} Senso ${s.numero} — ${escapeHtml(s.titulo)}</div>` : ''}${p ? `<div>Item N ${p.num}: ${escapeHtml(p.texto)}</div>` : ''}</div>
         ${!a.auditoriaId ? `<div class="linha" style="display:flex;gap:10px;flex-wrap:wrap;"><div style="flex:1;min-width:160px;"><label>Área</label><select id="c5p-area"><option value=""></option>${d.areas.map(x => `<option value="${x.id}" ${x.id === a.areaId ? 'selected' : ''}>${escapeHtml(x.nome)}</option>`).join('')}</select></div>
           <div style="flex:1;min-width:160px;"><label>Senso</label><select id="c5p-senso"><option value=""></option>${d.modelo.sensos.map(x => `<option value="${x.chave}" ${x.chave === a.senso ? 'selected' : ''}>${x.numero} - ${escapeHtml(x.titulo)}</option>`).join('')}</select></div></div>` : ''}
+        ${a.auditoriaId && a.qid ? (() => { const au = d.auditorias.find(x => x.id === a.auditoriaId), f = au && (au.fotos || {})[a.qid]; return `<div style="display:flex;gap:10px;align-items:center;margin:8px 0;padding:8px;border-radius:8px;background:${f ? '#f0fdf4' : '#fef2f2'};">${f ? `<a href="${escapeHtml(f)}" target="_blank"><img src="${escapeHtml(f)}" style="width:72px;height:56px;object-fit:cover;border-radius:6px;"></a><span style="font-size:12.5px;">📷 Foto do item N registrada.</span>` : '<span style="font-size:12.5px;color:#991b1b;font-weight:700;">📷 Item N: tire a foto da não conformidade (obrigatório).</span>'}<label class="btn-secundario btn-sm" style="width:auto;cursor:pointer;margin:0 0 0 auto;">${f ? 'Trocar foto' : 'Tirar / enviar foto'}<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="c5EnviarFoto('${a.auditoriaId}', '${a.qid}', this)"></label></div>`; })() : ''}
         <label>Ação *</label><textarea id="c5p-acao" rows="2" placeholder="O que será feito para o item voltar a S">${escapeHtml(a.acao || '')}</textarea>
         <div class="linha" style="display:flex;gap:10px;flex-wrap:wrap;">
           <div style="flex:2;min-width:180px;"><label>Dono *</label><input id="c5p-dono" list="c5p-donos" value="${escapeHtml(a.dono || '')}"><datalist id="c5p-donos">${donos.map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist></div>
@@ -11455,7 +11607,7 @@ const EXCL = {
     abas: [['sonho', '🌟 Sonho'], ['kpis', '🎯 Meta e Real'], ['valida', '✅ Validação 1.2'], ['arquivos', '📎 Evidências']],
     tipos: [['exposicao', 'Foto do Sonho exposto na unidade'], ['dpoday', 'Apresentação do DPO Day'], ['comunicacao', 'Evidência de comunicação'], ['outro', 'Outro']] },
   manutencao: { q: 'planejamento:2.2', icone: '🛠️', titulo: 'Check Global de Manutenção', sub: 'Planejamento · pergunta <strong>2.2 Manutenção das Instalações</strong>', req1: ['V.1', 'V.2', 'V.3'],
-    abas: [['check', '📝 Checklist do trimestre'], ['evolucao', '📈 Evolução T1–T4'], ['ronda', '📱 Checklist no celular e fotos'], ['acoes', '🔁 Plano de ação'], ['fornecedores', '📇 Base de fornecedores'], ['raci', '👥 RACI e ANS'], ['valida', '✅ Validação 2.2'], ['arquivos', '📎 Laudos e anexos']],
+    abas: [['check', '📝 Checklist do trimestre'], ['evolucao', '📈 Evolução T1–T4'], ['ronda', '📱 Checklist no celular e fotos'], ['acoes', '🔁 Plano de ação'], ['chamados', '🛠️ Chamados de manutenção'], ['fornecedores', '📇 Base de fornecedores'], ['raci', '👥 RACI e ANS'], ['valida', '✅ Validação 2.2'], ['arquivos', '📎 Laudos e anexos']],
     tipos: [['laudo', 'Laudo técnico'], ['contrato', 'Contrato de fornecedor'], ['foto', 'Foto'], ['outro', 'Outro']] },
   p3a: { q: 'planejamento:2.3', icone: '🧭', titulo: 'P1A / P3A — pessoas, estrutura e frota', sub: 'Planejamento · pergunta <strong>2.3 P1A e P3A</strong>', req1: ['V.1', 'V.2', 'V.3', 'V.4'],
     abas: [['volume', '📈 Volume e marketplace'], ['param', '⚙️ Parâmetros'], ['projetos', '🗂️ Projetos P1A / P3A'], ['pessoas', '👥 Pessoas (QLP)'], ['frota', '🚚 Frota'], ['estrutura', '🏭 Instalações, PA e estacionamento'], ['financeiro', '💰 Impactos financeiros'], ['playbook', '📘 Playbook'], ['valida', '✅ Validação 2.3'], ['arquivos', '📎 Evidências']],
@@ -11505,6 +11657,7 @@ function exPreparar() {
     if (!Array.isArray(d.modelo) || !d.modelo.length) d.modelo = JSON.parse(JSON.stringify(FD.meta.modeloManutencao || []));
     d.notas = d.notas || {}; d.datas = d.datas || {};
     ['acoes', 'fornecedores', 'raci'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
+    chamPreparar(d);
     if (FD.triSel === undefined) { FD.triSel = exTriAtual(); }
     manGarantirPlanos();
   }
@@ -11870,7 +12023,8 @@ function ansResumoMes(d, m) {
     if (exNum(v.real) !== null) { neg += ansNeg(d, m, dia); real += exNum(v.real); dias++; if (exNum(v.buffer) !== null || v.limiteLink) completos++; }
     fora += exNum(v.fora) || 0;
   }
-  return { neg, real, fora, dias, uteis, completos, disp: neg ? real / neg - 1 : null };
+  let trabMes = 0; for (let dia = 1; dia <= n; dia++) if (ansTrabalha(d, m, dia)) trabMes++;
+  return { neg, real, fora, dias, uteis, trabMes, completos, disp: neg ? real / neg - 1 : null };
 }
 function ansValidar(d) {
   const ac = d.acordo || {}, acordoOk = ac.data && exNum(ac.capacidade) && ac.horaLimite;
@@ -11895,6 +12049,7 @@ function ansHtmlDiario() {
     <div class="painel" style="margin-bottom:10px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
       <div><label style="margin:0;font-size:12px;">Mês</label><select onchange="FD.ansMes = Number(this.value); fdCorpoRender();">${MESES_LONGOS_FD.map((mm, i) => `<option value="${i}" ${i === m ? 'selected' : ''}>${mm}</option>`).join('')}</select></div>
       <div><label style="margin:0;font-size:12px;">Tolerância para ação (±%)</label>${simInp(d.tolerancia, 'pct', `fdDefinir('tolerancia', fdParse(this.value)); ansGarantirAcoes(); exRedesenhar()`, '10', 'width:90px;')}</div>
+      <button class="btn-primario btn-sm" style="width:auto;background:#0f766e;align-self:center;" onclick="ansAbrirEnvio()">📤 Enviar ANS ao comercial</button>
       <div><label style="margin:0;font-size:12px;">Volume meta do mês (hl)</label>${simInp((d.metaMes || {})[m], 'num', `ansSetMeta(${m}, this.value)`, 'digite a meta', 'width:140px;')}</div>
       <div style="flex:1;min-width:240px;font-size:12px;color:#64748b;">${exNum((d.metaMes || {})[m]) !== null ? `O volume negociado de cada dia é calculado automaticamente: meta do mês × % do dia da semana, só nos dias trabalhados (${Array.from({ length: n }, (_, i) => i + 1).filter(x => ansTrabalha(d, m, x)).length} dias). Ajuste em <a href="#" onclick="fdTrocarAba('param'); return false;">⚙️ Parâmetros</a>.` : '⚠️ Digite a meta do mês para o volume negociado ser distribuído automaticamente pelos dias trabalhados.'}</div>
     </div>
@@ -11903,7 +12058,7 @@ function ansHtmlDiario() {
       <div class="kpi-card"><div class="valor" style="font-size:20px;">${fdFmt(r.real)}</div><div class="rotulo">Realizado acumulado (hl)</div></div>
       <div class="kpi-card"><div class="valor" style="font-size:20px;color:${r.disp !== null && Math.abs(r.disp) * 100 > tol ? '#dc2626' : '#16a34a'};">${fdPct(r.disp)}</div><div class="rotulo">Dispersão dos dias lançados</div></div>
       <div class="kpi-card"><div class="valor" style="font-size:20px;">${fdFmt(r.fora)}</div><div class="rotulo">Volume fora de rota (hl)</div></div>
-      <div class="kpi-card"><div class="valor" style="font-size:20px;">${r.dias}/${r.uteis}</div><div class="rotulo">Dias úteis lançados</div></div>
+      <div class="kpi-card"><div class="valor" style="font-size:20px;">${r.dias}/${r.trabMes}</div><div class="rotulo">Dias trabalhados lançados no mês</div></div>
     </div>
     <div class="fd-tabela-wrap"><table class="fd-tabela ans-tab">
       <thead><tr><th>Dia</th><th></th><th>Volume negociado</th><th>Volume realizado</th><th>Fora de rota</th><th>Buffer utilizado %</th><th>Limite fechamento link (hs)</th><th>Dispersão</th><th>Orientação</th><th style="min-width:200px;">Justificativa</th><th>Ação</th></tr></thead>
@@ -11912,7 +12067,7 @@ function ansHtmlDiario() {
         return `<tr class="${trab ? '' : 'ans-dom'}">
           <td><strong>${dia}</strong></td><td style="color:#64748b;">${DIAS_SEM_EX[wd]}</td>
           <td style="text-align:right;font-weight:700;">${exNum((d.metaMes || {})[m]) !== null ? (trab ? fdFmt(ansNeg(d, m, dia)) : '<span style="color:#94a3b8;font-weight:400;">não trabalha</span>') : simInp(v.neg, 'num', `ansSet(${m}, ${dia}, 'neg', this.value)`, fdFmt(ansNeg(d, m, dia)), 'width:90px;')}</td>
-          <td>${simInp(v.real, 'num', `ansSet(${m}, ${dia}, 'real', this.value)`, '', 'width:90px;')}${acima ? '<small style="color:#dc2626;display:block;">acima da capacidade</small>' : ''}</td>
+          <td>${simInp(v.real, 'num', `ansSet(${m}, ${dia}, 'real', this.value)`, '', 'width:90px;')}</td>
           <td>${simInp(v.fora, 'num', `ansSet(${m}, ${dia}, 'fora', this.value)`, '', 'width:80px;')}</td>
           <td>${simInp(v.buffer, 'pct', `ansSet(${m}, ${dia}, 'buffer', this.value)`, '', 'width:70px;')}</td>
           <td><input type="time" value="${escapeHtml(v.limiteLink || '')}" style="width:100px;margin:0;${v.limiteLink && (d.acordo || {}).horaLimite && v.limiteLink > d.acordo.horaLimite ? 'border-color:#dc2626;color:#dc2626;' : ''}" onchange="ansSet(${m}, ${dia}, 'limiteLink', this.value, true)" title="${(d.acordo || {}).horaLimite ? 'Acordado: ' + d.acordo.horaLimite : ''}"></td>
@@ -11982,6 +12137,47 @@ function ansHtmlParam() {
       <div class="ans-cal">${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(x => `<b>${x}</b>`).join('')}${'<i></i>'.repeat(pri)}${Array.from({ length: n }, (_, i) => i + 1).map(dia => { const t = ansTrabalha(d, m, dia); return `<button class="${t ? 'trab' : ''}" onclick="ansToggleDia(${m}, ${dia})"><strong>${dia}</strong><small>${t ? (meta !== null ? fdFmt(ansNeg(d, m, dia)) + ' hl' : 'trabalha') : 'folga'}</small></button>`; }).join('')}</div>
       ${meta !== null ? `<div style="font-size:12.5px;margin-top:8px;">Meta de ${MESES_LONGOS_FD[m]}: <strong>${fdFmt(meta)} hl</strong> distribuída em ${trab.length} dias.</div>` : ''}</div>`;
 }
+function ansTextoEnvio(m, opc) {
+  const d = FD.dados, ac = d.acordo || {}, n = ansDiasNoMes(m), r = ansResumoMes(d, m), meta = exNum((d.metaMes || {})[m]);
+  const emp = (ESTADO.usuario && ESTADO.usuario.companyName) || '';
+  const L = [`*ANS de Volume — ${MESES_LONGOS_FD[m]}/${FD.ano}*${emp ? ' — ' + emp : ''}`, ''];
+  if (meta !== null) L.push(`Meta de volume do mês: ${fdFmt(meta)} hl em ${r.trabMes} dias trabalhados`);
+  if (exNum(ac.capacidade)) L.push(`Capacidade máxima diária: ${fdFmt(exNum(ac.capacidade))} hl`);
+  if (ac.horaLimite) L.push(`Horário limite de fechamento do link: ${ac.horaLimite}`);
+  if (exNum(ac.bufferMax)) L.push(`Buffer máximo acordado: ${fdFmt(exNum(ac.bufferMax))}%`);
+  L.push(`Tolerância de dispersão: ±${exNum(d.tolerancia) || 10}%`);
+  if (opc.dias) { L.push('', '*Volume negociado por dia (hl):*'); for (let dia = 1; dia <= n; dia++) { if (!ansTrabalha(d, m, dia)) continue; const dt = new Date(FD.ano, m, dia); L.push(`${String(dia).padStart(2, '0')}/${String(m + 1).padStart(2, '0')} ${DIAS_SEM_EX[dt.getDay()]}: ${fdFmt(ansNeg(d, m, dia))}`); } }
+  if (opc.resultado && r.dias) { L.push('', '*Resultado até agora:*', `Negociado: ${fdFmt(r.neg)} hl · Realizado: ${fdFmt(r.real)} hl · Dispersão: ${fdPct(r.disp)}`); const fora = []; for (let dia = 1; dia <= n; dia++) if (ansPrecisaAcao(d, m, dia)) fora.push(`${dia}/${m + 1} (${fdPct(ansDisp(d, m, dia))})`); if (fora.length) L.push(`Dias fora da tolerância: ${fora.join(', ')}`); if (r.fora) L.push(`Volume fora de rota: ${fdFmt(r.fora)} hl`); }
+  if (opc.regras && String(ac.regras || '').trim()) L.push('', '*Regras do acordo:*', ac.regras);
+  return L.join('\n');
+}
+function ansAbrirEnvio() {
+  const d = FD.dados, ac = d.acordo = d.acordo || {}, m = FD.ansMes;
+  document.getElementById('modal-area').innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) gopFecharPlano()"><div class="modal-caixa" style="max-width:640px;">
+    <h3 style="margin-top:0;">📤 Enviar ANS ao comercial — ${MESES_LONGOS_FD[m]}/${FD.ano}</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;"><div style="flex:1;min-width:200px;"><label>E-mail do comercial</label><input id="ans-env-email" type="email" placeholder="gv@revenda.com.br; vendas@..." value="${escapeHtml(ac.emailVendas || '')}"></div>
+      <div style="flex:1;min-width:180px;"><label>WhatsApp do comercial</label><input id="ans-env-fone" inputmode="tel" placeholder="(64) 99999-9999" value="${escapeHtml(ac.foneVendas || '')}"></div></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin:10px 0;font-size:13px;">
+      <label style="display:flex;gap:6px;align-items:center;font-weight:400;margin:0;"><input type="checkbox" id="ans-env-dias" style="width:auto;" checked onchange="ansPrevEnvio()"> Volume negociado por dia</label>
+      <label style="display:flex;gap:6px;align-items:center;font-weight:400;margin:0;"><input type="checkbox" id="ans-env-res" style="width:auto;" checked onchange="ansPrevEnvio()"> Resultado até agora</label>
+      <label style="display:flex;gap:6px;align-items:center;font-weight:400;margin:0;"><input type="checkbox" id="ans-env-reg" style="width:auto;" onchange="ansPrevEnvio()"> Regras do acordo</label></div>
+    <label>Mensagem</label><textarea id="ans-env-txt" rows="12" style="font-family:monospace;font-size:12px;"></textarea>
+    <div class="acoes-form" style="justify-content:flex-end;margin-top:12px;flex-wrap:wrap;gap:8px;"><button class="btn-secundario" onclick="gopFecharPlano()">Fechar</button>
+      <button class="btn-secundario" onclick="ansEnviar('copiar')">📋 Copiar</button><button class="btn-secundario" onclick="ansEnviar('email')">✉️ E-mail</button><button class="btn-primario" style="width:auto;background:#16a34a;" onclick="ansEnviar('whats')">WhatsApp</button></div>
+    ${(d.envios || []).length ? `<div style="font-size:11.5px;color:#64748b;margin-top:8px;">Últimos envios: ${(d.envios || []).slice(-4).reverse().map(e => `${new Date(e.em).toLocaleString('pt-BR')} (${e.canal}, ${MESES_FD[e.mes]})`).join(' · ')}</div>` : ''}
+  </div></div>`;
+  ansPrevEnvio();
+}
+function ansPrevEnvio() { const el = document.getElementById('ans-env-txt'); if (el) el.value = ansTextoEnvio(FD.ansMes, { dias: document.getElementById('ans-env-dias').checked, resultado: document.getElementById('ans-env-res').checked, regras: document.getElementById('ans-env-reg').checked }); }
+function ansEnviar(canal) {
+  const d = FD.dados, ac = d.acordo, txt = document.getElementById('ans-env-txt').value, email = document.getElementById('ans-env-email').value.trim(), fone = document.getElementById('ans-env-fone').value.replace(/\D/g, '');
+  ac.emailVendas = email; ac.foneVendas = document.getElementById('ans-env-fone').value.trim();
+  if (canal === 'copiar') { if (navigator.clipboard) navigator.clipboard.writeText(txt); mostrarToast('Mensagem copiada.'); }
+  else if (canal === 'email') { const assunto = `ANS de Volume — ${MESES_LONGOS_FD[FD.ansMes]}/${FD.ano}`; window.open(`mailto:${encodeURIComponent(email).replace(/%40/g, '@').replace(/%3B/g, ';')}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(txt.replace(/\*/g, ''))}`, '_blank'); }
+  else { const num = fone ? (fone.length <= 11 ? '55' + fone : fone) : ''; window.open(`https://wa.me/${num}?text=${encodeURIComponent(txt)}`, '_blank'); }
+  d.envios = Array.isArray(d.envios) ? d.envios : []; d.envios.push({ em: new Date().toISOString(), canal: canal === 'whats' ? 'WhatsApp' : canal === 'email' ? 'E-mail' : 'Copiado', mes: FD.ansMes });
+  fdAgendarSalvar();
+}
 function ansHtmlAcordo() {
   const ac = FD.dados.acordo; exAoEditar();
   const campo = (k, rot, tipo, ph) => `<div><label>${rot}</label><input type="${tipo || 'text'}" value="${escapeHtml(ac[k] ?? '')}" placeholder="${escapeHtml(ph || '')}" onchange="FD.dados.acordo['${k}'] = this.value; fdAgendarSalvar(); exValidar();"></div>`;
@@ -11993,6 +12189,8 @@ function ansHtmlAcordo() {
       </div>
       <label>Regras do acordo (curva de vendas, cortes de volume, fora de rota, dias de desconto)</label>
       <textarea rows="4" onchange="FD.dados.acordo.regras = this.value; fdAgendarSalvar(); exValidar();">${escapeHtml(ac.regras || '')}</textarea></div>
+    <div class="painel" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><h3 style="margin:0;">📤 Comunicação com o comercial</h3><button class="btn-primario btn-sm" style="width:auto;background:#0f766e;" onclick="ansAbrirEnvio()">Enviar ANS por e-mail / WhatsApp</button>
+      <span style="font-size:12px;color:#64748b;">${(FD.dados.envios || []).length} envio(s) registrado(s)${(FD.dados.envios || []).length ? ' · último em ' + new Date(FD.dados.envios[FD.dados.envios.length - 1].em).toLocaleString('pt-BR') : ''}</span></div>
     <div class="painel"><h3 style="margin-top:0;">🗓️ Check do ANS nas reuniões de rotina (semanal / mensal)</h3>
       ${fdTabela('reunioes', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'tipo', rotulo: 'Rotina', tipo: 'select', opcoes: ['Semanal', 'Mensal'], largura: 110 }, { campo: 'participantes', rotulo: 'Participantes (vendas e logística)', largura: 240 }, { campo: 'decisoes', rotulo: 'Pontos e decisões', largura: 340 }], { botao: 'Registrar reunião' })}</div>`;
 }
@@ -12434,6 +12632,124 @@ function p3aProjetar() {
 }
 
 // ======================= CHECK GLOBAL DE MANUTENÇÃO (Planejamento 2.2) =======================
+// ---- Chamados de manutenção (dentro do Check Global 2.2) ----
+const CAT_CHAMADO = ['Elétrica', 'Hidráulica', 'Civil / estrutura', 'Telhado e calhas', 'Refrigeração / ar-condicionado', 'Equipamentos de movimentação', 'Segurança patrimonial / CFTV', 'Combate a incêndio', 'TI / sistemas', 'Outros'];
+const PRIO_CHAMADO = ['Emergencial', 'Alta', 'Média', 'Baixa'];
+const COR_PRIO_CHAMADO = { Emergencial: '#991b1b', Alta: '#dc2626', 'Média': '#d97706', Baixa: '#2563eb' };
+const STATUS_CHAMADO = ['Aberto', 'Em andamento', 'Aguardando fornecedor / peça', 'Concluído', 'Cancelado'];
+const SLA_CHAMADO_PADRAO = [['Todas', 'Emergencial', 1], ['Todas', 'Alta', 3], ['Todas', 'Média', 7], ['Todas', 'Baixa', 15]];
+let CHAM_FILTRO = { status: 'abertos', cat: '', busca: '' };
+function chamPreparar(d) {
+  d.chamados = Array.isArray(d.chamados) ? d.chamados : [];
+  if (!Array.isArray(d.slaChamados) || !d.slaChamados.length) d.slaChamados = SLA_CHAMADO_PADRAO.map(([categoria, prioridade, dias]) => ({ id: fdId(), categoria, prioridade, dias }));
+}
+function chamSla(c) { const l = FD.dados.slaChamados || []; const r = l.find(x => x.categoria === c.categoria && x.prioridade === c.prioridade) || l.find(x => (x.categoria || 'Todas') === 'Todas' && x.prioridade === c.prioridade); return r ? exNum(r.dias) : null; }
+function chamSomarDias(data, dias) { const dt = new Date(data + 'T12:00:00'); dt.setDate(dt.getDate() + dias); return dt.toISOString().slice(0, 10); }
+function chamPrazo(c) { if (c.prazoManual) return c.prazoManual; const s = chamSla(c); return c.abertura && s !== null ? chamSomarDias(c.abertura, s) : ''; }
+function chamFechado(c) { return c.status === 'Concluído' || c.status === 'Cancelado'; }
+function chamDias(c) { if (!c.abertura) return null; const fim = chamFechado(c) && c.fechamento ? new Date(c.fechamento + 'T12:00:00') : new Date(); return Math.max(0, Math.floor((fim - new Date(c.abertura + 'T12:00:00')) / 86400000)); }
+function chamAtrasado(c) { const p = chamPrazo(c); if (!p || c.status === 'Cancelado') return false; const ref = chamFechado(c) ? (c.fechamento || exHoje()) : exHoje(); return ref > p; }
+function chamHtml() {
+  const d = FD.dados, l = d.chamados, hoje = exHoje();
+  const abertos = l.filter(c => !chamFechado(c)), atras = abertos.filter(chamAtrasado), concl = l.filter(c => c.status === 'Concluído');
+  const noPrazo = concl.filter(c => !chamAtrasado(c)).length, media = concl.length ? concl.reduce((s, c) => s + (chamDias(c) || 0), 0) / concl.length : null;
+  const f = CHAM_FILTRO, lista = l.filter(c => (f.status === 'abertos' ? !chamFechado(c) : f.status === 'atrasados' ? !chamFechado(c) && chamAtrasado(c) : f.status === 'fechados' ? chamFechado(c) : true) && (!f.cat || c.categoria === f.cat) && (!f.busca || JSON.stringify(c).toLowerCase().includes(f.busca.toLowerCase())))
+    .sort((a, b) => (chamFechado(a) - chamFechado(b)) || (chamAtrasado(b) - chamAtrasado(a)) || PRIO_CHAMADO.indexOf(a.prioridade) - PRIO_CHAMADO.indexOf(b.prioridade) || String(a.abertura).localeCompare(String(b.abertura)));
+  const porCat = {}; abertos.forEach(c => { porCat[c.categoria || '—'] = (porCat[c.categoria || '—'] || 0) + 1; });
+  return `
+    <div class="kpis" style="margin-bottom:12px;">
+      <div class="kpi-card"><div class="valor">${abertos.length}</div><div class="rotulo">Chamados abertos</div></div>
+      <div class="kpi-card"><div class="valor" style="color:${atras.length ? '#dc2626' : '#16a34a'};">${atras.length}</div><div class="rotulo">Abertos fora do prazo</div></div>
+      <div class="kpi-card"><div class="valor">${concl.length ? fdPct(noPrazo / concl.length, 0) : '—'}</div><div class="rotulo">Concluídos no prazo (${noPrazo}/${concl.length})</div></div>
+      <div class="kpi-card"><div class="valor">${media === null ? '—' : fdFmt(media, 1)}</div><div class="rotulo">Dias médios para fechar</div></div>
+      <div class="kpi-card"><div class="valor">${abertos.length ? fdFmt(abertos.reduce((s, c) => s + (chamDias(c) || 0), 0) / abertos.length, 1) : '—'}</div><div class="rotulo">Dias médios em aberto</div></div>
+    </div>
+    <div class="barra-acoes"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        ${[['abertos', 'Abertos'], ['atrasados', 'Fora do prazo'], ['fechados', 'Fechados'], ['todos', 'Todos']].map(([k, r]) => `<button class="btn-sm ${f.status === k ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="CHAM_FILTRO.status='${k}'; fdCorpoRender();">${r}</button>`).join('')}
+        <select style="width:auto;margin:0;" onchange="CHAM_FILTRO.cat=this.value; fdCorpoRender();"><option value="">Todas as categorias</option>${CAT_CHAMADO.map(c => `<option ${c === f.cat ? 'selected' : ''}>${c}</option>`).join('')}</select>
+        <input style="width:180px;margin:0;" placeholder="🔎 Buscar" value="${escapeHtml(f.busca)}" onchange="CHAM_FILTRO.busca=this.value; fdCorpoRender();"></div>
+      <div class="direita"><button class="btn-secundario btn-sm" onclick="chamAbrirSla()">⏱️ Prazos de fechamento</button><button class="btn-primario btn-sm" style="width:auto;" onclick="chamNovo()">+ Abrir chamado</button></div></div>
+    ${Object.keys(porCat).length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">${Object.entries(porCat).sort((a, b) => b[1] - a[1]).map(([c, n]) => `<span class="dpo-chip-nivel">${escapeHtml(c)}: ${n}</span>`).join('')}</div>` : ''}
+    <div class="fd-tabela-wrap"><table class="fd-tabela gop-acoes"><thead><tr><th>Nº</th><th>Abertura</th><th style="min-width:220px;">Chamado</th><th>Categoria</th><th>Prioridade</th><th>Responsável</th><th>Prazo</th><th>Dias abertos</th><th>Plano</th><th>Status</th></tr></thead>
+      <tbody>${lista.map(c => { const pr = chamPrazo(c), at = chamAtrasado(c), ac = c.acoes || [], acOk = ac.filter(a => a.status === 'Concluída').length; return `<tr style="cursor:pointer;${at && !chamFechado(c) ? 'background:#fef2f2;' : ''}" onclick="chamAbrir('${c.id}')">
+        <td>${escapeHtml(c.n ?? '')}</td><td>${c.abertura ? new Date(c.abertura + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+        <td><strong>${escapeHtml(c.titulo || c.descricao || '(sem descrição)')}</strong>${c.local ? `<div style="font-size:11.5px;color:#64748b;">📍 ${escapeHtml(c.local)}</div>` : ''}${c.itemTxt ? `<div style="font-size:11px;color:#64748b;">Checklist ${escapeHtml(c.itemTxt)}</div>` : ''}</td>
+        <td style="font-size:12px;">${escapeHtml(c.categoria || '')}</td><td>${c.prioridade ? `<span class="dpo-chip-nivel" style="background:${COR_PRIO_CHAMADO[c.prioridade]};color:#fff;">${c.prioridade}</span>` : ''}</td>
+        <td style="font-size:12px;">${escapeHtml(c.responsavel || '—')}</td><td style="${at ? 'color:#dc2626;font-weight:800;' : ''}">${pr ? new Date(pr + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}${at ? ' ⚠️' : ''}</td>
+        <td style="font-weight:800;text-align:center;${at ? 'color:#dc2626;' : ''}">${chamDias(c) ?? '—'}</td><td style="font-size:12px;">${ac.length ? `${acOk}/${ac.length}` : '—'}</td>
+        <td><span class="dpo-chip-nivel" style="background:${c.status === 'Concluído' ? '#16a34a' : c.status === 'Cancelado' ? '#64748b' : at ? '#dc2626' : c.status === 'Aberto' ? '#2563eb' : '#d97706'};color:#fff;">${escapeHtml(c.status || 'Aberto')}</span></td></tr>`; }).join('') || '<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:14px;">Nenhum chamado neste filtro.</td></tr>'}</tbody></table></div>`;
+}
+function chamNovo(itemId) {
+  const d = FD.dados, n = d.chamados.reduce((m, c) => Math.max(m, exNum(c.n) || 0), 0) + 1, it = itemId ? manItens().find(i => i.id === itemId) : null;
+  const c = { id: fdId(), n, abertura: exHoje(), status: 'Aberto', prioridade: it && it.critico ? 'Alta' : 'Média', categoria: '', acoes: [], itemId: it ? it.id : '', itemTxt: it ? `${it.num} ${it.texto}` : '', titulo: it ? it.texto.slice(0, 120) : '', novo: true };
+  d.chamados.push(c); chamAbrir(c.id);
+}
+function chamAbrir(id) {
+  const c = FD.dados.chamados.find(x => x.id === id); if (!c) return;
+  const sel = (k, l, ph) => `<select id="ch-${k}" onchange="chamLer('${c.id}'); chamAbrir('${c.id}')"><option value="">${ph || ''}</option>${l.map(o => `<option ${o === c[k] ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('')}</select>`;
+  const inp = (k, t, ph) => `<input id="ch-${k}" type="${t || 'text'}" value="${escapeHtml(c[k] ?? '')}" placeholder="${escapeHtml(ph || '')}">`;
+  const forn = (FD.dados.fornecedores || []).map(f => f.nome).filter(Boolean), pr = chamPrazo(c), sla = chamSla(c);
+  document.getElementById('modal-area').innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) chamFechar('${c.id}')"><div class="modal-caixa" style="max-width:860px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><h3 style="margin:0;">🛠️ Chamado de manutenção nº ${escapeHtml(c.n ?? '')}</h3><span style="font-size:13px;">${chamDias(c) ?? 0} dia(s) em aberto ${chamAtrasado(c) ? '<strong style="color:#dc2626;">· fora do prazo</strong>' : ''}</span></div>
+    ${c.itemTxt ? `<div class="gop-plano-ref">Item do checklist: ${escapeHtml(c.itemTxt)}</div>` : ''}
+    <div class="cx-grid">
+      <div style="grid-column:span 2;"><label>O que precisa ser feito *</label>${inp('titulo', 'text', 'Ex.: Vazamento na calha do armazém')}</div><div><label>Abertura</label>${inp('abertura', 'date')}</div>
+      <div><label>Local / área</label>${inp('local', 'text', 'Armazém, doca 3…')}</div><div><label>Categoria</label>${sel('categoria', CAT_CHAMADO)}</div><div><label>Prioridade</label>${sel('prioridade', PRIO_CHAMADO)}</div>
+      <div><label>Solicitante</label>${inp('solicitante')}</div><div><label>Responsável / fornecedor</label><input id="ch-responsavel" list="ch-forn" value="${escapeHtml(c.responsavel || '')}"><datalist id="ch-forn">${forn.map(f => `<option value="${escapeHtml(f)}">`).join('')}</datalist></div>
+      <div><label>Prazo de fechamento</label><input id="ch-prazoManual" type="date" value="${escapeHtml(c.prazoManual || pr || '')}"><small style="color:#64748b;">${sla !== null ? `Pelo cadastro: ${sla} dia(s)` : 'Sem prazo cadastrado para esta prioridade'}</small></div>
+      <div style="grid-column:1/-1;"><label>Descrição</label><textarea id="ch-descricao" rows="2">${escapeHtml(c.descricao || '')}</textarea></div>
+      <div><label>Status</label>${sel('status', STATUS_CHAMADO)}</div><div><label>Fechamento</label>${inp('fechamento', 'date')}</div><div><label>Custo (R$)</label><input id="ch-custo" inputmode="decimal" value="${escapeHtml(fdFmtInput(c.custo))}"></div>
+      <div style="grid-column:1/-1;"><label>Solução aplicada</label><textarea id="ch-solucao" rows="2">${escapeHtml(c.solucao || '')}</textarea></div>
+      <div style="grid-column:1/-1;"><label>Foto / anexo</label><div style="display:flex;gap:8px;align-items:center;">${c.foto ? `<a href="${escapeHtml(c.foto)}" target="_blank">📎 ver anexo</a>` : ''}<label class="btn-secundario btn-sm" style="width:auto;cursor:pointer;margin:0;">${c.foto ? 'Trocar' : '📷 Anexar foto'}<input type="file" accept="image/*,.pdf" style="display:none;" onchange="chamAnexar('${c.id}', this)"></label></div></div>
+    </div>
+    <h4 style="margin:14px 0 6px;">🔁 Plano de ação do chamado</h4>
+    <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th style="min-width:220px;">Ação</th><th>Responsável</th><th>Prazo</th><th>Status</th><th></th></tr></thead><tbody>
+      ${(c.acoes || []).map((a, k) => `<tr><td><input value="${escapeHtml(a.acao || '')}" onchange="chamAcao('${c.id}', ${k}, 'acao', this.value)"></td><td><input value="${escapeHtml(a.responsavel || '')}" list="ch-forn" onchange="chamAcao('${c.id}', ${k}, 'responsavel', this.value)"></td><td><input type="date" value="${escapeHtml(a.prazo || '')}" onchange="chamAcao('${c.id}', ${k}, 'prazo', this.value)"></td>
+        <td><select onchange="chamAcao('${c.id}', ${k}, 'status', this.value)">${STATUS_ACAO_EX.map(s => `<option ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}</select></td><td><button class="fd-remover" onclick="chamLer('${c.id}'); FD.dados.chamados.find(x => x.id === '${c.id}').acoes.splice(${k}, 1); chamAbrir('${c.id}');">✕</button></td></tr>`).join('') || '<tr><td colspan="5" style="color:#94a3b8;text-align:center;">Sem ações ainda.</td></tr>'}
+    </tbody></table></div>
+    <button class="btn-secundario btn-sm" style="margin-top:6px;" onclick="chamLer('${c.id}'); const x = FD.dados.chamados.find(y => y.id === '${c.id}'); x.acoes = x.acoes || []; x.acoes.push({ id: fdId(), status: 'Não iniciado' }); chamAbrir('${c.id}');">+ Ação</button>
+    <div class="acoes-form" style="justify-content:space-between;margin-top:14px;"><button class="btn-perigo btn-sm" onclick="chamExcluir('${c.id}')">Excluir chamado</button>
+      <div style="display:flex;gap:8px;"><button class="btn-secundario" onclick="chamFechar('${c.id}')">Fechar</button><button class="btn-primario" style="width:auto;" onclick="chamSalvar('${c.id}')">💾 Salvar chamado</button></div></div>
+  </div></div>`;
+}
+function chamLer(id) {
+  const c = FD.dados.chamados.find(x => x.id === id); if (!c) return;
+  const v = k => { const el = document.getElementById('ch-' + k); return el ? el.value : undefined; };
+  ['titulo', 'abertura', 'local', 'categoria', 'prioridade', 'solicitante', 'responsavel', 'descricao', 'status', 'fechamento', 'solucao'].forEach(k => { const x = v(k); if (x !== undefined) c[k] = x; });
+  const cu = v('custo'); if (cu !== undefined) c.custo = fdParse(cu);
+  const pm = v('prazoManual'); if (pm !== undefined) { const auto = (() => { const s = chamSla(c); return c.abertura && s !== null ? chamSomarDias(c.abertura, s) : ''; })(); c.prazoManual = pm && pm !== auto ? pm : ''; }
+}
+function chamAcao(id, k, campo, v) { const c = FD.dados.chamados.find(x => x.id === id); c.acoes[k][campo] = v; fdAgendarSalvar(); }
+function chamSalvar(id) {
+  chamLer(id); const c = FD.dados.chamados.find(x => x.id === id);
+  if (!String(c.titulo || '').trim()) { mostrarToast('Informe o que precisa ser feito.', true); return; }
+  if (c.status === 'Concluído' && !c.fechamento) c.fechamento = exHoje();
+  if (c.status === 'Concluído' && !String(c.solucao || '').trim()) { mostrarToast('Descreva a solução aplicada para concluir.', true); chamAbrir(id); return; }
+  if (!chamFechado(c)) c.fechamento = '';
+  c.prazoCalc = chamPrazo(c);
+  delete c.novo; gopFecharPlano(); fdAgendarSalvar(); exRedesenhar(); mostrarToast('Chamado salvo.');
+}
+function chamFechar(id) { const c = FD.dados.chamados.find(x => x.id === id); if (c && c.novo && !String((document.getElementById('ch-titulo') || {}).value || '').trim()) FD.dados.chamados = FD.dados.chamados.filter(x => x.id !== id); else if (c) { chamLer(id); delete c.novo; fdAgendarSalvar(); } gopFecharPlano(); exRedesenhar(); }
+function chamExcluir(id) { if (!confirm('Excluir este chamado?')) return; FD.dados.chamados = FD.dados.chamados.filter(x => x.id !== id); gopFecharPlano(); fdAgendarSalvar(); exRedesenhar(); }
+async function chamAnexar(id, input) {
+  const arq = input.files && input.files[0]; if (!arq) return; chamLer(id);
+  try { const fd = new FormData(); fd.append('file', arq); const up = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd }); const u = await up.json(); if (!up.ok) throw new Error(u.error || 'Falha no envio.'); FD.dados.chamados.find(x => x.id === id).foto = u.url; fdAgendarSalvar(); chamAbrir(id); } catch (e) { mostrarToast(e.message, true); }
+}
+function chamAbrirSla() {
+  const l = FD.dados.slaChamados;
+  document.getElementById('modal-area').innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) { gopFecharPlano(); exRedesenhar(); }"><div class="modal-caixa" style="max-width:620px;">
+    <h3 style="margin-top:0;">⏱️ Cadastro de dias para fechamento</h3>
+    <div style="font-size:12.5px;color:#475569;margin-bottom:8px;">Prazo em dias corridos a partir da abertura. Use "Todas" para o padrão da prioridade; cadastre uma categoria específica quando o prazo for diferente (ex.: Telhado → Alta → 10 dias).</div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th>Categoria</th><th>Prioridade</th><th>Dias para fechar</th><th></th></tr></thead><tbody>
+      ${l.map((r, k) => `<tr><td><select onchange="FD.dados.slaChamados[${k}].categoria = this.value; fdAgendarSalvar();">${['Todas', ...CAT_CHAMADO].map(c => `<option ${c === (r.categoria || 'Todas') ? 'selected' : ''}>${c}</option>`).join('')}</select></td>
+        <td><select onchange="FD.dados.slaChamados[${k}].prioridade = this.value; fdAgendarSalvar();">${PRIO_CHAMADO.map(c => `<option ${c === r.prioridade ? 'selected' : ''}>${c}</option>`).join('')}</select></td>
+        <td><input type="number" min="0" value="${escapeHtml(r.dias ?? '')}" onchange="FD.dados.slaChamados[${k}].dias = fdParse(this.value); fdAgendarSalvar();" style="width:90px;"></td>
+        <td><button class="fd-remover" title="Excluir" onclick="FD.dados.slaChamados.splice(${k}, 1); fdAgendarSalvar(); chamAbrirSla();">✕</button></td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="acoes-form" style="justify-content:space-between;margin-top:12px;"><button class="btn-secundario btn-sm" onclick="FD.dados.slaChamados.push({ id: fdId(), categoria: 'Todas', prioridade: 'Média', dias: 7 }); fdAgendarSalvar(); chamAbrirSla();">+ Adicionar prazo</button><button class="btn-primario" style="width:auto;" onclick="gopFecharPlano(); exRedesenhar();">Concluir</button></div>
+  </div></div>`;
+}
+
 const DESTINOS_MAN = ['Reparo de curto prazo', 'CAPEX emergencial', 'Priorizado com prazo'];
 function manItens() { return FD.dados.modelo.flatMap(s => s.grupos.flatMap(g => g.itens)); }
 function manNota(t, id) { return ((FD.dados.notas || {})[t] || {})[id]; }
@@ -12475,6 +12791,7 @@ function manHtmlAba(a) {
   if (a === 'evolucao') return manHtmlEvolucao();
   if (a === 'ronda') return manHtmlRonda();
   if (a === 'acoes') return manHtmlAcoes();
+  if (a === 'chamados') return chamHtml();
   exAoEditar();
   if (a === 'fornecedores') return `<div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#475569;">Base de fornecedores acessível a toda a unidade (manutenção, segurança, rota). Inclua o ANS (prazo de atendimento) e o custo/contrato de cada um.</div>${fdTabela('fornecedores', [{ campo: 'nome', rotulo: 'Fornecedor / órgão', largura: 180 }, { campo: 'contato', rotulo: 'Contato', largura: 130 }, { campo: 'servico', rotulo: 'Tipo de serviço', largura: 170 }, { campo: 'categoria', rotulo: 'Categoria', tipo: 'select', opcoes: ['Manutenção', 'Segurança / emergência', 'Rota (hotel, restaurante)', 'Utilidades (água, energia)', 'Outro'], largura: 150 }, { campo: 'frequencia', rotulo: 'Frequência', tipo: 'select', opcoes: ['Comum', 'Raro', 'Contrato fixo'], largura: 110 }, { campo: 'cidade', rotulo: 'Cidade', largura: 120 }, { campo: 'ans', rotulo: 'ANS / prazo de atendimento', largura: 150, recarregar: true }, { campo: 'custo', rotulo: 'Custo / contrato', largura: 130 }], { botao: 'Adicionar fornecedor', numerar: true })}`;
   if (a === 'raci') return `<div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#475569;">RACI da manutenção entre as áreas da unidade e os fornecedores externos (R = executa · A = aprova · C = consultado · I = informado).</div>${fdTabela('raci', [{ campo: 'atividade', rotulo: 'Atividade / item de manutenção', largura: 220 }, { campo: 'r', rotulo: 'R', largura: 130, recarregar: true }, { campo: 'a', rotulo: 'A', largura: 130 }, { campo: 'c', rotulo: 'C', largura: 120 }, { campo: 'i', rotulo: 'I', largura: 120 }, { campo: 'fornecedor', rotulo: 'Fornecedor', tipo: 'select', opcoes: (d.fornecedores || []).map(f => f.nome).filter(Boolean), largura: 160, recarregar: true }], { botao: 'Adicionar linha' })}`;
@@ -12504,6 +12821,7 @@ function manHtmlCheck() {
             <div class="c5-texto"><strong>${i.num}</strong> ${escapeHtml(i.texto)} ${i.critico ? '<span class="dpo-chip-nivel" style="background:#fee2e2;color:#991b1b;">crítico</span>' : ''} <small style="color:#94a3b8;">peso ${i.peso}</small>
               ${fotos.length ? `<a href="#" onclick="FD.aba='ronda'; fdDesenhar(); return false;" style="font-size:11.5px;">📷 ${fotos.length}</a>` : i.foto ? '<small style="color:#94a3b8;">📷 pede foto</small>' : ''}
               ${pl ? `<button class="gop-plano ${manAcaoDef(pl) ? 'ok' : 'pend'}" onclick="manAbrirAcao('${pl.id}')">${manAcaoDef(pl) ? '📝' : '⚠️'}</button>` : ''}
+              ${v !== undefined && v !== '' && v !== 'na' && Number(v) < 3 ? (() => { const ch = (d.chamados || []).find(c => c.itemId === i.id && !chamFechado(c)); return ch ? `<button class="gop-plano pend" title="Chamado nº ${ch.n} aberto há ${chamDias(ch)} dia(s)" onclick="chamAbrir('${ch.id}')">🛠️ ${ch.n}</button>` : `<button class="gop-plano" title="Abrir chamado de manutenção" onclick="chamNovo('${i.id}')">🛠️+</button>`; })() : ''}
               <details style="margin-top:3px;"><summary style="cursor:pointer;font-size:11.5px;color:#4338ca;">Verificação e pontuação</summary><div style="font-size:12px;white-space:pre-line;color:#475569;margin-top:4px;"><strong>Verificação:</strong> ${escapeHtml(i.verificacao)}\n\n<strong>Pontos:</strong> ${escapeHtml(i.pontos)}</div>
                 <div style="margin-top:6px;font-size:12px;">📌 Foto da condição ideal: ${i.fotoIdeal ? `<a href="${escapeHtml(i.fotoIdeal)}" target="_blank">ver</a> · ` : ''}<label style="display:inline;cursor:pointer;color:#2563eb;font-weight:600;">${i.fotoIdeal ? 'trocar' : 'enviar'}<input type="file" accept="image/*" style="display:none;" onchange="manFotoIdeal('${i.id}', this)"></label></div></details></div>
             <div class="c5-botoes">${btn(i.id, '3', v)}${btn(i.id, '1', v)}${btn(i.id, '0', v)}${btn(i.id, 'na', v)}</div>

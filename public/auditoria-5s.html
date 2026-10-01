@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7c3aed">
+<title>Auditoria 5S</title>
+<style>
+  :root { --cor:#6d28d9; --borda:#e2e8f0; --texto:#0f172a; --sub:#64748b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:#f1f5f9; color:var(--texto); }
+  header { position:sticky; top:0; z-index:5; background:var(--cor); color:#fff; padding:12px 16px; box-shadow:0 2px 8px rgba(0,0,0,.15); }
+  header h1 { font-size:17px; margin:0; } header div { font-size:12.5px; opacity:.92; margin-top:2px; }
+  .barra { height:6px; background:rgba(255,255,255,.25); border-radius:3px; margin-top:8px; overflow:hidden; } .barra i { display:block; height:100%; background:#facc15; width:0; transition:width .3s; }
+  main { padding:12px 16px 90px; max-width:720px; margin:0 auto; }
+  .caixa { background:#fff; border:1px solid var(--borda); border-radius:12px; padding:10px 12px; margin-bottom:12px; }
+  label.r { font-size:12px; font-weight:700; color:var(--sub); display:block; margin-top:6px; }
+  input, select { width:100%; font-size:16px; padding:8px; border:1px solid var(--borda); border-radius:8px; margin-top:4px; background:#fff; }
+  .linha { display:flex; gap:8px; } .linha > div { flex:1; min-width:0; }
+  .info { font-size:12.5px; color:#475569; margin-top:6px; }
+  h2 { font-size:15px; margin:18px 0 6px; color:var(--cor); display:flex; justify-content:space-between; }
+  .item { background:#fff; border:1px solid var(--borda); border-radius:12px; padding:10px 12px; margin-bottom:8px; }
+  .item.s { border-color:#86efac; background:#f0fdf4; } .item.n { border-color:#fca5a5; background:#fff7f7; } .item.na { opacity:.75; }
+  .txt { font-size:14px; line-height:1.35; } .num { font-weight:800; }
+  .bt { display:flex; gap:6px; margin-top:8px; } .bt button { flex:1; border:1px solid var(--borda); background:#fff; border-radius:10px; padding:11px 0; font-size:16px; font-weight:800; color:#334155; }
+  .bt .S.ativo { background:#16a34a; color:#fff; border-color:#16a34a; } .bt .N.ativo { background:#dc2626; color:#fff; border-color:#dc2626; } .bt .NA.ativo { background:#64748b; color:#fff; border-color:#64748b; }
+  .foto { display:flex; gap:8px; align-items:center; margin-top:8px; }
+  .foto label { display:inline-block; border-radius:10px; padding:9px 12px; font-size:14px; font-weight:700; cursor:pointer; }
+  .foto .obrig { background:#dc2626; color:#fff; animation:pulsa 1.4s infinite; } .foto .troca { background:#ede9fe; color:#5b21b6; }
+  .foto img { width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--borda); }
+  .foto input { display:none; }
+  @keyframes pulsa { 50% { opacity:.65; } }
+  .rodape { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--borda); padding:10px 16px; display:flex; gap:8px; justify-content:center; }
+  .rodape button { flex:1; max-width:340px; border:0; border-radius:10px; padding:12px; font-size:15px; font-weight:800; background:var(--cor); color:#fff; }
+  .vazio { text-align:center; color:var(--sub); padding:40px 10px; }
+  .toast { position:fixed; left:50%; bottom:76px; transform:translateX(-50%); background:#0f172a; color:#fff; padding:10px 16px; border-radius:10px; font-size:14px; display:none; z-index:10; }
+</style>
+</head>
+<body>
+<header><h1>🧹 Auditoria 5S</h1><div id="sub">Carregando...</div><div class="barra"><i id="prog"></i></div></header>
+<main id="main"><div class="vazio">Carregando auditoria...</div></main>
+<div class="rodape" id="rodape" style="display:none;"><button onclick="proxima()">Próxima área →</button></div>
+<div class="toast" id="toast"></div>
+<script>
+const TOKEN = new URLSearchParams(location.search).get('t') || '';
+const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+let R = null, AREA = null;
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = 'none', 2500); }
+function localGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+function localSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function perguntas() { return R.sensos.flatMap(s => s.perguntas); }
+function respDe(areaId, qid) { return ((R.resp[areaId] || {})[qid]) || { resp: '', foto: null }; }
+function pctArea(areaId) { let S = 0, N = 0; perguntas().forEach(p => { const v = respDe(areaId, p.id).resp; if (v === 'S') S++; if (v === 'N') N++; }); return S + N ? S / (S + N) : null; }
+function respondidas(areaId) { return perguntas().filter(p => respDe(areaId, p.id).resp).length; }
+function semFoto(areaId) { return perguntas().filter(p => { const x = respDe(areaId, p.id); return x.resp === 'N' && !x.foto; }).length; }
+function topo() {
+  const a = R.areas.find(x => x.id === AREA), tot = perguntas().length, feitas = a ? respondidas(a.id) : 0, p = a ? pctArea(a.id) : null;
+  document.getElementById('prog').style.width = (tot ? feitas / tot * 100 : 0) + '%';
+  document.getElementById('sub').textContent = `${R.empresa} · ${MESES[R.mes]}/${R.ano}${a ? ` · ${feitas}/${tot} respondidas${p === null ? '' : ' · ' + (p * 100).toFixed(0) + '%'}${semFoto(a.id) ? ` · ${semFoto(a.id)} N sem foto` : ''}` : ''}`;
+}
+function render() {
+  const main = document.getElementById('main');
+  const deps = [...new Set(R.areas.map(a => a.depto || 'Sem departamento'))];
+  const a = R.areas.find(x => x.id === AREA);
+  let html = `<div class="caixa">
+    <label class="r">Auditor</label><input id="autor" value="${esc(localGet('aud5s_autor'))}" placeholder="Seu nome" onchange="localSet('aud5s_autor', this.value)">
+    <div class="linha"><div><label class="r">Área</label><select onchange="AREA = this.value; render(); window.scrollTo(0, 0);"><option value="">Escolha a área…</option>${deps.map(d => `<optgroup label="${esc(d)}">${R.areas.filter(x => (x.depto || 'Sem departamento') === d).map(x => `<option value="${x.id}" ${x.id === AREA ? 'selected' : ''}>${esc(x.nome)}${respondidas(x.id) === perguntas().length ? ' ✓' : respondidas(x.id) ? ' …' : ''}</option>`).join('')}</optgroup>`).join('')}</select></div>
+      <div style="flex:0 0 130px;"><label class="r">Mês</label><select onchange="trocarMes(this.value)">${MESES.map((m, i) => `<option value="${i}" ${i === R.mes ? 'selected' : ''}>${m}</option>`).join('')}</select></div></div>
+    ${a ? `<div class="info">${a.placa ? `🚚 <strong>${esc(a.placa)}</strong> · ` : ''}Dono: <strong>${esc(a.dono || '—')}</strong>${a.supervisor ? ` · Supervisor: <strong>${esc(a.supervisor)}</strong>` : ''} · Auditor previsto: <strong>${esc(a.auditor || '—')}</strong></div>` : ''}
+  </div>`;
+  if (!a) { html += '<div class="vazio">Escolha a área para começar a auditoria.</div>'; main.innerHTML = html; document.getElementById('rodape').style.display = 'none'; topo(); return; }
+  R.sensos.forEach(s => {
+    let S = 0, N = 0; s.perguntas.forEach(p => { const v = respDe(a.id, p.id).resp; if (v === 'S') S++; if (v === 'N') N++; });
+    html += `<h2><span>Senso ${esc(s.numero)} — ${esc(s.titulo)}</span><span>${S + N ? Math.round(S / (S + N) * 100) + '%' : ''}</span></h2>`;
+    s.perguntas.forEach(p => {
+      const x = respDe(a.id, p.id), cls = x.resp === 'S' ? 's' : x.resp === 'N' ? 'n' : x.resp === 'NA' ? 'na' : '';
+      const b = v => `<button class="${v} ${x.resp === v ? 'ativo' : ''}" onclick="responder('${p.id}', '${v}')">${v === 'NA' ? 'N/A' : v}</button>`;
+      html += `<div class="item ${cls}" id="it-${p.id}"><div class="txt"><span class="num">${esc(p.num)}</span> ${esc(p.texto)}</div>
+        <div class="bt">${b('S')}${b('N')}${b('NA')}</div>
+        ${x.resp === 'N' ? `<div class="foto">${x.foto ? `<a href="${esc(x.foto)}" target="_blank"><img src="${esc(x.foto)}" alt=""></a><label class="troca">Trocar foto<input type="file" accept="image/*" capture="environment" onchange="enviarFoto('${p.id}', this)"></label>` : `<label class="obrig">📷 Foto obrigatória — tirar agora<input id="f-${p.id}" type="file" accept="image/*" capture="environment" onchange="enviarFoto('${p.id}', this)"></label>`}<span id="env-${p.id}" style="font-size:12px;"></span></div>` : ''}
+      </div>`;
+    });
+  });
+  main.innerHTML = html;
+  document.getElementById('rodape').style.display = 'flex';
+  topo();
+}
+async function responder(qid, v) {
+  const a = AREA, x = respDe(a, qid), nova = x.resp === v ? '' : v, antiga = x.resp;
+  R.resp[a] = R.resp[a] || {}; R.resp[a][qid] = { ...x, resp: nova };
+  render();
+  // N: abre a câmera na hora (ainda dentro do toque do usuário)
+  if (nova === 'N' && !x.foto) { const inp = document.getElementById('f-' + qid); if (inp) inp.click(); }
+  try {
+    const r = await fetch('/api/public/5s/' + encodeURIComponent(TOKEN) + '/resp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ areaId: a, mes: R.mes, qid, resp: nova, autor: (document.getElementById('autor') || {}).value || '' }) });
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Falha ao salvar.');
+    if (nova === 'N') toast('Item N salvo — tire a foto da não conformidade.');
+  } catch (e) { R.resp[a][qid] = { ...x, resp: antiga }; render(); toast('⚠️ ' + e.message); }
+}
+async function reduzir(arq) {
+  try {
+    if (!/^image\/(jpe?g|png|webp)$/i.test(arq.type) || arq.size < 900000) return arq;
+    const img = await new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = erro; i.src = URL.createObjectURL(arq); });
+    const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const blob = await new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.8));
+    return blob ? new File([blob], 'foto.jpg', { type: 'image/jpeg' }) : arq;
+  } catch (e) { return arq; }
+}
+async function enviarFoto(qid, input) {
+  const arq = input.files && input.files[0]; if (!arq) return;
+  const st = document.getElementById('env-' + qid); if (st) st.textContent = '⏫ enviando…';
+  try {
+    const fd = new FormData(); fd.append('file', await reduzir(arq)); fd.append('areaId', AREA); fd.append('mes', R.mes); fd.append('qid', qid); fd.append('autor', (document.getElementById('autor') || {}).value || '');
+    const r = await fetch('/api/public/5s/' + encodeURIComponent(TOKEN) + '/foto', { method: 'POST', body: fd });
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Falha no envio.');
+    R.resp[AREA] = R.resp[AREA] || {}; R.resp[AREA][qid] = { ...respDe(AREA, qid), foto: j.url };
+    render(); toast('✅ Foto enviada!');
+  } catch (e) { if (st) st.textContent = '⚠️ ' + e.message; }
+}
+function proxima() {
+  if (semFoto(AREA)) { toast(`Faltam ${semFoto(AREA)} foto(s) dos itens N desta área.`); const p = perguntas().find(p => { const x = respDe(AREA, p.id); return x.resp === 'N' && !x.foto; }); const el = p && document.getElementById('it-' + p.id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  const l = R.areas, i = l.findIndex(a => a.id === AREA); AREA = l[(i + 1) % l.length].id; render(); window.scrollTo(0, 0);
+}
+async function carregar(mes) {
+  const r = await fetch('/api/public/5s/' + encodeURIComponent(TOKEN) + (mes !== undefined ? '?mes=' + mes : ''));
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Não foi possível abrir a auditoria.');
+  R = j; R.resp = R.resp || {};
+}
+async function trocarMes(m) { try { await carregar(Number(m)); render(); } catch (e) { toast('⚠️ ' + e.message); } }
+(async () => {
+  try {
+    if (!TOKEN) throw new Error('Link sem código da auditoria.');
+    await carregar();
+    document.title = `Auditoria 5S — ${R.empresa}`;
+    if (!R.areas.length) throw new Error('Nenhuma área cadastrada no 5S desta revenda.');
+    render();
+  } catch (e) {
+    document.getElementById('sub').textContent = 'Erro';
+    document.getElementById('main').innerHTML = `<div class="vazio">⚠️ ${esc(e.message)}</div>`;
+  }
+})();
+</script>
+</body>
+</html>

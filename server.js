@@ -450,6 +450,8 @@ function inicializarBase() {
         db.run(`ALTER TABLE users ADD COLUMN reset_token TEXT`, () => {});
         db.run(`ALTER TABLE users ADD COLUMN reset_token_expires TEXT`, () => {});
         db.run(`ALTER TABLE users ADD COLUMN mentor_id INTEGER`, () => {});
+        // Acesso criado pela própria empresa: entra sem permissões e só loga depois que o Master aprovar.
+        db.run(`ALTER TABLE users ADD COLUMN aprovacao_pendente INTEGER DEFAULT 0`, () => {});
         db.run(`ALTER TABLE users ADD COLUMN whatsapp_number TEXT`, () => {});
         db.run(`ALTER TABLE users ADD COLUMN whatsapp_notifications INTEGER DEFAULT 0`, () => {});
         // Permissão de módulos INDIVIDUAL por acesso (client_admin) dentro da
@@ -1353,6 +1355,13 @@ function inicializarBase() {
             id INTEGER PRIMARY KEY AUTOINCREMENT, company_id INTEGER NOT NULL, ano INTEGER NOT NULL, trimestre INTEGER NOT NULL,
             item TEXT NOT NULL, url TEXT NOT NULL, obs TEXT, autor TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_5s_links (
+            token TEXT PRIMARY KEY, company_id INTEGER NOT NULL, ano INTEGER NOT NULL, criado_por INTEGER, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_5s_resp (
+            company_id INTEGER NOT NULL, ano INTEGER NOT NULL, area_id TEXT NOT NULL, mes INTEGER NOT NULL, qid TEXT NOT NULL,
+            resp TEXT, foto TEXT, autor TEXT, updated_at TEXT NOT NULL, PRIMARY KEY (company_id, ano, area_id, mes, qid)
+        )`);
         db.run(`CREATE TABLE IF NOT EXISTS dpo_ronda_notas (
             company_id INTEGER NOT NULL, ano INTEGER NOT NULL, trimestre INTEGER NOT NULL, item TEXT NOT NULL,
             nota TEXT, autor TEXT, updated_at TEXT NOT NULL, PRIMARY KEY (company_id, ano, trimestre, item)
@@ -1948,6 +1957,9 @@ app.post('/api/login', (req, res) => {
         if (err || !user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
         }
+        if (Number(user.aprovacao_pendente) === 1) {
+            return res.status(403).json({ error: 'Seu acesso foi criado e está aguardando a aprovação da Impulsionar. Você será avisado assim que for liberado.' });
+        }
 
         const token = jwt.sign(
             { userId: user.id, role: user.role, companyId: user.company_id, employeeId: user.employee_id || null, mentorId: user.mentor_id || null },
@@ -2280,7 +2292,7 @@ app.get('/api/companies/:id/members', requireRole('admin', 'client_admin'), asyn
     if (req.user.role === 'client_admin' && String(req.params.id) !== String(req.user.companyId)) {
         return res.status(403).json({ error: 'Você só pode ver os acessos da sua própria corporação.' });
     }
-    const membros = await dbAll(`SELECT id, name, email, enabled_modules FROM users WHERE company_id = ? AND role = 'client_admin' ORDER BY id ASC`, [req.params.id]);
+    const membros = await dbAll(`SELECT id, name, email, enabled_modules, aprovacao_pendente FROM users WHERE company_id = ? AND role = 'client_admin' ORDER BY id ASC`, [req.params.id]);
     const emp = await dbGet(`SELECT gestor_principal_id FROM companies WHERE id = ?`, [req.params.id]);
     res.json(membros.map(m => ({ ...m, principal: !!(emp && emp.gestor_principal_id && Number(emp.gestor_principal_id) === Number(m.id)) })));
 });
@@ -2306,10 +2318,17 @@ async function ehGestorPrincipalDpo(companyId, userId) {
 // o padrão da empresa (ver /api/login), então aqui só grava a restrição
 // PRÓPRIA deste usuário. enabled_modules === null (nenhuma marcação) limpa a
 // restrição própria e volta a valer o padrão da empresa.
-app.put('/api/companies/:id/members/:memberId/permissions', requireRole('admin', 'client_admin'), async (req, res) => {
-    if (req.user.role === 'client_admin' && String(req.params.id) !== String(req.user.companyId)) {
-        return res.status(403).json({ error: 'Você só pode gerenciar acessos da sua própria corporação.' });
-    }
+// Só o Master libera permissões; aprovar um acesso criado pela empresa libera o login.
+app.put('/api/companies/:id/members/:memberId/aprovar', requireRole('admin'), async (req, res) => {
+    try {
+        const u = await dbGet(`SELECT id, name FROM users WHERE id = ? AND company_id = ? AND role = 'client_admin'`, [req.params.memberId, req.params.id]);
+        if (!u) return res.status(404).json({ error: 'Acesso não encontrado.' });
+        await new Promise((resolve, reject) => db.run(`UPDATE users SET aprovacao_pendente = 0 WHERE id = ?`, [u.id], e => e ? reject(e) : resolve()));
+        notificarPorCompanyAdmins(req.params.id, 'Acesso aprovado', `O acesso de ${u.name} foi aprovado pela Impulsionar e já pode entrar.`);
+        res.json({ message: 'Acesso aprovado! Confira as permissões liberadas.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao aprovar o acesso.' }); }
+});
+app.put('/api/companies/:id/members/:memberId/permissions', requireRole('admin'), async (req, res) => {
     const { enabled_modules } = req.body;
     const valor = Array.isArray(enabled_modules) ? JSON.stringify(enabled_modules) : null;
     db.run(`UPDATE users SET enabled_modules = ? WHERE id = ? AND company_id = ? AND role = 'client_admin'`,
@@ -2328,12 +2347,18 @@ app.post('/api/companies/:id/members', requireRole('admin', 'client_admin'), asy
     if (!name || !email || !password) return res.status(400).json({ error: 'Informe nome, e-mail e senha do novo acesso.' });
     if (password.length < 6) return res.status(400).json({ error: 'A senha precisa ter pelo menos 6 caracteres.' });
     try {
-        const empresa = await dbGet(`SELECT id FROM companies WHERE id = ?`, [req.params.id]);
+        const empresa = await dbGet(`SELECT id, name FROM companies WHERE id = ?`, [req.params.id]);
         if (!empresa) return res.status(404).json({ error: 'Empresa não encontrada.' });
         const hash = await bcrypt.hash(password, 10);
-        db.run(`INSERT INTO users (name, email, password, company_id, role) VALUES (?, ?, ?, ?, 'client_admin')`,
-            [name, email.trim(), hash, req.params.id], (err) => {
+        // Criado pela empresa: sem nenhuma permissão e pendente de aprovação do Master.
+        const pelaEmpresa = req.user.role !== 'admin';
+        db.run(`INSERT INTO users (name, email, password, company_id, role, enabled_modules, aprovacao_pendente) VALUES (?, ?, ?, ?, 'client_admin', ?, ?)`,
+            [name, email.trim(), hash, req.params.id, pelaEmpresa ? '[]' : null, pelaEmpresa ? 1 : 0], (err) => {
                 if (err) return res.status(400).json({ error: 'Este e-mail já está em uso por outra conta.' });
+                if (pelaEmpresa) {
+                    notificarMasters('Novo acesso aguardando aprovação', `${empresa.name} cadastrou ${name} (${email.trim()}). Aprove e libere as permissões em Empresas → Acessos.`, 'companies');
+                    return res.json({ message: 'Acesso criado! Ele só consegue entrar depois que a Impulsionar aprovar e liberar as permissões.' });
+                }
                 res.json({ message: 'Acesso criado! Este membro já pode entrar com o e-mail e senha próprios dele.' });
             });
     } catch (e) { res.status(500).json({ error: 'Erro ao criar o acesso.' }); }
@@ -8438,8 +8463,8 @@ app.post('/api/dpo/ferramentas-digitais/:chave/novo-ano', requireRole('admin', '
                 else if (chave === 'riscos') base = { riscos: origem.riscos, respostas: origem.respostas, retomada: origem.retomada, retomadaRevisao: origem.retomadaRevisao, retomadaLocal: origem.retomadaLocal, revisoes: origem.revisoes };
                 else if (chave === 'capex') base = { aprovadores: origem.aprovadores, cadastros: origem.cadastros, premissas: origem.premissas, emergencial: origem.emergencial, itens: (origem.itens || []).filter(i => i.etapa !== 'Concluído' && i.etapa !== 'Cancelado') };
                 else if (chave === 'p3a') base = { ...origem, __resumo: undefined };
-                else if (chave === 'manutencao') base = { modelo: origem.modelo, fornecedores: origem.fornecedores, raci: origem.raci, acoes: (origem.acoes || []).filter(a => a.status !== 'Concluída') };
-                else if (chave === 'cinco_s') { const o = prepararDados5sDpo(origem); base = { modelo: o.modelo, areas: o.areas, auditorias: [], acoes: o.acoes.filter(a => a.status !== 'Concluída' && !a.auto).map(a => ({ ...a, id: idGop() })) }; }
+                else if (chave === 'manutencao') base = { modelo: origem.modelo, fornecedores: origem.fornecedores, raci: origem.raci, slaChamados: origem.slaChamados, chamados: (origem.chamados || []).filter(c => c.status !== 'Concluído' && c.status !== 'Cancelado'), acoes: (origem.acoes || []).filter(a => a.status !== 'Concluída') };
+                else if (chave === 'cinco_s') { const o = prepararDados5sDpo(origem); base = { modelo: o.modelo, areas: o.areas, motoristas: o.motoristas, departamentos: o.departamentos, auditorias: [], acoes: o.acoes.filter(a => a.status !== 'Concluída' && !a.auto).map(a => ({ ...a, id: idGop() })) }; }
                 else if (chave === 'gop') { const o = prepararDadosGopDpo(origem); base = { gops: Object.fromEntries(Object.entries(o.gops).map(([k, g]) => [k, { titulo: g.titulo, area: g.area, meta: g.meta, itens: g.itens, resp: {} }])), acoes: o.acoes.filter(a => a.status !== 'Concluída' && !a.auto).map(a => ({ ...a, id: idGop() })) }; }
                 else base = { params: origem.params };
             }
@@ -8802,12 +8827,89 @@ app.post('/api/dpo/cinco-s/importar', requireRole('admin', 'client_admin'), asyn
         res.status(400).json({ error: 'Não foi possível importar a planilha 5S.' });
     }
 });
+// Auditoria 5S pelo celular: link público por empresa/ano; respostas e fotos entram na ferramenta ao abrir.
+async function link5sDpo(token) {
+    const link = await dbGet(`SELECT * FROM dpo_5s_links WHERE token = ?`, [String(token || '')]);
+    if (!link) return null;
+    const empresa = await dbGet(`SELECT name FROM companies WHERE id = ?`, [link.company_id]);
+    const dados = prepararDados5sDpo((await carregarFerramentaDigitalDpo(link.company_id, 'cinco_s', link.ano)).dados);
+    return { link, empresa, dados };
+}
+app.post('/api/dpo/cinco-s/link', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const f = await resolverFerramentaDigitalDpo(req, res, 'cinco_s', req.body.company_id);
+        if (!f) return;
+        const ano = anoValidoDpo(req.body.ano);
+        let reg = await dbGet(`SELECT token FROM dpo_5s_links WHERE company_id = ? AND ano = ?`, [f.companyId, ano]);
+        if (!reg) { reg = { token: crypto.randomBytes(16).toString('hex') }; await new Promise((resolve, reject) => db.run(`INSERT INTO dpo_5s_links (token, company_id, ano, criado_por) VALUES (?, ?, ?, ?)`, [reg.token, f.companyId, ano, req.user.userId], e => e ? reject(e) : resolve())); }
+        res.json({ url: `${baseUrlPublicaDpo(req)}/auditoria-5s.html?t=${reg.token}`, token: reg.token });
+    } catch (e) { res.status(400).json({ error: 'Erro ao gerar o link da auditoria.' }); }
+});
+app.get('/api/dpo/cinco-s/celular', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const f = await resolverFerramentaDigitalDpo(req, res, 'cinco_s', req.query.company_id);
+        if (!f) return;
+        res.json(await dbAll(`SELECT area_id, mes, qid, resp, foto, autor, updated_at FROM dpo_5s_resp WHERE company_id = ? AND ano = ?`, [f.companyId, anoValidoDpo(req.query.ano)]));
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar a auditoria do celular.' }); }
+});
+app.get('/api/public/5s/:token', async (req, res) => {
+    try {
+        const r = await link5sDpo(req.params.token);
+        if (!r) return res.status(404).json({ error: 'Link da auditoria inválido.' });
+        const mes = Math.max(0, Math.min(11, Number(req.query.mes ?? (r.link.ano === new Date().getFullYear() ? new Date().getMonth() : 11)) || 0));
+        const resp = {};
+        r.dados.auditorias.filter(a => a.mes === mes).forEach(a => { resp[a.areaId] = {}; Object.entries(a.resp || {}).forEach(([q, v]) => { resp[a.areaId][q] = { resp: v, foto: (a.fotos || {})[q] || null, em: (a.respEm || {})[q] || '' }; }); });
+        const cel = await dbAll(`SELECT area_id, qid, resp, foto, updated_at FROM dpo_5s_resp WHERE company_id = ? AND ano = ? AND mes = ?`, [r.link.company_id, r.link.ano, mes]);
+        cel.forEach(c => { const a = resp[c.area_id] = resp[c.area_id] || {}, x = a[c.qid] = a[c.qid] || { resp: '', foto: null, em: '' }; if (c.resp !== null && String(c.updated_at) > String(x.em)) { x.resp = c.resp; x.em = c.updated_at; } if (c.foto) x.foto = c.foto; });
+        res.json({ empresa: r.empresa ? r.empresa.name : '', ano: r.link.ano, mes, meta: r.dados.modelo.meta || 85,
+            sensos: r.dados.modelo.sensos.map(s => ({ chave: s.chave, numero: s.numero, titulo: s.titulo, perguntas: s.perguntas.map(p => ({ id: p.id, num: p.num, texto: p.texto })) })),
+            areas: r.dados.areas.map(a => ({ id: a.id, nome: a.nome, depto: a.depto || '', dono: a.dono || '', auditor: a.auditor || '', placa: a.placa || '', supervisor: a.supervisor || '' })), resp });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar a auditoria.' }); }
+});
+function validar5sPublicoDpo(r, body) {
+    const areaId = String(body.areaId || ''), qid = String(body.qid || ''), mes = Number(body.mes);
+    if (!r.dados.areas.some(a => a.id === areaId)) return 'Área inválida.';
+    if (!r.dados.modelo.sensos.some(s => s.perguntas.some(p => p.id === qid))) return 'Pergunta inválida.';
+    if (!(mes >= 0 && mes <= 11)) return 'Mês inválido.';
+    return null;
+}
+app.post('/api/public/5s/:token/resp', async (req, res) => {
+    try {
+        const r = await link5sDpo(req.params.token);
+        if (!r) return res.status(404).json({ error: 'Link da auditoria inválido.' });
+        const erro = validar5sPublicoDpo(r, req.body); if (erro) return res.status(400).json({ error: erro });
+        const resp = String(req.body.resp ?? ''); if (!['S', 'N', 'NA', ''].includes(resp)) return res.status(400).json({ error: 'Resposta inválida.' });
+        const quando = new Date().toISOString();
+        await new Promise((resolve, reject) => db.run(`INSERT INTO dpo_5s_resp (company_id, ano, area_id, mes, qid, resp, autor, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(company_id, ano, area_id, mes, qid) DO UPDATE SET resp = excluded.resp, autor = excluded.autor, updated_at = excluded.updated_at`,
+            [r.link.company_id, r.link.ano, req.body.areaId, Number(req.body.mes), req.body.qid, resp, String(req.body.autor || '').slice(0, 80), quando], e => e ? reject(e) : resolve()));
+        res.json({ message: 'Resposta salva!', updated_at: quando });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar a resposta.' }); }
+});
+app.post('/api/public/5s/:token/foto', (req, res) => {
+    uploadMaterialDpo.single('file')(req, res, async (err) => {
+        if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Foto muito grande.' : err.message });
+        if (!req.file) return res.status(400).json({ error: 'Nenhuma foto recebida.' });
+        if (!/^image\//.test(req.file.mimetype || '') && !/\.(jpe?g|png|heic|webp)$/i.test(req.file.originalname || '')) return res.status(400).json({ error: 'Envie uma imagem.' });
+        try {
+            const r = await link5sDpo(req.params.token);
+            if (!r) return res.status(404).json({ error: 'Link da auditoria inválido.' });
+            const erro = validar5sPublicoDpo(r, req.body); if (erro) return res.status(400).json({ error: erro });
+            const url = '/uploads/' + req.file.filename;
+            await new Promise((resolve, reject) => db.run(`INSERT INTO dpo_5s_resp (company_id, ano, area_id, mes, qid, resp, foto, autor, updated_at) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)
+                ON CONFLICT(company_id, ano, area_id, mes, qid) DO UPDATE SET foto = excluded.foto`,
+                [r.link.company_id, r.link.ano, req.body.areaId, Number(req.body.mes), req.body.qid, url, String(req.body.autor || '').slice(0, 80), new Date().toISOString()], e => e ? reject(e) : resolve()));
+            res.json({ message: 'Foto enviada!', url });
+        } catch (e) { res.status(400).json({ error: 'Erro ao salvar a foto.' }); }
+    });
+});
 function exportar5sDpo(add, dados) {
     const d = prepararDados5sDpo(dados), M = MESES_CURTOS_DPO;
     const pctSenso = (au, s) => { let S = 0, N = 0; s.perguntas.forEach(p => { const v = resp5sDpo((au.resp || {})[p.id]); if (v === 'S') S++; if (v === 'N') N++; }); return S + N ? S / (S + N) : null; };
     const pctAud = au => { const v = d.modelo.sensos.map(s => pctSenso(au, s)).filter(x => x !== null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
     const fmt = v => v === null || v === undefined ? '' : `${String(Math.round(v * 1000) / 10).replace('.', ',')}%`;
-    add('Donos de área', [['Área', 'nome', 26], ['Departamento', 'depto', 18], ['Dono', 'dono', 20], ['Auditor', 'auditor', 20]], d.areas);
+    add('Donos de área', [['Área', 'nome', 26], ['Departamento', 'depto', 18], ['Placa', 'placa', 12], ['Dono / motorista', 'dono', 22], ['Supervisor', 'supervisor', 20], ['Auditor', 'auditor', 20]], d.areas);
+    if (Array.isArray(d.motoristas) && d.motoristas.length) add('Motoristas', [['Motorista', 'nome', 26], ['Supervisor', 'supervisor', 22], ['Placa', 'placa', 12], ['Telefone', 'telefone', 16]], d.motoristas);
     add('Resultado Geral', [['Área', 'a', 26], ['Departamento', 'dep', 16], ...M.map((m, i) => [m, 'm' + i, 9])], d.areas.map(a => ({ a: a.nome, dep: a.depto, ...Object.fromEntries(M.map((m, i) => { const au = d.auditorias.find(x => x.areaId === a.id && x.mes === i); return ['m' + i, au ? fmt(pctAud(au)) : '']; })) })));
     const linhas = [];
     d.auditorias.forEach(au => { const a = d.areas.find(x => x.id === au.areaId); d.modelo.sensos.forEach(s => s.perguntas.forEach(p => linhas.push({ area: a ? a.nome : '', mes: M[au.mes], auditor: au.auditor, senso: s.titulo, q: `${p.num} ${p.texto}`, r: (au.resp || {})[p.id] || '' }))); });
@@ -8896,6 +8998,14 @@ function exportarExclusivaDpo(chave, add, dados) {
         add('Checklist', [['Seção', 'secao', 18], ['Grupo', 'grupo', 30], ['Nº', 'n', 6], ['Questão', 'q', 70], ['Peso', 'peso', 6], ['Crítico', 'critico', 8], ['T1', 't0', 6], ['T2', 't1', 6], ['T3', 't2', 6], ['T4', 't3', 6]], linhas);
         tabela('Plano de ação', d.acoes, [['Trimestre', 'triNome', 10], ['Item', 'itemTxt', 45], ['Crítico', 'criticoTxt', 8], ['Tratativa', 'destino', 22], ['Ação', 'acao', 45], ['Responsável', 'responsavel', 18], ['Prazo', 'prazo', 12], ['Status', 'status', 14]]);
         tabela('Base de fornecedores', d.fornecedores, [['Fornecedor', 'nome', 26], ['Contato', 'contato', 18], ['Tipo de serviço', 'servico', 24], ['Frequência', 'frequencia', 12], ['Cidade', 'cidade', 16], ['ANS / prazo de atendimento', 'ans', 24], ['Custo / contrato', 'custo', 18]]);
+        if (Array.isArray(d.chamados) && d.chamados.length) {
+            const hoje = new Date().toISOString().slice(0, 10), dias = c => c.abertura ? Math.max(0, Math.floor((new Date((['Concluído', 'Cancelado'].includes(c.status) && c.fechamento ? c.fechamento : hoje) + 'T12:00:00') - new Date(c.abertura + 'T12:00:00')) / 86400000)) : '';
+            add('Chamados de manutenção', [['Nº', 'n', 6], ['Abertura', 'abertura', 12], ['Chamado', 'titulo', 40], ['Local', 'local', 18], ['Categoria', 'categoria', 20], ['Prioridade', 'prioridade', 12], ['Responsável', 'responsavel', 20], ['Prazo', 'prazo', 12], ['Status', 'status', 18], ['Fechamento', 'fechamento', 12], ['Dias abertos', 'dias', 10], ['Solução', 'solucao', 40], ['Custo', 'custo', 12]],
+                d.chamados.map(c => ({ ...c, prazo: c.prazoManual || c.prazoCalc || '', dias: dias(c) })));
+            const acs = []; d.chamados.forEach(c => (c.acoes || []).forEach(a => acs.push({ n: c.n, chamado: c.titulo, ...a })));
+            tabela('Ações dos chamados', acs, [['Chamado nº', 'n', 8], ['Chamado', 'chamado', 34], ['Ação', 'acao', 40], ['Responsável', 'responsavel', 20], ['Prazo', 'prazo', 12], ['Status', 'status', 14]]);
+            tabela('Prazos de fechamento', d.slaChamados, [['Categoria', 'categoria', 26], ['Prioridade', 'prioridade', 14], ['Dias', 'dias', 8]]);
+        }
         tabela('RACI', d.raci, [['Atividade / item', 'atividade', 34], ['R', 'r', 18], ['A', 'a', 18], ['C', 'c', 18], ['I', 'i', 18], ['Fornecedor', 'fornecedor', 20]]);
     }
 }
