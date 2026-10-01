@@ -6685,7 +6685,7 @@ async function renderDpoAgenda() {
       <h2 style="margin-top:32px;">🔐 Pastas liberadas por empresa</h2>
       <p style="color:#64748b;margin-top:-8px;">Escolha quais pastas do DPO cada empresa enxerga dentro dos pilares que ela comprou (a empresa recebe uma notificação quando uma pasta nova é liberada). Marque "1ª auditoria em 2026" para revendas que nunca foram auditadas — só elas podem ficar no selo Route Basic. Em "📊 Autoavaliações" você vê o resumo e as notas de cada mês da empresa.</p>
       <table>
-        <thead><tr><th>Empresa</th><th>📝 Gestão (Checklist)</th><th>📁 Perguntas Bate-Papo</th><th>📂 Material do Pilar</th><th>🧰 Ferramentas Impulsionar</th><th>📊 Autoavaliação Mensal</th><th>📋 Gerenciador GOP</th><th title="Revenda que nunca foi auditada: pode receber o selo Route Basic">1ª auditoria em 2026</th><th></th></tr></thead>
+        <thead><tr><th>Empresa</th><th>📝 Gestão (Checklist)</th><th>📁 Conhecimento do Time</th><th>📂 Material do Pilar</th><th>🧰 Ferramentas Impulsionar</th><th>📊 Autoavaliação Mensal</th><th>📋 Gerenciador GOP</th><th title="Revenda que nunca foi auditada: pode receber o selo Route Basic">1ª auditoria em 2026</th><th></th></tr></thead>
         <tbody>
           ${CONTRATADAS.map(e => `
             <tr>
@@ -7335,7 +7335,7 @@ async function abrirOuCriarPilarDpo(pillarKey) {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
-const ABAS_PILAR_DPO = { checklist: '📝 Gestão', batepapo: '📁 Perguntas Bate-Papo', material: '📂 Material do Pilar', ferramentas: '🧰 Ferramentas Impulsionar' };
+const ABAS_PILAR_DPO = { checklist: '📝 Gestão', batepapo: '📁 Conhecimento do Time', material: '📂 Material do Pilar', ferramentas: '🧰 Ferramentas Impulsionar' };
 
 async function abrirVisualizacaoCicloDpo(ciclo, somenteLeitura, pilarKeyInicial) {
   let pastas = { checklist: true, batepapo: false, material: false, ferramentas: false };
@@ -7446,7 +7446,7 @@ async function carregarBatePapoDpo() {
           <button class="btn-primario btn-sm" onclick="abrirModalBatePapoDpo()">+ Adicionar</button>
         </div>
       </div>
-      ${!grupos.length ? `<div class="msg-vazio">Nenhuma pergunta de bate-papo registrada neste pilar ainda. Clique em <strong>+ Adicionar</strong>, escolha a pergunta do pilar e registre as perguntas e respostas.</div>` : grupos.map(g => `
+      ${!grupos.length ? `<div class="msg-vazio">Nenhum registro de conhecimento do time neste pilar ainda. Clique em <strong>+ Adicionar</strong>, escolha a pergunta do pilar e registre as perguntas e respostas.</div>` : grupos.map(g => `
         <div class="dpo-grupo">
           <div class="dpo-grupo-titulo">${escapeHtml(g.numero)} ${escapeHtml(g.texto || '')} <span style="font-weight:600;color:#94a3b8;">(${g.itens.length})</span></div>
           ${g.itens.map((item, i) => `
@@ -7484,7 +7484,7 @@ function abrirModalBatePapoDpo(id) {
   area.innerHTML = `
     <div class="modal-fundo" onclick="if(event.target===this) fecharModalBatePapoDpo()">
       <div class="modal-caixa" style="max-width:620px;max-height:90vh;overflow-y:auto;">
-        <h3 style="margin-top:0;">${existente ? 'Editar Pergunta do Bate-Papo' : 'Adicionar Perguntas do Bate-Papo'}</h3>
+        <h3 style="margin-top:0;">${existente ? 'Editar Conhecimento do Time' : 'Adicionar Conhecimento do Time'}</h3>
         <label>Pergunta do pilar (${escapeHtml(pilar.label)})</label>
         <select id="bp-dpo-numero">
           ${existente ? '' : '<option value="">Selecione a pergunta do pilar...</option>'}
@@ -7515,7 +7515,7 @@ function adicionarItemBatePapoDpo(existente) {
       ${n > 1 ? `<button class="btn-secundario btn-sm" onclick="this.closest('.bp-dpo-item').remove()">Remover</button>` : ''}
     </div>
     <label>Descreva a pergunta</label>
-    <textarea class="bp-dpo-pergunta" rows="2" placeholder="Qual foi a pergunta feita no bate-papo?">${existente ? escapeHtml(existente.pergunta || '') : ''}</textarea>
+    <textarea class="bp-dpo-pergunta" rows="2" placeholder="Qual pergunta foi feita ao time?">${existente ? escapeHtml(existente.pergunta || '') : ''}</textarea>
     <label>Resposta</label>
     <textarea class="bp-dpo-resposta" rows="3" placeholder="Qual foi a resposta?">${existente ? escapeHtml(existente.resposta || '') : ''}</textarea>
   `;
@@ -7552,7 +7552,7 @@ async function salvarBatePapoDpo(id) {
 }
 
 async function excluirBatePapoDpo(id) {
-  if (!confirm('Excluir esta pergunta do bate-papo?')) return;
+  if (!confirm('Excluir este registro de conhecimento do time?')) return;
   try {
     const r = await api('/api/dpo/bate-papo/' + id, { method: 'DELETE' });
     mostrarToast(r.message);
@@ -7573,7 +7573,7 @@ async function baixarExcelBatePapoDpo() {
     const urlBlob = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = urlBlob;
-    a.download = 'perguntas-bate-papo-' + pilar.key + '.xlsx';
+    a.download = 'conhecimento-do-time-' + pilar.key + '.xlsx';
     document.body.appendChild(a); a.click(); a.remove();
     window.URL.revokeObjectURL(urlBlob);
   } catch (e) { mostrarToast(e.message, true); }

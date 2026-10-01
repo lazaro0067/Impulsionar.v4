@@ -6692,7 +6692,7 @@ function ordemDasPerguntasDoPilarDpo(pilarKey) {
 // ---------- Permissão por PASTA do DPO (Master libera por empresa) ----------
 const PASTAS_DPO = ['checklist', 'batepapo', 'material', 'ferramentas', 'autoavaliacao', 'gop'];
 const PASTAS_DPO_PADRAO = { checklist: true, batepapo: false, material: false, ferramentas: false, autoavaliacao: true, gop: true };
-const ROTULOS_PASTAS_DPO = { checklist: 'Gestão (Checklist)', batepapo: 'Perguntas Bate-Papo', material: 'Material do Pilar', ferramentas: 'Ferramentas Impulsionar', autoavaliacao: 'Autoavaliação Mensal', gop: 'Gerenciador GOP' };
+const ROTULOS_PASTAS_DPO = { checklist: 'Gestão (Checklist)', batepapo: 'Conhecimento do Time', material: 'Material do Pilar', ferramentas: 'Ferramentas Impulsionar', autoavaliacao: 'Autoavaliação Mensal', gop: 'Gerenciador GOP' };
 
 async function pastasLiberadasDaEmpresa(companyId) {
     const resultado = { ...PASTAS_DPO_PADRAO };
@@ -6790,7 +6790,7 @@ app.get('/api/dpo/bate-papo/:pillarKey', requireRole('admin', 'client_admin'), a
         const companyId = await resolverEmpresaBatePapoDpo(req, res, req.params.pillarKey, req.query.company_id);
         if (!companyId) return;
         res.json(await listarBatePapoDpo(companyId, req.params.pillarKey));
-    } catch (e) { res.status(500).json({ error: 'Erro ao carregar as perguntas do bate-papo.' }); }
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar o conhecimento do time.' }); }
 });
 
 // Aceita uma OU várias perguntas de uma vez para a mesma pergunta do pilar:
@@ -6816,7 +6816,7 @@ app.post('/api/dpo/bate-papo', requireRole('admin', 'client_admin'), async (req,
             ));
         }
         res.json({ message: validos.length === 1 ? 'Pergunta adicionada!' : `${validos.length} perguntas adicionadas!` });
-    } catch (e) { res.status(400).json({ error: 'Erro ao salvar a pergunta do bate-papo.' }); }
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar o registro de conhecimento do time.' }); }
 });
 
 async function obterBatePapoComAcesso(req, res, id) {
@@ -6871,14 +6871,14 @@ app.get('/api/dpo/bate-papo/:pillarKey/export', requireRole('admin', 'client_adm
         const workbook = new ExcelJS.Workbook();
         workbook.creator = 'Impulsionar V4';
         workbook.created = new Date();
-        const sheet = workbook.addWorksheet('Perguntas Bate-Papo', { views: [{ state: 'frozen', ySplit: 1 }] });
+        const sheet = workbook.addWorksheet('Conhecimento do Time', { views: [{ state: 'frozen', ySplit: 1 }] });
         sheet.columns = [
             { header: 'Empresa', key: 'empresa', width: 24 },
             { header: 'Pilar', key: 'pilar', width: 24 },
             { header: 'Nº Pergunta do Pilar', key: 'numero', width: 12 },
             { header: 'Pergunta do Pilar', key: 'perguntaPilar', width: 40 },
             { header: 'Item', key: 'item', width: 7 },
-            { header: 'Pergunta (Bate-Papo)', key: 'pergunta', width: 55 },
+            { header: 'Pergunta ao time', key: 'pergunta', width: 55 },
             { header: 'Resposta', key: 'resposta', width: 65 },
             { header: 'Registrado por', key: 'autor', width: 22 },
             { header: 'Data', key: 'data', width: 13 }
@@ -6912,7 +6912,7 @@ app.get('/api/dpo/bate-papo/:pillarKey/export', requireRole('admin', 'client_adm
         sheet.autoFilter = { from: 'A1', to: 'I1' };
 
         const buffer = await workbook.xlsx.writeBuffer();
-        const nomeArquivo = `perguntas-bate-papo-${pilarKey}-${(empresa ? empresa.name : 'empresa').replace(/[^a-z0-9]+/gi, '-')}.xlsx`;
+        const nomeArquivo = `conhecimento-do-time-${pilarKey}-${(empresa ? empresa.name : 'empresa').replace(/[^a-z0-9]+/gi, '-')}.xlsx`;
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
         res.send(Buffer.from(buffer));
