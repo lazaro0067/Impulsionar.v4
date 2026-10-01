@@ -423,7 +423,10 @@ function inicializarBase() {
          'dpo_auditoria_oficial_data TEXT', 'dpo_auditoria_oficial_nota TEXT',
          // Revenda que nunca foi auditada (1ª auditoria em 2026) — só ela pode
          // receber o selo "Route Basic" na régua de selos DPO 2026.
-         'dpo_primeira_auditoria INTEGER DEFAULT 0'].forEach(coluna => {
+         'dpo_primeira_auditoria INTEGER DEFAULT 0',
+         // Gestor principal da empresa (marcado pelo Master) — aprova cadastros
+         // sensíveis como os aprovadores de CAPEX; usado em outras rotinas.
+         'gestor_principal_id INTEGER'].forEach(coluna => {
             db.run(`ALTER TABLE companies ADD COLUMN ${coluna}`, () => {});
         });
 
@@ -1350,6 +1353,10 @@ function inicializarBase() {
             id INTEGER PRIMARY KEY AUTOINCREMENT, company_id INTEGER NOT NULL, ano INTEGER NOT NULL, trimestre INTEGER NOT NULL,
             item TEXT NOT NULL, url TEXT NOT NULL, obs TEXT, autor TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_ronda_notas (
+            company_id INTEGER NOT NULL, ano INTEGER NOT NULL, trimestre INTEGER NOT NULL, item TEXT NOT NULL,
+            nota TEXT, autor TEXT, updated_at TEXT NOT NULL, PRIMARY KEY (company_id, ano, trimestre, item)
+        )`);
         db.run(`CREATE TABLE IF NOT EXISTS dpo_acomp_liberacoes (
             company_id INTEGER NOT NULL,
             question_key TEXT NOT NULL,
@@ -2274,8 +2281,26 @@ app.get('/api/companies/:id/members', requireRole('admin', 'client_admin'), asyn
         return res.status(403).json({ error: 'Você só pode ver os acessos da sua própria corporação.' });
     }
     const membros = await dbAll(`SELECT id, name, email, enabled_modules FROM users WHERE company_id = ? AND role = 'client_admin' ORDER BY id ASC`, [req.params.id]);
-    res.json(membros);
+    const emp = await dbGet(`SELECT gestor_principal_id FROM companies WHERE id = ?`, [req.params.id]);
+    res.json(membros.map(m => ({ ...m, principal: !!(emp && emp.gestor_principal_id && Number(emp.gestor_principal_id) === Number(m.id)) })));
 });
+
+// Master marca qual acesso da empresa é o Gestor principal (aprova aprovadores de CAPEX etc.).
+app.put('/api/companies/:id/gestor-principal', requireRole('admin'), async (req, res) => {
+    try {
+        const uid = req.body.userId ? Number(req.body.userId) : null;
+        if (uid) {
+            const u = await dbGet(`SELECT id FROM users WHERE id = ? AND company_id = ? AND role = 'client_admin'`, [uid, req.params.id]);
+            if (!u) return res.status(400).json({ error: 'Usuário não pertence a esta empresa.' });
+        }
+        await new Promise((resolve, reject) => db.run(`UPDATE companies SET gestor_principal_id = ? WHERE id = ?`, [uid, req.params.id], e => e ? reject(e) : resolve()));
+        res.json({ message: uid ? 'Gestor principal definido!' : 'Gestor principal removido.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao definir o gestor principal.' }); }
+});
+async function ehGestorPrincipalDpo(companyId, userId) {
+    const c = await dbGet(`SELECT gestor_principal_id FROM companies WHERE id = ?`, [companyId]);
+    return !!(c && c.gestor_principal_id && Number(c.gestor_principal_id) === Number(userId));
+}
 
 // Permissão de módulos individual deste acesso (gestor ou membro) — some com
 // o padrão da empresa (ver /api/login), então aqui só grava a restrição
@@ -8290,14 +8315,21 @@ async function migrarPprAntigoDpo(companyId) {
     await new Promise((resolve) => db.run(`UPDATE dpo_ferramentas_digitais_arquivos SET chave = CASE WHEN tipo = 'ppr_armazem' THEN 'sim_armazem' WHEN tipo = 'ppr_entrega' THEN 'sim_entrega' ELSE 'orcamento' END WHERE company_id = ? AND chave = 'ppr'`, [companyId], () => resolve()));
 }
 
-async function respostaFerramentaDigitalDpo(f, chave, ano) {
+async function respostaFerramentaDigitalDpo(f, chave, ano, ctxReq) {
     if (CHAVES_DIMENSIONAMENTO_DPO.includes(chave)) await migrarPprAntigoDpo(f.companyId);
     const r = await carregarFerramentaDigitalDpo(f.companyId, chave, ano);
     if (chave === 'gop') r.dados = garantirPlanosGopDpo(r.dados);
     if (chave === 'cinco_s') r.dados = garantirPlanos5sDpo(r.dados);
     const pergunta = f.pilar ? perguntaDoPilarDpo(f.pilar, f.pergunta) : null;
+    let ctx;
+    if (ctxReq && (chave === 'capex' || chave === 'p3a')) {
+        const principal = await ehGestorPrincipalDpo(f.companyId, ctxReq.user.userId);
+        const usuarios = chave === 'capex' ? await dbAll(`SELECT id, name FROM users WHERE company_id = ? AND role = 'client_admin' ORDER BY name`, [f.companyId]) : undefined;
+        const emp = await dbGet(`SELECT gestor_principal_id FROM companies WHERE id = ?`, [f.companyId]);
+        ctx = { ehMaster: ctxReq.user.role === 'admin', souGestorPrincipal: principal, meuUserId: ctxReq.user.userId, usuarios, temGestorPrincipal: !!(emp && emp.gestor_principal_id) };
+    }
     return {
-        chave, titulo: f.titulo, pilar: f.pilar || null, pilarLabel: f.pilar ? DPO_AMBEV_DATA[f.pilar].label : (f.pilarLabel || ''), pergunta: f.pergunta, modeloGop: f.modeloGop || undefined, modelo5s: f.modelo5s || undefined, modeloManutencao: chave === 'manutencao' ? MODELO_MANUTENCAO_DPO : undefined,
+        ctx, chave, titulo: f.titulo, pilar: f.pilar || null, pilarLabel: f.pilar ? DPO_AMBEV_DATA[f.pilar].label : (f.pilarLabel || ''), pergunta: f.pergunta, modeloGop: f.modeloGop || undefined, modelo5s: f.modelo5s || undefined, modeloManutencao: chave === 'manutencao' ? MODELO_MANUTENCAO_DPO : undefined,
         perguntaTexto: pergunta ? pergunta.pergunta.questao : '', verificacao: pergunta ? pergunta.pergunta.verificacao : '',
         companyId: Number(f.companyId), ano, anos: await anosDaChaveDpo(f.companyId, chave), ...r, template: f.template || null,
         validacao: await validacaoDaChaveDpo(f.companyId, chave, ano, r.dados)
@@ -8308,7 +8340,7 @@ app.get('/api/dpo/ferramentas-digitais/:chave', requireRole('admin', 'client_adm
     try {
         const f = await resolverFerramentaDigitalDpo(req, res, req.params.chave, req.query.company_id);
         if (!f) return;
-        res.json(await respostaFerramentaDigitalDpo(f, req.params.chave, anoValidoDpo(req.query.ano)));
+        res.json(await respostaFerramentaDigitalDpo(f, req.params.chave, anoValidoDpo(req.query.ano), req));
     } catch (e) {
         console.error('Erro ao carregar ferramenta digital DPO:', e.message);
         res.status(500).json({ error: 'Erro ao carregar a ferramenta.' });
@@ -8347,6 +8379,7 @@ app.put('/api/dpo/ferramentas-digitais/:chave', requireRole('admin', 'client_adm
         let dados = req.body.dados && typeof req.body.dados === 'object' ? req.body.dados : {};
         if (req.params.chave === 'gop') dados = garantirPlanosGopDpo(dados);
         if (req.params.chave === 'cinco_s') dados = garantirPlanos5sDpo(dados);
+        if ((req.params.chave === 'p3a' || req.params.chave === 'capex') && req.user.role !== 'admin') dados = await protegerCamposDpo(req.params.chave, f.companyId, ano, dados, req.user);
         const json = JSON.stringify(dados);
         if (json.length > 1500000) return res.status(400).json({ error: 'Dados grandes demais para salvar.' });
         await new Promise((resolve, reject) => db.run(
@@ -8360,6 +8393,24 @@ app.put('/api/dpo/ferramentas-digitais/:chave', requireRole('admin', 'client_adm
         res.status(400).json({ error: 'Erro ao salvar.' });
     }
 });
+
+// Campos que só o Master (parâmetros do P1A/P3A) ou o Gestor principal (aprovadores de CAPEX) podem mudar;
+// aprovação de CAPEX só vale quando feita pelo próprio aprovador cadastrado.
+async function protegerCamposDpo(chave, companyId, ano, dados, user) {
+    const atual = (await carregarFerramentaDigitalDpo(companyId, chave, ano)).dados || {};
+    if (chave === 'p3a') { dados.paramMaster = atual.paramMaster; return dados; }
+    const principal = await ehGestorPrincipalDpo(companyId, user.userId);
+    if (!principal) dados.aprovadores = atual.aprovadores;
+    const aprovadores = Array.isArray(dados.aprovadores) ? dados.aprovadores : [];
+    const antes = Object.fromEntries((atual.itens || []).map(i => [i.id, i]));
+    (dados.itens || []).forEach(i => {
+        const a = antes[i.id] || {}, novo = JSON.stringify(i.aprovacao || null), velho = JSON.stringify(a.aprovacao || null);
+        if (novo === velho) return;
+        const ok = i.aprovacao && Number(i.aprovacao.userId) === Number(user.userId) && aprovadores.some(x => Number(x.userId) === Number(user.userId));
+        if (!ok && i.aprovacao) i.aprovacao = a.aprovacao; // aprovação forjada: mantém a anterior
+    });
+    return dados;
+}
 
 // Abre a pasta de um ano novo. Copia do ano de origem só o que é "estrutura":
 // parâmetros dos simuladores; RACI e KPIs do orçamento; áreas, Sonho e responsáveis da SWOT.
@@ -8382,9 +8433,10 @@ app.post('/api/dpo/ferramentas-digitais/:chave/novo-ano', requireRole('admin', '
                 };
                 else if (chave === 'swot') base = { areas: origem.areas, sonho: origem.sonho, responsaveis: origem.responsaveis, vinculoDNMP: origem.vinculoDNMP, vinculoDNMPTexto: origem.vinculoDNMPTexto };
                 else if (chave === 'orcamento') base = { raci: origem.raci, kpis: origem.kpis, processo: origem.processo };
-                else if (chave === 'sonho') base = { frase: origem.frase, conexao: origem.conexao, exposicao: origem.exposicao, kpis: (origem.kpis || []).map(k => ({ id: k.id, nome: k.nome, pilar: k.pilar, sentido: k.sentido, meta: k.meta, real: [] })) };
+                else if (chave === 'sonho') base = { frase: origem.frase, conexao: origem.conexao, exposicao: origem.exposicao, kpis: (origem.kpis || []).map(k => ({ id: k.id, nome: k.nome, pilar: k.pilar, sentido: k.sentido, meta: k.meta, unidade: k.unidade, acumula: k.acumula, real: [] })) };
                 else if (chave === 'ans') base = { acordo: origem.acordo, volPadrao: origem.volPadrao, tolerancia: origem.tolerancia };
-                else if (chave === 'capex') base = { cadastros: origem.cadastros, premissas: origem.premissas, emergencial: origem.emergencial, itens: (origem.itens || []).filter(i => i.etapa !== 'Concluído' && i.etapa !== 'Cancelado') };
+                else if (chave === 'riscos') base = { riscos: origem.riscos, respostas: origem.respostas, retomada: origem.retomada, retomadaRevisao: origem.retomadaRevisao, retomadaLocal: origem.retomadaLocal, revisoes: origem.revisoes };
+                else if (chave === 'capex') base = { aprovadores: origem.aprovadores, cadastros: origem.cadastros, premissas: origem.premissas, emergencial: origem.emergencial, itens: (origem.itens || []).filter(i => i.etapa !== 'Concluído' && i.etapa !== 'Cancelado') };
                 else if (chave === 'p3a') base = { ...origem, __resumo: undefined };
                 else if (chave === 'manutencao') base = { modelo: origem.modelo, fornecedores: origem.fornecedores, raci: origem.raci, acoes: (origem.acoes || []).filter(a => a.status !== 'Concluída') };
                 else if (chave === 'cinco_s') { const o = prepararDados5sDpo(origem); base = { modelo: o.modelo, areas: o.areas, auditorias: [], acoes: o.acoes.filter(a => a.status !== 'Concluída' && !a.auto).map(a => ({ ...a, id: idGop() })) }; }
@@ -8774,8 +8826,9 @@ function exportar5sDpo(add, dados) {
 // A nota sugerida é calculada na tela e gravada em dados.__resumo.
 // ======================================================================
 const MODELO_MANUTENCAO_DPO = [{"titulo": "Fundamentos", "grupos": [{"numero": "1", "titulo": "Gestão De Áreas E Equipamentos Críticos", "itens": [{"id": "m1_1", "num": "1.1", "texto": "A Estrutura das Coberturas existentes apresentam bom estado de conservação?", "verificacao": "Estrutura com ausência de anomalias (ferrugem, colisão, danos em geral) que coloquem em risco a segurança e operacionalidade do Armazém.\n\nLaudo Técnico Estrutural/Mapeamento e Tratativa das Anomalias.\n\nCheck do cronograma de manutenção de 6 em 6 meses.", "pontos": "3 - Estruturas sem risco de queda e cronograma de manutenção em dia.\n\n1- Algumas anomalias encontradas, porém todas mapeadas com plano de ação gerando visibilidade com follow.\n\n0 - Plano de ação inconsistente e/ou anomalias não mapeadas.", "peso": 4, "foto": true, "critico": true}, {"id": "m1_2", "num": "1.2", "texto": "As telhas e calhas das coberturas existentes estão em bom estado de conservação?", "verificacao": "Checar se as telhas e calhas estão livres de danos, vazamento e goteiras.\n\nVerificar se existe vazão apropriada para as águas oriundas do telhado.\n\nCheck do cronograma de manutenção de 6 em 6 meses.", "pontos": "3 - As telhas e calhas das coberturas existentes estão em bom estado de conservação.\n\n1- Algumas anomalias encontradas, porém todas mapeadas com plano de ação gerando visibilidade com follow.\n\n0 - Plano de ação inconsistente e/ou anomalias não mapeadas.", "peso": 1, "foto": true, "critico": true}, {"id": "m1_3", "num": "1.3", "texto": "Itens críticos de segurança patrimonial como: portão de acesso, porta do banco, torniquete e CFTV estão em perfeita funcionalidade?", "verificacao": "Checar (in loco) a funcionalidade dos itens e entrevistar usuários (controle, portaria e financeiro).\n\nCFTV com 60 dias de imagens e contrato de manutenção de segurança (controle de acesso e CFTV).\n\nPara todos os itens funcionarem perfeitamente é necessário um plano de manutenção.", "pontos": "3 - Todos os itens críticos de segurança patrimonial estão funcionando perfeitamente.\n\n1 - Pelo menos 2 itens estão funcionando perfeitamente e os outros estão mapeados para solução. \n\n0 – Menos de 2 itens funcionando e/ou problemas não mapeados.", "peso": 1, "foto": true, "critico": true}, {"id": "m1_4", "num": "1.4", "texto": "Áreas e equipamentos críticos relacionados à qualidade (câmara fria, gerador, flowracks, racks, equipamentos de limpeza, áreas e equipamentos de controle de PNC) são inspecionados regularmente e estão em perfeita funcionalidade?", "verificacao": "Checar (in loco) a funcionalidade e conservação dos itens e áreas e entrevistar usuários.\n\nChecar se todos os itens estão inventariados em perfeita condição e se tem plano de correção para os que não estejam.\n\nVerificar a existência de laudo que ateste a segurança dos racks e flowracks.\n\nVerificar o cronograma de manutenção preventiva da câmara fria e gerador.", "pontos": "3 - Todos os itens críticos de qualidade estão funcionando perfeitamente.\n\n1 - Pelo menos 3 itens estão funcionando perfeitamente e os outros estão mapeados para solução.\n\n0 - Dois itens apenas funcionando e/ou problemas não mapeados.", "peso": 1, "foto": true, "critico": true}, {"id": "m1_5", "num": "1.5", "texto": "Itens e equipamentos críticos de segurança (hidrantes e extintores, trava rodas, linha de vida, paleteira manual e carrinhos) estão em perfeita funcionalidade?", "verificacao": "Checar (in loco) a funcionalidade e conservação dos itens e entrevistar usuários.\n\nChecar se todos os itens estão inventariados em perfeitas condições e se tem plano de correção para os que não estejam.\n\nVerificar a existência de laudo que ateste a segurança da linha de vida.\n\nVerificar cronograma/plano de inspeção dos hidrantes, extintores, paleteiras e carrinhos.", "pontos": "3 - Todos os itens críticos de segurança estão funcionando perfeitamente.\n\n1 - Pelo menos 3 itens estão funcionando perfeitamente e os outros estão mapeados para solução.\n\n0 - Dois itens apenas funcionando e/ou problemas não mapeados.", "peso": 1, "foto": true, "critico": true}, {"id": "m1_6", "num": "1.6", "texto": "A unidade possui um plano de contingência único, integrado e atualizado para casos críticos?", "verificacao": "Apresentar contratos/tratativa para abastecimento de água, abastecimento dos geradores, falta de energia e intertravamento das portas (caixa).\n\nVerificar se o plano está atualizado com o contato dos responsáveis atuais.\n\nVerificar plano para compra, transporte e abastecimento de diesel do gerador.", "pontos": "3 - Possui plano de contingência único, integrado e atualizado de 100% dos itens críticos.\n\n1 - Há um plano, mas este não está completo ou não está atualizado.\n\n0 - Não há um plano.", "peso": 3, "foto": false, "critico": true}, {"id": "m1_7", "num": "1.7", "texto": "A unidade executa a rotina estabelecida (rondas e reuniões), criando plano de ação correto e consistente?", "verificacao": "Verificar se o Quadro de Gestão à Vista da Matinal do GOD está atualizado com indicador da área.\n\nVerificar se a Reunião de Estrutura acontece na frequência correta e conforme TOR.\n\nVerificar se a Ronda de Blindagem é feita na periodicidade e qualidade correta.\n\nVerificar se a Reunião do Pilar acontece conforme TOR da Reunião DPO.\n\nVerificar se a Super Matinal/Vespertina/Noturna aborda o assunto conforme TOR.\n\nVerificar se o assunto é tratado em MPR do GOD e da GEO.\n\nAnalisar os planos de ação para as anomalias e serviços já realizados e a serem executados e/ou planejados.", "pontos": "3 - Reuniões e rondas são realizadas regularmente conforme padrão e há plano de ação para a evolução da estrutura. \n\n1 - Reuniões e rondas são realizadas parcialmente (pelo menos 75%, com a frequência especificada) –  analisar os últimos 3 meses.\n\n0 - Reuniões e rondas não são realizadas regularmente, de acordo com as orientações, ou estão com frequência abaixo de 75%  –  analisar os últimos 3 meses.\n\n\nNOTA: Se a Reunião de Estrutura não estiver sendo realizada na frequência correta, a questão 1.7 deverá ser Zero.", "peso": 3, "foto": false, "critico": true}]}, {"numero": "2", "titulo": "Gestão Do Plano De Tráfego", "itens": [{"id": "m2_1", "num": "2.1", "texto": "As cancelas e guarda-corpos de proteção estão em bom estado de conservação e de acordo com a especificação padrão?", "verificacao": "Verificar se as segregações, guarda-corpos e cancelas estão conforme padrão e sem apresentar anomalias.\n\nVerificar se existe registro de quando aconteceu à anomalia e qual foi à tratativa e/ou fluxo de cobrança da avaria.\n\nVerificar se os guarda-corpos e proteções de pilares estão devidamente fixados ao piso com todos os parafusos bem apertados.", "pontos": "3 - Segregações, guarda-corpos e cancelas em boas condições de utilização.\n\n1 - Conservação com algumas falhas na pintura, pequenas manutenções ou mal afixados no piso, mas com plano de ação para adequação.\n\n0 - Conservação em estado ruim sem plano de ação.", "peso": 3, "foto": true, "critico": false}, {"id": "m2_2", "num": "2.2", "texto": "As áreas de segregação do picking, espera dos motoristas, refugo, sala dos conferentes, retorno de rota, pit stop e armazenamento de gás (P20) estão em bom estado de conservação?", "verificacao": "Verificar em ronda as condições das áreas que devem estar em perfeita condições de uso. Caso haja anomalia deve haver registro das ocorrências com plano de ação para tratamento.\n\nO prazo entre registro de anomalia e tratamento deve respeitar padrão.", "pontos": "3 - As áreas estão em bom estado de conservação. Problemas sendo tratado em plano de ação.\n\n1 - Conservação com algumas falhas na pintura ou pequenas manutenções, mas sendo tratado via plano de ação.\n\n0 - Conservação em estado ruim.", "peso": 3, "foto": true, "critico": false}, {"id": "m2_3", "num": "2.3", "texto": "Pinturas de faixa de pedestre, fluxo de circulação, separação de lotes, vagas de veículos (leves e pesados), guia de conferente, redzone e sinalizações dos equipamentos de combate a incêndio estão em bom estado de conservação?", "verificacao": "Unidade deve ter cronograma para pinturas novas e manutenção das antigas. Controle eletrônico com plano de ação para tratamento dos problemas quando necessário.\n\nEm ronda na unidade verifique o estado de conservação das pinturas. As mesmas devem seguir padrão.\n\nPlacas de sinalização em bom estado de conservação.", "pontos": "3 - Pinturas e sinalizações presentes em todos os locais definidos e estão em bom estado de conservação.\n\n1 - Pinturas e sinalizações presentes em todos os locais definidos, contudo existem falhas na conservação sendo tratados com plano de ação. \n\n0 - Falta pintura e/ou sinalizações em locais definidos e/ou má conservação nas existentes.", "peso": 1, "foto": true, "critico": false}]}, {"numero": "3", "titulo": "Conservação Civil", "itens": [{"id": "m3_1", "num": "3.1", "texto": "As áreas de estocagem, circulação de veículos, Pit Stop, pedestres e áreas ADM estão livres de buracos ou outras interferências?", "verificacao": "Verificar (in loco) pisos, rampas e áreas de circulação da unidade, analisar VBZ de quebra e checar chamados com motivos buracos. \n\nCheck de apontamento de condições inseguras no Credit sem tratamento.", "pontos": "3 - Pisos em bom estado de conservação, não apresentando risco de quedas ou tropeços.\n\n1 - Algumas anomalias encontradas, porém todas mapeadas com plano de ação gerando visibilidade com follow.\n\n0 - Plano de ação inconsistente e/ou anomalias não mapeadas.", "peso": 1, "foto": true, "critico": false}, {"id": "m3_2", "num": "3.2", "texto": "Tetos e forros estão livres de rachaduras, buracos, deslocamentos (PVC ou Placas), umidade, manchas e goteiras?", "verificacao": "Verificar in loco.\n\nCheck de chamados abertos com plano de ação para solucionar.\n\nCheck de GSAs com plano de ação para solucionar.", "pontos": "3 - Tetos e forros em bom estado de conservação, não apresentando risco de queda.\n\n1 - Alguma anomalia encontrada, porém todas mapeadas com plano de ação gerando visibilidade com follow.\n\n0 – Anomalias identificadas em ronda e não mapeadas e/ou plano de ação inconsistente.", "peso": 1, "foto": true, "critico": false}, {"id": "m3_3", "num": "3.3", "texto": "O Muro de Fechamento do perímetro está livre de buracos, rachaduras e com pintura em bom estado (quando houver pintura)?", "verificacao": "Verificar se existem anomalias (buracos, concertinas amassadas, respeitar especificações do check list patrimonial dos muros). \n\nCheck de chamados abertos com plano de ação para solucionar.", "pontos": "3 - Muro em bom estado de conservação, não apresentando trincas ou risco de queda.\n\n1 - Alguma anomalia encontrada, porém todas mapeadas com plano de ação gerando visibilidade com follow.\n\n0 - Anomalias identificadas em ronda e não mapeadas e/ou plano de ação inconsistente.", "peso": 3, "foto": true, "critico": false}, {"id": "m3_4", "num": "3.4", "texto": "O revestimento das paredes das salas e acessos estão livres de buracos e rachaduras?", "verificacao": "Verificar se existem anomalias (pintura envelhecida ou danificada, mofos, buracos, trincas, rachaduras) nas paredes.\n\nCheck de chamados abertos com plano de ação para solucionar.", "pontos": "3 - Paredes em bom estado de conservação, não apresentando trincas ou risco de quedas. \n\n1 - Alguma anomalia encontrada, porém todas mapeadas com plano de ação gerando visibilidade com follow.\n\n0 - Anomalias identificadas em ronda e não mapeadas e/ou plano de ação inconsistente.", "peso": 3, "foto": true, "critico": false}, {"id": "m3_5", "num": "3.5", "texto": "As portas e janelas das salas estão em perfeitas condições de uso?", "verificacao": "Verificar se existem anomalias (maçaneta quebrada, trinco quebrado, sem porta, vidro quebrado das janelas, persiana rasgada entrando sol, insulfim rasgado, porta emperrando ou fazendo barulho ao movimentar). \n\nCheck de chamados abertos com plano de ação para solucionar.", "pontos": "3 - Portas e janelas em bom estado de conservação.\n\n1 - Alguma anomalia encontrada, porém todas mapeadas com plano de ação gerando visibilidade com follow.\n\n0 - Anomalias identificadas em ronda e não mapeadas e/ou plano de ação inconsistente.", "peso": 3, "foto": false, "critico": false}]}, {"numero": "4", "titulo": "Elétrica", "itens": [{"id": "m4_1", "num": "4.1", "texto": "A Cabine Primária, Quadros de Energia e Infraestrutura Elétrica para distribuição de Força da Unidade estão em bom estado de conservação?", "verificacao": "Unidade possui laudo técnico válido com as condições infraestruturais elétrica da unidade? Incluem verificação das condições das cabines e quadros? Verificar documentação.\n\nA infraestrutura elétrica esta em boas condições de uso? No caso de anomalia existe plano de ação para tratamento com prazos coerentes?\n\nA infraestrutura elétrica tem revisão periódica conforme orientação de engenheiro eletricista?\n\nOs locais onde estão instalados as cabines e quadros são adequados (a frente de qualquer quadro / painel elétrico deve ter 1m² de acesso livre de interferências para a execução da manutenção do mesmo)? Existe risco de batida por máquinas e veículos? Verifique as condições físicas em ronda.\n\nToda a rede elétrica está protegida por eletrocalha, eletrodutos, canaletas, conduítes e suportes.", "pontos": "3 - Unidade com toda documentação válida. Instalações em perfeitas condições de uso e revisões periódicas acontecendo conforme orientação técnica garantindo a segurança da unidade. \n\n1 - Unidade com toda documentação válida. Instalação com algumas anomalias sendo tratadas via plano de ação e revisões acontecendo conforme orientação técnica.\n\n0 - Unidade sem documentação válida. Instalações com problemas ou sem revisões.", "peso": 1, "foto": true, "critico": true}, {"id": "m4_2", "num": "4.2", "texto": "Iluminação interna e externa está em perfeitas condições de uso? Existe cronograma de verificação dos mesmos?", "verificacao": "Realize ronda pelas áreas e verifique a existência de lâmpadas, refletores, etc. queimadas e/ou danificados.\n\nA unidade possui agenda definida para verificação das condições da iluminação? O mesmo atende a necessidade da unidade?\n\nVerifique RACIs e ANSs definidas para realização de rondas e tratamento de problemas. A unidade deve ter análise e plano de ação para tratamento de problemas.", "pontos": "3 - Poucas lâmpadas queimadas ou danificadas, unidade com agenda definida para verificação e ANSs e RACIs definidas.\n\n1 – Algumas lâmpadas queimadas, falha no cronograma de verificação e sem plano de ação consistente. \n\n0 - Lâmpadas queimadas, falha no cronograma verificação e/ou plano de ação inconsistente.", "peso": 1, "foto": true, "critico": false}, {"id": "m4_3", "num": "4.3", "texto": "As instalações elétricas como: ar condicionado, ventiladores, chuveiros elétricos, tomadas e VDs estão em bom estado de conservação? Existe cronograma de verificação?", "verificacao": "Realize ronda pelas áreas e verifique a existência de equipamentos queimados e/ou danificados.\n\nVerifique o cronograma de revisão das instalações elétricas. A unidade deve ter controle formal das revisões.\n\nVerificar se o ar condicionado está inventariado, possui plano de manutenção preventiva e se as anomalias estão mapeadas.", "pontos": "3 – Pelo menos 3 dos itens de instalações elétricas estão em boas condições de uso e cronograma de revisões ocorrendo e sendo registradas.\n\n1 – Menos de 3 itens de instalações elétricas estão em boas condições, contudo não existem falhas no cronograma de revisões.\n\n0 - Instalações elétricas com problemas e/ou falha no cronograma de revisões.", "peso": 3, "foto": true, "critico": false}]}, {"numero": "5", "titulo": "Hidráulica, Áreas Molhadas E Molháveis", "itens": [{"id": "m5_1", "num": "5.1", "texto": "Os Banheiros, Vestiários e Refeitórios estão garantindo as condições básicas de funcionamento e utilização?", "verificacao": "Banheiros, vestiários e refeitórios livres de odores.\n\nVasos, Pias e Torneiras em funcionamento e livre de vazamentos.\n\nChuveiros em funcionamento.\n\nArmários em bom estado de conservação.\n\nSuportes para sabão, papéis e espelhos bem fixados e sem anomalias.", "pontos": "3 - Atendimento de 5 itens de verificação.\n\n1- Atendimento de 3 a 4 itens de verificação.\n\n0 - Atendimento menor que 3 itens de verificação.", "peso": 1, "foto": true, "critico": false}, {"id": "m5_2", "num": "5.2", "texto": "A unidade está realizando a limpeza e possui registro de manutenção preventiva nos ralos, sifões, grelhas e galerias (condutor de água pluvial)?", "verificacao": "Verificar se a unidade executa um cronograma padrão de limpeza  e manutenção e se existem ações para tratamento de anomalias. \n\nEntreviste algumas pessoas e verifique se existe registro de anomalias relacionadas a entupimentos, inundações e vazamentos.", "pontos": "3 - Cronograma de limpeza e manutenção acontecendo conforme padrão. O mesmo é gerenciado via plano de ação. Não existem sinas de entupimentos, inundações e vazamentos.\n\n1 - Não existem sinais de entupimentos ou vazamentos, porém cronograma de limpeza com falhas e sem plano de ação para tratamento.\n\n0 - Existência de sinais de vazamentos e entupimentos e sem cronograma de limpeza e manutenção.", "peso": 3, "foto": false, "critico": false}, {"id": "m5_3", "num": "5.3", "texto": "Reservatório de água potável da unidade está em perfeita condição de uso e possui registro de manutenção e limpezas periódicas? (Se aplicável)", "verificacao": "Existe plano para abastecimento de água no caso de falta? Existe laudo para controle de PH?\n\nExiste gestão das manutenções dos reservatórios? A mesma está em boas condições físicas?\n\nUnidade realiza manutenção e limpeza conforme padrões de conservação sanitários? Existe controle eletrônico (planilha)? Atenção para unidades com poço artesiano. \n\nSmall OP:  Regional  ajudar na elaboração / execução do plano.", "pontos": "3 - Plano de abastecimento consistente, laudo emitido e controlado, livre de vazamentos e limpeza ocorrendo conforme cronograma e padrões sanitários.\n1 – Laudo emitido, livre de vazamentos, mas com falhas no cronograma de limpeza e manutenção.  \n0 – Não atende os requisitos acima.", "peso": 3, "foto": false, "critico": true}]}]}, {"titulo": "Gerenciar para Manter", "grupos": [{"numero": "6", "titulo": "Manutenção Preventiva", "itens": [{"id": "m6_1", "num": "6.1", "texto": "A unidade possui um Plano de manutenção preventiva (com periodicidade e atividades) para cada tipo de equipamentos e áreas criticas?", "verificacao": "Plano de manutenção com periodicidade das seguintes atividades preventivas:\n\nEquipamentos críticos: geradores, portões de acesso, ar condicionado, quadros elétricos, flowracks, porta pallet, linha de vida, câmara fria, SPDA, bomba d'água e recalque (alimentação dos hidrantes).\n\nÁreas criticas: Caixa Financeiro, Pit Stop,  tanque de abastecimento, oficinas, telhados.\n\nVerificar o controle de produtividade do técnico, anomalias, controle de fotos e OS parada por falta de material. \n\nServiços a serem realizados em cada tipo de manutenção (com pelo menos as recomendações contidas no manual do equipamento - quando aplicável).", "pontos": "3 - O plano de manutenção é seguido e engloba todas as áreas e equipamentos críticos, com gestão da produtividade dos técnicos, anomalias e materiais. \n\n1 - O plano de manutenção existe, mas não é detalhado ou está faltando componentes-chaves, gestão insuficiente da produtividade, anomalias e materiais. \n\n0 - Não existem evidências de plano de manutenção.", "peso": 3, "foto": false, "critico": false}, {"id": "m6_2", "num": "6.2", "texto": "A unidade utiliza os aprendizados das manutenções corretivas para atualizar os planos de manutenção preventiva?", "verificacao": "Verificar a Lista de Manutenção Corretivas com as principais ocorrências.\n\nVerificar a realização de Relatos de Anomalia para itens críticos que passaram por manutenção corretiva com uma preventiva feita. \n\nVerificar se a unidade controla os indicadores MTBF e MTTR e se existem ações para melhorar a performance.\n\nVerificar evolução dos indicadores atrelados a atualização dos planos.\n\nSmall OP:  Regional  apurar o KPI  de forma centralizada.", "pontos": "3 - Os planos de Manuteção Preventiva são atualizados com os aprendizados das manutenção corretivas, relatos de anomalia são gerados quando necessário e a unidade controla o MTBF e MTTR.\n\n1 - Os planos de Manuteção Preventiva são atualizados com os aprendizados da Manutenção corretiva, mas não apresentam evolução, existem falhas na geração dos relatos e/ou no acompanhamento de MTBF e MTTR.\n\n0 - Os planos não foram atualizados, não são feitos relatos de anomalia e/ou o MTBF e MTTR não é controlado.", "peso": 3, "foto": false, "critico": false}]}, {"numero": "7", "titulo": "Gestão Dos Custos De Manutenção", "itens": [{"id": "m7_1", "num": "7.1", "texto": "As manutenções recorrentes executadas na unidade possuem contrato de prestação de serviço validado via CSU?", "verificacao": "Verificar os contratos (Ex.: Manserv, Talentos, etc.).\n\nVerificar exceções aprovados pelo corporativo AC.\n\nVerificar Matriz de Serviços disponibilizada pelo Coorporativo.\n\nVerificar execução de manutenção sem pedido ou contrato.\n\nVerificar existência de regularização de notas fiscais.", "pontos": "3 - Possui todos os contratos de serviços recorrentes devidamente aprovados.\n\n1 - Não possui todos os contratos, no entanto estão em processo de aprovação.\n\n0 - Não possui contrato, não estão em fluxo de aprovação e/ou possui notas fiscais não regularizadas.", "peso": 3, "foto": false, "critico": false}, {"id": "m7_2", "num": "7.2", "texto": "Existe um controle e estratificação dos maiores gastos por área/equipamento/serviço?", "verificacao": "Apresentar controle com histórico mínimo de 6 meses.\n\nVerificar a realização da Reunião de OBZ com análises e estratificações. \n\nPlano de Ação com follow dos maiores gastos.", "pontos": "3 - Possui estratificação aberto por área, Reunião de OBZ acontece com Plano de Ação e follow para os itens de maior impacto.\n\n1 - Possui estratificação, mas com plano de ação e follow inconsistentes.\n\n0 - Não possui estratificação.", "peso": 3, "foto": false, "critico": false}, {"id": "m7_3", "num": "7.3", "texto": "A unidade possui uma gestão do pacote de manutenção?", "verificacao": "Verificar se o dono tem o acompanhamento do resultado (PLAN x TEND x REAL).\n\nVerificar se a unidade tem estouros no Pacote Manutenção.\n\nVerificar se o dono pode explicar os principais impactos.\n\nVerificar se a unidade tem um controle da tendência do LE.\n\nVerificar se existem alocações indevidas no pacote sem tratativa.", "pontos": "3 – A unidade possui gestão e acompanhamento do pacote, garante a correta alocação das despesas, sem estouro, possui evidências e estratificações com Plano de Ação e follow.\n\n1 – A unidade possui gestão e acompanhamento do pacote, no entanto, existem falhas de alocação das despesas e nas tratativas. \n\n0 – A unidade não possui gestão do pacote e/ou possui lançamentos indevidos.", "peso": 3, "foto": false, "critico": false}, {"id": "m7_4", "num": "7.4", "texto": "A unidade possui áreas internas comodatadas para parceiros? A mesma possui evidências de cobranças?", "verificacao": "Verificar existência do contrato das áreas comodatadas, cobrar existência física do comodato assinado e reconhecimento de firma. \n\nVerificar se as áreas estão em bom estado de conservação e/ou foram realizados os reparos necessários.\n\nVerificar se os reparos de responsabilidade do comodatado foram devidamente cobrados.", "pontos": "3 - Possui comodato e as obras com responsabilidade do parceiro é devidamente cobrado.\n\n1 - Possui comodato, mas não é cobrado.\n\n0 - Não possui comodato.", "peso": 3, "foto": false, "critico": false}, {"id": "m7_5", "num": "7.5", "texto": "A unidade possui um processo de aquisição de equipamentos e peças para a execução das atividades de manutenção?", "verificacao": "Verificar se os funcionários conhecem e utilizam o Portal do Fornecedor Local.\n\nApresentar controle que evidencie a contratação de serviços e/ou aquisição de peças x lista de ordens de serviço. \n\nVerificar se existem OS abertas por falta de material.\n\nAvaliar o prazo de cumprimento das ordens de serviço x disponibilidade dos materiais.\n\nVerificar se a unidade faz gestão de estoque de peças e materiais com inventários regulares.", "pontos": "3 - 90% das aquisições concretizadas <= de 30 dias da abertura da ordem de serviço.\n\n1 - 90% das aquisições concretizadas <=60 dias da abertura da ordem de serviço.\n\n0 - Não atende os requisitos.", "peso": 3, "foto": false, "critico": false}, {"id": "m7_6", "num": "7.6", "texto": "A unidade possui um processo definido para o planejamento orçamentário de obras, serviços e aquisição de peças?", "verificacao": "Verificar a existência de orçamentos padronizados que contemplem todos os itens.\n\nEntrevistar se o dono entende os benefícios de se realizar um orçamento padronizado.\n\nValidar se o serviço descriminado corresponde ao orçado.\n\nVerificar se o Aceite Final da Obra reflete o orçamento aprovado. \n\nVerificar se foi prospectado mais de um fornecedor.", "pontos": "3 – Obras e serviços realizados atenderam os requisitos de cotação e prospecção orçamentária.\n\n1 – A unidade possui processo definido, no entanto existem falhas e oportunidades. \n\n0 – Não atende os requisitos.", "peso": 3, "foto": false, "critico": false}]}, {"numero": "8", "titulo": "Gestão De Ordens De Serviços", "itens": [{"id": "m8_1", "num": "8.1", "texto": "Existe um fluxo definido e amplamente divulgado da ferramenta de abertura de chamados?", "verificacao": "Verificar se existe o fluxo de abertura, disponibilidade da ferramenta e plano de comunicação (visão 6 meses).\n\nEntrevistar in loco 3 usuários para checar o conhecimento da ferramenta.\n\nVerificar a gestão e conservação dos QRCodes.\n\nLUP com passo a passo para abertura de chamado.\n\nNota: Small OP poderá realizar o processo através do Clic.", "pontos": "3 - Evidências da disponibilidade, comunicação e utilização da ferramenta.\n\n1 - A ferramenta existe, mas não é utilizada ou bem comunicada.\n\n0 - Sem evidências da utilização e comunicação.", "peso": 3, "foto": false, "critico": false}, {"id": "m8_2", "num": "8.2", "texto": "A unidade garante gestão das ordens de serviços (corretivas e preventivas) com prazo de execução, priorização das demandas e follow nas reuniões de rotina?", "verificacao": "Verificar se existe algum sistema de gestão implatando (Exppe - Optimus) e este é utilizado frequentemente. \n\nVerificar follow na reunião de estrutura semanal.\n\nVerificar se existem chamados fechados indevidamente, sem a solução definitiva do problema. \n\nVerificar Plano de Ação para as anomalias e serviços não atendidos.", "pontos": "3 - Há sistema de gestão e acompanhamento, sem chamados fechados indevidamente, anomalias são tratadas em reunião com Plano de Ação e follow.\n\n1 – Há sistema de gestão e acompanhamento, com chamados fechados indevidamente, falhas na tratativa das anomalias.\n\n0 - Não possui sistema de gestão e anomalias não são tratadas.", "peso": 3, "foto": false, "critico": false}, {"id": "m8_3", "num": "8.3", "texto": "A unidade realiza check com os prestadores de serviço com foco em planejamento, execução e nível de serviço?", "verificacao": "Ata de reunião com o desdobramento de atividades, acompanhamento da execução, qualidade dos serviços. \n\nVerificar se a unidade exige e faz a gestão da garantia de peças, materiais e serviços.", "pontos": "3 – Tem gestão da garantia de peças e serviços e evidências de reunião com Plano de Ação e follow. \n\n1 – Algumas peças e serviços possuem garantias, mas existem falhas no Plano de Ação e reuniões.\n\n0 - Não possui evidências de gestão de garantia e não ocorre reunião.", "peso": 1, "foto": false, "critico": false}]}]}, {"titulo": "Gerenciar para Melhorar", "grupos": [{"numero": "9", "titulo": "Nível De Serviço", "itens": [{"id": "m9_1", "num": "9.1", "texto": "A unidade aplica e tem acompanhamento da Pesquisa de Nível de Serviço de manutenção e Serviços Gerais?", "verificacao": "Verificar se a unidade aplica periodicamente uma Pesquisa de Nível de Serviço.\n\nVerificar se existe evolução entre uma pesquisa e outra.\n\nChecar a existência de plano de ação e evidências que respaldem e enderecem os itens da pesquisa com follow mensal.", "pontos": "3 – A Pesquisa é aplicada, existe plano consistente com follow mensal e apresenta evolução no resultado.\n\n1 – A Pesquisa é aplicada, existe um plano sem follow e sem evolução no resultado.\n\n0 – A pesquisa não é aplicada e/ou não existe acompanhamento.", "peso": 1, "foto": false, "critico": false}, {"id": "m9_2", "num": "9.2", "texto": "A unidade garante os chamados de manutenção predial fechados no prazo?", "verificacao": "Apresentar gestão e estratificação dos chamados.\n\nChecar se o resultado da unidade é maior ou igual à meta desdobrada. \n\nVerificar % de chamados reabertos. \n\nEntrevista com no mínimo 3 usuários e verificação in loco.", "pontos": "3 – A unidade atinge a meta de chamados, possui acompanhamentos gerenciais e controla o % de chamados reabertos. \n\n1 – A unidade atinge a meta de chamados, mas os controles não são eficientes e não há informações sobre os chamados reabertos. \n\n0 - Não atende os requisitos.", "peso": 3, "foto": false, "critico": false}, {"id": "m9_3", "num": "9.3", "texto": "A unidade possui um plano efetivo, amplo e frequente de comunicação dos processos de manutenção, obras e serviços concluídos e feedback de chamados?", "verificacao": "Verificar se a unidade possui uma rotina de comunicar as frentes da área. \n\nChecar se existe plano de comunicação para iniciar atividades de manutenção e obras  constando: macro atividades, cronograma, plano de tráfego e áreas a serem isoladas, sendo obrigatória a presença dos responsáveis abaixo:\nAmbev - Gerente da área, Prefeito  5S, TST e Tec. de Manutenção;\nTerceiros - Responsável pela área e TST;\nConstrutora - Encarregado e TST.\n\nConsultar materiais de RCOG, R. Estrutura, Super Matinal. \n\nChecar a ativação e comunicação via WorkPlace e Comunicação Interna. \n\nEntrevista in loco.", "pontos": "3 – Comunicação eficiente, frequente e ampla, utilizando as reuniões corretas e promovendo mudança na percepção da área. \n\n1 - Comunicação inconsistente e Plano de Ação com falhas. \n\n0 - Não existe comunicação.", "peso": 3, "foto": false, "critico": false}, {"id": "m9_4", "num": "9.4", "texto": "Foi feito algum benckmark de processo, indicadores, melhores práticas ou iniciativas com outras operações?", "verificacao": "Verificar o processo de busca e compartilhamento de Melhores Práticas de Manutenção entre as unidades.  \n\nVerificar evolução direta ou indireta no processo que foi aplicado a Melhor Prática.\n\nVerificar planos de ação.", "pontos": "3 – A unidade adotou/compartilhou alguma melhor prática e consegue evidenciar melhoria nos processos. \n\n1 – A unidade adotou/compartilhou alguma melhor prática, mas ainda não houve melhoria nos processos.  \n\n0 - Não existem evidências.", "peso": 1, "foto": false, "critico": false}]}]}];
-const TOOLS_EXCLUSIVAS_DPO = { sonho: 'gestao:1.2', manutencao: 'planejamento:2.2', p3a: 'planejamento:2.3', capex: 'planejamento:2.4', ans: 'planejamento:3.2' };
+const TOOLS_EXCLUSIVAS_DPO = { riscos: 'planejamento:2.1', sonho: 'gestao:1.2', manutencao: 'planejamento:2.2', p3a: 'planejamento:2.3', capex: 'planejamento:2.4', ans: 'planejamento:3.2' };
 Object.assign(FERRAMENTAS_DIGITAIS_DPO, {
+    riscos: { pilar: 'planejamento', pergunta: '2.1', titulo: 'Riscos, Resposta e Retomada de Negócios' },
     sonho: { pilar: 'gestao', pergunta: '1.2', titulo: 'DPO Sonho' },
     manutencao: { pilar: 'planejamento', pergunta: '2.2', titulo: 'Check Global de Manutenção' },
     p3a: { pilar: 'planejamento', pergunta: '2.3', titulo: 'P1A / P3A — pessoas, estrutura e frota' },
@@ -8786,7 +8839,17 @@ Object.assign(FERRAMENTAS_DIGITAIS_DPO, {
 function exportarExclusivaDpo(chave, add, dados) {
     const M = MESES_CURTOS_DPO, d = dados || {};
     const tabela = (nome, lista, cols) => { if (Array.isArray(lista) && lista.length) add(nome, cols.map(([h, k, w]) => [h, k, w || 18]), lista); };
-    if (chave === 'sonho') {
+    if (chave === 'riscos') {
+        const riscos = (d.riscos || []).filter(r => r.risco);
+        add('Matriz de Riscos', [['Nº', 'n', 6], ['Risco', 'risco', 34], ['Descrição', 'descricao', 50], ['Plano de ação', 'plano', 50], ['Impacto/Dano', 'impacto', 14], ['Probabilidade', 'prob', 16], ['Tipo de risco', 'classe', 12], ['Tipo', 'tipo', 14], ['Perigo', 'perigo', 26], ['Mecanismo', 'mecanismo', 22], ['Frequência', 'freq', 12], ...M.map((m, i) => [m, 'm' + i, 6])],
+            riscos.map(r => ({ ...r, classe: classeRiscoDpo(r), freq: freqRiscoDpo(classeRiscoDpo(r)), ...Object.fromEntries(M.map((m, i) => ['m' + i, ({ P: 'Plan', R: 'Real', X: 'Real (extra)' })[(r.verif || {})[i]] || ''])) })));
+        add('Plano de resposta', [['Risco', 'risco', 30], ['Tipo', 'classe', 10], ['Proprietários', 'prop', 26], ['Procedimento quando o risco surgir', 'proc', 50], ['Ações no final do episódio', 'pos', 40], ['Nível de serviço / mão de obra', 'ns', 36], ['Responsável', 'resp', 24], ['Contato', 'cont', 24]],
+            riscos.map(r => { const p = (d.respostas || {})[r.id] || {}; return { risco: r.risco, classe: classeRiscoDpo(r), prop: p.proprietarios, proc: p.procedimento, pos: p.posEpisodio, ns: p.nivelServico, resp: p.responsavel, cont: p.contato }; }));
+        tabela('Plano de Retomada', d.retomada, [['Parada', 'parada', 30], ['Categoria', 'categoria', 20], ['Fornecedor', 'fornecedor', 24], ['Atividades', 'atividades', 26], ['Contato', 'contato', 26], ['Ações', 'acoes', 60]]);
+        tabela('Histórico de Ocorrências', d.ocorrencias, [['Data', 'data', 12], ['Risco', 'risco', 28], ['Descrição', 'descricao', 50], ['Modificar procedimento?', 'mudar', 12], ['Ações corretivas', 'acoes', 40], ['Impacto R$', 'impacto', 12]]);
+        tabela('Revisões da matriz', d.revisoes, [['Data', 'data', 12], ['Responsável', 'responsavel', 22], ['Time de segurança participou', 'seguranca', 12], ['Alterações', 'alteracoes', 70]]);
+        tabela('Conversa com o time', d.entrevistas, [['Data', 'data', 12], ['Nome', 'nome', 22], ['Cargo', 'cargo', 20], ['Conhece os 3 riscos', 'top3', 12], ['Conhece o plano de resposta', 'plano', 12], ['Sabe onde está a retomada', 'local', 12]]);
+    } else if (chave === 'sonho') {
         add('Sonho', [['Campo', 'c', 30], ['Conteúdo', 'v', 90]], [
             { c: 'Frase do Sonho', v: d.frase }, { c: 'Data da revisão', v: d.dataRevisao }, { c: 'Conexão com a estratégia ABI', v: d.conexao },
             { c: 'Onde está exposto', v: d.exposicao }, { c: 'Como foi construído (envolvimento)', v: d.construcao }]);
@@ -8803,12 +8866,13 @@ function exportarExclusivaDpo(chave, add, dados) {
     } else if (chave === 'ans') {
         const linhas = [];
         Object.entries(d.meses || {}).forEach(([m, mes]) => Object.entries((mes || {}).dias || {}).forEach(([dia, v]) => {
-            const neg = numDpo(v.neg), real = numDpo(v.real);
-            linhas.push({ mes: M[m], dia: Number(dia), neg, real, fora: numDpo(v.fora), buffer: numDpo(v.buffer), horaLimite: numDpo(v.horaLimite), disp: neg && real !== null ? `${String(Math.round((real / neg - 1) * 1000) / 10).replace('.', ',')}%` : '', just: v.just || '' });
+            const neg = numDpo(v.negAuto) ?? numDpo(v.neg), real = numDpo(v.real);
+            linhas.push({ mes: M[m], dia: Number(dia), neg, real, fora: numDpo(v.fora), buffer: numDpo(v.buffer), limiteLink: v.limiteLink || '', disp: neg && real !== null ? `${String(Math.round((real / neg - 1) * 1000) / 10).replace('.', ',')}%` : '', just: v.just || '' });
         }));
         linhas.sort((a, b) => M.indexOf(a.mes) - M.indexOf(b.mes) || a.dia - b.dia);
-        add('Acompanhamento diário', [['Mês', 'mes', 8], ['Dia', 'dia', 6], ['Volume negociado', 'neg', 14], ['Volume realizado', 'real', 14], ['Fora de rota', 'fora', 12], ['Buffer %', 'buffer', 10], ['Pedidos após hora limite %', 'horaLimite', 14], ['Dispersão', 'disp', 10], ['Justificativa', 'just', 40]], linhas);
+        add('Acompanhamento diário', [['Mês', 'mes', 8], ['Dia', 'dia', 6], ['Volume negociado', 'neg', 14], ['Volume realizado', 'real', 14], ['Fora de rota', 'fora', 12], ['Buffer %', 'buffer', 10], ['Limite fechamento link (hs)', 'limiteLink', 14], ['Dispersão', 'disp', 10], ['Justificativa', 'just', 40]], linhas);
         tabela('Ações', d.acoes, [['Mês', 'mesNome', 8], ['Dia', 'dia', 6], ['Dispersão', 'dispTxt', 10], ['Causa', 'causa', 35], ['Ação', 'acao', 45], ['Responsável', 'responsavel', 18], ['Prazo', 'prazo', 12], ['Status', 'status', 14]]);
+        add('Meta mensal', [['Mês', 'mes', 10], ['Volume meta (hl)', 'meta', 16]], M.map((m, i) => ({ mes: m, meta: numDpo((d.metaMes || {})[i]) })));
         tabela('Reuniões de check', d.reunioes, [['Data', 'data', 12], ['Tipo', 'tipo', 12], ['Participantes', 'participantes', 40], ['Pontos / decisões', 'decisoes', 60]]);
     } else if (chave === 'capex') {
         tabela('Registro de solicitações', d.itens, [['Nº', 'n', 6], ['Data', 'data', 12], ['Descrição', 'descricao', 40], ['Área', 'area', 14], ['Categoria', 'categoria', 16], ['Tipo', 'tipo', 14], ['Origem', 'origem', 18], ['Justificativa', 'justificativa', 50], ['Qtde', 'qtd', 8], ['Custo unitário', 'unitario', 14], ['Custo total', 'total', 14], ['G', 'g', 5], ['U', 'u', 5], ['T', 't', 5], ['Etapa', 'etapa', 14], ['Orçado', 'orcado', 14], ['Aprovado', 'aprovado', 14], ['Realizado', 'realizado', 14], ['Início', 'inicio', 12], ['Fim previsto', 'fimPrevisto', 12], ['Fim real', 'fimReal', 12], ['NF', 'nfNome', 30]]);
@@ -8816,7 +8880,12 @@ function exportarExclusivaDpo(chave, add, dados) {
         tabela('Plano de ação', d.plano, [['Data', 'data', 12], ['Área', 'area', 14], ['Assunto', 'assunto', 20], ['Ação', 'acao', 45], ['Responsável', 'responsavel', 18], ['Prazo', 'prazo', 12], ['Status', 'status', 14]]);
     } else if (chave === 'p3a') {
         tabela('Projetos P1A-P3A', d.projetos, [['Horizonte', 'horizonte', 10], ['Descrição', 'descricao', 45], ['Recurso', 'recurso', 14], ['Tipo', 'tipo', 22], ['Qtde', 'qtd', 8], ['Valor unit.', 'unitario', 14], ['Previsto', 'previsto', 14], ['Realizado', 'realizado', 14], ['Ano', 'ano', 8], ['Data execução', 'execucao', 12], ['Prioridade', 'prioridade', 10], ['Status', 'status', 18], ['Registro', 'registro', 18], ['Impacto no negócio', 'impacto', 45]]);
-        tabela('Volume', d.volumes, [['Ano', 'ano', 8], ['Volume (hl)', 'volume', 14], ['Marketplace (hl)', 'mktp', 14], ['Crescimento %', 'cresc', 12]]);
+        const volLin = [];
+        Object.entries(d.volReal || {}).forEach(([ano, v]) => volLin.push({ ano: Number(ano), tipo: 'Realizado', volume: numDpo(v.volume), mktp: numDpo(v.mktp) }));
+        Object.entries(d.volAdic || {}).forEach(([ano, v]) => volLin.push({ ano: Number(ano), tipo: 'Adicional planejado', volume: numDpo(v.vol), mktp: numDpo(v.mktp), motivo: v.motivo || '' }));
+        volLin.sort((a, b) => a.ano - b.ano);
+        tabela('Volume', volLin.length ? volLin : d.volumes, [['Ano', 'ano', 8], ['Tipo', 'tipo', 20], ['Volume (hl)', 'volume', 14], ['Marketplace (hl)', 'mktp', 14], ['Motivo do adicional', 'motivo', 50]]);
+        tabela('Parâmetros da frota', d.paramFrota, [['Tipo', 'tipo', 14], ['hl por caminhão/dia', 'hlDia', 14], ['Entregas por caminhão/dia', 'entregasDia', 14], ['% do volume', 'part', 10], ['Qtde atual', 'atual', 10], ['Pessoas por caminhão', 'tripulacao', 12], ['Valor de compra', 'valor', 14]]);
         tabela('QLP', d.qlp, [['Função', 'funcao', 22], ['Atual', 'atual', 10], ['Ano 1', 'a1', 10], ['Ano 2', 'a2', 10], ['Ano 3', 'a3', 10], ['Justificativa', 'just', 45]]);
         tabela('Frota', d.frota, [['Placa', 'placa', 12], ['Tipo', 'tipo', 12], ['Ano fabricação', 'ano', 10], ['Utilização %', 'util', 12], ['Decisão', 'decisao', 22], ['Observação', 'obs', 40]]);
         tabela('Impactos financeiros', d.impactos, [['Investimento', 'descricao', 40], ['Valor', 'valor', 14], ['Parcelas', 'parcelas', 10], ['Juros % a.m.', 'juros', 10], ['Economia anual', 'economia', 14], ['Receita/ganho anual', 'ganho', 14]]);
@@ -8831,6 +8900,128 @@ function exportarExclusivaDpo(chave, add, dados) {
     }
 }
 
+const IMPACTOS_RISCO_DPO = ['Insignificante', 'Menor', 'Moderado', 'Maior', 'Extremo'];
+const PROBS_RISCO_DPO = ['Raro', 'Improvável', 'Possível', 'Provável', 'Quase certamente'];
+const MATRIZ_RISCO_DPO = { Extremo: ['Alto', 'Crítico', 'Crítico', 'Crítico', 'Crítico'], Maior: ['Alto', 'Alto', 'Crítico', 'Crítico', 'Crítico'], Moderado: ['Moderado', 'Moderado', 'Alto', 'Alto', 'Crítico'], Menor: ['Baixo', 'Baixo', 'Moderado', 'Alto', 'Alto'], Insignificante: ['Baixo', 'Baixo', 'Baixo', 'Moderado', 'Alto'] };
+function normRiscoDpo(v, lista) { const t = semAcentoGop(v); if (!t) return ''; if (t === 'ALTO') return 'Provável'; if (t === 'ESTRANHO') return 'Raro'; return lista.find(x => semAcentoGop(x) === t) || lista.find(x => t.startsWith(semAcentoGop(x).slice(0, 4))) || ''; }
+function classeRiscoDpo(r) { if (r.classeManual) return r.classeManual; const l = MATRIZ_RISCO_DPO[r.impacto], i = PROBS_RISCO_DPO.indexOf(r.prob); return l && i >= 0 ? l[i] : ''; }
+function freqRiscoDpo(c) { return c === 'Crítico' || c === 'Alto' ? 'Trimestral' : c === 'Moderado' ? 'Semestral' : c === 'Baixo' ? 'Anual' : ''; }
+// Lê a Matriz de Riscos Externos (abas Matriz de Riscos, Histórico, Plano de Retomada, Matriz de Contatos e uma aba por plano de ação).
+function lerWorkbookRiscosDpo(wb) {
+    const txt = v => { const x = valorCelulaGop(v); return x === null || x === undefined ? '' : String(x instanceof Date ? x.toISOString().slice(0, 10) : x).trim(); };
+    const out = { riscos: [], ocorrencias: [], retomada: [], contatos: {}, planos: [] }, avisos = [];
+    const acharCab = (ws, testes) => { for (let r = 1; r <= Math.min(ws.rowCount, 15); r++) { const row = ws.getRow(r), cols = {}; row.eachCell((c, n) => { const t = semAcentoGop(txt(c.value)); Object.entries(testes).forEach(([k, re]) => { if (cols[k] === undefined && re.test(t)) cols[k] = n; }); }); if (Object.keys(cols).length >= Math.min(3, Object.keys(testes).length)) return { linha: r, cols }; } return null; };
+    wb.worksheets.forEach(ws => {
+        const nome = semAcentoGop(ws.name);
+        if (/^MATRIZ DE RISCOS/.test(nome)) {
+            const h = acharCab(ws, { n: /^N[°º]?$/, risco: /^RISCO$/, desc: /^DESCRICAO/, plano: /^PLANO DE ACAO/, imp: /^IMPACTO/, prob: /^PROBABILIDADE/, tipo: /^TIPO$/, perigo: /^PERIGO/, mec: /^MECANISMO/, pr: /^PLAN\s*\//, jan: /^JAN/ });
+            if (!h) { avisos.push('Aba Matriz de Riscos sem cabeçalho reconhecido.'); return; }
+            let atual = null;
+            for (let r = h.linha + 1; r <= ws.rowCount; r++) {
+                const g = k => h.cols[k] ? txt(ws.getRow(r).getCell(h.cols[k]).value) : '';
+                const risco = g('risco'), pr = semAcentoGop(g('pr'));
+                if (risco) {
+                    atual = { id: idGop(), n: Number(g('n')) || out.riscos.length + 1, risco, descricao: g('desc'), plano: g('plano'), impacto: normRiscoDpo(g('imp'), IMPACTOS_RISCO_DPO), prob: normRiscoDpo(g('prob'), PROBS_RISCO_DPO), tipo: g('tipo'), perigo: g('perigo'), mecanismo: g('mec'), verif: {} };
+                    out.riscos.push(atual);
+                }
+                if (atual && h.cols.jan && (pr === 'PLAN' || pr === 'REAL')) {
+                    for (let m = 0; m < 12; m++) {
+                        const v = Number(txt(ws.getRow(r).getCell(h.cols.jan + m).value).replace(',', '.'));
+                        if (!(v > 0)) continue;
+                        const ant = atual.verif[m];
+                        atual.verif[m] = pr === 'PLAN' ? (ant === 'R' || ant === 'X' ? 'R' : 'P') : (ant === 'P' || ant === 'R' ? 'R' : 'X');
+                    }
+                }
+            }
+        } else if (/^HISTORICO/.test(nome)) {
+            const h = acharCab(ws, { data: /^DATA$/, risco: /^RISCO$/, desc: /^DESCRICAO/, mudar: /MODIFICAR/, acoes: /^ACOES/, imp: /^IMPACTO/ });
+            if (!h) return;
+            for (let r = h.linha + 1; r <= ws.rowCount; r++) {
+                const g = k => h.cols[k] ? ws.getRow(r).getCell(h.cols[k]).value : '';
+                const risco = txt(g('risco')); if (!risco) continue;
+                out.ocorrencias.push({ id: idGop(), data: dataCelulaGop(g('data')), risco, descricao: txt(g('desc')), mudar: /^S/i.test(txt(g('mudar'))) ? 'Sim' : 'Não', acoes: txt(g('acoes')), impacto: Number(txt(g('imp')).replace(',', '.')) || '' });
+            }
+        } else if (/^PLANO DE RETOMADA/.test(nome)) {
+            const h = acharCab(ws, { parada: /^PARADA/, forn: /^FORNECEDOR/, ativ: /^ATIVIDADE/, cont: /^CONTATO/, acoes: /^ACOES/ });
+            if (!h) return;
+            for (let r = h.linha + 1; r <= ws.rowCount; r++) {
+                const g = k => h.cols[k] ? txt(ws.getRow(r).getCell(h.cols[k]).value) : '';
+                if (!g('parada')) continue;
+                out.retomada.push({ id: idGop(), parada: g('parada'), categoria: categoriaRetomadaDpo(g('parada') + ' ' + g('ativ')), fornecedor: g('forn'), atividades: g('ativ'), contato: g('cont'), acoes: g('acoes') });
+            }
+        } else if (/^MATRIZ DE CONTATOS/.test(nome)) {
+            const h = acharCab(ws, { risco: /^MATRIZ DE CONTATOS/, acao: /^ACAO IMEDIATA/, resp: /^RESPONSAVEL/, cont: /^CONTATO/ });
+            if (!h) return;
+            for (let r = h.linha + 1; r <= ws.rowCount; r++) {
+                const g = k => h.cols[k] ? txt(ws.getRow(r).getCell(h.cols[k]).value) : '';
+                if (g('risco')) out.contatos[semAcentoGop(g('risco'))] = { acao: g('acao'), resp: g('resp'), cont: g('cont') };
+            }
+        } else {
+            // aba de plano de ação por risco ("Plano de Ação contra Riscos Externos")
+            let ehPlano = false; const campos = {};
+            for (let r = 1; r <= Math.min(ws.rowCount, 40); r++) ws.getRow(r).eachCell(c => { const t = txt(c.value); if (/Plano de A[cç][aã]o contra Riscos/i.test(t)) ehPlano = true; });
+            if (!ehPlano) return;
+            const rotulos = { prop: /^PROPRIETARIO/, desc: /^DESCRICAO/, proc: /^PROCEDIMENTO/, pos: /^ACOES A SEREM/, imp: /^IMPACTO NA OPERACAO/, freq: /^FREQUENCIA/ };
+            let risco = '', chaveAtual = null;
+            for (let r = 1; r <= ws.rowCount; r++) {
+                ws.getRow(r).eachCell(c => {
+                    const t = txt(c.value); if (!t) return;
+                    const m = t.match(/^Risco\s*:\s*(.+)$/i); if (m) { risco = m[1].trim(); return; }
+                    const k = Object.keys(rotulos).find(k => rotulos[k].test(semAcentoGop(t)));
+                    if (k) { chaveAtual = k; return; }
+                    if (chaveAtual && !/^N[°º]\s*RISCO/i.test(t) && !/^\d+$/.test(t)) campos[chaveAtual] = (campos[chaveAtual] ? campos[chaveAtual] + '\n' : '') + t;
+                });
+            }
+            if (risco) out.planos.push({ risco, ...campos });
+        }
+    });
+    return { ...out, avisos };
+}
+function categoriaRetomadaDpo(t) {
+    const x = semAcentoGop(t);
+    if (/ARMAZENAMENTO|ARMAZEM EXTERNO/.test(x)) return 'Armazenamento externo';
+    if (/ALUGUE|LOCADORA|FROTA EXTRA/.test(x)) return 'Aluguel de veículos';
+    if (/SISTEMA|INTERNET|SERVIDOR|WMS|PROMAX|BEES/.test(x)) return 'Reparo de sistemas';
+    if (/CFTV|AR-CONDICIONADO|AR CONDICIONADO|EQUIPAMENTO|ENERGIA|ELETRIC|GERADOR|PORTAO|EMPILHADEIRA/.test(x)) return 'Equipamentos';
+    if (/BOMBEIRO|DEFESA CIVIL|ACIDENTE|ALAGAMENTO|POLICIA/.test(x)) return 'Emergência / órgãos públicos';
+    return 'Fornecedores';
+}
+app.post('/api/dpo/riscos/importar', requireRole('admin', 'client_admin'), async (req, res) => {
+    const { url, originalName } = req.body;
+    if (!/^\/uploads\/[\w.\-]+$/.test(String(url || ''))) return res.status(400).json({ error: 'Envie a planilha antes de importar.' });
+    try {
+        const f = await resolverFerramentaDigitalDpo(req, res, 'riscos', req.body.company_id);
+        if (!f) return;
+        const ano = anoValidoDpo(req.body.ano);
+        let wb;
+        try { wb = await lerArquivoPlanilhaDpo(path.join(PASTA_UPLOADS, path.basename(url))); }
+        catch (e) { return res.status(400).json({ error: /\.xlsb$/i.test(url) ? 'Não consegui ler o formato .xlsb. Salve como .xlsx e importe de novo.' : 'Não foi possível ler a planilha.' }); }
+        const lido = lerWorkbookRiscosDpo(wb);
+        if (!lido.riscos.length) return res.status(400).json({ error: 'Não encontrei a aba "Matriz de Riscos".', avisos: lido.avisos });
+        const d = (await carregarFerramentaDigitalDpo(f.companyId, 'riscos', ano)).dados || {};
+        d.riscos = Array.isArray(d.riscos) ? d.riscos : []; d.respostas = d.respostas || {}; d.retomada = Array.isArray(d.retomada) ? d.retomada : []; d.ocorrencias = Array.isArray(d.ocorrencias) ? d.ocorrencias : [];
+        const porNome = Object.fromEntries(d.riscos.map(r => [semAcentoGop(r.risco), r]));
+        lido.riscos.forEach(r => { const ex = porNome[semAcentoGop(r.risco)]; if (ex) { Object.assign(ex, { ...r, id: ex.id }); } else { d.riscos.push(r); porNome[semAcentoGop(r.risco)] = r; } });
+        const acharRisco = nome => { const t = semAcentoGop(nome); return porNome[t] || d.riscos.find(r => { const a = semAcentoGop(r.risco); return a.includes(t) || t.includes(a) || a.split(' ')[0] === t.split(' ')[0] && a.split(' ')[0].length > 5; }); };
+        Object.entries(lido.contatos).forEach(([k, c]) => { const r = porNome[k] || acharRisco(k); if (!r) return; const p = d.respostas[r.id] = d.respostas[r.id] || {}; if (c.resp) p.responsavel = c.resp; if (c.cont) p.contato = c.cont; if (c.acao && !p.procedimento) p.procedimento = c.acao; });
+        lido.planos.forEach(pl => { const r = acharRisco(pl.risco); if (!r) return; const p = d.respostas[r.id] = d.respostas[r.id] || {}; if (pl.prop) p.proprietarios = pl.prop; if (pl.proc) p.procedimento = pl.proc; if (pl.pos) p.posEpisodio = pl.pos; if (pl.imp) p.impactoOperacao = pl.imp; });
+        const jaRet = new Set(d.retomada.map(x => semAcentoGop(x.parada)));
+        lido.retomada.forEach(x => { const ex = d.retomada.find(y => semAcentoGop(y.parada) === semAcentoGop(x.parada)); if (ex) Object.assign(ex, { ...x, id: ex.id }); else if (!jaRet.has(semAcentoGop(x.parada))) d.retomada.push(x); });
+        const jaOc = new Set(d.ocorrencias.map(o => o.data + '|' + semAcentoGop(o.risco) + '|' + semAcentoGop(o.descricao)));
+        lido.ocorrencias.forEach(o => { if (!jaOc.has(o.data + '|' + semAcentoGop(o.risco) + '|' + semAcentoGop(o.descricao))) d.ocorrencias.push(o); });
+        await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_ferramentas_digitais (company_id, chave, ano, dados, updated_by, updated_at) VALUES (?, 'riscos', ?, ?, ?, CURRENT_TIMESTAMP)
+             ON CONFLICT(company_id, chave, ano) DO UPDATE SET dados = excluded.dados, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP`,
+            [f.companyId, ano, JSON.stringify(d), req.user.userId], (err) => err ? reject(err) : resolve()));
+        db.run(`INSERT INTO dpo_ferramentas_digitais_arquivos (company_id, chave, ano, tipo, url, original_name, comentario, created_by) VALUES (?, 'riscos', ?, 'matriz', ?, ?, ?, ?)`,
+            [f.companyId, ano, url, originalName || 'Matriz de Riscos Externos', 'Importada para o sistema', req.user.userId], () => {});
+        res.json({ message: `${lido.riscos.length} risco(s), ${lido.ocorrencias.length} ocorrência(s), ${lido.retomada.length} item(ns) do plano de retomada e ${lido.planos.length} plano(s) de resposta importados.`, dados: d, avisos: lido.avisos });
+    } catch (e) {
+        console.error('Erro ao importar matriz de riscos:', e.message);
+        res.status(400).json({ error: 'Não foi possível importar a matriz de riscos.' });
+    }
+});
+
 // Ronda de manutenção: link público para tirar as fotos no celular e subir direto no checklist.
 app.post('/api/dpo/manutencao/ronda-link', requireRole('admin', 'client_admin'), async (req, res) => {
     try {
@@ -8843,7 +9034,7 @@ app.post('/api/dpo/manutencao/ronda-link', requireRole('admin', 'client_admin'),
             await new Promise((resolve, reject) => db.run(`INSERT INTO dpo_ronda_links (token, company_id, ano, trimestre, criado_por) VALUES (?, ?, ?, ?, ?)`, [token, f.companyId, ano, tri, req.user.userId], (err) => err ? reject(err) : resolve()));
             reg = { token };
         }
-        res.json({ url: `${baseUrlPublicaDpo(req)}/ronda.html?t=${reg.token}`, token: reg.token });
+        res.json({ url: `${baseUrlPublicaDpo(req)}/checklist-global.html?t=${reg.token}`, token: reg.token });
     } catch (e) { res.status(400).json({ error: 'Erro ao gerar o link da ronda.' }); }
 });
 app.get('/api/dpo/manutencao/fotos', requireRole('admin', 'client_admin'), async (req, res) => {
@@ -8869,7 +9060,11 @@ async function rondaPorTokenDpo(token) {
     const empresa = await dbGet(`SELECT name, logo_url FROM companies WHERE id = ?`, [link.company_id]);
     const reg = await dbGet(`SELECT dados FROM dpo_ferramentas_digitais WHERE company_id = ? AND chave = 'manutencao' AND ano = ?`, [link.company_id, link.ano]);
     const dados = reg ? JSON.parse(reg.dados || '{}') : {};
-    return { link, empresa, modelo: dados.modelo || MODELO_MANUTENCAO_DPO, notas: ((dados.notas || {})[link.trimestre]) || {} };
+    // nota mais recente entre a tela (dados.notasEm) e o celular (dpo_ronda_notas)
+    const notas = { ...(((dados.notas || {})[link.trimestre]) || {}) }, em = ((dados.notasEm || {})[link.trimestre]) || {};
+    const cel = await dbAll(`SELECT item, nota, updated_at FROM dpo_ronda_notas WHERE company_id = ? AND ano = ? AND trimestre = ?`, [link.company_id, link.ano, link.trimestre]);
+    cel.forEach(c => { if (!em[c.item] || String(c.updated_at) > String(em[c.item])) notas[c.item] = c.nota; });
+    return { link, empresa, modelo: dados.modelo || MODELO_MANUTENCAO_DPO, notas };
 }
 app.get('/api/public/ronda/:token', async (req, res) => {
     try {
@@ -8877,9 +9072,30 @@ app.get('/api/public/ronda/:token', async (req, res) => {
         if (!r) return res.status(404).json({ error: 'Link de ronda inválido.' });
         const fotos = await dbAll(`SELECT item, url, obs, autor, created_at FROM dpo_ronda_fotos WHERE company_id = ? AND ano = ? AND trimestre = ? ORDER BY created_at DESC`, [r.link.company_id, r.link.ano, r.link.trimestre]);
         res.json({ empresa: r.empresa ? r.empresa.name : '', logo: r.empresa ? r.empresa.logo_url : null, ano: r.link.ano, trimestre: r.link.trimestre + 1,
-            secoes: r.modelo.map(s => ({ titulo: s.titulo, grupos: s.grupos.map(g => ({ numero: g.numero, titulo: g.titulo, itens: g.itens.map(i => ({ id: i.id, num: i.num, texto: i.texto, verificacao: i.verificacao, foto: !!i.foto, critico: !!i.critico, fotoIdeal: i.fotoIdeal || null, nota: r.notas[i.id] === undefined ? '' : String(r.notas[i.id]) })) })) })),
+            secoes: r.modelo.map(s => ({ titulo: s.titulo, grupos: s.grupos.map(g => ({ numero: g.numero, titulo: g.titulo, itens: g.itens.map(i => ({ id: i.id, num: i.num, texto: i.texto, verificacao: i.verificacao, pontos: i.pontos, peso: i.peso, foto: !!i.foto, critico: !!i.critico, fotoIdeal: i.fotoIdeal || null, nota: r.notas[i.id] === undefined ? '' : String(r.notas[i.id]) })) })) })),
             fotos });
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar a ronda.' }); }
+});
+app.post('/api/public/ronda/:token/nota', async (req, res) => {
+    try {
+        const r = await rondaPorTokenDpo(req.params.token);
+        if (!r) return res.status(404).json({ error: 'Link do checklist inválido.' });
+        const item = String(req.body.item || '').slice(0, 40), nota = String(req.body.nota ?? '');
+        if (!['3', '1', '0', 'na', ''].includes(nota)) return res.status(400).json({ error: 'Nota inválida.' });
+        if (!r.modelo.some(s => s.grupos.some(g => g.itens.some(i => i.id === item)))) return res.status(400).json({ error: 'Item inválido.' });
+        const quando = new Date().toISOString();
+        await new Promise((resolve, reject) => db.run(`INSERT INTO dpo_ronda_notas (company_id, ano, trimestre, item, nota, autor, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(company_id, ano, trimestre, item) DO UPDATE SET nota = excluded.nota, autor = excluded.autor, updated_at = excluded.updated_at`,
+            [r.link.company_id, r.link.ano, r.link.trimestre, item, nota, String(req.body.autor || '').slice(0, 80), quando], e => e ? reject(e) : resolve()));
+        res.json({ message: 'Nota registrada!', nota, updated_at: quando });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar a nota.' }); }
+});
+app.get('/api/dpo/manutencao/ronda-notas', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const f = await resolverFerramentaDigitalDpo(req, res, 'manutencao', req.query.company_id);
+        if (!f) return;
+        res.json(await dbAll(`SELECT trimestre, item, nota, autor, updated_at FROM dpo_ronda_notas WHERE company_id = ? AND ano = ?`, [f.companyId, anoValidoDpo(req.query.ano)]));
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar as notas do celular.' }); }
 });
 app.post('/api/public/ronda/:token/foto', (req, res) => {
     uploadMaterialDpo.single('file')(req, res, async (err) => {
@@ -9013,7 +9229,7 @@ const BLOCOS_ACOMP_DPO = {
     inspecoes: /inspe[çc]|auditoria|checklist|check-list|ronda|gemba|blitz|observa[çc][ãa]o comportamental|sinaliza[çc]/i
 };
 const ORDEM_BLOCOS_ACOMP_DPO = Object.keys(BLOCOS_ACOMP_DPO);
-const ACOMP_ESPECIAIS_DPO = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop', 'gestao:3.1': 'cinco_s', 'gestao:1.2': 'sonho', 'planejamento:2.2': 'manutencao', 'planejamento:2.3': 'p3a', 'planejamento:2.4': 'capex', 'planejamento:3.2': 'ans' };
+const ACOMP_ESPECIAIS_DPO = { 'planejamento:2.1': 'riscos', 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop', 'gestao:3.1': 'cinco_s', 'gestao:1.2': 'sonho', 'planejamento:2.2': 'manutencao', 'planejamento:2.3': 'p3a', 'planejamento:2.4': 'capex', 'planejamento:3.2': 'ans' };
 const KPIS_CONHECIDOS_DPO = ['TML', 'TMA', 'NPS', 'eNPS', 'OTIF', 'LTI', 'MDI', 'MTI', 'SIF', 'TRI', 'TRIFR', 'PNP', 'FNP', 'VMI', 'EFC', 'OEE', 'DPMO', 'IRL', 'GPS'];
 
 function sugestoesAcompDpo(texto) {

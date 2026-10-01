@@ -632,6 +632,20 @@
   .sonho-kpi-linha { display:flex; justify-content:space-between; gap:8px; } .sonho-kpi-linha small { display:block; opacity:.7; font-size:10.5px; } .sonho-kpi-linha strong { font-size:16px; }
   .sonho-tab td, .ans-tab td { padding:3px 4px; } .sonho-tab input, .ans-tab input { min-width:64px; }
   .ans-tab tr.ans-dom td { background:#f1f5f9; color:#94a3b8; }
+  .ans-metas { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; } .ans-metas > div.ativo label { color:#4338ca; font-weight:800; }
+  .ans-cal { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; max-width:640px; } .ans-cal b { text-align:center; font-size:11.5px; color:#64748b; }
+  .ans-cal button { border:1px solid var(--cinza-200); background:#f1f5f9; color:#94a3b8; border-radius:8px; padding:6px 2px; display:flex; flex-direction:column; align-items:center; cursor:pointer; min-height:52px; }
+  .ans-cal button.trab { background:#ecfdf5; border-color:#6ee7b7; color:#065f46; } .ans-cal small { font-size:10.5px; }
+  .p3a-sug { display:flex; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--cinza-200); border-radius:8px; margin-bottom:6px; font-size:13px; } .p3a-sug.feito { background:#f0fdf4; border-color:#86efac; }
+  .rc-top { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; } .rc-top > div { background:#fff; border:1px solid var(--cinza-200); border-radius:10px; padding:10px 12px; position:relative; }
+  .rc-n { position:absolute; top:8px; right:10px; font-size:26px; font-weight:900; color:#e2e8f0; }
+  .rc-mapa { display:grid; grid-template-columns:96px repeat(5,1fr); gap:4px; font-size:11px; } .rc-mapa > b { text-align:center; color:#64748b; align-self:end; } .rc-mapa > b.lado { text-align:right; align-self:center; padding-right:4px; }
+  .rc-mapa > div { min-height:42px; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; }
+  .rc-rev { border-bottom:1px solid var(--cinza-200); padding:6px 0; font-size:13px; }
+  .rc-cel { width:58px; height:30px; border:1px dashed #cbd5e1; border-radius:6px; background:#fff; font-size:11px; font-weight:700; cursor:pointer; }
+  .rc-resp summary::-webkit-details-marker { display:none; }
+  @media (max-width:800px) { .rc-duas { grid-template-columns:1fr !important; } }
+  .p3a-trava { padding:9px 10px; background:#f1f5f9; border-radius:8px; font-weight:700; color:#334155; }
   .capex-pipeline { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-bottom:12px; }
   .capex-pipeline > div { background:#fff; border:1px solid var(--cinza-200); border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:2px; }
   .capex-pipeline strong { font-size:22px; } .capex-pipeline span { font-weight:700; font-size:12.5px; } .capex-pipeline small { color:#64748b; }
@@ -2540,7 +2554,7 @@ async function carregarMembrosEmpresa(companyId, prefixo) {
     CACHE_MEMBROS_EMPRESA_ATUAL = membros;
     area.innerHTML = `
       <table style="margin-bottom:8px;">
-        <thead><tr><th>Nome</th><th>E-mail</th><th>Permissões</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Permissões</th><th title="Gestor principal: aprova cadastros sensíveis (ex.: aprovadores de CAPEX)">Gestor principal</th><th>Ações</th></tr></thead>
         <tbody>
           ${membros.map(m => {
             const restrito = m.enabled_modules ? (() => { try { return JSON.parse(m.enabled_modules); } catch (e) { return null; } })() : null;
@@ -2550,6 +2564,7 @@ async function carregarMembrosEmpresa(companyId, prefixo) {
               <td>${escapeHtml(m.name)}</td>
               <td>${escapeHtml(m.email)}</td>
               <td style="font-size:12px;color:${Array.isArray(restrito) ? '#c9a227' : '#16a34a'};">${Array.isArray(restrito) ? `Restrito (${qtdModulos} módulo(s))` : 'Acesso completo'}</td>
+              <td>${m.principal ? `<span style="font-weight:800;color:#b45309;">⭐ Principal</span>${prefixo === 'ne' ? ` <button type="button" class="btn-secundario btn-sm" onclick="definirGestorPrincipal(${companyId}, null, '${prefixo}')">Remover</button>` : ''}` : prefixo === 'ne' ? `<button type="button" class="btn-secundario btn-sm" onclick="definirGestorPrincipal(${companyId}, ${m.id}, '${prefixo}')">☆ Marcar</button>` : ''}</td>
               <td>
                 <button type="button" class="btn-secundario btn-sm" onclick="abrirEditarMembroEmpresa(${companyId}, ${m.id}, '${prefixo}')">✏️ Editar</button>
                 <button type="button" class="btn-secundario btn-sm" onclick="abrirPermissoesMembroEmpresa(${companyId}, ${m.id}, '${prefixo}')">🔒 Permissões</button>
@@ -2571,6 +2586,10 @@ async function carregarMembrosEmpresa(companyId, prefixo) {
   }
 }
 
+async function definirGestorPrincipal(companyId, userId, prefixo) {
+  try { const r = await api('/api/companies/' + companyId + '/gestor-principal', { method: 'PUT', body: JSON.stringify({ userId }) }); mostrarToast(r.message); carregarMembrosEmpresa(companyId, prefixo); }
+  catch (e) { mostrarToast(e.message, true); }
+}
 async function adicionarMembroEmpresa(companyId, prefixo) {
   const nome = document.getElementById(prefixo + '-novo-membro-nome').value;
   const email = document.getElementById(prefixo + '-novo-membro-email').value;
@@ -9093,11 +9112,12 @@ async function excluirFerramentaDpo(id) {
 // ======================================================================
 let FD = null; // pasta aberta: { chave, ano, companyId, dados, validacao, arquivos, aba, meta }
 let DIM = null; // visão das pastas do Simulador de Dimensionamento num ano
-const FD_PERGUNTAS = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop', 'gestao:3.1': 'cinco_s', 'gestao:1.2': 'sonho', 'planejamento:2.2': 'manutencao', 'planejamento:2.3': 'p3a', 'planejamento:2.4': 'capex', 'planejamento:3.2': 'ans' };
+const FD_PERGUNTAS = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop', 'gestao:3.1': 'cinco_s', 'planejamento:2.1': 'riscos', 'gestao:1.2': 'sonho', 'planejamento:2.2': 'manutencao', 'planejamento:2.3': 'p3a', 'planejamento:2.4': 'capex', 'planejamento:3.2': 'ans' };
 const FD_DESCRICOES = {
   swot: ['Análise SWOT digital por área (Armazém, Distribuição, Frota, Gente): fatores, matriz, cruzamentos, objetivos e planos — com validação dos itens V.1 a V.3.', '🧭 Abrir Análise SWOT'],
   dimensionamento: ['Simulador de Dimensionamento em pastas por ano: Armazém, Entrega e Puxada (orçamento calculado × realizado), RACI, KPIs e PDCA — com validação dos itens V.1 a V.5.', '📐 Abrir Simulador de Dimensionamento'],
   cinco_s: ['Gerenciador 5S: donos de área e auditores, auditoria cruzada mensal dos 5 sensos (S / N / NA), resultado por área, departamento e senso com meta de 85%, plano de ação obrigatório em todo item N e importação da planilha 5S.', '🧹 Abrir Gerenciador 5S'],
+  riscos: ['Riscos, Resposta e Retomada: matriz impacto × probabilidade, top 3, plano de resposta, plano de retomada, ocorrências, revisões guardadas e importação da planilha.', '🛡️ Abrir Riscos e Retomada'],
   sonho: ['DPO Sonho: frase do sonho, DPO Day, KPIs do sonho com Meta e Real mês a mês (download Excel) e validação V.1 a V.5.', '🌟 Abrir DPO Sonho'],
   manutencao: ['Check Global de Manutenção: checklist trimestral com pesos e itens críticos, evolução T1–T4, ronda com link para fotos pelo celular, plano de ação, fornecedores e RACI.', '🛠️ Abrir Check Global'],
   p3a: ['P1A / P3A: volume e marketplace, projetos de pessoas, frota e instalações, PA/estacionamento, impactos financeiros e playbook passo a passo.', '🧭 Abrir P1A / P3A'],
@@ -9140,6 +9160,7 @@ async function abrirFerramentaDigitalDpo(chave, companyId, ano, aba) {
     if (chave === 'gop') gopPreparar();
     if (chave === 'cinco_s') c5Preparar();
     if (EXCL[chave]) exPreparar();
+    if (chave === 'manutencao') manSincronizarCelular();
     fdDesenhar();
   } catch (e) { cont.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
@@ -11427,20 +11448,23 @@ async function c5Importar(input) {
 // Sonho (Gestão 1.2) · Check Global de Manutenção (Planej. 2.2) · P1A/P3A (2.3) · CAPEX (2.4) · ANS de Volume (3.2)
 // Cada uma substitui o acompanhamento genérico da pergunta e calcula a nota sugerida.
 const EXCL = {
+  riscos: { q: 'planejamento:2.1', icone: '🛡️', titulo: 'Riscos, Resposta e Retomada de Negócios', sub: 'Planejamento · pergunta <strong>2.1 Avaliação de Riscos, Resposta e Retomada de Negócios</strong>', req1: ['V.1', 'V.2'],
+    abas: [['resumo', '📊 Resumo e top 3'], ['matriz', '⚠️ Matriz de riscos'], ['verif', '🗓️ Verificações'], ['resposta', '🛡️ Plano de resposta'], ['retomada', '🔄 Plano de retomada'], ['ocorrencias', '📒 Histórico de ocorrências'], ['time', '🗣️ Conversa com o time'], ['valida', '✅ Validação 2.1'], ['arquivos', '📎 Anexos']],
+    tipos: [['matriz', 'Matriz de Riscos (planilha)'], ['retomada', 'Plano de retomada'], ['ata', 'Ata de revisão com Segurança'], ['outro', 'Outro']] },
   sonho: { q: 'gestao:1.2', icone: '🌟', titulo: 'DPO Sonho', sub: 'Gestão Revenda · pergunta <strong>1.2 Definição de Sonho</strong>', req1: ['V.1', 'V.2'],
     abas: [['sonho', '🌟 Sonho'], ['kpis', '🎯 Meta e Real'], ['valida', '✅ Validação 1.2'], ['arquivos', '📎 Evidências']],
     tipos: [['exposicao', 'Foto do Sonho exposto na unidade'], ['dpoday', 'Apresentação do DPO Day'], ['comunicacao', 'Evidência de comunicação'], ['outro', 'Outro']] },
   manutencao: { q: 'planejamento:2.2', icone: '🛠️', titulo: 'Check Global de Manutenção', sub: 'Planejamento · pergunta <strong>2.2 Manutenção das Instalações</strong>', req1: ['V.1', 'V.2', 'V.3'],
-    abas: [['check', '📝 Checklist do trimestre'], ['evolucao', '📈 Evolução T1–T4'], ['ronda', '📷 Ronda e fotos'], ['acoes', '🔁 Plano de ação'], ['fornecedores', '📇 Base de fornecedores'], ['raci', '👥 RACI e ANS'], ['valida', '✅ Validação 2.2'], ['arquivos', '📎 Laudos e anexos']],
+    abas: [['check', '📝 Checklist do trimestre'], ['evolucao', '📈 Evolução T1–T4'], ['ronda', '📱 Checklist no celular e fotos'], ['acoes', '🔁 Plano de ação'], ['fornecedores', '📇 Base de fornecedores'], ['raci', '👥 RACI e ANS'], ['valida', '✅ Validação 2.2'], ['arquivos', '📎 Laudos e anexos']],
     tipos: [['laudo', 'Laudo técnico'], ['contrato', 'Contrato de fornecedor'], ['foto', 'Foto'], ['outro', 'Outro']] },
   p3a: { q: 'planejamento:2.3', icone: '🧭', titulo: 'P1A / P3A — pessoas, estrutura e frota', sub: 'Planejamento · pergunta <strong>2.3 P1A e P3A</strong>', req1: ['V.1', 'V.2', 'V.3', 'V.4'],
-    abas: [['volume', '📈 Volume e marketplace'], ['projetos', '🗂️ Projetos P1A / P3A'], ['pessoas', '👥 Pessoas (QLP)'], ['frota', '🚚 Frota'], ['estrutura', '🏭 Instalações, PA e estacionamento'], ['financeiro', '💰 Impactos financeiros'], ['playbook', '📘 Playbook'], ['valida', '✅ Validação 2.3'], ['arquivos', '📎 Evidências']],
+    abas: [['volume', '📈 Volume e marketplace'], ['param', '⚙️ Parâmetros'], ['projetos', '🗂️ Projetos P1A / P3A'], ['pessoas', '👥 Pessoas (QLP)'], ['frota', '🚚 Frota'], ['estrutura', '🏭 Instalações, PA e estacionamento'], ['financeiro', '💰 Impactos financeiros'], ['playbook', '📘 Playbook'], ['valida', '✅ Validação 2.3'], ['arquivos', '📎 Evidências']],
     tipos: [['p3a', 'Planilha P3A'], ['capex', 'Registro CAPEX'], ['negociacao', 'Negociação sindical / 3PL / aluguel'], ['ata', 'Ata de feedback da liderança'], ['outro', 'Outro']] },
   capex: { q: 'planejamento:2.4', icone: '🏗️', titulo: 'Gestão de CAPEX', sub: 'Planejamento · pergunta <strong>2.4 Plano e Uso do CAPEX</strong>', req1: ['V.1', 'V.2', 'V.3', 'V.4'],
-    abas: [['dash', '📊 Painel'], ['itens', '📋 Registro de solicitações'], ['gut', '🎯 Priorização GUT'], ['checks', '🗓️ Check trimestral'], ['plano', '🔁 Plano de ação'], ['cad', '⚙️ Cadastros'], ['valida', '✅ Validação 2.4'], ['arquivos', '📎 Anexos']],
+    abas: [['dash', '📊 Painel'], ['itens', '📋 Registro de solicitações'], ['gut', '🎯 Priorização GUT'], ['checks', '🗓️ Check trimestral'], ['plano', '🔁 Plano de ação'], ['cad', '⚙️ Parâmetros e aprovadores'], ['valida', '✅ Validação 2.4'], ['arquivos', '📎 Anexos']],
     tipos: [['planilha', 'Planilha CAPEX'], ['proposta', 'Proposta de fornecedor'], ['nf', 'Nota fiscal'], ['ata', 'Ata do check trimestral'], ['outro', 'Outro']] },
   ans: { q: 'planejamento:3.2', icone: '🤝', titulo: 'ANS de Volume com Vendas', sub: 'Planejamento · pergunta <strong>3.2 ANS com Vendas</strong>', req1: ['V.1', 'V.2'],
-    abas: [['diario', '📅 Acompanhamento diário'], ['acordo', '📄 Acordo e rotina'], ['acoes', '🔁 Ações de dispersão'], ['valida', '✅ Validação 3.2'], ['arquivos', '📎 Anexos']],
+    abas: [['diario', '📅 Acompanhamento diário'], ['param', '⚙️ Parâmetros (meta e dias)'], ['acordo', '📄 Acordo e rotina'], ['acoes', '🔁 Ações de dispersão'], ['valida', '✅ Validação 3.2'], ['arquivos', '📎 Anexos']],
     tipos: [['ans', 'ANS assinado'], ['ata', 'Ata de reunião com vendas'], ['relatorio', 'Relatório de volume'], ['outro', 'Outro']] }
 };
 const EXCL_POR_PERGUNTA = Object.fromEntries(Object.entries(EXCL).map(([k, v]) => [v.q, k]));
@@ -11458,6 +11482,7 @@ function exAbrirAcomp(a, cid) { const t = EXCL_POR_PERGUNTA[a.questionKey]; retu
 function exPreparar() {
   const d = FD.dados, c = FD.chave;
   d.manual = d.manual || {};
+  if (c === 'riscos') rcPreparar(d);
   if (c === 'sonho') {
     if (!Array.isArray(d.kpis) || !d.kpis.length) d.kpis = SONHO_KPIS_PADRAO.map(([nome, pilar, sentido, meta, unidade]) => ({ id: fdId(), nome, pilar, sentido, meta, unidade, acumula: unidade === 'nº' ? 'soma' : 'media', real: [] }));
     ['propostas', 'comunicacoes'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
@@ -11472,7 +11497,8 @@ function exPreparar() {
     ['itens', 'checks', 'plano'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
   } else if (c === 'p3a') {
     ['volumes', 'projetos', 'frota', 'impactos', 'feedbacks', 'pontos'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
-    if (!d.volumes.length) d.volumes = [-2, -1, 0, 1, 2, 3].map(i => ({ id: fdId(), ano: String(FD.ano + i) }));
+    if (!d.volReal) { d.volReal = {}; d.volumes.forEach(v => { if (Number(v.ano) < FD.ano && exNum(v.volume) !== null) d.volReal[v.ano] = { volume: exNum(v.volume), mktp: exNum(v.mktp) }; }); }
+    d.volAdic = d.volAdic || {}; d.paramMaster = d.paramMaster || {}; d.paramRev = d.paramRev || {}; d.paramFrota = Array.isArray(d.paramFrota) ? d.paramFrota : [];
     if (!Array.isArray(d.qlp) || !d.qlp.length) d.qlp = ['Motoristas', 'Ajudantes de entrega', 'Motoristas de puxada', 'Operadores de empilhadeira', 'Conferentes', 'Ajudantes de armazém', 'Administrativo'].map(f => ({ id: fdId(), funcao: f }));
     d.estrutura = d.estrutura || {}; d.playbook = d.playbook || {};
   } else if (c === 'manutencao') {
@@ -11488,6 +11514,7 @@ function exPreparar() {
 // ---- validação da pergunta (nota 3 / 1 / 0) ----
 function exLinhas() {
   const d = FD.dados, c = FD.chave;
+  if (c === 'riscos') return rcValidar(d);
   if (c === 'sonho') return sonhoValidar(d);
   if (c === 'ans') return ansValidar(d);
   if (c === 'capex') return capexValidar(d);
@@ -11530,8 +11557,9 @@ function exManual(v, campo, valor) { const d = FD.dados; d.manual = d.manual || 
 function exHtmlAba() {
   const a = FD.aba, c = FD.chave;
   if (a === 'valida') return exHtmlValidacao();
+  if (c === 'riscos') return rcHtmlAba(a);
   if (c === 'sonho') return a === 'kpis' ? sonhoHtmlKpis() : sonhoHtmlSonho();
-  if (c === 'ans') return a === 'acordo' ? ansHtmlAcordo() : a === 'acoes' ? ansHtmlAcoes() : ansHtmlDiario();
+  if (c === 'ans') return a === 'param' ? ansHtmlParam() : a === 'acordo' ? ansHtmlAcordo() : a === 'acoes' ? ansHtmlAcoes() : ansHtmlDiario();
   if (c === 'capex') return a === 'itens' ? capexHtmlItens() : a === 'gut' ? capexHtmlGut() : a === 'checks' ? capexHtmlChecks() : a === 'plano' ? capexHtmlPlano() : a === 'cad' ? capexHtmlCad() : capexHtmlDash();
   if (c === 'p3a') return p3aHtmlAba(a);
   if (c === 'manutencao') return manHtmlAba(a);
@@ -11541,6 +11569,175 @@ function exRedesenhar() {
   exValidar(); fdCorpoRender();
 }
 function exAoEditar() { FD_AO_EDITAR = () => { exValidar(); }; }
+
+const RISCOS_PADRAO = [["Falta de Energia", "Interrupção inesperada no fornecimento de energia elétrica, impactando operações em escritórios, armazéns e sistemas de TI", "1. Acionar gerador .\n2. Pausar operações críticas com segurança.\n3. Comunicar time de TI e gestão local.", "Maior", "Raro", "Especial", "Falta de iluminação em caso de emergência", "Estresse mental"], ["Indisponibilidade do Sistema do PROMAX", "Sistema externo apresenta instabilidade ou falha, comprometendo o planejamento ou a execução das atividades", "1. Abrir chamado via now Gestão e comunicar o setor de TI para suporte\n2. Acionar o suporte HBSIS para corrigir a parada do Promax", "Maior", "Raro", "Especial", "Outro", "Estresse mental"], ["Indisponibilidade do Sistema do BEES Delivery", "Plataforma de  entregas controlada por terceiros fica fora do ar, impedindo a execução da rota", "1. Registrar o erro com print ou código.\n2. Abrir chamado via Quick Gestão e comunicar o setor de TI para suporte.\n3. Notificar gestor e equipe de rota.", "Moderado", "Improvável", "Especial", "Outro", "Estresse mental"], ["Indisponibilidade Pix Entrega", "Instabilidade no sistema de pagamentos instantâneos (PIX), inviabilizando a conclusão de vendas no momento da entrega", "1. Informar ao cliente e oferecer alternativas.\n2.  Comunicar ao supervisor\n3. Utilizar a chave pix da Lima  09.608.725.0002-31", "Moderado", "Improvável", "Especial", "Outro", "Estresse mental"], ["Indisponibilidade WMS", "Sistema de gerenciamento de armazéns (WMS) apresenta falhas, impactando a separação, movimentação ou expedição de produtos", "1. Abrir chamado via Quick Gestão e comunicar o setor de TI para suporte e realizar separação em contigência pela OCP", "Maior", "Raro", "Especial", "Outro", "Estresse mental"], ["Contaminação na água", "Fornecimento de água contaminado, representando risco à saúde dos colaboradores e podendo inviabilizar atividades operacionais", "1. Suspender uso da água imediatamente.\n2. Acionar equipe de manutenção e segurança do trabalho.\n3. Providenciar água potável alternativa.", "Moderado", "Raro", "Biológico", "Biológico infeccioso", "Diarreia"], ["Restrição horário de atendimento", "Limitações legais ou municipais que restringem o horário de funcionamento de pontos de venda, dificultando a execução de rotas", "1. Reprogramar rota e priorizar entregas em locais com janela reduzida.\n2. Comunicar motoristas e clientes.\n3. Atualizar sistema/logística com novo horário.", "Maior", "Improvável", "Lei e ordem", "Público - Roubos - Assaltos", "Estresse mental"], ["Restrição entrada de veículos em municípios para entrega de produtos", "Proibição temporária ou permanente de entrada de caminhões em determinadas áreas urbanas, afetando o cumprimento de rotas", "1. Contatar cliente para ponto alternativo de entrega.\n2. Registrar ocorrência.\n3. Reprogramar rota.", "Extremo", "Raro", "Lei e ordem", "Público - Roubos - Assaltos", "Estresse mental"], ["Lockdown", "Medidas governamentais que suspendem temporariamente as atividades comerciais ou o tráfego de veículos, afetando toda a operação", "1. Suspender imediatamente entregas e atividades externas.\n2. Comunicar todas as equipes e clientes.\n3. Acionar plano de contingência e home office (se possível).", "Extremo", "Raro", "Lei e ordem", "Bactérias/Vírus", "Doenças endêmicas/epidêmicas"], ["Interrupção no atendimento do DETRAN, Prefeitura, Sefaz, Receita Federal, Sindicatos", "Órgãos públicos indisponíveis por greve, sobrecarga ou sistemas fora do ar, atrasando emissões de documentos e autorizações legais", "1. Registrar a falha ou indisponibilidade.\n2. Reprogramar emissão ou entrega de documentos.\n3. Comunicar liderança e jurídico (se necessário).", "Maior", "Raro", "Lei e ordem", "Público - Roubos - Assaltos", "Estresse mental"], ["Alagamentos", "Inundações causadas por chuvas intensas que bloqueiam vias e acessos a clientes, centros de distribuição ou escritórios", "1. Redirecionar rota evitando áreas alagadas.\n2. Comunicar central sobre atraso ou bloqueio.\n3. Registrar o ocorrido com fotos se possível.", "Maior", "Provável", "Mecânico", "Cai no mesmo nível, escorrega e tropeça", "Trauma contuso"], ["Atolamento", "Veículo preso em vias não pavimentadas ou em más condições, impedindo a continuidade da rota de entrega", "1. Parar o veículo e avaliar as condições do terreno ao redor com segurança.\n2. Acionar o supervisor ou a central de operações, informando a localização exata.\n3. Solicitar apoio (reboque, veículo auxiliar ou suporte local), conforme protocolo da empresa.", "Maior", "Raro", "Mecânico", "Equipamentos em movimento/tráfego", "Lesão por Corpo Estranho"], ["Chuvas torrenciais", "Chuvas intensas que inviabilizam deslocamentos e aumentam o risco de acidentes ou atrasos significativos", "1. Reavaliar e ajustar rota com base nas condições.\n2. Alertar motoristas sobre cuidados redobrados.\n3. Suspender entregas em áreas críticas.", "Moderado", "Improvável", "Físicos", "Temperaturas mais baixas (frio ou calor)", "Faringite"], ["Buracos nas vias (trechos críticos e quebras de estradas)", "Vias danificadas que comprometem a integridade dos veículos, aumentam o tempo de trajeto e o risco de acidentes", "1. Reduzir a velocidade e manter distância segura de outros veículos.\n2. Comunicar imediatamente a situação ao supervisor ou à central de distribuição.\n3. Se necessário, desviar a rota para evitar maiores danos ou risco de acidente (seguir diretrizes de segurança).", "Maior", "Possível", "Físicos", "Equipamentos em movimento/tráfego", "Fratura"], ["Trecho interditado (Acidentes, obras)", "Bloqueio total ou parcial de uma rota devido a acidentes, obras ou eventos imprevistos, gerando necessidade de replanejamento", "1. Parar em local seguro e sinalizar a equipe de rota ou central de monitoramento.\n2. Verificar alternativas de trajeto usando GPS atualizado ou conforme orientação da supervisão.\n3. Replanejar a sequência de entregas, priorizando rotas acessíveis e viáveis.", "Extremo", "Possível", "Físicos", "Equipamentos em movimento/tráfego", "Estresse mental"], ["Ponte interditada", "Interdição de ponte importante para o trajeto de entrega, obrigando mudanças de rota e gerando atrasos", "1. Roteirizar via alternativa com urgência.\n2. Informar equipe de transporte.\n3. Registrar impacto e reprogramar entregas.", "Moderado", "Improvável", "Físicos", "Equipamentos em movimento/tráfego", "Estresse mental"], ["Colisão de veículo em rota", "Acidente envolvendo o veículo durante a entrega, resultando em atrasos, perdas ou danos a mercadorias", "1. Verificar estado do motorista e acionar socorro.\n2. Comunicar imediatamente à central.\n3. Isolar o local e registrar o acidente.", "Moderado", "Raro", "Mecânico", "Bater-se com ou contra objetos", "Fratura"], ["Protestos em via pública", "Manifestações ou bloqueios civis que impedem o trânsito de veículos e afetam a logística de entrega", "1. Suspender o deslocamento até liberação da via.\n2. Informar gestor e reavaliar rota alternativa.\n3. Comunicar clientes afetados.", "Moderado", "Raro", "Lei e ordem", "Público - Roubos - Assaltos", "Estresse mental"], ["Devolução por motivo \"Difícil Acesso\"", "Impossibilidade de concluir a entrega devido à localização remota, topografia complicada ou restrições locais", "1. Registrar motivo da devolução.\n2. Comunicar cliente e equipe de rota.\n3. Reencaminhar para logística para reprogramação.", "Maior", "Raro", "Especial", "Transporte durante o trabalho", "Estresse mental"], ["Roubos e Assaltos em rota", "Ocorrência de crimes contra a carga ou o motorista durante o trajeto, gerando perdas financeiras e riscos à integridade física", "1. Acionar a polícia imediatamente.\n2. Informar a central via rádio ou app.\n3. Registrar BO e isolar a área (se possível).", "Maior", "Improvável", "Lei e ordem", "Público - Roubos - Assaltos", "Trauma contuso"], ["Greve de Transporte público", "Paralisação de serviços de transporte urbano, afetando o deslocamento de colaboradores e podendo impactar a produtividade", "1. Notificar RH sobre ausência.\n2. Redirecionar demandas críticas para quem estiver presente.\n3. Registrar ponto com justificativa.", "Moderado", "Raro", "Especial", "Outro", "Estresse mental"], ["Greve dos Caminhoneiros", "Movimento nacional ou regional que bloqueia estradas ou interrompe o fluxo de caminhões, afetando toda a cadeia de abastecimento", "1. Suspender temporariamente os carregamentos afetados.\n2. Notificar clientes e vendas sobre atrasos.\n3. Avaliar rotas alternativas ou mudança de datas.", "Extremo", "Improvável", "Especial", "Outro", "Estresse mental"], ["Greve de Funcionários", "Paralisação das atividades por parte dos colaboradores devido a conflitos trabalhistas ou mobilizações sindicais", "1. Comunicar o RH e a liderança imediata.\n2. Proteger acesso a áreas operacionais.\n3. Acionar plano mínimo de contingência.", "Extremo", "Raro", "Especial", "Outro", "Estresse mental"], ["Surto de uma Doença", "Crescimento repentino de casos de uma doença em uma região, afetando a saúde da força de trabalho e exigindo restrições operacionais", "1. Isolar colaborador com sintomas.\n2. Comunicar imediatamente ao RH.\n3. Iniciar higienização reforçada no local.", "Moderado", "Raro", "Biológico", "Biológico infeccioso", "Doenças endêmicas/epidêmicas"], ["Epidemia", "Doença infecciosa com disseminação regional, provocando impactos em massa na sociedade, no consumo e nas operações", "1. Acionar protocolo interno de saúde.\n2. Distribuir EPIs (máscaras, álcool).\n3. Informar equipe sobre medidas de prevenção.", "Moderado", "Raro", "Biológico", "Biológico infeccioso", "Doenças endêmicas/epidêmicas"], ["Pandemia", "Propagação global de uma doença com alto impacto na saúde pública, mobilidade urbana e funcionamento das empresas", "1. Interromper atividades presenciais, se necessário.\n2. Redirecionar trabalho para home office.\n3. Notificar colaboradores sobre protocolos.", "Extremo", "Raro", "Biológico", "Biológico infeccioso", "Doenças endêmicas/epidêmicas"], ["Endemia", "Doença persistente em determinada região, que pode afetar a frequência ao trabalho, deslocamentos e a segurança sanitária da operação", "1. Comunicar casos à área de saúde ocupacional.\n2. Verificar condições sanitárias da base.\n3. Orientar equipe exposta.", "Maior", "Raro", "Biológico", "Biológico infeccioso", "Doenças endêmicas/epidêmicas"], ["Acidentes de trabalho", "Ocorrência de lesões ou incidentes durante a jornada de trabalho, afetando a operação e exigindo ações corretivas e legais", "1. Socorrer o colaborador imediatamente.\n2. Acionar ambulância / SESMT.\n3. Preservar o local e registrar o ocorrido.", "Extremo", "Possível", "Mecânico", "Equipamentos em movimento/tráfego", "Atropelamento"], ["Acidentes de trajeto", "Incidentes ocorridos no deslocamento casa-trabalho, impactando a disponibilidade do colaborador", "1. Verificar a gravidade e acionar socorro.\n2. Comunicar o RH e a liderança.\n3. Registrar boletim e coordenar apoio.", "Extremo", "Possível", "Mecânico", "Equipamentos em movimento/tráfego", "Fratura"], ["Caminhão de Entrega Quebrado em Rota", "Falha mecânica do veículo durante o trajeto, comprometendo a finalização da rota de entrega", "1. Acionar assistência mecânica.\n2. Informar a central para replanejamento.\n3. Avaliar transferência de carga, se possível.", "Extremo", "Raro", "Mecânico", "Equipamentos em movimento/tráfego", "Estresse mental"], ["Carreta de Puxada Quebrada na Estrada", "Pane mecânica no veículo de transferência, prejudicando o abastecimento dos CDs ou filiais", "1. Acionar mecânica e escolta, se necessário.\n2. Informar centros de distribuição impactados.\n3. Reprogramar recebimentos.", "Extremo", "Raro", "Mecânico", "Equipamentos em movimento/tráfego", "Estresse mental"], ["Paralização Sindicato", "Mobilizações sindicais que interrompem total ou parcialmente as operações, mesmo sem adesão dos próprios colaboradores", "1. Suspender operações afetadas.\n2. Garantir segurança de pessoas e patrimônio.\n3. Comunicar liderança, jurídico e RH.", "Menor", "Improvável", "Especial", "Outro", "Estresse mental"]];
+const RETOMADA_PADRAO = [["Queda de internet / falha nos servidores", "Reparo de sistemas", "Internet, servidores"], ["Indisponibilidade de sistemas (BEES, WMS, Promax)", "Reparo de sistemas", "BEES, BEES Deliver, WMS, Promax"], ["Falha nos equipamentos de CFTV", "Equipamentos", "CFTV"], ["Queda de energia / falha elétrica interna", "Equipamentos", "Serviços elétricos, gerador"], ["Falha em empilhadeiras e equipamentos de movimentação", "Equipamentos", "Empilhadeiras, paleteiras"], ["Falha no ar-condicionado", "Equipamentos", "Ar-condicionado"], ["Infestação / risco sanitário", "Fornecedores", "Controle de pragas, dedetização, lavagem de tanques"], ["Problemas estruturais (portões, ferragens)", "Fornecedores", "Serralheria, manutenção predial"], ["Armazenamento externo", "Armazenamento externo", "Alocação de produtos fora da unidade"], ["Aluguel de frota", "Aluguel de veículos", "Frota extra de entrega e puxada"], ["Transporte contratado do time", "Fornecedores", "Fretado"], ["Alagamentos / desastres naturais", "Emergência / órgãos públicos", "Defesa civil"], ["Acidente grave (unidade ou trajeto)", "Emergência / órgãos públicos", "Bombeiros 193, SAMU 192"]];
+// ======================= RISCOS, RESPOSTA E RETOMADA (Planejamento 2.1) =======================
+const IMPACTOS_RISCO = ['Insignificante', 'Menor', 'Moderado', 'Maior', 'Extremo'];
+const PROBS_RISCO = ['Raro', 'Improvável', 'Possível', 'Provável', 'Quase certamente'];
+const MATRIZ_RISCO = { Extremo: ['Alto', 'Crítico', 'Crítico', 'Crítico', 'Crítico'], Maior: ['Alto', 'Alto', 'Crítico', 'Crítico', 'Crítico'], Moderado: ['Moderado', 'Moderado', 'Alto', 'Alto', 'Crítico'], Menor: ['Baixo', 'Baixo', 'Moderado', 'Alto', 'Alto'], Insignificante: ['Baixo', 'Baixo', 'Baixo', 'Moderado', 'Alto'] };
+const COR_CLASSE_RISCO = { 'Crítico': '#dc2626', 'Alto': '#ea580c', 'Moderado': '#ca8a04', 'Baixo': '#16a34a' };
+const TIPOS_RISCO = ['Especial', 'Biológico', 'Lei e ordem', 'Mecânico', 'Físicos', 'Químicos', 'Ergonômico', 'Fogo'];
+const CATEGORIAS_RETOMADA = ['Fornecedores', 'Reparo de sistemas', 'Armazenamento externo', 'Aluguel de veículos', 'Equipamentos', 'Emergência / órgãos públicos'];
+const CATEGORIAS_RETOMADA_OBRIG = CATEGORIAS_RETOMADA.slice(0, 5);
+function rcClasse(r) { if (r.classeManual) return r.classeManual; const l = MATRIZ_RISCO[r.impacto], i = PROBS_RISCO.indexOf(r.prob); return l && i >= 0 ? l[i] : ''; }
+function rcFreq(c) { return c === 'Crítico' || c === 'Alto' ? 'Trimestral' : c === 'Moderado' ? 'Semestral' : c === 'Baixo' ? 'Anual' : ''; }
+function rcPeso(c) { return { 'Crítico': 4, 'Alto': 3, 'Moderado': 2, 'Baixo': 1 }[c] || 0; }
+function rcChip(c) { return c ? `<span class="dpo-chip-nivel" style="background:${COR_CLASSE_RISCO[c]};color:#fff;">${c}</span>` : '<span style="color:#94a3b8;">—</span>'; }
+function rcNorm(t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\b(do|da|de|dos|das|no|na|em|e|o|a|sistema)\b/g, ' ').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(); }
+function rcMesmoRisco(a, b) { const x = rcNorm(a), y = rcNorm(b); if (!x || !y) return false; if (x === y || x.includes(y) || y.includes(x)) return true; const px = x.split(' ').filter(w => w.length > 4), py = new Set(y.split(' ').filter(w => w.length > 4)); return px.filter(w => py.has(w) || py.has(w.replace(/s$/, '')) || py.has(w + 's')).length >= Math.min(2, px.length); }
+function rcOcorrencias(r) { return (FD.dados.ocorrencias || []).filter(o => o.riscoId === r.id || rcMesmoRisco(o.risco, r.risco)); }
+function rcRiscos() { return (FD.dados.riscos || []).filter(r => String(r.risco || '').trim()); }
+function rcTop3() { return rcRiscos().map(r => ({ r, c: rcClasse(r), oc: rcOcorrencias(r).length })).sort((a, b) => rcPeso(b.c) - rcPeso(a.c) || b.oc - a.oc || PROBS_RISCO.indexOf(b.r.prob) - PROBS_RISCO.indexOf(a.r.prob) || IMPACTOS_RISCO.indexOf(b.r.impacto) - IMPACTOS_RISCO.indexOf(a.r.impacto)).slice(0, 3); }
+function rcDiasDesde(data) { if (!data) return null; return (Date.now() - new Date(data + 'T12:00:00').getTime()) / 86400000; }
+function rcRespostaOk(r) { const p = (FD.dados.respostas || {})[r.id] || {}; return !!(String(p.procedimento || '').trim() && String(p.responsavel || '').trim() && String(p.contato || '').trim()); }
+function rcPreparar(d) {
+  if (!Array.isArray(d.riscos) || !d.riscos.length) d.riscos = RISCOS_PADRAO.map(([risco, descricao, plano, impacto, prob, tipo, perigo, mecanismo], i) => ({ id: fdId(), n: i + 1, risco, descricao, plano, impacto, prob, tipo, perigo, mecanismo, verif: {} }));
+  if (!Array.isArray(d.retomada) || !d.retomada.length) d.retomada = RETOMADA_PADRAO.map(([parada, categoria, atividades]) => ({ id: fdId(), parada, categoria, atividades }));
+  d.respostas = d.respostas || {};
+  ['ocorrencias', 'revisoes', 'entrevistas'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
+}
+function rcValidar(d) {
+  const rs = rcRiscos(), aval = rs.filter(r => rcClasse(r)), rev = (d.revisoes || []).slice().sort((a, b) => String(b.data).localeCompare(String(a.data)))[0];
+  const revDias = rev ? rcDiasDesde(rev.data) : null, revOk = revDias !== null && revDias <= 366;
+  const alvo = rs.filter(r => ['Crítico', 'Alto'].includes(rcClasse(r))), resp = alvo.filter(rcRespostaOk);
+  const cats = CATEGORIAS_RETOMADA_OBRIG.filter(c => (d.retomada || []).some(x => x.categoria === c && String(x.contato || '').trim()));
+  const retDias = rcDiasDesde(d.retomadaRevisao), retOk = retDias !== null && retDias <= 366;
+  const ent = (d.entrevistas || []).filter(e => String(e.nome || '').trim()), entOk = ent.filter(e => e.top3 === 'Sim' && e.plano === 'Sim' && e.local === 'Sim');
+  return [
+    { v: 'V.1', titulo: 'Matriz de riscos de paralisação em vigor, revisada no último ano', st: exSt(aval.length >= 5 && revOk && rev.seguranca === 'Sim', aval.length >= 1), txt: `${aval.length} risco(s) avaliados (impacto × probabilidade) · ${rev ? `última revisão em ${new Date(rev.data + 'T12:00:00').toLocaleDateString('pt-BR')}${revOk ? '' : ' (há mais de 1 ano)'}${rev.seguranca === 'Sim' ? ' com o time de Segurança' : ' — marque a participação da Segurança'}` : 'registre a revisão da matriz (botão 📝 em Resumo)'} · ${(d.revisoes || []).length} versão(ões) guardada(s).`, ir: 'resumo' },
+    { v: 'V.2', titulo: 'Plano de resposta à parada para os riscos mapeados', st: exSt(alvo.length && resp.length === alvo.length, resp.length > 0), txt: `${resp.length}/${alvo.length} risco(s) Crítico/Alto com procedimento, responsável e contato no plano de resposta.`, ir: 'resposta' },
+    { v: 'V.3', titulo: 'Plano de retomada de negócios revisado no último ano', st: exSt(retOk && cats.length === CATEGORIAS_RETOMADA_OBRIG.length, retOk || cats.length > 0), txt: `${d.retomadaRevisao ? `Revisado em ${new Date(d.retomadaRevisao + 'T12:00:00').toLocaleDateString('pt-BR')}${retOk ? '' : ' (há mais de 1 ano)'}` : 'Informe a data da última revisão'} · com contato: ${cats.join(', ') || 'nenhuma categoria'}${cats.length < CATEGORIAS_RETOMADA_OBRIG.length ? ` · falta: ${CATEGORIAS_RETOMADA_OBRIG.filter(c => !cats.includes(c)).join(', ')}` : ''}.`, ir: 'retomada' },
+    { v: 'V.4', titulo: 'Liderança e operação falam dos 3 principais riscos, do plano e de onde está a retomada', st: exSt(entOk.length >= 3 && String(d.retomadaLocal || '').trim(), entOk.length >= 1), txt: `${entOk.length}/${ent.length} pessoa(s) responderam bem as 3 perguntas · ${String(d.retomadaLocal || '').trim() ? 'local do plano informado' : 'informe onde fica o plano de retomada'}.`, ir: 'time' }
+  ];
+}
+function rcHtmlAba(a) {
+  if (a === 'matriz') return rcHtmlMatriz();
+  if (a === 'verif') return rcHtmlVerif();
+  if (a === 'resposta') return rcHtmlResposta();
+  if (a === 'retomada') return rcHtmlRetomada();
+  if (a === 'ocorrencias') return rcHtmlOcorrencias();
+  if (a === 'time') return rcHtmlTime();
+  return rcHtmlResumo();
+}
+function rcHtmlResumo() {
+  const d = FD.dados, rs = rcRiscos(), top = rcTop3(), cnt = c => rs.filter(r => rcClasse(r) === c).length;
+  const oc = d.ocorrencias || [], impTot = oc.reduce((s, o) => s + (exNum(o.impacto) || 0), 0);
+  const rec = rs.map(r => ({ r, n: rcOcorrencias(r).length })).filter(x => x.n).sort((a, b) => b.n - a.n)[0];
+  const revs = (d.revisoes || []).slice().sort((a, b) => String(b.data).localeCompare(String(a.data)));
+  return `
+    <div class="barra-acoes"><div class="plano-meta">Matriz de riscos externos (paralisação da operação), plano de resposta e plano de retomada — base da planilha "Matriz de Riscos Externos".</div>
+      <div class="direita"><label class="btn-secundario btn-sm" style="width:auto;cursor:pointer;margin:0;">📥 Importar planilha da matriz<input type="file" accept=".xlsx,.xlsm,.xlsb" style="display:none;" onchange="rcImportar(this)"></label>
+        <button class="btn-primario btn-sm" style="width:auto;" onclick="rcAbrirRevisao()">📝 Registrar revisão da matriz</button></div></div>
+    <div class="kpis" style="margin-bottom:12px;">
+      <div class="kpi-card"><div class="valor">${rs.length}</div><div class="rotulo">Riscos mapeados</div></div>
+      ${['Crítico', 'Alto', 'Moderado', 'Baixo'].map(c => `<div class="kpi-card" style="border-top:4px solid ${COR_CLASSE_RISCO[c]};"><div class="valor" style="color:${COR_CLASSE_RISCO[c]};">${cnt(c)}</div><div class="rotulo">${c}</div></div>`).join('')}
+      <div class="kpi-card"><div class="valor">${oc.length}</div><div class="rotulo">Ocorrências · ${simFmt(impTot, 'rs')}</div></div>
+    </div>
+    <div class="painel" style="margin-bottom:12px;"><h3 style="margin-top:0;">🎯 Os 3 principais riscos da unidade (o time precisa saber falar deles)</h3>
+      <div class="rc-top">${top.map((x, k) => `<div style="border-top:5px solid ${COR_CLASSE_RISCO[x.c] || '#94a3b8'};"><div class="rc-n">${k + 1}</div><strong>${escapeHtml(x.r.risco)}</strong><div>${rcChip(x.c)} · ${x.oc} ocorrência(s)</div><div style="font-size:12px;color:#475569;white-space:pre-line;margin-top:4px;">${escapeHtml(((d.respostas || {})[x.r.id] || {}).procedimento || x.r.plano || '')}</div><div style="font-size:12px;margin-top:4px;">${rcRespostaOk(x.r) ? '✅ plano de resposta completo' : `<a href="#" onclick="FD.rcAbrir='${x.r.id}'; fdTrocarAba('resposta'); return false;">⚠️ completar plano de resposta</a>`}</div></div>`).join('') || '<div style="color:#94a3b8;">Avalie os riscos na matriz.</div>'}</div>
+      ${rec ? `<div style="margin-top:10px;font-size:13px;">🔁 Risco mais recorrente até agora: <strong>${escapeHtml(rec.r.risco)}</strong> (${rec.n} ocorrência(s)).</div>` : ''}</div>
+    <div style="display:grid;grid-template-columns:minmax(320px,1.2fr) minmax(280px,1fr);gap:12px;margin-bottom:12px;" class="rc-duas">
+      <div class="painel"><h3 style="margin-top:0;">🌡️ Mapa de calor — impacto × probabilidade</h3>
+        <div class="rc-mapa"><div></div>${PROBS_RISCO.map(p => `<b>${p}</b>`).join('')}
+          ${IMPACTOS_RISCO.slice().reverse().map(im => `<b class="lado">${im}</b>${PROBS_RISCO.map((p, i) => { const c = MATRIZ_RISCO[im][i], l = rs.filter(r => r.impacto === im && r.prob === p); return `<div style="background:${COR_CLASSE_RISCO[c]}${l.length ? '' : '33'};" title="${escapeHtml(l.map(r => r.risco).join('\n'))}"><strong>${l.length || ''}</strong></div>`; }).join('')}`).join('')}</div>
+        <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Passe o mouse no quadrado para ver os riscos. Crítico/Alto → verificação trimestral · Moderado → semestral · Baixo → anual.</div></div>
+      <div class="painel"><h3 style="margin-top:0;">📝 Revisões da matriz (versões guardadas)</h3>
+        ${revs.length ? revs.map(r => `<div class="rc-rev"><strong>${new Date(r.data + 'T12:00:00').toLocaleDateString('pt-BR')}</strong> · ${escapeHtml(r.responsavel || '')} ${r.seguranca === 'Sim' ? '<span class="dpo-chip-nivel">com Segurança</span>' : ''}<div style="font-size:12px;color:#475569;white-space:pre-line;">${escapeHtml(r.alteracoes || '')}</div><small style="color:#94a3b8;">${(r.snapshot || []).length} riscos na versão</small></div>`).join('') : '<div style="color:#94a3b8;font-size:12.5px;">Nenhuma revisão registrada. A pergunta pede a matriz revisada no último ano, com o time de Segurança, guardando as versões anteriores.</div>'}</div>
+    </div>`;
+}
+function rcAbrirRevisao() {
+  document.getElementById('modal-area').innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) gopFecharPlano()"><div class="modal-caixa" style="max-width:560px;">
+    <h3 style="margin-top:0;">📝 Registrar revisão da matriz de riscos</h3>
+    <div style="font-size:12.5px;color:#475569;">A versão atual da matriz (${rcRiscos().length} riscos) fica guardada junto com esta revisão.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;"><div style="flex:1;min-width:140px;"><label>Data</label><input id="rc-rev-data" type="date" value="${exHoje()}"></div><div style="flex:2;min-width:180px;"><label>Responsável</label><input id="rc-rev-resp"></div></div>
+    <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:10px;"><input id="rc-rev-seg" type="checkbox" style="width:auto;"> O time de Segurança participou da revisão</label>
+    <label>O que mudou em relação à versão anterior *</label><textarea id="rc-rev-alt" rows="4" placeholder="Ex.: incluído risco de alagamento no bairro X; probabilidade de queda de energia subiu para Possível…"></textarea>
+    <div class="acoes-form" style="justify-content:flex-end;margin-top:12px;"><button class="btn-secundario" onclick="gopFecharPlano()">Cancelar</button><button class="btn-primario" style="width:auto;" onclick="rcSalvarRevisao()">💾 Guardar revisão</button></div></div></div>`;
+}
+function rcSalvarRevisao() {
+  const g = id => (document.getElementById(id) || {}).value || '', alt = g('rc-rev-alt').trim();
+  if (!alt) { mostrarToast('Descreva o que mudou.', true); return; }
+  FD.dados.revisoes.push({ id: fdId(), data: g('rc-rev-data') || exHoje(), responsavel: g('rc-rev-resp').trim(), seguranca: document.getElementById('rc-rev-seg').checked ? 'Sim' : 'Não', alteracoes: alt, snapshot: rcRiscos().map(r => ({ risco: r.risco, impacto: r.impacto, prob: r.prob, classe: rcClasse(r) })) });
+  gopFecharPlano(); fdAgendarSalvar(); exRedesenhar(); mostrarToast('Revisão guardada.');
+}
+async function rcImportar(input) {
+  const arq = input.files && input.files[0]; if (!arq) return;
+  try {
+    if (FD_TIMER) await fdSalvar();
+    const fd = new FormData(); fd.append('file', arq);
+    const up = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd });
+    const u = await up.json(); if (!up.ok) throw new Error(u.error || 'Falha no envio.');
+    const r = await api('/api/dpo/riscos/importar', { method: 'POST', body: JSON.stringify({ url: u.url, originalName: u.originalName, ano: FD.ano, company_id: FD.companyId || undefined }) });
+    FD.dados = r.dados; rcPreparar(FD.dados); exRedesenhar(); mostrarToast(r.message);
+  } catch (e) { mostrarToast(e.message, true); }
+  input.value = '';
+}
+function rcHtmlMatriz() {
+  exAoEditar();
+  return `<div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#475569;">Riscos externos que podem parar a operação. Escolha <strong>impacto</strong> e <strong>probabilidade</strong>: o tipo de risco (Crítico / Alto / Moderado / Baixo) e a frequência de verificação saem da matriz automaticamente.</div>
+    ${fdTabela('riscos', [{ campo: 'n', rotulo: 'Nº', tipo: 'number', largura: 60 }, { campo: 'risco', rotulo: 'Risco', largura: 200 }, { campo: 'descricao', rotulo: 'Descrição', tipo: 'textarea', largura: 240 },
+      { campo: 'impacto', rotulo: 'Impacto / dano', tipo: 'select', opcoes: IMPACTOS_RISCO, largura: 120, recarregar: true }, { campo: 'prob', rotulo: 'Probabilidade', tipo: 'select', opcoes: PROBS_RISCO, largura: 130, recarregar: true },
+      { campo: 'cl', rotulo: 'Tipo de risco', tipo: 'calc', valor: l => rcChip(rcClasse(l)) }, { campo: 'fr', rotulo: 'Verificação', tipo: 'calc', valor: l => rcFreq(rcClasse(l)) },
+      { campo: 'tipo', rotulo: 'Tipo', tipo: 'select', opcoes: TIPOS_RISCO, largura: 110 }, { campo: 'perigo', rotulo: 'Perigo', largura: 160 }, { campo: 'mecanismo', rotulo: 'Mecanismo / consequência', largura: 150 },
+      { campo: 'plano', rotulo: 'Plano de ação (resumo)', tipo: 'textarea', largura: 260 }], { botao: 'Adicionar risco' })}`;
+}
+function rcHtmlVerif() {
+  const rs = rcRiscos().slice().sort((a, b) => rcPeso(rcClasse(b)) - rcPeso(rcClasse(a)));
+  const cel = { P: ['Plan', '#e0e7ff', '#3730a3'], R: ['Real ✓', '#dcfce7', '#166534'], X: ['Extra ✓', '#ccfbf1', '#115e59'] };
+  return `<div class="barra-acoes"><div class="plano-meta">Verificação de cada risco no ano (Plan / Real). Clique no mês: vazio → <strong>Plan</strong> → <strong>Real</strong> → vazio.</div><div class="direita"><button class="btn-secundario btn-sm" onclick="rcPlanejarFreq()">🗓️ Planejar pela frequência</button></div></div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela rc-verif"><thead><tr><th style="min-width:220px;">Risco</th><th>Tipo</th><th>Freq.</th>${MESES_FD.map(m => `<th>${m}</th>`).join('')}<th>Status</th></tr></thead>
+    <tbody>${rs.map(r => { const v = r.verif || {}, pl = Object.values(v).filter(x => x === 'P' || x === 'R').length, re = Object.values(v).filter(x => x === 'R').length; return `<tr><td>${escapeHtml(r.risco)}</td><td>${rcChip(rcClasse(r))}</td><td style="font-size:12px;">${rcFreq(rcClasse(r))}</td>
+      ${MESES_FD.map((_, m) => { const x = cel[v[m]]; return `<td><button class="rc-cel" style="${x ? `background:${x[1]};color:${x[2]};` : ''}" onclick="rcCiclar('${r.id}', ${m})">${x ? x[0] : ''}</button></td>`; }).join('')}
+      <td style="font-weight:800;">${pl ? fdPct(re / pl, 0) : '—'}</td></tr>`; }).join('')}</tbody></table></div>`;
+}
+function rcCiclar(id, m) { const r = FD.dados.riscos.find(x => x.id === id); r.verif = r.verif || {}; const ord = ['', 'P', 'R']; r.verif[m] = ord[(ord.indexOf(r.verif[m] || '') + 1) % 3] || undefined; if (!r.verif[m]) delete r.verif[m]; fdAgendarSalvar(); fdCorpoRender(); }
+function rcPlanejarFreq() {
+  const meses = { Trimestral: [0, 3, 6, 9], Semestral: [0, 6], Anual: [0] };
+  rcRiscos().forEach(r => { r.verif = r.verif || {}; (meses[rcFreq(rcClasse(r))] || []).forEach(m => { if (!r.verif[m]) r.verif[m] = 'P'; }); });
+  fdAgendarSalvar(); fdCorpoRender(); mostrarToast('Meses planejados conforme a frequência de cada risco.');
+}
+function rcResp(id, campo, v) { const d = FD.dados; d.respostas[id] = d.respostas[id] || {}; d.respostas[id][campo] = v; fdAgendarSalvar(); exValidar(); const el = document.getElementById('rc-ok-' + id); if (el) el.innerHTML = rcRespostaOk({ id }) ? '✅ completo' : '⚠️ falta procedimento, responsável ou contato'; }
+function rcHtmlResposta() {
+  const todos = !!FD.rcTodos, rs = rcRiscos().filter(r => todos || ['Crítico', 'Alto'].includes(rcClasse(r))).sort((a, b) => rcPeso(rcClasse(b)) - rcPeso(rcClasse(a)));
+  const campo = (r, k, rot, area, ph) => { const v = ((FD.dados.respostas || {})[r.id] || {})[k] || ''; return `<div ${area ? 'style="grid-column:1/-1;"' : ''}><label>${rot}</label>${area ? `<textarea rows="3" placeholder="${escapeHtml(ph || '')}" onchange="rcResp('${r.id}', '${k}', this.value)">${escapeHtml(v)}</textarea>` : `<input value="${escapeHtml(v)}" placeholder="${escapeHtml(ph || '')}" onchange="rcResp('${r.id}', '${k}', this.value)">`}</div>`; };
+  return `<div class="barra-acoes"><div class="plano-meta">Plano de resposta à parada — obrigatório para os riscos <strong>Críticos e Altos</strong>: o que fazer quando o risco surgir, quem responde, contato, nível de serviço e mão de obra.</div>
+      <div class="direita"><label style="display:flex;gap:6px;align-items:center;font-weight:400;margin:0;font-size:13px;"><input type="checkbox" style="width:auto;" ${todos ? 'checked' : ''} onchange="FD.rcTodos = this.checked; fdCorpoRender();"> Mostrar todos os riscos</label></div></div>
+    ${rs.map(r => `<details class="painel rc-resp" ${FD.rcAbrir === r.id || !rcRespostaOk(r) ? 'open' : ''} style="margin-bottom:8px;border-left:4px solid ${COR_CLASSE_RISCO[rcClasse(r)] || '#94a3b8'};">
+      <summary style="cursor:pointer;display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><strong>${escapeHtml(r.risco)}</strong> ${rcChip(rcClasse(r))} <span id="rc-ok-${r.id}" style="font-size:12px;">${rcRespostaOk(r) ? '✅ completo' : '⚠️ falta procedimento, responsável ou contato'}</span></summary>
+      <div class="cx-grid" style="margin-top:8px;">
+        ${campo(r, 'proprietarios', 'Proprietários do risco', false, 'Ex.: Supervisor de Distribuição e Gerente de Frota')}${campo(r, 'responsavel', 'Responsável pela resposta *', false, 'Quem aciona')}${campo(r, 'contato', 'Contato (telefone / canal) *', false, '(64) 9…')}
+        ${campo(r, 'procedimento', 'Procedimento quando o risco surgir *', true, r.plano || '1 - …')}
+        ${campo(r, 'posEpisodio', 'Ações no final do episódio', true, 'Registrar a ocorrência, revisar a rota, comunicar…')}
+        ${campo(r, 'nivelServico', 'Nível de serviço e mão de obra (como manter as entregas e quem cobre)', true, 'Ex.: reprogramar rotas prioritárias, acionar frota de apoio, remanejar equipe…')}
+        ${campo(r, 'impactoOperacao', 'Impacto na operação', false, 'Crítico / parcial…')}
+      </div></details>`).join('') || '<div class="msg-vazio">Nenhum risco Crítico ou Alto na matriz.</div>'}`;
+}
+function rcHtmlRetomada() {
+  const d = FD.dados; exAoEditar();
+  const cats = CATEGORIAS_RETOMADA_OBRIG.map(c => [c, (d.retomada || []).some(x => x.categoria === c && String(x.contato || '').trim())]);
+  return `<div class="painel" style="margin-bottom:10px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;">
+      <div><label style="margin:0;font-size:12px;">Última revisão do plano</label><input type="date" value="${escapeHtml(d.retomadaRevisao || '')}" onchange="fdDefinir('retomadaRevisao', this.value); exRedesenhar();" style="margin:0;"></div>
+      <div style="flex:1;min-width:240px;"><label style="margin:0;font-size:12px;">Onde o plano de retomada fica na unidade (V.4)</label><input value="${escapeHtml(d.retomadaLocal || '')}" placeholder="Ex.: Quadro de gestão à vista da sala de expedição e pasta no Drive" onchange="fdDefinir('retomadaLocal', this.value); exValidar();" style="margin:0;"></div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">${cats.map(([c, ok]) => `<span class="dpo-chip-nivel" style="background:${ok ? '#dcfce7' : '#fee2e2'};color:${ok ? '#166534' : '#991b1b'};">${ok ? '✅' : '⭕'} ${c}</span>`).join('')}<span style="font-size:12px;color:#64748b;">obrigatórios com contato</span></div>
+    ${fdTabela('retomada', [{ campo: 'parada', rotulo: 'Parada', largura: 200 }, { campo: 'categoria', rotulo: 'Categoria', tipo: 'select', opcoes: CATEGORIAS_RETOMADA, largura: 170, recarregar: true }, { campo: 'fornecedor', rotulo: 'Fornecedor', largura: 150 }, { campo: 'atividades', rotulo: 'Atividades', largura: 160 }, { campo: 'contato', rotulo: 'Contato', largura: 170, recarregar: true }, { campo: 'acoes', rotulo: 'Ações para retomar', tipo: 'textarea', largura: 300 }], { botao: 'Adicionar parada / fornecedor', numerar: true })}`;
+}
+function rcHtmlOcorrencias() {
+  const d = FD.dados, nomes = rcRiscos().map(r => r.risco); exAoEditar();
+  const cont = rcRiscos().map(r => ({ r, n: rcOcorrencias(r).length })).filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 6), max = Math.max(1, ...cont.map(x => x.n));
+  const mudar = (d.ocorrencias || []).filter(o => o.mudar === 'Sim');
+  return `${cont.length ? `<div class="painel" style="margin-bottom:10px;"><h4 style="margin:0 0 8px;">🔁 Riscos mais recorrentes</h4>${cont.map(x => `<div class="capex-barra"><span>${escapeHtml(x.r.risco)}</span><div><i style="width:${x.n / max * 100}%;background:${COR_CLASSE_RISCO[rcClasse(x.r)] || '#64748b'};"></i></div><b>${x.n}</b></div>`).join('')}</div>` : ''}
+    ${mudar.length ? `<div class="painel" style="margin-bottom:10px;border-left:4px solid #d97706;font-size:12.5px;">⚠️ ${mudar.length} ocorrência(s) pedem mudança de procedimento — revise o plano de resposta e registre a revisão da matriz.</div>` : ''}
+    ${fdTabela('ocorrencias', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'risco', rotulo: 'Risco', tipo: 'select', opcoes: nomes, largura: 200, recarregar: true }, { campo: 'descricao', rotulo: 'Descrição', tipo: 'textarea', largura: 260 }, { campo: 'mudar', rotulo: 'Modificar procedimento?', tipo: 'select', opcoes: ['Sim', 'Não'], largura: 100, recarregar: true }, { campo: 'acoes', rotulo: 'Ações corretivas', tipo: 'textarea', largura: 220 }, { campo: 'impacto', rotulo: 'Impacto (R$)', tipo: 'decimal', largura: 110, recarregar: true }], { botao: 'Registrar ocorrência' })}`;
+}
+function rcHtmlTime() {
+  const d = FD.dados, top = rcTop3(); exAoEditar();
+  return `<div class="painel" style="margin-bottom:10px;"><h3 style="margin-top:0;">🗣️ O time sabe falar dos riscos? (V.4)</h3>
+      <div style="font-size:12.5px;color:#475569;">Converse com líderes e operação e registre se cada pessoa sabe: <strong>1)</strong> os 3 principais riscos, <strong>2)</strong> o plano de resposta deles e <strong>3)</strong> onde está o plano de retomada.</div>
+      <div style="margin-top:8px;font-size:13px;">Top 3 hoje: ${top.map((x, k) => `<strong>${k + 1}. ${escapeHtml(x.r.risco)}</strong>`).join(' · ') || '—'} · Plano de retomada: <strong>${escapeHtml(d.retomadaLocal || 'local não informado')}</strong></div></div>
+    ${fdTabela('entrevistas', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'nome', rotulo: 'Nome', largura: 160, recarregar: true }, { campo: 'cargo', rotulo: 'Cargo', largura: 150 }, { campo: 'top3', rotulo: 'Fala dos 3 riscos?', tipo: 'select', opcoes: ['Sim', 'Parcial', 'Não'], largura: 110, recarregar: true }, { campo: 'plano', rotulo: 'Conhece o plano de resposta?', tipo: 'select', opcoes: ['Sim', 'Parcial', 'Não'], largura: 120, recarregar: true }, { campo: 'local', rotulo: 'Sabe onde está a retomada?', tipo: 'select', opcoes: ['Sim', 'Não'], largura: 120, recarregar: true }, { campo: 'obs', rotulo: 'Observação', largura: 200 }], { botao: 'Registrar conversa' })}`;
+}
 
 // ======================= DPO SONHO (Gestão 1.2) =======================
 const SONHO_PILARES = ['Gente', 'Segurança', 'Custo / Produtividade', 'Nível de Serviço'];
@@ -11640,7 +11837,15 @@ const DIAS_SEM_EX = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 function ansDiasNoMes(m) { return new Date(FD.ano, m + 1, 0).getDate(); }
 function ansDia(m, dia) { const mes = FD.dados.meses[m] = FD.dados.meses[m] || { dias: {} }; mes.dias = mes.dias || {}; return mes.dias[dia] = mes.dias[dia] || {}; }
 function ansDiaLer(d, m, dia) { return (((d.meses || {})[m] || {}).dias || {})[dia] || {}; }
-function ansNeg(d, m, dia) { const v = ansDiaLer(d, m, dia); if (exNum(v.neg) !== null) return exNum(v.neg); const wd = new Date(FD.ano, m, dia).getDay(); return exNum((d.volPadrao || {})[wd]) || 0; }
+const ANS_PESO_PADRAO = { 1: 21.3, 2: 19.1, 3: 18.1, 4: 17, 5: 14.9, 6: 9.6, 0: 0 };
+function ansPeso(d, wd) { const p = (d.pesoSemana || {})[wd]; return exNum(p) === null ? ANS_PESO_PADRAO[wd] : exNum(p); }
+function ansTrabalha(d, m, dia) { const o = ((d.diasTrab || {})[m] || {})[dia]; if (o === true || o === false) return o; return ansPeso(d, new Date(FD.ano, m, dia).getDay()) > 0; }
+function ansSomaPesos(d, m) { let s = 0; for (let dia = 1; dia <= ansDiasNoMes(m); dia++) if (ansTrabalha(d, m, dia)) s += ansPeso(d, new Date(FD.ano, m, dia).getDay()) || 1; return s; }
+function ansNeg(d, m, dia) {
+  const meta = exNum((d.metaMes || {})[m]);
+  if (meta !== null) { if (!ansTrabalha(d, m, dia)) return 0; const soma = ansSomaPesos(d, m); return soma ? meta * (ansPeso(d, new Date(FD.ano, m, dia).getDay()) || 1) / soma : 0; }
+  const v = ansDiaLer(d, m, dia); if (exNum(v.neg) !== null) return exNum(v.neg); const wd = new Date(FD.ano, m, dia).getDay(); return exNum((d.volPadrao || {})[wd]) || 0;
+}
 function ansDisp(d, m, dia) { const v = ansDiaLer(d, m, dia), real = exNum(v.real), neg = ansNeg(d, m, dia); return real === null || !neg ? null : real / neg - 1; }
 function ansOrient(x) { if (x === null) return ['', '']; const a = Math.abs(x); return a >= 0.2 ? ['Alto desvio', '#991b1b;background:#fee2e2'] : a >= 0.1 ? ['Dispersão considerável', '#9a3412;background:#ffedd5'] : a >= 0.05 ? ['Atenção', '#854d0e;background:#fef9c3'] : ['OK', '#166534;background:#dcfce7']; }
 function ansPrecisaAcao(d, m, dia) { const x = ansDisp(d, m, dia); return x !== null && Math.abs(x) * 100 > (exNum(d.tolerancia) || 10); }
@@ -11651,6 +11856,7 @@ function ansGarantirAcoes() {
     const k = `${m}|${dia}`; precisa.add(k);
     if (!ch.has(k)) { const x = ansDisp(d, Number(m), Number(dia)); const a = { id: fdId(), mes: Number(m), dia: Number(dia), disp: x, causa: '', acao: '', responsavel: '', prazo: '', status: 'Não iniciado', auto: true }; d.acoes.push(a); novos.push(a); ch.add(k); }
   }));
+  Object.keys(d.meses || {}).forEach(m => Object.entries((d.meses[m] || {}).dias || {}).forEach(([dia, v]) => { v.negAuto = ansNeg(d, Number(m), Number(dia)); }));
   d.acoes.forEach(a => { if (a.auto) a.disp = ansDisp(d, a.mes, a.dia); a.mesNome = MESES_FD[a.mes]; a.dispTxt = a.disp === null || a.disp === undefined ? '' : fdPct(a.disp); });
   d.acoes = d.acoes.filter(a => !(a.auto && !precisa.has(`${a.mes}|${a.dia}`) && !String(a.acao || '').trim()));
   return novos;
@@ -11660,8 +11866,8 @@ function ansResumoMes(d, m) {
   const n = ansDiasNoMes(m), hoje = new Date(); let neg = 0, real = 0, fora = 0, dias = 0, uteis = 0, completos = 0;
   for (let dia = 1; dia <= n; dia++) {
     const dt = new Date(FD.ano, m, dia), v = ansDiaLer(d, m, dia);
-    if (dt.getDay() !== 0 && dt <= hoje) uteis++;
-    if (exNum(v.real) !== null) { neg += ansNeg(d, m, dia); real += exNum(v.real); dias++; if (exNum(v.buffer) !== null || exNum(v.horaLimite) !== null) completos++; }
+    if (ansTrabalha(d, m, dia) && dt <= hoje) uteis++;
+    if (exNum(v.real) !== null) { neg += ansNeg(d, m, dia); real += exNum(v.real); dias++; if (exNum(v.buffer) !== null || v.limiteLink) completos++; }
     fora += exNum(v.fora) || 0;
   }
   return { neg, real, fora, dias, uteis, completos, disp: neg ? real / neg - 1 : null };
@@ -11674,7 +11880,7 @@ function ansValidar(d) {
   const nec = d.acoes.filter(a => a.auto), def = nec.filter(ansAcaoDefinida).length;
   return [
     { v: 'V.1', titulo: 'ANS com vendas e check do plano nas rotinas', st: exSt(acordoOk && (d.reunioes || []).length >= 1, acordoOk || (d.reunioes || []).length), txt: `${acordoOk ? 'ANS registrado (data, capacidade e hora limite)' : 'Complete o acordo: data, capacidade máxima e hora limite'} · ${(d.reunioes || []).length} reunião(ões) de check registrada(s).`, ir: 'acordo' },
-    { v: 'V.2', titulo: 'Itens obrigatórios monitorados diariamente', st: exSt(cobertura >= 0.8 && ref.completos >= ref.dias * 0.5 && ref.dias > 0, ref.dias > 0), txt: `${ref.dias}/${ref.uteis} dia(s) úteis lançados no mês de referência · ${ref.completos} com buffer / hora limite · capacidade, curva de vendas, fora de rota e buffer calculados na tela.`, ir: 'diario' },
+    { v: 'V.2', titulo: 'Itens obrigatórios monitorados diariamente', st: exSt(cobertura >= 0.8 && ref.completos >= ref.dias * 0.5 && ref.dias > 0, ref.dias > 0), txt: `${ref.dias}/${ref.uteis} dia(s) úteis lançados no mês de referência · ${ref.completos} com buffer / limite de fechamento do link · capacidade, curva de vendas, fora de rota e buffer calculados na tela.`, ir: 'diario' },
     { v: 'V.3', titulo: `Ações definidas quando a dispersão passa de ±${exNum(d.tolerancia) || 10}%`, st: exSt(nec.length ? def === nec.length : ref.dias > 0, def > 0), txt: `${def}/${nec.length} dia(s) com dispersão acima da tolerância já têm ação e responsável.`, ir: 'acoes' }
   ];
 }
@@ -11689,8 +11895,8 @@ function ansHtmlDiario() {
     <div class="painel" style="margin-bottom:10px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
       <div><label style="margin:0;font-size:12px;">Mês</label><select onchange="FD.ansMes = Number(this.value); fdCorpoRender();">${MESES_LONGOS_FD.map((mm, i) => `<option value="${i}" ${i === m ? 'selected' : ''}>${mm}</option>`).join('')}</select></div>
       <div><label style="margin:0;font-size:12px;">Tolerância para ação (±%)</label>${simInp(d.tolerancia, 'pct', `fdDefinir('tolerancia', fdParse(this.value)); ansGarantirAcoes(); exRedesenhar()`, '10', 'width:90px;')}</div>
-      <details style="flex:1;min-width:280px;"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;">📦 Volume negociado padrão por dia da semana (hl)</summary>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">${[1, 2, 3, 4, 5, 6, 0].map(wd => `<div style="width:92px;"><label style="margin:0;font-size:11px;">${DIAS_SEM_EX[wd]}</label>${simInp((d.volPadrao || {})[wd], 'num', `FD.dados.volPadrao[${wd}] = fdParse(this.value); fdAgendarSalvar(); ansGarantirAcoes(); exRedesenhar()`, '')}</div>`).join('')}</div></details>
+      <div><label style="margin:0;font-size:12px;">Volume meta do mês (hl)</label>${simInp((d.metaMes || {})[m], 'num', `ansSetMeta(${m}, this.value)`, 'digite a meta', 'width:140px;')}</div>
+      <div style="flex:1;min-width:240px;font-size:12px;color:#64748b;">${exNum((d.metaMes || {})[m]) !== null ? `O volume negociado de cada dia é calculado automaticamente: meta do mês × % do dia da semana, só nos dias trabalhados (${Array.from({ length: n }, (_, i) => i + 1).filter(x => ansTrabalha(d, m, x)).length} dias). Ajuste em <a href="#" onclick="fdTrocarAba('param'); return false;">⚙️ Parâmetros</a>.` : '⚠️ Digite a meta do mês para o volume negociado ser distribuído automaticamente pelos dias trabalhados.'}</div>
     </div>
     <div class="kpis" style="margin-bottom:10px;">
       <div class="kpi-card"><div class="valor" style="font-size:20px;">${fdFmt(metaAte)}</div><div class="rotulo">Meta até a data (hl)</div></div>
@@ -11700,16 +11906,16 @@ function ansHtmlDiario() {
       <div class="kpi-card"><div class="valor" style="font-size:20px;">${r.dias}/${r.uteis}</div><div class="rotulo">Dias úteis lançados</div></div>
     </div>
     <div class="fd-tabela-wrap"><table class="fd-tabela ans-tab">
-      <thead><tr><th>Dia</th><th></th><th>Volume negociado</th><th>Volume realizado</th><th>Fora de rota</th><th>Buffer utilizado %</th><th>Pedidos após hora limite %</th><th>Dispersão</th><th>Orientação</th><th style="min-width:200px;">Justificativa</th><th>Ação</th></tr></thead>
+      <thead><tr><th>Dia</th><th></th><th>Volume negociado</th><th>Volume realizado</th><th>Fora de rota</th><th>Buffer utilizado %</th><th>Limite fechamento link (hs)</th><th>Dispersão</th><th>Orientação</th><th style="min-width:200px;">Justificativa</th><th>Ação</th></tr></thead>
       <tbody>${Array.from({ length: n }, (_, i) => i + 1).map(dia => {
-        const dt = new Date(FD.ano, m, dia), wd = dt.getDay(), v = ansDiaLer(d, m, dia), x = ansDisp(d, m, dia), [or, cor] = ansOrient(x), ac = acaoDe(dia), acima = cap && exNum(v.real) > cap;
-        return `<tr class="${wd === 0 ? 'ans-dom' : ''}">
+        const dt = new Date(FD.ano, m, dia), wd = dt.getDay(), v = ansDiaLer(d, m, dia), x = ansDisp(d, m, dia), [or, cor] = ansOrient(x), ac = acaoDe(dia), trab = ansTrabalha(d, m, dia), acima = !!cap && exNum(v.real) !== null && exNum(v.real) > cap;
+        return `<tr class="${trab ? '' : 'ans-dom'}">
           <td><strong>${dia}</strong></td><td style="color:#64748b;">${DIAS_SEM_EX[wd]}</td>
-          <td>${simInp(v.neg, 'num', `ansSet(${m}, ${dia}, 'neg', this.value)`, fdFmt(ansNeg(d, m, dia)), 'width:90px;')}</td>
+          <td style="text-align:right;font-weight:700;">${exNum((d.metaMes || {})[m]) !== null ? (trab ? fdFmt(ansNeg(d, m, dia)) : '<span style="color:#94a3b8;font-weight:400;">não trabalha</span>') : simInp(v.neg, 'num', `ansSet(${m}, ${dia}, 'neg', this.value)`, fdFmt(ansNeg(d, m, dia)), 'width:90px;')}</td>
           <td>${simInp(v.real, 'num', `ansSet(${m}, ${dia}, 'real', this.value)`, '', 'width:90px;')}${acima ? '<small style="color:#dc2626;display:block;">acima da capacidade</small>' : ''}</td>
           <td>${simInp(v.fora, 'num', `ansSet(${m}, ${dia}, 'fora', this.value)`, '', 'width:80px;')}</td>
           <td>${simInp(v.buffer, 'pct', `ansSet(${m}, ${dia}, 'buffer', this.value)`, '', 'width:70px;')}</td>
-          <td>${simInp(v.horaLimite, 'pct', `ansSet(${m}, ${dia}, 'horaLimite', this.value)`, '', 'width:70px;')}</td>
+          <td><input type="time" value="${escapeHtml(v.limiteLink || '')}" style="width:100px;margin:0;${v.limiteLink && (d.acordo || {}).horaLimite && v.limiteLink > d.acordo.horaLimite ? 'border-color:#dc2626;color:#dc2626;' : ''}" onchange="ansSet(${m}, ${dia}, 'limiteLink', this.value, true)" title="${(d.acordo || {}).horaLimite ? 'Acordado: ' + d.acordo.horaLimite : ''}"></td>
           <td style="font-weight:800;text-align:right;">${x === null ? '' : fdPct(x)}</td>
           <td>${or ? `<span class="dpo-chip-nivel" style="color:${cor};">${or}</span>` : ''}</td>
           <td><input value="${escapeHtml(v.just || '')}" placeholder="${x !== null && Math.abs(x) * 100 > tol ? 'Motivo da dispersão' : ''}" onchange="ansSet(${m}, ${dia}, 'just', this.value, true)"></td>
@@ -11753,6 +11959,29 @@ function ansSalvarAcao(id) {
   Object.assign(a, { causa: g('ans-causa').trim(), acao: g('ans-acao').trim(), responsavel: g('ans-resp').trim(), prazo: g('ans-prazo'), status: g('ans-st') });
   gopFecharPlano(); fdAgendarSalvar(); exRedesenhar();
 }
+function ansSetMeta(m, v) { const d = FD.dados; d.metaMes = d.metaMes || {}; d.metaMes[m] = fdParse(v); ansGarantirAcoes(); fdAgendarSalvar(); exRedesenhar(); }
+function ansSetPeso(wd, v) { const d = FD.dados; d.pesoSemana = d.pesoSemana || {}; d.pesoSemana[wd] = fdParse(v); ansGarantirAcoes(); fdAgendarSalvar(); exRedesenhar(); }
+function ansToggleDia(m, dia) { const d = FD.dados; d.diasTrab = d.diasTrab || {}; d.diasTrab[m] = d.diasTrab[m] || {}; d.diasTrab[m][dia] = !ansTrabalha(d, m, dia); ansGarantirAcoes(); fdAgendarSalvar(); exRedesenhar(); }
+function ansCopiarMeta(m) { const d = FD.dados, v = (d.metaMes || {})[m]; if (exNum(v) === null) { mostrarToast('Preencha a meta deste mês primeiro.', true); return; } for (let i = m + 1; i < 12; i++) if (exNum((d.metaMes || {})[i]) === null) d.metaMes[i] = v; ansGarantirAcoes(); fdAgendarSalvar(); exRedesenhar(); mostrarToast('Meta copiada para os meses seguintes vazios.'); }
+function ansHtmlParam() {
+  const d = FD.dados, m = FD.ansMes, n = ansDiasNoMes(m), somaSem = [1, 2, 3, 4, 5, 6, 0].reduce((s, wd) => s + (ansPeso(d, wd) || 0), 0);
+  const pri = new Date(FD.ano, m, 1).getDay(), trab = Array.from({ length: n }, (_, i) => i + 1).filter(x => ansTrabalha(d, m, x));
+  const meta = exNum((d.metaMes || {})[m]);
+  return `
+    <div class="painel" style="margin-bottom:12px;"><h3 style="margin-top:0;">🎯 Volume meta por mês (hl)</h3>
+      <div style="font-size:12.5px;color:#475569;margin-bottom:8px;">Digite a meta de volume negociada com vendas para cada mês. O volume negociado de cada dia sobe automaticamente no acompanhamento diário.</div>
+      <div class="ans-metas">${MESES_LONGOS_FD.map((mm, i) => `<div class="${i === m ? 'ativo' : ''}"><label style="margin:0;font-size:11.5px;cursor:pointer;" onclick="FD.ansMes = ${i}; fdCorpoRender();">${mm}</label>${simInp((d.metaMes || {})[i], 'num', `ansSetMeta(${i}, this.value)`, '', 'width:100%;')}</div>`).join('')}</div>
+      <button class="btn-secundario btn-sm" style="margin-top:8px;" onclick="ansCopiarMeta(${m})">Copiar a meta de ${MESES_LONGOS_FD[m]} para os meses seguintes vazios</button></div>
+    <div class="painel" style="margin-bottom:12px;"><h3 style="margin-top:0;">📊 % do volume por dia da semana (curva de vendas)</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">${[1, 2, 3, 4, 5, 6, 0].map(wd => `<div style="width:96px;"><label style="margin:0;font-size:11.5px;">${DIAS_SEM_EX[wd]}</label>${simInp((d.pesoSemana || {})[wd] ?? ANS_PESO_PADRAO[wd], 'pct', `ansSetPeso(${wd}, this.value)`, '', 'width:100%;')}</div>`).join('')}
+        <div style="font-size:12.5px;font-weight:700;color:${Math.abs(somaSem - 100) < 0.6 ? '#166534' : '#d97706'};padding-bottom:8px;">Soma: ${fdFmt(somaSem, 1)}%${Math.abs(somaSem - 100) < 0.6 ? ' ✓' : ' — a ferramenta normaliza pelos dias trabalhados'}</div></div>
+      <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Peso de cada dia na semana. Dia com 0% não é trabalhado por padrão. No mês, a meta é dividida proporcionalmente aos pesos dos dias marcados como trabalhados.</div></div>
+    <div class="painel"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;"><h3 style="margin:0;">🗓️ Dias trabalhados</h3>
+      <select style="width:auto;margin:0;" onchange="FD.ansMes = Number(this.value); fdCorpoRender();">${MESES_LONGOS_FD.map((mm, i) => `<option value="${i}" ${i === m ? 'selected' : ''}>${mm}</option>`).join('')}</select>
+      <span style="font-size:12.5px;color:#475569;">${trab.length} dia(s) trabalhado(s) · clique no dia para marcar feriado / dia extra</span></div>
+      <div class="ans-cal">${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(x => `<b>${x}</b>`).join('')}${'<i></i>'.repeat(pri)}${Array.from({ length: n }, (_, i) => i + 1).map(dia => { const t = ansTrabalha(d, m, dia); return `<button class="${t ? 'trab' : ''}" onclick="ansToggleDia(${m}, ${dia})"><strong>${dia}</strong><small>${t ? (meta !== null ? fdFmt(ansNeg(d, m, dia)) + ' hl' : 'trabalha') : 'folga'}</small></button>`; }).join('')}</div>
+      ${meta !== null ? `<div style="font-size:12.5px;margin-top:8px;">Meta de ${MESES_LONGOS_FD[m]}: <strong>${fdFmt(meta)} hl</strong> distribuída em ${trab.length} dias.</div>` : ''}</div>`;
+}
 function ansHtmlAcordo() {
   const ac = FD.dados.acordo; exAoEditar();
   const campo = (k, rot, tipo, ph) => `<div><label>${rot}</label><input type="${tipo || 'text'}" value="${escapeHtml(ac[k] ?? '')}" placeholder="${escapeHtml(ph || '')}" onchange="FD.dados.acordo['${k}'] = this.value; fdAgendarSalvar(); exValidar();"></div>`;
@@ -11760,7 +11989,7 @@ function ansHtmlAcordo() {
     <div class="painel" style="margin-bottom:12px;"><h3 style="margin-top:0;">📄 Acordo de Nível de Serviço com Vendas</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
         ${campo('data', 'Data do acordo / revisão', 'date')}${campo('vendas', 'Responsável por Vendas')}${campo('logistica', 'Responsável pela Logística')}
-        ${campo('capacidade', 'Capacidade máxima diária (hl)', 'number')}${campo('horaLimite', 'Hora limite do pedido', 'time')}${campo('bufferMax', 'Buffer máximo acordado (%)', 'number')}
+        <div><label>Capacidade máxima diária (hl)</label>${simInp(ac.capacidade, 'num', `FD.dados.acordo.capacidade = fdParse(this.value); fdAgendarSalvar(); exValidar();`, '')}</div>${campo('horaLimite', 'Horário limite de fechamento do link', 'time')}${campo('bufferMax', 'Buffer máximo acordado (%)', 'number')}
       </div>
       <label>Regras do acordo (curva de vendas, cortes de volume, fora de rota, dias de desconto)</label>
       <textarea rows="4" onchange="FD.dados.acordo.regras = this.value; fdAgendarSalvar(); exValidar();">${escapeHtml(ac.regras || '')}</textarea></div>
@@ -11858,6 +12087,7 @@ function capexAbrir(id) {
       <h4 style="margin:12px 0 4px;">🤝 Propostas de fornecedores (V.6)</h4>
       <div id="cx-propostas">${(i.propostas || []).map((p, k) => capexHtmlProposta(p, k)).join('')}</div>
       <button class="btn-secundario btn-sm" onclick="capexAddProposta('${i.id}')">+ Proposta</button>
+      <h4 style="margin:12px 0 4px;">✅ Aprovação</h4>${capexHtmlAprovacao(i)}
       <h4 style="margin:12px 0 4px;">📌 Andamento</h4>
       <div class="cx-grid">
         <div><label>Etapa</label>${sel('etapa', ETAPAS_CAPEX)}</div><div><label>Orçado (R$)</label>${num('orcado')}</div><div><label>Aprovado (R$)</label>${num('aprovado')}</div>
@@ -11881,6 +12111,7 @@ function capexAddProposta(id) { const i = FD.dados.itens.find(x => x.id === id);
 function capexSalvar(id) {
   const i = FD.dados.itens.find(x => x.id === id); capexLerForm(i);
   if (!String(i.descricao || '').trim()) { mostrarToast('Informe a descrição.', true); return; }
+  if (['Execução', 'Concluído'].includes(i.etapa) && capexAprovadores().length && !(i.aprovacao && i.aprovacao.decisao === 'Aprovado')) { mostrarToast('Esta solicitação precisa ser aprovada por um aprovador antes de ir para Execução.', true); i.etapa = 'Aprovação'; capexAbrir(id); return; }
   if (i.etapa === 'Concluído' && !(i.nf && i.nf.url)) { mostrarToast('Para concluir o investimento, anexe a nota fiscal.', true); i.etapa = 'Execução'; capexAbrir(id); return; }
   if (i.etapa === 'Concluído' && (!i.fimReal || exNum(i.realizado) === null)) { mostrarToast('Informe o fim real e o valor realizado para concluir.', true); return; }
   gopFecharPlano(); fdAgendarSalvar(); exRedesenhar(); mostrarToast('Solicitação salva.');
@@ -11910,7 +12141,39 @@ function capexHtmlPlano() { exAoEditar(); return `<div class="painel"><h3 style=
 function capexHtmlCad() {
   const c = FD.dados.cadastros;
   const area = (k, rot) => `<div class="painel"><h4 style="margin:0 0 6px;">${rot}</h4><textarea rows="9" onchange="FD.dados.cadastros['${k}'] = this.value; fdAgendarSalvar();">${escapeHtml(c[k] || '')}</textarea><div style="font-size:11px;color:#64748b;">Um por linha.</div></div>`;
-  return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">${area('areas', 'Áreas')}${area('categorias', 'Categorias')}${area('origens', 'Origens')}${area('tipos', 'Tipos')}</div>`;
+  return `${capexHtmlAprovadores()}<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">${area('areas', 'Áreas')}${area('categorias', 'Categorias')}${area('origens', 'Origens')}${area('tipos', 'Tipos')}</div>`;
+}
+// ---- aprovadores de CAPEX: cadastrados pelo Gestor principal da empresa (marcado pelo Master) ----
+function capexPodeAprovadores() { const c = FD.meta.ctx || {}; return !!(c.ehMaster || c.souGestorPrincipal); }
+function capexAprovadores() { return (FD.dados.aprovadores || []).filter(a => a.userId); }
+function capexMeuAprovador(i) { const c = FD.meta.ctx || {}, eu = capexAprovadores().find(a => Number(a.userId) === Number(c.meuUserId)); if (!eu) return null; const lim = exNum(eu.alcada); return !lim || capexTotal(i) <= lim ? eu : null; }
+function capexHtmlAprovadores() {
+  const c = FD.meta.ctx || {}, pode = capexPodeAprovadores(), us = c.usuarios || [], l = FD.dados.aprovadores = Array.isArray(FD.dados.aprovadores) ? FD.dados.aprovadores : [];
+  return `<div class="painel" style="margin-bottom:12px;"><h3 style="margin-top:0;">✅ Aprovadores de CAPEX</h3>
+    <div style="font-size:12.5px;color:#475569;margin-bottom:8px;">${pode ? 'Você é o <strong>Gestor principal</strong> da empresa: cadastre quem aprova CAPEX e a alçada (valor máximo) de cada um.' : c.temGestorPrincipal ? '🔒 Somente o Gestor principal da empresa altera esta lista.' : '🔒 O Master ainda não marcou o Gestor principal da empresa (Cadastro da empresa → Acessos). Depois disso ele cadastra os aprovadores aqui.'}
+      Uma solicitação só passa para <strong>Execução</strong> depois de aprovada por um aprovador com alçada para o valor.</div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th style="min-width:200px;">Aprovador</th><th>Alçada até (R$)</th><th style="min-width:180px;">Áreas / observação</th>${pode ? '<th></th>' : ''}</tr></thead><tbody>
+      ${l.map((a, k) => pode ? `<tr><td><select onchange="capexAprov(${k}, 'userId', this.value)"><option value=""></option>${us.map(u => `<option value="${u.id}" ${Number(u.id) === Number(a.userId) ? 'selected' : ''}>${escapeHtml(u.name)}</option>`).join('')}</select></td>
+        <td>${simInp(a.alcada, 'rs', `capexAprov(${k}, 'alcada', fdParse(this.value))`, 'sem limite', 'width:140px;')}</td><td><input value="${escapeHtml(a.obs || '')}" onchange="capexAprov(${k}, 'obs', this.value)"></td><td><button class="fd-remover" onclick="FD.dados.aprovadores.splice(${k}, 1); fdAgendarSalvar(); fdCorpoRender();">✕</button></td></tr>`
+        : `<tr><td>${escapeHtml(a.nome || '')}</td><td>${exNum(a.alcada) ? simFmt(exNum(a.alcada), 'rs') : 'sem limite'}</td><td>${escapeHtml(a.obs || '')}</td></tr>`).join('') || `<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:12px;">Nenhum aprovador cadastrado.</td></tr>`}
+    </tbody></table></div>
+    ${pode ? `<button class="btn-secundario btn-sm" style="margin-top:8px;" onclick="FD.dados.aprovadores.push({ id: fdId() }); fdCorpoRender();">+ Adicionar aprovador</button>` : ''}</div>`;
+}
+function capexAprov(k, campo, v) { const a = FD.dados.aprovadores[k]; a[campo] = v; if (campo === 'userId') { const u = ((FD.meta.ctx || {}).usuarios || []).find(x => Number(x.id) === Number(v)); a.userId = v ? Number(v) : ''; a.nome = u ? u.name : ''; } fdAgendarSalvar(); if (campo === 'userId') fdCorpoRender(); }
+function capexAprovar(id, aprovar) {
+  const i = FD.dados.itens.find(x => x.id === id); capexLerForm(i);
+  const eu = capexMeuAprovador(i); if (!eu) { mostrarToast('Você não é aprovador com alçada para este valor.', true); return; }
+  const obs = prompt(aprovar ? 'Observação da aprovação (opcional):' : 'Motivo da reprovação:') ; if (obs === null) return;
+  i.aprovacao = { userId: Number(eu.userId), nome: eu.nome, em: new Date().toISOString(), valor: capexTotal(i), decisao: aprovar ? 'Aprovado' : 'Reprovado', obs };
+  if (aprovar) { if (exNum(i.aprovado) === null) i.aprovado = capexTotal(i); if (['Solicitação', 'Orçamento', 'Aprovação'].includes(i.etapa || 'Solicitação')) i.etapa = 'Execução'; } else i.etapa = 'Reprovado';
+  fdAgendarSalvar(); capexAbrir(id); mostrarToast(aprovar ? 'Solicitação aprovada.' : 'Solicitação reprovada.');
+}
+function capexHtmlAprovacao(i) {
+  const ap = i.aprovacao, lista = capexAprovadores(), eu = capexMeuAprovador(i);
+  if (ap) return `<div class="gop-plano-ref" style="border-color:${ap.decisao === 'Aprovado' ? '#16a34a' : '#dc2626'};">${ap.decisao === 'Aprovado' ? '✅' : '❌'} <strong>${escapeHtml(ap.decisao)}</strong> por ${escapeHtml(ap.nome || '')} em ${new Date(ap.em).toLocaleString('pt-BR')} · ${simFmt(ap.valor, 'rs')}${ap.obs ? ` · ${escapeHtml(ap.obs)}` : ''}</div>`;
+  if (!lista.length) return '<div style="font-size:12px;color:#64748b;">Sem aprovadores cadastrados — o Gestor principal cadastra em ⚙️ Parâmetros e aprovadores.</div>';
+  const quem = lista.filter(a => !exNum(a.alcada) || capexTotal(i) <= exNum(a.alcada)).map(a => a.nome).join(', ') || 'nenhum aprovador com alçada para este valor';
+  return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;">⏳ Aguardando aprovação de: <strong>${escapeHtml(quem)}</strong>${eu ? `<button class="btn-primario btn-sm" style="width:auto;background:#16a34a;" onclick="capexAprovar('${i.id}', true)">✅ Aprovar</button><button class="btn-perigo btn-sm" onclick="capexAprovar('${i.id}', false)">Reprovar</button>` : ''}</div>`;
 }
 
 // ======================= P1A / P3A (Planejamento 2.3) =======================
@@ -11927,16 +12190,178 @@ const PLAYBOOK_P3A = [
 ];
 function p3aProjetos(d) { return (d.projetos || []).filter(p => String(p.descricao || '').trim()); }
 function p3aPrevisto(p) { return (exNum(p.qtd) || 0) * (exNum(p.unitario) || 0); }
+// ---- P1A/P3A: série de volume (2 anos realizados + projeção automática + adicional planejado) ----
+const P3A_PARAM_MASTER = [
+  ['crescPadrao', 'Crescimento padrão de volume', 'pct', 3], ['idadeMaxFrota', 'Idade máxima da frota (anos)', 'num', 10], ['utilMin', 'Utilização mínima da frota', 'pct', 30],
+  ['reservaFrota', 'Reserva técnica de frota', 'pct', 10], ['ocupMaxArmazem', 'Ocupação máxima do armazém', 'pct', 85], ['diasEntrega', 'Dias de entrega no ano', 'num', 300],
+  ['juros', 'Juros padrão de financiamento (% a.m.)', 'pct', 1.5], ['paybackMax', 'Payback máximo aceitável (anos)', 'num', 5], ['hlPessoaArmazem', 'Produtividade do armazém (hl por colaborador/dia)', 'num', '']
+];
+const TIPOS_FROTA_P3A = ['VUC', '3/4', 'Toco', 'Truck', 'Bitruck', 'Carreta', 'Moto / modal alternativo'];
+function p3aPM(k) { const pm = FD.dados.paramMaster || {}, def = (P3A_PARAM_MASTER.find(x => x[0] === k) || [])[3]; const v = exNum(pm[k]); return v === null ? (def === '' ? null : def) : v; }
+function p3aSerie(d) {
+  const A = FD.ano, real = d.volReal || {}, adic = d.volAdic || {};
+  const rv = ano => exNum((real[ano] || {}).volume), rm = ano => exNum((real[ano] || {}).mktp);
+  const varHist = rv(A - 2) && rv(A - 1) !== null ? rv(A - 1) / rv(A - 2) - 1 : null;
+  const varMk = rm(A - 2) && rm(A - 1) !== null ? rm(A - 1) / rm(A - 2) - 1 : null;
+  const metodo = d.metodoCresc || (varHist !== null ? 'historico' : 'padrao');
+  const padrao = (p3aPM('crescPadrao') || 0) / 100;
+  const g = metodo === 'manual' ? (exNum(d.crescManual) ?? 0) / 100 : metodo === 'padrao' ? padrao : (varHist ?? padrao);
+  const gMk = metodo === 'historico' && varMk !== null ? varMk : g;
+  const linhas = [A - 2, A - 1].map(ano => ({ ano, tipo: 'Realizado', volume: rv(ano), mktp: rm(ano) }));
+  let pv = rv(A - 1), pmk = rm(A - 1);
+  [A, A + 1, A + 2, A + 3].forEach(ano => {
+    const ad = adic[ano] || {}, adV = exNum(ad.vol), adM = exNum(ad.mktp);
+    const autoV = pv !== null ? pv * (1 + g) : null, autoM = pmk !== null ? pmk * (1 + gMk) : null;
+    const volume = autoV !== null ? autoV + (adV || 0) : adV, mktp = autoM !== null ? autoM + (adM || 0) : adM;
+    linhas.push({ ano, tipo: ano === A ? 'Ano atual' : 'Projeção', horizonte: ano === A + 1 ? 'P1A' : ano > A + 1 ? 'P3A' : '', autoV, autoM, adV, adM, motivo: ad.motivo || '', volume, mktp });
+    pv = volume; pmk = mktp;
+  });
+  return { linhas, g, gMk, varHist, varMk, metodo };
+}
+function p3aSetReal(ano, campo, v) { const d = FD.dados; d.volReal = d.volReal || {}; d.volReal[ano] = d.volReal[ano] || {}; d.volReal[ano][campo] = fdParse(v); fdAgendarSalvar(); exRedesenhar(); }
+function p3aSetAdic(ano, campo, v, texto) { const d = FD.dados; d.volAdic = d.volAdic || {}; d.volAdic[ano] = d.volAdic[ano] || {}; d.volAdic[ano][campo] = texto ? v : fdParse(v); fdAgendarSalvar(); if (!texto) exRedesenhar(); else exValidar(); }
+function p3aHtmlVolume() {
+  const d = FD.dados, S = p3aSerie(d), A = FD.ano;
+  const opc = (k, rot) => `<label style="display:flex;gap:6px;align-items:center;font-weight:400;margin:0;font-size:13px;"><input type="radio" name="p3a-met" style="width:auto;" ${S.metodo === k ? 'checked' : ''} onchange="fdDefinir('metodoCresc', '${k}'); exRedesenhar();"> ${rot}</label>`;
+  const cor = v => v === null || v === undefined ? '' : `color:${v >= 0 ? '#166534' : '#991b1b'};`;
+  return `
+    <div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#475569;">Preencha o <strong>realizado dos últimos 2 anos</strong> (${A - 2} e ${A - 1}). A ferramenta calcula a variação e projeta ${A} a ${A + 3} automaticamente. Em <strong>Adicional planejado</strong> coloque o que precisa planejar além do automático (novo território, cliente grande, marketplace…) e o motivo — o adicional entra na base dos anos seguintes.</div>
+    <div class="painel" style="margin-bottom:10px;display:flex;gap:18px;flex-wrap:wrap;align-items:center;">
+      <strong style="font-size:13px;">Como projetar:</strong>
+      ${opc('historico', `Variação dos últimos 2 anos <strong style="${cor(S.varHist)}">${S.varHist === null ? '(preencha os 2 anos)' : fdPct(S.varHist)}</strong>`)}
+      ${opc('padrao', `Crescimento padrão Impulsionar <strong>${fdPct((p3aPM('crescPadrao') || 0) / 100)}</strong>`)}
+      <span style="display:flex;gap:6px;align-items:center;">${opc('manual', 'Manual')}${simInp(d.crescManual, 'pct', `fdDefinir('crescManual', fdParse(this.value)); fdDefinir('metodoCresc', 'manual'); exRedesenhar()`, '0', 'width:80px;')}</span>
+      <span style="margin-left:auto;font-size:12.5px;">Crescimento aplicado: <strong>${fdPct(S.g)}</strong> volume · <strong>${fdPct(S.gMk)}</strong> marketplace</span>
+    </div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela">
+      <thead><tr><th>Ano</th><th>Tipo</th><th>Volume automático (hl)</th><th>Adicional planejado (hl)</th><th>Volume final (hl)</th><th>Marketplace automático</th><th>Adicional mktp</th><th>Marketplace final</th><th>Crescimento</th><th>% mktp</th><th style="min-width:220px;">O que precisa planejar além do automático</th></tr></thead>
+      <tbody>${S.linhas.map((l, i) => { const ant = i ? S.linhas[i - 1].volume : null, cr = ant && l.volume !== null ? l.volume / ant - 1 : null; const real = l.tipo === 'Realizado'; return `<tr style="${real ? 'background:#f8fafc;' : ''}">
+        <td><strong>${l.ano}</strong>${l.horizonte ? ` <span class="dpo-chip-nivel">${l.horizonte}</span>` : ''}</td><td style="font-size:12px;color:#64748b;">${l.tipo}</td>
+        <td>${real ? simInp(l.volume, 'num', `p3aSetReal(${l.ano}, 'volume', this.value)`, 'realizado', 'width:110px;') : `<span class="fd-calc">${fdFmt(l.autoV)}</span>`}</td>
+        <td>${real ? '' : simInp(l.adV, 'num', `p3aSetAdic(${l.ano}, 'vol', this.value)`, '0', 'width:100px;')}</td>
+        <td style="font-weight:800;">${fdFmt(l.volume)}</td>
+        <td>${real ? simInp(l.mktp, 'num', `p3aSetReal(${l.ano}, 'mktp', this.value)`, 'realizado', 'width:100px;') : `<span class="fd-calc">${fdFmt(l.autoM)}</span>`}</td>
+        <td>${real ? '' : simInp(l.adM, 'num', `p3aSetAdic(${l.ano}, 'mktp', this.value)`, '0', 'width:90px;')}</td>
+        <td style="font-weight:700;">${fdFmt(l.mktp)}</td>
+        <td style="font-weight:700;${cor(cr)}">${cr === null ? '—' : fdPct(cr)}</td><td>${l.volume && l.mktp !== null ? fdPct(l.mktp / l.volume) : '—'}</td>
+        <td>${real ? '' : `<input value="${escapeHtml(l.motivo)}" placeholder="${l.adV || l.adM ? 'Explique o adicional' : 'Ex.: novo território, cliente-chave…'}" onchange="p3aSetAdic(${l.ano}, 'motivo', this.value, true)" style="margin:0;">`}</td></tr>`; }).join('')}</tbody>
+    </table></div>
+    ${p3aHtmlSugestoes()}`;
+}
+// ---- necessidade de frota pela projeção (parâmetros da revenda) ----
+function p3aFrotaAtual(tipo) {
+  const d = FD.dados, lista = (d.frota || []).filter(v => v.placa && v.tipo === tipo && v.decisao !== 'Desmobilizar');
+  const pf = (d.paramFrota || []).find(p => p.tipo === tipo);
+  return lista.length || (pf ? exNum(pf.atual) || 0 : 0);
+}
+function p3aNecessidadeFrota() {
+  const d = FD.dados, S = p3aSerie(d), dias = p3aPM('diasEntrega') || 300, res = (p3aPM('reservaFrota') || 0) / 100;
+  const pf = (d.paramFrota || []).filter(p => p.tipo && exNum(p.hlDia));
+  if (!pf.length) return null;
+  const somaPart = pf.reduce((s, p) => s + (exNum(p.part) || 0), 0);
+  const part = p => somaPart ? (exNum(p.part) || 0) / somaPart : 1 / pf.length;
+  const dropMk = exNum((d.paramRev || {}).dropMk);
+  return S.linhas.filter(l => l.tipo !== 'Realizado' && l.volume !== null).map(l => ({
+    ano: l.ano, horizonte: l.horizonte, volume: l.volume,
+    tipos: pf.map(p => {
+      const mk = l.mktp || 0, base = dropMk ? l.volume - mk : l.volume;
+      const porHl = base / dias * part(p) / exNum(p.hlDia);
+      const entregasMk = dropMk ? mk / dias * part(p) / dropMk : 0;
+      const porEnt = dropMk && exNum(p.entregasDia) ? entregasMk / exNum(p.entregasDia) : 0;
+      const nec = Math.ceil((porHl + porEnt) * (1 + res) - 1e-9), atual = p3aFrotaAtual(p.tipo);
+      return { tipo: p.tipo, nec, atual, gap: nec - atual, valor: exNum(p.valor), trip: exNum(p.tripulacao), entregasDia: exNum(p.entregasDia) ? Math.round((base / dias * part(p)) / (exNum(p.hlDia) / exNum(p.entregasDia)) + entregasMk) : null };
+    })
+  }));
+}
+function p3aSugestoes() {
+  const d = FD.dados, sug = [], A = FD.ano, nec = p3aNecessidadeFrota();
+  if (nec) {
+    const feito = {};
+    nec.forEach(ano => ano.tipos.forEach(t => {
+      const ja = feito[t.tipo] || 0, falta = t.gap - ja;
+      if (falta <= 0) return;
+      feito[t.tipo] = ja + falta;
+      const hz = ano.ano <= A + 1 ? 'P1A' : 'P3A';
+      sug.push({ key: `frota|${t.tipo}|${ano.ano}`, icone: '🚚', txt: `Aumentar a frota ${t.tipo}: +${falta} veículo(s) em ${ano.ano} — necessidade ${t.nec} × atual ${t.atual} pelo volume projetado de ${fdFmt(ano.volume)} hl.`, proj: { horizonte: hz, descricao: `Aumento de frota ${t.tipo} (+${falta}) para ${ano.ano}`, recurso: 'Frota', tipo: 'Capacidade de entrega', qtd: falta, unitario: t.valor || '', ano: String(ano.ano), prioridade: ano.ano <= A + 1 ? 'Alta' : 'Média', impacto: `Atender o volume projetado de ${fdFmt(ano.volume)} hl em ${ano.ano} sem perder nível de serviço.` } });
+      if (t.trip) sug.push({ key: `pessoas|${t.tipo}|${ano.ano}`, icone: '👥', txt: `Contratar ${Math.ceil(falta * t.trip)} pessoa(s) de entrega para os novos ${t.tipo} em ${ano.ano} (${t.trip} por veículo).`, proj: { horizonte: hz, descricao: `QLP de entrega para ${falta} ${t.tipo} novo(s) em ${ano.ano}`, recurso: 'Pessoas', tipo: 'QLP', qtd: Math.ceil(falta * t.trip), ano: String(ano.ano), prioridade: 'Média', impacto: 'Tripular a frota adicional.' } });
+    }));
+  }
+  const idadeMax = p3aPM('idadeMaxFrota'), utilMin = p3aPM('utilMin');
+  const velhos = {}; (d.frota || []).filter(v => v.placa && exNum(v.ano) && idadeMax && A - exNum(v.ano) >= idadeMax && v.decisao !== 'Desmobilizar').forEach(v => { (velhos[v.tipo || 'Sem tipo'] = velhos[v.tipo || 'Sem tipo'] || []).push(v.placa); });
+  Object.entries(velhos).forEach(([tipo, placas]) => { const pf = (d.paramFrota || []).find(p => p.tipo === tipo) || {}; sug.push({ key: `renova|${tipo}`, icone: '♻️', txt: `Renovar ${placas.length} ${tipo} com ${idadeMax} anos ou mais (${placas.join(', ')}).`, proj: { horizonte: 'P1A', descricao: `Renovação de frota ${tipo}: ${placas.join(', ')}`, recurso: 'Frota', tipo: 'Renovação da frota', qtd: placas.length, unitario: exNum(pf.valor) || '', ano: String(A + 1), prioridade: 'Alta', impacto: 'Reduzir custo de manutenção e risco de quebra em rota.' } }); });
+  const ociosos = (d.frota || []).filter(v => v.placa && exNum(v.util) !== null && utilMin && exNum(v.util) < utilMin);
+  if (ociosos.length) sug.push({ key: 'ociosa', icone: '🅿️', txt: `${ociosos.length} veículo(s) abaixo de ${fdFmt(utilMin)}% de utilização (${ociosos.map(v => v.placa).join(', ')}) — avaliar desmobilizar ou realocar antes de comprar.`, proj: { horizonte: 'P1A', descricao: `Desmobilizar / realocar frota ociosa: ${ociosos.map(v => v.placa).join(', ')}`, recurso: 'Frota', tipo: 'Aumento de produtividade', ano: String(A + 1), prioridade: 'Média', impacto: 'Liberar custo fixo de frota ociosa.' } });
+  const e = d.estrutura || {}, cap = exNum(e.capacidadeHl), giro = exNum(e.diasEstoque), S = p3aSerie(d), ult = S.linhas[S.linhas.length - 1], ocup = (p3aPM('ocupMaxArmazem') || 100) / 100;
+  if (cap && giro && ult.volume) { const necHl = ult.volume / 12 / 26 * giro; if (necHl > cap * ocup) sug.push({ key: 'armazem', icone: '🏭', txt: `Armazém: necessidade de ${fdFmt(necHl)} hl em ${ult.ano} passa de ${fdPct(ocup, 0)} da capacidade (${fdFmt(cap)} hl).`, proj: { horizonte: 'P3A', descricao: `Expansão de armazenagem para ${ult.ano}`, recurso: 'Armazém', tipo: 'Expansão de armazenagem', ano: String(ult.ano), prioridade: 'Média', impacto: `Capacidade para ${fdFmt(necHl)} hl de estoque.` } }); }
+  const prod = p3aPM('hlPessoaArmazem'), qArm = (d.qlp || []).filter(q => /armaz|empilhad|conferent/i.test(q.funcao || '')).reduce((s, q) => s + (exNum(q.atual) || 0), 0);
+  if (prod && qArm) S.linhas.filter(l => l.tipo !== 'Realizado' && l.volume).forEach(l => { const nec = Math.ceil(l.volume / (p3aPM('diasEntrega') || 300) / prod); if (nec > qArm && l.ano > A) sug.push({ key: `qlparm|${l.ano}`, icone: '👷', txt: `Armazém em ${l.ano}: ${nec} colaborador(es) necessário(s) pela produtividade de ${fdFmt(prod)} hl/dia × ${qArm} atuais.`, proj: { horizonte: l.ano === A + 1 ? 'P1A' : 'P3A', descricao: `QLP armazém +${nec - qArm} para ${l.ano}`, recurso: 'Pessoas', tipo: 'QLP', qtd: nec - qArm, ano: String(l.ano), prioridade: 'Média', impacto: 'Manter a produtividade do armazém com o volume projetado.' } }); });
+  return sug;
+}
+function p3aHtmlSugestoes() {
+  const sug = p3aSugestoes(), d = FD.dados, ja = new Set((d.projetos || []).map(p => p.sug).filter(Boolean));
+  const semParam = !(d.paramFrota || []).some(p => p.tipo && exNum(p.hlDia));
+  return `<div class="painel" style="margin-top:12px;border-left:4px solid #4338ca;">
+    <h3 style="margin-top:0;">🤖 Sugestões automáticas pelos parâmetros</h3>
+    ${semParam ? `<div style="font-size:12.5px;color:#92400e;margin-bottom:6px;">Preencha em <a href="#" onclick="fdTrocarAba('param'); return false;">⚙️ Parâmetros</a> a média de hl e de entregas por caminhão para a ferramenta calcular se a frota precisa crescer.</div>` : ''}
+    ${sug.length ? sug.map(s => `<div class="p3a-sug ${ja.has(s.key) ? 'feito' : ''}"><span>${s.icone}</span><div style="flex:1;">${escapeHtml(s.txt)}</div>${ja.has(s.key) ? '<span style="color:#166534;font-weight:700;font-size:12px;">✅ já é projeto</span>' : `<button class="btn-secundario btn-sm" style="width:auto;" onclick="p3aCriarProjeto('${s.key}')">+ Criar projeto</button>`}</div>`).join('') : '<div style="color:#94a3b8;font-size:12.5px;">Nenhuma necessidade identificada com os dados atuais.</div>'}
+  </div>`;
+}
+function p3aCriarProjeto(key) {
+  const s = p3aSugestoes().find(x => x.key === key); if (!s) return;
+  FD.dados.projetos.push({ id: fdId(), sug: key, status: 'Não iniciado', registro: 'Ainda não registrado', ...s.proj });
+  fdAgendarSalvar(); exRedesenhar(); mostrarToast('Projeto criado em 🗂️ Projetos P1A / P3A.');
+}
+function p3aHtmlParam() {
+  const d = FD.dados, ehMaster = !!(FD.meta.ctx && FD.meta.ctx.ehMaster), pm = d.paramMaster || {};
+  const campoM = ([k, rot, tipo, def]) => `<div><label>${rot}</label>${ehMaster ? simInp(pm[k], tipo === 'pct' ? 'pct' : 'num', `FD.dados.paramMaster = FD.dados.paramMaster || {}; FD.dados.paramMaster['${k}'] = fdParse(this.value); fdAgendarSalvar(); exValidar();`, def === '' ? '' : String(def).replace('.', ',')) : `<div class="p3a-trava">${exNum(pm[k]) !== null ? fdFmt(exNum(pm[k]), exNum(pm[k]) % 1 ? 1 : 0) : (def === '' ? '—' : String(def).replace('.', ','))}${tipo === 'pct' ? '%' : ''}</div>`}</div>`;
+  d.paramFrota = Array.isArray(d.paramFrota) ? d.paramFrota : []; d.paramRev = d.paramRev || {};
+  exAoEditar();
+  const nec = p3aNecessidadeFrota();
+  return `
+    <div class="painel" style="margin-bottom:12px;">
+      <h3 style="margin-top:0;">🔒 Parâmetros Impulsionar <span style="font-size:12px;font-weight:600;color:#64748b;">${ehMaster ? '— você está editando como Master' : '— cadastrados pelo Master (somente leitura)'}</span></h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;">${P3A_PARAM_MASTER.map(campoM).join('')}</div>
+      <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Usados nas sugestões automáticas: projeção padrão de volume, renovação por idade, frota ociosa, reserva técnica, ocupação do armazém, juros e payback.</div>
+    </div>
+    <div class="painel" style="margin-bottom:12px;">
+      <h3 style="margin-top:0;">🚚 Parâmetros da revenda — média da frota de entrega</h3>
+      <div style="font-size:12.5px;color:#475569;margin-bottom:8px;">Preenchido pela revenda. Informe a média real de cada tipo de caminhão: quanto entrega em <strong>hl por dia</strong> e quantas <strong>entregas por dia</strong>. Com a projeção de volume a ferramenta calcula se a frota precisa crescer.</div>
+      ${fdTabela('paramFrota', [{ campo: 'tipo', rotulo: 'Tipo de veículo', tipo: 'select', opcoes: TIPOS_FROTA_P3A, largura: 140, recarregar: true }, { campo: 'hlDia', rotulo: 'hl por caminhão/dia', tipo: 'decimal', largura: 110, recarregar: true }, { campo: 'entregasDia', rotulo: 'Entregas por caminhão/dia', tipo: 'decimal', largura: 110, recarregar: true },
+        { campo: 'drop', rotulo: 'hl por entrega', tipo: 'calc', valor: l => exNum(l.hlDia) && exNum(l.entregasDia) ? fdFmt(exNum(l.hlDia) / exNum(l.entregasDia), 1) : '—' },
+        { campo: 'part', rotulo: '% do volume', tipo: 'decimal', largura: 80, recarregar: true }, { campo: 'atual', rotulo: 'Qtde atual', tipo: 'decimal', largura: 80, recarregar: true },
+        { campo: 'tripulacao', rotulo: 'Pessoas por caminhão', tipo: 'decimal', largura: 90 }, { campo: 'valor', rotulo: 'Valor de compra (R$)', tipo: 'decimal', largura: 120 }], { botao: 'Adicionar tipo de veículo' })}
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;align-items:flex-end;">
+        <div><label style="margin:0;font-size:12px;">hl médio por entrega do marketplace</label>${simInp(d.paramRev.dropMk, 'num', `FD.dados.paramRev.dropMk = fdParse(this.value); fdAgendarSalvar(); exRedesenhar();`, 'opcional', 'width:120px;')}</div>
+        <div style="font-size:11.5px;color:#64748b;flex:1;min-width:240px;">Qtde atual: se a aba 🚚 Frota estiver preenchida, conta os veículos cadastrados de cada tipo; senão usa este campo. Marketplace com entrega menor: informe o hl por entrega para calcular pelas entregas.</div>
+      </div>
+    </div>
+    ${nec ? `<div class="painel"><h3 style="margin-top:0;">📐 Necessidade de frota pela projeção</h3><div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th>Ano</th><th>Volume (hl)</th>${nec[0].tipos.map(t => `<th>${escapeHtml(t.tipo)}<br><small>necessário / atual</small></th>`).join('')}</tr></thead>
+      <tbody>${nec.map(a => `<tr><td><strong>${a.ano}</strong> ${a.horizonte ? `<span class="dpo-chip-nivel">${a.horizonte}</span>` : ''}</td><td>${fdFmt(a.volume)}</td>${a.tipos.map(t => `<td style="font-weight:700;${t.gap > 0 ? 'background:#fee2e2;color:#991b1b;' : 'color:#166534;'}">${t.nec} / ${t.atual}${t.gap > 0 ? ` (+${t.gap})` : ''}${t.entregasDia ? `<br><small style="font-weight:400;color:#64748b;">${fdFmt(t.entregasDia)} entregas/dia</small>` : ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Necessário = volume ÷ dias de entrega × % do tipo ÷ hl por caminhão/dia, + reserva técnica de ${fdFmt(p3aPM('reservaFrota') || 0)}%.</div></div>` : ''}
+    ${p3aHtmlSugestoes()}`;
+}
+function p3aPayback(p) { const g = exNum(p.ganhoAnual), v = p3aPrevisto(p); return g && v ? v / g : null; }
+function p3aHtmlPayback() {
+  const d = FD.dados, max = p3aPM('paybackMax'), pr = p3aProjetos(d).filter(p => p3aPrevisto(p));
+  const imp = (d.impactos || []).filter(i => exNum(i.valor));
+  const linha = (nome, valor, ganho, origem) => { const pb = valor && ganho ? valor / ganho : null; return `<tr><td>${escapeHtml(nome)}</td><td style="font-size:12px;color:#64748b;">${origem}</td><td>${simFmt(valor, 'rs')}</td><td>${ganho ? simFmt(ganho, 'rs') : '<span style="color:#94a3b8;">informe</span>'}</td><td style="font-weight:800;${pb !== null && max && pb > max ? 'color:#dc2626;' : pb !== null ? 'color:#166534;' : ''}">${pb === null ? '—' : `${fdFmt(pb, 1)} anos (${fdFmt(pb * 12, 0)} meses)`}</td></tr>`; };
+  return `<div class="painel" style="margin-bottom:12px;"><h3 style="margin-top:0;">💰 Payback — em quanto tempo cada investimento se paga</h3>
+    <div style="font-size:12.5px;color:#475569;margin-bottom:6px;">Payback = investimento ÷ (economia + ganho por ano). Acima de ${max ? fdFmt(max, 1) + ' anos (parâmetro Impulsionar)' : 'o limite'} fica em vermelho.</div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th>Investimento</th><th>Origem</th><th>Valor</th><th>Economia + ganho / ano</th><th>Payback</th></tr></thead>
+    <tbody>${pr.map(p => linha(p.descricao, p3aPrevisto(p), exNum(p.ganhoAnual), 'Projeto ' + (p.horizonte || ''))).join('')}${imp.map(i => linha(i.descricao || i.tipo || 'Investimento', exNum(i.valor), (exNum(i.economia) || 0) + (exNum(i.ganho) || 0), 'Impactos financeiros')).join('')}
+    ${!pr.length && !imp.length ? '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px;">Cadastre projetos com valor ou investimentos em 💰 Impactos financeiros.</td></tr>' : ''}</tbody></table></div></div>`;
+}
+
 function p3aPmt(v, n, j) { if (!v || !n) return null; if (!j) return v / n; return v * j / (1 - Math.pow(1 + j, -n)); }
 function p3aValidar(d) {
-  const pr = p3aProjetos(d), rec = new Set(pr.map(p => p.recurso).filter(Boolean)), vol = (d.volumes || []).filter(v => exNum(v.volume) !== null);
+  const pr = p3aProjetos(d), rec = new Set(pr.map(p => p.recurso).filter(Boolean)), serie = p3aSerie(d).linhas, vol = serie.filter(v => v.volume !== null && v.volume !== undefined);
   const fb = (d.feedbacks || []).filter(f => String(f.lider || '').trim()), lideres = new Set(fb.map(f => f.lider.trim().toLowerCase()));
   const precisaRegistro = pr.filter(p => ['Pessoas', 'Frota', 'Instalações', 'Armazém', 'Novos modais / mix de frota'].includes(p.recurso));
   const imp = (d.impactos || []).filter(i => exNum(i.valor) && (exNum(i.economia) || exNum(i.ganho)));
   const pa = (d.pontos || []).filter(p => String(p.local || '').trim());
   const pb = d.playbook || {};
   return [
-    { v: 'V.1', titulo: 'P1A/P3A de instalações, frota e pessoas com base em volume e marketplace', st: exSt(pr.length && rec.size >= 2 && vol.length >= 3 && vol.some(v => exNum(v.mktp) !== null), pr.length || vol.length), txt: `${pr.length} projeto(s) cobrindo ${[...rec].join(', ') || 'nenhum recurso'} · ${vol.length} ano(s) de volume projetado.`, ir: 'projetos' },
+    { v: 'V.1', titulo: 'P1A/P3A de instalações, frota e pessoas com base em volume e marketplace', st: exSt(pr.length && rec.size >= 2 && serie.filter(v => v.tipo === 'Realizado' && v.volume !== null).length >= 2 && vol.length >= 5 && vol.some(v => v.mktp !== null && v.mktp !== undefined), pr.length || vol.length), txt: `${pr.length} projeto(s) cobrindo ${[...rec].join(', ') || 'nenhum recurso'} · ${serie.filter(v => v.tipo === 'Realizado' && v.volume !== null).length}/2 anos realizados e ${vol.filter(v => v.tipo !== 'Realizado').length} ano(s) projetados.`, ir: 'projetos' },
     { v: 'V.2', titulo: 'Feedback da liderança sobre recursos necessários', st: exSt(fb.length >= 2, fb.length >= 1), txt: `${fb.length} feedback(s) da liderança registrado(s) no Playbook.`, ir: 'playbook' },
     { v: 'V.3', titulo: 'Liderança fala sobre seu envolvimento no P1A/P3A', st: exSt(lideres.size >= 2 || pb['V.3'], lideres.size >= 1), txt: `${lideres.size} líder(es) envolvido(s)${pb['V.3'] ? ' · etapa confirmada no Playbook' : ''}.`, ir: 'playbook' },
     { v: 'V.4', titulo: 'Mudanças levadas para CAPEX, sindical/3PL ou compras', st: exSt(precisaRegistro.length && precisaRegistro.every(p => p.registro && p.registro !== 'Ainda não registrado'), precisaRegistro.some(p => p.registro && p.registro !== 'Ainda não registrado')), txt: `${precisaRegistro.filter(p => p.registro && p.registro !== 'Ainda não registrado').length}/${precisaRegistro.length} projeto(s) de frota, pessoas ou instalações com registro.`, ir: 'projetos' },
@@ -11948,23 +12373,15 @@ function p3aValidar(d) {
 }
 function p3aHtmlAba(a) {
   const d = FD.dados; exAoEditar();
-  if (a === 'volume') {
-    const vs = d.volumes;
-    return `
-      <div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#475569;">Histórico e projeção de volume e marketplace por ano — base do P1A (próximo ano) e do P3A (3 anos). Crescimento calculado ano contra ano.</div>
-      ${fdTabela('volumes', [{ campo: 'ano', rotulo: 'Ano', largura: 90 }, { campo: 'volume', rotulo: 'Volume (hl)', tipo: 'decimal', largura: 130, recarregar: true }, { campo: 'mktp', rotulo: 'Marketplace (hl)', tipo: 'decimal', largura: 130, recarregar: true },
-        { campo: 'c', rotulo: 'Crescimento', tipo: 'calc', valor: (l, i) => { const ant = i ? exNum(vs[i - 1].volume) : null, v = exNum(l.volume); return ant && v !== null ? `<strong style="color:${v >= ant ? '#166534' : '#991b1b'};">${fdPct(v / ant - 1)}</strong>` : ''; } },
-        { campo: 'm', rotulo: '% marketplace', tipo: 'calc', valor: l => exNum(l.volume) && exNum(l.mktp) !== null ? fdPct(exNum(l.mktp) / exNum(l.volume)) : '' },
-        { campo: 'tipo', rotulo: 'Tipo', tipo: 'select', opcoes: ['Realizado', 'Projeção'], largura: 110 }], { botao: 'Adicionar ano' })}
-      <div class="painel" style="margin-top:10px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;"><div><label style="margin:0;font-size:12px;">Projetar os próximos anos com crescimento de</label>${simInp(d.crescProj, 'pct', `FD.dados.crescProj = fdParse(this.value); fdAgendarSalvar()`, '3', 'width:90px;')}</div><button class="btn-secundario btn-sm" onclick="p3aProjetar()">Projetar a partir do último ano preenchido</button></div>`;
-  }
+  if (a === 'volume') return p3aHtmlVolume();
+  if (a === 'param') return p3aHtmlParam();
   if (a === 'projetos') {
     const pr = p3aProjetos(d), soma = h => pr.filter(p => !h || p.horizonte === h).reduce((s, p) => s + p3aPrevisto(p), 0);
     return `
       <div class="kpis" style="margin-bottom:10px;"><div class="kpi-card"><div class="valor" style="font-size:20px;">${simFmt(soma('P1A'), 'rs')}</div><div class="rotulo">P1A (próximo ano)</div></div><div class="kpi-card"><div class="valor" style="font-size:20px;">${simFmt(soma('P3A'), 'rs')}</div><div class="rotulo">P3A (3 anos)</div></div>${RECURSOS_P3A.slice(0, 4).map(r => `<div class="kpi-card"><div class="valor" style="font-size:20px;">${pr.filter(p => p.recurso === r).length}</div><div class="rotulo">${r}</div></div>`).join('')}</div>
       ${fdTabela('projetos', [{ campo: 'horizonte', rotulo: 'Horizonte', tipo: 'select', opcoes: ['P1A', 'P3A'], largura: 80 }, { campo: 'descricao', rotulo: 'Projeto / necessidade', tipo: 'textarea', largura: 240 }, { campo: 'recurso', rotulo: 'Recurso', tipo: 'select', opcoes: RECURSOS_P3A, largura: 150, recarregar: true },
         { campo: 'tipo', rotulo: 'Tipo', tipo: 'select', opcoes: ['Capacidade de entrega', 'Renovação da frota', 'Expansão de armazenagem', 'Aumento de produtividade', 'Segurança', 'Marketplace', 'Estrutura / instalações', 'QLP'], largura: 160 },
-        { campo: 'qtd', rotulo: 'Qtde', tipo: 'decimal', largura: 60, recarregar: true }, { campo: 'unitario', rotulo: 'Valor unit. (R$)', tipo: 'decimal', largura: 110, recarregar: true }, { campo: 'prev', rotulo: 'Previsto', tipo: 'calc', valor: l => simFmt(p3aPrevisto(l) || null, 'rs') },
+        { campo: 'qtd', rotulo: 'Qtde', tipo: 'decimal', largura: 60, recarregar: true }, { campo: 'unitario', rotulo: 'Valor unit. (R$)', tipo: 'decimal', largura: 110, recarregar: true }, { campo: 'prev', rotulo: 'Previsto', tipo: 'calc', valor: l => simFmt(p3aPrevisto(l) || null, 'rs') }, { campo: 'ganhoAnual', rotulo: 'Economia + ganho / ano (R$)', tipo: 'decimal', largura: 120, recarregar: true }, { campo: 'pb', rotulo: 'Payback', tipo: 'calc', valor: l => { const pb = p3aPayback(l), max = p3aPM('paybackMax'); return pb === null ? '' : `<strong style="color:${max && pb > max ? '#dc2626' : '#166534'};">${fdFmt(pb, 1)} anos</strong>`; } },
         { campo: 'ano', rotulo: 'Ano', largura: 70 }, { campo: 'execucao', rotulo: 'Data execução', tipo: 'date', largura: 130 }, { campo: 'prioridade', rotulo: 'Prioridade', tipo: 'select', opcoes: ['Alta', 'Média', 'Baixa'], largura: 90 },
         { campo: 'status', rotulo: 'Status', tipo: 'select', opcoes: ['Não iniciado', 'Andamento (no prazo)', 'Andamento (atrasado)', 'Concluído'], largura: 150 },
         { campo: 'registro', rotulo: 'Registro (V.4)', tipo: 'select', opcoes: ['CAPEX', 'Negociação sindical / 3PL', 'Compras / aluguel', 'Não se aplica', 'Ainda não registrado'], largura: 170, recarregar: true },
@@ -11977,15 +12394,15 @@ function p3aHtmlAba(a) {
   if (a === 'frota') {
     const f = (d.frota || []).filter(v => v.placa), ociosa = f.filter(v => exNum(v.util) !== null && exNum(v.util) < 30);
     return `<div class="kpis" style="margin-bottom:10px;"><div class="kpi-card"><div class="valor">${f.length}</div><div class="rotulo">Veículos</div></div><div class="kpi-card"><div class="valor" style="color:${ociosa.length ? '#d97706' : ''};">${ociosa.length}</div><div class="rotulo">Frota ociosa (&lt;30% de utilização)</div></div><div class="kpi-card"><div class="valor">${f.filter(v => exNum(v.ano) && FD.ano - exNum(v.ano) >= 10).length}</div><div class="rotulo">Com 10 anos ou mais</div></div></div>
-      ${fdTabela('frota', [{ campo: 'placa', rotulo: 'Placa', largura: 100 }, { campo: 'tipo', rotulo: 'Tipo', tipo: 'select', opcoes: ['VUC', '3/4', 'Toco', 'Truck', 'Bitruck', 'Carreta', 'Moto / modal alternativo'], largura: 110 }, { campo: 'ano', rotulo: 'Ano fab.', tipo: 'decimal', largura: 70, recarregar: true },
+      ${fdTabela('frota', [{ campo: 'placa', rotulo: 'Placa', largura: 100 }, { campo: 'tipo', rotulo: 'Tipo', tipo: 'select', opcoes: TIPOS_FROTA_P3A, largura: 110, recarregar: true }, { campo: 'ano', rotulo: 'Ano fab.', tipo: 'number', largura: 80, recarregar: true },
         { campo: 'util', rotulo: 'Utilização %', tipo: 'decimal', largura: 80, recarregar: true }, { campo: 'st', rotulo: 'Leitura', tipo: 'calc', valor: l => exNum(l.util) !== null && exNum(l.util) < 30 ? '<span style="color:#d97706;font-weight:700;">ociosa</span>' : exNum(l.ano) && FD.ano - exNum(l.ano) >= 10 ? '<span style="color:#dc2626;font-weight:700;">idade</span>' : '' },
-        { campo: 'decisao', rotulo: 'Decisão', tipo: 'select', opcoes: ['Manter', 'Renovar', 'Desmobilizar', 'Realocar', 'Aumentar frota', 'Trocar modal'], largura: 130 }, { campo: 'obs', rotulo: 'Observação', largura: 240 }], { botao: 'Adicionar veículo' })}`;
+        { campo: 'decisao', rotulo: 'Decisão', tipo: 'select', opcoes: ['Manter', 'Renovar', 'Desmobilizar', 'Realocar', 'Aumentar frota', 'Trocar modal'], largura: 130 }, { campo: 'obs', rotulo: 'Observação', largura: 240 }], { botao: 'Adicionar veículo' })}${p3aHtmlSugestoes()}`;
   }
   if (a === 'estrutura') {
-    const e = d.estrutura, vs = (d.volumes || []).filter(v => exNum(v.volume) !== null), ult = vs[vs.length - 1];
+    const e = d.estrutura, vs = p3aSerie(d).linhas.filter(v => v.volume !== null && v.volume !== undefined), ult = vs[vs.length - 1];
     const f = (k, rot) => `<div><label>${rot}</label>${simInp(e[k], 'num', `FD.dados.estrutura['${k}'] = fdParse(this.value); fdAgendarSalvar(); fdCorpoRender()`, '')}</div>`;
     const giro = exNum(e.diasEstoque) || 0, capHl = exNum(e.capacidadeHl);
-    const necHl = ult && giro ? exNum(ult.volume) / 12 / 26 * giro : null;
+    const necHl = ult && giro ? ult.volume / 12 / 26 * giro : null;
     return `<div class="painel" style="margin-bottom:12px;"><h3 style="margin-top:0;">🏭 Capacidade do armazém</h3>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">${f('m2', 'Área (m²)')}${f('posicoes', 'Posições de palete')}${f('capacidadeHl', 'Capacidade (hl)')}${f('diasEstoque', 'Cobertura de estoque (dias)')}</div>
         <div style="margin-top:10px;font-size:13px;">${necHl !== null ? `Necessidade no último ano projetado (${escapeHtml(ult.ano)}): <strong>${fdFmt(necHl)} hl</strong> · ${capHl ? (capHl >= necHl ? `<span style="color:#166534;font-weight:700;">atende (${fdPct(necHl / capHl, 0)} da capacidade)</span>` : `<span style="color:#dc2626;font-weight:700;">faltam ${fdFmt(necHl - capHl)} hl — registrar projeto de Armazém</span>`) : 'informe a capacidade'}` : 'Preencha o volume projetado e a cobertura de estoque para calcular a necessidade.'}</div></div>
@@ -11996,13 +12413,13 @@ function p3aHtmlAba(a) {
   if (a === 'financeiro') return `<div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#475569;">Impacto financeiro de cada investimento (base da aba "Análise de impactos financeiros" da planilha): parcela = Price com juros ao mês; payback = investimento ÷ (economia + ganho anual).</div>
       ${fdTabela('impactos', [{ campo: 'descricao', rotulo: 'Investimento', largura: 220 }, { campo: 'tipo', rotulo: 'Tipo', tipo: 'select', opcoes: ['Substituição de frota', 'Aumento de frota', 'Alterações estruturais', 'Aquisição de equipamentos', 'Pessoas / QLP', 'Outro'], largura: 160 },
         { campo: 'valor', rotulo: 'Valor (R$)', tipo: 'decimal', largura: 110, recarregar: true }, { campo: 'parcelas', rotulo: 'Parcelas', tipo: 'decimal', largura: 70, recarregar: true }, { campo: 'juros', rotulo: 'Juros % a.m.', tipo: 'decimal', largura: 80, recarregar: true },
-        { campo: 'pmt', rotulo: 'Parcela', tipo: 'calc', valor: l => simFmt(p3aPmt(exNum(l.valor), exNum(l.parcelas), (exNum(l.juros) || 0) / 100), 'rs') },
-        { campo: 'tot', rotulo: 'Total pago', tipo: 'calc', valor: l => { const p = p3aPmt(exNum(l.valor), exNum(l.parcelas), (exNum(l.juros) || 0) / 100); return p ? simFmt(p * exNum(l.parcelas), 'rs') : simFmt(exNum(l.valor), 'rs'); } },
+        { campo: 'pmt', rotulo: 'Parcela', tipo: 'calc', valor: l => simFmt(p3aPmt(exNum(l.valor), exNum(l.parcelas), (exNum(l.juros) ?? p3aPM('juros') ?? 0) / 100), 'rs') },
+        { campo: 'tot', rotulo: 'Total pago', tipo: 'calc', valor: l => { const p = p3aPmt(exNum(l.valor), exNum(l.parcelas), (exNum(l.juros) ?? p3aPM('juros') ?? 0) / 100); return p ? simFmt(p * exNum(l.parcelas), 'rs') : simFmt(exNum(l.valor), 'rs'); } },
         { campo: 'economia', rotulo: 'Economia anual (R$)', tipo: 'decimal', largura: 110, recarregar: true }, { campo: 'ganho', rotulo: 'Ganho anual (R$)', tipo: 'decimal', largura: 110, recarregar: true },
         { campo: 'pb', rotulo: 'Payback', tipo: 'calc', valor: l => { const r = (exNum(l.economia) || 0) + (exNum(l.ganho) || 0); return exNum(l.valor) && r ? `<strong>${fdFmt(exNum(l.valor) / r, 1)} anos</strong>` : '<span style="color:#64748b;">investimento em produtividade/segurança</span>'; } }], { botao: 'Adicionar investimento' })}`;
   if (a === 'playbook') {
     const pb = d.playbook;
-    return `<div class="painel" style="margin-bottom:12px;"><h3 style="margin-top:0;">📘 Playbook do P1A / P3A</h3><div style="font-size:12.5px;color:#475569;margin-bottom:8px;">Passo a passo para atender a pergunta 2.3. Marque cada etapa quando concluída.</div>
+    return `${p3aHtmlPayback()}<div class="painel" style="margin-bottom:12px;"><h3 style="margin-top:0;">📘 Playbook do P1A / P3A</h3><div style="font-size:12.5px;color:#475569;margin-bottom:8px;">Passo a passo para atender a pergunta 2.3. Marque cada etapa quando concluída.</div>
       ${PLAYBOOK_P3A.map(([v, tit, txt]) => { const st = (FD.validacao.itens.find(x => x.numero === v) || {}).ok; return `<div class="p3a-passo ${pb[v] ? 'feito' : ''}"><label style="display:flex;gap:8px;align-items:flex-start;margin:0;font-weight:400;"><input type="checkbox" style="width:auto;margin-top:3px;" ${pb[v] ? 'checked' : ''} onchange="FD.dados.playbook['${v}'] = this.checked; fdAgendarSalvar(); exRedesenhar();"><div><strong>${v} · ${escapeHtml(tit)}</strong> ${st ? '<span style="color:#16a34a;font-size:11px;">✅ validado pela ferramenta</span>' : ''}<div style="font-size:12.5px;color:#475569;">${escapeHtml(txt)}</div></div></label></div>`; }).join('')}</div>
       <div class="painel"><h3 style="margin-top:0;">🗣️ Feedback da liderança (V.2 e V.3)</h3>${fdTabela('feedbacks', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'lider', rotulo: 'Líder', largura: 150, recarregar: true }, { campo: 'area', rotulo: 'Área', tipo: 'select', opcoes: ['Entrega', 'Armazém', 'Puxada', 'Frota', 'Gente', 'Gestão'], largura: 110 }, { campo: 'recurso', rotulo: 'Recurso necessário', tipo: 'select', opcoes: RECURSOS_P3A, largura: 150 }, { campo: 'feedback', rotulo: 'Feedback (produtividade, frota ociosa, necessidades)', largura: 320 }], { botao: 'Registrar feedback' })}</div>`;
   }
@@ -12074,7 +12491,7 @@ function manHtmlCheck() {
       <div><label style="margin:0;font-size:12px;">Data da avaliação</label><input type="date" value="${escapeHtml((d.datas || {})[t] || '')}" onchange="FD.dados.datas[${t}] = this.value; fdAgendarSalvar();" style="margin:0;"></div>
       <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
         <span class="fd-nota" style="background:${total === null ? '#94a3b8' : total >= 0.9 ? '#16a34a' : total >= 0.75 ? '#d97706' : '#dc2626'};">T${t + 1}: ${total === null ? '—' : fdPct(total, 1)}${ant !== null && total !== null ? ` (${total >= ant ? '▲' : '▼'} ${fdFmt(Math.abs(total - ant) * 100, 1)} p.p.)` : ''}</span>
-        <button class="btn-primario btn-sm" style="width:auto;background:#0f766e;" onclick="FD.aba = 'ronda'; fdDesenhar(); manGerarLink();">📷 Link da ronda (celular)</button>
+        <button class="btn-primario btn-sm" style="width:auto;background:#0f766e;" onclick="FD.aba = 'ronda'; fdDesenhar(); manGerarLink();">📱 Link do Checklist Global (celular)</button><button class="btn-secundario btn-sm" onclick="manSincronizarCelular()" title="Trazer as notas dadas no celular">↻ Notas do celular</button>
         ${t && !manTriComNotas(t) && manTriComNotas(t - 1) ? `<button class="btn-secundario btn-sm" onclick="manCopiarTri()">⇐ Copiar notas do T${t}</button>` : ''}
       </div>
     </div>
@@ -12096,6 +12513,7 @@ function manHtmlCheck() {
 function manNotar(id, v) {
   const d = FD.dados, t = FD.triSel; d.notas[t] = d.notas[t] || {};
   d.notas[t][id] = String(d.notas[t][id]) === v ? '' : v;
+  d.notasEm = d.notasEm || {}; d.notasEm[t] = d.notasEm[t] || {}; d.notasEm[t][id] = new Date().toISOString();
   if (!d.datas[t]) d.datas[t] = exHoje();
   const novos = manGarantirPlanos();
   fdAgendarSalvar(); exRedesenhar();
@@ -12139,6 +12557,16 @@ function manHtmlEvolucao() {
     <div class="painel" style="margin-top:12px;"><h3 style="margin-top:0;">🔎 Itens que mudaram de nota entre trimestres (gaps)</h3>
       ${mud.length ? mud.map(x => `<div style="font-size:12.5px;padding:3px 0;">${Number(x.b) > Number(x.a) ? '🟢' : '🔴'} <strong>T${x.t} → T${x.t + 1}</strong> · ${x.i.num} ${escapeHtml(x.i.texto)}: ${x.a} → ${x.b}</div>`).join('') : '<div style="color:#94a3b8;font-size:12.5px;">Sem mudanças registradas entre trimestres ainda.</div>'}</div>`;
 }
+async function manSincronizarCelular() {
+  // notas dadas no celular (Checklist Global) entram aqui se forem mais novas que as da tela
+  try {
+    const q = new URLSearchParams(); q.set('ano', FD.ano); if (FD.companyId) q.set('company_id', FD.companyId);
+    const l = await api('/api/dpo/manutencao/ronda-notas?' + q.toString()); if (!FD || FD.chave !== 'manutencao') return;
+    const d = FD.dados; d.notasEm = d.notasEm || {}; let n = 0;
+    l.forEach(x => { const t = x.trimestre, em = (d.notasEm[t] || {})[x.item]; if (em && String(x.updated_at) <= String(em)) return; if (String(((d.notas || {})[t] || {})[x.item] ?? '') === String(x.nota ?? '')) { (d.notasEm[t] = d.notasEm[t] || {})[x.item] = x.updated_at; return; } d.notas[t] = d.notas[t] || {}; d.notas[t][x.item] = x.nota; (d.notasEm[t] = d.notasEm[t] || {})[x.item] = x.updated_at; if (!d.datas[t] && x.nota !== '') d.datas[t] = String(x.updated_at).slice(0, 10); n++; });
+    if (n) { manGarantirPlanos(); fdAgendarSalvar(); exRedesenhar(); mostrarToast(`${n} nota(s) do celular aplicada(s) ao checklist.`); }
+  } catch (e) { /* sem notas do celular */ }
+}
 async function manCarregarFotos() {
   try { const q = new URLSearchParams(); q.set('ano', FD.ano); if (FD.companyId) q.set('company_id', FD.companyId); FD.manFotos = await api('/api/dpo/manutencao/fotos?' + q.toString()); if (FD.chave === 'manutencao' && ['check', 'ronda'].includes(FD.aba)) fdCorpoRender(); } catch (e) { FD.manFotos = []; }
 }
@@ -12149,10 +12577,10 @@ function manHtmlRonda() {
   const itens = manItens();
   return `
     <div class="painel" style="margin-bottom:12px;">
-      <h3 style="margin-top:0;">📷 Ronda de manutenção — T${t + 1}/${FD.ano}</h3>
-      <div style="font-size:12.5px;color:#475569;margin-bottom:8px;">Gere o link e abra no celular durante a ronda: cada item do checklist tem o botão <strong>Tirar foto</strong> e a foto sobe na hora para cá, junto com a observação. Não precisa de login.</div>
+      <h3 style="margin-top:0;">📱 Checklist Global no celular — T${t + 1}/${FD.ano}</h3>
+      <div style="font-size:12.5px;color:#475569;margin-bottom:8px;">Gere o link do <strong>Checklist Global</strong> e abra no celular durante a ronda: em cada item dá para <strong>dar a nota (3 / 1 / 0 / N/A)</strong> e <strong>tirar a foto</strong> — tudo sobe na hora para cá. Não precisa de login.</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${[0, 1, 2, 3].map(x => `<button class="btn-sm ${x === t ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="FD.triSel = ${x}; fdCorpoRender();">T${x + 1}</button>`).join('')}
-        <button class="btn-primario btn-sm" style="width:auto;background:#0f766e;" onclick="manGerarLink()">🔗 Gerar link da ronda do T${t + 1}</button><button class="btn-secundario btn-sm" onclick="FD.manFotos = null; manCarregarFotos();">↻ Atualizar fotos</button></div>
+        <button class="btn-primario btn-sm" style="width:auto;background:#0f766e;" onclick="manGerarLink()">🔗 Gerar link do Checklist Global T${t + 1}</button><button class="btn-secundario btn-sm" onclick="FD.manFotos = null; manCarregarFotos();">↻ Atualizar fotos</button></div>
       <div id="man-link" style="margin-top:8px;"></div>
     </div>
     ${!fotos.length ? '<div class="msg-vazio">Nenhuma foto nesta ronda ainda.</div>' : itens.filter(i => porItem[i.id]).map(i => `
@@ -12163,7 +12591,7 @@ async function manGerarLink() {
   try {
     const r = await api('/api/dpo/manutencao/ronda-link', { method: 'POST', body: JSON.stringify({ ano: FD.ano, trimestre: FD.triSel, company_id: FD.companyId || undefined }) });
     const el = document.getElementById('man-link');
-    if (el) el.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><input readonly value="${escapeHtml(r.url)}" style="flex:1;min-width:260px;margin:0;" onclick="this.select()"><button class="btn-secundario btn-sm" onclick="navigator.clipboard && navigator.clipboard.writeText('${escapeHtml(r.url)}'); mostrarToast('Link copiado.');">📋 Copiar</button><a class="btn-secundario btn-sm" target="_blank" href="https://wa.me/?text=${encodeURIComponent('Ronda de manutenção — abra no celular: ' + r.url)}">WhatsApp</a><a class="btn-secundario btn-sm" target="_blank" href="${escapeHtml(r.url)}">Abrir</a></div>`;
+    if (el) el.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><input readonly value="${escapeHtml(r.url)}" style="flex:1;min-width:260px;margin:0;" onclick="this.select()"><button class="btn-secundario btn-sm" onclick="navigator.clipboard && navigator.clipboard.writeText('${escapeHtml(r.url)}'); mostrarToast('Link copiado.');">📋 Copiar</button><a class="btn-secundario btn-sm" target="_blank" href="https://wa.me/?text=${encodeURIComponent('Checklist Global de Manutenção — abra no celular: ' + r.url)}">WhatsApp</a><a class="btn-secundario btn-sm" target="_blank" href="${escapeHtml(r.url)}">Abrir</a></div>`;
   } catch (e) { mostrarToast(e.message, true); }
 }
 async function manExcluirFoto(id) { if (!confirm('Remover esta foto?')) return; try { await api('/api/dpo/manutencao/fotos/' + id, { method: 'DELETE' }); FD.manFotos = (FD.manFotos || []).filter(f => f.id !== id); fdCorpoRender(); } catch (e) { mostrarToast(e.message, true); } }
