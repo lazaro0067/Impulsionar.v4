@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<title>Meus resultados</title>
+<style>
+  :root { --cor:#0f766e; --borda:#e2e8f0; --sub:#64748b; --ok:#16a34a; --nok:#dc2626; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:#f1f5f9; color:#0f172a; }
+  header { background:var(--cor); color:#fff; padding:14px 16px; } header h1 { font-size:18px; margin:0; } header div { font-size:12.5px; opacity:.9; margin-top:2px; }
+  main { padding:12px 16px 40px; max-width:640px; margin:0 auto; }
+  .caixa { background:#fff; border:1px solid var(--borda); border-radius:12px; padding:12px; margin-bottom:12px; }
+  input, select, textarea { width:100%; font-size:16px; padding:10px; border:1px solid var(--borda); border-radius:8px; margin-top:4px; background:#fff; font-family:inherit; }
+  label { font-size:12.5px; font-weight:700; color:#334155; display:block; margin-top:8px; }
+  button.prim { width:100%; border:0; border-radius:10px; padding:13px; font-size:16px; font-weight:800; background:var(--cor); color:#fff; margin-top:10px; }
+  .ola { font-size:18px; font-weight:800; } .ola small { display:block; font-size:12.5px; color:var(--sub); font-weight:400; }
+  .dias { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-top:8px; } .dias button { flex-shrink:0; border:1px solid var(--borda); background:#fff; border-radius:10px; padding:6px 10px; font-size:13px; font-weight:700; }
+  .dias button.ativo { background:var(--cor); color:#fff; border-color:var(--cor); } .dias button.ruim { border-color:#fca5a5; }
+  .kpis { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .kpi { background:#fff; border:1px solid var(--borda); border-radius:12px; padding:10px; border-top:5px solid #94a3b8; }
+  .kpi.ok { border-top-color:var(--ok); } .kpi.nok { border-top-color:var(--nok); }
+  .kpi .nome { font-size:12.5px; font-weight:700; color:#334155; } .kpi .valor { font-size:24px; font-weight:900; margin:2px 0; } .kpi.ok .valor { color:var(--ok); } .kpi.nok .valor { color:var(--nok); }
+  .kpi .meta { font-size:11.5px; color:var(--sub); } .kpi .mes { font-size:12px; margin-top:4px; padding-top:4px; border-top:1px dashed var(--borda); }
+  .kpi a { font-size:11.5px; }
+  .var { background:linear-gradient(135deg,#065f46,#0f766e); color:#fff; border-radius:12px; padding:14px; margin-bottom:12px; } .var .v { font-size:28px; font-weight:900; } .var small { opacity:.85; }
+  .pend { border:1px solid #fca5a5; background:#fff7f7; border-radius:10px; padding:10px; margin-bottom:8px; font-size:13.5px; }
+  .pend button { border:0; background:var(--nok); color:#fff; border-radius:8px; padding:8px 12px; font-weight:800; margin-top:6px; }
+  .feito { border:1px solid #86efac; background:#f0fdf4; border-radius:10px; padding:8px 10px; margin-bottom:6px; font-size:12.5px; }
+  .erro { color:var(--nok); font-size:13px; margin-top:8px; }
+  .toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:#0f172a; color:#fff; padding:10px 16px; border-radius:10px; font-size:14px; display:none; z-index:10; }
+  .modal { position:fixed; inset:0; background:rgba(15,23,42,.55); display:flex; align-items:flex-end; justify-content:center; z-index:20; }
+  .modal > div { background:#fff; width:100%; max-width:640px; max-height:92vh; overflow:auto; border-radius:16px 16px 0 0; padding:16px; }
+</style>
+</head>
+<body>
+<header><h1>📊 Meus resultados</h1><div id="sub">Carregando…</div></header>
+<main id="main"></main>
+<div class="toast" id="toast"></div>
+<div id="modal"></div>
+<script>
+const TOKEN = new URLSearchParams(location.search).get('t') || '';
+let R = null, DIA = null, MAT = '';
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function lget(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+function lset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = 'none', 2600); }
+const num = v => v === null || v === undefined || v === '' || isNaN(Number(v)) ? null : Number(v);
+function fmt(ind, v) { if (v === null) return '—'; const d = Math.abs(v) < 100 && v % 1 ? (ind.unidade === 'nota' ? 2 : 1) : 0; return v.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d }) + (ind.unidade === '%' ? '%' : ind.unidade && !['nota', 'nº'].includes(ind.unidade) ? ' ' + ind.unidade : ''); }
+function ok(ind, v) { const m = num(ind.meta); if (v === null || m === null) return null; return ind.sentido === 'maior' ? v >= m : v <= m; }
+function rs(v) { return 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function valor(dia, id) { return num(((R.dias.find(d => d.data === dia) || {}).valores || {})[id]); }
+function mesAcum(ind) { const v = R.dias.map(d => num((d.valores || {})[ind.id])).filter(x => x !== null); if (!v.length) return null; return ind.acumula === 'soma' ? v.reduce((a, b) => a + b, 0) : v.reduce((a, b) => a + b, 0) / v.length; }
+function justDe(dia, id) { return R.justificativas.find(j => j.data === dia && j.ind_id === id); }
+function pendentes() { const l = []; R.dias.forEach(d => R.indicadores.forEach(i => { const v = num((d.valores || {})[i.id]); if (ok(i, v) === false && !justDe(d.data, i.id)) l.push({ dia: d.data, ind: i, v }); })); return l; }
+function login(msg) {
+  document.getElementById('main').innerHTML = `<div class="caixa"><div style="font-size:15px;font-weight:800;">Digite sua matrícula</div><div style="font-size:12.5px;color:#64748b;">Você vê seus indicadores do dia e do mês e a sua variável.</div>
+    <input id="mat" inputmode="numeric" autocomplete="off" value="${esc(lget('vis_mat'))}" placeholder="Matrícula" onkeydown="if(event.key==='Enter') entrar()">
+    <div id="erro" class="erro">${esc(msg || '')}</div><button class="prim" onclick="entrar()">Ver meus resultados</button></div>`;
+}
+async function consultar(mes) {
+  const r = await fetch('/api/public/vis/' + encodeURIComponent(TOKEN) + '/consulta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ matricula: MAT, mes }) });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Não foi possível consultar.');
+  R = j; DIA = R.dias.length ? R.dias[R.dias.length - 1].data : null;
+}
+async function entrar() {
+  MAT = ((document.getElementById('mat') || {}).value || '').trim(); if (!MAT) return;
+  try { await consultar(); lset('vis_mat', MAT); render(); } catch (e) { login(e.message); }
+}
+async function trocarMes(m) { try { await consultar(m); render(); } catch (e) { toast(e.message); } }
+function render() {
+  const c = R.colaborador, pend = pendentes(), mesesOp = [];
+  const hoje = new Date(); for (let k = 0; k < 6; k++) { const d = new Date(hoje.getFullYear(), hoje.getMonth() - k, 1); mesesOp.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); }
+  const premioMes = R.indicadores.reduce((s, i) => s + (num(i.premio) || 0) * R.dias.filter(d => ok(i, num((d.valores || {})[i.id])) === true).length, 0);
+  const temPremio = R.indicadores.some(i => num(i.premio));
+  let h = `<div class="caixa" style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><div class="ola">Olá, ${esc(String(c.nome || '').split(' ')[0])}!<small>${esc(c.nome)} · Matrícula ${esc(c.matricula)}${c.funcao ? ' · ' + esc(c.funcao) : ''}${c.supervisor ? ' · Supervisor ' + esc(c.supervisor) : ''}</small></div>
+    <div style="flex:0 0 120px;"><select onchange="trocarMes(this.value)">${mesesOp.map(m => `<option value="${m}" ${m === R.mes ? 'selected' : ''}>${['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'][Number(m.slice(5)) - 1]}/${m.slice(0, 4)}</option>`).join('')}</select></div></div>`;
+  if (temPremio || (R.incentivo || {}).regras) h += `<div class="var"><small>Sua variável no mês (dias dentro da meta)</small><div class="v">${rs(premioMes)}</div>${R.indicadores.filter(i => num(i.premio)).map(i => `<div style="font-size:12.5px;">${esc(i.nome)}: ${R.dias.filter(d => ok(i, num((d.valores || {})[i.id])) === true).length} dia(s) × ${rs(num(i.premio))}</div>`).join('')}${(R.incentivo || {}).regras ? `<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:12.5px;">Como funciona</summary><div style="font-size:12.5px;white-space:pre-line;margin-top:4px;">${esc(R.incentivo.regras)}</div></details>` : ''}</div>`;
+  if (pend.length) h += `<div class="caixa" style="border-color:#fca5a5;"><div style="font-weight:800;color:#dc2626;margin-bottom:6px;">⚠️ ${pend.length} resultado(s) abaixo da meta — justifique com o relato de anomalia (5 porquês)</div>${pend.map((p, k) => `<div class="pend"><strong>${esc(p.ind.nome)}</strong> em ${p.dia.split('-').reverse().slice(0, 2).join('/')}: ${fmt(p.ind, p.v)} (meta ${fmt(p.ind, num(p.ind.meta))})<br><button onclick="abrirRelato(${k})">Justificar agora</button></div>`).join('')}</div>`;
+  if (!R.dias.length) { h += '<div class="caixa" style="text-align:center;color:#64748b;">Ainda não há resultados lançados neste mês.</div>'; }
+  else {
+    h += `<div class="caixa"><div style="font-size:13px;font-weight:700;">Dia</div><div class="dias">${R.dias.map(d => { const ruim = R.indicadores.some(i => ok(i, num((d.valores || {})[i.id])) === false); return `<button class="${d.data === DIA ? 'ativo' : ''} ${ruim ? 'ruim' : ''}" onclick="DIA='${d.data}'; render();">${d.data.slice(8, 10)}/${d.data.slice(5, 7)}${ruim ? ' 🔴' : ''}</button>`; }).join('')}</div></div>`;
+    h += `<div class="kpis">${R.indicadores.map(i => { const v = valor(DIA, i.id), o = ok(i, v), m = mesAcum(i), om = ok(i, m), an = R.anexos.filter(a => a.indId === i.id && a.data === DIA), j = justDe(DIA, i.id); return `<div class="kpi ${o === true ? 'ok' : o === false ? 'nok' : ''}"><div class="nome">${esc(i.nome)}</div><div class="valor">${fmt(i, v)}</div><div class="meta">meta ${fmt(i, num(i.meta))} · ${i.sentido === 'maior' ? 'quanto maior melhor' : 'quanto menor melhor'}</div>
+      <div class="mes">Mês: <strong style="color:${om === true ? '#16a34a' : om === false ? '#dc2626' : '#334155'};">${fmt(i, m)}</strong></div>${j ? `<div style="font-size:11.5px;color:#166534;margin-top:3px;">✅ relato enviado${j.status && j.status !== 'Enviada' ? ' · ' + esc(j.status) : ''}</div>` : ''}${an.map(a => `<div><a href="${esc(a.url)}" target="_blank">📄 ${esc(a.nome || 'relatório')}</a></div>`).join('')}</div>`; }).join('')}</div>`;
+  }
+  const feitos = R.justificativas.slice().sort((a, b) => String(b.data).localeCompare(String(a.data)));
+  if (feitos.length) h += `<div class="caixa" style="margin-top:12px;"><div style="font-weight:800;margin-bottom:6px;">📝 Meus relatos</div>${feitos.map(j => { const i = R.indicadores.find(x => x.id === j.ind_id) || { nome: j.ind_id }; return `<div class="feito"><strong>${esc(i.nome)}</strong> ${j.data.split('-').reverse().slice(0, 2).join('/')} · ${esc(j.status || 'Enviada')}<br>Causa: ${esc((j.dados || {}).causa || '')} · Ação: ${esc((j.dados || {}).acao || '')}${j.retorno ? `<br><em>Supervisor: ${esc(j.retorno)}</em>` : ''}</div>`; }).join('')}</div>`;
+  h += `<button class="prim" style="background:#64748b;" onclick="lset('vis_mat',''); login();">Sair / outra matrícula</button>`;
+  document.getElementById('main').innerHTML = h;
+  document.getElementById('sub').textContent = R.empresa;
+  window.PEND = pend;
+}
+function abrirRelato(k) {
+  const p = window.PEND[k];
+  document.getElementById('modal').innerHTML = `<div class="modal" onclick="if(event.target===this) fechar()"><div>
+    <div style="font-size:16px;font-weight:800;">📝 Relato de anomalia — 5 porquês</div>
+    <div style="font-size:13px;color:#475569;margin:4px 0 8px;">Problema: <strong>${esc(p.ind.nome)} de ${fmt(p.ind, p.v)}</strong> contra meta ${fmt(p.ind, num(p.ind.meta))} em ${p.dia.split('-').reverse().join('/')}.</div>
+    ${[1, 2, 3, 4, 5].map(n => `<label>${n}º Por quê?${n <= 3 ? ' *' : ''}</label><input id="pq${n}" placeholder="${n === 1 ? 'Por que o resultado ficou fora da meta?' : 'Por que isso aconteceu?'}">`).join('')}
+    <label>Causa raiz *</label><input id="causa">
+    <label>O que vou fazer para não repetir? *</label><input id="acao">
+    <label>Até quando</label><input id="prazo" type="date">
+    <div id="erro" class="erro"></div>
+    <button class="prim" id="btn" onclick="enviarRelato(${k})">Enviar relato</button><button class="prim" style="background:#e2e8f0;color:#334155;" onclick="fechar()">Cancelar</button></div></div>`;
+}
+function fechar() { document.getElementById('modal').innerHTML = ''; }
+async function enviarRelato(k) {
+  const p = window.PEND[k], g = id => (document.getElementById(id) || {}).value || '', er = document.getElementById('erro'), btn = document.getElementById('btn');
+  const porques = [1, 2, 3, 4, 5].map(n => g('pq' + n).trim());
+  if (porques.filter(Boolean).length < 3 || !g('causa').trim() || !g('acao').trim()) { er.textContent = 'Preencha pelo menos 3 porquês, a causa raiz e a ação.'; return; }
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  try {
+    const r = await fetch('/api/public/vis/' + encodeURIComponent(TOKEN) + '/justificar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ matricula: MAT, data: p.dia, indId: p.ind.id, porques, causa: g('causa'), acao: g('acao'), prazo: g('prazo'), valor: fmt(p.ind, p.v), meta: fmt(p.ind, num(p.ind.meta)), problema: `${p.ind.nome} ${fmt(p.ind, p.v)} × meta ${fmt(p.ind, num(p.ind.meta))}` }) });
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Falha ao enviar.');
+    fechar(); toast('✅ Relato enviado ao supervisor.'); await consultar(R.mes); render();
+  } catch (e) { er.textContent = '⚠️ ' + e.message; btn.disabled = false; btn.textContent = 'Enviar relato'; }
+}
+(async () => {
+  try {
+    if (!TOKEN) throw new Error('Link sem código.');
+    const r = await fetch('/api/public/vis/' + encodeURIComponent(TOKEN)); const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'Link inválido.');
+    document.getElementById('sub').textContent = j.empresa;
+    if (lget('vis_mat')) { MAT = lget('vis_mat'); try { await consultar(); render(); return; } catch (e) { login(); return; } }
+    login();
+  } catch (e) { document.getElementById('sub').textContent = 'Erro'; document.getElementById('main').innerHTML = `<div class="caixa">⚠️ ${esc(e.message)}</div>`; }
+})();
+</script>
+</body>
+</html>

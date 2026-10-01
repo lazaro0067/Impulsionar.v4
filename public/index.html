@@ -645,6 +645,8 @@
   .rc-cel { width:58px; height:30px; border:1px dashed #cbd5e1; border-radius:6px; background:#fff; font-size:11px; font-weight:700; cursor:pointer; }
   .rc-resp summary::-webkit-details-marker { display:none; }
   @media (max-width:800px) { .rc-duas { grid-template-columns:1fr !important; } }
+  .c5-cal .c5-dia { border:1px solid var(--cinza-200); border-radius:8px; min-height:58px; padding:3px; display:flex; flex-direction:column; gap:2px; font-size:11px; background:#fff; } .c5-cal .c5-dia.hoje { border-color:#7c3aed; box-shadow:0 0 0 2px #ddd6fe; }
+  .c5-cal .c5-dia span { border-radius:4px; padding:0 3px; font-size:10px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .c5-foto-falta { color:#dc2626; font-weight:800; font-size:12px; cursor:pointer; border:1px dashed #fca5a5; border-radius:6px; padding:1px 6px; background:#fff; }
   .p3a-trava { padding:9px 10px; background:#f1f5f9; border-radius:8px; font-weight:700; color:#334155; }
   .capex-pipeline { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-bottom:12px; }
@@ -7080,6 +7082,8 @@ async function renderDpoHome() {
     // Cores dos pilares = nível da última autoavaliação mensal (régua de selos DPO 2026).
     const niveisDpo = await api('/api/dpo/niveis').catch(() => ({ geral: null, pilares: {}, primeiraAuditoria: false }));
     const pastasDpoHome = await api('/api/dpo/pastas').catch(() => ({ autoavaliacao: true }));
+    // Histórico = só autoavaliações mensais aprovadas (abrir um pilar não gera histórico).
+    const histAv = ((await api('/api/dpo/autoavaliacoes').catch(() => ({ lista: [] }))).lista || []).filter(a => a.status === 'aprovada');
     const geralDpo = niveisDpo.geral;
     const ciclosAbertos = ciclos.filter(c => c.status !== 'concluido');
     const cicloPorPilar = {};
@@ -7153,19 +7157,19 @@ async function renderDpoHome() {
           `).join('')}
         </div>
       </div>` : ''}
-      ${ciclos.length ? `
+      ${histAv.length ? `
       <div style="margin-top:24px;">
-        <h3>Histórico de Ciclos</h3>
+        <h3>Histórico de Autoavaliações</h3>
+        <div style="font-size:12.5px;color:#64748b;margin:-6px 0 10px;">Só entram aqui as autoavaliações mensais salvas e aprovadas. A gestão de cada pilar abre pelo botão do pilar acima.</div>
         <div class="grid-3">
-          ${ciclos.map(c => `
-            <div class="plano-card">
-              <div class="plano-meta">${escapeHtml(c.referencia || 'Sem referência')}</div>
-              <div class="plano-meta">Pilares: ${c.pilares.map(p => escapeHtml(dpoLabelDoPilar(p))).join(', ')}</div>
-              <div class="plano-meta">Status: <strong style="color:${ROTULOS_STATUS_CICLO_DPO[c.status]?.cor}">${ROTULOS_STATUS_CICLO_DPO[c.status]?.texto}</strong></div>
-              <div class="plano-meta">${c.totalRespondidas}/${c.totalPerguntas} respondida(s)</div>
-              <div class="acoes-form"><button class="btn-secundario btn-sm" onclick="abrirCicloDpo(${c.id}, '${c.pilares[0]}')">Abrir</button>${ehMasterOuSuporte() ? `<button class="btn-perigo btn-sm" onclick="excluirCicloDpo(${c.id}, renderDpoHome)">🗑 Excluir</button>` : ''}</div>
-            </div>
-          `).join('')}
+          ${histAv.map(a => { const v = visualSeloDpo(a.nivelGeral); return `
+            <div class="plano-card" style="border-left:5px solid ${v.cor};">
+              <div class="plano-meta"><strong>${escapeHtml(a.referenciaLabel)}</strong></div>
+              <div class="plano-meta">Nível: <strong>${escapeHtml(v.label)}</strong> · ${fmtPctDpoFront(a.categorias && a.categorias.todos)}</div>
+              <div class="plano-meta">Status: <strong style="color:#166534;">✅ Aprovada</strong></div>
+              <div class="plano-meta">${a.totalRespondidas}/${a.totalPerguntas} respondida(s)</div>
+              <div class="acoes-form"><button class="btn-secundario btn-sm" onclick="renderDpoAutoavaliacao(null, ${a.id})">Abrir</button>${ehMasterOuSuporte() ? `<button class="btn-perigo btn-sm" onclick="excluirAutoavaliacaoHomeDpo(${a.id})">🗑 Excluir</button>` : ''}</div>
+            </div>`; }).join('')}
         </div>
       </div>` : ''}
     `;
@@ -8641,6 +8645,10 @@ async function excluirAutoavaliacaoDpoMaster(id, rotulo) {
   try { const r = await api('/api/dpo/autoavaliacoes/' + id, { method: 'DELETE' }); mostrarToast(r.message); renderDpoAgenda(); }
   catch (e) { mostrarToast(e.message, true); }
 }
+async function excluirAutoavaliacaoHomeDpo(id) {
+  if (!confirm('Excluir esta autoavaliação aprovada? As respostas dela serão apagadas.')) return;
+  try { const r = await api('/api/dpo/autoavaliacoes/' + id, { method: 'DELETE' }); mostrarToast(r.message); renderDpoHome(); } catch (e) { mostrarToast(e.message, true); }
+}
 async function excluirAutoavaliacaoDpo(id) {
   if (!confirm('Excluir esta autoavaliação e todas as notas dela?')) return;
   try { const r = await api('/api/dpo/autoavaliacoes/' + id, { method: 'DELETE' }); mostrarToast(r.message); renderDpoAutoavaliacao(ESTADO_AUTOAVAL.companyId); }
@@ -9118,11 +9126,12 @@ async function excluirFerramentaDpo(id) {
 // ======================================================================
 let FD = null; // pasta aberta: { chave, ano, companyId, dados, validacao, arquivos, aba, meta }
 let DIM = null; // visão das pastas do Simulador de Dimensionamento num ano
-const FD_PERGUNTAS = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop', 'gestao:3.1': 'cinco_s', 'planejamento:2.1': 'riscos', 'gestao:1.2': 'sonho', 'planejamento:2.2': 'manutencao', 'planejamento:2.3': 'p3a', 'planejamento:2.4': 'capex', 'planejamento:3.2': 'ans' };
+const FD_PERGUNTAS = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop', 'gestao:3.1': 'cinco_s', 'entrega:3.1': 'visibilidade', 'planejamento:2.1': 'riscos', 'gestao:1.2': 'sonho', 'planejamento:2.2': 'manutencao', 'planejamento:2.3': 'p3a', 'planejamento:2.4': 'capex', 'planejamento:3.2': 'ans' };
 const FD_DESCRICOES = {
   swot: ['Análise SWOT digital por área (Armazém, Distribuição, Frota, Gente): fatores, matriz, cruzamentos, objetivos e planos — com validação dos itens V.1 a V.3.', '🧭 Abrir Análise SWOT'],
   dimensionamento: ['Simulador de Dimensionamento em pastas por ano: Armazém, Entrega e Puxada (orçamento calculado × realizado), RACI, KPIs e PDCA — com validação dos itens V.1 a V.5.', '📐 Abrir Simulador de Dimensionamento'],
   cinco_s: ['Gerenciador 5S: donos de área e auditores, auditoria cruzada mensal dos 5 sensos (S / N / NA), resultado por área, departamento e senso com meta de 85%, plano de ação obrigatório em todo item N e importação da planilha 5S.', '🧹 Abrir Gerenciador 5S'],
+  visibilidade: ['Visibilidade de Resultados: motoristas e ajudantes consultam pela matrícula no celular os indicadores do dia e do mês e a variável, com relato de 5 porquês quando ficam abaixo da meta.', '📲 Abrir Visibilidade de Resultados'],
   riscos: ['Riscos, Resposta e Retomada: matriz impacto × probabilidade, top 3, plano de resposta, plano de retomada, ocorrências, revisões guardadas e importação da planilha.', '🛡️ Abrir Riscos e Retomada'],
   sonho: ['DPO Sonho: frase do sonho, DPO Day, KPIs do sonho com Meta e Real mês a mês (download Excel) e validação V.1 a V.5.', '🌟 Abrir DPO Sonho'],
   manutencao: ['Check Global de Manutenção: checklist trimestral com pesos e itens críticos, evolução T1–T4, ronda com link para fotos pelo celular, plano de ação, fornecedores e RACI.', '🛠️ Abrir Check Global'],
@@ -9166,7 +9175,7 @@ async function abrirFerramentaDigitalDpo(chave, companyId, ano, aba) {
     if (chave === 'gop') gopPreparar();
     if (chave === 'cinco_s') { c5Preparar(); c5Sincronizar(false); }
     if (EXCL[chave]) exPreparar();
-    if (chave === 'manutencao') manSincronizarCelular();
+    if (chave === 'manutencao') { manSincronizarCelular(); chamSincronizarLink(false); }
     fdDesenhar();
   } catch (e) { cont.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
@@ -11220,12 +11229,13 @@ function c5Chip() {
 }
 function c5Abas() {
   const p = c5Pendentes().length;
-  return [['painel', '📊 Resultado'], ['auditoria', '📝 Lançar auditoria'], ['areas', '👥 Donos de área'], ['acoes', `🔁 Gerenciador de ações${p ? ` <span class="gop-badge">${p}</span>` : ''}`], ['arquivos', '📎 Planilhas e fotos']];
+  return [['painel', '📊 Resultado'], ['calendario', '🗓️ Calendário e avisos'], ['auditoria', '📝 Lançar auditoria'], ['areas', '👥 Donos de área'], ['acoes', `🔁 Gerenciador de ações${p ? ` <span class="gop-badge">${p}</span>` : ''}`], ['arquivos', '📎 Planilhas e fotos']];
 }
 function c5HtmlAba() {
   const a = FD.aba;
   if (a === 'painel') return c5HtmlPainel();
   if (a === 'auditoria') return c5HtmlAuditoria();
+  if (a === 'calendario') return c5HtmlCalendario();
   if (a === 'areas') return c5HtmlAreas();
   if (a === 'acoes') return c5HtmlAcoes();
   return '';
@@ -11379,7 +11389,7 @@ function c5HtmlAreas() {
         </tbody></table></div></div>
       <div class="painel"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;"><h3 style="margin:0;">🏷️ Departamentos</h3><button class="btn-secundario btn-sm" onclick="c5NovoDepto()">+ Novo</button></div>
         ${deps.map((x, k) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--cinza-200);font-size:13px;"><span>${escapeHtml(x)} <small style="color:#94a3b8;">${d.areas.filter(a => a.depto === x).length} área(s)</small></span><span style="white-space:nowrap;"><button class="btn-secundario btn-sm" onclick="c5EditarDepto(${k})">✏️</button> <button class="btn-perigo btn-sm" onclick="c5ExcluirDepto(${k})">🗑️</button></span></div>`).join('')}</div>
-    </div>`;
+    </div>${c5HtmlAuditoresBase()}`;
 }
 function c5EditarArea(id) { C5_AREA_ID = id; C5_AREA_DEPTO = null; C5_AREA_TMP = {}; c5AbrirArea(); }
 function c5AbrirArea() {
@@ -11600,6 +11610,9 @@ async function c5Importar(input) {
 // Sonho (Gestão 1.2) · Check Global de Manutenção (Planej. 2.2) · P1A/P3A (2.3) · CAPEX (2.4) · ANS de Volume (3.2)
 // Cada uma substitui o acompanhamento genérico da pergunta e calcula a nota sugerida.
 const EXCL = {
+  visibilidade: { q: 'entrega:3.1', icone: '📲', titulo: 'Visibilidade de Resultados da Distribuição', sub: 'Entrega · pergunta <strong>3.1 Visibilidade de Resultados</strong>', req1: ['V.1', 'V.2', 'V.3'],
+    abas: [['painel', '📊 Painel do time'], ['lancar', '📥 Lançar resultados'], ['equipe', '👥 Motoristas e ajudantes'], ['metas', '🎯 Metas e variável'], ['just', '📝 Relatos 5 porquês'], ['valida', '✅ Validação 3.1'], ['arquivos', '📎 Anexos']],
+    tipos: [['relatorio', 'Relatório de indicadores'], ['variavel', 'Política de remuneração variável'], ['foto', 'Foto do quadro / tela'], ['outro', 'Outro']] },
   riscos: { q: 'planejamento:2.1', icone: '🛡️', titulo: 'Riscos, Resposta e Retomada de Negócios', sub: 'Planejamento · pergunta <strong>2.1 Avaliação de Riscos, Resposta e Retomada de Negócios</strong>', req1: ['V.1', 'V.2'],
     abas: [['resumo', '📊 Resumo e top 3'], ['matriz', '⚠️ Matriz de riscos'], ['verif', '🗓️ Verificações'], ['resposta', '🛡️ Plano de resposta'], ['retomada', '🔄 Plano de retomada'], ['ocorrencias', '📒 Histórico de ocorrências'], ['time', '🗣️ Conversa com o time'], ['valida', '✅ Validação 2.1'], ['arquivos', '📎 Anexos']],
     tipos: [['matriz', 'Matriz de Riscos (planilha)'], ['retomada', 'Plano de retomada'], ['ata', 'Ata de revisão com Segurança'], ['outro', 'Outro']] },
@@ -11635,6 +11648,7 @@ function exPreparar() {
   const d = FD.dados, c = FD.chave;
   d.manual = d.manual || {};
   if (c === 'riscos') rcPreparar(d);
+  if (c === 'visibilidade') visPreparar(d);
   if (c === 'sonho') {
     if (!Array.isArray(d.kpis) || !d.kpis.length) d.kpis = SONHO_KPIS_PADRAO.map(([nome, pilar, sentido, meta, unidade]) => ({ id: fdId(), nome, pilar, sentido, meta, unidade, acumula: unidade === 'nº' ? 'soma' : 'media', real: [] }));
     ['propostas', 'comunicacoes'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
@@ -11668,6 +11682,7 @@ function exPreparar() {
 function exLinhas() {
   const d = FD.dados, c = FD.chave;
   if (c === 'riscos') return rcValidar(d);
+  if (c === 'visibilidade') return visValidar(d);
   if (c === 'sonho') return sonhoValidar(d);
   if (c === 'ans') return ansValidar(d);
   if (c === 'capex') return capexValidar(d);
@@ -11711,6 +11726,7 @@ function exHtmlAba() {
   const a = FD.aba, c = FD.chave;
   if (a === 'valida') return exHtmlValidacao();
   if (c === 'riscos') return rcHtmlAba(a);
+  if (c === 'visibilidade') return visHtmlAba(a);
   if (c === 'sonho') return a === 'kpis' ? sonhoHtmlKpis() : sonhoHtmlSonho();
   if (c === 'ans') return a === 'param' ? ansHtmlParam() : a === 'acordo' ? ansHtmlAcordo() : a === 'acoes' ? ansHtmlAcoes() : ansHtmlDiario();
   if (c === 'capex') return a === 'itens' ? capexHtmlItens() : a === 'gut' ? capexHtmlGut() : a === 'checks' ? capexHtmlChecks() : a === 'plano' ? capexHtmlPlano() : a === 'cad' ? capexHtmlCad() : capexHtmlDash();
@@ -11725,6 +11741,133 @@ function exAoEditar() { FD_AO_EDITAR = () => { exValidar(); }; }
 
 const RISCOS_PADRAO = [["Falta de Energia", "Interrupção inesperada no fornecimento de energia elétrica, impactando operações em escritórios, armazéns e sistemas de TI", "1. Acionar gerador .\n2. Pausar operações críticas com segurança.\n3. Comunicar time de TI e gestão local.", "Maior", "Raro", "Especial", "Falta de iluminação em caso de emergência", "Estresse mental"], ["Indisponibilidade do Sistema do PROMAX", "Sistema externo apresenta instabilidade ou falha, comprometendo o planejamento ou a execução das atividades", "1. Abrir chamado via now Gestão e comunicar o setor de TI para suporte\n2. Acionar o suporte HBSIS para corrigir a parada do Promax", "Maior", "Raro", "Especial", "Outro", "Estresse mental"], ["Indisponibilidade do Sistema do BEES Delivery", "Plataforma de  entregas controlada por terceiros fica fora do ar, impedindo a execução da rota", "1. Registrar o erro com print ou código.\n2. Abrir chamado via Quick Gestão e comunicar o setor de TI para suporte.\n3. Notificar gestor e equipe de rota.", "Moderado", "Improvável", "Especial", "Outro", "Estresse mental"], ["Indisponibilidade Pix Entrega", "Instabilidade no sistema de pagamentos instantâneos (PIX), inviabilizando a conclusão de vendas no momento da entrega", "1. Informar ao cliente e oferecer alternativas.\n2.  Comunicar ao supervisor\n3. Utilizar a chave pix da Lima  09.608.725.0002-31", "Moderado", "Improvável", "Especial", "Outro", "Estresse mental"], ["Indisponibilidade WMS", "Sistema de gerenciamento de armazéns (WMS) apresenta falhas, impactando a separação, movimentação ou expedição de produtos", "1. Abrir chamado via Quick Gestão e comunicar o setor de TI para suporte e realizar separação em contigência pela OCP", "Maior", "Raro", "Especial", "Outro", "Estresse mental"], ["Contaminação na água", "Fornecimento de água contaminado, representando risco à saúde dos colaboradores e podendo inviabilizar atividades operacionais", "1. Suspender uso da água imediatamente.\n2. Acionar equipe de manutenção e segurança do trabalho.\n3. Providenciar água potável alternativa.", "Moderado", "Raro", "Biológico", "Biológico infeccioso", "Diarreia"], ["Restrição horário de atendimento", "Limitações legais ou municipais que restringem o horário de funcionamento de pontos de venda, dificultando a execução de rotas", "1. Reprogramar rota e priorizar entregas em locais com janela reduzida.\n2. Comunicar motoristas e clientes.\n3. Atualizar sistema/logística com novo horário.", "Maior", "Improvável", "Lei e ordem", "Público - Roubos - Assaltos", "Estresse mental"], ["Restrição entrada de veículos em municípios para entrega de produtos", "Proibição temporária ou permanente de entrada de caminhões em determinadas áreas urbanas, afetando o cumprimento de rotas", "1. Contatar cliente para ponto alternativo de entrega.\n2. Registrar ocorrência.\n3. Reprogramar rota.", "Extremo", "Raro", "Lei e ordem", "Público - Roubos - Assaltos", "Estresse mental"], ["Lockdown", "Medidas governamentais que suspendem temporariamente as atividades comerciais ou o tráfego de veículos, afetando toda a operação", "1. Suspender imediatamente entregas e atividades externas.\n2. Comunicar todas as equipes e clientes.\n3. Acionar plano de contingência e home office (se possível).", "Extremo", "Raro", "Lei e ordem", "Bactérias/Vírus", "Doenças endêmicas/epidêmicas"], ["Interrupção no atendimento do DETRAN, Prefeitura, Sefaz, Receita Federal, Sindicatos", "Órgãos públicos indisponíveis por greve, sobrecarga ou sistemas fora do ar, atrasando emissões de documentos e autorizações legais", "1. Registrar a falha ou indisponibilidade.\n2. Reprogramar emissão ou entrega de documentos.\n3. Comunicar liderança e jurídico (se necessário).", "Maior", "Raro", "Lei e ordem", "Público - Roubos - Assaltos", "Estresse mental"], ["Alagamentos", "Inundações causadas por chuvas intensas que bloqueiam vias e acessos a clientes, centros de distribuição ou escritórios", "1. Redirecionar rota evitando áreas alagadas.\n2. Comunicar central sobre atraso ou bloqueio.\n3. Registrar o ocorrido com fotos se possível.", "Maior", "Provável", "Mecânico", "Cai no mesmo nível, escorrega e tropeça", "Trauma contuso"], ["Atolamento", "Veículo preso em vias não pavimentadas ou em más condições, impedindo a continuidade da rota de entrega", "1. Parar o veículo e avaliar as condições do terreno ao redor com segurança.\n2. Acionar o supervisor ou a central de operações, informando a localização exata.\n3. Solicitar apoio (reboque, veículo auxiliar ou suporte local), conforme protocolo da empresa.", "Maior", "Raro", "Mecânico", "Equipamentos em movimento/tráfego", "Lesão por Corpo Estranho"], ["Chuvas torrenciais", "Chuvas intensas que inviabilizam deslocamentos e aumentam o risco de acidentes ou atrasos significativos", "1. Reavaliar e ajustar rota com base nas condições.\n2. Alertar motoristas sobre cuidados redobrados.\n3. Suspender entregas em áreas críticas.", "Moderado", "Improvável", "Físicos", "Temperaturas mais baixas (frio ou calor)", "Faringite"], ["Buracos nas vias (trechos críticos e quebras de estradas)", "Vias danificadas que comprometem a integridade dos veículos, aumentam o tempo de trajeto e o risco de acidentes", "1. Reduzir a velocidade e manter distância segura de outros veículos.\n2. Comunicar imediatamente a situação ao supervisor ou à central de distribuição.\n3. Se necessário, desviar a rota para evitar maiores danos ou risco de acidente (seguir diretrizes de segurança).", "Maior", "Possível", "Físicos", "Equipamentos em movimento/tráfego", "Fratura"], ["Trecho interditado (Acidentes, obras)", "Bloqueio total ou parcial de uma rota devido a acidentes, obras ou eventos imprevistos, gerando necessidade de replanejamento", "1. Parar em local seguro e sinalizar a equipe de rota ou central de monitoramento.\n2. Verificar alternativas de trajeto usando GPS atualizado ou conforme orientação da supervisão.\n3. Replanejar a sequência de entregas, priorizando rotas acessíveis e viáveis.", "Extremo", "Possível", "Físicos", "Equipamentos em movimento/tráfego", "Estresse mental"], ["Ponte interditada", "Interdição de ponte importante para o trajeto de entrega, obrigando mudanças de rota e gerando atrasos", "1. Roteirizar via alternativa com urgência.\n2. Informar equipe de transporte.\n3. Registrar impacto e reprogramar entregas.", "Moderado", "Improvável", "Físicos", "Equipamentos em movimento/tráfego", "Estresse mental"], ["Colisão de veículo em rota", "Acidente envolvendo o veículo durante a entrega, resultando em atrasos, perdas ou danos a mercadorias", "1. Verificar estado do motorista e acionar socorro.\n2. Comunicar imediatamente à central.\n3. Isolar o local e registrar o acidente.", "Moderado", "Raro", "Mecânico", "Bater-se com ou contra objetos", "Fratura"], ["Protestos em via pública", "Manifestações ou bloqueios civis que impedem o trânsito de veículos e afetam a logística de entrega", "1. Suspender o deslocamento até liberação da via.\n2. Informar gestor e reavaliar rota alternativa.\n3. Comunicar clientes afetados.", "Moderado", "Raro", "Lei e ordem", "Público - Roubos - Assaltos", "Estresse mental"], ["Devolução por motivo \"Difícil Acesso\"", "Impossibilidade de concluir a entrega devido à localização remota, topografia complicada ou restrições locais", "1. Registrar motivo da devolução.\n2. Comunicar cliente e equipe de rota.\n3. Reencaminhar para logística para reprogramação.", "Maior", "Raro", "Especial", "Transporte durante o trabalho", "Estresse mental"], ["Roubos e Assaltos em rota", "Ocorrência de crimes contra a carga ou o motorista durante o trajeto, gerando perdas financeiras e riscos à integridade física", "1. Acionar a polícia imediatamente.\n2. Informar a central via rádio ou app.\n3. Registrar BO e isolar a área (se possível).", "Maior", "Improvável", "Lei e ordem", "Público - Roubos - Assaltos", "Trauma contuso"], ["Greve de Transporte público", "Paralisação de serviços de transporte urbano, afetando o deslocamento de colaboradores e podendo impactar a produtividade", "1. Notificar RH sobre ausência.\n2. Redirecionar demandas críticas para quem estiver presente.\n3. Registrar ponto com justificativa.", "Moderado", "Raro", "Especial", "Outro", "Estresse mental"], ["Greve dos Caminhoneiros", "Movimento nacional ou regional que bloqueia estradas ou interrompe o fluxo de caminhões, afetando toda a cadeia de abastecimento", "1. Suspender temporariamente os carregamentos afetados.\n2. Notificar clientes e vendas sobre atrasos.\n3. Avaliar rotas alternativas ou mudança de datas.", "Extremo", "Improvável", "Especial", "Outro", "Estresse mental"], ["Greve de Funcionários", "Paralisação das atividades por parte dos colaboradores devido a conflitos trabalhistas ou mobilizações sindicais", "1. Comunicar o RH e a liderança imediata.\n2. Proteger acesso a áreas operacionais.\n3. Acionar plano mínimo de contingência.", "Extremo", "Raro", "Especial", "Outro", "Estresse mental"], ["Surto de uma Doença", "Crescimento repentino de casos de uma doença em uma região, afetando a saúde da força de trabalho e exigindo restrições operacionais", "1. Isolar colaborador com sintomas.\n2. Comunicar imediatamente ao RH.\n3. Iniciar higienização reforçada no local.", "Moderado", "Raro", "Biológico", "Biológico infeccioso", "Doenças endêmicas/epidêmicas"], ["Epidemia", "Doença infecciosa com disseminação regional, provocando impactos em massa na sociedade, no consumo e nas operações", "1. Acionar protocolo interno de saúde.\n2. Distribuir EPIs (máscaras, álcool).\n3. Informar equipe sobre medidas de prevenção.", "Moderado", "Raro", "Biológico", "Biológico infeccioso", "Doenças endêmicas/epidêmicas"], ["Pandemia", "Propagação global de uma doença com alto impacto na saúde pública, mobilidade urbana e funcionamento das empresas", "1. Interromper atividades presenciais, se necessário.\n2. Redirecionar trabalho para home office.\n3. Notificar colaboradores sobre protocolos.", "Extremo", "Raro", "Biológico", "Biológico infeccioso", "Doenças endêmicas/epidêmicas"], ["Endemia", "Doença persistente em determinada região, que pode afetar a frequência ao trabalho, deslocamentos e a segurança sanitária da operação", "1. Comunicar casos à área de saúde ocupacional.\n2. Verificar condições sanitárias da base.\n3. Orientar equipe exposta.", "Maior", "Raro", "Biológico", "Biológico infeccioso", "Doenças endêmicas/epidêmicas"], ["Acidentes de trabalho", "Ocorrência de lesões ou incidentes durante a jornada de trabalho, afetando a operação e exigindo ações corretivas e legais", "1. Socorrer o colaborador imediatamente.\n2. Acionar ambulância / SESMT.\n3. Preservar o local e registrar o ocorrido.", "Extremo", "Possível", "Mecânico", "Equipamentos em movimento/tráfego", "Atropelamento"], ["Acidentes de trajeto", "Incidentes ocorridos no deslocamento casa-trabalho, impactando a disponibilidade do colaborador", "1. Verificar a gravidade e acionar socorro.\n2. Comunicar o RH e a liderança.\n3. Registrar boletim e coordenar apoio.", "Extremo", "Possível", "Mecânico", "Equipamentos em movimento/tráfego", "Fratura"], ["Caminhão de Entrega Quebrado em Rota", "Falha mecânica do veículo durante o trajeto, comprometendo a finalização da rota de entrega", "1. Acionar assistência mecânica.\n2. Informar a central para replanejamento.\n3. Avaliar transferência de carga, se possível.", "Extremo", "Raro", "Mecânico", "Equipamentos em movimento/tráfego", "Estresse mental"], ["Carreta de Puxada Quebrada na Estrada", "Pane mecânica no veículo de transferência, prejudicando o abastecimento dos CDs ou filiais", "1. Acionar mecânica e escolta, se necessário.\n2. Informar centros de distribuição impactados.\n3. Reprogramar recebimentos.", "Extremo", "Raro", "Mecânico", "Equipamentos em movimento/tráfego", "Estresse mental"], ["Paralização Sindicato", "Mobilizações sindicais que interrompem total ou parcialmente as operações, mesmo sem adesão dos próprios colaboradores", "1. Suspender operações afetadas.\n2. Garantir segurança de pessoas e patrimônio.\n3. Comunicar liderança, jurídico e RH.", "Menor", "Improvável", "Especial", "Outro", "Estresse mental"]];
 const RETOMADA_PADRAO = [["Queda de internet / falha nos servidores", "Reparo de sistemas", "Internet, servidores"], ["Indisponibilidade de sistemas (BEES, WMS, Promax)", "Reparo de sistemas", "BEES, BEES Deliver, WMS, Promax"], ["Falha nos equipamentos de CFTV", "Equipamentos", "CFTV"], ["Queda de energia / falha elétrica interna", "Equipamentos", "Serviços elétricos, gerador"], ["Falha em empilhadeiras e equipamentos de movimentação", "Equipamentos", "Empilhadeiras, paleteiras"], ["Falha no ar-condicionado", "Equipamentos", "Ar-condicionado"], ["Infestação / risco sanitário", "Fornecedores", "Controle de pragas, dedetização, lavagem de tanques"], ["Problemas estruturais (portões, ferragens)", "Fornecedores", "Serralheria, manutenção predial"], ["Armazenamento externo", "Armazenamento externo", "Alocação de produtos fora da unidade"], ["Aluguel de frota", "Aluguel de veículos", "Frota extra de entrega e puxada"], ["Transporte contratado do time", "Fornecedores", "Fretado"], ["Alagamentos / desastres naturais", "Emergência / órgãos públicos", "Defesa civil"], ["Acidente grave (unidade ou trajeto)", "Emergência / órgãos públicos", "Bombeiros 193, SAMU 192"]];
+// ======================= VISIBILIDADE DE RESULTADOS (Entrega 3.1) =======================
+const VIS_IND_PADRAO = [['devPdv', 'Devolução PDV', '%', 'menor', 2.5], ['devHl', 'Devolução hl', '%', 'menor', 1], ['tml', 'TML (tempo médio no PDV)', 'min', 'menor', 15], ['rating', 'Rating', 'nota', 'maior', 4.5]];
+let VIS_DATA = null;
+function visPreparar(d) {
+  d.colaboradores = Array.isArray(d.colaboradores) ? d.colaboradores : [];
+  if (!Array.isArray(d.indicadores) || !d.indicadores.length) d.indicadores = VIS_IND_PADRAO.map(([id, nome, unidade, sentido, meta]) => ({ id, nome, unidade, sentido, meta, acumula: 'media', premio: '' }));
+  d.indicadores.forEach(i => { if (!i.id) i.id = fdId(); });
+  d.resultados = d.resultados || {}; d.incentivo = d.incentivo || {}; d.anexosInd = Array.isArray(d.anexosInd) ? d.anexosInd : [];
+  if (!VIS_DATA) { const ds = Object.keys(d.resultados).sort(); VIS_DATA = ds.length ? ds[ds.length - 1] : exHoje(); }
+  visCarregarRegistros();
+}
+async function visCarregarRegistros() { try { const q = new URLSearchParams(); q.set('ano', FD.ano); if (FD.companyId) q.set('company_id', FD.companyId); FD.visReg = await api('/api/dpo/visibilidade/registros?' + q.toString()); if (FD && FD.chave === 'visibilidade') exRedesenhar(); } catch (e) { FD.visReg = { justificativas: [], acessos: [] }; } }
+function visInds() { return (FD.dados.indicadores || []).filter(i => String(i.nome || '').trim()); }
+function visAtivos() { return (FD.dados.colaboradores || []).filter(c => String(c.matricula || '').trim() && c.ativo !== 'Não'); }
+function visOk(ind, v) { const m = exNum(ind.meta); if (v === null || v === undefined || m === null) return null; return ind.sentido === 'maior' ? v >= m : v <= m; }
+function visVal(data, mat, indId) { return exNum((((FD.dados.resultados || {})[data] || {})[mat] || {})[indId]); }
+function visMes(mat, ind, mes) { const v = Object.entries(FD.dados.resultados || {}).filter(([dt]) => dt.startsWith(mes)).map(([, pm]) => exNum(((pm || {})[mat] || {})[ind.id])).filter(x => x !== null); if (!v.length) return null; return ind.acumula === 'soma' ? v.reduce((a, b) => a + b, 0) : v.reduce((a, b) => a + b, 0) / v.length; }
+function visFmt(ind, v) { return v === null || v === undefined ? '—' : fdFmt(v, Math.abs(v) < 100 && v % 1 ? (ind.unidade === 'nota' ? 2 : 1) : 0) + (ind.unidade === '%' ? '%' : ind.unidade && ind.unidade !== 'nota' && ind.unidade !== 'nº' ? ' ' + ind.unidade : ''); }
+function visCel(ind, v) { const ok = visOk(ind, v); return `<td style="text-align:center;font-weight:700;${ok === true ? 'background:#dcfce7;color:#166534;' : ok === false ? 'background:#fee2e2;color:#991b1b;' : 'color:#94a3b8;'}">${visFmt(ind, v)}</td>`; }
+function visJust(data, mat, indId) { return ((FD.visReg || {}).justificativas || []).find(j => j.data === data && String(j.matricula) === String(mat) && j.ind_id === indId); }
+function visPendentes(mes) { const l = []; Object.entries(FD.dados.resultados || {}).filter(([dt]) => !mes || dt.startsWith(mes)).forEach(([dt, pm]) => Object.entries(pm || {}).forEach(([mat, v]) => visInds().forEach(ind => { if (visOk(ind, exNum((v || {})[ind.id])) === false && !visJust(dt, mat, ind.id)) l.push({ dt, mat, ind }); }))); return l; }
+function visValidar(d) {
+  const inds = visInds().filter(i => exNum(i.meta) !== null), at = visAtivos(), lim = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const dias = Object.keys(d.resultados || {}).filter(dt => dt >= lim && Object.keys(d.resultados[dt] || {}).length);
+  const premio = inds.some(i => exNum(i.premio)), regras = String((d.incentivo || {}).regras || '').trim().length >= 20;
+  const ac = ((FD.visReg || {}).acessos || []).filter(a => a.data >= lim), mats = new Set(ac.map(a => String(a.matricula)));
+  return [
+    { v: 'V.1', titulo: 'Equipe vê o desempenho diário individual de IVs e KPIs', st: exSt(inds.length >= 3 && at.length && dias.length >= 5, inds.length && dias.length), txt: `${inds.length} indicador(es) com meta · ${at.length} motorista(s)/ajudante(s) cadastrados · ${dias.length} dia(s) com resultado lançado nos últimos 30 dias.`, ir: 'lancar' },
+    { v: 'V.2', titulo: 'Remuneração variável e meta de incentivo visíveis', st: exSt(premio && regras, premio || regras), txt: `${premio ? 'Prêmio por indicador cadastrado' : 'Cadastre o prêmio por dia na meta'} · ${regras ? 'regras da variável descritas' : 'descreva como funciona a variável'}.`, ir: 'metas' },
+    { v: 'V.3', titulo: 'Desempenho diário disponível no celular', st: exSt(d.linkGerado && ac.length, d.linkGerado), txt: `${d.linkGerado ? 'Link de resultados gerado' : 'Gere o link de resultados no Painel'} · ${ac.reduce((s, a) => s + (a.qtd || 0), 0)} acesso(s) nos últimos 30 dias.`, ir: 'painel' },
+    { v: 'V.4', titulo: 'Visibilidade individual da variável, sem intervenção da liderança', st: exSt(premio && at.length && mats.size >= Math.ceil(at.length * 0.5), mats.size > 0), txt: `${mats.size}/${at.length} colaborador(es) consultaram com a própria matrícula nos últimos 30 dias (meta: metade do time).`, ir: 'painel' }
+  ];
+}
+function visHtmlAba(a) {
+  if (a === 'lancar') return visHtmlLancar();
+  if (a === 'equipe') return visHtmlEquipe();
+  if (a === 'metas') return visHtmlMetas();
+  if (a === 'just') return visHtmlJust();
+  return visHtmlPainel();
+}
+function visHtmlPainel() {
+  const d = FD.dados, inds = visInds(), at = visAtivos(), dt = VIS_DATA, mes = dt.slice(0, 7), pend = visPendentes(mes);
+  const acHoje = new Set(((FD.visReg || {}).acessos || []).filter(a => a.data.startsWith(mes)).map(a => String(a.matricula)));
+  return `
+    <div class="painel" style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <div><label style="margin:0;font-size:12px;">Dia</label><input type="date" value="${dt}" style="margin:0;" onchange="VIS_DATA = this.value || exHoje(); fdCorpoRender();"></div>
+      <button class="btn-primario btn-sm" style="width:auto;background:#0f766e;" onclick="visGerarLink()">📲 Link de resultados do time</button>
+      <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
+        <span class="dpo-chip-nivel" style="background:${pend.length ? '#fee2e2' : '#dcfce7'};color:${pend.length ? '#991b1b' : '#166534'};">${pend.length} resultado(s) abaixo da meta sem relato no mês</span>
+        <span class="dpo-chip-nivel">${acHoje.size}/${at.length} consultaram no mês</span></div>
+      <div id="vis-link" style="width:100%;"></div>
+    </div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th>Matrícula</th><th style="min-width:180px;">Nome</th><th>Função</th>${inds.map(i => `<th style="text-align:center;">${escapeHtml(i.nome)}<br><small>dia · meta ${visFmt(i, exNum(i.meta))}</small></th>`).join('')}${inds.map(i => `<th style="text-align:center;">${escapeHtml(i.nome)}<br><small>mês</small></th>`).join('')}<th>Relatos</th><th></th></tr></thead>
+      <tbody>${at.map(c => { const pc = pend.filter(p => String(p.mat) === String(c.matricula)).length; return `<tr><td>${escapeHtml(c.matricula)}</td><td><strong>${escapeHtml(c.nome || '')}</strong>${acHoje.has(String(c.matricula)) ? ' <span title="Consultou no mês">👁️</span>' : ''}</td><td style="font-size:12px;">${escapeHtml(c.funcao || '')}</td>
+        ${inds.map(i => visCel(i, visVal(dt, c.matricula, i.id))).join('')}${inds.map(i => visCel(i, visMes(c.matricula, i, mes))).join('')}
+        <td style="font-size:12px;${pc ? 'color:#dc2626;font-weight:700;' : ''}">${pc ? `${pc} pendente(s)` : '✅'}</td>
+        <td><button class="btn-secundario btn-sm" title="Mandar o link pelo WhatsApp" onclick="visWhatsColab('${c.id}')">📲</button></td></tr>`; }).join('') || `<tr><td colspan="${5 + inds.length * 2}" style="text-align:center;color:#94a3b8;padding:14px;">Cadastre motoristas e ajudantes em 👥.</td></tr>`}</tbody></table></div>`;
+}
+async function visGerarLink() {
+  try {
+    const r = await api('/api/dpo/visibilidade/link', { method: 'POST', body: JSON.stringify({ company_id: FD.companyId || undefined }) });
+    if (!FD.dados.linkGerado) { FD.dados.linkGerado = true; fdAgendarSalvar(); exValidar(); }
+    FD.visLink = r.url;
+    const el = document.getElementById('vis-link');
+    if (el) el.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;"><input readonly value="${escapeHtml(r.url)}" style="flex:1;min-width:260px;margin:0;" onclick="this.select()"><button class="btn-secundario btn-sm" onclick="navigator.clipboard && navigator.clipboard.writeText('${escapeHtml(r.url)}'); mostrarToast('Link copiado.');">📋 Copiar</button><a class="btn-secundario btn-sm" target="_blank" href="https://wa.me/?text=${encodeURIComponent('📊 Veja seus resultados do dia e do mês (Devolução, TML, Rating e sua variável). Entre com a sua matrícula: ' + r.url)}">WhatsApp (grupo)</a><a class="btn-secundario btn-sm" target="_blank" href="${escapeHtml(r.url)}">Abrir</a></div>`;
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function visWhatsColab(id) {
+  if (!FD.visLink) { try { const r = await api('/api/dpo/visibilidade/link', { method: 'POST', body: JSON.stringify({ company_id: FD.companyId || undefined }) }); FD.visLink = r.url; if (!FD.dados.linkGerado) { FD.dados.linkGerado = true; fdAgendarSalvar(); } } catch (e) { mostrarToast(e.message, true); return; } }
+  const c = FD.dados.colaboradores.find(x => x.id === id), n = String(c.telefone || '').replace(/\D/g, '');
+  window.open(`https://wa.me/${n ? (n.length <= 11 ? '55' + n : n) : ''}?text=${encodeURIComponent(`Olá ${String(c.nome || '').split(' ')[0]}! Veja seus resultados do dia e do mês e a sua variável pelo link: ${FD.visLink} — use a sua matrícula ${c.matricula}.`)}`, '_blank');
+}
+function visSetVal(mat, indId, v) { const d = FD.dados, r = d.resultados[VIS_DATA] = d.resultados[VIS_DATA] || {}; r[mat] = r[mat] || {}; const x = fdParse(v); if (x === '' || x === null) delete r[mat][indId]; else r[mat][indId] = x; if (!Object.keys(r[mat]).length) delete r[mat]; if (!Object.keys(r).length) delete d.resultados[VIS_DATA]; fdAgendarSalvar(); exValidar(); }
+function visColar() {
+  const txt = (document.getElementById('vis-colar') || {}).value || '', inds = visInds(), at = visAtivos(); let n = 0, nao = [];
+  txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean).forEach(l => {
+    const p = l.split(/\t|;/).map(x => x.trim()); if (p.length < 2) return;
+    const c = at.find(x => String(x.matricula).replace(/^0+/, '') === p[0].replace(/^0+/, '')); if (!c) { nao.push(p[0]); return; }
+    inds.forEach((ind, k) => { if (p[k + 1] !== undefined && p[k + 1] !== '') visSetValSem(c.matricula, ind.id, p[k + 1]); }); n++;
+  });
+  fdAgendarSalvar(); exRedesenhar(); mostrarToast(`${n} linha(s) lançada(s) em ${VIS_DATA.split('-').reverse().join('/')}${nao.length ? ` · matrícula(s) não encontrada(s): ${nao.join(', ')}` : ''}.`, !!nao.length);
+}
+function visSetValSem(mat, indId, v) { const d = FD.dados, r = d.resultados[VIS_DATA] = d.resultados[VIS_DATA] || {}; r[mat] = r[mat] || {}; const x = fdParse(String(v).replace('%', '')); if (x !== '' && x !== null) r[mat][indId] = x; }
+async function visAnexar(indId, input) {
+  const arq = input.files && input.files[0]; if (!arq) return;
+  try { const fd = new FormData(); fd.append('file', arq); const up = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd }); const u = await up.json(); if (!up.ok) throw new Error(u.error || 'Falha no envio.');
+    FD.dados.anexosInd.push({ id: fdId(), indId, data: VIS_DATA, url: u.url, nome: u.originalName || arq.name }); fdAgendarSalvar(); fdCorpoRender(); mostrarToast('Anexo salvo.'); } catch (e) { mostrarToast(e.message, true); }
+}
+function visHtmlLancar() {
+  const inds = visInds(), at = visAtivos(), dt = VIS_DATA, an = FD.dados.anexosInd.filter(a => a.data === dt);
+  return `
+    <div class="painel" style="margin-bottom:12px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div><label style="margin:0;font-size:12px;">Dia dos resultados</label><input type="date" value="${dt}" style="margin:0;" onchange="VIS_DATA = this.value || exHoje(); fdCorpoRender();"></div>
+      <div style="font-size:12.5px;color:#475569;flex:1;min-width:260px;">Digite os resultados de cada motorista/ajudante ou cole da planilha abaixo. Verde = dentro da meta; vermelho = o colaborador precisará justificar com o relato de anomalia (5 porquês) pelo link.</div></div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th>Matrícula</th><th style="min-width:180px;">Nome</th>${inds.map(i => `<th style="text-align:center;">${escapeHtml(i.nome)}<br><small>meta ${visFmt(i, exNum(i.meta))}</small></th>`).join('')}</tr></thead>
+      <tbody>${at.map(c => `<tr><td>${escapeHtml(c.matricula)}</td><td>${escapeHtml(c.nome || '')} <small style="color:#64748b;">${escapeHtml(c.funcao || '')}</small></td>${inds.map(i => { const v = visVal(dt, c.matricula, i.id), ok = visOk(i, v); return `<td style="${ok === true ? 'background:#f0fdf4;' : ok === false ? 'background:#fef2f2;' : ''}">${simInp(v, 'num', `visSetVal('${escapeHtml(c.matricula)}', '${i.id}', this.value); fdCorpoRender();`, '', 'width:90px;')}</td>`; }).join('')}</tr>`).join('') || `<tr><td colspan="${2 + inds.length}" style="text-align:center;color:#94a3b8;padding:14px;">Cadastre a equipe em 👥.</td></tr>`}</tbody></table></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-top:12px;">
+      <div class="painel"><h4 style="margin:0 0 6px;">📋 Colar da planilha</h4><div style="font-size:12px;color:#64748b;margin-bottom:6px;">Uma linha por pessoa: <strong>matrícula</strong> e os valores na ordem: ${inds.map(i => escapeHtml(i.nome)).join(' · ')} (separados por tabulação ou ponto e vírgula).</div><textarea id="vis-colar" rows="5" placeholder="12345;2,1;0,8;14;4,7"></textarea><button class="btn-secundario btn-sm" style="margin-top:6px;" onclick="visColar()">Lançar no dia ${dt.split('-').reverse().join('/')}</button></div>
+      <div class="painel"><h4 style="margin:0 0 6px;">📎 Relatório de cada indicador (${dt.split('-').reverse().join('/')})</h4>${inds.map(i => { const l = an.filter(a => a.indId === i.id); return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:5px 0;border-bottom:1px solid var(--cinza-200);font-size:13px;"><strong style="min-width:140px;">${escapeHtml(i.nome)}</strong>${l.map(a => `<a href="${escapeHtml(a.url)}" target="_blank">📄 ${escapeHtml(a.nome || 'anexo')}</a><button class="fd-remover" title="Excluir" onclick="FD.dados.anexosInd = FD.dados.anexosInd.filter(x => x.id !== '${a.id}'); fdAgendarSalvar(); fdCorpoRender();">✕</button>`).join('')}<label class="btn-secundario btn-sm" style="width:auto;cursor:pointer;margin:0 0 0 auto;">+ Anexo<input type="file" style="display:none;" onchange="visAnexar('${i.id}', this)"></label></div>`; }).join('')}</div>
+    </div>`;
+}
+function visHtmlEquipe() {
+  FD_AO_EDITAR = (path, i, campo) => { if (path === 'colaboradores' && campo === 'novoSup') { const l = FD.dados.colaboradores[i]; if (String(l.novoSup || '').trim()) l.supervisor = l.novoSup.trim(); delete l.novoSup; } if (path === 'colaboradores' && campo === 'matricula') FD.dados.colaboradores[i].matricula = String(FD.dados.colaboradores[i].matricula || '').trim(); exValidar(); };
+  const sups = [...new Set((FD.dados.colaboradores || []).map(c => c.supervisor).filter(Boolean))];
+  return `<div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#475569;">Cadastro de motoristas e ajudantes. A <strong>matrícula</strong> é o que o colaborador digita no link para ver os próprios resultados. Edite direto na tabela; ✕ exclui.</div>
+    ${fdTabela('colaboradores', [{ campo: 'matricula', rotulo: 'Matrícula *', largura: 100 }, { campo: 'nome', rotulo: 'Nome *', largura: 200 }, { campo: 'funcao', rotulo: 'Função', tipo: 'select', opcoes: ['Motorista', 'Ajudante', 'Motorista entregador', 'Conferente de rota'], largura: 150 }, { campo: 'supervisor', rotulo: 'Supervisor', tipo: 'select', opcoes: l => [...new Set([...sups, l.supervisor].filter(Boolean))], largura: 150 }, { campo: 'novoSup', rotulo: 'Novo supervisor', largura: 130, recarregar: true }, { campo: 'placa', rotulo: 'Placa', largura: 100 }, { campo: 'telefone', rotulo: 'WhatsApp', largura: 130 }, { campo: 'ativo', rotulo: 'Ativo', tipo: 'select', opcoes: ['Sim', 'Não'], largura: 80 }], { botao: 'Adicionar motorista / ajudante', numerar: true })}
+    <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Para um supervisor que ainda não está na lista, digite em "Novo supervisor".</div>`;
+}
+function visHtmlMetas() {
+  exAoEditar();
+  return `<div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#475569;">Indicadores, metas e o prêmio da variável. <strong>Prêmio por dia na meta</strong> é o valor que o colaborador acumula a cada dia em que bate a meta daquele indicador — ele vê no link quanto já ganhou no mês.</div>
+    ${fdTabela('indicadores', [{ campo: 'nome', rotulo: 'Indicador', largura: 200 }, { campo: 'unidade', rotulo: 'Unidade', tipo: 'select', opcoes: ['%', 'hl', 'min', 'nota', 'nº', 'R$'], largura: 90 }, { campo: 'sentido', rotulo: 'Melhor quando', tipo: 'select', opcoes: ['menor', 'maior'], largura: 110 }, { campo: 'meta', rotulo: 'Meta', tipo: 'decimal', largura: 90, recarregar: true }, { campo: 'acumula', rotulo: 'Mês', tipo: 'select', opcoes: ['media', 'soma'], largura: 90 }, { campo: 'premio', rotulo: 'Prêmio por dia na meta (R$)', tipo: 'decimal', largura: 140 }], { botao: 'Adicionar indicador' })}
+    <div class="painel" style="margin-top:12px;"><h4 style="margin:0 0 6px;">💰 Como funciona a variável (aparece para o colaborador)</h4><textarea rows="4" placeholder="Ex.: Cada dia dentro da meta de Devolução PDV vale R$ 5,00; Rating acima de 4,5 vale R$ 3,00/dia; pagamento no mês seguinte..." onchange="FD.dados.incentivo.regras = this.value; fdAgendarSalvar(); exValidar();">${escapeHtml(FD.dados.incentivo.regras || '')}</textarea></div>`;
+}
+function visHtmlJust() {
+  const l = ((FD.visReg || {}).justificativas || []), inds = Object.fromEntries(visInds().map(i => [i.id, i]));
+  const pend = visPendentes();
+  return `<div class="barra-acoes"><div class="plano-meta">Relatos de anomalia (5 porquês) enviados pelos motoristas e ajudantes pelo link quando o resultado ficou fora da meta.</div><div class="direita"><button class="btn-secundario btn-sm" onclick="visCarregarRegistros()">↻ Atualizar</button></div></div>
+    ${pend.length ? `<div class="painel" style="margin-bottom:10px;border-left:4px solid #dc2626;font-size:12.5px;">⚠️ ${pend.length} resultado(s) fora da meta ainda sem relato: ${pend.slice(0, 12).map(p => `${escapeHtml((visAtivos().find(c => String(c.matricula) === String(p.mat)) || {}).nome || p.mat)} · ${escapeHtml(p.ind.nome)} ${p.dt.slice(8, 10)}/${p.dt.slice(5, 7)}`).join(' · ')}${pend.length > 12 ? '…' : ''}</div>` : ''}
+    ${l.map(j => { const ind = inds[j.ind_id] || { nome: j.ind_id }, x = j.dados || {}; return `<div class="painel" style="margin-bottom:8px;border-left:4px solid ${j.status === 'Validada' ? '#16a34a' : j.status === 'Devolvida' ? '#dc2626' : '#d97706'};">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;"><strong>${escapeHtml(x.nome || j.matricula)} · ${escapeHtml(ind.nome)} · ${j.data.split('-').reverse().join('/')}</strong><span style="font-size:12px;color:#64748b;">resultado ${escapeHtml(x.valor ?? '')} × meta ${escapeHtml(x.meta ?? '')}</span></div>
+      <ol style="margin:6px 0;padding-left:20px;font-size:13px;">${(x.porques || []).filter(Boolean).map(p => `<li>Por quê? ${escapeHtml(p)}</li>`).join('')}</ol>
+      <div style="font-size:13px;"><strong>Causa raiz:</strong> ${escapeHtml(x.causa || '')} · <strong>Ação:</strong> ${escapeHtml(x.acao || '')}${x.prazo ? ` até ${x.prazo.split('-').reverse().join('/')}` : ''}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center;"><select style="width:auto;margin:0;" id="vj-st-${j.id}">${['Enviada', 'Validada', 'Devolvida'].map(s => `<option ${s === (j.status || 'Enviada') ? 'selected' : ''}>${s}</option>`).join('')}</select><input id="vj-ret-${j.id}" style="flex:1;min-width:200px;margin:0;" placeholder="Retorno do supervisor" value="${escapeHtml(j.retorno || '')}"><button class="btn-secundario btn-sm" onclick="visSalvarJust(${j.id})">Salvar</button></div></div>`; }).join('') || '<div class="msg-vazio">Nenhum relato enviado ainda.</div>'}`;
+}
+async function visSalvarJust(id) { try { await api('/api/dpo/visibilidade/justificativas/' + id, { method: 'PUT', body: JSON.stringify({ status: document.getElementById('vj-st-' + id).value, retorno: document.getElementById('vj-ret-' + id).value }) }); mostrarToast('Relato atualizado.'); visCarregarRegistros(); } catch (e) { mostrarToast(e.message, true); } }
+
 // ======================= RISCOS, RESPOSTA E RETOMADA (Planejamento 2.1) =======================
 const IMPACTOS_RISCO = ['Insignificante', 'Menor', 'Moderado', 'Maior', 'Extremo'];
 const PROBS_RISCO = ['Raro', 'Improvável', 'Possível', 'Provável', 'Quase certamente'];
@@ -12668,7 +12811,7 @@ function chamHtml() {
         ${[['abertos', 'Abertos'], ['atrasados', 'Fora do prazo'], ['fechados', 'Fechados'], ['todos', 'Todos']].map(([k, r]) => `<button class="btn-sm ${f.status === k ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="CHAM_FILTRO.status='${k}'; fdCorpoRender();">${r}</button>`).join('')}
         <select style="width:auto;margin:0;" onchange="CHAM_FILTRO.cat=this.value; fdCorpoRender();"><option value="">Todas as categorias</option>${CAT_CHAMADO.map(c => `<option ${c === f.cat ? 'selected' : ''}>${c}</option>`).join('')}</select>
         <input style="width:180px;margin:0;" placeholder="🔎 Buscar" value="${escapeHtml(f.busca)}" onchange="CHAM_FILTRO.busca=this.value; fdCorpoRender();"></div>
-      <div class="direita"><button class="btn-secundario btn-sm" onclick="chamAbrirSla()">⏱️ Prazos de fechamento</button><button class="btn-primario btn-sm" style="width:auto;" onclick="chamNovo()">+ Abrir chamado</button></div></div>
+      <div class="direita"><button class="btn-secundario btn-sm" onclick="chamSincronizarLink(true)" title="Trazer os chamados abertos pelo link">↻</button><button class="btn-secundario btn-sm" style="width:auto;background:#dcfce7;" onclick="chamGerarLink()">🔗 Link para abrir chamado</button><button class="btn-secundario btn-sm" onclick="chamAbrirSla()">⏱️ Prazos de fechamento</button><button class="btn-primario btn-sm" style="width:auto;" onclick="chamNovo()">+ Abrir chamado</button></div></div>
     ${Object.keys(porCat).length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">${Object.entries(porCat).sort((a, b) => b[1] - a[1]).map(([c, n]) => `<span class="dpo-chip-nivel">${escapeHtml(c)}: ${n}</span>`).join('')}</div>` : ''}
     <div class="fd-tabela-wrap"><table class="fd-tabela gop-acoes"><thead><tr><th>Nº</th><th>Abertura</th><th style="min-width:220px;">Chamado</th><th>Categoria</th><th>Prioridade</th><th>Responsável</th><th>Prazo</th><th>Dias abertos</th><th>Plano</th><th>Status</th></tr></thead>
       <tbody>${lista.map(c => { const pr = chamPrazo(c), at = chamAtrasado(c), ac = c.acoes || [], acOk = ac.filter(a => a.status === 'Concluída').length; return `<tr style="cursor:pointer;${at && !chamFechado(c) ? 'background:#fef2f2;' : ''}" onclick="chamAbrir('${c.id}')">
@@ -12692,6 +12835,8 @@ function chamAbrir(id) {
   document.getElementById('modal-area').innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) chamFechar('${c.id}')"><div class="modal-caixa" style="max-width:860px;">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><h3 style="margin:0;">🛠️ Chamado de manutenção nº ${escapeHtml(c.n ?? '')}</h3><span style="font-size:13px;">${chamDias(c) ?? 0} dia(s) em aberto ${chamAtrasado(c) ? '<strong style="color:#dc2626;">· fora do prazo</strong>' : ''}</span></div>
     ${c.itemTxt ? `<div class="gop-plano-ref">Item do checklist: ${escapeHtml(c.itemTxt)}</div>` : ''}
+    ${c.origem === 'link' ? `<div class="gop-plano-ref">📱 Aberto pelo link ${escapeHtml(c.protocolo || '')} por <strong>${escapeHtml(c.solicitante || '')}</strong>${c.telefoneSolicitante ? ` · ${escapeHtml(c.telefoneSolicitante)}` : ''}</div>` : ''}
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0;"><button class="btn-secundario btn-sm" style="width:auto;background:#dcfce7;" onclick="chamWhats('${c.id}', 'responsavel')">WhatsApp p/ responsável</button>${c.telefoneSolicitante ? `<button class="btn-secundario btn-sm" style="width:auto;background:#dcfce7;" onclick="chamWhats('${c.id}', 'solicitante')">WhatsApp p/ solicitante</button>` : ''}</div>
     <div class="cx-grid">
       <div style="grid-column:span 2;"><label>O que precisa ser feito *</label>${inp('titulo', 'text', 'Ex.: Vazamento na calha do armazém')}</div><div><label>Abertura</label>${inp('abertura', 'date')}</div>
       <div><label>Local / área</label>${inp('local', 'text', 'Armazém, doca 3…')}</div><div><label>Categoria</label>${sel('categoria', CAT_CHAMADO)}</div><div><label>Prioridade</label>${sel('prioridade', PRIO_CHAMADO)}</div>
@@ -12748,6 +12893,147 @@ function chamAbrirSla() {
     </tbody></table></div>
     <div class="acoes-form" style="justify-content:space-between;margin-top:12px;"><button class="btn-secundario btn-sm" onclick="FD.dados.slaChamados.push({ id: fdId(), categoria: 'Todas', prioridade: 'Média', dias: 7 }); fdAgendarSalvar(); chamAbrirSla();">+ Adicionar prazo</button><button class="btn-primario" style="width:auto;" onclick="gopFecharPlano(); exRedesenhar();">Concluir</button></div>
   </div></div>`;
+}
+
+// ---- chamados abertos pelo link (celular) ----
+async function chamSincronizarLink(avisar) {
+  try {
+    const q = new URLSearchParams(); if (FD.companyId) q.set('company_id', FD.companyId);
+    const l = await api('/api/dpo/manutencao/chamados-celular?' + q.toString()); if (!FD || FD.chave !== 'manutencao') return;
+    const d = FD.dados; chamPreparar(d);
+    const ja = new Set(d.chamados.map(c => c.pubId).filter(Boolean)); let n = 0;
+    l.forEach(x => {
+      if (ja.has(x.id)) return;
+      const ab = String(x.created_at || '').slice(0, 10) || exHoje();
+      if (ab.slice(0, 4) !== String(FD.ano)) return;
+      const num = d.chamados.reduce((m, c) => Math.max(m, exNum(c.n) || 0), 0) + 1;
+      d.chamados.push({ id: fdId(), n: num, pubId: x.id, protocolo: 'C-' + x.id, abertura: ab, status: 'Aberto', titulo: x.titulo, descricao: x.descricao, local: x.local, categoria: x.categoria, prioridade: x.prioridade, solicitante: x.solicitante, telefoneSolicitante: x.telefone, foto: x.foto, acoes: [], origem: 'link' });
+      n++;
+    });
+    if (n) { d.chamados.forEach(c => { c.prazoCalc = chamPrazo(c); }); fdAgendarSalvar(); exRedesenhar(); }
+    if (avisar || n) mostrarToast(n ? `${n} chamado(s) novo(s) aberto(s) pelo link.` : 'Nenhum chamado novo pelo link.');
+  } catch (e) { if (avisar) mostrarToast(e.message, true); }
+}
+async function chamGerarLink() {
+  try {
+    const r = await api('/api/dpo/manutencao/chamado-link', { method: 'POST', body: JSON.stringify({ company_id: FD.companyId || undefined }) });
+    const txt = `🛠️ Precisa de manutenção? Abra o chamado por aqui: ${r.url}`;
+    document.getElementById('modal-area').innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) gopFecharPlano()"><div class="modal-caixa" style="max-width:560px;">
+      <h3 style="margin-top:0;">🔗 Link para abrir chamado de manutenção</h3>
+      <div style="font-size:12.5px;color:#475569;margin-bottom:8px;">Qualquer pessoa da unidade abre o chamado pelo celular (sem login), com foto. O chamado cai aqui na lista e o gestor recebe o aviso no sininho. Pelo mesmo link a pessoa acompanha o status informando o telefone.</div>
+      <input readonly value="${escapeHtml(r.url)}" onclick="this.select()">
+      <div class="acoes-form" style="justify-content:flex-end;margin-top:12px;gap:8px;flex-wrap:wrap;"><button class="btn-secundario" onclick="navigator.clipboard && navigator.clipboard.writeText('${escapeHtml(r.url)}'); mostrarToast('Link copiado.');">📋 Copiar</button>
+        <a class="btn-secundario" target="_blank" href="${escapeHtml(r.url)}">Abrir</a><a class="btn-primario" style="width:auto;background:#16a34a;" target="_blank" href="https://wa.me/?text=${encodeURIComponent(txt)}">Enviar no WhatsApp</a></div>
+    </div></div>`;
+  } catch (e) { mostrarToast(e.message, true); }
+}
+function chamWhats(id, para) {
+  chamLer(id); const c = FD.dados.chamados.find(x => x.id === id), pr = chamPrazo(c);
+  const txt = `🛠️ *Chamado de manutenção nº ${c.n}*${c.protocolo ? ` (${c.protocolo})` : ''}\n${c.titulo || ''}${c.local ? `\n📍 ${c.local}` : ''}${c.categoria ? `\nCategoria: ${c.categoria}` : ''}${c.prioridade ? ` · Prioridade: ${c.prioridade}` : ''}\nAberto em ${c.abertura ? new Date(c.abertura + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}${pr ? ` · Prazo: ${new Date(pr + 'T12:00:00').toLocaleDateString('pt-BR')}` : ''}\nStatus: ${c.status || 'Aberto'}${c.descricao ? `\n\n${c.descricao}` : ''}${(c.acoes || []).length ? `\n\nPlano:\n${c.acoes.map(a => `• ${a.acao || ''}${a.responsavel ? ` (${a.responsavel})` : ''}${a.prazo ? ` até ${new Date(a.prazo + 'T12:00:00').toLocaleDateString('pt-BR')}` : ''} — ${a.status || ''}`).join('\n')}` : ''}${c.foto ? `\n\nFoto: ${location.origin}${c.foto}` : ''}`;
+  let fone = '';
+  if (para === 'solicitante') fone = c.telefoneSolicitante || '';
+  else { const f = (FD.dados.fornecedores || []).find(x => x.nome && x.nome === c.responsavel); fone = f ? f.contato || '' : ''; }
+  const n = String(fone).replace(/\D/g, ''), num = n ? (n.length <= 11 ? '55' + n : n) : '';
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(txt)}`, '_blank');
+}
+// ---- 5S: auditores (contato), calendário e avisos ----
+function c5Auditores() { const d = FD.dados; d.auditores = Array.isArray(d.auditores) ? d.auditores : []; return d.auditores; }
+function c5AuditorDe(area) { const n = String(area.auditor || '').trim().toLowerCase(); return c5Auditores().find(a => String(a.nome || '').trim().toLowerCase() === n); }
+function c5AbrirAuditor(id) {
+  const a = id ? c5Auditores().find(x => x.id === id) : {}, nomes = [...new Set(FD.dados.areas.map(x => x.auditor).filter(Boolean))];
+  document.getElementById('modal-area').innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) gopFecharPlano()"><div class="modal-caixa" style="max-width:480px;">
+    <h3 style="margin-top:0;">${id ? '✏️ Editar auditor' : '➕ Novo auditor'}</h3>
+    <label>Nome (igual ao usado nas áreas) *</label><input id="c5u-nome" list="c5u-nomes" value="${escapeHtml(a.nome || '')}"><datalist id="c5u-nomes">${nomes.map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist>
+    <label>WhatsApp</label><input id="c5u-whats" inputmode="tel" placeholder="(64) 99999-9999" value="${escapeHtml(a.whatsapp || '')}">
+    <label>E-mail</label><input id="c5u-email" type="email" value="${escapeHtml(a.email || '')}">
+    <div class="acoes-form" style="justify-content:flex-end;margin-top:14px;"><button class="btn-secundario" onclick="gopFecharPlano()">Cancelar</button><button class="btn-primario" style="width:auto;" onclick="c5SalvarAuditor(${id ? `'${id}'` : 'null'})">💾 Salvar</button></div></div></div>`;
+}
+function c5SalvarAuditor(id) {
+  const g = k => (document.getElementById('c5u-' + k) || {}).value || '', nome = g('nome').trim();
+  if (!nome) { mostrarToast('Informe o nome.', true); return; }
+  if (!g('whats').trim() && !g('email').trim()) { mostrarToast('Informe o WhatsApp ou o e-mail para receber os avisos.', true); return; }
+  const dados = { nome, whatsapp: g('whats').trim(), email: g('email').trim() };
+  if (id) { const a = c5Auditores().find(x => x.id === id), velho = a.nome; Object.assign(a, dados); if (velho !== nome) FD.dados.areas.forEach(ar => { if (ar.auditor === velho) ar.auditor = nome; }); } else c5Auditores().push({ id: fdId(), ...dados });
+  gopFecharPlano(); fdAgendarSalvar(); c5Redesenhar(); mostrarToast('Auditor salvo.');
+}
+function c5ExcluirAuditor(id) { if (!confirm('Excluir este auditor da base de contatos?')) return; FD.dados.auditores = c5Auditores().filter(a => a.id !== id); fdAgendarSalvar(); c5Redesenhar(); }
+function c5HtmlAuditoresBase() {
+  const l = c5Auditores(), semContato = [...new Set(FD.dados.areas.map(a => a.auditor).filter(Boolean))].filter(n => !l.some(a => a.nome.trim().toLowerCase() === n.trim().toLowerCase()));
+  return `<div class="painel" style="margin-top:12px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;"><h3 style="margin:0;">📲 Auditores — contato para os avisos (${l.length})</h3><button class="btn-secundario btn-sm" onclick="c5AbrirAuditor()">+ Auditor</button></div>
+    ${semContato.length ? `<div style="font-size:12.5px;color:#b45309;margin-bottom:6px;">Sem contato cadastrado (não recebem aviso): ${semContato.map(escapeHtml).join(', ')}</div>` : ''}
+    <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th>Auditor</th><th>WhatsApp</th><th>E-mail</th><th>Áreas</th><th></th></tr></thead><tbody>
+      ${l.map(a => `<tr><td><strong>${escapeHtml(a.nome)}</strong></td><td>${escapeHtml(a.whatsapp || '—')}</td><td>${escapeHtml(a.email || '—')}</td><td style="font-size:12px;">${FD.dados.areas.filter(x => String(x.auditor || '').trim().toLowerCase() === a.nome.trim().toLowerCase()).map(x => escapeHtml(x.nome)).join(', ') || '—'}</td><td style="white-space:nowrap;"><button class="btn-secundario btn-sm" onclick="c5AbrirAuditor('${a.id}')">✏️</button> <button class="btn-perigo btn-sm" onclick="c5ExcluirAuditor('${a.id}')">🗑️</button></td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px;">Cadastre WhatsApp e e-mail dos auditores para o disparo automático.</td></tr>'}
+    </tbody></table></div></div>`;
+}
+let C5_CAL_MES = null, C5_AVISOS = null;
+async function c5CarregarAvisos() { try { const q = new URLSearchParams(); q.set('ano', FD.ano); if (FD.companyId) q.set('company_id', FD.companyId); C5_AVISOS = await api('/api/dpo/cinco-s/avisos?' + q.toString()); if (FD && FD.chave === 'cinco_s' && FD.aba === 'calendario') fdCorpoRender(); } catch (e) { C5_AVISOS = { avisos: [] }; } }
+function c5AudFeita(areaId, mes) { const au = c5Aud(areaId, mes); if (!au) return false; if (au.origem === 'planilha' && au.notaInformada !== undefined) return true; const tot = FD.dados.modelo.sensos.reduce((s, x) => s + x.perguntas.length, 0); return Object.values(au.resp || {}).filter(Boolean).length >= tot; }
+function c5HtmlCalendario() {
+  const d = FD.dados; d.calendario = d.calendario || {}; d.avisos = d.avisos || {};
+  if (C5_CAL_MES === null) C5_CAL_MES = FD.ano === new Date().getFullYear() ? new Date().getMonth() : 0;
+  if (!C5_AVISOS) c5CarregarAvisos();
+  const m = C5_CAL_MES, cal = d.calendario[m] = d.calendario[m] || {}, hoje = exHoje(), cfg = d.avisos;
+  const av = id => ((C5_AVISOS || {}).avisos || []).find(x => x.mes === m && x.area_id === id);
+  const st = a => { const dt = cal[a.id]; if (c5AudFeita(a.id, m)) return ['✅ Realizada', '#dcfce7', '#166534']; if (!dt) return ['Sem data', '#f1f5f9', '#64748b']; if (dt < hoje) return ['⚠️ Atrasada', '#fee2e2', '#991b1b']; if (dt === hoje) return ['🔔 Hoje', '#fef9c3', '#854d0e']; return ['Agendada', '#e0e7ff', '#3730a3']; };
+  const nDias = new Date(FD.ano, m + 1, 0).getDate(), pri = new Date(FD.ano, m, 1).getDay();
+  const porDia = {}; d.areas.forEach(a => { const dt = cal[a.id]; if (dt) (porDia[Number(dt.slice(8, 10))] = porDia[Number(dt.slice(8, 10))] || []).push(a); });
+  return `
+    <div class="painel" style="margin-bottom:12px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div><label style="margin:0;font-size:12px;">Mês</label><select onchange="C5_CAL_MES = Number(this.value); fdCorpoRender();">${MESES_LONGOS_FD.map((x, i) => `<option value="${i}" ${i === m ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
+      <button class="btn-secundario btn-sm" onclick="c5DistribuirMes()">🗓️ Distribuir áreas nos dias úteis</button>
+      <button class="btn-secundario btn-sm" onclick="c5RepetirMeses()">↻ Repetir este dia nos próximos meses</button>
+      <div style="margin-left:auto;font-size:12.5px;color:#475569;">${d.areas.filter(a => c5AudFeita(a.id, m)).length}/${d.areas.length} auditoria(s) realizada(s) em ${MESES_LONGOS_FD[m]}</div>
+    </div>
+    <div class="painel" style="margin-bottom:12px;">
+      <h3 style="margin-top:0;">🔔 Avisos automáticos aos auditores</h3>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;font-size:13px;">
+        <label style="display:flex;gap:6px;align-items:center;font-weight:400;margin:0;"><input type="checkbox" style="width:auto;" ${cfg.ativo !== false ? 'checked' : ''} onchange="FD.dados.avisos.ativo = this.checked; fdAgendarSalvar();"> Disparar automaticamente</label>
+        <label style="display:flex;gap:6px;align-items:center;font-weight:400;margin:0;"><input type="checkbox" style="width:auto;" ${cfg.whats !== false ? 'checked' : ''} onchange="FD.dados.avisos.whats = this.checked; fdAgendarSalvar();"> WhatsApp</label>
+        <label style="display:flex;gap:6px;align-items:center;font-weight:400;margin:0;"><input type="checkbox" style="width:auto;" ${cfg.email !== false ? 'checked' : ''} onchange="FD.dados.avisos.email = this.checked; fdAgendarSalvar();"> E-mail</label>
+        <div><label style="margin:0;font-size:12px;">Das</label><input type="number" min="0" max="23" value="${escapeHtml(cfg.horaInicio ?? 8)}" style="width:70px;margin:0;" onchange="FD.dados.avisos.horaInicio = Number(this.value); fdAgendarSalvar();"></div>
+        <div><label style="margin:0;font-size:12px;">até as</label><input type="number" min="1" max="24" value="${escapeHtml(cfg.horaFim ?? 18)}" style="width:70px;margin:0;" onchange="FD.dados.avisos.horaFim = Number(this.value); fdAgendarSalvar();"></div>
+        <div><label style="margin:0;font-size:12px;">Repetir a cada (h)</label><input type="number" min="1" max="12" value="${escapeHtml(cfg.intervalo ?? 2)}" style="width:80px;margin:0;" onchange="FD.dados.avisos.intervalo = Number(this.value); fdAgendarSalvar();"></div>
+        <label style="display:flex;gap:6px;align-items:center;font-weight:400;margin:0;"><input type="checkbox" style="width:auto;" ${cfg.atrasadas !== false ? 'checked' : ''} onchange="FD.dados.avisos.atrasadas = this.checked; fdAgendarSalvar();"> Continuar avisando as atrasadas</label>
+      </div>
+      <div style="font-size:11.5px;color:#64748b;margin-top:6px;">No dia agendado o auditor recebe o link da auditoria (com a área já escolhida) e o aviso se repete no intervalo até a auditoria ser concluída. ${C5_AVISOS && C5_AVISOS.whatsConfigurado === false ? '<strong style="color:#b45309;">O WhatsApp automático do servidor ainda não está configurado — por enquanto os avisos saem por e-mail; use o botão 📲 para mandar pelo seu WhatsApp.</strong>' : ''}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(300px,1fr) minmax(420px,1.4fr);gap:12px;" class="rc-duas">
+      <div class="painel"><div class="ans-cal c5-cal">${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(x => `<b>${x}</b>`).join('')}${'<i></i>'.repeat(pri)}${Array.from({ length: nDias }, (_, i) => i + 1).map(dia => { const l = porDia[dia] || [], dt = `${FD.ano}-${String(m + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`; return `<div class="c5-dia ${dt === hoje ? 'hoje' : ''}"><strong>${dia}</strong>${l.map(a => `<span style="background:${st(a)[1]};color:${st(a)[2]};" title="${escapeHtml(a.nome)} · ${escapeHtml(a.auditor || '')}">${escapeHtml(a.placa || a.nome).slice(0, 12)}</span>`).join('')}</div>`; }).join('')}</div></div>
+      <div class="painel"><div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th>Área</th><th>Auditor</th><th>Data</th><th>Situação</th><th>Avisos</th><th></th></tr></thead><tbody>
+        ${d.areas.map(a => { const s = st(a), x = av(a.id), cont = c5AuditorDe(a); return `<tr><td><strong>${escapeHtml(a.nome)}</strong><div style="font-size:11px;color:#64748b;">${escapeHtml(a.depto || '')}</div></td><td style="font-size:12px;">${escapeHtml(a.auditor || '—')}${cont ? '' : '<div style="color:#b45309;font-size:11px;">sem contato</div>'}</td>
+          <td><input type="date" value="${escapeHtml(cal[a.id] || '')}" min="${FD.ano}-${String(m + 1).padStart(2, '0')}-01" max="${FD.ano}-${String(m + 1).padStart(2, '0')}-${nDias}" style="margin:0;width:140px;" onchange="c5AgendarArea('${a.id}', this.value)"></td>
+          <td><span class="dpo-chip-nivel" style="background:${s[1]};color:${s[2]};">${s[0]}</span></td>
+          <td style="font-size:11.5px;color:#64748b;">${x ? `${x.envios}× · ${new Date(x.ultimo).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}<br>${escapeHtml(x.canais || '')}` : '—'}</td>
+          <td style="white-space:nowrap;">${c5AudFeita(a.id, m) ? '' : `<button class="btn-secundario btn-sm" title="Disparar o aviso agora" onclick="c5AvisarAgora('${a.id}')">🔔</button> <button class="btn-secundario btn-sm" title="Mandar pelo meu WhatsApp" onclick="c5WhatsManual('${a.id}')">📲</button>`}</td></tr>`; }).join('') || '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:12px;">Cadastre as áreas primeiro.</td></tr>'}
+      </tbody></table></div></div>
+    </div>`;
+}
+function c5AgendarArea(areaId, data) { const d = FD.dados; d.calendario = d.calendario || {}; d.calendario[C5_CAL_MES] = d.calendario[C5_CAL_MES] || {}; if (data) d.calendario[C5_CAL_MES][areaId] = data; else delete d.calendario[C5_CAL_MES][areaId]; fdAgendarSalvar(); fdCorpoRender(); }
+function c5DistribuirMes() {
+  const d = FD.dados, m = C5_CAL_MES, nDias = new Date(FD.ano, m + 1, 0).getDate(), uteis = [];
+  for (let dia = 1; dia <= nDias; dia++) { const wd = new Date(FD.ano, m, dia).getDay(); if (wd >= 1 && wd <= 5) uteis.push(dia); }
+  const cal = d.calendario[m] = d.calendario[m] || {}, sem = d.areas.filter(a => !cal[a.id]);
+  if (!sem.length) { if (!confirm('Todas as áreas já têm data. Redistribuir todas?')) return; d.areas.forEach(a => delete cal[a.id]); }
+  const l = d.areas.filter(a => !cal[a.id]), passo = Math.max(1, uteis.length / Math.max(1, l.length));
+  l.forEach((a, i) => { const dia = uteis[Math.min(uteis.length - 1, Math.floor(i * passo))]; cal[a.id] = `${FD.ano}-${String(m + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`; });
+  fdAgendarSalvar(); fdCorpoRender(); mostrarToast(`${l.length} área(s) distribuída(s) nos dias úteis de ${MESES_LONGOS_FD[m]}.`);
+}
+function c5RepetirMeses() {
+  const d = FD.dados, m = C5_CAL_MES, cal = d.calendario[m] || {}; let n = 0;
+  for (let mm = m + 1; mm < 12; mm++) { const nDias = new Date(FD.ano, mm + 1, 0).getDate(), alvo = d.calendario[mm] = d.calendario[mm] || {}; Object.entries(cal).forEach(([id, dt]) => { if (alvo[id]) return; let dia = Math.min(nDias, Number(dt.slice(8, 10))); let wd = new Date(FD.ano, mm, dia).getDay(); while (wd === 0 || wd === 6) { dia = dia < nDias ? dia + 1 : dia - 2; wd = new Date(FD.ano, mm, dia).getDay(); } alvo[id] = `${FD.ano}-${String(mm + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`; n++; }); }
+  fdAgendarSalvar(); fdCorpoRender(); mostrarToast(`${n} agendamento(s) criado(s) nos próximos meses (fim de semana vai para o dia útil mais próximo).`);
+}
+async function c5AvisarAgora(areaId) {
+  try { if (FD_TIMER) await fdSalvar(); const r = await api('/api/dpo/cinco-s/avisar', { method: 'POST', body: JSON.stringify({ ano: FD.ano, mes: C5_CAL_MES, areaId, company_id: FD.companyId || undefined }) }); mostrarToast(r.message, !(r.whats || r.email)); if (!(r.whats || r.email)) window.open(`https://wa.me/${r.telefone ? (r.telefone.replace(/\D/g, '').length <= 11 ? '55' : '') + r.telefone.replace(/\D/g, '') : ''}?text=${encodeURIComponent(r.texto)}`, '_blank'); C5_AVISOS = null; c5CarregarAvisos(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function c5WhatsManual(areaId) {
+  try {
+    const r = await api('/api/dpo/cinco-s/link', { method: 'POST', body: JSON.stringify({ ano: FD.ano, company_id: FD.companyId || undefined }) });
+    const a = FD.dados.areas.find(x => x.id === areaId), cont = c5AuditorDe(a) || {}, n = String(cont.whatsapp || '').replace(/\D/g, '');
+    const url = `${r.url}&area=${encodeURIComponent(areaId)}&mes=${C5_CAL_MES}`, dt = ((FD.dados.calendario || {})[C5_CAL_MES] || {})[areaId];
+    window.open(`https://wa.me/${n ? (n.length <= 11 ? '55' + n : n) : ''}?text=${encodeURIComponent(`🧹 Auditoria 5S — ${a.nome}${dt ? ` (agendada para ${dt.split('-').reverse().join('/')})` : ''}. Faça pelo celular: ${url}`)}`, '_blank');
+  } catch (e) { mostrarToast(e.message, true); }
 }
 
 const DESTINOS_MAN = ['Reparo de curto prazo', 'CAPEX emergencial', 'Priorizado com prazo'];

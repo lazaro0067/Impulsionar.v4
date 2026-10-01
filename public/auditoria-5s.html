@@ -134,7 +134,9 @@ async function trocarMes(m) { try { await carregar(Number(m)); render(); } catch
 (async () => {
   try {
     if (!TOKEN) throw new Error('Link sem código da auditoria.');
-    await carregar();
+    const qs = new URLSearchParams(location.search), mesQ = qs.get('mes');
+    await carregar(mesQ !== null && mesQ !== '' ? Number(mesQ) : undefined);
+    if (qs.get('area') && R.areas.some(a => a.id === qs.get('area'))) AREA = qs.get('area');
     document.title = `Auditoria 5S — ${R.empresa}`;
     if (!R.areas.length) throw new Error('Nenhuma área cadastrada no 5S desta revenda.');
     render();

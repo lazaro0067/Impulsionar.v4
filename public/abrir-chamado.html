@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#b45309">
+<title>Abrir chamado de manutenção</title>
+<style>
+  :root { --cor:#b45309; --borda:#e2e8f0; --sub:#64748b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:#f1f5f9; color:#0f172a; }
+  header { background:var(--cor); color:#fff; padding:14px 16px; } header h1 { font-size:18px; margin:0; } header div { font-size:12.5px; opacity:.9; margin-top:2px; }
+  main { padding:12px 16px 40px; max-width:620px; margin:0 auto; }
+  .caixa { background:#fff; border:1px solid var(--borda); border-radius:12px; padding:12px; margin-bottom:12px; }
+  label { font-size:12.5px; font-weight:700; color:#334155; display:block; margin-top:10px; }
+  input, select, textarea { width:100%; font-size:16px; padding:9px; border:1px solid var(--borda); border-radius:8px; margin-top:4px; background:#fff; font-family:inherit; }
+  .prio { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:4px; } .prio button { border:1px solid var(--borda); background:#fff; border-radius:8px; padding:9px 2px; font-size:13px; font-weight:700; }
+  .prio button.ativo { color:#fff; }
+  .foto { display:flex; gap:10px; align-items:center; margin-top:6px; } .foto label { margin:0; background:#fef3c7; color:#92400e; padding:10px 12px; border-radius:10px; cursor:pointer; } .foto input { display:none; } .foto img { width:70px; height:70px; object-fit:cover; border-radius:8px; }
+  button.enviar { width:100%; border:0; border-radius:10px; padding:14px; font-size:16px; font-weight:800; background:var(--cor); color:#fff; margin-top:14px; }
+  .ok { text-align:center; padding:30px 10px; } .ok .num { font-size:30px; font-weight:900; color:var(--cor); }
+  .meu { border-bottom:1px solid var(--borda); padding:8px 0; font-size:13.5px; } .st { display:inline-block; font-size:11.5px; font-weight:700; border-radius:999px; padding:1px 8px; background:#e0e7ff; color:#3730a3; }
+  .erro { color:#dc2626; font-size:13px; margin-top:8px; }
+</style>
+</head>
+<body>
+<header><h1>🛠️ Abrir chamado de manutenção</h1><div id="sub">Carregando…</div></header>
+<main id="main"></main>
+<script>
+const TOKEN = new URLSearchParams(location.search).get('t') || '';
+const CATS = ['Elétrica', 'Hidráulica', 'Civil / estrutura', 'Telhado e calhas', 'Refrigeração / ar-condicionado', 'Equipamentos de movimentação', 'Segurança patrimonial / CFTV', 'Combate a incêndio', 'TI / sistemas', 'Outros'];
+const PRIO = [['Emergencial', '#991b1b'], ['Alta', '#dc2626'], ['Média', '#d97706'], ['Baixa', '#2563eb']];
+let prio = 'Média', arquivo = null, EMP = '';
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function lget(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+function lset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function form() {
+  document.getElementById('main').innerHTML = `<div class="caixa">
+    <label>Seu nome *</label><input id="nome" value="${esc(lget('ch_nome'))}">
+    <label>Seu WhatsApp</label><input id="tel" inputmode="tel" placeholder="(64) 99999-9999" value="${esc(lget('ch_tel'))}">
+    <label>O que precisa ser feito? *</label><input id="titulo" placeholder="Ex.: Lâmpada queimada na doca 2">
+    <label>Onde?</label><input id="local" placeholder="Armazém, doca, escritório, refeitório…">
+    <label>Tipo</label><select id="cat"><option value="">Escolha…</option>${CATS.map(c => `<option>${c}</option>`).join('')}</select>
+    <label>Urgência</label><div class="prio">${PRIO.map(([p, c]) => `<button type="button" class="${p === prio ? 'ativo' : ''}" style="${p === prio ? `background:${c};border-color:${c};` : ''}" onclick="prio='${p}'; marcar()">${p}</button>`).join('')}</div>
+    <label>Detalhes</label><textarea id="desc" rows="3" placeholder="Descreva o problema"></textarea>
+    <div class="foto"><label>📷 Foto<input type="file" accept="image/*" capture="environment" onchange="foto(this)"></label><span id="prev" style="font-size:12.5px;color:#64748b;">opcional</span></div>
+    <div id="erro" class="erro"></div>
+    <button class="enviar" id="btn" onclick="enviar()">Abrir chamado</button></div>
+    <div class="caixa" id="meus"></div>`;
+  meus();
+}
+function marcar() { document.querySelectorAll('.prio button').forEach((b, i) => { const [p, c] = PRIO[i]; b.className = p === prio ? 'ativo' : ''; b.style.background = p === prio ? c : '#fff'; b.style.borderColor = p === prio ? c : ''; }); }
+async function reduzir(arq) {
+  try {
+    if (!/^image\/(jpe?g|png|webp)$/i.test(arq.type) || arq.size < 900000) return arq;
+    const img = await new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = erro; i.src = URL.createObjectURL(arq); });
+    const k = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const blob = await new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.8)); return blob ? new File([blob], 'foto.jpg', { type: 'image/jpeg' }) : arq;
+  } catch (e) { return arq; }
+}
+async function foto(inp) { const a = inp.files && inp.files[0]; if (!a) return; arquivo = await reduzir(a); document.getElementById('prev').innerHTML = `<img src="${URL.createObjectURL(arquivo)}" alt="">`; }
+async function enviar() {
+  const g = id => (document.getElementById(id) || {}).value || '', er = document.getElementById('erro'), btn = document.getElementById('btn');
+  if (!g('nome').trim() || !g('titulo').trim()) { er.textContent = 'Informe seu nome e o que precisa ser feito.'; return; }
+  lset('ch_nome', g('nome').trim()); lset('ch_tel', g('tel').trim());
+  btn.disabled = true; btn.textContent = 'Enviando…'; er.textContent = '';
+  try {
+    const fd = new FormData();
+    [['solicitante', 'nome'], ['telefone', 'tel'], ['titulo', 'titulo'], ['local', 'local'], ['categoria', 'cat'], ['descricao', 'desc']].forEach(([k, id]) => fd.append(k, g(id).trim()));
+    fd.append('prioridade', prio); if (arquivo) fd.append('file', arquivo);
+    const r = await fetch('/api/public/chamado/' + encodeURIComponent(TOKEN), { method: 'POST', body: fd });
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Falha ao abrir o chamado.');
+    const txt = `🛠️ Abri o chamado de manutenção ${j.protocolo}: ${g('titulo').trim()}${g('local').trim() ? ' — ' + g('local').trim() : ''} (urgência ${prio}).`;
+    document.getElementById('main').innerHTML = `<div class="caixa ok"><div>✅ Chamado aberto!</div><div class="num">${esc(j.protocolo)}</div><div style="color:#64748b;font-size:13px;margin:6px 0 14px;">Guarde o protocolo. A manutenção já foi avisada.</div>
+      <a href="https://wa.me/?text=${encodeURIComponent(txt)}" target="_blank" style="display:block;background:#16a34a;color:#fff;border-radius:10px;padding:12px;font-weight:800;text-decoration:none;">Compartilhar no WhatsApp</a>
+      <button class="enviar" onclick="arquivo=null; form()">Abrir outro chamado</button></div><div class="caixa" id="meus"></div>`;
+    meus();
+  } catch (e) { er.textContent = '⚠️ ' + e.message; btn.disabled = false; btn.textContent = 'Abrir chamado'; }
+}
+async function meus() {
+  const el = document.getElementById('meus'), tel = lget('ch_tel').replace(/\D/g, ''); if (!el) return;
+  if (!tel) { el.innerHTML = '<div style="font-size:12.5px;color:#64748b;">Informe seu WhatsApp ao abrir o chamado para acompanhar o status por aqui.</div>'; return; }
+  try {
+    const r = await fetch('/api/public/chamado/' + encodeURIComponent(TOKEN) + '?tel=' + tel); const j = await r.json();
+    el.innerHTML = `<strong style="font-size:14px;">Meus chamados</strong>${(j.meus || []).map(m => `<div class="meu"><strong>${esc(m.protocolo)}</strong> · ${esc(m.titulo || '')}<br><span class="st" style="${m.status === 'Concluído' ? 'background:#dcfce7;color:#166534;' : ''}">${esc(m.status)}</span>${m.prazo ? ` <small style="color:#64748b;">prazo ${m.prazo.split('-').reverse().join('/')}</small>` : ''}${m.responsavel ? ` <small style="color:#64748b;">· ${esc(m.responsavel)}</small>` : ''}</div>`).join('') || '<div style="font-size:12.5px;color:#64748b;margin-top:6px;">Nenhum chamado aberto com este telefone.</div>'}`;
+  } catch (e) { el.innerHTML = ''; }
+}
+(async () => {
+  try {
+    if (!TOKEN) throw new Error('Link sem código.');
+    const r = await fetch('/api/public/chamado/' + encodeURIComponent(TOKEN)); const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'Link inválido.');
+    EMP = j.empresa; document.getElementById('sub').textContent = EMP; form();
+  } catch (e) { document.getElementById('sub').textContent = 'Erro'; document.getElementById('main').innerHTML = `<div class="caixa">⚠️ ${esc(e.message)}</div>`; }
+})();
+</script>
+</body>
+</html>
