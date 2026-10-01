@@ -620,6 +620,37 @@
   .acomp-switch input:checked + span { background: #16a34a; }
   .acomp-switch input:checked + span::before { transform: translateX(18px); }
   .dpo-score-badge { font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  /* ferramentas exclusivas: Sonho, Check Global, P1A/P3A, CAPEX, ANS */
+  .sonho-painel { background: linear-gradient(135deg,#1e1b4b,#312e81 60%,#4338ca); color:#fff; border-radius:14px; padding:18px; margin-bottom:12px; }
+  .sonho-topo { text-align:center; margin-bottom:14px; }
+  .sonho-tag { display:inline-block; background:#facc15; color:#1e1b4b; font-weight:900; letter-spacing:2px; padding:3px 12px; border-radius:999px; font-size:12px; }
+  .sonho-frase { font-size:22px; font-weight:800; margin-top:8px; line-height:1.3; }
+  .sonho-kpis { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; }
+  .sonho-kpi { background:rgba(255,255,255,.1); border-radius:10px; padding:10px; border-left:4px solid #94a3b8; }
+  .sonho-kpi.ok { border-left-color:#4ade80; } .sonho-kpi.nok { border-left-color:#f87171; }
+  .sonho-kpi-nome { font-weight:700; font-size:12.5px; margin-bottom:6px; } .sonho-kpi-nome span { opacity:.7; }
+  .sonho-kpi-linha { display:flex; justify-content:space-between; gap:8px; } .sonho-kpi-linha small { display:block; opacity:.7; font-size:10.5px; } .sonho-kpi-linha strong { font-size:16px; }
+  .sonho-tab td, .ans-tab td { padding:3px 4px; } .sonho-tab input, .ans-tab input { min-width:64px; }
+  .ans-tab tr.ans-dom td { background:#f1f5f9; color:#94a3b8; }
+  .capex-pipeline { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-bottom:12px; }
+  .capex-pipeline > div { background:#fff; border:1px solid var(--cinza-200); border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:2px; }
+  .capex-pipeline strong { font-size:22px; } .capex-pipeline span { font-weight:700; font-size:12.5px; } .capex-pipeline small { color:#64748b; }
+  .capex-barra { display:grid; grid-template-columns:140px 1fr 110px; gap:8px; align-items:center; font-size:12.5px; padding:3px 0; }
+  .capex-barra div { background:#f1f5f9; border-radius:6px; height:12px; overflow:hidden; } .capex-barra i { display:block; height:100%; background:#0f766e; }
+  .capex-barra b { text-align:right; }
+  .capex-meses { display:grid; grid-template-columns:repeat(12,1fr); gap:6px; height:140px; align-items:end; }
+  .capex-meses > div { display:flex; flex-direction:column; justify-content:flex-end; align-items:center; height:100%; }
+  .capex-meses b { order:0; } .capex-meses i { order:1; } .capex-meses small { order:2; margin-top:2px; }
+  .capex-meses i { display:block; width:70%; background:#4338ca; border-radius:4px 4px 0 0; min-height:2px; }
+  .capex-meses small { font-size:10.5px; color:#64748b; } .capex-meses b { font-size:10px; }
+  .cx-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px 10px; }
+  .cx-prop { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:6px; } .cx-prop input { flex:1; min-width:110px; margin:0; }
+  .ex-valida { padding:10px 12px; }
+  .man-fotos { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+  .man-fotos > div { width:150px; position:relative; } .man-fotos img { width:150px; height:110px; object-fit:cover; border-radius:8px; border:1px solid var(--cinza-200); }
+  .man-fotos small { display:block; font-size:11px; color:#475569; } .man-fotos .fd-remover { position:absolute; top:4px; right:4px; background:#fff; }
+  .p3a-passo { padding:8px 10px; border:1px solid var(--cinza-200); border-radius:8px; margin-bottom:6px; } .p3a-passo.feito { background:#f0fdf4; border-color:#86efac; }
+  @media (max-width:700px) { .capex-barra { grid-template-columns:90px 1fr 80px; } .sonho-frase { font-size:18px; } }
 </style>
 </head>
 <body>
@@ -9062,11 +9093,16 @@ async function excluirFerramentaDpo(id) {
 // ======================================================================
 let FD = null; // pasta aberta: { chave, ano, companyId, dados, validacao, arquivos, aba, meta }
 let DIM = null; // visão das pastas do Simulador de Dimensionamento num ano
-const FD_PERGUNTAS = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop', 'gestao:3.1': 'cinco_s' };
+const FD_PERGUNTAS = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop', 'gestao:3.1': 'cinco_s', 'gestao:1.2': 'sonho', 'planejamento:2.2': 'manutencao', 'planejamento:2.3': 'p3a', 'planejamento:2.4': 'capex', 'planejamento:3.2': 'ans' };
 const FD_DESCRICOES = {
   swot: ['Análise SWOT digital por área (Armazém, Distribuição, Frota, Gente): fatores, matriz, cruzamentos, objetivos e planos — com validação dos itens V.1 a V.3.', '🧭 Abrir Análise SWOT'],
   dimensionamento: ['Simulador de Dimensionamento em pastas por ano: Armazém, Entrega e Puxada (orçamento calculado × realizado), RACI, KPIs e PDCA — com validação dos itens V.1 a V.5.', '📐 Abrir Simulador de Dimensionamento'],
   cinco_s: ['Gerenciador 5S: donos de área e auditores, auditoria cruzada mensal dos 5 sensos (S / N / NA), resultado por área, departamento e senso com meta de 85%, plano de ação obrigatório em todo item N e importação da planilha 5S.', '🧹 Abrir Gerenciador 5S'],
+  sonho: ['DPO Sonho: frase do sonho, DPO Day, KPIs do sonho com Meta e Real mês a mês (download Excel) e validação V.1 a V.5.', '🌟 Abrir DPO Sonho'],
+  manutencao: ['Check Global de Manutenção: checklist trimestral com pesos e itens críticos, evolução T1–T4, ronda com link para fotos pelo celular, plano de ação, fornecedores e RACI.', '🛠️ Abrir Check Global'],
+  p3a: ['P1A / P3A: volume e marketplace, projetos de pessoas, frota e instalações, PA/estacionamento, impactos financeiros e playbook passo a passo.', '🧭 Abrir P1A / P3A'],
+  capex: ['Gestão de CAPEX: solicitações com propostas, priorização GUT, aprovação, execução, nota fiscal na conclusão, check trimestral e painel.', '🏗️ Abrir Gestão de CAPEX'],
+  ans: ['ANS de Volume: acompanhamento diário negociado × real, dispersão acima de ±10% gera ação automaticamente, acordo e rotina com vendas.', '🤝 Abrir ANS de Volume'],
   gop: ['Gerenciador GOP: Inventário, Obsolescence, TQI Armazém, Rating, TQI Distribuição e OTIF — SIM/NÃO por mês, plano de ação obrigatório em todo mês NOK e importação da planilha Gerenciador GOP.', '📋 Abrir Gerenciador GOP']
 };
 
@@ -9087,20 +9123,23 @@ function fdCorpoRender() { const el = document.getElementById('fd-corpo'); if (e
 async function abrirFerramentaDigitalDpo(chave, companyId, ano, aba) {
   if (chave === 'dimensionamento' || chave === 'ppr') return abrirDimensionamentoDpo(companyId, ano);
   if (SIMS_DPO[chave] || chave === 'orcamento') return abrirPastaDimensionamentoDpo(chave, companyId, ano, aba);
+  if (String(chave).startsWith('acomp:') && EXCL_POR_PERGUNTA[String(chave).slice(6)]) { chave = EXCL_POR_PERGUNTA[String(chave).slice(6)]; aba = undefined; }
   const cont = document.getElementById('conteudo');
   cont.innerHTML = '<p>Carregando ferramenta...</p>';
+  FD_AO_EDITAR = null;
   try {
     const q = new URLSearchParams();
     if (companyId) q.set('company_id', companyId);
     if (ano) q.set('ano', ano);
     const d = await api('/api/dpo/ferramentas-digitais/' + chave + '?' + q.toString());
-    FD = { chave, ano: d.ano, companyId: companyId || null, dados: d.dados || {}, validacao: d.validacao, arquivos: d.arquivos || [], aba: aba || (String(chave).startsWith('acomp:') ? 'itens' : chave === 'gop' || chave === 'cinco_s' ? 'painel' : 'inicio'), meta: d, salvoEm: d.updated_at, autor: d.autorNome };
+    FD = { chave, ano: d.ano, companyId: companyId || null, dados: d.dados || {}, validacao: d.validacao, arquivos: d.arquivos || [], aba: aba || (EXCL[chave] ? EXCL[chave].abas[0][0] : String(chave).startsWith('acomp:') ? 'itens' : chave === 'gop' || chave === 'cinco_s' ? 'painel' : 'inicio'), meta: d, salvoEm: d.updated_at, autor: d.autorNome };
     if (chave === 'swot') swotPrepararDados();
     if (acompEh() && d.template && d.template.especial === 'gop') await acompCarregarGop();
     if (acompEh() && d.template && d.template.especial === 'cinco_s') await acompCarregar5s();
     if (acompEh()) { acompPrepararDados(); acompAtualizarResumo(); }
     if (chave === 'gop') gopPreparar();
     if (chave === 'cinco_s') c5Preparar();
+    if (EXCL[chave]) exPreparar();
     fdDesenhar();
   } catch (e) { cont.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
@@ -9118,10 +9157,12 @@ async function fdSalvar() {
   const st = document.getElementById('fd-status');
   try {
     if (acompEh()) acompAtualizarResumo();
+    if (exEh()) exValidar();
     const corpo = { ano: FD.ano, dados: FD.dados };
     if (FD.companyId) corpo.company_id = FD.companyId;
     const r = await api('/api/dpo/ferramentas-digitais/' + FD.chave, { method: 'PUT', body: JSON.stringify(corpo) });
     FD.validacao = acompEh() ? acompValidacao() : r.validacao;
+    if (exEh()) { exValidar(); if (st) st.innerHTML = '✅ Salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); return; }
     if (gopEh() || c5Eh()) { const nota = document.getElementById('fd-nota'); if (nota) nota.innerHTML = c5Eh() ? c5Chip() : gopChip(); if (st) st.innerHTML = '✅ Salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); return; }
     if (DIM) DIM.validacao = r.validacao;
     if (st) st.innerHTML = '✅ Salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -9142,7 +9183,7 @@ function fdVoltar() {
   if (FD_TIMER) fdSalvar();
   if (c5Eh()) { FD = null; const f = C5_VOLTAR; C5_VOLTAR = null; if (f) { f(); return; } if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) renderCicloDpoAtual(); else renderDpoHome(); return; }
   if (gopEh()) { FD = null; const f = GOP_VOLTAR; GOP_VOLTAR = null; if (f) { f(); return; } if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) renderCicloDpoAtual(); else renderDpoHome(); return; }
-  if (acompEh()) { FD = null; if (ACOMP_VOLTAR) { const f = ACOMP_VOLTAR; ACOMP_VOLTAR = null; f(); return; } if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) renderCicloDpoAtual(); else renderDpoHome(); return; }
+  if (acompEh() || exEh()) { FD = null; if (ACOMP_VOLTAR) { const f = ACOMP_VOLTAR; ACOMP_VOLTAR = null; f(); return; } if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) renderCicloDpoAtual(); else renderDpoHome(); return; }
   if (FD && FD.chave !== 'swot') { const c = FD.companyId; FD = null; abrirDimensionamentoDpo(c, DIM ? DIM.ano : null); return; }
   FD = null;
   if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo) renderCicloDpoAtual(); else renderDpoHome();
@@ -9165,18 +9206,18 @@ function fdDesenhar() {
   const m = FD.meta;
   const ehSim = !!SIMS_DPO[FD.chave], ehOrc = FD.chave === 'orcamento';
   const ehAcomp = acompEh();
-  const ehGop = gopEh(), eh5s = c5Eh();
-  const abas = eh5s ? c5Abas() : ehGop ? gopAbas() : ehAcomp ? acompAbas() : FD.chave === 'swot'
+  const ehGop = gopEh(), eh5s = c5Eh(), ehEx = exEh();
+  const abas = ehEx ? exCfg().abas : eh5s ? c5Abas() : ehGop ? gopAbas() : ehAcomp ? acompAbas() : FD.chave === 'swot'
     ? [['inicio', '🏁 Início e áreas'], ['forcas', '💪 Forças'], ['fraquezas', '⚠️ Fraquezas'], ['oportunidades', '🚀 Oportunidades'], ['ameacas', '🛑 Ameaças'], ['matriz', '🧮 Matriz SWOT'], ['cruzamentos', '🔀 Cruzamentos'], ['objetivos', '🎯 Objetivos estratégicos'], ['planos', '📋 Planos de ação'], ['validacao', '✅ Validação 1.3'], ['arquivos', '📎 Arquivos']]
     : ehSim ? [['parametros', '⚙️ Parâmetros'], ['plan', '📋 Orçamento (Plan)'], ['real', '📈 Realizado'], ['comparativo', '📊 Plan x Real'], ['obz', '💰 OBZ Plan x Real'], ['arquivos', '📎 Arquivos'], ['validacao', '✅ Validação 1.1']]
     : [['raci', '👥 RACI e processo'], ['kpis', '🌱 KPIs de sustentabilidade'], ['pdca', '🔁 PDCA de custos'], ['arquivos', '📎 Arquivos'], ['validacao', '✅ Validação 1.1']];
-  const titulo = eh5s ? '🧹 Gerenciador 5S' : ehGop ? '📋 Gerenciador GOP — Revendas' : ehAcomp ? `🚀 ${escapeHtml(m.template.numero)} ${escapeHtml(m.template.questao)}` : FD.chave === 'swot' ? '🧭 ' + escapeHtml(m.titulo) : ehSim ? `${SIMS_DPO[FD.chave].icone} ${SIMS_DPO[FD.chave].titulo}` : '📑 Orçamento, RACI e KPIs';
-  const anosHtml = FD.chave === 'swot' || ehAcomp || ehGop || eh5s
+  const titulo = ehEx ? `${exCfg().icone} ${exCfg().titulo}` : eh5s ? '🧹 Gerenciador 5S' : ehGop ? '📋 Gerenciador GOP — Revendas' : ehAcomp ? `🚀 ${escapeHtml(m.template.numero)} ${escapeHtml(m.template.questao)}` : FD.chave === 'swot' ? '🧭 ' + escapeHtml(m.titulo) : ehSim ? `${SIMS_DPO[FD.chave].icone} ${SIMS_DPO[FD.chave].titulo}` : '📑 Orçamento, RACI e KPIs';
+  const anosHtml = FD.chave === 'swot' || ehEx || ehAcomp || ehGop || eh5s
     ? fdAnosHtml(m.anos, FD.ano, 'fdAbrirAnoSwot', 'fdNovoAnoSwot')
     : fdAnosHtml(DIM && DIM.pastas[FD.chave] ? DIM.pastas[FD.chave].anos : [], FD.ano, 'fdAbrirAnoPasta', 'fdNovoAnoPasta');
   cont.innerHTML = `
     <div class="barra-acoes">
-      <div><button class="btn-secundario btn-sm" onclick="fdVoltar()">← ${FD.chave === 'swot' || acompEh() || ehGop || eh5s ? 'Voltar' : 'Pastas do Simulador de Dimensionamento'}</button></div>
+      <div><button class="btn-secundario btn-sm" onclick="fdVoltar()">← ${FD.chave === 'swot' || ehEx || acompEh() || ehGop || eh5s ? 'Voltar' : 'Pastas do Simulador de Dimensionamento'}</button></div>
       <div class="direita">
         <span id="fd-status" style="font-size:12px;color:#64748b;">${FD.salvoEm ? 'Última gravação: ' + new Date(String(FD.salvoEm).replace(' ', 'T') + 'Z').toLocaleString('pt-BR') + (FD.autor ? ' por ' + escapeHtml(FD.autor) : '') : 'Pasta ainda não preenchida'}</span>
         <button class="btn-secundario btn-sm" onclick="fdSalvar()">💾 Salvar</button>
@@ -9185,8 +9226,8 @@ function fdDesenhar() {
     </div>
     <h1 style="margin-bottom:2px;">${titulo} <span style="color:#94a3b8;font-weight:600;">· ${FD.ano}</span></h1>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-      <span class="plano-meta">${eh5s ? `Gestão Revenda · pergunta <strong>3.1 5S</strong> · auditoria cruzada mensal por área · plano obrigatório em todo item N` : ehGop ? `GOPs da revenda — uma aba por GOP · plano de ação obrigatório em todo mês NOK` : ehAcomp ? `🚀 Acompanhamento Impulsionar · ${escapeHtml(m.template.pilarLabel)} · ${escapeHtml(m.template.grupo)}${m.template.mandatoria ? ' · <strong style="color:#dc2626;">Mandatória</strong>' : ''}` : `${escapeHtml(m.pilarLabel || '')} · pergunta <strong>${escapeHtml(m.pergunta || '')} ${escapeHtml(m.perguntaTexto || '')}</strong>${ehSim || ehOrc ? ' · pasta do Simulador de Dimensionamento' : ''}`}</span>
-      <span id="fd-nota">${eh5s ? c5Chip() : ehGop ? gopChip() : fdChipNota(FD.validacao, ehAcomp ? "fdTrocarAba('itens')" : undefined)}</span>
+      <span class="plano-meta">${ehEx ? exCfg().sub + ' · 🚀 Acompanhamento Impulsionar' : eh5s ? `Gestão Revenda · pergunta <strong>3.1 5S</strong> · auditoria cruzada mensal por área · plano obrigatório em todo item N` : ehGop ? `GOPs da revenda — uma aba por GOP · plano de ação obrigatório em todo mês NOK` : ehAcomp ? `🚀 Acompanhamento Impulsionar · ${escapeHtml(m.template.pilarLabel)} · ${escapeHtml(m.template.grupo)}${m.template.mandatoria ? ' · <strong style="color:#dc2626;">Mandatória</strong>' : ''}` : `${escapeHtml(m.pilarLabel || '')} · pergunta <strong>${escapeHtml(m.pergunta || '')} ${escapeHtml(m.perguntaTexto || '')}</strong>${ehSim || ehOrc ? ' · pasta do Simulador de Dimensionamento' : ''}`}</span>
+      <span id="fd-nota">${ehEx ? fdChipNota(FD.validacao, "fdTrocarAba('valida')") : eh5s ? c5Chip() : ehGop ? gopChip() : fdChipNota(FD.validacao, ehAcomp ? "fdTrocarAba('itens')" : undefined)}</span>
     </div>
     ${anosHtml}
     <div class="fd-abas">${abas.map(([k, r]) => `<button class="fd-aba ${FD.aba === k ? 'ativa' : ''}" onclick="fdTrocarAba('${k}')">${r}</button>`).join('')}</div>
@@ -9199,6 +9240,7 @@ function fdHtmlAba() {
   const a = FD.aba;
   if (a === 'validacao') return fdHtmlValidacao(FD.validacao, FD.meta);
   if (a === 'arquivos') return fdHtmlArquivos();
+  if (exEh()) return exHtmlAba();
   if (acompEh()) return acompHtmlAba();
   if (gopEh()) return gopHtmlAba();
   if (c5Eh()) return c5HtmlAba();
@@ -9291,7 +9333,7 @@ function fdHtmlValidacao(v, meta) {
 
 // ---- arquivos de atualização ----
 function fdHtmlArquivos() {
-  const tipos = c5Eh() ? [['planilha_5s', 'Planilha 5S'], ['foto', 'Foto antes / depois'], ['quadro', 'Quadro de gestão à vista'], ['outro', 'Outro']] : gopEh() ? [['planilha_gop', 'Planilha Gerenciador GOP'], ['evidencia', 'Evidência de ação'], ['outro', 'Outro']] : acompEh() ? [['evidencia', 'Evidência'], ['ata', 'Ata / lista de presença'], ['padrao', 'Padrão / procedimento'], ['relatorio', 'Relatório de indicador'], ['foto', 'Foto'], ['outro', 'Outro']]
+  const tipos = exEh() ? exCfg().tipos : c5Eh() ? [['planilha_5s', 'Planilha 5S'], ['foto', 'Foto antes / depois'], ['quadro', 'Quadro de gestão à vista'], ['outro', 'Outro']] : gopEh() ? [['planilha_gop', 'Planilha Gerenciador GOP'], ['evidencia', 'Evidência de ação'], ['outro', 'Outro']] : acompEh() ? [['evidencia', 'Evidência'], ['ata', 'Ata / lista de presença'], ['padrao', 'Padrão / procedimento'], ['relatorio', 'Relatório de indicador'], ['foto', 'Foto'], ['outro', 'Outro']]
     : FD.chave === 'swot'
     ? [['swot', 'Planilha SWOT'], ['dn_mp', 'Descrição de Negócio / Mapeamento de Processo'], ['ata', 'Ata / evidência de priorização'], ['outro', 'Outro']]
     : SIMS_DPO[FD.chave] ? [['planilha', `Planilha ${SIMS_DPO[FD.chave].planilha} (.xlsm)`], ['evidencia', 'Evidência (e-mail, ata de revisão)'], ['outro', 'Outro']]
@@ -11380,6 +11422,752 @@ async function c5Importar(input) {
   } catch (e) { mostrarToast(e.message, true); }
   input.value = '';
 }
+
+// ======================= FERRAMENTAS EXCLUSIVAS POR PERGUNTA =======================
+// Sonho (Gestão 1.2) · Check Global de Manutenção (Planej. 2.2) · P1A/P3A (2.3) · CAPEX (2.4) · ANS de Volume (3.2)
+// Cada uma substitui o acompanhamento genérico da pergunta e calcula a nota sugerida.
+const EXCL = {
+  sonho: { q: 'gestao:1.2', icone: '🌟', titulo: 'DPO Sonho', sub: 'Gestão Revenda · pergunta <strong>1.2 Definição de Sonho</strong>', req1: ['V.1', 'V.2'],
+    abas: [['sonho', '🌟 Sonho'], ['kpis', '🎯 Meta e Real'], ['valida', '✅ Validação 1.2'], ['arquivos', '📎 Evidências']],
+    tipos: [['exposicao', 'Foto do Sonho exposto na unidade'], ['dpoday', 'Apresentação do DPO Day'], ['comunicacao', 'Evidência de comunicação'], ['outro', 'Outro']] },
+  manutencao: { q: 'planejamento:2.2', icone: '🛠️', titulo: 'Check Global de Manutenção', sub: 'Planejamento · pergunta <strong>2.2 Manutenção das Instalações</strong>', req1: ['V.1', 'V.2', 'V.3'],
+    abas: [['check', '📝 Checklist do trimestre'], ['evolucao', '📈 Evolução T1–T4'], ['ronda', '📷 Ronda e fotos'], ['acoes', '🔁 Plano de ação'], ['fornecedores', '📇 Base de fornecedores'], ['raci', '👥 RACI e ANS'], ['valida', '✅ Validação 2.2'], ['arquivos', '📎 Laudos e anexos']],
+    tipos: [['laudo', 'Laudo técnico'], ['contrato', 'Contrato de fornecedor'], ['foto', 'Foto'], ['outro', 'Outro']] },
+  p3a: { q: 'planejamento:2.3', icone: '🧭', titulo: 'P1A / P3A — pessoas, estrutura e frota', sub: 'Planejamento · pergunta <strong>2.3 P1A e P3A</strong>', req1: ['V.1', 'V.2', 'V.3', 'V.4'],
+    abas: [['volume', '📈 Volume e marketplace'], ['projetos', '🗂️ Projetos P1A / P3A'], ['pessoas', '👥 Pessoas (QLP)'], ['frota', '🚚 Frota'], ['estrutura', '🏭 Instalações, PA e estacionamento'], ['financeiro', '💰 Impactos financeiros'], ['playbook', '📘 Playbook'], ['valida', '✅ Validação 2.3'], ['arquivos', '📎 Evidências']],
+    tipos: [['p3a', 'Planilha P3A'], ['capex', 'Registro CAPEX'], ['negociacao', 'Negociação sindical / 3PL / aluguel'], ['ata', 'Ata de feedback da liderança'], ['outro', 'Outro']] },
+  capex: { q: 'planejamento:2.4', icone: '🏗️', titulo: 'Gestão de CAPEX', sub: 'Planejamento · pergunta <strong>2.4 Plano e Uso do CAPEX</strong>', req1: ['V.1', 'V.2', 'V.3', 'V.4'],
+    abas: [['dash', '📊 Painel'], ['itens', '📋 Registro de solicitações'], ['gut', '🎯 Priorização GUT'], ['checks', '🗓️ Check trimestral'], ['plano', '🔁 Plano de ação'], ['cad', '⚙️ Cadastros'], ['valida', '✅ Validação 2.4'], ['arquivos', '📎 Anexos']],
+    tipos: [['planilha', 'Planilha CAPEX'], ['proposta', 'Proposta de fornecedor'], ['nf', 'Nota fiscal'], ['ata', 'Ata do check trimestral'], ['outro', 'Outro']] },
+  ans: { q: 'planejamento:3.2', icone: '🤝', titulo: 'ANS de Volume com Vendas', sub: 'Planejamento · pergunta <strong>3.2 ANS com Vendas</strong>', req1: ['V.1', 'V.2'],
+    abas: [['diario', '📅 Acompanhamento diário'], ['acordo', '📄 Acordo e rotina'], ['acoes', '🔁 Ações de dispersão'], ['valida', '✅ Validação 3.2'], ['arquivos', '📎 Anexos']],
+    tipos: [['ans', 'ANS assinado'], ['ata', 'Ata de reunião com vendas'], ['relatorio', 'Relatório de volume'], ['outro', 'Outro']] }
+};
+const EXCL_POR_PERGUNTA = Object.fromEntries(Object.entries(EXCL).map(([k, v]) => [v.q, k]));
+const STATUS_ACAO_EX = ['Não iniciado', 'Em andamento', 'Concluída', 'Atrasado'];
+function exEh() { return !!(FD && EXCL[FD.chave]); }
+function exCfg() { return EXCL[FD.chave]; }
+function exHoje() { return new Date().toISOString().slice(0, 10); }
+function exMesAtual() { return FD.ano === new Date().getFullYear() ? new Date().getMonth() : 11; }
+function exTriAtual() { return FD.ano === new Date().getFullYear() ? Math.floor(new Date().getMonth() / 3) : 3; }
+function exNum(v) { return fdNum(v); }
+function exChip(st) { const m = { ok: ['✅ atende', '#dcfce7', '#166534'], parcial: ['🟡 parcial', '#fef9c3', '#854d0e'], pendente: ['⭕ pendente', '#fee2e2', '#991b1b'] }[st] || ['—', '#f1f5f9', '#64748b']; return `<span class="dpo-chip-nivel" style="background:${m[1]};color:${m[2]};">${m[0]}</span>`; }
+function exSt(ok, parcial) { return ok ? 'ok' : parcial ? 'parcial' : 'pendente'; }
+function exAbrirAcomp(a, cid) { const t = EXCL_POR_PERGUNTA[a.questionKey]; return t ? `abrirFerramentaDigitalDpo('${t}', ${cid || 'null'})` : `abrirFerramentaDigitalDpo('acomp:${a.questionKey}', ${cid || 'null'})`; }
+
+function exPreparar() {
+  const d = FD.dados, c = FD.chave;
+  d.manual = d.manual || {};
+  if (c === 'sonho') {
+    if (!Array.isArray(d.kpis) || !d.kpis.length) d.kpis = SONHO_KPIS_PADRAO.map(([nome, pilar, sentido, meta, unidade]) => ({ id: fdId(), nome, pilar, sentido, meta, unidade, acumula: unidade === 'nº' ? 'soma' : 'media', real: [] }));
+    ['propostas', 'comunicacoes'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
+  } else if (c === 'ans') {
+    d.volPadrao = d.volPadrao || { 1: 2000, 2: 1800, 3: 1700, 4: 1600, 5: 1400, 6: 900, 0: 0 };
+    if (d.tolerancia === undefined || d.tolerancia === '') d.tolerancia = 10;
+    d.meses = d.meses || {}; d.acoes = Array.isArray(d.acoes) ? d.acoes : []; d.acordo = d.acordo || {}; d.reunioes = Array.isArray(d.reunioes) ? d.reunioes : [];
+    if (FD.ansMes === undefined) FD.ansMes = exMesAtual();
+    ansGarantirAcoes();
+  } else if (c === 'capex') {
+    d.cadastros = d.cadastros || { areas: 'Armazém\nDistribuição\nPuxada\nFrota\nRevenda\nLogística\nFinanceiro', categorias: 'Manutenção e Reparo\nAtivo de Giro\nTecnologia\nEstrutura\nVeículo\nServidores\nMercado\nEquipamentos', origens: 'Produtividade\nSegurança\nCheck Global de Manutenção\nQualidade\nEstrutura\nP1A/P3A\nMarketplace', tipos: 'Reforma\nPintura\nAmpliação\nAquisição\nSubstituição\nEquipamentos\nSistema\nMóveis\nComputadores\nCelulares\nVasilhame\nPalete' };
+    ['itens', 'checks', 'plano'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
+  } else if (c === 'p3a') {
+    ['volumes', 'projetos', 'frota', 'impactos', 'feedbacks', 'pontos'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
+    if (!d.volumes.length) d.volumes = [-2, -1, 0, 1, 2, 3].map(i => ({ id: fdId(), ano: String(FD.ano + i) }));
+    if (!Array.isArray(d.qlp) || !d.qlp.length) d.qlp = ['Motoristas', 'Ajudantes de entrega', 'Motoristas de puxada', 'Operadores de empilhadeira', 'Conferentes', 'Ajudantes de armazém', 'Administrativo'].map(f => ({ id: fdId(), funcao: f }));
+    d.estrutura = d.estrutura || {}; d.playbook = d.playbook || {};
+  } else if (c === 'manutencao') {
+    if (!Array.isArray(d.modelo) || !d.modelo.length) d.modelo = JSON.parse(JSON.stringify(FD.meta.modeloManutencao || []));
+    d.notas = d.notas || {}; d.datas = d.datas || {};
+    ['acoes', 'fornecedores', 'raci'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
+    if (FD.triSel === undefined) { FD.triSel = exTriAtual(); }
+    manGarantirPlanos();
+  }
+  exValidar();
+}
+
+// ---- validação da pergunta (nota 3 / 1 / 0) ----
+function exLinhas() {
+  const d = FD.dados, c = FD.chave;
+  if (c === 'sonho') return sonhoValidar(d);
+  if (c === 'ans') return ansValidar(d);
+  if (c === 'capex') return capexValidar(d);
+  if (c === 'p3a') return p3aValidar(d);
+  if (c === 'manutencao') return manValidar(d);
+  return [];
+}
+function exValidar() {
+  const d = FD.dados, cfg = exCfg();
+  const linhas = exLinhas().map(l => { const m = (d.manual || {})[l.v]; return { ...l, stAuto: l.st, st: m && m.status === 'atende' ? 'ok' : m && m.status === 'nao' ? 'pendente' : l.st }; });
+  const ok = new Set(linhas.filter(l => l.st === 'ok').map(l => l.v));
+  const nota = linhas.length && linhas.every(l => l.st === 'ok') ? '3' : cfg.req1.every(v => ok.has(v)) ? '1' : '0';
+  FD.validacao = { notaSugerida: nota, itens: linhas.map(l => ({ numero: l.v, ok: l.st === 'ok', texto: l.titulo, faltas: [] })), regra: '' };
+  d.__resumo = { nota, ok: ok.size, total: linhas.length, atualizado: new Date().toISOString() };
+  d.__validacao = linhas.map(l => ({ v: l.v, st: l.st, txt: l.txt }));
+  const chip = document.getElementById('fd-nota'); if (chip) chip.innerHTML = fdChipNota(FD.validacao, "fdTrocarAba('valida')");
+  return linhas;
+}
+function exHtmlValidacao() {
+  const linhas = exValidar(), v = FD.validacao, n = v.notaSugerida, cor = n === '3' ? '#16a34a' : n === '1' ? '#d97706' : '#dc2626';
+  const q = FD.meta.verificacao || '';
+  return `
+    <div class="painel" style="margin-bottom:12px;border:2px solid ${cor};display:flex;gap:16px;align-items:center;">
+      <div style="width:64px;height:64px;border-radius:50%;background:${cor};color:#fff;font-size:30px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${n}</div>
+      <div><div style="font-size:17px;font-weight:800;">Nota sugerida: ${n} · ${linhas.filter(l => l.st === 'ok').length}/${linhas.length} verificações atendidas</div>
+        <div style="font-size:12.5px;color:#475569;">A ferramenta avalia cada verificação pelo que foi preenchido. Quando a evidência estiver fora do sistema, confirme manualmente. A nota oficial continua na 📊 Autoavaliação Mensal.</div></div>
+    </div>
+    ${linhas.map(l => { const m = (FD.dados.manual || {})[l.v] || {}; return `
+      <div class="painel ex-valida" style="margin-bottom:8px;border-left:4px solid ${l.st === 'ok' ? '#16a34a' : l.st === 'parcial' ? '#d97706' : '#dc2626'};">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;"><strong>${l.v} — ${escapeHtml(l.titulo)}</strong>${exChip(l.st)}</div>
+        <div style="font-size:12.5px;color:#475569;margin:4px 0 6px;">${escapeHtml(l.txt)}${l.ir ? ` · <a href="#" onclick="fdTrocarAba('${l.ir}'); return false;">ir para a aba</a>` : ''}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;">Automático: ${exChip(l.stAuto)}
+          <select style="width:auto;margin:0;" onchange="exManual('${l.v}', 'status', this.value)"><option value="">Usar o automático</option><option value="atende" ${m.status === 'atende' ? 'selected' : ''}>Confirmo que atende</option><option value="nao" ${m.status === 'nao' ? 'selected' : ''}>Não atende</option></select>
+          <input style="flex:1;min-width:220px;margin:0;" placeholder="Evidência (onde está, quem confirma...)" value="${escapeHtml(m.evidencia || '')}" onchange="exManual('${l.v}', 'evidencia', this.value)"></div>
+      </div>`; }).join('')}
+    <details class="painel" style="margin-top:10px;"><summary style="cursor:pointer;font-weight:700;">📖 Texto oficial da verificação e how to check</summary>
+      <div style="white-space:pre-line;font-size:12.5px;color:#334155;margin-top:8px;">${escapeHtml(q)}</div></details>`;
+}
+function exManual(v, campo, valor) { const d = FD.dados; d.manual = d.manual || {}; d.manual[v] = { ...(d.manual[v] || {}), [campo]: valor }; fdAgendarSalvar(); if (campo === 'status') fdCorpoRender(); else exValidar(); }
+function exHtmlAba() {
+  const a = FD.aba, c = FD.chave;
+  if (a === 'valida') return exHtmlValidacao();
+  if (c === 'sonho') return a === 'kpis' ? sonhoHtmlKpis() : sonhoHtmlSonho();
+  if (c === 'ans') return a === 'acordo' ? ansHtmlAcordo() : a === 'acoes' ? ansHtmlAcoes() : ansHtmlDiario();
+  if (c === 'capex') return a === 'itens' ? capexHtmlItens() : a === 'gut' ? capexHtmlGut() : a === 'checks' ? capexHtmlChecks() : a === 'plano' ? capexHtmlPlano() : a === 'cad' ? capexHtmlCad() : capexHtmlDash();
+  if (c === 'p3a') return p3aHtmlAba(a);
+  if (c === 'manutencao') return manHtmlAba(a);
+  return '';
+}
+function exRedesenhar() {
+  exValidar(); fdCorpoRender();
+}
+function exAoEditar() { FD_AO_EDITAR = () => { exValidar(); }; }
+
+// ======================= DPO SONHO (Gestão 1.2) =======================
+const SONHO_PILARES = ['Gente', 'Segurança', 'Custo / Produtividade', 'Nível de Serviço'];
+const SONHO_KPIS_PADRAO = [
+  ['LTI', 'Segurança', 'menor', 0, 'nº'], ['NPS', 'Nível de Serviço', 'maior', 65, '%'], ['Engagement', 'Gente', 'maior', 85, '%'], ['Disp. OBZ total logística', 'Custo / Produtividade', 'menor', 5, '%'],
+  ['Gabaritos de segurança', 'Segurança', 'maior', 100, '%'], ['Bate-papo de novos', 'Gente', 'maior', 100, '%'], ['Relatos', 'Segurança', 'maior', 90, '%'], ['OTIF', 'Nível de Serviço', 'maior', 85, '%'],
+  ['Turnover de novos', 'Gente', 'menor', 20, '%'], ['Devolução PDV', 'Nível de Serviço', 'menor', 2.5, '%']
+];
+function sonhoYtd(k) {
+  const v = (k.real || []).map(exNum).filter(x => x !== null);
+  if (!v.length) return null;
+  return k.acumula === 'soma' ? v.reduce((a, b) => a + b, 0) : k.acumula === 'ultimo' ? v[v.length - 1] : v.reduce((a, b) => a + b, 0) / v.length;
+}
+function sonhoOk(k, v) { const meta = exNum(k.meta); if (v === null || v === undefined || meta === null) return null; return k.sentido === 'menor' ? v <= meta : v >= meta; }
+function sonhoFmt(k, v) { return v === null || v === undefined ? '—' : fdFmt(v, Math.abs(v) < 10 && v % 1 ? 1 : 0) + (k.unidade === '%' ? '%' : ''); }
+function sonhoValidar(d) {
+  const rev = d.dataRevisao || '', revOk = rev && rev.slice(0, 4) === String(FD.ano) && Number(rev.slice(5, 7)) <= 3;
+  const kpis = (d.kpis || []).filter(k => String(k.nome || '').trim() && exNum(k.meta) !== null);
+  const pilares = new Set(kpis.map(k => k.pilar).filter(Boolean));
+  const temFoto = (FD.arquivos || []).some(a => a.tipo === 'exposicao');
+  const props = (d.propostas || []).filter(p => String(p.texto || '').trim());
+  return [
+    { v: 'V.1', titulo: 'Sonho revisado no ciclo (jan–mar) e em vigor', st: exSt(String(d.frase || '').trim() && revOk, String(d.frase || '').trim()), txt: `${String(d.frase || '').trim() ? 'Frase do Sonho preenchida' : 'Falta a frase do Sonho'} · revisão ${rev ? new Date(rev + 'T12:00:00').toLocaleDateString('pt-BR') : 'sem data'}${rev && !revOk ? ' (fora do ciclo jan–mar deste ano)' : ''}.`, ir: 'sonho' },
+    { v: 'V.2', titulo: 'KPIs do Sonho definidos e cascateados', st: exSt(kpis.length >= 4 && pilares.size >= 4, kpis.length >= 1), txt: `${kpis.length} KPI(s) com meta · pilares cobertos: ${[...pilares].join(', ') || 'nenhum'} (precisa de Gente, Segurança, Custo/Produtividade e Nível de Serviço).`, ir: 'kpis' },
+    { v: 'V.3', titulo: 'Conectado à estratégia ABI e comunicado', st: exSt(String(d.conexao || '').trim().length > 10 && (d.comunicacoes || []).length >= 1, String(d.conexao || '').trim() || (d.comunicacoes || []).length), txt: `${String(d.conexao || '').trim() ? 'Conexão com a estratégia descrita' : 'Descreva a conexão com a estratégia ABI'} · ${(d.comunicacoes || []).length} comunicação(ões) registrada(s).`, ir: 'sonho' },
+    { v: 'V.4', titulo: 'Sonho exposto fisicamente e visível', st: exSt(String(d.exposicao || '').trim() && temFoto, String(d.exposicao || '').trim() || temFoto), txt: `${String(d.exposicao || '').trim() ? 'Local: ' + d.exposicao : 'Informe onde o Sonho está exposto'} · ${temFoto ? 'foto anexada' : 'anexe a foto em 📎 Evidências (tipo "Foto do Sonho exposto")'}.`, ir: 'sonho' },
+    { v: 'V.5', titulo: 'Construído com o envolvimento de todos', st: exSt(props.length >= 2 && String(d.construcao || '').trim(), props.length >= 1 || String(d.construcao || '').trim()), txt: `${props.length} proposta(s) de grupos registradas · ${exNum(d.participantes) ? exNum(d.participantes) + ' participante(s)' : 'informe quantos participaram'}.`, ir: 'sonho' }
+  ];
+}
+function sonhoHtmlPainel() {
+  const d = FD.dados;
+  return `<div class="sonho-painel">
+    <div class="sonho-topo"><div class="sonho-tag">SONHO ${FD.ano}</div><div class="sonho-frase">${d.frase ? escapeHtml(d.frase) : '<span style="opacity:.6;">Escreva a frase do Sonho abaixo</span>'}</div></div>
+    <div class="sonho-kpis">${(d.kpis || []).filter(k => k.nome).map(k => { const y = sonhoYtd(k), ok = sonhoOk(k, y); return `<div class="sonho-kpi ${ok === true ? 'ok' : ok === false ? 'nok' : ''}"><div class="sonho-kpi-nome">${escapeHtml(k.nome)} <span>${k.sentido === 'menor' ? '↓' : '↑'}</span></div><div class="sonho-kpi-linha"><div><small>YTD</small><strong>${sonhoFmt(k, y)}</strong></div><div><small>Meta</small><strong>${sonhoFmt(k, exNum(k.meta))}</strong></div></div></div>`; }).join('')}</div>
+  </div>`;
+}
+function sonhoHtmlSonho() {
+  const d = FD.dados; exAoEditar();
+  const campo = (k, rot, ph, tipo) => `<div><label>${rot}</label>${tipo === 'area' ? `<textarea rows="3" placeholder="${escapeHtml(ph || '')}" onchange="fdDefinir('${k}', this.value); exValidar();">${escapeHtml(d[k] || '')}</textarea>` : `<input type="${tipo || 'text'}" placeholder="${escapeHtml(ph || '')}" value="${escapeHtml(d[k] || '')}" onchange="fdDefinir('${k}', this.value); exValidar(); ${k === 'frase' ? 'fdCorpoRender();' : ''}">`}</div>`;
+  return `
+    ${sonhoHtmlPainel()}
+    <div class="painel" style="margin:12px 0;">
+      <h3 style="margin-top:0;">✍️ Definição do Sonho</h3>
+      <label>Frase do Sonho</label><textarea rows="3" placeholder="Ex.: Ser uma revenda certificada, entre as 10 melhores do PEX, com time engajado e seguro, ampliando resultados com foco em produtividade e nível de serviço." onchange="fdDefinir('frase', this.value); exValidar(); fdCorpoRender();">${escapeHtml(d.frase || '')}</textarea>
+      <div class="linha" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
+        ${campo('dataRevisao', 'Data da revisão (DPO Day — até março)', '', 'date')}
+        ${campo('participantes', 'Participantes na construção', 'nº de pessoas', 'number')}
+        ${campo('exposicao', 'Onde o Sonho está exposto', 'Ex.: Team Room, entrada do armazém, refeitório')}
+      </div>
+      <div class="linha" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px;">
+        ${campo('conexao', 'Conexão com a estratégia ABI', 'Como o Sonho e os KPIs se ligam à estratégia da ABI e às metas anuais', 'area')}
+        ${campo('construcao', 'Como foi construído (envolvimento do time)', 'Ex.: DPO Day com 6 grupos de todas as áreas, votação da frase final...', 'area')}
+      </div>
+    </div>
+    <div class="painel" style="margin-bottom:12px;"><h3 style="margin-top:0;">👥 Propostas dos grupos (DPO Day)</h3>
+      ${fdTabela('propostas', [{ campo: 'grupo', rotulo: 'Grupo', largura: 90 }, { campo: 'texto', rotulo: 'Proposta de Sonho', tipo: 'textarea', largura: 480 }, { campo: 'escolhida', rotulo: 'Base da frase final?', tipo: 'select', opcoes: ['Sim', 'Não'], largura: 110 }], { botao: 'Adicionar proposta' })}</div>
+    <div class="painel"><h3 style="margin-top:0;">📣 Comunicação do Sonho</h3>
+      ${fdTabela('comunicacoes', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'canal', rotulo: 'Canal', tipo: 'select', opcoes: ['Team Room', 'Matinal', 'Quadro de gestão à vista', 'Reunião geral', 'WhatsApp / e-mail', 'Integração de novos', 'Outro'], largura: 170 }, { campo: 'publico', rotulo: 'Público', largura: 160 }, { campo: 'descricao', rotulo: 'O que foi comunicado', largura: 320 }], { botao: 'Registrar comunicação' })}</div>`;
+}
+function sonhoHtmlKpis() {
+  const d = FD.dados, cfg = !!FD.sonhoConfig;
+  const metaMes = (k, m) => { const v = exNum((k.metaMes || [])[m]); return v === null ? exNum(k.meta) : v; };
+  const linhaCfg = (k, i) => `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">
+        <select style="width:auto;margin:0;font-size:11.5px;" onchange="sonhoKpi(${i}, 'pilar', this.value)"><option value="">Pilar...</option>${SONHO_PILARES.map(p => `<option ${p === k.pilar ? 'selected' : ''}>${p}</option>`).join('')}</select>
+        <select style="width:auto;margin:0;font-size:11.5px;" onchange="sonhoKpi(${i}, 'sentido', this.value)"><option value="maior" ${k.sentido !== 'menor' ? 'selected' : ''}>↑ quanto maior melhor</option><option value="menor" ${k.sentido === 'menor' ? 'selected' : ''}>↓ quanto menor melhor</option></select>
+        <select style="width:auto;margin:0;font-size:11.5px;" onchange="sonhoKpi(${i}, 'unidade', this.value)"><option ${k.unidade === '%' ? 'selected' : ''}>%</option><option ${k.unidade === 'nº' ? 'selected' : ''}>nº</option></select>
+        <select style="width:auto;margin:0;font-size:11.5px;" onchange="sonhoKpi(${i}, 'acumula', this.value)"><option value="media" ${k.acumula === 'media' ? 'selected' : ''}>YTD = média</option><option value="soma" ${k.acumula === 'soma' ? 'selected' : ''}>YTD = soma</option><option value="ultimo" ${k.acumula === 'ultimo' ? 'selected' : ''}>YTD = último mês</option></select>
+        <button class="fd-remover" title="Remover KPI" onclick="if(confirm('Remover este KPI?')) { FD.dados.kpis.splice(${i}, 1); fdAgendarSalvar(); exRedesenhar(); }">✕</button></div>`;
+  return `
+    <div class="painel" style="margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:#475569;">
+      <div style="flex:1;min-width:260px;">Preencha só a <strong>Meta</strong> e o <strong>Real</strong> de cada mês. A meta do mês vem da meta anual — digite só se for diferente. Os KPIs cobrem <strong>Gente, Segurança, Custo/Produtividade e Nível de Serviço</strong>; o YTD é calculado automaticamente.</div>
+      <button class="btn-secundario btn-sm" style="width:auto;" onclick="FD.sonhoConfig = !FD.sonhoConfig; fdCorpoRender();">${cfg ? '✔ Concluir configuração' : '⚙️ Configurar KPIs'}</button>
+      <button class="btn-secundario btn-sm" style="width:auto;" onclick="baixarArquivoDpo('/api/dpo/ferramentas-digitais/sonho/export?ano=${FD.ano}${FD.companyId ? '&company_id=' + FD.companyId : ''}', 'sonho-meta-real-${FD.ano}.xlsx')">📊 Baixar Excel</button>
+    </div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela sonho-tab">
+      <thead><tr><th style="min-width:200px;">KPI</th><th>Meta ano</th><th></th>${MESES_FD.map(m => `<th>${m}</th>`).join('')}<th>YTD</th></tr></thead>
+      <tbody>${d.kpis.map((k, i) => { const y = sonhoYtd(k), ok = sonhoOk(k, y), fundo = i % 2 ? '#fafafa' : '#fff'; return `
+        <tr style="background:${fundo};"><td rowspan="2" style="vertical-align:top;">${cfg ? `<input value="${escapeHtml(k.nome || '')}" onchange="sonhoKpi(${i}, 'nome', this.value)" style="margin:0;">` : `<strong>${escapeHtml(k.nome || '(sem nome)')}</strong>`}
+            <div style="font-size:11px;color:#64748b;">${escapeHtml(k.pilar || 'sem pilar')} · ${k.sentido === 'menor' ? '↓ menor melhor' : '↑ maior melhor'}</div>${cfg ? linhaCfg(k, i) : ''}</td>
+          <td rowspan="2" style="vertical-align:top;">${simInp(k.meta, k.unidade === '%' ? 'pct' : 'num', `sonhoKpi(${i}, 'meta', fdParse(this.value))`, '', 'width:78px;')}</td>
+          <td style="font-size:11px;font-weight:800;color:#4338ca;">Meta</td>
+          ${MESES_FD.map((_, m) => `<td>${simInp((k.metaMes || [])[m], 'num', `sonhoMeta(${i}, ${m}, this.value)`, exNum(k.meta) === null ? '' : fdFmt(exNum(k.meta), exNum(k.meta) % 1 ? 1 : 0), 'width:64px;')}</td>`).join('')}
+          <td style="font-size:11.5px;color:#64748b;">${sonhoFmt(k, exNum(k.meta))}</td></tr>
+        <tr style="background:${fundo};"><td style="font-size:11px;font-weight:800;color:#0f766e;">Real</td>
+          ${MESES_FD.map((_, m) => { const v = exNum((k.real || [])[m]), okm = sonhoOk({ ...k, meta: metaMes(k, m) }, v); return `<td style="${okm === true ? 'background:#dcfce7;' : okm === false ? 'background:#fee2e2;' : ''}">${simInp((k.real || [])[m], 'num', `sonhoReal(${i}, ${m}, this.value)`, '', 'width:64px;')}</td>`; }).join('')}
+          <td style="font-weight:800;${ok === true ? 'color:#166534;' : ok === false ? 'color:#991b1b;' : ''}">${sonhoFmt(k, y)}</td></tr>`; }).join('')}</tbody>
+    </table></div>
+    ${cfg ? `<button class="btn-secundario btn-sm" style="margin-top:8px;" onclick="FD.dados.kpis.push({ id: fdId(), sentido: 'maior', unidade: '%', acumula: 'media', real: [] }); fdAgendarSalvar(); exRedesenhar();">+ Adicionar KPI</button>` : ''}
+    <div style="margin-top:14px;">${sonhoHtmlPainel()}</div>`;
+}
+function sonhoMeta(i, m, v) { const k = FD.dados.kpis[i]; k.metaMes = k.metaMes || []; while (k.metaMes.length < 12) k.metaMes.push(''); k.metaMes[m] = fdParse(v); fdAgendarSalvar(); exRedesenhar(); }
+function sonhoKpi(i, campo, v) { FD.dados.kpis[i][campo] = v; fdAgendarSalvar(); exRedesenhar(); }
+function sonhoReal(i, m, v) { const k = FD.dados.kpis[i]; k.real = k.real || []; while (k.real.length < 12) k.real.push(''); k.real[m] = fdParse(v); fdAgendarSalvar(); exRedesenhar(); }
+
+// ======================= ANS DE VOLUME (Planejamento 3.2) =======================
+const DIAS_SEM_EX = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+function ansDiasNoMes(m) { return new Date(FD.ano, m + 1, 0).getDate(); }
+function ansDia(m, dia) { const mes = FD.dados.meses[m] = FD.dados.meses[m] || { dias: {} }; mes.dias = mes.dias || {}; return mes.dias[dia] = mes.dias[dia] || {}; }
+function ansDiaLer(d, m, dia) { return (((d.meses || {})[m] || {}).dias || {})[dia] || {}; }
+function ansNeg(d, m, dia) { const v = ansDiaLer(d, m, dia); if (exNum(v.neg) !== null) return exNum(v.neg); const wd = new Date(FD.ano, m, dia).getDay(); return exNum((d.volPadrao || {})[wd]) || 0; }
+function ansDisp(d, m, dia) { const v = ansDiaLer(d, m, dia), real = exNum(v.real), neg = ansNeg(d, m, dia); return real === null || !neg ? null : real / neg - 1; }
+function ansOrient(x) { if (x === null) return ['', '']; const a = Math.abs(x); return a >= 0.2 ? ['Alto desvio', '#991b1b;background:#fee2e2'] : a >= 0.1 ? ['Dispersão considerável', '#9a3412;background:#ffedd5'] : a >= 0.05 ? ['Atenção', '#854d0e;background:#fef9c3'] : ['OK', '#166534;background:#dcfce7']; }
+function ansPrecisaAcao(d, m, dia) { const x = ansDisp(d, m, dia); return x !== null && Math.abs(x) * 100 > (exNum(d.tolerancia) || 10); }
+function ansGarantirAcoes() {
+  const d = FD.dados, novos = [], ch = new Set(d.acoes.map(a => `${a.mes}|${a.dia}`)), precisa = new Set();
+  Object.keys(d.meses || {}).forEach(m => Object.keys((d.meses[m] || {}).dias || {}).forEach(dia => {
+    if (!ansPrecisaAcao(d, Number(m), Number(dia))) return;
+    const k = `${m}|${dia}`; precisa.add(k);
+    if (!ch.has(k)) { const x = ansDisp(d, Number(m), Number(dia)); const a = { id: fdId(), mes: Number(m), dia: Number(dia), disp: x, causa: '', acao: '', responsavel: '', prazo: '', status: 'Não iniciado', auto: true }; d.acoes.push(a); novos.push(a); ch.add(k); }
+  }));
+  d.acoes.forEach(a => { if (a.auto) a.disp = ansDisp(d, a.mes, a.dia); a.mesNome = MESES_FD[a.mes]; a.dispTxt = a.disp === null || a.disp === undefined ? '' : fdPct(a.disp); });
+  d.acoes = d.acoes.filter(a => !(a.auto && !precisa.has(`${a.mes}|${a.dia}`) && !String(a.acao || '').trim()));
+  return novos;
+}
+function ansAcaoDefinida(a) { return !!(String(a.acao || '').trim() && String(a.responsavel || '').trim()); }
+function ansResumoMes(d, m) {
+  const n = ansDiasNoMes(m), hoje = new Date(); let neg = 0, real = 0, fora = 0, dias = 0, uteis = 0, completos = 0;
+  for (let dia = 1; dia <= n; dia++) {
+    const dt = new Date(FD.ano, m, dia), v = ansDiaLer(d, m, dia);
+    if (dt.getDay() !== 0 && dt <= hoje) uteis++;
+    if (exNum(v.real) !== null) { neg += ansNeg(d, m, dia); real += exNum(v.real); dias++; if (exNum(v.buffer) !== null || exNum(v.horaLimite) !== null) completos++; }
+    fora += exNum(v.fora) || 0;
+  }
+  return { neg, real, fora, dias, uteis, completos, disp: neg ? real / neg - 1 : null };
+}
+function ansValidar(d) {
+  const ac = d.acordo || {}, acordoOk = ac.data && exNum(ac.capacidade) && ac.horaLimite;
+  const m = exMesAtual(); const r = ansResumoMes(d, m), rAnt = m ? ansResumoMes(d, m - 1) : r;
+  const ref = r.dias >= Math.min(5, r.uteis) ? r : rAnt;
+  const cobertura = ref.uteis ? ref.dias / ref.uteis : 0;
+  const nec = d.acoes.filter(a => a.auto), def = nec.filter(ansAcaoDefinida).length;
+  return [
+    { v: 'V.1', titulo: 'ANS com vendas e check do plano nas rotinas', st: exSt(acordoOk && (d.reunioes || []).length >= 1, acordoOk || (d.reunioes || []).length), txt: `${acordoOk ? 'ANS registrado (data, capacidade e hora limite)' : 'Complete o acordo: data, capacidade máxima e hora limite'} · ${(d.reunioes || []).length} reunião(ões) de check registrada(s).`, ir: 'acordo' },
+    { v: 'V.2', titulo: 'Itens obrigatórios monitorados diariamente', st: exSt(cobertura >= 0.8 && ref.completos >= ref.dias * 0.5 && ref.dias > 0, ref.dias > 0), txt: `${ref.dias}/${ref.uteis} dia(s) úteis lançados no mês de referência · ${ref.completos} com buffer / hora limite · capacidade, curva de vendas, fora de rota e buffer calculados na tela.`, ir: 'diario' },
+    { v: 'V.3', titulo: `Ações definidas quando a dispersão passa de ±${exNum(d.tolerancia) || 10}%`, st: exSt(nec.length ? def === nec.length : ref.dias > 0, def > 0), txt: `${def}/${nec.length} dia(s) com dispersão acima da tolerância já têm ação e responsável.`, ir: 'acoes' }
+  ];
+}
+function ansHtmlDiario() {
+  const d = FD.dados, m = FD.ansMes, n = ansDiasNoMes(m), r = ansResumoMes(d, m), tol = exNum(d.tolerancia) || 10;
+  const hoje = new Date(), dataLim = FD.ano === hoje.getFullYear() && m === hoje.getMonth() ? hoje.getDate() : n;
+  let metaAte = 0; for (let dia = 1; dia <= dataLim; dia++) metaAte += ansNeg(d, m, dia);
+  const curva = [1, 2, 3, 4, 5, 6, 0].map(wd => { let neg = 0, real = 0; for (let dia = 1; dia <= n; dia++) { if (new Date(FD.ano, m, dia).getDay() !== wd) continue; const v = ansDiaLer(d, m, dia); if (exNum(v.real) === null) continue; neg += ansNeg(d, m, dia); real += exNum(v.real); } return { wd, neg, real }; });
+  const tn = curva.reduce((s, c) => s + c.neg, 0), tr = curva.reduce((s, c) => s + c.real, 0), cap = exNum((d.acordo || {}).capacidade);
+  const acaoDe = dia => d.acoes.find(a => a.mes === m && a.dia === dia);
+  return `
+    <div class="painel" style="margin-bottom:10px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div><label style="margin:0;font-size:12px;">Mês</label><select onchange="FD.ansMes = Number(this.value); fdCorpoRender();">${MESES_LONGOS_FD.map((mm, i) => `<option value="${i}" ${i === m ? 'selected' : ''}>${mm}</option>`).join('')}</select></div>
+      <div><label style="margin:0;font-size:12px;">Tolerância para ação (±%)</label>${simInp(d.tolerancia, 'pct', `fdDefinir('tolerancia', fdParse(this.value)); ansGarantirAcoes(); exRedesenhar()`, '10', 'width:90px;')}</div>
+      <details style="flex:1;min-width:280px;"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;">📦 Volume negociado padrão por dia da semana (hl)</summary>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">${[1, 2, 3, 4, 5, 6, 0].map(wd => `<div style="width:92px;"><label style="margin:0;font-size:11px;">${DIAS_SEM_EX[wd]}</label>${simInp((d.volPadrao || {})[wd], 'num', `FD.dados.volPadrao[${wd}] = fdParse(this.value); fdAgendarSalvar(); ansGarantirAcoes(); exRedesenhar()`, '')}</div>`).join('')}</div></details>
+    </div>
+    <div class="kpis" style="margin-bottom:10px;">
+      <div class="kpi-card"><div class="valor" style="font-size:20px;">${fdFmt(metaAte)}</div><div class="rotulo">Meta até a data (hl)</div></div>
+      <div class="kpi-card"><div class="valor" style="font-size:20px;">${fdFmt(r.real)}</div><div class="rotulo">Realizado acumulado (hl)</div></div>
+      <div class="kpi-card"><div class="valor" style="font-size:20px;color:${r.disp !== null && Math.abs(r.disp) * 100 > tol ? '#dc2626' : '#16a34a'};">${fdPct(r.disp)}</div><div class="rotulo">Dispersão dos dias lançados</div></div>
+      <div class="kpi-card"><div class="valor" style="font-size:20px;">${fdFmt(r.fora)}</div><div class="rotulo">Volume fora de rota (hl)</div></div>
+      <div class="kpi-card"><div class="valor" style="font-size:20px;">${r.dias}/${r.uteis}</div><div class="rotulo">Dias úteis lançados</div></div>
+    </div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela ans-tab">
+      <thead><tr><th>Dia</th><th></th><th>Volume negociado</th><th>Volume realizado</th><th>Fora de rota</th><th>Buffer utilizado %</th><th>Pedidos após hora limite %</th><th>Dispersão</th><th>Orientação</th><th style="min-width:200px;">Justificativa</th><th>Ação</th></tr></thead>
+      <tbody>${Array.from({ length: n }, (_, i) => i + 1).map(dia => {
+        const dt = new Date(FD.ano, m, dia), wd = dt.getDay(), v = ansDiaLer(d, m, dia), x = ansDisp(d, m, dia), [or, cor] = ansOrient(x), ac = acaoDe(dia), acima = cap && exNum(v.real) > cap;
+        return `<tr class="${wd === 0 ? 'ans-dom' : ''}">
+          <td><strong>${dia}</strong></td><td style="color:#64748b;">${DIAS_SEM_EX[wd]}</td>
+          <td>${simInp(v.neg, 'num', `ansSet(${m}, ${dia}, 'neg', this.value)`, fdFmt(ansNeg(d, m, dia)), 'width:90px;')}</td>
+          <td>${simInp(v.real, 'num', `ansSet(${m}, ${dia}, 'real', this.value)`, '', 'width:90px;')}${acima ? '<small style="color:#dc2626;display:block;">acima da capacidade</small>' : ''}</td>
+          <td>${simInp(v.fora, 'num', `ansSet(${m}, ${dia}, 'fora', this.value)`, '', 'width:80px;')}</td>
+          <td>${simInp(v.buffer, 'pct', `ansSet(${m}, ${dia}, 'buffer', this.value)`, '', 'width:70px;')}</td>
+          <td>${simInp(v.horaLimite, 'pct', `ansSet(${m}, ${dia}, 'horaLimite', this.value)`, '', 'width:70px;')}</td>
+          <td style="font-weight:800;text-align:right;">${x === null ? '' : fdPct(x)}</td>
+          <td>${or ? `<span class="dpo-chip-nivel" style="color:${cor};">${or}</span>` : ''}</td>
+          <td><input value="${escapeHtml(v.just || '')}" placeholder="${x !== null && Math.abs(x) * 100 > tol ? 'Motivo da dispersão' : ''}" onchange="ansSet(${m}, ${dia}, 'just', this.value, true)"></td>
+          <td>${ac ? `<button class="gop-plano ${ansAcaoDefinida(ac) ? 'ok' : 'pend'}" onclick="ansAbrirAcao('${ac.id}')">${ansAcaoDefinida(ac) ? '📝' : '⚠️'}</button>` : ''}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>
+    <div class="painel" style="margin-top:12px;"><h3 style="margin-top:0;">📉 Índice de curva de vendas (distribuição do volume por dia da semana)</h3>
+      <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th>Dia</th>${curva.map(c => `<th>${DIAS_SEM_EX[c.wd]}</th>`).join('')}</tr></thead><tbody>
+        <tr><td>% negociado</td>${curva.map(c => `<td>${tn ? fdPct(c.neg / tn) : '—'}</td>`).join('')}</tr>
+        <tr><td>% realizado</td>${curva.map(c => `<td style="font-weight:700;">${tr ? fdPct(c.real / tr) : '—'}</td>`).join('')}</tr>
+        <tr><td>Índice (real ÷ negociado)</td>${curva.map(c => { const idx = tn && tr && c.neg ? (c.real / tr) / (c.neg / tn) : null; return `<td style="${idx !== null && Math.abs(idx - 1) > 0.1 ? 'color:#dc2626;font-weight:800;' : ''}">${idx === null ? '—' : fdFmt(idx, 2)}</td>`; }).join('')}</tr>
+      </tbody></table></div>
+      <div style="font-size:11.5px;color:#64748b;margin-top:6px;">Orientação diária igual à planilha: OK (&lt;5%) · Atenção (5–10%) · Dispersão considerável (≥10%) · Alto desvio (≥20%). Acima de ±${tol}% o plano de ação abre na hora.</div></div>`;
+}
+function ansSet(m, dia, campo, valor, texto) {
+  const v = ansDia(m, dia);
+  v[campo] = texto ? valor : fdParse(valor);
+  const novos = ansGarantirAcoes();
+  fdAgendarSalvar(); exRedesenhar();
+  if (campo === 'real' && novos.length) ansAbrirAcao(novos[0].id);
+}
+function ansAbrirAcao(id) {
+  const d = FD.dados, a = d.acoes.find(x => x.id === id); if (!a) return;
+  const v = ansDiaLer(d, a.mes, a.dia);
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) gopFecharPlano()"><div class="modal-caixa" style="max-width:600px;">
+      <h3 style="margin-top:0;">🔁 Ação de dispersão — ${a.dia} de ${MESES_LONGOS_FD[a.mes]}</h3>
+      <div class="gop-plano-ref">Negociado <strong>${fdFmt(ansNeg(d, a.mes, a.dia))} hl</strong> · realizado <strong>${fdFmt(exNum(v.real))} hl</strong> · dispersão <strong>${fdPct(ansDisp(d, a.mes, a.dia))}</strong>${v.just ? `<div>Justificativa: ${escapeHtml(v.just)}</div>` : ''}</div>
+      <label>Causa</label><textarea id="ans-causa" rows="2">${escapeHtml(a.causa || v.just || '')}</textarea>
+      <label>Ação com vendas *</label><textarea id="ans-acao" rows="2" placeholder="Ex.: planejar o volume pós-feriado com base no histórico; alinhar corte de volume com o GV">${escapeHtml(a.acao || '')}</textarea>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;"><div style="flex:2;min-width:160px;"><label>Responsável *</label><input id="ans-resp" value="${escapeHtml(a.responsavel || '')}"></div>
+        <div style="flex:1;min-width:130px;"><label>Prazo</label><input id="ans-prazo" type="date" value="${escapeHtml(a.prazo || '')}"></div>
+        <div style="flex:1;min-width:140px;"><label>Status</label><select id="ans-st">${STATUS_ACAO_EX.map(s => `<option ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}</select></div></div>
+      <div class="acoes-form" style="justify-content:flex-end;margin-top:12px;"><button class="btn-secundario" onclick="gopFecharPlano()">Fechar</button><button class="btn-primario" style="width:auto;" onclick="ansSalvarAcao('${a.id}')">💾 Salvar ação</button></div>
+    </div></div>`;
+  setTimeout(() => { const el = document.getElementById('ans-acao'); if (el) el.focus(); }, 50);
+}
+function ansSalvarAcao(id) {
+  const a = FD.dados.acoes.find(x => x.id === id); if (!a) return;
+  const g = i => (document.getElementById(i) || {}).value || '';
+  Object.assign(a, { causa: g('ans-causa').trim(), acao: g('ans-acao').trim(), responsavel: g('ans-resp').trim(), prazo: g('ans-prazo'), status: g('ans-st') });
+  gopFecharPlano(); fdAgendarSalvar(); exRedesenhar();
+}
+function ansHtmlAcordo() {
+  const ac = FD.dados.acordo; exAoEditar();
+  const campo = (k, rot, tipo, ph) => `<div><label>${rot}</label><input type="${tipo || 'text'}" value="${escapeHtml(ac[k] ?? '')}" placeholder="${escapeHtml(ph || '')}" onchange="FD.dados.acordo['${k}'] = this.value; fdAgendarSalvar(); exValidar();"></div>`;
+  return `
+    <div class="painel" style="margin-bottom:12px;"><h3 style="margin-top:0;">📄 Acordo de Nível de Serviço com Vendas</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
+        ${campo('data', 'Data do acordo / revisão', 'date')}${campo('vendas', 'Responsável por Vendas')}${campo('logistica', 'Responsável pela Logística')}
+        ${campo('capacidade', 'Capacidade máxima diária (hl)', 'number')}${campo('horaLimite', 'Hora limite do pedido', 'time')}${campo('bufferMax', 'Buffer máximo acordado (%)', 'number')}
+      </div>
+      <label>Regras do acordo (curva de vendas, cortes de volume, fora de rota, dias de desconto)</label>
+      <textarea rows="4" onchange="FD.dados.acordo.regras = this.value; fdAgendarSalvar(); exValidar();">${escapeHtml(ac.regras || '')}</textarea></div>
+    <div class="painel"><h3 style="margin-top:0;">🗓️ Check do ANS nas reuniões de rotina (semanal / mensal)</h3>
+      ${fdTabela('reunioes', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'tipo', rotulo: 'Rotina', tipo: 'select', opcoes: ['Semanal', 'Mensal'], largura: 110 }, { campo: 'participantes', rotulo: 'Participantes (vendas e logística)', largura: 240 }, { campo: 'decisoes', rotulo: 'Pontos e decisões', largura: 340 }], { botao: 'Registrar reunião' })}</div>`;
+}
+function ansHtmlAcoes() {
+  const d = FD.dados, l = d.acoes.slice().sort((x, y) => (y.mes - x.mes) || (y.dia - x.dia));
+  return `
+    <div class="fd-tabela-wrap"><table class="fd-tabela gop-acoes">
+      <thead><tr><th>Data</th><th>Dispersão</th><th style="min-width:180px;">Causa</th><th style="min-width:220px;">Ação</th><th>Responsável</th><th>Prazo</th><th>Status</th></tr></thead>
+      <tbody>${l.map(a => `<tr class="${ansAcaoDefinida(a) ? '' : 'gop-pendente'}" style="cursor:pointer;" onclick="ansAbrirAcao('${a.id}')"><td>${a.dia}/${String(a.mes + 1).padStart(2, '0')}</td><td style="font-weight:800;">${fdPct(ansDisp(d, a.mes, a.dia))}</td><td style="font-size:12px;">${escapeHtml(a.causa || '')}</td><td style="font-size:12px;">${a.acao ? escapeHtml(a.acao) : '<strong style="color:#dc2626;">⚠️ Definir ação</strong>'}</td><td>${escapeHtml(a.responsavel || '—')}</td><td>${a.prazo ? new Date(a.prazo + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td><td><span class="dpo-chip-nivel" style="background:${COR_STATUS_GOP[gopStatusAcao({ status: a.status, prevista: a.prazo })]};color:#fff;">${gopStatusAcao({ status: a.status, prevista: a.prazo })}</span></td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:14px;">Nenhum dia com dispersão acima da tolerância.</td></tr>'}</tbody>
+    </table></div>`;
+}
+
+// ======================= GESTÃO DE CAPEX (Planejamento 2.4) =======================
+const ETAPAS_CAPEX = ['Solicitação', 'Orçamento', 'Aprovação', 'Execução', 'Concluído', 'Reprovado'];
+const COR_ETAPA_CAPEX = { 'Solicitação': '#64748b', 'Orçamento': '#2563eb', 'Aprovação': '#7c3aed', 'Execução': '#d97706', 'Concluído': '#16a34a', 'Reprovado': '#991b1b' };
+function capexLista(k) { return String((FD.dados.cadastros || {})[k] || '').split('\n').map(s => s.trim()).filter(Boolean); }
+function capexTotal(i) { return (exNum(i.qtd) || 0) * (exNum(i.unitario) || 0); }
+function capexGut(i) { const g = exNum(i.g), u = exNum(i.u), t = exNum(i.t); return g && u && t ? g * u * t : null; }
+function capexNoPrazo(i) { return !i.fimPrevisto || !i.fimReal || i.fimReal <= i.fimPrevisto; }
+function capexNoOrcamento(i) { const ap = exNum(i.aprovado) || capexTotal(i); const r = exNum(i.realizado); return r === null || !ap || r <= ap * 1.0001; }
+function capexValidar(d) {
+  const it = d.itens.filter(i => String(i.descricao || '').trim());
+  const aprov = it.filter(i => ['Aprovação', 'Execução', 'Concluído'].includes(i.etapa) && exNum(i.aprovado));
+  const comPlano = aprov.filter(i => i.inicio && i.fimPrevisto).length;
+  const triAtual = exTriAtual(), tris = new Set((d.checks || []).map(c => c.tri));
+  const trisNec = Array.from({ length: Math.max(1, FD.ano === new Date().getFullYear() ? triAtual : 4) }, (_, i) => 'T' + (i + 1));
+  const concl = it.filter(i => i.etapa === 'Concluído'), conclOk = concl.filter(i => capexNoPrazo(i) && capexNoOrcamento(i) && i.nf && i.nf.url).length;
+  const priorizados = it.filter(i => capexGut(i) && i.origem).length, comProposta = it.filter(i => (i.propostas || []).some(p => String(p.fornecedor || '').trim())).length;
+  return [
+    { v: 'V.1', titulo: 'CAPEX aprovado com plano de ação e projeção de volume/marketplace', st: exSt(aprov.length && comPlano === aprov.length && String(d.premissas || '').trim(), aprov.length || String(d.premissas || '').trim()), txt: `${comPlano}/${aprov.length} item(ns) aprovado(s) com início e fim previstos · ${String(d.premissas || '').trim() ? 'premissas de volume e marketplace descritas' : 'descreva as premissas de volume e marketplace no Painel'}.`, ir: 'dash' },
+    { v: 'V.2', titulo: 'Check do CAPEX na rotina trimestral', st: exSt(trisNec.every(t => tris.has(t)), tris.size > 0), txt: `Checks registrados: ${[...tris].sort().join(', ') || 'nenhum'} · esperado até agora: ${trisNec.join(', ')}.`, ir: 'checks' },
+    { v: 'V.3', titulo: 'Rotina para CAPEX emergencial', st: exSt(String(d.emergencial || '').trim().length >= 20, String(d.emergencial || '').trim().length > 0), txt: `${String(d.emergencial || '').trim() ? 'Rotina de CAPEX emergencial descrita' : 'Descreva a rotina de comunicação e registro do CAPEX emergencial no Painel'} · ${it.filter(i => i.emergencial === 'Sim').length} solicitação(ões) emergenciais.`, ir: 'dash' },
+    { v: 'V.4', titulo: 'Projetos entregues no prazo e no orçamento', st: exSt(concl.length && conclOk === concl.length, concl.length > 0 || aprov.length > 0), txt: `${conclOk}/${concl.length} projeto(s) concluído(s) no prazo, dentro do aprovado e com NF anexada.`, ir: 'itens' },
+    { v: 'V.5', titulo: 'Registro de solicitações priorizado (Check Global, P1A/P3A, mercado, KPIs)', st: exSt(it.length && priorizados === it.length, priorizados > 0), txt: `${it.length} solicitação(ões) no registro · ${priorizados} com GUT e origem definidos.`, ir: 'gut' },
+    { v: 'V.6', titulo: 'Pelo menos uma proposta de fornecedor por solicitação', st: exSt(it.length && comProposta === it.length, comProposta > 0), txt: `${comProposta}/${it.length} solicitação(ões) com proposta de fornecedor.`, ir: 'itens' }
+  ];
+}
+function capexHtmlDash() {
+  const d = FD.dados, it = d.itens.filter(i => String(i.descricao || '').trim()); exAoEditar();
+  const soma = (l, f) => l.reduce((s, i) => s + (f(i) || 0), 0);
+  const tot = soma(it, capexTotal), apr = soma(it.filter(i => !['Solicitação', 'Orçamento', 'Reprovado'].includes(i.etapa)), i => exNum(i.aprovado) || capexTotal(i)), real = soma(it, i => exNum(i.realizado));
+  const grupo = campo => { const m = {}; it.forEach(i => { const k = i[campo] || '—'; m[k] = (m[k] || 0) + capexTotal(i); }); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
+  const porMes = MESES_FD.map((_, mm) => soma(it.filter(i => (i.fimPrevisto || i.data || '').slice(0, 4) === String(FD.ano) && Number((i.fimPrevisto || i.data).slice(5, 7)) === mm + 1), capexTotal));
+  const maxMes = Math.max(1, ...porMes);
+  const bloco = (tit, l) => `<div class="painel"><h4 style="margin:0 0 8px;">${tit}</h4>${l.map(([k, v]) => `<div class="capex-barra"><span>${escapeHtml(k)}</span><div><i style="width:${tot ? v / tot * 100 : 0}%"></i></div><b>${simFmt(v, 'rs')}</b></div>`).join('') || '<div style="color:#94a3b8;font-size:12px;">Sem itens.</div>'}</div>`;
+  return `
+    <div class="kpis" style="margin-bottom:12px;">
+      <div class="kpi-card"><div class="valor" style="font-size:20px;">${simFmt(tot, 'rs')}</div><div class="rotulo">CAPEX solicitado (${it.length} itens)</div></div>
+      <div class="kpi-card"><div class="valor" style="font-size:20px;">${simFmt(apr, 'rs')}</div><div class="rotulo">Aprovado</div></div>
+      <div class="kpi-card"><div class="valor" style="font-size:20px;">${simFmt(real, 'rs')}</div><div class="rotulo">Realizado (${apr ? fdPct(real / apr, 0) : '—'} do aprovado)</div></div>
+      <div class="kpi-card"><div class="valor" style="font-size:20px;">${it.filter(i => i.etapa === 'Concluído').length}/${it.length}</div><div class="rotulo">Concluídos · ${it.filter(i => i.etapa === 'Concluído' && !(i.nf && i.nf.url)).length} sem NF</div></div>
+    </div>
+    <div class="capex-pipeline">${ETAPAS_CAPEX.map(e => `<div style="border-top:4px solid ${COR_ETAPA_CAPEX[e]};"><strong>${it.filter(i => (i.etapa || 'Solicitação') === e).length}</strong><span>${e}</span><small>${simFmt(soma(it.filter(i => (i.etapa || 'Solicitação') === e), capexTotal), 'rs')}</small></div>`).join('')}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:12px 0;">${bloco('Por área', grupo('area'))}${bloco('Por origem', grupo('origem'))}${bloco('Por categoria', grupo('categoria'))}</div>
+    <div class="painel" style="margin-bottom:12px;"><h4 style="margin:0 0 8px;">📅 CAPEX por mês (fim previsto)</h4><div class="capex-meses">${porMes.map((v, mm) => `<div><i style="height:${v / maxMes * 100}%"></i><small>${MESES_FD[mm]}</small><b>${v ? fdFmt(v / 1000, 0) + 'k' : ''}</b></div>`).join('')}</div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;">
+      <div class="painel"><h4 style="margin:0 0 6px;">📈 Premissas de volume e marketplace (V.1)</h4><textarea rows="4" placeholder="Projeção de volume e marketplace que sustenta o CAPEX do ano" onchange="fdDefinir('premissas', this.value); exValidar();">${escapeHtml(d.premissas || '')}</textarea></div>
+      <div class="painel"><h4 style="margin:0 0 6px;">🚨 Rotina de CAPEX emergencial (V.3)</h4><textarea rows="4" placeholder="Como a unidade comunica e registra uma necessidade emergencial (quem abre, prazo, aprovação...)" onchange="fdDefinir('emergencial', this.value); exValidar();">${escapeHtml(d.emergencial || '')}</textarea></div>
+    </div>`;
+}
+function capexHtmlItens() {
+  const d = FD.dados, l = d.itens.slice().sort((a, b) => (exNum(a.n) || 0) - (exNum(b.n) || 0));
+  return `
+    <div class="barra-acoes"><div class="plano-meta">Registro de solicitações CAPEX. Ao <strong>concluir</strong> o investimento é obrigatório anexar a nota fiscal.</div><div class="direita"><button class="btn-primario btn-sm" style="width:auto;" onclick="capexNovo()">+ Nova solicitação</button></div></div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela gop-acoes">
+      <thead><tr><th>Nº</th><th style="min-width:200px;">Descrição</th><th>Área</th><th>Origem</th><th>Total</th><th>GUT</th><th>Propostas</th><th>Etapa</th><th>Aprovado</th><th>Realizado</th><th>Fim previsto</th><th>NF</th></tr></thead>
+      <tbody>${l.map(i => { const e = i.etapa || 'Solicitação'; return `<tr style="cursor:pointer;" onclick="capexAbrir('${i.id}')">
+        <td>${escapeHtml(i.n ?? '')}</td><td><strong>${escapeHtml(i.descricao || '(sem descrição)')}</strong>${i.emergencial === 'Sim' ? ' <span class="dpo-chip-nivel" style="background:#fee2e2;color:#991b1b;">emergencial</span>' : ''}</td><td>${escapeHtml(i.area || '')}</td><td>${escapeHtml(i.origem || '')}</td>
+        <td>${simFmt(capexTotal(i), 'rs')}</td><td style="font-weight:800;">${capexGut(i) ?? '—'}</td><td>${(i.propostas || []).length}</td>
+        <td><span class="dpo-chip-nivel" style="background:${COR_ETAPA_CAPEX[e]};color:#fff;">${e}</span></td><td>${exNum(i.aprovado) !== null ? simFmt(exNum(i.aprovado), 'rs') : '—'}</td><td>${exNum(i.realizado) !== null ? simFmt(exNum(i.realizado), 'rs') : '—'}</td>
+        <td>${i.fimPrevisto ? new Date(i.fimPrevisto + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td><td>${i.nf && i.nf.url ? `<a href="${escapeHtml(i.nf.url)}" target="_blank" onclick="event.stopPropagation()">🧾</a>` : e === 'Concluído' ? '⚠️' : ''}</td></tr>`; }).join('') || '<tr><td colspan="12" style="text-align:center;color:#94a3b8;padding:14px;">Nenhuma solicitação ainda.</td></tr>'}</tbody>
+    </table></div>`;
+}
+function capexNovo() { const d = FD.dados, n = d.itens.reduce((m, i) => Math.max(m, exNum(i.n) || 0), 0) + 1; const i = { id: fdId(), n, data: exHoje(), etapa: 'Solicitação', qtd: 1, propostas: [] }; d.itens.push(i); capexAbrir(i.id); }
+function capexAbrir(id) {
+  const i = FD.dados.itens.find(x => x.id === id); if (!i) return;
+  const sel = (k, lista) => `<select id="cx-${k}"><option value=""></option>${lista.map(o => `<option ${o === i[k] ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('')}</select>`;
+  const inp = (k, tipo) => `<input id="cx-${k}" type="${tipo || 'text'}" value="${escapeHtml(i[k] ?? '')}">`;
+  const num = k => `<input id="cx-${k}" type="text" inputmode="decimal" value="${escapeHtml(fdFmtInput(i[k]))}">`;
+  const gut = (k, rot) => `<div><label>${rot}</label><select id="cx-${k}"><option value=""></option>${[[3, '3 - Extremo'], [2, '2 - Médio'], [1, '1 - Baixo']].map(([v, r]) => `<option value="${v}" ${String(i[k]) === String(v) ? 'selected' : ''}>${r}</option>`).join('')}</select></div>`;
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) gopFecharPlano()"><div class="modal-caixa" style="max-width:860px;">
+      <h3 style="margin-top:0;">🏗️ Solicitação CAPEX nº ${escapeHtml(i.n ?? '')}</h3>
+      <div class="cx-grid">
+        <div style="grid-column:span 2;"><label>Descrição do item / serviço *</label>${inp('descricao')}</div><div><label>Data</label>${inp('data', 'date')}</div>
+        <div><label>Área</label>${sel('area', capexLista('areas'))}</div><div><label>Categoria</label>${sel('categoria', capexLista('categorias'))}</div><div><label>Tipo</label>${sel('tipo', capexLista('tipos'))}</div>
+        <div><label>Origem</label>${sel('origem', capexLista('origens'))}</div><div><label>Emergencial?</label>${sel('emergencial', ['Não', 'Sim'])}</div><div><label>Operação</label>${inp('operacao')}</div>
+        <div style="grid-column:1/-1;"><label>Justificativa</label><textarea id="cx-justificativa" rows="2">${escapeHtml(i.justificativa || '')}</textarea></div>
+        <div><label>Quantidade</label>${num('qtd')}</div><div><label>Custo unitário (R$)</label>${num('unitario')}</div><div><label>Custo total</label><input disabled value="${escapeHtml(simFmt(capexTotal(i), 'rs'))}"></div>
+        ${gut('g', 'Gravidade')}${gut('u', 'Urgência')}${gut('t', 'Tendência')}
+      </div>
+      <h4 style="margin:12px 0 4px;">🤝 Propostas de fornecedores (V.6)</h4>
+      <div id="cx-propostas">${(i.propostas || []).map((p, k) => capexHtmlProposta(p, k)).join('')}</div>
+      <button class="btn-secundario btn-sm" onclick="capexAddProposta('${i.id}')">+ Proposta</button>
+      <h4 style="margin:12px 0 4px;">📌 Andamento</h4>
+      <div class="cx-grid">
+        <div><label>Etapa</label>${sel('etapa', ETAPAS_CAPEX)}</div><div><label>Orçado (R$)</label>${num('orcado')}</div><div><label>Aprovado (R$)</label>${num('aprovado')}</div>
+        <div><label>Início</label>${inp('inicio', 'date')}</div><div><label>Fim previsto</label>${inp('fimPrevisto', 'date')}</div><div><label>Fim real</label>${inp('fimReal', 'date')}</div>
+        <div><label>Realizado (R$)</label>${num('realizado')}</div>
+        <div style="grid-column:span 2;"><label>Nota fiscal (obrigatória para concluir)</label>
+          <div style="display:flex;gap:8px;align-items:center;">${i.nf && i.nf.url ? `<a href="${escapeHtml(i.nf.url)}" target="_blank">🧾 ${escapeHtml(i.nf.nome || 'NF')}</a><button class="btn-secundario btn-sm" onclick="capexTirarNf('${i.id}')">Trocar</button>` : `<label class="btn-secundario btn-sm" style="width:auto;cursor:pointer;margin:0;">📎 Anexar NF<input type="file" accept=".pdf,image/*,.xml" style="display:none;" onchange="capexAnexarNf('${i.id}', this)"></label>`}</div></div>
+      </div>
+      <div class="acoes-form" style="justify-content:space-between;margin-top:14px;"><button class="btn-perigo btn-sm" onclick="capexExcluir('${i.id}')">Excluir</button>
+        <div style="display:flex;gap:8px;"><button class="btn-secundario" onclick="gopFecharPlano(); exRedesenhar();">Fechar</button><button class="btn-primario" style="width:auto;" onclick="capexSalvar('${i.id}')">💾 Salvar</button></div></div>
+    </div></div>`;
+}
+function capexHtmlProposta(p, k) { return `<div class="cx-prop" data-k="${k}"><input placeholder="Fornecedor" value="${escapeHtml(p.fornecedor || '')}" data-c="fornecedor"><input placeholder="Valor (R$)" inputmode="decimal" value="${escapeHtml(fdFmtInput(p.valor))}" data-c="valor"><input placeholder="Prazo / observação" value="${escapeHtml(p.obs || '')}" data-c="obs"><select data-c="escolhida"><option value="">—</option><option ${p.escolhida === 'Escolhida' ? 'selected' : ''}>Escolhida</option></select></div>`; }
+function capexLerForm(i) {
+  const v = k => { const el = document.getElementById('cx-' + k); return el ? el.value : undefined; };
+  ['descricao', 'data', 'area', 'categoria', 'tipo', 'origem', 'emergencial', 'operacao', 'justificativa', 'etapa', 'inicio', 'fimPrevisto', 'fimReal', 'g', 'u', 't'].forEach(k => { const x = v(k); if (x !== undefined) i[k] = x; });
+  ['qtd', 'unitario', 'orcado', 'aprovado', 'realizado'].forEach(k => { const x = v(k); if (x !== undefined) i[k] = fdParse(x); });
+  i.propostas = [...document.querySelectorAll('#cx-propostas .cx-prop')].map(div => { const o = {}; div.querySelectorAll('[data-c]').forEach(el => { o[el.dataset.c] = el.dataset.c === 'valor' ? fdParse(el.value) : el.value; }); return o; }).filter(p => String(p.fornecedor || '').trim() || p.valor !== '');
+}
+function capexAddProposta(id) { const i = FD.dados.itens.find(x => x.id === id); capexLerForm(i); i.propostas = i.propostas || []; i.propostas.push({}); capexAbrir(id); }
+function capexSalvar(id) {
+  const i = FD.dados.itens.find(x => x.id === id); capexLerForm(i);
+  if (!String(i.descricao || '').trim()) { mostrarToast('Informe a descrição.', true); return; }
+  if (i.etapa === 'Concluído' && !(i.nf && i.nf.url)) { mostrarToast('Para concluir o investimento, anexe a nota fiscal.', true); i.etapa = 'Execução'; capexAbrir(id); return; }
+  if (i.etapa === 'Concluído' && (!i.fimReal || exNum(i.realizado) === null)) { mostrarToast('Informe o fim real e o valor realizado para concluir.', true); return; }
+  gopFecharPlano(); fdAgendarSalvar(); exRedesenhar(); mostrarToast('Solicitação salva.');
+}
+async function capexAnexarNf(id, input) {
+  const arq = input.files && input.files[0]; if (!arq) return;
+  const i = FD.dados.itens.find(x => x.id === id); capexLerForm(i);
+  try {
+    const fd = new FormData(); fd.append('file', arq);
+    const up = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd });
+    const u = await up.json(); if (!up.ok) throw new Error(u.error || 'Falha no envio.');
+    i.nf = { url: u.url, nome: u.originalName, em: exHoje() };
+    fdAgendarSalvar(); capexAbrir(id); mostrarToast('Nota fiscal anexada.');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+function capexTirarNf(id) { const i = FD.dados.itens.find(x => x.id === id); capexLerForm(i); delete i.nf; if (i.etapa === 'Concluído') i.etapa = 'Execução'; capexAbrir(id); }
+function capexExcluir(id) { if (!confirm('Excluir esta solicitação?')) return; FD.dados.itens = FD.dados.itens.filter(x => x.id !== id); gopFecharPlano(); fdAgendarSalvar(); exRedesenhar(); }
+function capexHtmlGut() {
+  const l = FD.dados.itens.filter(i => String(i.descricao || '').trim()).map(i => ({ i, s: capexGut(i) })).sort((a, b) => (b.s ?? -1) - (a.s ?? -1));
+  return `
+    <div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#475569;">Matriz GUT da planilha: <strong>Gravidade × Urgência × Tendência</strong> (1 a 3 cada, máximo 27). A prioridade considera também a origem (Check Global, P1A/P3A, segurança, mercado, produtividade).</div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th>Rank</th><th style="min-width:220px;">Solicitação</th><th>Origem</th><th>G</th><th>U</th><th>T</th><th>G×U×T</th><th>Total</th><th>Etapa</th></tr></thead>
+      <tbody>${l.map(({ i, s }, k) => `<tr style="cursor:pointer;" onclick="capexAbrir('${i.id}')"><td><strong>${s === null ? '—' : k + 1}</strong></td><td>${escapeHtml(i.descricao)}</td><td>${escapeHtml(i.origem || '⚠️ sem origem')}</td><td>${i.g || '—'}</td><td>${i.u || '—'}</td><td>${i.t || '—'}</td><td style="font-weight:800;${s >= 18 ? 'color:#dc2626;' : s >= 8 ? 'color:#d97706;' : ''}">${s ?? '⚠️'}</td><td>${simFmt(capexTotal(i), 'rs')}</td><td>${escapeHtml(i.etapa || 'Solicitação')}</td></tr>`).join('') || '<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:14px;">Nenhuma solicitação.</td></tr>'}</tbody></table></div>`;
+}
+function capexHtmlChecks() { exAoEditar(); return `<div class="painel"><h3 style="margin-top:0;">🗓️ Check trimestral do CAPEX</h3>${fdTabela('checks', [{ campo: 'tri', rotulo: 'Trimestre', tipo: 'select', opcoes: ['T1', 'T2', 'T3', 'T4'], largura: 100, recarregar: true }, { campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'participantes', rotulo: 'Participantes', largura: 220 }, { campo: 'decisoes', rotulo: 'Decisões (repriorização, aprovações, atrasos)', largura: 360 }], { botao: 'Registrar check' })}</div>`; }
+function capexHtmlPlano() { exAoEditar(); return `<div class="painel"><h3 style="margin-top:0;">🔁 Plano de ação — Gestão CAPEX</h3>${fdTabela('plano', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'area', rotulo: 'Área', tipo: 'select', opcoes: capexLista('areas'), largura: 120 }, { campo: 'assunto', rotulo: 'Assunto', largura: 150 }, { campo: 'acao', rotulo: 'Ação', largura: 280 }, { campo: 'responsavel', rotulo: 'Responsável', largura: 140 }, { campo: 'prazo', rotulo: 'Prazo', tipo: 'date', largura: 130 }, { campo: 'status', rotulo: 'Status', tipo: 'select', opcoes: ['No prazo', 'Atrasada', 'Completa', 'Cancelada'], largura: 120 }], { botao: 'Adicionar ação' })}</div>`; }
+function capexHtmlCad() {
+  const c = FD.dados.cadastros;
+  const area = (k, rot) => `<div class="painel"><h4 style="margin:0 0 6px;">${rot}</h4><textarea rows="9" onchange="FD.dados.cadastros['${k}'] = this.value; fdAgendarSalvar();">${escapeHtml(c[k] || '')}</textarea><div style="font-size:11px;color:#64748b;">Um por linha.</div></div>`;
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">${area('areas', 'Áreas')}${area('categorias', 'Categorias')}${area('origens', 'Origens')}${area('tipos', 'Tipos')}</div>`;
+}
+
+// ======================= P1A / P3A (Planejamento 2.3) =======================
+const RECURSOS_P3A = ['Pessoas', 'Frota', 'Instalações', 'Armazém', 'Novos modais / mix de frota', 'Ponto de Apoio / Estacionamento'];
+const PLAYBOOK_P3A = [
+  ['V.1', 'Montar o P1A (ano) e o P3A (3 anos) com base na projeção de volume e marketplace', 'Projete volume e marketplace por ano (📈), traduza em necessidades de pessoas, frota, instalações e armazém e registre cada necessidade como projeto (🗂️).'],
+  ['V.2', 'Colher o feedback da liderança sobre recursos necessários', 'Faça a rodada com cada líder (entrega, armazém, puxada, frota, gente) considerando produtividade e frota ociosa. Registre abaixo.'],
+  ['V.3', 'Garantir que a liderança explica seu envolvimento no P1A/P3A', 'Apresente o P3A no ciclo de negócios e combine quem é dono de cada projeto. Registre o líder responsável em cada feedback.'],
+  ['V.4', 'Levar as mudanças para CAPEX, negociação sindical/3PL ou compras/aluguéis', 'Para cada projeto que muda frota, pessoas ou instalações, informe onde foi registrado (coluna "Registro") e anexe a evidência.'],
+  ['V.5', 'Mapear os impactos no negócio', 'Descreva em cada projeto o impacto no negócio (capacidade, nível de serviço, produtividade, segurança).'],
+  ['V.6', 'Calcular os impactos financeiros', 'Em 💰 informe investimento, forma de pagamento, economia e ganho anual — a ferramenta calcula parcela e payback.'],
+  ['V.7', 'Contemplar Ponto de Apoio e estacionamento', 'Em 🏭 registre os PAs e estacionamentos existentes e a necessidade futura (ou marque que não se aplica).'],
+  ['V.8', 'Ter plano de ação / adequações antecipadas', 'Todo projeto precisa de prioridade, status e data de execução para antecipar as necessidades do negócio.']
+];
+function p3aProjetos(d) { return (d.projetos || []).filter(p => String(p.descricao || '').trim()); }
+function p3aPrevisto(p) { return (exNum(p.qtd) || 0) * (exNum(p.unitario) || 0); }
+function p3aPmt(v, n, j) { if (!v || !n) return null; if (!j) return v / n; return v * j / (1 - Math.pow(1 + j, -n)); }
+function p3aValidar(d) {
+  const pr = p3aProjetos(d), rec = new Set(pr.map(p => p.recurso).filter(Boolean)), vol = (d.volumes || []).filter(v => exNum(v.volume) !== null);
+  const fb = (d.feedbacks || []).filter(f => String(f.lider || '').trim()), lideres = new Set(fb.map(f => f.lider.trim().toLowerCase()));
+  const precisaRegistro = pr.filter(p => ['Pessoas', 'Frota', 'Instalações', 'Armazém', 'Novos modais / mix de frota'].includes(p.recurso));
+  const imp = (d.impactos || []).filter(i => exNum(i.valor) && (exNum(i.economia) || exNum(i.ganho)));
+  const pa = (d.pontos || []).filter(p => String(p.local || '').trim());
+  const pb = d.playbook || {};
+  return [
+    { v: 'V.1', titulo: 'P1A/P3A de instalações, frota e pessoas com base em volume e marketplace', st: exSt(pr.length && rec.size >= 2 && vol.length >= 3 && vol.some(v => exNum(v.mktp) !== null), pr.length || vol.length), txt: `${pr.length} projeto(s) cobrindo ${[...rec].join(', ') || 'nenhum recurso'} · ${vol.length} ano(s) de volume projetado.`, ir: 'projetos' },
+    { v: 'V.2', titulo: 'Feedback da liderança sobre recursos necessários', st: exSt(fb.length >= 2, fb.length >= 1), txt: `${fb.length} feedback(s) da liderança registrado(s) no Playbook.`, ir: 'playbook' },
+    { v: 'V.3', titulo: 'Liderança fala sobre seu envolvimento no P1A/P3A', st: exSt(lideres.size >= 2 || pb['V.3'], lideres.size >= 1), txt: `${lideres.size} líder(es) envolvido(s)${pb['V.3'] ? ' · etapa confirmada no Playbook' : ''}.`, ir: 'playbook' },
+    { v: 'V.4', titulo: 'Mudanças levadas para CAPEX, sindical/3PL ou compras', st: exSt(precisaRegistro.length && precisaRegistro.every(p => p.registro && p.registro !== 'Ainda não registrado'), precisaRegistro.some(p => p.registro && p.registro !== 'Ainda não registrado')), txt: `${precisaRegistro.filter(p => p.registro && p.registro !== 'Ainda não registrado').length}/${precisaRegistro.length} projeto(s) de frota, pessoas ou instalações com registro.`, ir: 'projetos' },
+    { v: 'V.5', titulo: 'Mapeamento dos impactos no negócio', st: exSt(pr.length && pr.every(p => String(p.impacto || '').trim()), pr.some(p => String(p.impacto || '').trim())), txt: `${pr.filter(p => String(p.impacto || '').trim()).length}/${pr.length} projeto(s) com impacto no negócio descrito.`, ir: 'projetos' },
+    { v: 'V.6', titulo: 'Cálculo de cada impacto financeiro', st: exSt(imp.length >= 1 && imp.length >= Math.min(pr.length, 3), imp.length >= 1), txt: `${imp.length} investimento(s) com valor e economia/ganho calculados.`, ir: 'financeiro' },
+    { v: 'V.7', titulo: 'Plano contempla Ponto de Apoio e/ou estacionamento', st: exSt(pa.length >= 1 || d.semPa === 'sim', false), txt: pa.length ? `${pa.length} PA/estacionamento mapeado(s).` : d.semPa === 'sim' ? 'Unidade sem PA/estacionamento (não se aplica).' : 'Registre os PAs/estacionamentos em 🏭.', ir: 'estrutura' },
+    { v: 'V.8', titulo: 'Plano de ação / adequações antecipadas', st: exSt(pr.length && pr.every(p => p.status && p.execucao && p.prioridade), pr.some(p => p.status && p.execucao)), txt: `${pr.filter(p => p.status && p.execucao && p.prioridade).length}/${pr.length} projeto(s) com prioridade, status e data de execução.`, ir: 'projetos' }
+  ];
+}
+function p3aHtmlAba(a) {
+  const d = FD.dados; exAoEditar();
+  if (a === 'volume') {
+    const vs = d.volumes;
+    return `
+      <div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#475569;">Histórico e projeção de volume e marketplace por ano — base do P1A (próximo ano) e do P3A (3 anos). Crescimento calculado ano contra ano.</div>
+      ${fdTabela('volumes', [{ campo: 'ano', rotulo: 'Ano', largura: 90 }, { campo: 'volume', rotulo: 'Volume (hl)', tipo: 'decimal', largura: 130, recarregar: true }, { campo: 'mktp', rotulo: 'Marketplace (hl)', tipo: 'decimal', largura: 130, recarregar: true },
+        { campo: 'c', rotulo: 'Crescimento', tipo: 'calc', valor: (l, i) => { const ant = i ? exNum(vs[i - 1].volume) : null, v = exNum(l.volume); return ant && v !== null ? `<strong style="color:${v >= ant ? '#166534' : '#991b1b'};">${fdPct(v / ant - 1)}</strong>` : ''; } },
+        { campo: 'm', rotulo: '% marketplace', tipo: 'calc', valor: l => exNum(l.volume) && exNum(l.mktp) !== null ? fdPct(exNum(l.mktp) / exNum(l.volume)) : '' },
+        { campo: 'tipo', rotulo: 'Tipo', tipo: 'select', opcoes: ['Realizado', 'Projeção'], largura: 110 }], { botao: 'Adicionar ano' })}
+      <div class="painel" style="margin-top:10px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;"><div><label style="margin:0;font-size:12px;">Projetar os próximos anos com crescimento de</label>${simInp(d.crescProj, 'pct', `FD.dados.crescProj = fdParse(this.value); fdAgendarSalvar()`, '3', 'width:90px;')}</div><button class="btn-secundario btn-sm" onclick="p3aProjetar()">Projetar a partir do último ano preenchido</button></div>`;
+  }
+  if (a === 'projetos') {
+    const pr = p3aProjetos(d), soma = h => pr.filter(p => !h || p.horizonte === h).reduce((s, p) => s + p3aPrevisto(p), 0);
+    return `
+      <div class="kpis" style="margin-bottom:10px;"><div class="kpi-card"><div class="valor" style="font-size:20px;">${simFmt(soma('P1A'), 'rs')}</div><div class="rotulo">P1A (próximo ano)</div></div><div class="kpi-card"><div class="valor" style="font-size:20px;">${simFmt(soma('P3A'), 'rs')}</div><div class="rotulo">P3A (3 anos)</div></div>${RECURSOS_P3A.slice(0, 4).map(r => `<div class="kpi-card"><div class="valor" style="font-size:20px;">${pr.filter(p => p.recurso === r).length}</div><div class="rotulo">${r}</div></div>`).join('')}</div>
+      ${fdTabela('projetos', [{ campo: 'horizonte', rotulo: 'Horizonte', tipo: 'select', opcoes: ['P1A', 'P3A'], largura: 80 }, { campo: 'descricao', rotulo: 'Projeto / necessidade', tipo: 'textarea', largura: 240 }, { campo: 'recurso', rotulo: 'Recurso', tipo: 'select', opcoes: RECURSOS_P3A, largura: 150, recarregar: true },
+        { campo: 'tipo', rotulo: 'Tipo', tipo: 'select', opcoes: ['Capacidade de entrega', 'Renovação da frota', 'Expansão de armazenagem', 'Aumento de produtividade', 'Segurança', 'Marketplace', 'Estrutura / instalações', 'QLP'], largura: 160 },
+        { campo: 'qtd', rotulo: 'Qtde', tipo: 'decimal', largura: 60, recarregar: true }, { campo: 'unitario', rotulo: 'Valor unit. (R$)', tipo: 'decimal', largura: 110, recarregar: true }, { campo: 'prev', rotulo: 'Previsto', tipo: 'calc', valor: l => simFmt(p3aPrevisto(l) || null, 'rs') },
+        { campo: 'ano', rotulo: 'Ano', largura: 70 }, { campo: 'execucao', rotulo: 'Data execução', tipo: 'date', largura: 130 }, { campo: 'prioridade', rotulo: 'Prioridade', tipo: 'select', opcoes: ['Alta', 'Média', 'Baixa'], largura: 90 },
+        { campo: 'status', rotulo: 'Status', tipo: 'select', opcoes: ['Não iniciado', 'Andamento (no prazo)', 'Andamento (atrasado)', 'Concluído'], largura: 150 },
+        { campo: 'registro', rotulo: 'Registro (V.4)', tipo: 'select', opcoes: ['CAPEX', 'Negociação sindical / 3PL', 'Compras / aluguel', 'Não se aplica', 'Ainda não registrado'], largura: 170, recarregar: true },
+        { campo: 'impacto', rotulo: 'Impacto no negócio (V.5)', tipo: 'textarea', largura: 220 }], { botao: 'Adicionar projeto', numerar: true })}`;
+  }
+  if (a === 'pessoas') return `<div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#475569;">QLP atual e necessidade nos próximos 3 anos por função (use os simuladores do Planejamento 1.1 como base). A diferença vira projeto de <strong>Pessoas</strong> no P1A/P3A.</div>
+      ${fdTabela('qlp', [{ campo: 'funcao', rotulo: 'Função', largura: 200 }, { campo: 'atual', rotulo: 'Atual', tipo: 'decimal', largura: 70, recarregar: true }, { campo: 'a1', rotulo: String(FD.ano + 1), tipo: 'decimal', largura: 70, recarregar: true }, { campo: 'a2', rotulo: String(FD.ano + 2), tipo: 'decimal', largura: 70, recarregar: true }, { campo: 'a3', rotulo: String(FD.ano + 3), tipo: 'decimal', largura: 70, recarregar: true },
+        { campo: 'dif', rotulo: 'Variação 3 anos', tipo: 'calc', valor: l => { const a = exNum(l.atual), b = exNum(l.a3) ?? exNum(l.a2) ?? exNum(l.a1); return a !== null && b !== null ? `<strong style="color:${b > a ? '#d97706' : '#166534'};">${b - a > 0 ? '+' : ''}${fdFmt(b - a)}</strong>` : ''; } },
+        { campo: 'just', rotulo: 'Justificativa (produtividade, volume, marketplace)', largura: 300 }], { botao: 'Adicionar função' })}`;
+  if (a === 'frota') {
+    const f = (d.frota || []).filter(v => v.placa), ociosa = f.filter(v => exNum(v.util) !== null && exNum(v.util) < 30);
+    return `<div class="kpis" style="margin-bottom:10px;"><div class="kpi-card"><div class="valor">${f.length}</div><div class="rotulo">Veículos</div></div><div class="kpi-card"><div class="valor" style="color:${ociosa.length ? '#d97706' : ''};">${ociosa.length}</div><div class="rotulo">Frota ociosa (&lt;30% de utilização)</div></div><div class="kpi-card"><div class="valor">${f.filter(v => exNum(v.ano) && FD.ano - exNum(v.ano) >= 10).length}</div><div class="rotulo">Com 10 anos ou mais</div></div></div>
+      ${fdTabela('frota', [{ campo: 'placa', rotulo: 'Placa', largura: 100 }, { campo: 'tipo', rotulo: 'Tipo', tipo: 'select', opcoes: ['VUC', '3/4', 'Toco', 'Truck', 'Bitruck', 'Carreta', 'Moto / modal alternativo'], largura: 110 }, { campo: 'ano', rotulo: 'Ano fab.', tipo: 'decimal', largura: 70, recarregar: true },
+        { campo: 'util', rotulo: 'Utilização %', tipo: 'decimal', largura: 80, recarregar: true }, { campo: 'st', rotulo: 'Leitura', tipo: 'calc', valor: l => exNum(l.util) !== null && exNum(l.util) < 30 ? '<span style="color:#d97706;font-weight:700;">ociosa</span>' : exNum(l.ano) && FD.ano - exNum(l.ano) >= 10 ? '<span style="color:#dc2626;font-weight:700;">idade</span>' : '' },
+        { campo: 'decisao', rotulo: 'Decisão', tipo: 'select', opcoes: ['Manter', 'Renovar', 'Desmobilizar', 'Realocar', 'Aumentar frota', 'Trocar modal'], largura: 130 }, { campo: 'obs', rotulo: 'Observação', largura: 240 }], { botao: 'Adicionar veículo' })}`;
+  }
+  if (a === 'estrutura') {
+    const e = d.estrutura, vs = (d.volumes || []).filter(v => exNum(v.volume) !== null), ult = vs[vs.length - 1];
+    const f = (k, rot) => `<div><label>${rot}</label>${simInp(e[k], 'num', `FD.dados.estrutura['${k}'] = fdParse(this.value); fdAgendarSalvar(); fdCorpoRender()`, '')}</div>`;
+    const giro = exNum(e.diasEstoque) || 0, capHl = exNum(e.capacidadeHl);
+    const necHl = ult && giro ? exNum(ult.volume) / 12 / 26 * giro : null;
+    return `<div class="painel" style="margin-bottom:12px;"><h3 style="margin-top:0;">🏭 Capacidade do armazém</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">${f('m2', 'Área (m²)')}${f('posicoes', 'Posições de palete')}${f('capacidadeHl', 'Capacidade (hl)')}${f('diasEstoque', 'Cobertura de estoque (dias)')}</div>
+        <div style="margin-top:10px;font-size:13px;">${necHl !== null ? `Necessidade no último ano projetado (${escapeHtml(ult.ano)}): <strong>${fdFmt(necHl)} hl</strong> · ${capHl ? (capHl >= necHl ? `<span style="color:#166534;font-weight:700;">atende (${fdPct(necHl / capHl, 0)} da capacidade)</span>` : `<span style="color:#dc2626;font-weight:700;">faltam ${fdFmt(necHl - capHl)} hl — registrar projeto de Armazém</span>`) : 'informe a capacidade'}` : 'Preencha o volume projetado e a cobertura de estoque para calcular a necessidade.'}</div></div>
+      <div class="painel"><h3 style="margin-top:0;">📍 Ponto de Apoio (PA) e estacionamento (V.7)</h3>
+        <label style="display:flex;gap:6px;align-items:center;font-weight:400;font-size:13px;"><input type="checkbox" style="width:auto;" ${d.semPa === 'sim' ? 'checked' : ''} onchange="FD.dados.semPa = this.checked ? 'sim' : ''; fdAgendarSalvar(); exValidar();"> A unidade não tem PA nem estacionamento (não se aplica)</label>
+        ${fdTabela('pontos', [{ campo: 'local', rotulo: 'Local', largura: 180 }, { campo: 'tipo', rotulo: 'Tipo', tipo: 'select', opcoes: ['Ponto de Apoio', 'Estacionamento', 'Pátio'], largura: 130 }, { campo: 'capacidade', rotulo: 'Capacidade (veículos)', tipo: 'decimal', largura: 110 }, { campo: 'necessidade', rotulo: 'Necessidade 3 anos', tipo: 'decimal', largura: 110 }, { campo: 'plano', rotulo: 'Plano', largura: 260 }], { botao: 'Adicionar PA / estacionamento' })}</div>`;
+  }
+  if (a === 'financeiro') return `<div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#475569;">Impacto financeiro de cada investimento (base da aba "Análise de impactos financeiros" da planilha): parcela = Price com juros ao mês; payback = investimento ÷ (economia + ganho anual).</div>
+      ${fdTabela('impactos', [{ campo: 'descricao', rotulo: 'Investimento', largura: 220 }, { campo: 'tipo', rotulo: 'Tipo', tipo: 'select', opcoes: ['Substituição de frota', 'Aumento de frota', 'Alterações estruturais', 'Aquisição de equipamentos', 'Pessoas / QLP', 'Outro'], largura: 160 },
+        { campo: 'valor', rotulo: 'Valor (R$)', tipo: 'decimal', largura: 110, recarregar: true }, { campo: 'parcelas', rotulo: 'Parcelas', tipo: 'decimal', largura: 70, recarregar: true }, { campo: 'juros', rotulo: 'Juros % a.m.', tipo: 'decimal', largura: 80, recarregar: true },
+        { campo: 'pmt', rotulo: 'Parcela', tipo: 'calc', valor: l => simFmt(p3aPmt(exNum(l.valor), exNum(l.parcelas), (exNum(l.juros) || 0) / 100), 'rs') },
+        { campo: 'tot', rotulo: 'Total pago', tipo: 'calc', valor: l => { const p = p3aPmt(exNum(l.valor), exNum(l.parcelas), (exNum(l.juros) || 0) / 100); return p ? simFmt(p * exNum(l.parcelas), 'rs') : simFmt(exNum(l.valor), 'rs'); } },
+        { campo: 'economia', rotulo: 'Economia anual (R$)', tipo: 'decimal', largura: 110, recarregar: true }, { campo: 'ganho', rotulo: 'Ganho anual (R$)', tipo: 'decimal', largura: 110, recarregar: true },
+        { campo: 'pb', rotulo: 'Payback', tipo: 'calc', valor: l => { const r = (exNum(l.economia) || 0) + (exNum(l.ganho) || 0); return exNum(l.valor) && r ? `<strong>${fdFmt(exNum(l.valor) / r, 1)} anos</strong>` : '<span style="color:#64748b;">investimento em produtividade/segurança</span>'; } }], { botao: 'Adicionar investimento' })}`;
+  if (a === 'playbook') {
+    const pb = d.playbook;
+    return `<div class="painel" style="margin-bottom:12px;"><h3 style="margin-top:0;">📘 Playbook do P1A / P3A</h3><div style="font-size:12.5px;color:#475569;margin-bottom:8px;">Passo a passo para atender a pergunta 2.3. Marque cada etapa quando concluída.</div>
+      ${PLAYBOOK_P3A.map(([v, tit, txt]) => { const st = (FD.validacao.itens.find(x => x.numero === v) || {}).ok; return `<div class="p3a-passo ${pb[v] ? 'feito' : ''}"><label style="display:flex;gap:8px;align-items:flex-start;margin:0;font-weight:400;"><input type="checkbox" style="width:auto;margin-top:3px;" ${pb[v] ? 'checked' : ''} onchange="FD.dados.playbook['${v}'] = this.checked; fdAgendarSalvar(); exRedesenhar();"><div><strong>${v} · ${escapeHtml(tit)}</strong> ${st ? '<span style="color:#16a34a;font-size:11px;">✅ validado pela ferramenta</span>' : ''}<div style="font-size:12.5px;color:#475569;">${escapeHtml(txt)}</div></div></label></div>`; }).join('')}</div>
+      <div class="painel"><h3 style="margin-top:0;">🗣️ Feedback da liderança (V.2 e V.3)</h3>${fdTabela('feedbacks', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'lider', rotulo: 'Líder', largura: 150, recarregar: true }, { campo: 'area', rotulo: 'Área', tipo: 'select', opcoes: ['Entrega', 'Armazém', 'Puxada', 'Frota', 'Gente', 'Gestão'], largura: 110 }, { campo: 'recurso', rotulo: 'Recurso necessário', tipo: 'select', opcoes: RECURSOS_P3A, largura: 150 }, { campo: 'feedback', rotulo: 'Feedback (produtividade, frota ociosa, necessidades)', largura: 320 }], { botao: 'Registrar feedback' })}</div>`;
+  }
+  return '';
+}
+function p3aProjetar() {
+  const d = FD.dados, cres = (exNum(d.crescProj) ?? 3) / 100, vs = d.volumes, base = [...vs].reverse().find(v => exNum(v.volume) !== null);
+  if (!base) { mostrarToast('Preencha o volume de pelo menos um ano.', true); return; }
+  let i = vs.indexOf(base), vol = exNum(base.volume), mk = exNum(base.mktp);
+  for (let k = i + 1; k < vs.length; k++) { vol *= 1 + cres; if (mk !== null) mk *= 1 + cres; vs[k].volume = Math.round(vol); if (mk !== null) vs[k].mktp = Math.round(mk); vs[k].tipo = 'Projeção'; }
+  fdAgendarSalvar(); exRedesenhar(); mostrarToast('Projeção aplicada.');
+}
+
+// ======================= CHECK GLOBAL DE MANUTENÇÃO (Planejamento 2.2) =======================
+const DESTINOS_MAN = ['Reparo de curto prazo', 'CAPEX emergencial', 'Priorizado com prazo'];
+function manItens() { return FD.dados.modelo.flatMap(s => s.grupos.flatMap(g => g.itens)); }
+function manNota(t, id) { return ((FD.dados.notas || {})[t] || {})[id]; }
+function manPct(t, itens) { let s = 0, m = 0; itens.forEach(i => { const v = manNota(t, i.id); if (v === undefined || v === '' || v === 'na') return; s += Number(v) * (Number(i.peso) || 1); m += 3 * (Number(i.peso) || 1); }); return m ? s / m : null; }
+function manTriComNotas(t) { return Object.values((FD.dados.notas || {})[t] || {}).some(v => v !== '' && v !== undefined); }
+function manGarantirPlanos() {
+  const d = FD.dados, novos = [], ch = new Set(d.acoes.filter(a => a.item).map(a => `${a.tri}|${a.item}`)), nok = new Set();
+  const itens = manItens();
+  Object.entries(d.notas || {}).forEach(([t, notas]) => Object.entries(notas || {}).forEach(([id, v]) => {
+    if (v === '' || v === undefined || v === 'na' || Number(v) >= 3) return;
+    const k = `${t}|${id}`; nok.add(k);
+    if (ch.has(k)) return;
+    const it = itens.find(i => i.id === id); if (!it) return;
+    const a = { id: fdId(), tri: Number(t), item: id, critico: !!it.critico, destino: it.critico ? 'Reparo de curto prazo' : 'Priorizado com prazo', acao: '', responsavel: '', prazo: '', status: 'Não iniciado', auto: true };
+    d.acoes.push(a); novos.push(a); ch.add(k);
+  }));
+  d.acoes = d.acoes.filter(a => !(a.auto && !nok.has(`${a.tri}|${a.item}`) && !String(a.acao || '').trim()));
+  d.acoes.forEach(a => { const it = itens.find(i => i.id === a.item); a.triNome = 'T' + (a.tri + 1); a.itemTxt = it ? `${it.num} ${it.texto}` : ''; a.criticoTxt = a.critico ? 'Sim' : ''; });
+  return novos;
+}
+function manAcaoDef(a) { return !!(String(a.acao || '').trim() && String(a.responsavel || '').trim() && a.prazo); }
+function manValidar(d) {
+  const itens = manItens(), tris = [0, 1, 2, 3].filter(manTriComNotas), ult = tris.length ? tris[tris.length - 1] : null;
+  const avaliados = ult === null ? 0 : itens.filter(i => { const v = manNota(ult, i.id); return v !== undefined && v !== ''; }).length;
+  const planosUlt = d.acoes.filter(a => a.tri === ult && a.item), def = planosUlt.filter(manAcaoDef).length;
+  const forn = (d.fornecedores || []).filter(f => String(f.nome || '').trim() && String(f.contato || '').trim());
+  const raci = (d.raci || []).filter(r => String(r.atividade || '').trim() && String(r.r || '').trim());
+  const comAns = forn.filter(f => String(f.ans || '').trim()).length;
+  return [
+    { v: 'V.1', titulo: 'Checklist preenchido (mín. trimestral), críticos evidenciados e tratados', st: exSt(ult !== null && avaliados >= itens.length * 0.9 && def === planosUlt.length, ult !== null), txt: ult === null ? 'Nenhum trimestre avaliado ainda.' : `T${ult + 1}: ${avaliados}/${itens.length} itens avaliados · ${def}/${planosUlt.length} item(ns) fora de conformidade com plano definido (críticos → reparo curto prazo ou CAPEX emergencial).`, ir: 'check' },
+    { v: 'V.2', titulo: 'Checklist digital mostrando os gaps e a evolução entre trimestres', st: exSt(tris.length >= 2, tris.length === 1), txt: `${tris.length} trimestre(s) avaliado(s) no sistema${tris.length >= 2 ? ' — evolução disponível em 📈' : ' — avalie o próximo trimestre para comparar'}.`, ir: 'evolucao' },
+    { v: 'V.3', titulo: 'Base de fornecedores disponível para a unidade', st: exSt(forn.length >= 3, forn.length >= 1), txt: `${forn.length} fornecedor(es) com contato na base.`, ir: 'fornecedores' },
+    { v: 'V.4', titulo: 'RACI entre áreas e fornecedores, com ANS, tipo de serviço e custo', st: exSt(raci.length >= 3 && raci.some(r => String(r.fornecedor || '').trim()) && comAns >= 1, raci.length >= 1), txt: `${raci.length} linha(s) de RACI · ${raci.filter(r => String(r.fornecedor || '').trim()).length} com fornecedor · ${comAns} fornecedor(es) com ANS informado.`, ir: 'raci' }
+  ];
+}
+function manHtmlAba(a) {
+  const d = FD.dados;
+  if (a === 'check') return manHtmlCheck();
+  if (a === 'evolucao') return manHtmlEvolucao();
+  if (a === 'ronda') return manHtmlRonda();
+  if (a === 'acoes') return manHtmlAcoes();
+  exAoEditar();
+  if (a === 'fornecedores') return `<div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#475569;">Base de fornecedores acessível a toda a unidade (manutenção, segurança, rota). Inclua o ANS (prazo de atendimento) e o custo/contrato de cada um.</div>${fdTabela('fornecedores', [{ campo: 'nome', rotulo: 'Fornecedor / órgão', largura: 180 }, { campo: 'contato', rotulo: 'Contato', largura: 130 }, { campo: 'servico', rotulo: 'Tipo de serviço', largura: 170 }, { campo: 'categoria', rotulo: 'Categoria', tipo: 'select', opcoes: ['Manutenção', 'Segurança / emergência', 'Rota (hotel, restaurante)', 'Utilidades (água, energia)', 'Outro'], largura: 150 }, { campo: 'frequencia', rotulo: 'Frequência', tipo: 'select', opcoes: ['Comum', 'Raro', 'Contrato fixo'], largura: 110 }, { campo: 'cidade', rotulo: 'Cidade', largura: 120 }, { campo: 'ans', rotulo: 'ANS / prazo de atendimento', largura: 150, recarregar: true }, { campo: 'custo', rotulo: 'Custo / contrato', largura: 130 }], { botao: 'Adicionar fornecedor', numerar: true })}`;
+  if (a === 'raci') return `<div class="painel" style="margin-bottom:10px;font-size:12.5px;color:#475569;">RACI da manutenção entre as áreas da unidade e os fornecedores externos (R = executa · A = aprova · C = consultado · I = informado).</div>${fdTabela('raci', [{ campo: 'atividade', rotulo: 'Atividade / item de manutenção', largura: 220 }, { campo: 'r', rotulo: 'R', largura: 130, recarregar: true }, { campo: 'a', rotulo: 'A', largura: 130 }, { campo: 'c', rotulo: 'C', largura: 120 }, { campo: 'i', rotulo: 'I', largura: 120 }, { campo: 'fornecedor', rotulo: 'Fornecedor', tipo: 'select', opcoes: (d.fornecedores || []).map(f => f.nome).filter(Boolean), largura: 160, recarregar: true }], { botao: 'Adicionar linha' })}`;
+  return '';
+}
+function manFotosDe(item, t) { return (FD.manFotos || []).filter(f => f.item === item && f.trimestre === t); }
+function manHtmlCheck() {
+  const d = FD.dados, t = FD.triSel, itens = manItens(), total = manPct(t, itens), ant = t ? manPct(t - 1, itens) : null;
+  if (!FD.manFotos) manCarregarFotos();
+  const btn = (id, v, atual) => `<button class="c5-resp ${String(atual) === v ? 'ativo ' + (v === '3' ? 'sim' : v === 'na' ? 'na' : 'nao') : ''}" onclick="manNotar('${id}', '${v}')">${v === 'na' ? 'N/A' : v}</button>`;
+  return `
+    <div class="painel" style="margin-bottom:10px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div><label style="margin:0;font-size:12px;">Trimestre</label><div style="display:flex;gap:4px;">${[0, 1, 2, 3].map(x => `<button class="btn-sm ${x === t ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="FD.triSel = ${x}; fdCorpoRender();">T${x + 1}${manTriComNotas(x) ? ' ✓' : ''}</button>`).join('')}</div></div>
+      <div><label style="margin:0;font-size:12px;">Data da avaliação</label><input type="date" value="${escapeHtml((d.datas || {})[t] || '')}" onchange="FD.dados.datas[${t}] = this.value; fdAgendarSalvar();" style="margin:0;"></div>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <span class="fd-nota" style="background:${total === null ? '#94a3b8' : total >= 0.9 ? '#16a34a' : total >= 0.75 ? '#d97706' : '#dc2626'};">T${t + 1}: ${total === null ? '—' : fdPct(total, 1)}${ant !== null && total !== null ? ` (${total >= ant ? '▲' : '▼'} ${fdFmt(Math.abs(total - ant) * 100, 1)} p.p.)` : ''}</span>
+        <button class="btn-primario btn-sm" style="width:auto;background:#0f766e;" onclick="FD.aba = 'ronda'; fdDesenhar(); manGerarLink();">📷 Link da ronda (celular)</button>
+        ${t && !manTriComNotas(t) && manTriComNotas(t - 1) ? `<button class="btn-secundario btn-sm" onclick="manCopiarTri()">⇐ Copiar notas do T${t}</button>` : ''}
+      </div>
+    </div>
+    ${d.modelo.map(s => `
+      <h3 style="margin:14px 0 6px;">${escapeHtml(s.titulo)} <span class="dpo-chip-nivel">${manPct(t, s.grupos.flatMap(g => g.itens)) === null ? '—' : fdPct(manPct(t, s.grupos.flatMap(g => g.itens)), 0)}</span></h3>
+      ${s.grupos.map(g => `<div class="painel" style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><h4 style="margin:0;">${g.numero} · ${escapeHtml(g.titulo)}</h4><span class="dpo-chip-nivel">${manPct(t, g.itens) === null ? '—' : fdPct(manPct(t, g.itens), 0)}</span></div>
+        ${g.itens.map(i => { const v = manNota(t, i.id), fotos = manFotosDe(i.id, t), pl = d.acoes.find(x => x.tri === t && x.item === i.id); return `
+          <div class="c5-pergunta ${v !== undefined && v !== '' && v !== 'na' && Number(v) < 3 ? 'nok' : ''}">
+            <div class="c5-texto"><strong>${i.num}</strong> ${escapeHtml(i.texto)} ${i.critico ? '<span class="dpo-chip-nivel" style="background:#fee2e2;color:#991b1b;">crítico</span>' : ''} <small style="color:#94a3b8;">peso ${i.peso}</small>
+              ${fotos.length ? `<a href="#" onclick="FD.aba='ronda'; fdDesenhar(); return false;" style="font-size:11.5px;">📷 ${fotos.length}</a>` : i.foto ? '<small style="color:#94a3b8;">📷 pede foto</small>' : ''}
+              ${pl ? `<button class="gop-plano ${manAcaoDef(pl) ? 'ok' : 'pend'}" onclick="manAbrirAcao('${pl.id}')">${manAcaoDef(pl) ? '📝' : '⚠️'}</button>` : ''}
+              <details style="margin-top:3px;"><summary style="cursor:pointer;font-size:11.5px;color:#4338ca;">Verificação e pontuação</summary><div style="font-size:12px;white-space:pre-line;color:#475569;margin-top:4px;"><strong>Verificação:</strong> ${escapeHtml(i.verificacao)}\n\n<strong>Pontos:</strong> ${escapeHtml(i.pontos)}</div>
+                <div style="margin-top:6px;font-size:12px;">📌 Foto da condição ideal: ${i.fotoIdeal ? `<a href="${escapeHtml(i.fotoIdeal)}" target="_blank">ver</a> · ` : ''}<label style="display:inline;cursor:pointer;color:#2563eb;font-weight:600;">${i.fotoIdeal ? 'trocar' : 'enviar'}<input type="file" accept="image/*" style="display:none;" onchange="manFotoIdeal('${i.id}', this)"></label></div></details></div>
+            <div class="c5-botoes">${btn(i.id, '3', v)}${btn(i.id, '1', v)}${btn(i.id, '0', v)}${btn(i.id, 'na', v)}</div>
+          </div>`; }).join('')}
+      </div>`).join('')}`).join('')}`;
+}
+function manNotar(id, v) {
+  const d = FD.dados, t = FD.triSel; d.notas[t] = d.notas[t] || {};
+  d.notas[t][id] = String(d.notas[t][id]) === v ? '' : v;
+  if (!d.datas[t]) d.datas[t] = exHoje();
+  const novos = manGarantirPlanos();
+  fdAgendarSalvar(); exRedesenhar();
+  if (novos.length) manAbrirAcao(novos[0].id);
+}
+function manCopiarTri() { const d = FD.dados, t = FD.triSel; d.notas[t] = { ...(d.notas[t - 1] || {}) }; d.datas[t] = exHoje(); manGarantirPlanos(); fdAgendarSalvar(); exRedesenhar(); mostrarToast(`Notas do T${t} copiadas para o T${t + 1}. Revise na ronda.`); }
+async function manFotoIdeal(id, input) {
+  const arq = input.files && input.files[0]; if (!arq) return;
+  try { const fd = new FormData(); fd.append('file', arq); const up = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd }); const u = await up.json(); if (!up.ok) throw new Error(u.error || 'Falha no envio.');
+    const it = manItens().find(i => i.id === id); it.fotoIdeal = u.url; fdAgendarSalvar(); fdCorpoRender(); mostrarToast('Foto da condição ideal salva.'); } catch (e) { mostrarToast(e.message, true); }
+}
+function manAbrirAcao(id) {
+  const a = FD.dados.acoes.find(x => x.id === id); if (!a) return;
+  const it = manItens().find(i => i.id === a.item);
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) gopFecharPlano()"><div class="modal-caixa" style="max-width:620px;">
+      <h3 style="margin-top:0;">🔧 Plano de manutenção — T${a.tri + 1}</h3>
+      <div class="gop-plano-ref">${it ? `<strong>${it.num}</strong> ${escapeHtml(it.texto)} · nota ${escapeHtml(manNota(a.tri, it.id) ?? '')}${it.critico ? ' · <strong style="color:#991b1b;">item crítico</strong>' : ''}` : ''}</div>
+      <label>Tratativa</label><select id="man-dest">${DESTINOS_MAN.map(x => `<option ${x === a.destino ? 'selected' : ''}>${x}</option>`).join('')}</select>
+      <label>Ação *</label><textarea id="man-acao" rows="2">${escapeHtml(a.acao || '')}</textarea>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;"><div style="flex:2;min-width:160px;"><label>Responsável *</label><input id="man-resp" list="man-forn" value="${escapeHtml(a.responsavel || '')}"><datalist id="man-forn">${(FD.dados.fornecedores || []).map(f => `<option value="${escapeHtml(f.nome || '')}">`).join('')}</datalist></div>
+        <div style="flex:1;min-width:130px;"><label>Prazo *</label><input id="man-prazo" type="date" value="${escapeHtml(a.prazo || '')}"></div>
+        <div style="flex:1;min-width:140px;"><label>Status</label><select id="man-st">${STATUS_ACAO_EX.map(s => `<option ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}</select></div></div>
+      <div class="acoes-form" style="justify-content:flex-end;margin-top:12px;"><button class="btn-secundario" onclick="gopFecharPlano()">Fechar</button><button class="btn-primario" style="width:auto;" onclick="manSalvarAcao('${a.id}')">💾 Salvar plano</button></div>
+    </div></div>`;
+}
+function manSalvarAcao(id) { const a = FD.dados.acoes.find(x => x.id === id); const g = i => (document.getElementById(i) || {}).value || ''; Object.assign(a, { destino: g('man-dest'), acao: g('man-acao').trim(), responsavel: g('man-resp').trim(), prazo: g('man-prazo'), status: g('man-st') }); gopFecharPlano(); fdAgendarSalvar(); exRedesenhar(); }
+function manHtmlAcoes() {
+  const l = FD.dados.acoes.slice().sort((x, y) => (y.tri - x.tri) || (y.critico - x.critico));
+  return `<div class="fd-tabela-wrap"><table class="fd-tabela gop-acoes"><thead><tr><th>Tri</th><th style="min-width:240px;">Item</th><th>Crítico</th><th>Tratativa</th><th style="min-width:200px;">Ação</th><th>Responsável</th><th>Prazo</th><th>Status</th></tr></thead>
+    <tbody>${l.map(a => { const st = gopStatusAcao({ status: a.status, prevista: a.prazo }); return `<tr class="${manAcaoDef(a) ? '' : 'gop-pendente'}" style="cursor:pointer;" onclick="manAbrirAcao('${a.id}')"><td>T${a.tri + 1}</td><td style="font-size:12px;">${escapeHtml(a.itemTxt || '')}</td><td>${a.critico ? '🔴' : ''}</td><td>${escapeHtml(a.destino || '')}</td><td style="font-size:12px;">${a.acao ? escapeHtml(a.acao) : '<strong style="color:#dc2626;">⚠️ Definir ação</strong>'}</td><td>${escapeHtml(a.responsavel || '—')}</td><td>${a.prazo ? new Date(a.prazo + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td><td><span class="dpo-chip-nivel" style="background:${COR_STATUS_GOP[st]};color:#fff;">${st}</span></td></tr>`; }).join('') || '<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:14px;">Nenhum item fora de conformidade.</td></tr>'}</tbody></table></div>`;
+}
+function manHtmlEvolucao() {
+  const d = FD.dados, tris = [0, 1, 2, 3];
+  const cel = v => `<td style="text-align:center;font-weight:700;${v === null ? '' : v >= 0.9 ? 'background:#dcfce7;color:#166534;' : v >= 0.75 ? 'background:#fef9c3;color:#854d0e;' : 'background:#fee2e2;color:#991b1b;'}">${v === null ? '—' : fdPct(v, 0)}</td>`;
+  const mud = [];
+  manItens().forEach(i => { for (let t = 1; t < 4; t++) { const a = manNota(t - 1, i.id), b = manNota(t, i.id); if (a !== undefined && a !== '' && b !== undefined && b !== '' && a !== b) mud.push({ i, t, a, b }); } });
+  return `<div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th style="min-width:260px;">Grupo</th>${tris.map(t => `<th>T${t + 1}${(d.datas || {})[t] ? `<br><small>${new Date(d.datas[t] + 'T12:00:00').toLocaleDateString('pt-BR')}</small>` : ''}</th>`).join('')}</tr></thead>
+    <tbody><tr style="font-weight:800;background:#f8fafc;"><td>CHECK GLOBAL DE MANUTENÇÃO</td>${tris.map(t => cel(manPct(t, manItens()))).join('')}</tr>
+      ${d.modelo.map(s => `<tr style="font-weight:700;"><td>${escapeHtml(s.titulo)}</td>${tris.map(t => cel(manPct(t, s.grupos.flatMap(g => g.itens)))).join('')}</tr>${s.grupos.map(g => `<tr style="font-size:12.5px;"><td style="padding-left:20px;">${g.numero} ${escapeHtml(g.titulo)}</td>${tris.map(t => cel(manPct(t, g.itens))).join('')}</tr>`).join('')}`).join('')}</tbody></table></div>
+    <div class="painel" style="margin-top:12px;"><h3 style="margin-top:0;">🔎 Itens que mudaram de nota entre trimestres (gaps)</h3>
+      ${mud.length ? mud.map(x => `<div style="font-size:12.5px;padding:3px 0;">${Number(x.b) > Number(x.a) ? '🟢' : '🔴'} <strong>T${x.t} → T${x.t + 1}</strong> · ${x.i.num} ${escapeHtml(x.i.texto)}: ${x.a} → ${x.b}</div>`).join('') : '<div style="color:#94a3b8;font-size:12.5px;">Sem mudanças registradas entre trimestres ainda.</div>'}</div>`;
+}
+async function manCarregarFotos() {
+  try { const q = new URLSearchParams(); q.set('ano', FD.ano); if (FD.companyId) q.set('company_id', FD.companyId); FD.manFotos = await api('/api/dpo/manutencao/fotos?' + q.toString()); if (FD.chave === 'manutencao' && ['check', 'ronda'].includes(FD.aba)) fdCorpoRender(); } catch (e) { FD.manFotos = []; }
+}
+function manHtmlRonda() {
+  const t = FD.triSel, fotos = (FD.manFotos || []).filter(f => f.trimestre === t);
+  if (!FD.manFotos) manCarregarFotos();
+  const porItem = {}; fotos.forEach(f => { (porItem[f.item] = porItem[f.item] || []).push(f); });
+  const itens = manItens();
+  return `
+    <div class="painel" style="margin-bottom:12px;">
+      <h3 style="margin-top:0;">📷 Ronda de manutenção — T${t + 1}/${FD.ano}</h3>
+      <div style="font-size:12.5px;color:#475569;margin-bottom:8px;">Gere o link e abra no celular durante a ronda: cada item do checklist tem o botão <strong>Tirar foto</strong> e a foto sobe na hora para cá, junto com a observação. Não precisa de login.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${[0, 1, 2, 3].map(x => `<button class="btn-sm ${x === t ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="FD.triSel = ${x}; fdCorpoRender();">T${x + 1}</button>`).join('')}
+        <button class="btn-primario btn-sm" style="width:auto;background:#0f766e;" onclick="manGerarLink()">🔗 Gerar link da ronda do T${t + 1}</button><button class="btn-secundario btn-sm" onclick="FD.manFotos = null; manCarregarFotos();">↻ Atualizar fotos</button></div>
+      <div id="man-link" style="margin-top:8px;"></div>
+    </div>
+    ${!fotos.length ? '<div class="msg-vazio">Nenhuma foto nesta ronda ainda.</div>' : itens.filter(i => porItem[i.id]).map(i => `
+      <div class="painel" style="margin-bottom:10px;"><strong>${i.num}</strong> ${escapeHtml(i.texto)}
+        <div class="man-fotos">${porItem[i.id].map(f => `<div><a href="${escapeHtml(f.url)}" target="_blank"><img src="${escapeHtml(f.url)}" alt=""></a><small>${escapeHtml(f.obs || '')}${f.autor ? ` · ${escapeHtml(f.autor)}` : ''}<br>${new Date(String(f.created_at).replace(' ', 'T') + 'Z').toLocaleString('pt-BR')}</small><button class="fd-remover" onclick="manExcluirFoto(${f.id})">✕</button></div>`).join('')}</div></div>`).join('')}`;
+}
+async function manGerarLink() {
+  try {
+    const r = await api('/api/dpo/manutencao/ronda-link', { method: 'POST', body: JSON.stringify({ ano: FD.ano, trimestre: FD.triSel, company_id: FD.companyId || undefined }) });
+    const el = document.getElementById('man-link');
+    if (el) el.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><input readonly value="${escapeHtml(r.url)}" style="flex:1;min-width:260px;margin:0;" onclick="this.select()"><button class="btn-secundario btn-sm" onclick="navigator.clipboard && navigator.clipboard.writeText('${escapeHtml(r.url)}'); mostrarToast('Link copiado.');">📋 Copiar</button><a class="btn-secundario btn-sm" target="_blank" href="https://wa.me/?text=${encodeURIComponent('Ronda de manutenção — abra no celular: ' + r.url)}">WhatsApp</a><a class="btn-secundario btn-sm" target="_blank" href="${escapeHtml(r.url)}">Abrir</a></div>`;
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function manExcluirFoto(id) { if (!confirm('Remover esta foto?')) return; try { await api('/api/dpo/manutencao/fotos/' + id, { method: 'DELETE' }); FD.manFotos = (FD.manFotos || []).filter(f => f.id !== id); fdCorpoRender(); } catch (e) { mostrarToast(e.message, true); } }
+
 
 function classificarAbaVaga(v) {
   if (v.deleted_at) return 'excluidas';
