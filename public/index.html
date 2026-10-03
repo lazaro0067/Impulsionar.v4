@@ -96,7 +96,15 @@
     padding: 20px 0;
     display: flex;
     flex-direction: column;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: thin; scrollbar-color: #ffffff rgba(255,255,255,.08);
   }
+  /* Barra de rolagem branca no menu lateral (subir/descer) */
+  .sidebar > * { flex-shrink: 0; }
+  .sidebar::-webkit-scrollbar { width: 8px; }
+  .sidebar::-webkit-scrollbar-track { background: rgba(255,255,255,.08); border-radius: 8px; }
+  .sidebar::-webkit-scrollbar-thumb { background: #ffffff; border-radius: 8px; border: 2px solid var(--azul-corp); }
+  .sidebar::-webkit-scrollbar-thumb:hover { background: #e2e8f0; }
   .sidebar h2 { color: #fff; text-align: center; font-size: 18px; margin: 0 0 24px; }
   .sidebar .usuario { text-align: center; font-size: 12px; color: #94a3b8; margin-bottom: 20px; padding: 0 12px; }
   .sidebar nav { flex: 1; }
@@ -119,6 +127,9 @@
   .sidebar .nav-subitens.aberto { max-height: 600px; }
   .sidebar .nav-subitens button.nav-item { padding-left: 40px; font-size: 13px; font-weight: 400; }
   .sidebar .sair { margin: 12px 24px 0; }
+  .cv-auto-lista { position:absolute; left:0; right:0; top:100%; z-index:40; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 12px 28px rgba(15,23,42,.16); max-height:260px; overflow:auto; margin-top:2px; }
+  .cv-auto-lista button { display:flex !important; justify-content:space-between; width:100% !important; text-align:left; border:0 !important; background:#fff; padding:9px 12px !important; font-size:14px; cursor:pointer; color:#0f172a; font-weight:400; margin:0 !important; border-radius:0 !important; }
+  .cv-auto-lista button small { color:#64748b; margin-left:10px; } .cv-auto-lista button.ativo, .cv-auto-lista button:hover { background:#eff6ff; }
   .marca-rodape-sidebar {
     text-align: center; font-size: 11px; color: #94a3b8; padding: 10px 16px 4px;
     border-top: 1px solid rgba(255,255,255,.08); letter-spacing: .2px;
@@ -1076,7 +1087,7 @@ const MENU_POR_PERFIL = {
     ['contracts', 'Meus Contratos']
   ],
   candidate: [
-    ['portalPerfil', 'Meu Currículo'], ['portalVagas', 'Vagas Disponíveis'], ['portalCandidaturas', 'Minhas Candidaturas'],
+    ['portalPerfil', 'Meu Currículo'], ['portalVagas', 'Vagas Disponíveis'], ['portalCandidaturas', 'Minhas Candidaturas'], ['discTeste', 'Teste de Perfil DISC'],
     ['videos', 'Academy Digital'], ['portalMensagens', 'Fale com o Master']
   ]
 };
@@ -3870,7 +3881,18 @@ async function renderDiscTeste() {
   cont.innerHTML = '<h1>Teste de Perfil DISC</h1><p>Carregando...</p>';
   try {
     const resultado = await api('/api/disc-test/meu-resultado');
-    if (resultado) { renderDiscResultado(resultado); return; }
+    if (resultado && resultado.naoLiberado) {
+      cont.innerHTML = `<h1>Teste de Perfil DISC</h1><div class="plano-card" style="max-width:620px;"><div style="font-size:40px;">🧠</div><h3 style="margin:6px 0;">O teste ainda não foi liberado para você</h3><p style="color:#475569;font-size:14px;">Quando a Impulsionar enviar o Teste de Perfil DISC, ele aparece aqui e você recebe um aviso no sininho. O resultado entra no seu currículo e ajuda as empresas a conhecerem o seu perfil comportamental.</p></div>`;
+      return;
+    }
+    if (resultado && !resultado.liberado) { renderDiscResultado(resultado); return; }
+    if (ESTADO.usuario.role === 'candidate') {
+      cont.innerHTML = `<h1>Teste de Perfil DISC</h1><div class="plano-card" style="max-width:640px;">
+        <div style="font-size:40px;">🧠</div><h3 style="margin:6px 0;">Seu Teste de Perfil DISC foi liberado!</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;">São perguntas rápidas: em cada uma, clique nas frases da que <strong>mais</strong> combina com você para a que <strong>menos</strong> combina. Não existe resposta certa ou errada — seja sincero(a). Leva cerca de 10 minutos.<br><br>✅ Ao concluir, o resultado aparece no seu currículo para as empresas. O teste só pode ser feito uma vez.</p>
+        <button class="btn-primario" style="width:auto;background:linear-gradient(135deg,#12a150,#22c55e);border:0;" onclick="iniciarDiscTeste()">Começar o teste →</button></div>`;
+      return;
+    }
     await iniciarDiscTeste();
   } catch (e) {
     cont.innerHTML = `<h1>Teste de Perfil DISC</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
@@ -3986,7 +4008,7 @@ function renderDiscResultado(resultado, ehPreview) {
       `).join('')}
     </div>
     ${ehPreview ? '' : `<p style="font-size:12px;color:#94a3b8;margin-top:10px;">Teste realizado em ${new Date(resultado.created_at).toLocaleDateString('pt-BR')}.</p>`}
-    <button class="btn-secundario btn-sm" onclick="iniciarDiscTeste(${ehPreview ? 'true' : 'false'})">🔄 ${ehPreview ? 'Testar de novo' : 'Refazer o teste'}</button>
+    ${resultado.candidato ? `<div class="msg-vazio" style="text-align:left;background:#f0fdf4;border-radius:8px;padding:10px 14px;">✅ Este resultado já aparece no seu currículo para as empresas.</div>` : `<button class="btn-secundario btn-sm" onclick="iniciarDiscTeste(${ehPreview ? 'true' : 'false'})">🔄 ${ehPreview ? 'Testar de novo' : 'Refazer o teste'}</button>`}
     ${ehPreview ? `<button class="btn-secundario btn-sm" onclick="renderDiscTesteMaster()">← Voltar</button>` : ''}
   `;
 }
@@ -3996,10 +4018,14 @@ async function renderDiscTesteMaster() {
   const cont = document.getElementById('conteudo');
   cont.innerHTML = '<h1>Teste DISC — Master</h1><p>Carregando...</p>';
   try {
-    const [empresas, resultados] = await Promise.all([
+    const [empresas, resDisc, candidatos] = await Promise.all([
       api('/api/companies'),
-      api('/api/disc-test/resultados').catch(() => [])
+      api('/api/disc-test/resultados?comPendentes=1').catch(() => ({ resultados: [], pendentesCandidatos: [] })),
+      api('/api/admin/candidate-accesses').catch(() => [])
     ]);
+    const resultados = Array.isArray(resDisc) ? resDisc : (resDisc.resultados || []);
+    const pendentesCand = (resDisc && resDisc.pendentesCandidatos) || [];
+    window._discCands = candidatos;
     const opcoesEmpresa = empresas.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
     cont.innerHTML = `
       <h1>Teste DISC — Master</h1>
@@ -4022,6 +4048,17 @@ async function renderDiscTesteMaster() {
         </div>
       </div>
 
+      <div class="plano-card" style="margin-bottom:16px;">
+        <h4 style="margin-top:0;">🎯 Enviar para candidatos do Portal de Vagas</h4>
+        <p style="font-size:12.5px;color:#64748b;margin-top:-4px;">O candidato recebe o aviso ao entrar no portal. Ao concluir, o resultado aparece no currículo padrão que as empresas veem.</p>
+        <div class="linha" style="align-items:flex-end;">
+          <div style="flex:2;position:relative;"><label>Candidato</label><input id="dtm-cand" placeholder="Digite o nome ou e-mail do candidato…" autocomplete="off"><input type="hidden" id="dtm-cand-id"></div>
+          <div style="display:flex;gap:8px;"><button class="btn-primario btn-sm" style="width:auto;" onclick="enviarDiscCandidato()">Enviar para este candidato</button>
+          <button class="btn-secundario btn-sm" style="width:auto;" onclick="enviarDiscCandidato(true)">Enviar para todos que ainda não fizeram</button></div>
+        </div>
+        ${pendentesCand.length ? `<div style="font-size:12.5px;color:#92400e;margin-top:8px;">⏳ Aguardando responder (${pendentesCand.length}): ${pendentesCand.slice(0, 12).map(p => escapeHtml(p.name)).join(', ')}${pendentesCand.length > 12 ? '…' : ''}</div>` : ''}
+      </div>
+
       <div class="plano-card">
         <h4 style="margin-top:0;">📋 Últimos resultados respondidos</h4>
         ${resultados.length === 0 ? '<div class="msg-vazio">Nenhum resultado respondido ainda.</div>' : `
@@ -4030,7 +4067,7 @@ async function renderDiscTesteMaster() {
           <tbody>
             ${resultados.map(r => `
               <tr>
-                <td>${escapeHtml(r.employeeName)}</td>
+                <td>${escapeHtml(r.employeeName)}${r.candidato ? ' <span style="font-size:11px;background:#e0f2fe;color:#075985;border-radius:999px;padding:1px 7px;">candidato</span>' : ''}</td>
                 <td>${escapeHtml(r.companyName || '-')}</td>
                 <td>${escapeHtml(r.perfil_primario)}/${escapeHtml(r.perfil_secundario)}</td>
                 <td>${new Date(r.created_at).toLocaleDateString('pt-BR')}</td>
@@ -4039,9 +4076,18 @@ async function renderDiscTesteMaster() {
         </table>`}
       </div>
     `;
+    cvAuto('dtm-cand', q => { const t = cvSemAcento(q).trim(); if (t.length < 2) return []; return (window._discCands || []).filter(c => cvSemAcento(c.name + ' ' + c.email).includes(t)).slice(0, 8).map(c => ({ label: c.name, sub: c.email, value: c.id })); },
+      (it, inp) => { inp.value = it.label; document.getElementById('dtm-cand-id').value = it.value; });
   } catch (e) {
     cont.innerHTML = `<h1>Teste DISC — Master</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
   }
+}
+async function enviarDiscCandidato(todos, userId) {
+  const id = userId || (document.getElementById('dtm-cand-id') || {}).value;
+  if (!todos && !id) return mostrarToast('Escolha o candidato na lista.', true);
+  if (todos && !confirm('Enviar o Teste DISC para todos os candidatos que ainda não fizeram?')) return;
+  try { const r = await api('/api/disc-test/enviar-candidatos', { method: 'POST', body: JSON.stringify(todos ? { todos: true } : { user_id: Number(id) }) }); mostrarToast(r.message); if (!userId) renderDiscTesteMaster(); }
+  catch (e) { mostrarToast(e.message, true); }
 }
 
 async function carregarFuncionariosDiscMaster() {
@@ -5727,6 +5773,8 @@ async function renderTalentPool() {
     const lista = await api('/api/talent-pool' + (query.toString() ? '?' + query.toString() : ''));
     cont.innerHTML = `
       <h1>Banco de Currículos</h1>
+      <div id="tp-portal"></div>
+      <h3 style="margin-top:26px;">👔 Executivos em transição</h3>
       <p style="color:#64748b;margin-top:-8px;">Executivos que sinalizaram estar buscando novas oportunidades.</p>
       <div class="formulario" style="margin-bottom:16px;">
         <div class="linha">
@@ -5766,6 +5814,44 @@ async function renderTalentPool() {
   } catch (e) {
     cont.innerHTML = `<h1>Banco de Currículos</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
   }
+  carregarBancoPortal();
+}
+let BP_LISTA = [], BP_FUNCAO = '';
+async function carregarBancoPortal() {
+  const el = document.getElementById('tp-portal'); if (!el) return;
+  try { BP_LISTA = await api('/api/banco-curriculos-portal'); } catch (e) { BP_LISTA = []; }
+  desenharBancoPortal();
+}
+function desenharBancoPortal() {
+  const el = document.getElementById('tp-portal'); if (!el) return;
+  const funcoes = [...new Set(BP_LISTA.map(b => b.funcao))].sort((a, b) => a.localeCompare(b));
+  const lista = BP_LISTA.filter(b => !BP_FUNCAO || b.funcao === BP_FUNCAO);
+  el.innerHTML = `
+    <h3 style="margin:6px 0 4px;">📂 Currículos guardados do Portal de Vagas <span style="font-size:13px;color:#64748b;font-weight:400;">(${BP_LISTA.length})</span></h3>
+    <p style="color:#64748b;margin:0 0 10px;font-size:13px;">Candidatos que você guardou por função ao analisar as candidaturas. Use nas próximas vagas.</p>
+    ${funcoes.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"><button class="btn-sm ${!BP_FUNCAO ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="BP_FUNCAO=''; desenharBancoPortal()">Todas (${BP_LISTA.length})</button>${funcoes.map(f => `<button class="btn-sm ${BP_FUNCAO === f ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="BP_FUNCAO=${escapeHtml(JSON.stringify(f))}; desenharBancoPortal()">${escapeHtml(f)} (${BP_LISTA.filter(b => b.funcao === f).length})</button>`).join('')}</div>` : ''}
+    <div id="modal-area"></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;">
+      ${lista.map(b => `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;gap:10px;align-items:center;">${b.photo_url ? `<img src="${escapeHtml(b.photo_url)}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;">` : `<div style="width:42px;height:42px;border-radius:50%;background:#e0e7ff;color:#3730a3;display:flex;align-items:center;justify-content:center;font-weight:800;">${escapeHtml(String(b.name || '?')[0].toUpperCase())}</div>`}
+          <div style="min-width:0;"><strong>${escapeHtml(b.name)}</strong><div style="font-size:12px;color:#64748b;">${[b.city, cvIdade(b.birth_date) ? cvIdade(b.birth_date) + ' anos' : ''].filter(Boolean).map(escapeHtml).join(' · ')}</div></div></div>
+        <div><span style="font-size:11.5px;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 9px;border-radius:999px;">🗂️ ${escapeHtml(b.funcao)}</span>${ESTADO.usuario.role === 'admin' ? ` <span style="font-size:11px;color:#64748b;">${escapeHtml(b.companyName || '')}</span>` : ''}</div>
+        ${b.observacao ? `<div style="font-size:12.5px;color:#475569;">📝 ${escapeHtml(b.observacao)}</div>` : ''}
+        <div style="font-size:11.5px;color:#94a3b8;">${b.vagaOrigem ? 'Veio da vaga "' + escapeHtml(b.vagaOrigem) + '" · ' : ''}guardado em ${candData(b.guardado_em)}</div>
+        <div style="display:flex;gap:6px;margin-top:auto;"><button class="btn-primario btn-sm" style="flex:1;" onclick="abrirCurriculoPadrao(BP_LISTA.find(x => x.bancoId === ${b.bancoId}))">📄 Ver currículo</button>
+          <button class="btn-secundario btn-sm" style="width:auto;" title="Trocar função" onclick="trocarFuncaoBanco(${b.bancoId})">✏️</button>
+          <button class="btn-perigo btn-sm" style="width:auto;" title="Remover do banco" onclick="removerDoBanco(${b.bancoId})">🗑️</button></div>
+      </div>`).join('')}
+    </div>
+    ${BP_LISTA.length === 0 ? '<div class="msg-vazio" style="text-align:left;">Nenhum currículo guardado ainda. Ao abrir uma candidatura, use "🗂️ Guardar no banco" (ou marque a opção ao recusar).</div>' : ''}`;
+}
+async function trocarFuncaoBanco(id) {
+  const b = BP_LISTA.find(x => x.bancoId === id); const f = prompt('Nova função para ' + b.name + ':', b.funcao); if (!f) return;
+  try { await api('/api/banco-curriculos-portal/' + id, { method: 'PUT', body: JSON.stringify({ funcao: f.trim() }) }); carregarBancoPortal(); } catch (e) { mostrarToast(e.message, true); }
+}
+async function removerDoBanco(id) {
+  if (!confirm('Remover este currículo do banco?')) return;
+  try { await api('/api/banco-curriculos-portal/' + id, { method: 'DELETE' }); carregarBancoPortal(); } catch (e) { mostrarToast(e.message, true); }
 }
 
 function aplicarFiltrosTalentPool() {
@@ -13250,6 +13336,7 @@ async function renderJobPostings() {
     const pendentes = lista.filter(v => v.status === 'pendente_aprovacao' && !v.deleted_at);
     let saldoCredito = 0;
     if (!ehAdmin) { try { saldoCredito = (await api('/api/minha-empresa/credito-vagas')).saldo || 0; } catch (e) {} }
+    window._saldoCreditoVagas = saldoCredito;
     const contagens = { abertas: 0, fechadas: 0, excluidas: 0 };
     lista.forEach(v => contagens[classificarAbaVaga(v)]++);
     const abas = [['abertas', 'Vagas Abertas'], ['fechadas', 'Vagas Fechadas'], ['excluidas', 'Vagas Excluídas']];
@@ -13289,7 +13376,9 @@ async function renderJobPostings() {
             ${v.paid_with_credit ? `<div class="plano-meta" style="color:#7c3aed;">✓ Publicada com crédito de dias da empresa</div>` : ''}
             ${v.refunded_at ? `<div class="plano-meta" style="color:#7c3aed;">↩️ Pagamento estornado em ${new Date(v.refunded_at).toLocaleDateString('pt-BR')}</div>` : ''}
             ${v.closingFeeLabel ? `<div class="plano-meta">Taxa de fechamento: <strong>${escapeHtml(v.closingFeeLabel)}</strong> — R$ ${Number(v.closingFeePrice).toFixed(2)}${v.closing_fee_status === 'paid' ? ' <span style="color:#16a34a;">(paga ✓)</span>' : v.closing_fee_status === 'pending_payment' ? ' <span style="color:#c9a227;">(pagamento pendente)</span>' : ''}</div>` : ''}
+            ${v.status === 'active' && vagaAbertaTxt(v) ? `<div class="plano-meta" style="color:#166534;font-weight:700;">🗓️ ${vagaAbertaTxt(v)}</div>` : ''}
             ${v.expires_at ? `<div class="plano-meta">Expira em ${new Date(v.expires_at).toLocaleDateString('pt-BR')}</div>` : ''}
+            ${v.work_schedule || v.pcd || v.contract_type ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin:4px 0;">${vagaExtrasHtml(v, { semDias: true })}</div>` : ''}
             <div class="plano-meta">${v.totalCandidaturas} candidatura(s) · ❤️ ${v.totalCurtidas || 0} curtida(s)</div>
             <div class="acoes-form" style="margin-top:10px;flex-wrap:wrap;">
               <button class="btn-secundario btn-sm" onclick="verDetalhesVaga(${v.id})">👁️ Ver</button>
@@ -13547,7 +13636,8 @@ async function abrirVagaCompartilhada(id) {
             </div>
           </div>
           <div style="padding:20px;max-height:50vh;overflow-y:auto;">
-            <div style="font-size:15px;font-weight:700;color:#0b1329;margin-bottom:12px;">💰 ${v.salary_range ? escapeHtml(v.salary_range) : 'Salário a combinar'} ${v.seniority ? ' · ' + escapeHtml(v.seniority) : ''}</div>
+            <div style="font-size:15px;font-weight:700;color:#0b1329;margin-bottom:8px;">💰 ${v.salary_range ? escapeHtml(cvMoeda(v.salary_range)) : 'Salário a combinar'} ${v.seniority ? ' · ' + escapeHtml(v.seniority) : ''}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">${vagaExtrasHtml(v)}</div>
             ${v.description ? `<p style="font-size:13px;color:#334155;">${escapeHtml(v.description)}</p>` : ''}
             ${v.education ? `<div style="margin-top:10px;"><strong>🎓 Formação</strong><div style="font-size:13px;color:#334155;">${escapeHtml(v.education)}</div></div>` : ''}
             ${v.languages ? `<div style="margin-top:10px;"><strong>🗣️ Idiomas</strong><div style="font-size:13px;color:#334155;">${escapeHtml(v.languages)}</div></div>` : ''}
@@ -13585,39 +13675,67 @@ function irParaCadastroCandidatoCompartilhado(id) {
   mostrarCadastroCandidato();
 }
 
+const VG_BENEFICIOS = ['Vale-transporte', 'Vale-refeição', 'Vale-alimentação', 'Cesta básica', 'Plano de saúde', 'Plano odontológico', 'Seguro de vida', 'PLR', 'Prêmio por desempenho', 'Auxílio combustível', 'Refeitório no local', 'Fretado', 'Day off no aniversário', 'Gympass / Wellhub', 'Convênio farmácia', 'Auxílio educação'];
+const VG_REQUISITOS_BASE = ['Ensino médio completo', 'Experiência anterior na função', 'Disponibilidade de horário', 'Residir na região', 'Pacote Office / Excel', 'Boa comunicação', 'CNH categoria B', 'CNH categoria D', 'Curso de NR-11 (empilhadeira)', 'Experiência com liderança de equipes', 'Superior completo ou cursando'];
 function mostrarFormularioVaga(id) {
   const ehAdmin = ESTADO.usuario.role === 'admin';
   const v = id ? CACHE_LISTA_VAGAS.find(x => x.id === id) : null;
+  const cidadeAtual = v && v.location ? (v.state && !String(v.location).includes('/') ? v.location + '/' + v.state : v.location) : '';
+  const sel = (idc, lista, valor, vazio = 'Selecione…') => `<select id="${idc}"><option value="">${vazio}</option>${lista.map(o => `<option ${valor === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
+  cvCarregarCidades();
   document.getElementById('form-area').innerHTML = `
-    <div class="formulario">
+    <style>
+      .vg-f .linha { gap:12px; } .vg-f h4 { margin:18px 0 6px; color:#0e2a47; font-size:15px; }
+      .vg-f .cv-sugs { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+      .vg-f .cv-sugs button { width:auto; border:1px dashed #cbd5e1; background:#fff; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:500; cursor:pointer; color:#475569; margin:0; }
+      .vg-f .cv-sugs button:hover { background:#f0fdf4; border-color:#12a150; color:#166534; }
+      .vg-f .cv-auto-lista { position:absolute; left:0; right:0; top:100%; z-index:30; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 12px 28px rgba(15,23,42,.16); max-height:260px; overflow:auto; margin-top:2px; }
+      .vg-f .cv-auto-lista button { display:flex; justify-content:space-between; width:100%; text-align:left; border:0; background:#fff; padding:9px 12px; font-size:14px; cursor:pointer; color:#0f172a; font-weight:400; margin:0; border-radius:0; }
+      .vg-f .cv-auto-lista button small { color:#64748b; } .vg-f .cv-auto-lista button.ativo, .vg-f .cv-auto-lista button:hover { background:#eff6ff; }
+      .vg-f .vg-dica { font-size:12px; color:#64748b; margin-top:4px; }
+      .vg-f input[type=checkbox] { width:auto; margin:0; }
+      .vg-horario { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:10px; padding:8px 10px; margin-top:6px; }
+      .vg-horario > div { display:flex; flex-direction:column; } .vg-horario select, .vg-horario input { width:auto; margin:0; }
+    </style>
+    <div class="formulario vg-f">
       <h3 style="margin-top:0;">${v ? 'Editar Vaga' : 'Nova Vaga'}</h3>
+      ${(ehAdmin && !v) ? `<div class="linha"><div style="flex:2"><label>Empresa</label><select id="vg-company">${CACHE_LISTA_EMPRESAS.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select></div></div>` : ''}
+      <h4>📌 Sobre a vaga</h4>
       <div class="linha">
-        <div style="flex:2"><label>Título da Vaga</label><input id="vg-title" value="${v ? escapeHtml(v.title) : ''}"></div>
-        <div><label>Cidade</label><input id="vg-location" placeholder="ex: São Paulo" value="${v ? escapeHtml(v.location || '') : ''}"></div>
-        <div><label>Estado</label>
-          <select id="vg-state">
-            <option value="">Selecione...</option>
-            ${UFS_BRASIL.map(uf => `<option value="${uf}" ${v && v.state === uf ? 'selected' : ''}>${uf}</option>`).join('')}
-          </select>
-        </div>
-        <div><label style="font-weight:400;"><input type="checkbox" id="vg-remote" ${v && v.is_remote ? 'checked' : ''}> Remoto</label></div>
+        <div style="flex:2"><label>Título da vaga (cargo) *</label><input id="vg-title" placeholder="Comece a digitar o cargo…" value="${v ? escapeHtml(v.title) : ''}"></div>
+        <div><label>Senioridade</label>${sel('vg-seniority', ['Operacional', 'Estágio', 'Jovem aprendiz', 'Júnior', 'Pleno', 'Sênior', 'Liderança', 'Coordenação', 'Gerência', 'Diretoria'], v && v.seniority)}</div>
+        <div><label>Tipo de contrato</label>${sel('vg-contrato', ['CLT', 'PJ', 'Temporário', 'Estágio', 'Jovem aprendiz', 'Autônomo / Freelancer'], v && v.contract_type)}</div>
       </div>
-      ${(ehAdmin && !v) ? `
       <div class="linha">
-        <div style="flex:2"><label>Empresa</label>
-          <select id="vg-company">${CACHE_LISTA_EMPRESAS.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select>
+        <div style="flex:2"><label>Cidade *</label><input id="vg-location" placeholder="Comece a digitar a cidade…" value="${escapeHtml(cidadeAtual)}"></div>
+        <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;padding-bottom:6px;">
+          <label style="font-weight:500;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="vg-remote" ${v && v.is_remote ? 'checked' : ''}> Remoto</label>
+          <label style="font-weight:500;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="vg-pcd" ${v && v.pcd ? 'checked' : ''}> ♿ Vaga também para PcD</label>
         </div>
+      </div>
+      <div class="linha">
+        <div style="flex:2"><label>Horário do expediente</label><input id="vg-horario" placeholder="Ex.: Seg a Sex, 08:00 às 18:00" value="${escapeHtml(v && v.work_schedule || '')}">
+          <div class="vg-horario">
+            <div><small>Dias</small><select id="vg-h-dias">${['Seg a Sex', 'Seg a Sáb', 'Escala 6x1', 'Escala 5x2', 'Escala 12x36', 'Turnos alternados'].map(o => `<option>${o}</option>`).join('')}</select></div>
+            <div><small>Entrada</small><input type="time" id="vg-h-ini" value="08:00"></div>
+            <div><small>Saída</small><input type="time" id="vg-h-fim" value="18:00"></div>
+            <div><small>Sábado (opcional)</small><input id="vg-h-sab" placeholder="08:00 às 12:00" style="width:120px;"></div>
+            <button type="button" class="btn-secundario btn-sm" style="width:auto;" onclick="vgMontarHorario()">Usar este horário</button>
+          </div></div>
+        <div><label>Faixa salarial</label><input id="vg-salary" inputmode="decimal" placeholder="Ex.: 3500 a 4200 ou A combinar" value="${v ? escapeHtml(cvMoeda(v.salary_range || '')) : ''}" onblur="this.value=cvMoeda(this.value)"><div class="vg-dica">Digite os números — vira R$ automaticamente. Deixe em branco para "a combinar".</div></div>
+      </div>
+      ${!v ? `<h4>📣 Plano de divulgação *</h4>
+      <div style="font-size:12.5px;color:#64748b;margin-bottom:8px;">Por quantos dias a vaga fica no ar para os candidatos.${!ehAdmin && Number(window._saldoCreditoVagas || 0) > 0 ? ` <strong style="color:#166534;">Sua empresa tem ${window._saldoCreditoVagas} dia(s) de crédito — pode publicar sem pagar.</strong>` : ''}</div>
+      <input type="hidden" id="vg-plan" value="${CACHE_VAGA_PLANS_ATIVOS.length ? (CACHE_VAGA_PLANS_ATIVOS.find(p => Number(p.days) === 30) || CACHE_VAGA_PLANS_ATIVOS[0]).id : ''}">
+      <div id="vg-planos" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:6px;">
+        ${CACHE_VAGA_PLANS_ATIVOS.length ? CACHE_VAGA_PLANS_ATIVOS.map(p => { const preco = Number(p.price) || 0; const popular = Number(p.days) === 30; return `
+          <button type="button" class="vg-plano" data-id="${p.id}" onclick="vgEscolherPlano(${p.id})" style="width:auto;text-align:left;position:relative;background:#fff;border:2px solid #e2e8f0;border-radius:14px;padding:14px;cursor:pointer;color:#0f172a;">
+            ${popular ? '<span style="position:absolute;top:-10px;right:10px;background:#12a150;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;">MAIS ESCOLHIDO</span>' : ''}
+            <div style="font-weight:800;font-size:14px;">${escapeHtml(p.label || p.days + ' dias')}</div>
+            <div style="font-size:24px;font-weight:900;color:#0e2a47;margin:4px 0 2px;">${preco ? preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'Grátis'}</div>
+            <div style="font-size:12px;color:#64748b;">📅 ${p.days} dias no ar${preco ? ` · ${(preco / p.days).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/dia` : ''}</div>
+          </button>`; }).join('') : '<div class="msg-vazio" style="text-align:left;">Nenhum plano de divulgação ativo. O Master precisa cadastrar em Portal de Vagas → Planos de Vaga.</div>'}
       </div>` : ''}
-      <div class="linha">
-        <div><label>Senioridade</label><input id="vg-seniority" placeholder="ex: Sênior" value="${v ? escapeHtml(v.seniority || '') : ''}"></div>
-        <div><label>Faixa Salarial (opcional)</label><input id="vg-salary" placeholder="ex: R$ 8.000 a R$ 12.000 — deixe em branco se preferir não informar" value="${v ? escapeHtml(v.salary_range || '') : ''}"></div>
-        ${!v ? `
-        <div><label>Plano de Divulgação</label>
-          <select id="vg-plan">
-            ${CACHE_VAGA_PLANS_ATIVOS.map(p => `<option value="${p.id}">${escapeHtml(p.label || p.days + ' dias')} — R$ ${Number(p.price).toFixed(2)}</option>`).join('')}
-          </select>
-        </div>` : ''}
-      </div>
       <div class="linha">
         <div style="flex:2">
           <label>Função (taxa de fechamento)</label>
@@ -13630,31 +13748,27 @@ function mostrarFormularioVaga(id) {
             <option value="">— Sem taxa de fechamento —</option>
             ${CACHE_CLOSING_FEE_PLANS_ATIVOS.map(p => `<option value="${p.id}" ${v && v.closing_fee_plan_id === p.id ? 'selected' : ''}>${escapeHtml(p.function_label)} — R$ ${Number(p.price).toFixed(2)}</option>`).join('')}
           </select>
-          <div style="font-size:12px;color:#64748b;margin-top:4px;">Se definida, uma cobrança automática no Mercado Pago é gerada para a empresa quando a vaga for fechada com um candidato contratado.</div>`}
+          <div class="vg-dica">Se definida, uma cobrança automática no Mercado Pago é gerada para a empresa quando a vaga for fechada com um candidato contratado.</div>`}
         </div>
       </div>
+      <h4>📝 Descrição e requisitos</h4>
+      <div class="linha"><div style="flex:2"><label>Descrição</label><textarea id="vg-description" rows="4" placeholder="Conte em poucas linhas sobre a vaga, a equipe e o que a empresa oferece.">${v ? escapeHtml(v.description || '') : ''}</textarea>
+        <div class="cv-sugs"><button type="button" onclick="vgDescricaoAuto()">✨ Sugerir descrição a partir do cargo</button></div></div></div>
       <div class="linha">
-        <div style="flex:2"><label>Descrição</label><textarea id="vg-description" rows="4">${v ? escapeHtml(v.description || '') : ''}</textarea></div>
+        <div><label>Formação exigida</label><input id="vg-education" list="vg-lista-formacao" placeholder="Escolha ou digite" value="${v ? escapeHtml(v.education || '') : ''}">
+          <datalist id="vg-lista-formacao">${['Ensino fundamental completo', 'Ensino médio completo', 'Curso técnico', 'Superior cursando', 'Superior completo', 'Superior completo em Administração', 'Superior completo em Logística', 'Pós-graduação / MBA'].map(o => `<option value="${o}">`).join('')}</datalist></div>
+        <div><label>Idioma(s)</label><input id="vg-languages" list="vg-lista-idiomas" placeholder="Ex.: Inglês intermediário" value="${v ? escapeHtml(v.languages || '') : ''}">
+          <datalist id="vg-lista-idiomas">${CV_IDIOMAS.slice(0, 12).flatMap(i => ['básico', 'intermediário', 'avançado', 'fluente'].map(n => `<option value="${i} ${n}">`)).join('')}</datalist></div>
       </div>
       <div class="linha">
-        <div><label>Formação Exigida</label><input id="vg-education" placeholder="ex: Superior completo em Administração" value="${v ? escapeHtml(v.education || '') : ''}"></div>
-        <div><label>Idioma(s)</label><input id="vg-languages" placeholder="ex: Inglês avançado" value="${v ? escapeHtml(v.languages || '') : ''}"></div>
+        <div style="flex:1"><label>Requisitos <span style="font-weight:400;color:#64748b;">(um por linha)</span></label><textarea id="vg-requirements" rows="4" placeholder="Um por linha">${v ? escapeHtml(v.requirements || '') : ''}</textarea><div class="cv-sugs" id="vg-sug-req"></div></div>
+        <div style="flex:1"><label>Responsabilidades <span style="font-weight:400;color:#64748b;">(uma por linha)</span></label><textarea id="vg-responsibilities" rows="4" placeholder="Uma por linha">${v ? escapeHtml(v.responsibilities || '') : ''}</textarea><div class="cv-sugs" id="vg-sug-resp"></div></div>
       </div>
-      <div class="linha">
-        <div style="flex:1"><label>Requisitos</label><textarea id="vg-requirements" rows="3" placeholder="Um por linha, ex:&#10;3+ anos de experiência na área&#10;Conhecimento em Excel avançado">${v ? escapeHtml(v.requirements || '') : ''}</textarea></div>
-        <div style="flex:1"><label>Responsabilidades</label><textarea id="vg-responsibilities" rows="3" placeholder="Um por linha, ex:&#10;Gerenciar a equipe de vendas&#10;Elaborar relatórios mensais">${v ? escapeHtml(v.responsibilities || '') : ''}</textarea></div>
-      </div>
-      <div class="linha">
-        <div style="flex:1"><label>Benefícios (opcional)</label><textarea id="vg-benefits" rows="2" placeholder="Um por linha, ex:&#10;Vale-refeição&#10;Plano de saúde">${v ? escapeHtml(v.benefits || '') : ''}</textarea></div>
-      </div>
+      <div class="linha"><div style="flex:1"><label>Benefícios <span style="font-weight:400;color:#64748b;">(um por linha)</span></label><textarea id="vg-benefits" rows="3">${v ? escapeHtml(v.benefits || '') : ''}</textarea><div class="cv-sugs" id="vg-sug-ben"></div></div></div>
       <div class="linha">
         <div style="display:flex;align-items:center;gap:14px;">
           <img id="vg-foto-preview" src="${v && v.photo_url ? escapeHtml(v.photo_url) : ''}" style="width:64px;height:64px;border-radius:10px;object-fit:cover;background:#e2e8f0;${v && v.photo_url ? '' : 'display:none;'}">
-          <div>
-            <label>Foto para o Card de Divulgação (opcional)</label>
-            <input id="vg-photo-file" type="file" accept="image/*" onchange="pre_visualizarFotoVaga()">
-            <div id="vg-photo-status" style="font-size:12px;color:#64748b;margin-top:4px;"></div>
-          </div>
+          <div><label>Foto para o card de divulgação (opcional)</label><input id="vg-photo-file" type="file" accept="image/*" onchange="pre_visualizarFotoVaga()"><div id="vg-photo-status" style="font-size:12px;color:#64748b;margin-top:4px;"></div></div>
         </div>
       </div>
       <div class="acoes-form">
@@ -13663,6 +13777,41 @@ function mostrarFormularioVaga(id) {
       </div>
     </div>
   `;
+  cvAuto('vg-title', q => { const t = cvSemAcento(q).trim(); if (!t) return []; const l = CV_CARGOS.filter(c => cvSemAcento(c).includes(t)).sort((a, b) => cvSemAcento(a).indexOf(t) - cvSemAcento(b).indexOf(t)).slice(0, 8).map(c => ({ label: c, value: c })); if (!CV_CARGOS.some(c => cvSemAcento(c) === t)) l.push({ label: `Usar “${q.trim()}”`, value: q.trim() }); return l; },
+    (it, inp) => { inp.value = it.value; vgSugestoes(); });
+  cvAuto('vg-location', q => cvBuscarCidades(q), (it, inp) => { inp.value = it.value; });
+  document.getElementById('vg-title').addEventListener('input', () => { clearTimeout(window._vgT); window._vgT = setTimeout(vgSugestoes, 300); });
+  ['vg-requirements', 'vg-responsibilities', 'vg-benefits'].forEach(i => document.getElementById(i).addEventListener('input', () => { clearTimeout(window._vgT2); window._vgT2 = setTimeout(vgSugestoes, 400); }));
+  vgSugestoes();
+  const pl = document.getElementById('vg-plan'); if (pl && pl.value) vgEscolherPlano(pl.value);
+  document.getElementById('form-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function vgEscolherPlano(id) {
+  document.getElementById('vg-plan').value = id;
+  document.querySelectorAll('.vg-plano').forEach(b => { const ok = Number(b.dataset.id) === Number(id); b.style.borderColor = ok ? '#12a150' : '#e2e8f0'; b.style.background = ok ? '#f0fdf4' : '#fff'; b.style.boxShadow = ok ? '0 0 0 3px rgba(18,161,80,.15)' : 'none'; });
+}
+function vgLinhas(id) { return (document.getElementById(id).value || '').split('\n').map(x => x.trim()).filter(Boolean); }
+function vgAddLinha(id, txt) { const el = document.getElementById(id); const l = vgLinhas(id); if (!l.some(x => cvSemAcento(x) === cvSemAcento(txt))) l.push(txt); el.value = l.join('\n'); vgSugestoes(); }
+function vgSugestoes() {
+  const titulo = cvSemAcento((document.getElementById('vg-title') || {}).value);
+  const resp = (CV_ATIVIDADES.find(([re]) => titulo && re.test(titulo)) || CV_ATIVIDADES[CV_ATIVIDADES.length - 1])[1];
+  const lid = /gerente|supervis|coorden|lider|encarreg|diretor|gestor/.test(titulo), mot = /motorista|entregador/.test(titulo), emp = /empilhadeira/.test(titulo);
+  const req = [...(lid ? ['Experiência com liderança de equipes', 'Superior completo ou cursando', 'Pacote Office / Excel'] : []), ...(mot ? ['CNH categoria D', 'Curso de direção defensiva', 'Experiência com entregas'] : []), ...(emp ? ['Curso de NR-11 (empilhadeira)', 'Experiência com operação de empilhadeira'] : []), ...VG_REQUISITOS_BASE];
+  const pinta = (alvo, lista, campo) => { const el = document.getElementById(alvo); if (!el) return; const ja = vgLinhas(campo).map(cvSemAcento); const l = [...new Set(lista)].filter(x => !ja.includes(cvSemAcento(x))).slice(0, 8);
+    el.innerHTML = l.length ? '<span style="font-size:12px;color:#64748b;align-self:center;">Sugestões:</span>' + l.map(x => `<button type="button" data-c="${campo}" data-t="${escapeHtml(x)}">+ ${escapeHtml(x)}</button>`).join('') : '';
+    el.querySelectorAll('button').forEach(b => b.onclick = () => vgAddLinha(b.dataset.c, b.dataset.t)); };
+  pinta('vg-sug-req', req, 'vg-requirements'); pinta('vg-sug-resp', resp, 'vg-responsibilities'); pinta('vg-sug-ben', VG_BENEFICIOS, 'vg-benefits');
+}
+function vgMontarHorario() {
+  const g = id => document.getElementById(id).value.trim();
+  let t = `${g('vg-h-dias')}, ${g('vg-h-ini')} às ${g('vg-h-fim')}`; if (g('vg-h-sab')) t += ` · Sáb ${g('vg-h-sab')}`;
+  document.getElementById('vg-horario').value = t;
+}
+function vgDescricaoAuto() {
+  const t = document.getElementById('vg-title').value.trim(); if (!t) return mostrarToast('Preencha o título da vaga primeiro.', true);
+  const cid = document.getElementById('vg-location').value.trim();
+  const el = document.getElementById('vg-description'); if (el.value.trim() && !confirm('Substituir a descrição atual pela sugestão?')) return;
+  el.value = `Estamos em busca de ${/^[aeiou]/i.test(t) ? 'um(a)' : 'um(a)'} ${t}${cid ? ' para atuar em ' + cid.replace('/', ' - ') : ''}. Procuramos uma pessoa comprometida, com vontade de crescer e que goste de trabalhar em equipe, para contribuir com os nossos resultados e com a melhor experiência para os nossos clientes.`;
 }
 
 function pre_visualizarFotoVaga() {
@@ -13674,13 +13823,17 @@ function pre_visualizarFotoVaga() {
 }
 
 async function salvarVaga(id) {
+  const cidadeVaga = document.getElementById('vg-location').value.trim();
   const corpo = {
-    title: document.getElementById('vg-title').value,
-    location: document.getElementById('vg-location').value,
-    state: document.getElementById('vg-state').value,
+    title: document.getElementById('vg-title').value.trim(),
+    location: cidadeVaga.includes('/') ? cidadeVaga.split('/')[0].trim() : cidadeVaga,
+    state: cidadeVaga.includes('/') ? cidadeVaga.split('/').pop().trim().toUpperCase() : '',
     is_remote: document.getElementById('vg-remote').checked,
+    pcd: document.getElementById('vg-pcd').checked,
+    work_schedule: document.getElementById('vg-horario').value.trim(),
+    contract_type: document.getElementById('vg-contrato').value,
     seniority: document.getElementById('vg-seniority').value,
-    salary_range: document.getElementById('vg-salary').value,
+    salary_range: cvMoeda(document.getElementById('vg-salary').value),
     description: document.getElementById('vg-description').value,
     education: document.getElementById('vg-education').value,
     languages: document.getElementById('vg-languages').value,
@@ -13695,6 +13848,7 @@ async function salvarVaga(id) {
   const selectTaxaFechamento = document.getElementById('vg-closing-fee-plan');
   if (selectTaxaFechamento) corpo.closingFeePlanId = selectTaxaFechamento.value || null;
   if (!corpo.title) { mostrarToast('Informe o título da vaga.', true); return; }
+  if (!corpo.location && !corpo.is_remote) { mostrarToast('Escolha a cidade da vaga (ou marque Remoto).', true); return; }
   if (!id && !corpo.vagaPlanId) { mostrarToast('Selecione um plano de divulgação.', true); return; }
   if (!id && ESTADO.usuario.role === 'admin' && !corpo.company_id) { mostrarToast('Selecione a empresa.', true); return; }
   try {
@@ -13797,7 +13951,8 @@ function abrirCandidatura(i) {
     acoesTopo: `<button class="btn-secundario btn-sm" onclick="verCandidaturasVaga(window._candVagaId)">← Lista</button>
       <button class="btn-sm" style="background:#ede9fe;color:#5b21b6;border:0;" onclick="cdForm('entrevista')">📅 Marcar entrevista</button>
       <button class="btn-sm" style="background:#e0f2fe;color:#075985;border:0;" onclick="cdForm('mensagem')">💬 Mensagem</button>
-      <button class="btn-sm" style="background:#fee2e2;color:#991b1b;border:0;" onclick="cdForm('recusa')">❌ Recusar</button>`,
+      <button class="btn-sm" style="background:#fee2e2;color:#991b1b;border:0;" onclick="cdForm('recusa')">❌ Recusar</button>
+      <button class="btn-sm" style="background:#fef3c7;color:#92400e;border:0;" onclick="cdForm('banco')">🗂️ Guardar no banco</button>`,
     rodape: '<div id="cd-painel" style="padding:0 16px 18px;"></div>'
   });
   cdCarregar();
@@ -13846,17 +14001,35 @@ function cdForm(tipo) {
   if (tipo === 'recusa') el.innerHTML = caixa('❌ Recusar candidatura', '#fecaca', `
     <div style="font-size:12.5px;color:#64748b;margin:4px 0 6px;">O candidato recebe esta mensagem. Pode editar se quiser.</div>
     <textarea id="cd-msg" rows="4">${padraoRecusa}</textarea>
+    <label style="font-weight:600;display:flex !important;gap:8px;align-items:center;"><input type="checkbox" id="cd-banco-junto" checked style="width:auto;margin:0;" onchange="document.getElementById('cd-funcao-box').style.display=this.checked?'':'none'"> Guardar o currículo no Banco de Currículos</label>
+    <div id="cd-funcao-box"><input id="cd-funcao" placeholder="Função para guardar (ex.: Conferente)" value="${escapeHtml(window._candAtual && window._candAtual.desired_role || '')}"></div>
     <div class="acoes-form"><button class="btn-perigo" style="width:auto;" onclick="cdAcao('recusa')">Enviar recusa</button><button class="btn-secundario" style="width:auto;" onclick="document.getElementById('cd-form').innerHTML=''">Cancelar</button></div>`);
+  if (tipo === 'banco') el.innerHTML = caixa('🗂️ Guardar no Banco de Currículos', '#fde68a', `
+    <div style="font-size:12.5px;color:#64748b;margin:4px 0 6px;">Escolha a função. O currículo fica salvo em "Banco de Currículos" para as próximas vagas.</div>
+    <label>Função</label><input id="cd-funcao" placeholder="Comece a digitar a função…" value="${escapeHtml(window._candAtual && window._candAtual.desired_role || '')}">
+    <label>Observação (opcional)</label><input id="cd-obs" placeholder="Ex.: bom perfil, sem CNH D no momento">
+    <div class="acoes-form"><button class="btn-primario" style="width:auto;" onclick="cdGuardarBanco()">Guardar no banco</button><button class="btn-secundario" style="width:auto;" onclick="document.getElementById('cd-form').innerHTML=''">Cancelar</button></div>`);
   if (tipo === 'mensagem') el.innerHTML = caixa('💬 Mensagem para o candidato', '#bae6fd', `
-    <textarea id="cd-msg" rows="3" style="margin-top:8px;" placeholder="Escreva sua mensagem…"></textarea>
+    <textarea id="cd-msg" rows="4" style="margin-top:8px;" placeholder="Escreva sua mensagem…"></textarea>
     <div class="acoes-form"><button class="btn-primario" style="width:auto;" onclick="cdAcao('mensagem')">Enviar mensagem</button><button class="btn-secundario" style="width:auto;" onclick="document.getElementById('cd-form').innerHTML=''">Cancelar</button></div>`);
+  const fn = document.getElementById('cd-funcao');
+  if (fn) { fn.id = 'cd-funcao'; cvAuto('cd-funcao', q => { const t = cvSemAcento(q).trim(); if (!t) return []; const l = CV_CARGOS.filter(c => cvSemAcento(c).includes(t)).slice(0, 8).map(c => ({ label: c, value: c })); if (!CV_CARGOS.some(c => cvSemAcento(c) === t)) l.push({ label: `Usar “${q.trim()}”`, value: q.trim() }); return l; }, (it, inp) => { inp.value = it.value; }); }
+  const m = document.getElementById('cd-msg'); if (m && tipo === 'mensagem') setTimeout(() => m.focus(), 300);
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+async function cdGuardarBanco(silencioso) {
+  const c = window._candAtual; if (!c) return;
+  const funcao = ((document.getElementById('cd-funcao') || {}).value || '').trim();
+  if (!funcao) { mostrarToast('Informe a função.', true); return false; }
+  try { const r = await api('/api/applications/' + c.id + '/banco', { method: 'POST', body: JSON.stringify({ funcao, observacao: ((document.getElementById('cd-obs') || {}).value || '') }) }); if (!silencioso) { mostrarToast(r.message); document.getElementById('cd-form').innerHTML = ''; } return true; }
+  catch (e) { mostrarToast(e.message, true); return false; }
 }
 async function cdAcao(tipo) {
   const c = window._candAtual; if (!c) return;
   const g = id => ((document.getElementById(id) || {}).value || '').trim();
   const corpo = { tipo, mensagem: g('cd-msg'), data: g('cd-data'), hora: g('cd-hora'), local: g('cd-local') };
   if (tipo === 'aprovado' && !confirm('Marcar ' + c.name + ' como aprovado(a)? O candidato será avisado.')) return;
+  if (tipo === 'recusa' && (document.getElementById('cd-banco-junto') || {}).checked) { if (!(await cdGuardarBanco(true))) return; }
   try {
     const r = await api('/api/applications/' + c.id + '/acao', { method: 'POST', body: JSON.stringify(corpo) });
     mostrarToast(r.message); cdCarregar();
@@ -13882,6 +14055,26 @@ const CV_NIVEIS_FORMACAO = ['Ensino Fundamental', 'Ensino Médio', 'Curso Técni
 let EXPERIENCIAS_PERFIL_ATUAL = [];
 const CV = { cidades: null, idiomas: [], regioes: [], habilidades: [], perfil: null, auto: {} };
 
+function cvMoeda(t) {
+  const txt = String(t || '').trim(); if (!txt) return '';
+  if (/combinar/i.test(txt)) return 'A combinar';
+  const fmt = n => { n = n.trim(); let x = n.includes(',') ? n.replace(/\./g, '').replace(',', '.') : (/^\d{1,3}(\.\d{3})+$/.test(n) ? n.replace(/\./g, '') : n); const v = Number(x); return isNaN(v) ? n : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  const sem = txt.replace(/R\$\s*/gi, '').trim();
+  if (/^[\d.,]+$/.test(sem)) return fmt(sem);
+  const m = sem.match(/^([\d.,]+)\s*(?:a|até|-|–)\s*([\d.,]+)$/i); if (m) return fmt(m[1]) + ' a ' + fmt(m[2]);
+  return txt;
+}
+function vagaDiasAberta(v) { const d = v && (v.published_at || v.approved_at); if (!d) return null; const x = new Date(String(d).includes('T') ? d : String(d).replace(' ', 'T') + 'Z'); if (isNaN(x)) return null; return Math.max(0, Math.floor((Date.now() - x) / 86400000)); }
+function vagaAbertaTxt(v) { const n = vagaDiasAberta(v); return n == null ? '' : n === 0 ? 'Aberta hoje' : n === 1 ? 'Aberta há 1 dia' : `Aberta há ${n} dias`; }
+function vagaExtrasHtml(v, opc = {}) {
+  const chip = (txt, bg, cor) => `<span style="font-size:${opc.grande ? '12.5' : '11.5'}px;font-weight:600;background:${bg};color:${cor};padding:${opc.grande ? '4px 10px' : '3px 9px'};border-radius:999px;display:inline-flex;align-items:center;gap:4px;">${txt}</span>`;
+  return [
+    v.contract_type ? chip('📝 ' + escapeHtml(v.contract_type), '#f1f5f9', '#334155') : '',
+    v.work_schedule ? chip('⏰ ' + escapeHtml(v.work_schedule), '#fff7ed', '#9a3412') : '',
+    v.pcd ? chip('♿ Vaga também para PcD', '#ecfeff', '#0e7490') : '',
+    opc.semDias ? '' : (vagaAbertaTxt(v) ? chip('🗓️ ' + vagaAbertaTxt(v), '#f0fdf4', '#166534') : '')
+  ].filter(Boolean).join('');
+}
 function cvSemAcento(t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
 function cvJson(v) { try { const l = JSON.parse(v || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return []; } }
 function cvMes(d) { if (!d) return ''; const m = String(d).match(/^(\d{4})-(\d{2})/); if (!m) return String(d); return ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][Number(m[2]) - 1] + '/' + m[1]; }
@@ -14034,7 +14227,10 @@ async function renderPortalPerfil() {
           <div><label>LinkedIn</label><input id="pp-linkedin" placeholder="linkedin.com/in/seu-perfil" value="${escapeHtml(p.linkedin_url || '')}"></div>
           <div><label>Sexo</label>${sel('pp-gender', ['Masculino', 'Feminino', 'Outro'], p.gender, 'Prefiro não informar')}</div>
           <div><label>CNH</label>${sel('pp-cnh', ['Não possuo', 'A', 'B', 'AB', 'C', 'D', 'E', 'AC', 'AD', 'AE'], p.cnh)}</div>
-          <div><label>Pessoa com deficiência (PcD)</label><input id="pp-pcd" placeholder="Se sim, qual? (opcional)" value="${escapeHtml(p.pcd || '')}"></div>
+          <div><label>Pessoa com deficiência (PcD)</label>
+            <label style="font-weight:400;display:flex;gap:8px;align-items:center;margin:6px 0;"><input type="checkbox" id="pp-pcd-sim" ${p.pcd ? 'checked' : ''} onchange="document.getElementById('pp-pcd-tipo-box').style.display=this.checked?'':'none'"> Sou pessoa com deficiência</label>
+            <div id="pp-pcd-tipo-box" style="${p.pcd ? '' : 'display:none;'}"><select id="pp-pcd-tipo"><option value="">Tipo de deficiência…</option>${['Física', 'Auditiva', 'Visual', 'Intelectual', 'Múltipla', 'Reabilitado(a) pelo INSS'].map(o => `<option ${String(p.pcd || '').startsWith(o) ? 'selected' : ''}>${o}</option>`).join('')}</select></div>
+          </div>
         </div>
       </section>
 
@@ -14043,7 +14239,7 @@ async function renderPortalPerfil() {
         <div class="cv-grade">
           <div><label class="cv-ob">Cargo desejado</label><input id="pp-desired-role" placeholder="Comece a digitar o cargo…" value="${escapeHtml(p.desired_role || '')}"></div>
           <div><label class="cv-ob">Modelo de trabalho</label>${sel('pp-modalidade', ['Presencial', 'Híbrido', 'Remoto', 'Indiferente'], p.modalidade)}</div>
-          <div><label>Pretensão salarial</label><input id="pp-pretensao" placeholder="Ex.: R$ 4.500 ou A combinar" value="${escapeHtml(p.pretensao_salarial || '')}"></div>
+          <div><label>Pretensão salarial</label><input id="pp-pretensao" inputmode="decimal" placeholder="Ex.: R$ 4.500,00 ou A combinar" value="${escapeHtml(cvMoeda(p.pretensao_salarial || ''))}" onblur="this.value=cvMoeda(this.value)"></div>
           <div><label>Disponibilidade para começar</label>${sel('pp-inicio', ['Imediata', 'Em 15 dias', 'Em 30 dias', 'A combinar'], p.disponibilidade_inicio)}</div>
         </div>
         <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:13.5px;">
@@ -14211,6 +14407,37 @@ function cvAtualizarDuracao(el) {
   const d = card.querySelector('.cv-dur'); if (d && ini) d.textContent = ini.value ? '⏱️ ' + cvDuracao(ini.value, atual && atual.checked ? '' : fim.value) : '';
 }
 function cvRenumerar(id, rotulo) { document.querySelectorAll('#' + id + ' .cv-item-tit').forEach((t, i) => { t.textContent = rotulo + ' ' + (i + 1); }); }
+// Sugestões de atividades conforme o cargo daquela experiência — um clique adiciona.
+const CV_ATIVIDADES = [
+  [/motorista|entregador|motoboy/, ['Entrega de produtos aos clientes (PDVs) conforme a rota', 'Conferência da carga na saída e no retorno', 'Checklist diário do veículo', 'Recebimento de pagamentos e canhotos', 'Direção defensiva e zelo pelo veículo']],
+  [/ajudante|auxiliar de carga/, ['Carga e descarga de mercadorias', 'Organização da carga no caminhão', 'Apoio nas entregas aos clientes', 'Conferência dos produtos com o cliente', 'Recolhimento de vasilhames e devoluções']],
+  [/empilhadeira/, ['Movimentação de paletes com empilhadeira', 'Abastecimento e carregamento de caminhões', 'Armazenagem em porta-paletes', 'Checklist diário da empilhadeira']],
+  [/conferent|armaz|estoqu|almox|expedi|separador|repositor|logistic/, ['Conferência de carga e descarga', 'Controle de estoque e inventário', 'Separação e montagem de pedidos', 'Organização do armazém (5S)', 'Lançamento de notas e movimentações no sistema']],
+  [/gerente|supervis|coorden|lider|encarreg|diretor|gestor|chefe/, ['Gestão e desenvolvimento da equipe', 'Acompanhamento de indicadores (KPIs) e metas', 'Condução de rotinas de gestão, reuniões e feedbacks', 'Elaboração e acompanhamento de planos de ação', 'Controle de custos e orçamento da área', 'Garantia de segurança, qualidade e cumprimento de processos']],
+  [/vend|comercial|promotor|represent|consultor|televend/, ['Visita a clientes e prospecção de novos', 'Negociação e fechamento de pedidos', 'Execução de mercado e merchandising no PDV', 'Cumprimento de metas de volume e cobertura', 'Pós-venda e relacionamento com clientes']],
+  [/mecanic|manuten|eletric|tecnico/, ['Manutenção preventiva e corretiva', 'Diagnóstico de falhas', 'Controle de peças e ferramentas', 'Registro de ordens de serviço']],
+  [/administr|financ|contab|fiscal|rh|pessoal|recep|secret|assistente|analista|faturist|cobran/, ['Lançamentos e controles no sistema', 'Emissão de relatórios e indicadores', 'Atendimento a clientes internos e externos', 'Organização e arquivo de documentos', 'Apoio às rotinas da área']],
+  [/./, ['Atendimento ao cliente', 'Organização e limpeza do ambiente de trabalho', 'Cumprimento de normas e procedimentos', 'Trabalho em equipe para atingir as metas']]
+];
+function cvAddAtividade(card, texto) {
+  const lista = card.querySelector('.exp-ativ-lista'); if (!lista) return;
+  const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;';
+  row.innerHTML = `<span style="color:#12a150;font-weight:800;">•</span><input class="exp-ativ" style="flex:1;margin:0;" placeholder="Ex.: ${lista.children.length ? 'Redução da devolução de 3,2% para 1,1%' : 'Liderança de 25 motoristas e ajudantes'}" value="${escapeHtml(texto || '')}"><button type="button" title="Remover" style="width:auto;border:0;background:#fee2e2;color:#991b1b;border-radius:8px;padding:6px 10px;cursor:pointer;" onclick="const c=this.closest('.cv-item'); this.parentNode.remove(); cvSugAtividades(c); cvAtualizarProgresso()">×</button>`;
+  lista.appendChild(row);
+  if (texto === undefined) row.querySelector('input').focus();
+}
+function cvSugAtividades(card) {
+  const el = card.querySelector('.exp-ativ-sugs'); if (!el) return;
+  const cargo = cvSemAcento(card.querySelector('.exp-cargo').value);
+  const ja = [...card.querySelectorAll('.exp-ativ')].map(i => cvSemAcento(i.value));
+  const base = (CV_ATIVIDADES.find(([re]) => cargo && re.test(cargo)) || CV_ATIVIDADES[CV_ATIVIDADES.length - 1])[1].filter(t => !ja.includes(cvSemAcento(t)));
+  el.innerHTML = base.length ? '<span style="font-size:12px;color:#64748b;align-self:center;">Sugestões (clique para adicionar):</span>' + base.map(t => `<button type="button" data-t="${escapeHtml(t)}">+ ${escapeHtml(t)}</button>`).join('') : '';
+  el.querySelectorAll('button').forEach(b => b.onclick = () => {
+    const vazio = [...card.querySelectorAll('.exp-ativ')].find(i => !i.value.trim());
+    if (vazio) vazio.value = b.dataset.t; else cvAddAtividade(card, b.dataset.t);
+    cvSugAtividades(card); cvAtualizarProgresso();
+  });
+}
 function adicionarLinhaExperiencia(exp) {
   exp = exp || {};
   const wrap = document.getElementById('pp-experiencias'); if (!wrap) return;
@@ -14231,9 +14458,17 @@ function adicionarLinhaExperiencia(exp) {
         <label style="font-weight:400;display:flex;gap:6px;align-items:center;margin-top:6px;"><input type="checkbox" class="exp-atual" ${exp.current ? 'checked' : ''} onchange="cvAtualizarDuracao(this)"> Trabalho aqui atualmente</label></div>
       <div style="align-self:end;"><div class="cv-dur"></div>${!exp.start && exp.period ? `<div class="cv-legado" style="font-size:12px;color:#b45309;">Período antigo informado: “${escapeHtml(exp.period)}” — selecione as datas.</div>` : ''}</div>
     </div>
-    <div style="margin-top:10px;"><label class="cv-ob" style="font-size:12.5px;font-weight:700;color:#334155;">Principais atividades e resultados</label>
-      <textarea class="exp-atividades" rows="3" placeholder="Uma atividade ou resultado por linha. Ex.:&#10;Liderança de 25 motoristas e ajudantes&#10;Redução da devolução de 3,2% para 1,1%">${escapeHtml(exp.activities || '')}</textarea></div>`;
+    <div class="exp-ativ-bloco" style="margin-top:12px;background:#fff;border:1px dashed #cbd5e1;border-radius:10px;padding:10px 12px;">
+      <label class="cv-ob" style="font-size:12.5px;font-weight:700;color:#334155;">Atividades que você realizava <span style="font-weight:400;color:#64748b;">(mínimo 2)</span></label>
+      <div class="exp-ativ-lista"></div>
+      <button type="button" class="btn-secundario btn-sm" style="width:auto;margin-top:4px;" onclick="cvAddAtividade(this.closest('.cv-item')); cvAtualizarProgresso()">+ Adicionar atividade</button>
+      <div class="cv-sugs exp-ativ-sugs"></div>
+    </div>`;
   wrap.appendChild(div);
+  const ativs = String(exp.activities || '').split('\n').map(l => l.replace(/^[-•*\s]+/, '').trim()).filter(Boolean);
+  (ativs.length ? ativs : ['', '']).forEach(t => cvAddAtividade(div, t));
+  div.querySelector('.exp-cargo').addEventListener('input', () => cvSugAtividades(div));
+  cvSugAtividades(div);
   cvRenumerar('pp-experiencias', 'Experiência');
   cvAtualizarDuracao(div.querySelector('.exp-inicio'));
   const cid = div.querySelector('.exp-cidade'); cid.id = 'exp-cid-' + Math.random().toString(36).slice(2);
@@ -14282,7 +14517,7 @@ function cvColetar() {
   const exps = primeiro ? [] : [...document.querySelectorAll('#pp-experiencias .linha-experiencia')].map(l => {
     const e = { role: l.querySelector('.exp-cargo').value.trim(), company: l.querySelector('.exp-empresa').value.trim(), city: l.querySelector('.exp-cidade').value.trim(),
       start: l.querySelector('.exp-inicio').value, end: l.querySelector('.exp-atual').checked ? '' : l.querySelector('.exp-fim').value, current: l.querySelector('.exp-atual').checked,
-      activities: l.querySelector('.exp-atividades').value.trim() };
+      activities: [...l.querySelectorAll('.exp-ativ')].map(i => i.value.trim()).filter(Boolean).join('\n') };
     e.period = e.start ? `${cvMes(e.start)} – ${e.current ? 'atual' : cvMes(e.end)}` : '';
     return e;
   }).filter(e => e.role || e.company || e.start || e.activities);
@@ -14292,7 +14527,7 @@ function cvColetar() {
   const temFoto = !!(CV.perfil && CV.perfil.photo_url) || !!((document.getElementById('pp-photo-file') || {}).files || [])[0];
   return {
     name: g('pp-name'), phone: g('pp-phone'), birth_date: g('pp-birth'), cep: g('pp-cep'), city: g('pp-city'), neighborhood: g('pp-bairro'), linkedin_url: g('pp-linkedin'),
-    gender: g('pp-gender'), cnh: g('pp-cnh'), pcd: g('pp-pcd'), desired_role: g('pp-desired-role'), modalidade: g('pp-modalidade'), pretensao_salarial: g('pp-pretensao'),
+    gender: g('pp-gender'), cnh: g('pp-cnh'), pcd: ck('pp-pcd-sim') ? (g('pp-pcd-tipo') || 'Sim') : '', desired_role: g('pp-desired-role'), modalidade: g('pp-modalidade'), pretensao_salarial: cvMoeda(g('pp-pretensao')),
     disponibilidade_inicio: g('pp-inicio'), disp_viagem: ck('pp-viagem'), disp_mudanca: ck('pp-mudanca'), bio: g('pp-bio'), education_level: g('pp-education'),
     first_job: primeiro, experiences_json: JSON.stringify(exps), education_json: JSON.stringify(forms), courses_json: JSON.stringify(cursos),
     languages: CV.idiomas.map(i => `${i.nome} (${i.nivel || 'Básico'})`).join(', '), skills: CV.habilidades.join(', '),
@@ -14316,7 +14551,8 @@ function cvPendencias(b) {
   if (b.bio.length < 60) add('Resumo profissional', 'pp-bio');
   if (!b.first_job) {
     if (!exps.length) add('Experiência profissional', 'cv-s-exp');
-    else if (exps.some(e => !e.role || !e.company || !e.start || (!e.end && !e.current) || !e.activities)) add('Completar experiências', 'cv-s-exp');
+    else if (exps.some(e => !e.role || !e.company || !e.start || (!e.end && !e.current))) add('Completar experiências', 'cv-s-exp');
+    else if (exps.some(e => String(e.activities || '').split('\n').filter(x => x.trim()).length < 2)) add('Atividades de cada experiência (mín. 2)', 'cv-s-exp');
     else if (exps.some(e => e.end && e.start && e.end < e.start)) add('Datas das experiências', 'cv-s-exp');
   }
   if (!b.education_level) add('Escolaridade', 'pp-education');
@@ -14325,7 +14561,7 @@ function cvPendencias(b) {
   if (b.skills.split(',').filter(x => x.trim()).length < 3) add('Habilidades (mín. 3)', 'cv-hab-busca');
   return f;
 }
-const CV_TOTAL_REQ = 13;
+const CV_TOTAL_REQ = 14;
 function cvAtualizarProgresso() {
   if (!document.getElementById('cv-barra')) return;
   const b = cvColetar(), falta = cvPendencias(b);
@@ -14364,13 +14600,16 @@ async function salvarPortalPerfil() {
 function cvPreVisualizar() {
   const b = cvColetar();
   const img = document.getElementById('pp-foto-preview');
-  abrirCurriculoPadrao({ ...CV.perfil, ...b, email: CV.perfil.email, photo_url: img && img.src && img.style.display !== 'none' ? img.src : '' }, { titulo: 'Assim as empresas veem o seu currículo' });
+  abrirCurriculoPadrao({ ...CV.perfil, ...b, email: CV.perfil.email, photo_url: img && img.src && img.style.display !== 'none' ? img.src : '' }, { titulo: 'Assim as empresas veem o seu currículo', semAvisoDesatualizado: true });
 }
 
 // ---------- Currículo no formato padrão (visto pelas empresas e pelo Master) ----------
 const CV_CSS_DOC = `
   .cvd { font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#1e293b; background:#fff; max-width:820px; margin:0 auto; line-height:1.45; font-size:13.5px; }
-  .cvd-cab { display:flex; gap:20px; align-items:center; background:linear-gradient(135deg,#0e2a47,#163d66); color:#fff; padding:26px 30px; border-radius:14px 14px 0 0; }
+  .cvd-cab { display:flex; gap:20px; align-items:center; background:linear-gradient(135deg,#0e2a47,#163d66); color:#fff; padding:26px 170px 26px 30px; border-radius:14px 14px 0 0; position:relative; }
+  .cvd-marca { position:absolute; top:14px; right:16px; display:flex; align-items:center; gap:6px; background:#fff; border-radius:10px; padding:5px 8px; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+  .cvd-cab .cvd-marca img { height:42px !important; width:auto !important; border:0 !important; border-radius:4px !important; background:none !important; object-fit:contain; display:block; }
+  .cvd-marca span { font-size:9.5px; line-height:1.1; color:#0e2a47; font-weight:800; text-transform:uppercase; letter-spacing:.4px; }
   .cvd-cab img, .cvd-cab .cvd-ini { width:96px; height:96px; border-radius:50%; object-fit:cover; border:3px solid rgba(255,255,255,.85); flex-shrink:0; background:#1e4a7a; display:flex; align-items:center; justify-content:center; font-size:36px; font-weight:800; }
   .cvd-nome { font-size:26px; font-weight:800; margin:0; letter-spacing:.2px; color:#fff; }
   .cvd-cargo { font-size:15px; color:#86efac; font-weight:700; margin-top:2px; }
@@ -14391,9 +14630,10 @@ const CV_CSS_DOC = `
   .cvd-niv { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px; } .cvd-niv span:last-child { color:#64748b; }
   .cvd-barra { height:5px; background:#e2e8f0; border-radius:999px; margin-bottom:8px; overflow:hidden; } .cvd-barra div { height:100%; background:#12a150; }
   .cvd-topo button, .cvd-topo a { width:auto !important; margin:0 !important; white-space:nowrap; }
-  .cvd-rod { text-align:center; font-size:11px; color:#94a3b8; margin-top:10px; }
-  @media (max-width:700px) { .cvd-corpo { grid-template-columns:1fr; } .cvd-lat { border-left:0; border-top:1px solid #e2e8f0; border-radius:0 0 14px 14px; } .cvd-cab { flex-direction:column; text-align:center; padding:22px 16px; } .cvd-contato { justify-content:center; } .cvd-princ { padding:18px 16px; } }
-  @media print { .cvd-cab { -webkit-print-color-adjust:exact; print-color-adjust:exact; } .cvd-lat, .cvd-tags span, .cvd-barra div, .cvd-exp::before { -webkit-print-color-adjust:exact; print-color-adjust:exact; } .cvd-exp { break-inside:avoid; } }
+  .cvd-rod { display:flex; align-items:center; justify-content:center; gap:8px; font-size:11.5px; color:#64748b; margin-top:12px; }
+  .cvd-rod img { height:22px; border-radius:4px; }
+  @media (max-width:700px) { .cvd-cab { padding:22px 16px !important; } .cvd-marca { position:static; order:-1; } .cvd-corpo { grid-template-columns:1fr; } .cvd-lat { border-left:0; border-top:1px solid #e2e8f0; border-radius:0 0 14px 14px; } .cvd-cab { flex-direction:column; text-align:center; padding:22px 16px; } .cvd-contato { justify-content:center; } .cvd-princ { padding:18px 16px; } }
+  @media print { .cvd-marca, .cvd-cab { -webkit-print-color-adjust:exact; print-color-adjust:exact; } .cvd-lat, .cvd-tags span, .cvd-barra div, .cvd-exp::before { -webkit-print-color-adjust:exact; print-color-adjust:exact; } .cvd-exp { break-inside:avoid; } }
 `;
 function cvHtmlPadrao(c) {
   const e = escapeHtml, exps = cvJson(c.experiences_json), forms = cvJson(c.education_json), cursos = cvJson(c.courses_json);
@@ -14410,7 +14650,8 @@ function cvHtmlPadrao(c) {
   return `<div class="cvd">
     <div class="cvd-cab">
       ${c.photo_url ? `<img src="${e(c.photo_url)}" alt="">` : `<div class="cvd-ini">${e(iniciais)}</div>`}
-      <div style="min-width:0;">
+      <div class="cvd-marca"><img src="${location.origin}/assets/logo-impulsionar.jpg" alt="Impulsionar V4" onerror="this.style.display='none'"><span>Currículo<br>verificado</span></div>
+      <div style="min-width:0;flex:1;">
         <h1 class="cvd-nome">${e(c.name || '')}</h1>
         <div class="cvd-cargo">${e(c.desired_role || '')}</div>
         <div class="cvd-contato">
@@ -14430,7 +14671,7 @@ function cvHtmlPadrao(c) {
               <h4>${e(x.role || '')}</h4>
               <div><span class="cvd-emp">${e(x.company || '')}</span>${x.city ? ` · ${e(x.city)}` : ''}</div>
               <div class="cvd-per">${x.start ? `${cvMes(x.start)} – ${x.current ? 'atual' : cvMes(x.end)} · ${cvDuracao(x.start, x.current ? '' : x.end)}` : e(x.period || '')}</div>
-              ${x.activities ? `<ul>${String(x.activities).split('\n').map(l => l.replace(/^[-•*\s]+/, '').trim()).filter(Boolean).map(l => `<li>${e(l)}</li>`).join('')}</ul>` : ''}
+              ${x.activities ? `<ul>${String(x.activities).split('\n').map(l => l.replace(/^[-•*\s]+/, '').trim()).filter(Boolean).map(l => `<li>${e(l)}</li>`).join('')}</ul>` : '<div style="font-size:12px;color:#b45309;font-style:italic;">Atividades não informadas pelo candidato.</div>'}
             </div>`).join('') : `<div style="color:#64748b;">${c.first_job ? 'Em busca do primeiro emprego.' : 'Não informada.'}</div>`}
         </div>
         <div class="cvd-bloco"><h2>Formação acadêmica</h2>
@@ -14441,20 +14682,24 @@ function cvHtmlPadrao(c) {
       </div>
       <aside class="cvd-lat">
         <div class="cvd-bloco"><h2>Objetivo</h2>
-          ${dado('Cargo desejado', e(c.desired_role || ''))}${dado('Modelo de trabalho', e(c.modalidade || ''))}${dado('Pretensão salarial', e(c.pretensao_salarial || ''))}${dado('Disponibilidade', e(c.disponibilidade_inicio || ''))}
+          ${dado('Cargo desejado', e(c.desired_role || ''))}${dado('Modelo de trabalho', e(c.modalidade || ''))}${dado('Pretensão salarial', e(cvMoeda(c.pretensao_salarial || '')))}${dado('Disponibilidade', e(c.disponibilidade_inicio || ''))}
           ${regioes.length ? dado('Onde deseja trabalhar', e(regioes.join(', '))) : ''}
         </div>
         ${habs.length ? `<div class="cvd-bloco"><h2>Habilidades</h2><div class="cvd-tags">${habs.map(h => `<span>${e(h)}</span>`).join('')}</div></div>` : ''}
         ${idiomas.length ? `<div class="cvd-bloco"><h2>Idiomas</h2>${idiomas.map(i => `<div class="cvd-niv"><span>${e(i.nome)}</span><span>${e(i.nivel || '')}</span></div><div class="cvd-barra"><div style="width:${nivelPct[i.nivel] || 25}%;"></div></div>`).join('')}</div>` : ''}
+        ${c.disc_perfil ? (() => { let j = {}; try { j = JSON.parse(c.disc_json || '{}'); } catch (x) {} const pc = j.percentuais || {}; const [p1, p2] = String(c.disc_perfil).split('/'); const nomes = { D: 'Dominância', I: 'Influência', S: 'Estabilidade', C: 'Conformidade' }, cores = { D: '#dc2626', I: '#f59e0b', S: '#16a34a', C: '#2563eb' };
+          return `<div class="cvd-bloco"><h2>Perfil comportamental (DISC)</h2><div style="font-size:13px;margin-bottom:8px;"><strong style="color:${cores[p1]};">${nomes[p1] || p1}</strong> com traços de <strong style="color:${cores[p2]};">${nomes[p2] || p2}</strong></div>
+            ${['D', 'I', 'S', 'C'].map(d => `<div class="cvd-niv"><span>${nomes[d]} (${d})</span><span>${pc[d] ?? 0}%</span></div><div class="cvd-barra"><div style="width:${pc[d] ?? 0}%;background:${cores[d]};"></div></div>`).join('')}
+            <div style="font-size:10.5px;color:#94a3b8;">Teste aplicado pela Impulsionar V4${c.disc_em ? ' em ' + new Date(String(c.disc_em).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : ''}</div></div>`; })() : ''}
         <div class="cvd-bloco"><h2>Informações adicionais</h2>
           ${dado('CNH', e(c.cnh || 'Não informada'))}
           ${dado('Viagens', c.disp_viagem ? 'Disponível' : 'Não disponível')}
           ${dado('Mudança de cidade', c.disp_mudanca ? 'Disponível' : 'Não disponível')}
-          ${c.pcd ? dado('PcD', e(c.pcd)) : ''}
+          ${c.pcd ? dado('Pessoa com deficiência', 'Sim' + (c.pcd !== 'Sim' ? ' — ' + e(c.pcd) : '')) : ''}
         </div>
       </aside>
     </div>
-    <div class="cvd-rod">Currículo gerado pelo Portal de Vagas Impulsionar V4</div>
+    <div class="cvd-rod"><img src="${location.origin}/assets/logo-impulsionar.jpg" alt="" onerror="this.style.display='none'"><span>Currículo padrão <strong>Impulsionar V4</strong> · Portal de Vagas · impulsionarv4.com.br</span></div>
   </div>`;
 }
 function abrirCurriculoPadrao(c, opcoes = {}) {
@@ -14462,7 +14707,7 @@ function abrirCurriculoPadrao(c, opcoes = {}) {
   if (!area) { area = document.createElement('div'); area.id = 'modal-area'; document.getElementById('conteudo').appendChild(area); }
   window._cvAtual = c;
   const fone = String(c.phone || '').replace(/\D/g, '');
-  area.innerHTML = `<style>${CV_CSS_DOC}</style>
+  area.innerHTML = `<style>${CV_CSS_DOC} #cd-painel .acoes-form { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; } #cd-painel textarea { min-height:90px; line-height:1.5; padding:10px 12px; } #cd-painel label { display:block; margin-top:8px; }</style>
     <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
       <div class="modal-caixa" style="max-width:900px;width:96vw;padding:0;background:#f1f5f9;max-height:92vh;overflow:auto;">
         <div class="cvd-topo" style="position:sticky;top:0;z-index:2;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;background:#fff;border-bottom:1px solid #e2e8f0;padding:10px 14px;">
@@ -14475,6 +14720,7 @@ function abrirCurriculoPadrao(c, opcoes = {}) {
             <button class="btn-secundario btn-sm" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button>
           </div>
         </div>
+        ${c.user_id && !c.curriculo_completo_em && !opcoes.semAvisoDesatualizado ? '<div style="margin:12px 16px 0;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:8px 12px;font-size:13px;">⚠️ Currículo antigo — o candidato ainda não completou o cadastro no novo padrão (pode faltar atividades, datas e formação).</div>' : ''}
         <div style="padding:16px;">${cvHtmlPadrao(c)}</div>
         ${opcoes.rodape || ''}
       </div>
@@ -14549,6 +14795,7 @@ function desenharAcessosCandidatos() {
         ${sel('status', [['', 'Todos os status'], ['pending', 'Em análise'], ['approved', 'Aprovados'], ['ajustes_solicitados', 'Ajustes'], ['rejected', 'Reprovados']], AC_FILTRO.status)}
       </div>
       <div class="direita" style="display:flex;gap:8px;">
+        <button class="btn-secundario" onclick="pedirAtualizacaoCurriculos()">📣 Pedir para completar currículo</button>
         <button class="btn-secundario" onclick="copiarLinkCadastroCandidato()">🔗 Copiar link de cadastro</button>
         <button class="btn-primario" onclick="formAcessoCandidato()">+ Criar acesso</button>
       </div>
@@ -14556,7 +14803,7 @@ function desenharAcessosCandidatos() {
     <div id="modal-area"></div>
     <div style="overflow-x:auto;">
     <table>
-      <thead><tr><th>Candidato</th><th>WhatsApp</th><th>Cidade</th><th>Cargo desejado</th><th>Origem</th><th>Cadastro</th><th>Último acesso</th><th>Currículo</th><th>Status</th><th style="width:190px;">Ações</th></tr></thead>
+      <thead><tr><th>Candidato</th><th>WhatsApp</th><th>Cidade</th><th>Cargo desejado</th><th>Origem</th><th>Cadastro</th><th>Último acesso</th><th>Currículo</th><th>Status</th><th style="width:230px;">Ações</th></tr></thead>
       <tbody>
         ${lista.map(c => `<tr>
           <td><div style="display:flex;gap:8px;align-items:center;">${c.photo_url ? `<img src="${escapeHtml(c.photo_url)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : `<div style="width:32px;height:32px;border-radius:50%;background:#e0e7ff;color:#3730a3;display:flex;align-items:center;justify-content:center;font-weight:800;">${escapeHtml((c.name || '?').trim()[0].toUpperCase())}</div>`}<div><strong>${escapeHtml(c.name)}</strong><div style="font-size:12px;color:#64748b;">${escapeHtml(c.email)}</div></div></div></td>
@@ -14566,10 +14813,11 @@ function desenharAcessosCandidatos() {
           <td>${acBadge(AC_ORIGENS, c.origem || '', [c.origem ? c.origem : 'Cadastro direto', '#f1f5f9', '#475569'])}</td>
           <td style="white-space:nowrap;font-size:12.5px;">${acData(c.criado_em) ? acData(c.criado_em).toLocaleDateString('pt-BR') : '—'}<div style="color:#94a3b8;font-size:11.5px;">${acQuando(c.criado_em)}</div></td>
           <td style="white-space:nowrap;font-size:12.5px;">${Number(c.qtd_logins) ? `${acQuando(c.ultimo_login)}<div style="color:#94a3b8;font-size:11.5px;">${c.qtd_logins} acesso(s)</div>` : '<span style="color:#d97706;font-weight:700;">Nunca entrou</span>'}</td>
-          <td style="min-width:90px;"><div style="background:#e2e8f0;border-radius:999px;height:7px;overflow:hidden;"><div style="width:${c.completo}%;height:100%;background:${c.completo >= 75 ? '#16a34a' : c.completo >= 40 ? '#f59e0b' : '#ef4444'};"></div></div><div style="font-size:11.5px;color:#64748b;">${c.completo}% · ${c.candidaturas} candidatura(s)</div></td>
+          <td style="min-width:90px;"><div style="background:#e2e8f0;border-radius:999px;height:7px;overflow:hidden;"><div style="width:${c.completo}%;height:100%;background:${c.completo >= 75 ? '#16a34a' : c.completo >= 40 ? '#f59e0b' : '#ef4444'};"></div></div><div style="font-size:11.5px;color:#64748b;">${c.completo}% · ${c.candidaturas} candidatura(s)</div>${c.atualizado ? '' : '<div style="font-size:11px;color:#b45309;font-weight:700;">não atualizado</div>'}</td>
           <td>${acBadge(AC_STATUS, c.status || 'pending', AC_STATUS.pending)}</td>
           <td style="white-space:nowrap;">
             <button class="btn-secundario btn-sm" title="Ver currículo" onclick="verCurriculoCandidatoMaster(${c.id})">📄</button>
+            <button class="btn-secundario btn-sm" title="Enviar Teste DISC" onclick="if(confirm('Enviar o Teste DISC para ${escapeHtml(String(c.name).replace(/'/g, ''))}?')) enviarDiscCandidato(false, ${c.id})">🧠</button>
             <button class="btn-secundario btn-sm" title="Editar" onclick="formAcessoCandidato(${c.id})">✏️</button>
             <button class="btn-secundario btn-sm" title="Gerar nova senha" onclick="novaSenhaCandidato(${c.id})">🔑</button>
             <button class="btn-perigo btn-sm" title="Excluir acesso" onclick="excluirAcessoCandidato(${c.id})">🗑️</button>
@@ -14577,6 +14825,10 @@ function desenharAcessosCandidatos() {
       </tbody>
     </table></div>
     ${lista.length === 0 ? '<div class="msg-vazio">Nenhum candidato encontrado com esses filtros.</div>' : `<div style="font-size:12px;color:#64748b;margin-top:6px;">${lista.length} de ${AC_LISTA.length} candidato(s)</div>`}`;
+}
+async function pedirAtualizacaoCurriculos() {
+  if (!confirm('Enviar um aviso (sininho) para todos os candidatos que ainda não completaram o currículo no novo padrão?')) return;
+  try { const r = await api('/api/admin/candidate-accesses/pedir-atualizacao', { method: 'POST' }); mostrarToast(r.message); } catch (e) { mostrarToast(e.message, true); }
 }
 function acFone(t) { let d = String(t || '').replace(/\D/g, ''); if (d.length <= 11) d = '55' + d; return d; }
 function copiarLinkCadastroCandidato() {
@@ -14714,7 +14966,7 @@ const GRADIENTES_VAGA = [
   'linear-gradient(135deg,#4f46e5,#0ea5e9)'
 ];
 
-let PV_FILTRO = { q: '', chip: 'todas', ordem: 'recentes' }, PV_PERFIL = null;
+let PV_FILTRO = { q: '', chip: 'todas', ordem: 'recentes' }, PV_PERFIL = null, PV_CONFIG = {};
 const PV_CHIPS = [['todas', 'Todas'], ['combina', '✨ Combinam com você'], ['regiao', '📍 Minha região'], ['remoto', '🏠 Remoto'], ['lideranca', '👔 Liderança'], ['novas', '🆕 Novas']];
 const PV_LID = /(gerente|coordenador|supervisor|lider|líder|encarregado|diretor|chefe|head|gestor|superintendente)/i;
 function pvSemAcento(t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
@@ -14734,8 +14986,8 @@ async function renderPortalVagas() {
   const cont = document.getElementById('conteudo');
   cont.innerHTML = '<h1>Vagas Disponíveis</h1><p>Carregando...</p>';
   try {
-    const [lista, perfil] = await Promise.all([api('/api/portal/vagas'), api('/api/portal/me').catch(() => null)]);
-    PV_PERFIL = perfil;
+    const [lista, perfil, conf] = await Promise.all([api('/api/portal/vagas'), api('/api/portal/me').catch(() => null), api('/api/portal/config').catch(() => ({}))]);
+    PV_PERFIL = perfil; PV_CONFIG = conf || {};
     CACHE_LISTA_VAGAS_PORTAL = lista.map(pvEnriquecer);
     desenharPortalVagas();
   } catch (e) {
@@ -14773,8 +15025,11 @@ function pvCard(v, i) {
           <span>📍 ${pvLocal(v)}</span>
           ${v.seniority ? `<span>📊 ${escapeHtml(v.seniority)}</span>` : ''}
           ${v.education ? `<span>🎓 ${escapeHtml(v.education)}</span>` : ''}
+          ${v.work_schedule ? `<span>⏰ ${escapeHtml(v.work_schedule)}</span>` : ''}
+          ${v.pcd ? '<span style="background:#ecfeff;color:#0e7490;">♿ Também para PcD</span>' : ''}
         </div>
-        <div class="pv-salario">💰 ${v.salary_range ? escapeHtml(v.salary_range) : 'Salário a combinar'}</div>
+        <div class="pv-salario">💰 ${v.salary_range ? escapeHtml(cvMoeda(v.salary_range)) : 'Salário a combinar'}</div>
+        ${vagaAbertaTxt(v) ? `<div style="font-size:12px;color:#64748b;margin-bottom:6px;">🗓️ ${vagaAbertaTxt(v)}</div>` : ''}
         <p class="pv-desc">${escapeHtml((v.description || '').slice(0, 120))}${(v.description || '').length > 120 ? '…' : ''}</p>
         <div class="pv-rodape">
           <button id="curtir-btn-${v.id}" class="pv-curtir" onclick="curtirVagaPortal(${v.id})">${v.euCurti ? '❤️' : '🤍'} ${v.totalCurtidas || 0}</button>
@@ -14831,11 +15086,11 @@ function desenharPortalVagas() {
     <section class="pv-hero">
       <h1>${primeiro ? `Olá, ${escapeHtml(primeiro)}! ` : ''}Sua próxima oportunidade está aqui 🚀</h1>
       <p>Vagas reais de empresas parceiras da Impulsionar V4. Candidate-se com 1 clique.</p>
-      <div class="pv-nums">
+      ${PV_CONFIG.mostrarNumeros ? `<div class="pv-nums">
         <div><strong>${todas.length}</strong>vaga(s) aberta(s)</div>
         <div><strong>${empresas}</strong>empresa(s) contratando</div>
         ${conta('combina') ? `<div><strong>${conta('combina')}</strong>combinam com você</div>` : ''}
-      </div>
+      </div>` : `<div style="height:16px;"></div>`}
       <div class="pv-busca">
         <input id="pv-busca" placeholder="🔎 Buscar cargo, empresa ou cidade…" value="${escapeHtml(PV_FILTRO.q)}" oninput="PV_FILTRO.q=this.value; clearTimeout(window._pvT); window._pvT=setTimeout(()=>{desenharPortalVagas(); const i=document.getElementById('pv-busca'); i.focus(); i.setSelectionRange(i.value.length,i.value.length);},250)">
         <select onchange="PV_FILTRO.ordem=this.value; desenharPortalVagas()">
@@ -14848,6 +15103,8 @@ function desenharPortalVagas() {
     <div class="pv-chips">
       ${PV_CHIPS.map(([k, t]) => `<button class="pv-chip ${PV_FILTRO.chip === k ? 'ativo' : ''}" onclick="PV_FILTRO.chip='${k}'; desenharPortalVagas()">${t}<small>${conta(k)}</small></button>`).join('')}
     </div>
+    ${PV_PERFIL && PV_PERFIL.disc_liberado && !PV_PERFIL.disc_perfil ? `<div style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:1px solid #ddd6fe;color:#4c1d95;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13.5px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">🧠 <span style="flex:1;min-width:200px;"><strong>Você recebeu o Teste de Perfil DISC!</strong> Faça agora — o resultado entra no seu currículo e chama a atenção das empresas.</span><button class="btn-primario btn-sm" style="width:auto;background:#7c3aed;border:0;" onclick="irPara('discTeste')">Fazer o teste →</button></div>` : ''}
+    ${PV_PERFIL && !PV_PERFIL.curriculo_completo_em ? `<div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13.5px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">📝 <span style="flex:1;min-width:200px;"><strong>Complete o seu currículo</strong> (experiências, atividades e formação) para poder se candidatar às vagas.</span><button class="btn-primario btn-sm" style="width:auto;" onclick="irPara('portalPerfil')">Completar agora →</button></div>` : ''}
     ${!(PV_PERFIL && PV_PERFIL.desired_role) ? `<div style="background:#f5f3ff;border:1px solid #ddd6fe;color:#5b21b6;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;">✨ Informe o seu <strong>cargo desejado</strong> em "Meu Currículo" para destacarmos as vagas que combinam com você.</div>` : ''}
     <div id="modal-area"></div>
     ${lista.length ? `<div class="pv-grade">${lista.map(pvCard).join('')}</div>` : `<div class="pv-vazio"><div style="font-size:40px;">🔍</div><strong style="color:#0f172a;">Nenhuma vaga com esse filtro agora.</strong><div style="margin-top:4px;">${todas.length ? 'Tente outro filtro ou limpe a busca.' : 'Novas vagas entram toda semana. Mantenha seu currículo completo para ser encontrado pelas empresas!'}</div>${todas.length ? `<button class="pv-chip" style="margin-top:12px;" onclick="PV_FILTRO={q:'',chip:'todas',ordem:'recentes'}; desenharPortalVagas()">Ver todas as vagas</button>` : ''}</div>`}`;
@@ -14878,7 +15135,8 @@ function verDetalhesVagaPortal(id) {
         </div>
         <div style="padding:20px;max-height:55vh;overflow-y:auto;">
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">${v.nova ? '<span style="font-size:11px;font-weight:800;background:#dcfce7;color:#166534;padding:3px 9px;border-radius:999px;">🆕 Nova</span>' : ''}${v.combina ? '<span style="font-size:11px;font-weight:800;background:#f5f3ff;color:#6d28d9;padding:3px 9px;border-radius:999px;">✨ Combina com você</span>' : ''}${v.expiraEm != null ? `<span style="font-size:11px;font-weight:800;background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:999px;">⏳ ${v.expiraEm <= 1 ? 'Último dia para se candidatar' : 'Aberta por mais ' + v.expiraEm + ' dias'}</span>` : ''}</div>
-          <div style="font-size:15px;font-weight:800;color:#15803d;margin-bottom:12px;">💰 ${v.salary_range ? escapeHtml(v.salary_range) : 'Salário a combinar'} ${v.seniority ? '<span style="color:#0b1329;font-weight:700;"> · ' + escapeHtml(v.seniority) + '</span>' : ''}</div>
+          <div style="font-size:15px;font-weight:800;color:#15803d;margin-bottom:8px;">💰 ${v.salary_range ? escapeHtml(cvMoeda(v.salary_range)) : 'Salário a combinar'} ${v.seniority ? '<span style="color:#0b1329;font-weight:700;"> · ' + escapeHtml(v.seniority) + '</span>' : ''}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">${vagaExtrasHtml(v, { grande: true })}</div>
           ${v.description ? `<p style="font-size:13px;color:#334155;">${escapeHtml(v.description)}</p>` : ''}
           ${v.education ? `<div style="margin-top:10px;"><strong>🎓 Formação</strong><div style="font-size:13px;color:#334155;">${escapeHtml(v.education)}</div></div>` : ''}
           ${v.languages ? `<div style="margin-top:10px;"><strong>🗣️ Idiomas</strong><div style="font-size:13px;color:#334155;">${escapeHtml(v.languages)}</div></div>` : ''}
@@ -14912,8 +15170,17 @@ async function curtirVagaPortal(id) {
 function alternarFiltroRegiaoVagas() { PV_FILTRO.chip = PV_FILTRO.chip === 'regiao' ? 'todas' : 'regiao'; desenharPortalVagas(); }
 
 async function candidatarVaga(id) {
+  if (PV_PERFIL && !PV_PERFIL.curriculo_completo_em) { pvAvisoCompletar(); return; }
   try { await api('/api/portal/vagas/' + id + '/apply', { method: 'POST' }); mostrarToast('Candidatura enviada!'); renderPortalVagas(); }
-  catch (e) { mostrarToast(e.message, true); }
+  catch (e) { if (/Complete o seu currículo/.test(e.message)) pvAvisoCompletar(); else mostrarToast(e.message, true); }
+}
+function pvAvisoCompletar() {
+  const area = document.getElementById('modal-area'); if (!area) return irPara('portalPerfil');
+  area.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) this.parentNode.innerHTML=''"><div class="modal-caixa" style="max-width:420px;text-align:center;">
+    <div style="font-size:42px;">📝</div><h3 style="margin:6px 0;">Complete seu currículo para se candidatar</h3>
+    <p style="font-size:13.5px;color:#475569;">As empresas precisam ver suas experiências, as atividades que você realizava e a sua formação. Leva poucos minutos!</p>
+    <div class="acoes-form" style="justify-content:center;"><button class="btn-primario" style="width:auto;background:linear-gradient(135deg,#12a150,#22c55e);border:0;" onclick="irPara('portalPerfil')">Completar meu currículo →</button><button class="btn-secundario" style="width:auto;" onclick="document.getElementById('modal-area').innerHTML=''">Agora não</button></div>
+  </div></div>`;
 }
 
 // ---------- Candidato: minhas candidaturas ----------
@@ -15651,6 +15918,7 @@ async function salvarMeuWhatsApp() {
 const ROTULOS_AUTOMACAO = {
   auto_approve_resumes: ['Aprovação automática de currículos', 'Currículos novos já entram aprovados, sem revisão manual do Master.'],
   ai_support_autopilot: ['IA responde Suporte sozinha (autopilot)', 'Quando ligado, a IA responde direto ao candidato. Quando desligado, a resposta da IA sempre espera sua aprovação pelo WhatsApp.'],
+  portal_mostrar_numeros: ['Mostrar números do Portal de Vagas para candidatos', 'Exibe no topo da página de vagas quantas vagas estão abertas e quantas empresas estão contratando. Deixe desligado até o portal ter volume.'],
   ai_resume_review_autopilot: ['IA decide aprovação de currículo sozinha (autopilot)', 'Quando ligado, a IA aplica a decisão direto. Quando desligado, a sugestão da IA sempre espera sua aprovação pelo WhatsApp.']
 };
 

@@ -554,7 +554,8 @@ function inicializarBase() {
         const CHAVES_AUTOMACAO_PADRAO = {
             auto_approve_resumes: '0',        // currículo novo já entra aprovado, sem revisão do Master
             ai_support_autopilot: '0',        // IA responde suporte sozinha, sem esperar aprovação no WhatsApp
-            ai_resume_review_autopilot: '0'   // IA decide aprovação/ajuste de currículo sozinha
+            ai_resume_review_autopilot: '0',  // IA decide aprovação/ajuste de currículo sozinha
+            portal_mostrar_numeros: '0'       // mostra aos candidatos o total de vagas e empresas (ligar quando o portal tiver volume)
         };
         Object.entries(CHAVES_AUTOMACAO_PADRAO).forEach(([k, v]) => {
             db.run(`INSERT OR IGNORE INTO automation_settings (key, value) VALUES (?, ?)`, [k, v]);
@@ -1048,7 +1049,8 @@ function inicializarBase() {
         ['photo_url TEXT', 'gender TEXT', 'education_level TEXT', 'languages TEXT', 'first_job INTEGER DEFAULT 0',
          'experiences_json TEXT', 'desired_states TEXT', 'desired_cities TEXT', 'cep TEXT', 'neighborhood TEXT', 'state TEXT', 'lgpd_at TEXT', 'origem TEXT',
          'birth_date TEXT', 'cnh TEXT', 'pretensao_salarial TEXT', 'modalidade TEXT', 'disp_viagem INTEGER DEFAULT 0', 'disp_mudanca INTEGER DEFAULT 0', 'pcd TEXT',
-         'education_json TEXT', 'courses_json TEXT', 'disponibilidade_inicio TEXT', 'curriculo_completo_em TEXT'].forEach(coluna => {
+         'education_json TEXT', 'courses_json TEXT', 'disponibilidade_inicio TEXT', 'curriculo_completo_em TEXT',
+         'disc_liberado INTEGER DEFAULT 0', 'disc_liberado_em TEXT', 'disc_perfil TEXT', 'disc_json TEXT', 'disc_em TEXT'].forEach(coluna => {
             db.run(`ALTER TABLE candidate_profiles ADD COLUMN ${coluna}`, () => {});
         });
 
@@ -1118,6 +1120,11 @@ function inicializarBase() {
         db.run(`ALTER TABLE job_postings ADD COLUMN approved_at DATETIME`, () => {});
         db.run(`ALTER TABLE job_postings ADD COLUMN rejection_reason TEXT`, () => {});
         db.run(`ALTER TABLE job_postings ADD COLUMN paid_with_credit INTEGER DEFAULT 0`, () => {});
+        ['work_schedule TEXT', 'pcd INTEGER DEFAULT 0', 'contract_type TEXT'].forEach(c => db.run(`ALTER TABLE job_postings ADD COLUMN ${c}`, () => {}));
+        // Banco de currículos da empresa: candidatos do portal guardados por função para próximas vagas.
+        db.run(`CREATE TABLE IF NOT EXISTS company_talent_bank (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, company_id INTEGER NOT NULL, candidate_user_id INTEGER NOT NULL, funcao TEXT, observacao TEXT,
+            origem_vaga_id INTEGER, user_id INTEGER, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(company_id, candidate_user_id))`);
         // Detalhes completos da vaga, pedidos pela empresa no cadastro: formação,
         // idiomas e requisitos ajudam o candidato a entender se o perfil bate;
         // benefícios é opcional (nem toda empresa quer/pode informar). photo_url
@@ -2585,7 +2592,7 @@ app.get('/api/admin/candidate-accesses', requireRole('admin'), async (req, res) 
     try {
         const lista = await dbAll(`SELECT u.id, u.name, u.email, u.ultimo_login, COALESCE(u.qtd_logins, 0) as qtd_logins,
                 COALESCE(u.criado_em, cp.created_at) as criado_em, cp.phone, cp.city, cp.desired_role, cp.status, cp.origem, cp.resume_url, cp.photo_url,
-                cp.experiences_json, cp.skills, cp.bio, cp.birth_date, cp.modalidade, cp.education_json, cp.education_level, cp.first_job, cp.curriculo_completo_em,
+                cp.experiences_json, cp.skills, cp.bio, cp.birth_date, cp.curriculo_completo_em as atualizado, cp.modalidade, cp.education_json, cp.education_level, cp.first_job, cp.curriculo_completo_em,
                 (SELECT COUNT(*) FROM job_applications ja WHERE ja.candidate_user_id = u.id) as candidaturas
             FROM users u LEFT JOIN candidate_profiles cp ON cp.user_id = u.id WHERE u.role = 'candidate' ORDER BY COALESCE(u.criado_em, cp.created_at) DESC, u.id DESC`);
         res.json(lista.map(c => {
@@ -2595,6 +2602,13 @@ app.get('/api/admin/candidate-accesses', requireRole('admin'), async (req, res) 
             return { ...resto, completo };
         }));
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar acessos.' }); }
+});
+app.post('/api/admin/candidate-accesses/pedir-atualizacao', requireRole('admin'), async (req, res) => {
+    try {
+        const l = await dbAll(`SELECT u.id FROM users u LEFT JOIN candidate_profiles cp ON cp.user_id = u.id WHERE u.role = 'candidate' AND cp.curriculo_completo_em IS NULL`);
+        l.forEach(u => notificar(u.id, 'Atualize o seu currículo 📝', 'O Portal de Vagas ganhou o currículo padrão. Complete experiências, atividades e formação para poder se candidatar às vagas.', 'portalPerfil'));
+        res.json({ message: l.length ? `Aviso enviado para ${l.length} candidato(s) com currículo incompleto.` : 'Todos os candidatos já estão com o currículo completo.' });
+    } catch (e) { res.status(500).json({ error: 'Erro ao enviar avisos.' }); }
 });
 app.post('/api/admin/candidate-accesses', requireRole('admin'), async (req, res) => {
     const b = req.body || {};
@@ -2839,7 +2853,8 @@ function pendenciasCurriculo(b) {
     if (!b.first_job) {
         const exps = jsonListaCurriculo(b.experiences_json).filter(e => e && (e.role || e.company));
         if (!exps.length) falta.push('Experiência profissional (ou marque primeiro emprego)');
-        else if (exps.some(e => !e.role || !e.company || !e.start || (!e.end && !e.current) || !String(e.activities || '').trim())) falta.push('Experiências: cargo, empresa, início, fim e atividades');
+        else if (exps.some(e => !e.role || !e.company || !e.start || (!e.end && !e.current))) falta.push('Experiências: cargo, empresa, início e fim');
+        else if (exps.some(e => String(e.activities || '').split('\n').filter(x => x.trim()).length < 2)) falta.push('Experiências: informe ao menos 2 atividades realizadas em cada uma');
         else if (exps.some(e => e.end && e.start && e.end < e.start)) falta.push('Experiências: data de fim antes do início');
     }
     if (String(b.skills || '').split(',').map(x => x.trim()).filter(Boolean).length < 3) falta.push('Habilidades (mín. 3)');
@@ -2903,6 +2918,8 @@ app.post('/api/portal/vagas/:id/apply', requireRole('candidate'), async (req, re
     try {
         const vaga = await dbGet(`SELECT * FROM job_postings WHERE id = ? AND status = 'active' AND deleted_at IS NULL AND expires_at > CURRENT_TIMESTAMP`, [req.params.id]);
         if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada ou não está mais disponível.' });
+        const perfilCand = await dbGet(`SELECT curriculo_completo_em FROM candidate_profiles WHERE user_id = ?`, [req.user.userId]);
+        if (!perfilCand || !perfilCand.curriculo_completo_em) return res.status(400).json({ error: 'Complete o seu currículo antes de se candidatar — as empresas precisam ver suas experiências e atividades.', completarCurriculo: true });
         db.run(`INSERT INTO job_applications (job_posting_id, candidate_user_id) VALUES (?, ?)`, [req.params.id, req.user.userId], (err) => {
             if (err) return res.status(400).json({ error: 'Você já se candidatou a esta vaga.' });
             notificarPorCompanyAdmins(vaga.company_id, 'Nova candidatura 📄', `Novo currículo para "${vaga.title}". Abra em Vagas Ofertadas → Ver currículos.`, 'jobPostings');
@@ -2932,7 +2949,7 @@ app.get('/api/public/vagas/:id', async (req, res) => {
     try {
         const vaga = await dbGet(
             `SELECT jp.id, jp.title, jp.description, jp.location, jp.state, jp.is_remote, jp.seniority, jp.salary_range,
-                    jp.education, jp.languages, jp.requirements, jp.responsibilities, jp.benefits, jp.photo_url,
+                    jp.education, jp.languages, jp.requirements, jp.responsibilities, jp.benefits, jp.photo_url, jp.work_schedule, jp.pcd, jp.contract_type, jp.published_at,
                     c.name as companyName, c.logo_url as companyLogo,
                     (SELECT COUNT(*) FROM job_posting_likes jl WHERE jl.job_posting_id = jp.id) as totalCurtidas
              FROM job_postings jp JOIN companies c ON c.id = jp.company_id
@@ -2944,6 +2961,46 @@ app.get('/api/public/vagas/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar a vaga.' }); }
 });
 
+app.get('/api/portal/config', async (req, res) => {
+    res.json({ mostrarNumeros: await automacaoLigada('portal_mostrar_numeros') });
+});
+// Banco de currículos da empresa (candidatos do portal guardados por função)
+app.post('/api/applications/:id/banco', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const { a, erro } = await candidaturaComAcesso(req, req.params.id); if (erro) return res.status(erro[0]).json({ error: erro[1] });
+        const funcao = String(req.body.funcao || '').trim().slice(0, 120);
+        if (!funcao) return res.status(400).json({ error: 'Escolha a função para guardar o currículo.' });
+        await new Promise((ok, er) => db.run(`INSERT INTO company_talent_bank (company_id, candidate_user_id, funcao, observacao, origem_vaga_id, user_id) VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(company_id, candidate_user_id) DO UPDATE SET funcao = excluded.funcao, observacao = excluded.observacao`,
+            [a.company_id, a.candidate_user_id, funcao, String(req.body.observacao || '').slice(0, 500), a.job_posting_id, req.user.userId], e => e ? er(e) : ok()));
+        res.json({ message: `Currículo guardado no Banco de Currículos como "${funcao}".` });
+    } catch (e) { res.status(400).json({ error: 'Erro ao guardar no banco.' }); }
+});
+app.get('/api/banco-curriculos-portal', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const params = []; let filtro = '';
+        if (req.user.role === 'client_admin') { filtro = 'WHERE b.company_id = ?'; params.push(req.user.companyId); }
+        const lista = await dbAll(`SELECT cp.*, u.id as userId, u.name, u.email, b.id as bancoId, b.funcao, b.observacao, b.created_at as guardado_em, b.company_id as bancoEmpresa,
+                c.name as companyName, jp.title as vagaOrigem
+            FROM company_talent_bank b JOIN users u ON u.id = b.candidate_user_id LEFT JOIN candidate_profiles cp ON cp.user_id = u.id
+            LEFT JOIN companies c ON c.id = b.company_id LEFT JOIN job_postings jp ON jp.id = b.origem_vaga_id ${filtro} ORDER BY b.funcao COLLATE NOCASE, u.name COLLATE NOCASE`, params);
+        res.json(lista);
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar o banco.' }); }
+});
+app.put('/api/banco-curriculos-portal/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const b = await dbGet(`SELECT * FROM company_talent_bank WHERE id = ?`, [req.params.id]);
+        if (!b || (req.user.role === 'client_admin' && b.company_id !== req.user.companyId)) return res.status(404).json({ error: 'Registro não encontrado.' });
+        db.run(`UPDATE company_talent_bank SET funcao = ?, observacao = ? WHERE id = ?`, [String(req.body.funcao || b.funcao).slice(0, 120), String(req.body.observacao ?? b.observacao ?? '').slice(0, 500), b.id], () => res.json({ message: 'Atualizado!' }));
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar.' }); }
+});
+app.delete('/api/banco-curriculos-portal/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const b = await dbGet(`SELECT * FROM company_talent_bank WHERE id = ?`, [req.params.id]);
+        if (!b || (req.user.role === 'client_admin' && b.company_id !== req.user.companyId)) return res.status(404).json({ error: 'Registro não encontrado.' });
+        db.run(`DELETE FROM company_talent_bank WHERE id = ?`, [b.id], () => res.json({ message: 'Removido do banco.' }));
+    } catch (e) { res.status(400).json({ error: 'Erro ao remover.' }); }
+});
 app.get('/api/portal/my-applications', requireRole('candidate'), async (req, res) => {
     try {
         const lista = await dbAll(
@@ -3323,6 +3380,10 @@ app.get('/api/job-postings', requireRole('admin', 'client_admin'), async (req, r
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar vagas.' }); }
 });
 
+function salvarCamposExtrasVaga(id, b) {
+    db.run(`UPDATE job_postings SET work_schedule = ?, pcd = ?, contract_type = ? WHERE id = ?`,
+        [String(b.work_schedule || '').trim().slice(0, 150), b.pcd ? 1 : 0, String(b.contract_type || '').trim().slice(0, 40), id], () => {});
+}
 app.post('/api/job-postings', requireRole('admin', 'client_admin'), async (req, res) => {
     const { title, description, location, state, is_remote, seniority, salary_range, vagaPlanId, closingFeePlanId, company_id,
              education, languages, requirements, responsibilities, benefits, photo_url } = req.body;
@@ -3348,6 +3409,7 @@ app.post('/api/job-postings', requireRole('admin', 'client_admin'), async (req, 
                     education || '', languages || '', requirements || '', responsibilities || '', benefits || '', photo_url || ''],
                 function (err) { err ? reject(err) : resolve(this.lastID); }
             ));
+            salvarCamposExtrasVaga(resultado, req.body);
             db.all(`SELECT id FROM users WHERE role = 'admin'`, [], (e, admins) => {
                 if (!e) admins.forEach(a => notificar(a.id, 'Nova vaga aguardando aprovação', `"${title}" — revise e aprove ou rejeite no Portal de Vagas.`, 'jobPostings'));
             });
@@ -3366,6 +3428,7 @@ app.post('/api/job-postings', requireRole('admin', 'client_admin'), async (req, 
             function (err) { err ? reject(err) : resolve(this.lastID); }
         ));
 
+        salvarCamposExtrasVaga(resultado, req.body);
         const preference = await mpPreference.create({
             body: {
                 items: [{ title: `Divulgação de vaga: ${title} (${plano.label || plano.days + ' dias'})`, quantity: 1, unit_price: Number(plano.price), currency_id: 'BRL' }],
@@ -3563,6 +3626,7 @@ app.put('/api/job-postings/:id', requireRole('admin', 'client_admin'), async (re
                 novoStatus, reenviarParaAnalise ? 1 : 0, req.params.id],
             (err) => err ? reject(err) : resolve()
         ));
+        salvarCamposExtrasVaga(req.params.id, req.body);
         if (reenviarParaAnalise) {
             db.all(`SELECT id FROM users WHERE role = 'admin'`, [], (e, admins) => {
                 if (!e) admins.forEach(a => notificar(a.id, 'Vaga reenviada para aprovação', `"${title}" foi editada e reenviada — revise novamente.`, 'jobPostings'));
@@ -4040,7 +4104,7 @@ app.delete('/api/employee-goals/:id', requireRole('admin', 'client_admin'), ensu
    ========================================================== */
 const ROTULOS_PERFIL_DISC = { D: 'Dominância', I: 'Influência', S: 'Estabilidade', C: 'Conformidade' };
 
-app.get('/api/disc-test/questions', requireRole('autonomous', 'admin'), (req, res) => {
+app.get('/api/disc-test/questions', requireRole('autonomous', 'admin', 'candidate'), (req, res) => {
     res.json(DISC_DATA);
 });
 
@@ -4079,10 +4143,69 @@ app.get('/api/disc-test/resultados', requireRole('admin'), async (req, res) => {
          LEFT JOIN companies c ON c.id = e.company_id
          ORDER BY r.created_at DESC LIMIT 100`
     );
-    res.json(resultados);
+    const cands = await dbAll(`SELECT u.name as employeeName, 'Candidato do Portal' as companyName, cp.disc_perfil, cp.disc_em as created_at, cp.disc_liberado, cp.disc_liberado_em
+        FROM candidate_profiles cp JOIN users u ON u.id = cp.user_id WHERE cp.disc_perfil IS NOT NULL AND cp.disc_perfil <> '' ORDER BY cp.disc_em DESC LIMIT 100`).catch(() => []);
+    const pendentes = await dbAll(`SELECT u.id, u.name, cp.disc_liberado_em FROM candidate_profiles cp JOIN users u ON u.id = cp.user_id WHERE cp.disc_liberado = 1 ORDER BY cp.disc_liberado_em DESC`).catch(() => []);
+    const lista = [...resultados, ...cands.map(c => ({ ...c, perfil_primario: c.disc_perfil.split('/')[0], perfil_secundario: c.disc_perfil.split('/')[1], candidato: true }))]
+        .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+    if (req.query.comPendentes === '1') return res.json({ resultados: lista, pendentesCandidatos: pendentes });
+    res.json(lista);
 });
 
-app.get('/api/disc-test/meu-resultado', requireRole('autonomous'), async (req, res) => {
+function calcularDiscServidor(respostas) {
+    if (!Array.isArray(respostas) || respostas.length !== DISC_DATA.length) return { erro: 'É preciso responder todas as perguntas do teste.' };
+    const pontos = { D: 0, I: 0, S: 0, C: 0 }, pesos = [4, 3, 2, 1];
+    for (const resp of respostas) {
+        const ordem = Array.isArray(resp.ordem) ? resp.ordem : [];
+        if (ordem.length !== 4 || new Set(ordem).size !== 4) return { erro: 'Cada pergunta precisa ranquear as 4 frases, sem repetição.' };
+        ordem.forEach((dim, i) => { if (pontos[dim] !== undefined) pontos[dim] += pesos[i] || 0; });
+    }
+    const max = DISC_DATA.length * 4;
+    const percentuais = { D: Math.round(pontos.D / max * 100), I: Math.round(pontos.I / max * 100), S: Math.round(pontos.S / max * 100), C: Math.round(pontos.C / max * 100) };
+    const ranking = ['D', 'I', 'S', 'C'].sort((a, b) => pontos[b] - pontos[a]);
+    return { pontos, percentuais, primario: ranking[0], secundario: ranking[1] };
+}
+function resultadoDiscCandidato(cp) {
+    if (!cp || !cp.disc_perfil) return null;
+    let j = {}; try { j = JSON.parse(cp.disc_json || '{}'); } catch (e) {}
+    const [p1, p2] = String(cp.disc_perfil).split('/');
+    return { percentuais: j.percentuais || {}, perfil_primario: p1, perfil_secundario: p2, perfilPrimarioLabel: ROTULOS_PERFIL_DISC[p1], perfilSecundarioLabel: ROTULOS_PERFIL_DISC[p2], created_at: cp.disc_em, candidato: true };
+}
+// Candidatos do Portal de Vagas: o Master libera o teste (uso único); o resultado vai para o currículo padrão.
+app.post('/api/disc-test/enviar-candidatos', requireRole('admin'), async (req, res) => {
+    try {
+        const { user_id, todos } = req.body || {};
+        if (!user_id && !todos) return res.status(400).json({ error: 'Escolha o candidato (ou "todos").' });
+        const alvos = user_id ? await dbAll(`SELECT u.id FROM users u WHERE u.id = ? AND u.role = 'candidate'`, [user_id])
+            : await dbAll(`SELECT u.id FROM users u JOIN candidate_profiles cp ON cp.user_id = u.id WHERE u.role = 'candidate' AND (cp.disc_perfil IS NULL OR cp.disc_perfil = '')`);
+        if (!alvos.length) return res.status(404).json({ error: todos ? 'Todos os candidatos já fizeram o teste.' : 'Candidato não encontrado.' });
+        for (const a of alvos) {
+            await new Promise(ok => db.run(`INSERT OR IGNORE INTO candidate_profiles (user_id) VALUES (?)`, [a.id], () => ok()));
+            await new Promise(ok => db.run(`UPDATE candidate_profiles SET disc_liberado = 1, disc_liberado_em = CURRENT_TIMESTAMP WHERE user_id = ?`, [a.id], () => ok()));
+            notificar(a.id, 'Teste de Perfil DISC liberado 🧠', 'Faça o teste (leva uns 10 minutos). O resultado aparece no seu currículo para as empresas.', 'discTeste');
+        }
+        res.json({ message: `Teste DISC enviado para ${alvos.length} candidato(s)!` });
+    } catch (e) { res.status(400).json({ error: 'Erro ao enviar o teste DISC.' }); }
+});
+app.get('/api/disc-test/meu-resultado', requireRole('autonomous', 'candidate'), async (req, res, next) => {
+    if (req.user.role !== 'candidate') return next();
+    const cp = await dbGet(`SELECT disc_perfil, disc_json, disc_em, disc_liberado FROM candidate_profiles WHERE user_id = ?`, [req.user.userId]);
+    const r = resultadoDiscCandidato(cp);
+    res.json(r ? { ...r, liberado: !!(cp && cp.disc_liberado) } : (cp && cp.disc_liberado ? null : { naoLiberado: true }));
+});
+app.post('/api/disc-test/submit', requireRole('autonomous', 'candidate'), async (req, res, next) => {
+    if (req.user.role !== 'candidate') return next();
+    try {
+        const cp = await dbGet(`SELECT disc_liberado FROM candidate_profiles WHERE user_id = ?`, [req.user.userId]);
+        if (!cp || !cp.disc_liberado) return res.status(403).json({ error: 'O Teste DISC ainda não foi liberado para você.' });
+        const r = calcularDiscServidor(req.body.respostas); if (r.erro) return res.status(400).json({ error: r.erro });
+        await new Promise((ok, er) => db.run(`UPDATE candidate_profiles SET disc_perfil = ?, disc_json = ?, disc_em = CURRENT_TIMESTAMP, disc_liberado = 0 WHERE user_id = ?`,
+            [`${r.primario}/${r.secundario}`, JSON.stringify({ pontos: r.pontos, percentuais: r.percentuais }), req.user.userId], e => e ? er(e) : ok()));
+        res.json({ message: 'Teste DISC concluído!', percentuais: r.percentuais, perfil_primario: r.primario, perfil_secundario: r.secundario,
+            perfilPrimarioLabel: ROTULOS_PERFIL_DISC[r.primario], perfilSecundarioLabel: ROTULOS_PERFIL_DISC[r.secundario], created_at: new Date().toISOString(), candidato: true });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar o teste.' }); }
+});
+app.get('/api/disc-test/meu-resultado', requireRole('autonomous', 'candidate'), async (req, res) => {
     const resultado = await dbGet(
         `SELECT * FROM disc_results WHERE employee_id = ? ORDER BY id DESC LIMIT 1`,
         [req.user.employeeId]
@@ -4101,7 +4224,7 @@ app.get('/api/disc-test/meu-resultado', requireRole('autonomous'), async (req, r
     res.json(resultado);
 });
 
-app.post('/api/disc-test/submit', requireRole('autonomous'), async (req, res) => {
+app.post('/api/disc-test/submit', requireRole('autonomous', 'candidate'), async (req, res) => {
     const { respostas } = req.body; // [{ perguntaId, ordem: ['D','I','S','C'] em ordem do que MAIS combina para o que MENOS combina }]
     if (!Array.isArray(respostas) || respostas.length !== DISC_DATA.length) {
         return res.status(400).json({ error: 'É preciso responder todas as perguntas do teste.' });
