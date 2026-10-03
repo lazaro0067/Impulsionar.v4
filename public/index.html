@@ -1031,7 +1031,7 @@ const MENU_POR_PERFIL = {
         ['mentorships', 'Mentorias'], ['community', 'Comunidade'], ['events', 'Eventos'], ['ranking', 'Ranking']
     ]},
     { group: 'Vagas Ofertadas', moduleKey: 'vagas', items: [
-        ['talentPool', 'Banco de Currículos'], ['jobPostings', 'Vagas Ofertadas'], ['portalCandidates', 'Candidatos do Portal']
+        ['talentPool', 'Banco de Currículos'], ['jobPostings', 'Vagas Ofertadas']
     ]},
     { group: 'Impulsionar V4 DPO Ambev', moduleKey: 'dpoAmbev', items: [
         ['dpoHome', 'DPO Ambev']
@@ -6158,10 +6158,10 @@ async function verCandidato(userId) {
       api('/api/admin/candidates/' + userId),
       api('/api/admin/candidates/' + userId + '/messages')
     ]);
-    const experiencias = c.experiences_json ? JSON.parse(c.experiences_json) : [];
+    window._cvAtual = c;
     modalArea.innerHTML = `
       <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
-        <div class="modal-caixa" style="max-width:640px;">
+        <div class="modal-caixa" style="max-width:900px;width:96vw;max-height:92vh;overflow:auto;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;">
             <div style="display:flex;gap:14px;align-items:center;">
               ${c.photo_url ? `<img src="${escapeHtml(c.photo_url)}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;">` : ''}
@@ -6172,18 +6172,9 @@ async function verCandidato(userId) {
             </div>
             <button class="btn-secundario btn-sm" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button>
           </div>
-          <div style="margin-top:14px;font-size:13px;line-height:1.7;">
-            <div><strong>E-mail:</strong> ${escapeHtml(c.email)}</div>
-            ${c.phone ? `<div><strong>Telefone:</strong> ${escapeHtml(c.phone)}</div>` : ''}
-            ${c.linkedin_url ? `<div><strong>LinkedIn:</strong> <a href="${escapeHtml(c.linkedin_url)}" target="_blank">${escapeHtml(c.linkedin_url)}</a></div>` : ''}
-            ${c.gender ? `<div><strong>Sexo:</strong> ${escapeHtml(c.gender)}</div>` : ''}
-            ${c.education_level ? `<div><strong>Escolaridade:</strong> ${escapeHtml(c.education_level)}</div>` : ''}
-            ${c.languages ? `<div><strong>Idiomas:</strong> ${escapeHtml(c.languages)}</div>` : ''}
-            ${c.skills ? `<div><strong>Habilidades:</strong> ${escapeHtml(c.skills)}</div>` : ''}
-            ${c.bio ? `<div style="margin-top:8px;"><strong>Sobre:</strong><br>${escapeHtml(c.bio)}</div>` : ''}
-            ${experiencias.length ? `<div style="margin-top:8px;"><strong>Experiências:</strong><ul style="margin:4px 0 0 18px;">${experiencias.map(e => `<li>${escapeHtml(e.role || '')}${e.company ? ' — ' + escapeHtml(e.company) : ''}${e.period ? ' (' + escapeHtml(e.period) + ')' : ''}</li>`).join('')}</ul></div>` : (c.first_job ? '<div style="margin-top:8px;"><em>Sem experiências anteriores — primeiro emprego.</em></div>' : '')}
-            ${c.resume_url ? `<div style="margin-top:8px;"><a href="${escapeHtml(c.resume_url)}" target="_blank">📄 Baixar currículo anexado →</a></div>` : '<div style="margin-top:8px;color:#94a3b8;">Sem currículo (arquivo) anexado ainda.</div>'}
-          </div>
+          <style>${CV_CSS_DOC}</style>
+          <div style="display:flex;gap:6px;justify-content:flex-end;margin:10px 0 6px;"><button class="btn-secundario btn-sm" onclick="imprimirCurriculoPadrao()">🖨️ Imprimir / PDF</button>${c.resume_url ? `<a class="btn-secundario btn-sm" style="text-decoration:none;" href="${escapeHtml(c.resume_url)}" target="_blank">📎 Arquivo anexado</a>` : ''}</div>
+          <div style="max-height:60vh;overflow:auto;border-radius:14px;">${cvHtmlPadrao(c)}</div>
 
           <h4 style="margin:18px 0 6px;">Interação com o candidato</h4>
           <div style="max-height:180px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;padding:10px;background:#f8fafc;">
@@ -6267,32 +6258,39 @@ async function mudarStatusCandidato(userId, status) {
 }
 
 // ---------- Admin/client_admin: candidatos aprovados (buscáveis) ----------
+let PC_LISTA = [], PC_BUSCA = '';
 async function renderPortalCandidates() {
   const cont = document.getElementById('conteudo');
   cont.innerHTML = '<h1>Candidatos do Portal</h1><p>Carregando...</p>';
-  try {
-    const lista = await api('/api/portal/candidates');
-    cont.innerHTML = `
-      <h1>Candidatos do Portal</h1>
-      <p style="color:#64748b;margin-top:-8px;">Currículos aprovados pelo Master, cadastrados publicamente no portal de vagas.</p>
-      <table>
-        <thead><tr><th>Nome</th><th>Cargo Desejado</th><th>Cidade</th><th>Contato</th><th>Currículo</th></tr></thead>
-        <tbody>
-          ${lista.map(c => `
-            <tr>
-              <td>${escapeHtml(c.name)}</td>
-              <td>${escapeHtml(c.desired_role || '-')}</td>
-              <td>${escapeHtml(c.city || '-')}</td>
-              <td>${escapeHtml(c.email)}${c.phone ? ' · ' + escapeHtml(c.phone) : ''}</td>
-              <td>${c.resume_url ? `<a href="${escapeHtml(c.resume_url)}" target="_blank">Baixar</a>` : '-'}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      ${lista.length === 0 ? '<div class="msg-vazio">Nenhum candidato aprovado ainda.</div>' : ''}
-    `;
-  } catch (e) {
-    cont.innerHTML = `<h1>Candidatos do Portal</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
-  }
+  try { PC_LISTA = await api('/api/portal/candidates'); desenharPortalCandidates(); }
+  catch (e) { cont.innerHTML = `<h1>Candidatos do Portal</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+function desenharPortalCandidates() {
+  const cont = document.getElementById('conteudo');
+  const q = cvSemAcento(PC_BUSCA.trim());
+  const lista = PC_LISTA.filter(c => !q || cvSemAcento([c.name, c.desired_role, c.city, c.skills, c.desired_cities, c.education_level].join(' ')).includes(q));
+  cont.innerHTML = `
+    <h1>Candidatos do Portal</h1>
+    <p style="color:#64748b;margin-top:-8px;">Currículos aprovados pelo Master. Clique em "Ver currículo" para abrir no formato padrão, imprimir ou salvar em PDF.</p>
+    <div class="barra-acoes"><input id="pc-busca" placeholder="🔎 Buscar por nome, cargo, cidade ou habilidade…" value="${escapeHtml(PC_BUSCA)}" style="max-width:420px;" oninput="PC_BUSCA=this.value; clearTimeout(window._pcT); window._pcT=setTimeout(()=>{desenharPortalCandidates(); const i=document.getElementById('pc-busca'); i.focus(); i.setSelectionRange(i.value.length,i.value.length);},250)"><div class="direita" style="font-size:13px;color:#64748b;">${lista.length} candidato(s)</div></div>
+    <div id="modal-area"></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">
+      ${lista.map(c => {
+        const exps = cvJson(c.experiences_json), ult = exps.slice().sort((a, b) => (b.current ? '9' : b.end || b.start || '').localeCompare(a.current ? '9' : a.end || a.start || ''))[0];
+        const idade = cvIdade(c.birth_date), habs = String(c.skills || '').split(',').map(x => x.trim()).filter(Boolean);
+        return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:12px;align-items:center;">
+            ${c.photo_url ? `<img src="${escapeHtml(c.photo_url)}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;">` : `<div style="width:52px;height:52px;border-radius:50%;background:#e0e7ff;color:#3730a3;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;">${escapeHtml(String(c.name || '?').trim()[0].toUpperCase())}</div>`}
+            <div style="min-width:0;"><strong style="color:#0e2a47;">${escapeHtml(c.name)}</strong><div style="font-size:13px;color:#12a150;font-weight:700;">${escapeHtml(c.desired_role || 'Cargo não informado')}</div>
+              <div style="font-size:12px;color:#64748b;">${[c.city, idade ? idade + ' anos' : '', c.education_level].filter(Boolean).map(escapeHtml).join(' · ')}</div></div>
+          </div>
+          ${ult ? `<div style="font-size:12.5px;color:#334155;">💼 ${escapeHtml(ult.role || '')}${ult.company ? ' — ' + escapeHtml(ult.company) : ''}${ult.start ? ` <span style="color:#94a3b8;">(${cvDuracao(ult.start, ult.current ? '' : ult.end)})</span>` : ''}</div>` : (c.first_job ? '<div style="font-size:12.5px;color:#64748b;">🌱 Primeiro emprego</div>' : '')}
+          ${habs.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${habs.slice(0, 5).map(h => `<span style="font-size:11px;background:#e0f2fe;color:#075985;border-radius:6px;padding:2px 7px;">${escapeHtml(h)}</span>`).join('')}${habs.length > 5 ? `<span style="font-size:11px;color:#64748b;">+${habs.length - 5}</span>` : ''}</div>` : ''}
+          <button class="btn-primario btn-sm" style="margin-top:auto;" onclick="abrirCurriculoPadrao(PC_LISTA.find(x => x.user_id === ${Number(c.user_id)}))">📄 Ver currículo</button>
+        </div>`;
+      }).join('')}
+    </div>
+    ${lista.length === 0 ? '<div class="msg-vazio">Nenhum candidato encontrado.</div>' : ''}`;
 }
 
 // ---------- Admin: planos de vaga (dias x preço) ----------
@@ -13303,7 +13301,7 @@ async function renderJobPostings() {
               ${ehAdmin && ['pending_payment', 'pendente_aprovacao'].includes(v.status) && !excluida ? `<button class="btn-sm" style="background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;" onclick="liberarVagaCortesia(${v.id}, ${Number(v.planDays || 30)})">🎁 Liberar sem pagamento</button>` : ''}
               ${v.status === 'active' ? `<button class="btn-secundario btn-sm" onclick="compartilharVaga(${v.id})">📤 Compartilhar</button>` : ''}
               ${!excluida && !['pendente_aprovacao', 'fechada'].includes(v.status) ? `<button class="btn-secundario btn-sm" onclick="mostrarFormularioFecharVaga(${v.id})">🔒 Fechar Vaga</button>` : ''}
-              ${v.totalCandidaturas > 0 ? `<button class="btn-secundario btn-sm" onclick="verCandidaturasVaga(${v.id})">Ver Candidaturas</button>` : ''}
+              ${v.totalCandidaturas > 0 ? `<button class="btn-sm" style="background:#ede9fe;color:#5b21b6;border:0;" onclick="verCandidaturasVaga(${v.id})">📄 Ver currículos (${v.totalCandidaturas})</button>` : ''}
               ${ehAdmin && v.mp_payment_id && !v.paid_with_credit && !v.refunded_at ? `<button class="btn-perigo btn-sm" onclick="estornarVaga(${v.id})">↩️ Estornar Pagamento</button>` : ''}
               ${v.closing_fee_status === 'pending_payment' ? `<button class="btn-primario btn-sm" onclick="pagarTaxaFechamentoVaga(${v.id})">💳 Pagar Taxa de Fechamento</button>` : ''}
             </div>
@@ -13455,7 +13453,7 @@ function compartilharVaga(id) {
   const ehAdmin = ESTADO.usuario.role === 'admin';
   const link = window.location.origin + window.location.pathname + '#vaga=' + id;
   const legenda = `🚀 Vaga aberta: ${v.title}${ehAdmin && v.companyName ? ' — ' + v.companyName : ''}\n📍 ${v.is_remote ? 'Remoto' : (v.location || 'A combinar')}\n\nConfira e candidate-se pela Impulsionar V4:\n${link}`;
-  COMPARTILHAR_ATUAL = { link, legenda };
+  COMPARTILHAR_ATUAL = { link, legenda, titulo: v.title };
   const modalArea = document.getElementById('modal-area');
   modalArea.innerHTML = `
     <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
@@ -13467,9 +13465,11 @@ function compartilharVaga(id) {
         <p style="font-size:13px;color:#64748b;margin-top:-6px;">"${escapeHtml(v.title)}"</p>
         <textarea readonly rows="6" style="width:100%;font-size:12px;margin-bottom:10px;" onclick="this.select()">${escapeHtml(legenda)}</textarea>
         <div class="acoes-form" style="flex-wrap:wrap;">
-          <button class="btn-primario btn-sm" onclick="abrirCompartilharWhatsApp()">💬 WhatsApp</button>
-          <button class="btn-secundario btn-sm" onclick="copiarLegendaCompartilhar()">📷 Copiar legenda p/ Instagram</button>
-          <button class="btn-secundario btn-sm" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button>
+          <button class="btn-secundario btn-sm" style="width:auto;" onclick="copiarTextoCompartilhar()">📋 Copiar</button>
+          <button class="btn-sm" style="width:auto;background:#16a34a;color:#fff;border:0;" onclick="abrirCompartilharWhatsApp()">💬 WhatsApp</button>
+          <button class="btn-sm" style="width:auto;background:linear-gradient(135deg,#f58529,#dd2a7b,#8134af);color:#fff;border:0;" onclick="copiarLegendaCompartilhar()">📷 Instagram</button>
+          <button class="btn-sm" style="width:auto;background:#e0f2fe;color:#075985;border:0;" onclick="abrirCompartilharEmail()">✉️ E-mail</button>
+          <button class="btn-secundario btn-sm" style="width:auto;" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button>
         </div>
         <div id="compartilhar-status" style="font-size:12px;color:#64748b;margin-top:6px;"></div>
       </div>
@@ -13477,6 +13477,16 @@ function compartilharVaga(id) {
   `;
 }
 
+async function copiarTextoCompartilhar() {
+  if (!COMPARTILHAR_ATUAL) return;
+  const st = document.getElementById('compartilhar-status');
+  try { await navigator.clipboard.writeText(COMPARTILHAR_ATUAL.legenda); if (st) st.textContent = '✅ Texto copiado! É só colar onde quiser.'; }
+  catch (e) { if (st) st.textContent = 'Selecione o texto acima e copie (Ctrl/Cmd+C).'; }
+}
+function abrirCompartilharEmail() {
+  if (!COMPARTILHAR_ATUAL) return;
+  location.href = 'mailto:?subject=' + encodeURIComponent('Vaga aberta: ' + (COMPARTILHAR_ATUAL.titulo || '')) + '&body=' + encodeURIComponent(COMPARTILHAR_ATUAL.legenda);
+}
 function abrirCompartilharWhatsApp() {
   if (!COMPARTILHAR_ATUAL) return;
   window.open('https://wa.me/?text=' + encodeURIComponent(COMPARTILHAR_ATUAL.legenda), '_blank');
@@ -13487,8 +13497,9 @@ async function copiarLegendaCompartilhar() {
   const statusEl = document.getElementById('compartilhar-status');
   try {
     await navigator.clipboard.writeText(COMPARTILHAR_ATUAL.legenda);
-    if (statusEl) statusEl.textContent = 'Legenda copiada! Abrindo o Instagram para você colar no post/story.';
-    window.open('https://www.instagram.com/', '_blank');
+    if (statusEl) statusEl.textContent = '✅ Legenda copiada! Abrindo o Instagram — é só colar no post ou story.';
+    if (/Android|iPhone|iPad/i.test(navigator.userAgent)) { location.href = 'instagram://camera'; setTimeout(() => { if (!document.hidden) window.open('https://www.instagram.com/', '_blank'); }, 1200); }
+    else window.open('https://www.instagram.com/', '_blank');
   } catch (e) {
     if (statusEl) statusEl.textContent = 'Não foi possível copiar automaticamente — selecione o texto acima e copie manualmente (Ctrl/Cmd+C).';
   }
@@ -13743,11 +13754,112 @@ async function excluirVaga(id) {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
+// ---------- Empresa: candidaturas de uma vaga (currículos + ações) ----------
+const CAND_STATUS = {
+  recebida: ['📥 Recebida', '#e0f2fe', '#075985'], em_analise: ['👀 Em análise', '#fef9c3', '#854d0e'], entrevista: ['📅 Entrevista marcada', '#ede9fe', '#5b21b6'],
+  recusada: ['❌ Recusada', '#fee2e2', '#991b1b'], aprovado: ['🎉 Aprovado', '#dcfce7', '#166534']
+};
+function candBadge(st) { const [t, bg, cor] = CAND_STATUS[st || 'recebida'] || CAND_STATUS.recebida; return `<span style="font-size:11.5px;font-weight:800;background:${bg};color:${cor};padding:3px 10px;border-radius:999px;white-space:nowrap;">${t}</span>`; }
+function candData(d) { if (!d) return ''; const x = new Date(String(d).includes('T') ? d : String(d).replace(' ', 'T') + 'Z'); return isNaN(x) ? '' : x.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }); }
+function candEntrevistaTxt(v) { if (!v) return ''; const [d, h] = String(v).split('T'); return d.split('-').reverse().join('/') + (h ? ' às ' + h.slice(0, 5) : ''); }
+
 async function verCandidaturasVaga(id) {
   try {
     const lista = await api('/api/job-postings/' + id + '/applications');
     if (!lista.length) { mostrarToast('Nenhuma candidatura ainda.'); return; }
-    alert('Candidaturas:\n\n' + lista.map(c => `${c.name} — ${c.desired_role || ''} — ${c.email}${c.phone ? ' — ' + c.phone : ''}`).join('\n\n'));
+    window._candVaga = lista; window._candVagaId = id;
+    const vaga = (typeof CACHE_LISTA_VAGAS !== 'undefined' && CACHE_LISTA_VAGAS.find(v => v.id === id)) || {};
+    const cont = {}; lista.forEach(c => { cont[c.appStatus] = (cont[c.appStatus] || 0) + 1; });
+    const area = document.getElementById('modal-area');
+    area.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) this.parentNode.innerHTML=''"><div class="modal-caixa" style="max-width:720px;width:96vw;max-height:90vh;overflow:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+        <div><h3 style="margin:0;">📄 Currículos recebidos (${lista.length})</h3><div style="font-size:13px;color:#64748b;">${escapeHtml(vaga.title || '')}</div></div>
+        <button class="btn-secundario btn-sm" style="width:auto;" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px;">${Object.keys(CAND_STATUS).filter(k => cont[k]).map(k => candBadge(k) + `<small style="margin:0 6px 0 -2px;color:#64748b;align-self:center;">${cont[k]}</small>`).join('')}</div>
+      ${lista.map((c, i) => `<div style="display:flex;gap:12px;align-items:center;border-bottom:1px solid #e2e8f0;padding:12px 0;flex-wrap:wrap;">
+        ${c.photo_url ? `<img src="${escapeHtml(c.photo_url)}" style="width:46px;height:46px;border-radius:50%;object-fit:cover;">` : `<div style="width:46px;height:46px;border-radius:50%;background:#e0e7ff;color:#3730a3;display:flex;align-items:center;justify-content:center;font-weight:800;">${escapeHtml(String(c.name || '?')[0].toUpperCase())}</div>`}
+        <div style="flex:1;min-width:180px;"><strong>${escapeHtml(c.name)}</strong> ${c.naoLidas ? `<span style="background:#dc2626;color:#fff;border-radius:999px;font-size:11px;padding:1px 7px;">${c.naoLidas} nova(s)</span>` : ''}
+          <div style="font-size:12.5px;color:#64748b;">${[c.desired_role, c.city, cvIdade(c.birth_date) ? cvIdade(c.birth_date) + ' anos' : ''].filter(Boolean).map(escapeHtml).join(' · ')}</div>
+          <div style="font-size:12px;color:#94a3b8;">Candidatou-se em ${candData(c.applied_at)}${c.appStatus === 'entrevista' ? ` · <strong style="color:#5b21b6;">entrevista ${candEntrevistaTxt(c.entrevista_em)}</strong>${c.entrevista_resposta === 'confirmado' ? ' ✅' : c.entrevista_resposta === 'remarcar' ? ' 🔁 pediu para remarcar' : ''}` : ''}</div></div>
+        ${candBadge(c.appStatus)}
+        <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirCandidatura(${i})">Ver currículo →</button></div>`).join('')}
+    </div></div>`;
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+function abrirCandidatura(i) {
+  const c = window._candVaga[i]; if (!c) return;
+  window._candAtual = c;
+  if (!c.visto_empresa_em) { c.visto_empresa_em = 'agora'; if (c.appStatus === 'recebida') c.appStatus = 'em_analise'; api('/api/applications/' + c.id + '/visto', { method: 'POST' }).then(() => cdCarregar()).catch(() => {}); }
+  abrirCurriculoPadrao(c, {
+    titulo: 'Candidatura — ' + c.name,
+    acoesTopo: `<button class="btn-secundario btn-sm" onclick="verCandidaturasVaga(window._candVagaId)">← Lista</button>
+      <button class="btn-sm" style="background:#ede9fe;color:#5b21b6;border:0;" onclick="cdForm('entrevista')">📅 Marcar entrevista</button>
+      <button class="btn-sm" style="background:#e0f2fe;color:#075985;border:0;" onclick="cdForm('mensagem')">💬 Mensagem</button>
+      <button class="btn-sm" style="background:#fee2e2;color:#991b1b;border:0;" onclick="cdForm('recusa')">❌ Recusar</button>`,
+    rodape: '<div id="cd-painel" style="padding:0 16px 18px;"></div>'
+  });
+  cdCarregar();
+}
+async function cdCarregar() {
+  const c = window._candAtual, el = document.getElementById('cd-painel'); if (!c || !el) return;
+  let d = { status: c.appStatus, eventos: [] };
+  try { d = await api('/api/applications/' + c.id + '/eventos'); c.appStatus = d.status; c.naoLidas = 0; } catch (e) {}
+  el.innerHTML = `
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;max-width:820px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <h3 style="margin:0;font-size:16px;color:#0e2a47;">Andamento da candidatura</h3>${candBadge(d.status)}
+      </div>
+      ${d.status === 'entrevista' ? `<div style="margin-top:10px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:10px 12px;font-size:13.5px;">📅 <strong>${candEntrevistaTxt(d.entrevista_em)}</strong> · 📍 ${escapeHtml(d.entrevista_local || '')}<br>
+        ${d.entrevista_resposta === 'confirmado' ? '<span style="color:#166534;font-weight:700;">✅ Candidato confirmou presença</span>' : d.entrevista_resposta === 'remarcar' ? '<span style="color:#b45309;font-weight:700;">🔁 Candidato pediu para remarcar</span>' : '<span style="color:#64748b;">Aguardando confirmação do candidato</span>'}</div>` : ''}
+      <div id="cd-form" style="margin-top:12px;"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+        ${['entrevista', 'em_analise'].includes(d.status) ? `<button class="btn-sm" style="background:#dcfce7;color:#166534;border:0;width:auto;" onclick="cdAcao('aprovado')">🎉 Aprovar candidato</button>` : ''}
+        ${['recusada', 'aprovado'].includes(d.status) ? `<button class="btn-secundario btn-sm" style="width:auto;" onclick="cdAcao('reabrir')">↩️ Voltar para análise</button>` : ''}
+      </div>
+      <h4 style="margin:16px 0 8px;font-size:14px;">Histórico e mensagens <span style="font-weight:400;color:#64748b;font-size:12px;">— tudo aqui aparece também para o candidato</span></h4>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="align-self:center;font-size:12px;color:#64748b;background:#f1f5f9;border-radius:999px;padding:3px 12px;">📄 Candidatura enviada em ${candData(c.applied_at)}</div>
+        ${(d.eventos || []).map(ev => cdBolha(ev, 'empresa')).join('')}
+      </div>
+    </div>`;
+}
+function cdBolha(ev, lado) {
+  if (ev.autor === 'sistema') return `<div style="align-self:center;font-size:12px;color:#64748b;background:#f1f5f9;border-radius:999px;padding:3px 12px;">${escapeHtml(ev.texto)} · ${candData(ev.created_at)}</div>`;
+  const meu = ev.autor === lado;
+  const cor = ev.tipo === 'recusa' ? ['#fef2f2', '#991b1b'] : ev.tipo === 'entrevista' ? ['#f5f3ff', '#4c1d95'] : meu ? ['#0e2a47', '#fff'] : ['#f1f5f9', '#0f172a'];
+  return `<div style="align-self:${meu ? 'flex-end' : 'flex-start'};max-width:85%;">
+    <div style="background:${cor[0]};color:${cor[1]};border-radius:12px;padding:9px 12px;font-size:13.5px;white-space:pre-wrap;${ev.tipo === 'recusa' || ev.tipo === 'entrevista' ? 'border:1px solid rgba(0,0,0,.06);' : ''}">${escapeHtml(ev.texto)}</div>
+    <div style="font-size:11px;color:#94a3b8;margin-top:2px;text-align:${meu ? 'right' : 'left'};">${ev.autor === 'empresa' ? 'Empresa' : 'Candidato'} · ${candData(ev.created_at)}</div></div>`;
+}
+function cdForm(tipo) {
+  const el = document.getElementById('cd-form'); if (!el) return;
+  const hoje = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const padraoRecusa = 'Olá! Agradecemos o seu interesse na vaga. Analisamos o seu currículo e, neste momento, seguiremos com outros candidatos. Deixaremos o seu currículo salvo para próximas oportunidades. Desejamos sucesso!';
+  const caixa = (titulo, cor, corpo) => `<div style="border:2px solid ${cor};border-radius:12px;padding:12px;"><strong style="font-size:14px;">${titulo}</strong>${corpo}</div>`;
+  if (tipo === 'entrevista') el.innerHTML = caixa('📅 Marcar entrevista', '#ddd6fe', `
+    <div class="linha" style="margin-top:8px;"><div><label>Data</label><input type="date" id="cd-data" min="${hoje}"></div><div><label>Hora</label><input type="time" id="cd-hora" step="900"></div></div>
+    <label>Local ou link da reunião</label><input id="cd-local" placeholder="Ex.: Rua X, 123 — Rio Verde/GO ou link do Google Meet">
+    <label>Mensagem para o candidato (opcional)</label><textarea id="cd-msg" rows="2" placeholder="Ex.: Trazer documento com foto e CNH."></textarea>
+    <div class="acoes-form"><button class="btn-primario" style="width:auto;" onclick="cdAcao('entrevista')">Enviar para o candidato</button><button class="btn-secundario" style="width:auto;" onclick="document.getElementById('cd-form').innerHTML=''">Cancelar</button></div>`);
+  if (tipo === 'recusa') el.innerHTML = caixa('❌ Recusar candidatura', '#fecaca', `
+    <div style="font-size:12.5px;color:#64748b;margin:4px 0 6px;">O candidato recebe esta mensagem. Pode editar se quiser.</div>
+    <textarea id="cd-msg" rows="4">${padraoRecusa}</textarea>
+    <div class="acoes-form"><button class="btn-perigo" style="width:auto;" onclick="cdAcao('recusa')">Enviar recusa</button><button class="btn-secundario" style="width:auto;" onclick="document.getElementById('cd-form').innerHTML=''">Cancelar</button></div>`);
+  if (tipo === 'mensagem') el.innerHTML = caixa('💬 Mensagem para o candidato', '#bae6fd', `
+    <textarea id="cd-msg" rows="3" style="margin-top:8px;" placeholder="Escreva sua mensagem…"></textarea>
+    <div class="acoes-form"><button class="btn-primario" style="width:auto;" onclick="cdAcao('mensagem')">Enviar mensagem</button><button class="btn-secundario" style="width:auto;" onclick="document.getElementById('cd-form').innerHTML=''">Cancelar</button></div>`);
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+async function cdAcao(tipo) {
+  const c = window._candAtual; if (!c) return;
+  const g = id => ((document.getElementById(id) || {}).value || '').trim();
+  const corpo = { tipo, mensagem: g('cd-msg'), data: g('cd-data'), hora: g('cd-hora'), local: g('cd-local') };
+  if (tipo === 'aprovado' && !confirm('Marcar ' + c.name + ' como aprovado(a)? O candidato será avisado.')) return;
+  try {
+    const r = await api('/api/applications/' + c.id + '/acao', { method: 'POST', body: JSON.stringify(corpo) });
+    mostrarToast(r.message); cdCarregar();
   } catch (e) { mostrarToast(e.message, true); }
 }
 
@@ -13758,213 +13870,626 @@ async function confirmarPagamentoVaga(paymentId) {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
-// ---------- Candidato: meu currículo ----------
+// ---------- Candidato: meu currículo (padrão profissional) ----------
 const UFS_BRASIL = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+const UF_NOMES = { AC: 'Acre', AL: 'Alagoas', AP: 'Amapá', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceará', DF: 'Distrito Federal', ES: 'Espírito Santo', GO: 'Goiás', MA: 'Maranhão', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Pará', PB: 'Paraíba', PR: 'Paraná', PE: 'Pernambuco', PI: 'Piauí', RJ: 'Rio de Janeiro', RN: 'Rio Grande do Norte', RS: 'Rio Grande do Sul', RO: 'Rondônia', RR: 'Roraima', SC: 'Santa Catarina', SP: 'São Paulo', SE: 'Sergipe', TO: 'Tocantins' };
 const IDIOMAS_PADRAO = ['Inglês', 'Espanhol', 'Francês', 'Alemão', 'Italiano'];
+const CV_IDIOMAS = ['Inglês', 'Espanhol', 'Francês', 'Alemão', 'Italiano', 'Português', 'Libras', 'Mandarim', 'Japonês', 'Coreano', 'Russo', 'Árabe', 'Hindi', 'Holandês', 'Sueco', 'Norueguês', 'Dinamarquês', 'Finlandês', 'Polonês', 'Turco', 'Grego', 'Hebraico', 'Tcheco', 'Húngaro', 'Romeno', 'Ucraniano', 'Vietnamita', 'Tailandês', 'Indonésio', 'Filipino', 'Persa', 'Guarani', 'Catalão', 'Galego', 'Basco', 'Esperanto', 'Latim', 'Crioulo haitiano', 'Suaíli', 'Cantonês'];
+const CV_NIVEIS_IDIOMA = ['Básico', 'Intermediário', 'Avançado', 'Fluente', 'Nativo'];
+const CV_HABILIDADES = ['Liderança de equipes', 'Gestão de pessoas', 'Comunicação', 'Trabalho em equipe', 'Negociação', 'Resolução de problemas', 'Tomada de decisão', 'Organização', 'Proatividade', 'Foco em resultados', 'Atendimento ao cliente', 'Vendas', 'Gestão de indicadores (KPIs)', 'Planejamento', 'Gestão de rotinas', 'PDCA', 'Lean / Melhoria contínua', 'Kaizen', '5S', 'Six Sigma', 'Gestão de processos', 'Gestão de projetos', 'Logística', 'Roteirização', 'Gestão de frota', 'Distribuição urbana', 'Armazenagem', 'WMS', 'TMS', 'Controle de estoque', 'Inventário', 'Expedição', 'Recebimento de mercadorias', 'Operação de empilhadeira', 'Direção defensiva', 'Segurança do trabalho', 'NR-11', 'NR-35', 'NR-10', 'NR-12', 'Excel', 'Excel avançado', 'Power BI', 'Pacote Office', 'Google Workspace', 'SAP', 'TOTVS', 'Promax', 'ERP', 'SQL', 'Python', 'Análise de dados', 'Gestão financeira', 'Orçamento', 'Contas a pagar e receber', 'Faturamento', 'Departamento pessoal', 'Recrutamento e seleção', 'Treinamento e desenvolvimento', 'Feedback', 'Trade marketing', 'Merchandising', 'Execução de mercado', 'Gestão comercial', 'Prospecção de clientes', 'Pós-venda', 'Manutenção preventiva', 'Manutenção corretiva', 'Mecânica diesel', 'Elétrica industrial', 'Qualidade', 'Auditoria', 'ISO 9001', 'DPO / VPO Ambev', 'Gestão à vista', 'Inteligência emocional', 'Criatividade', 'Pensamento analítico', 'Adaptabilidade', 'Pontualidade'];
+const CV_CARGOS = ["Motorista", "Motorista de caminhão", "Motorista entregador", "Motorista carreteiro", "Motorista de empilhadeira", "Motorista de van", "Motorista particular", "Motoboy", "Ajudante de entrega", "Ajudante de motorista", "Ajudante geral", "Ajudante de carga e descarga", "Auxiliar de logística", "Assistente de logística", "Analista de logística", "Coordenador de logística", "Supervisor de logística", "Gerente de logística", "Conferente", "Conferente de carga", "Conferente de mercadorias", "Operador de empilhadeira", "Operador de armazém", "Auxiliar de armazém", "Estoquista", "Almoxarife", "Auxiliar de almoxarifado", "Separador de mercadorias", "Repositor", "Repositor de mercadorias", "Operador de logística", "Supervisor de armazém", "Encarregado de armazém", "Coordenador de armazém", "Gerente de armazém", "Supervisor de distribuição", "Coordenador de distribuição", "Gerente de distribuição", "Analista de transportes", "Coordenador de transportes", "Supervisor de frota", "Gestor de frota", "Analista de frota", "Roteirizador", "Programador de rotas", "Despachante", "Expedidor", "Auxiliar de expedição", "Supervisor de expedição", "Vendedor", "Vendedor externo", "Vendedor interno", "Representante comercial", "Promotor de vendas", "Promotor de merchandising", "Consultor de vendas", "Assistente comercial", "Auxiliar comercial", "Analista comercial", "Supervisor de vendas", "Coordenador de vendas", "Gerente de vendas", "Gerente comercial", "Diretor comercial", "Executivo de contas", "Key account", "Televendas", "Operador de telemarketing", "Atendente", "Atendente de loja", "Operador de caixa", "Caixa", "Fiscal de loja", "Fiscal de caixa", "Balconista", "Recepcionista", "Auxiliar administrativo", "Assistente administrativo", "Analista administrativo", "Coordenador administrativo", "Gerente administrativo", "Auxiliar de escritório", "Secretária", "Secretária executiva", "Office boy", "Auxiliar financeiro", "Assistente financeiro", "Analista financeiro", "Coordenador financeiro", "Gerente financeiro", "Controller", "Tesoureiro", "Analista de contas a pagar", "Analista de contas a receber", "Analista de crédito e cobrança", "Auxiliar de cobrança", "Faturista", "Auxiliar de faturamento", "Analista de faturamento", "Auxiliar contábil", "Assistente contábil", "Analista contábil", "Contador", "Analista fiscal", "Auxiliar fiscal", "Analista de custos", "Auxiliar de departamento pessoal", "Assistente de departamento pessoal", "Analista de departamento pessoal", "Analista de folha de pagamento", "Auxiliar de RH", "Assistente de RH", "Analista de RH", "Analista de recrutamento e seleção", "Analista de treinamento e desenvolvimento", "Business partner de RH", "Coordenador de RH", "Gerente de RH", "Técnico de segurança do trabalho", "Engenheiro de segurança do trabalho", "Analista de segurança do trabalho", "Coordenador de segurança do trabalho", "Bombeiro civil", "Vigilante", "Porteiro", "Controlador de acesso", "Auxiliar de limpeza", "Zelador", "Copeiro", "Cozinheiro", "Auxiliar de cozinha", "Garçom", "Mecânico", "Mecânico de caminhão", "Mecânico de manutenção", "Mecânico diesel", "Auxiliar de mecânico", "Eletricista", "Eletricista de manutenção", "Eletricista automotivo", "Técnico de manutenção", "Técnico em eletrônica", "Técnico em mecânica", "Supervisor de manutenção", "Coordenador de manutenção", "Gerente de manutenção", "Soldador", "Serralheiro", "Pedreiro", "Pintor", "Borracheiro", "Lavador de veículos", "Funileiro", "Operador de máquinas", "Operador de produção", "Auxiliar de produção", "Líder de produção", "Supervisor de produção", "Coordenador de produção", "Gerente de produção", "Gerente industrial", "Analista de PCP", "Analista de qualidade", "Técnico de qualidade", "Inspetor de qualidade", "Coordenador de qualidade", "Gerente de qualidade", "Analista de processos", "Analista de melhoria contínua", "Engenheiro de produção", "Engenheiro de processos", "Engenheiro mecânico", "Engenheiro civil", "Engenheiro eletricista", "Analista de planejamento", "Analista de dados", "Analista de BI", "Cientista de dados", "Analista de sistemas", "Desenvolvedor", "Programador", "Analista de suporte", "Técnico de informática", "Auxiliar de TI", "Coordenador de TI", "Gerente de TI", "Analista de marketing", "Assistente de marketing", "Coordenador de marketing", "Gerente de marketing", "Designer gráfico", "Social media", "Analista de trade marketing", "Coordenador de trade marketing", "Analista de compras", "Comprador", "Assistente de compras", "Coordenador de compras", "Gerente de compras", "Analista de suprimentos", "Analista jurídico", "Advogado", "Assistente jurídico", "Analista de customer success", "Analista de atendimento ao cliente", "Supervisor de atendimento", "Coordenador de atendimento", "Gerente de atendimento", "Líder de equipe", "Encarregado", "Encarregado de turno", "Supervisor", "Supervisor operacional", "Supervisor de turno", "Coordenador", "Coordenador operacional", "Coordenador de operações", "Gerente", "Gerente de operações", "Gerente operacional", "Gerente geral", "Gerente de unidade", "Gerente regional", "Gerente de projetos", "Gerente de filial", "Gerente de loja", "Subgerente", "Diretor", "Diretor de operações", "Diretor executivo", "CEO", "Sócio-diretor", "Consultor", "Consultor de gestão", "Consultor de processos", "Analista de gente e gestão", "Coordenador de gente e gestão", "Gerente de gente e gestão", "Trainee", "Trainee de liderança", "Estagiário", "Estágio administrativo", "Estágio em logística", "Jovem aprendiz", "Menor aprendiz", "Primeiro emprego", "Professor", "Instrutor", "Enfermeiro", "Técnico de enfermagem", "Auxiliar de enfermagem", "Farmacêutico", "Nutricionista", "Psicólogo", "Assistente social"];
+const CV_NIVEIS_FORMACAO = ['Ensino Fundamental', 'Ensino Médio', 'Curso Técnico', 'Tecnólogo', 'Graduação', 'Pós-graduação / MBA', 'Mestrado', 'Doutorado'];
 let EXPERIENCIAS_PERFIL_ATUAL = [];
+const CV = { cidades: null, idiomas: [], regioes: [], habilidades: [], perfil: null, auto: {} };
+
+function cvSemAcento(t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+function cvJson(v) { try { const l = JSON.parse(v || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return []; } }
+function cvMes(d) { if (!d) return ''; const m = String(d).match(/^(\d{4})-(\d{2})/); if (!m) return String(d); return ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][Number(m[2]) - 1] + '/' + m[1]; }
+function cvDuracao(ini, fim) {
+  const a = String(ini || '').match(/^(\d{4})-(\d{2})/); if (!a) return '';
+  const hoje = new Date(); const b = String(fim || '').match(/^(\d{4})-(\d{2})/) || [0, hoje.getFullYear(), String(hoje.getMonth() + 1)];
+  let meses = (Number(b[1]) - Number(a[1])) * 12 + (Number(b[2]) - Number(a[2])) + 1; if (meses < 1) return '';
+  const anos = Math.floor(meses / 12); meses %= 12;
+  return [anos ? anos + (anos > 1 ? ' anos' : ' ano') : '', meses ? meses + (meses > 1 ? ' meses' : ' mês') : ''].filter(Boolean).join(' e ');
+}
+function cvIdade(d) { const m = String(d || '').match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return null; const h = new Date(); let i = h.getFullYear() - Number(m[1]); if (h.getMonth() + 1 < Number(m[2]) || (h.getMonth() + 1 === Number(m[2]) && h.getDate() < Number(m[3]))) i--; return i; }
+function cvParseIdiomas(t) { return String(t || '').split(',').map(x => x.trim()).filter(Boolean).map(x => { const m = x.match(/^(.*?)\s*\(([^)]*)\)\s*$/); return m ? { nome: m[1].trim(), nivel: m[2].trim() } : { nome: x, nivel: '' }; }); }
+async function cvCarregarCidades() {
+  if (CV.cidades) return CV.cidades;
+  try { const r = await fetch('/api/public/cidades'); CV.cidades = r.ok ? await r.json() : []; } catch (e) { CV.cidades = []; }
+  CV.cidades.forEach(c => { c._n = cvSemAcento(c[0]); });
+  return CV.cidades;
+}
+function cvBuscarCidades(q, limite = 8) {
+  const t = cvSemAcento(q).trim(); if (t.length < 2 || !CV.cidades) return [];
+  const [nome, uf] = t.split('/').map(x => x.trim());
+  const res = [];
+  for (const c of CV.cidades) { if ((uf ? c[1].toLowerCase() === uf : true) && c._n.startsWith(nome)) res.push(c); if (res.length >= limite) break; }
+  if (res.length < limite) for (const c of CV.cidades) { if (!c._n.startsWith(nome) && c._n.includes(nome) && (!uf || c[1].toLowerCase() === uf)) res.push(c); if (res.length >= limite) break; }
+  return res.map(c => ({ label: c[0], sub: c[1], value: c[0] + '/' + c[1] }));
+}
+
+// Autocomplete genérico: buscar(q) → [{label, sub, value}], escolher(item)
+function cvAuto(inputId, buscar, escolher, opcoes = {}) {
+  const inp = document.getElementById(inputId); if (!inp) return;
+  const caixa = document.createElement('div'); caixa.className = 'cv-auto-lista'; caixa.style.display = 'none';
+  inp.parentNode.style.position = 'relative'; inp.parentNode.appendChild(caixa);
+  let itens = [], ativo = -1;
+  const desenhar = () => {
+    if (!itens.length) { caixa.style.display = 'none'; return; }
+    caixa.innerHTML = itens.map((it, i) => `<button type="button" data-i="${i}" class="${i === ativo ? 'ativo' : ''}">${escapeHtml(it.label)}${it.sub ? `<small>${escapeHtml(it.sub)}</small>` : ''}</button>`).join('');
+    caixa.style.display = 'block';
+  };
+  const atualizar = () => { itens = buscar(inp.value) || []; ativo = itens.length ? 0 : -1; desenhar(); };
+  inp.setAttribute('autocomplete', 'off');
+  inp.addEventListener('input', atualizar);
+  inp.addEventListener('focus', () => { if (opcoes.abrirNoFoco || inp.value) atualizar(); });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' && itens.length) { ativo = (ativo + 1) % itens.length; desenhar(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp' && itens.length) { ativo = (ativo - 1 + itens.length) % itens.length; desenhar(); e.preventDefault(); }
+    else if (e.key === 'Enter') { if (ativo >= 0 && itens[ativo]) { e.preventDefault(); escolher(itens[ativo], inp); itens = []; desenhar(); } else if (opcoes.livre && inp.value.trim()) { e.preventDefault(); escolher({ label: inp.value.trim(), value: inp.value.trim() }, inp); } }
+    else if (e.key === 'Escape') { itens = []; desenhar(); }
+  });
+  caixa.addEventListener('mousedown', e => { const b = e.target.closest('button'); if (!b) return; e.preventDefault(); escolher(itens[Number(b.dataset.i)], inp); itens = []; desenhar(); });
+  inp.addEventListener('blur', () => setTimeout(() => { itens = []; desenhar(); }, 120));
+}
+
+function cvChips(id, lista, rotulo, extra) {
+  const el = document.getElementById(id); if (!el) return;
+  el.innerHTML = lista.length ? lista.map((x, i) => `<span class="cv-chip">${rotulo(x)}${extra ? extra(x, i) : ''}<button type="button" title="Remover" onclick="cvRemover('${id}', ${i})">×</button></span>`).join('') : '<span class="cv-vazio-chip">Nada selecionado ainda</span>';
+}
+function cvRemover(id, i) {
+  if (id === 'cv-chips-idiomas') { CV.idiomas.splice(i, 1); cvDesenharIdiomas(); }
+  if (id === 'cv-chips-regioes') { CV.regioes.splice(i, 1); cvDesenharRegioes(); }
+  if (id === 'cv-chips-hab') { CV.habilidades.splice(i, 1); cvDesenharHabilidades(); }
+  cvAtualizarProgresso();
+}
+function cvDesenharIdiomas() {
+  cvChips('cv-chips-idiomas', CV.idiomas, x => `<strong>${escapeHtml(x.nome)}</strong>`, (x, i) => `<select onchange="CV.idiomas[${i}].nivel=this.value" title="Nível">${CV_NIVEIS_IDIOMA.map(n => `<option ${x.nivel === n ? 'selected' : ''}>${n}</option>`).join('')}</select>`);
+}
+function cvDesenharRegioes() { cvChips('cv-chips-regioes', CV.regioes, x => /^[A-Z]{2}$/.test(x) ? `📍 ${escapeHtml(UF_NOMES[x] || x)} <em>(todo o estado)</em>` : `📍 ${escapeHtml(x)}`); }
+function cvDesenharHabilidades() { cvChips('cv-chips-hab', CV.habilidades, x => escapeHtml(x)); const c = document.getElementById('cv-hab-cont'); if (c) c.textContent = `${CV.habilidades.length} selecionada(s)` + (CV.habilidades.length < 3 ? ' · mínimo 3' : ''); }
+
+const CV_CSS_FORM = `
+  .cv-wrap { max-width:1000px; }
+  .cv-wrap input[type=checkbox] { width:auto !important; margin:0 !important; flex-shrink:0; height:auto; }
+  .cv-wrap label:has(> input[type=checkbox]) { display:flex !important; align-items:center; justify-content:flex-start; gap:8px; width:auto; text-align:left; }
+  .cv-acoes button { width:auto !important; }
+  .cv-wrap input, .cv-wrap select, .cv-wrap textarea { box-sizing:border-box; }
+  .cv-topo { position:sticky; top:0; z-index:5; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px 16px; margin-bottom:14px; box-shadow:0 4px 14px rgba(15,23,42,.06); }
+  .cv-barra { height:10px; background:#e2e8f0; border-radius:999px; overflow:hidden; margin:8px 0 6px; } .cv-barra div { height:100%; transition:width .3s; }
+  .cv-falta { display:flex; flex-wrap:wrap; gap:6px; } .cv-falta a { font-size:12px; background:#fef2f2; color:#b91c1c; padding:3px 9px; border-radius:999px; text-decoration:none; cursor:pointer; }
+  .cv-sec { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px; margin-bottom:14px; }
+  .cv-sec h3 { margin:0 0 4px; font-size:16px; color:#0e2a47; display:flex; align-items:center; gap:8px; } .cv-sec > p { margin:0 0 12px; font-size:12.5px; color:#64748b; }
+  .cv-grade { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+  .cv-grade label, .cv-campo label { display:block; font-size:12.5px; font-weight:700; color:#334155; margin-bottom:4px; }
+  .cv-ob::after { content:' *'; color:#dc2626; }
+  .cv-erro { border-color:#ef4444 !important; box-shadow:0 0 0 3px rgba(239,68,68,.15) !important; }
+  .cv-auto-lista { position:absolute; left:0; right:0; top:100%; z-index:30; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 12px 28px rgba(15,23,42,.16); max-height:260px; overflow:auto; margin-top:2px; }
+  .cv-auto-lista button { display:flex; justify-content:space-between; width:100%; text-align:left; border:0; background:#fff; padding:9px 12px; font-size:14px; cursor:pointer; color:#0f172a; }
+  .cv-auto-lista button small { color:#64748b; margin-left:10px; } .cv-auto-lista button.ativo, .cv-auto-lista button:hover { background:#eff6ff; }
+  .cv-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; min-height:30px; align-items:center; }
+  .cv-chip { display:inline-flex; align-items:center; gap:6px; background:#eef2ff; color:#3730a3; border-radius:999px; padding:4px 6px 4px 11px; font-size:13px; }
+  .cv-chip select { width:auto; padding:1px 4px; font-size:12px; margin:0; border-radius:6px; height:auto; }
+  .cv-chip button { border:0; background:rgba(55,48,163,.12); color:#3730a3; border-radius:50%; width:20px; height:20px; cursor:pointer; line-height:1; padding:0; }
+  .cv-vazio-chip { font-size:12.5px; color:#94a3b8; }
+  .cv-sugs { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; } .cv-sugs button { border:1px dashed #cbd5e1; background:#fff; border-radius:999px; padding:3px 10px; font-size:12px; cursor:pointer; color:#475569; }
+  .cv-item { border:1px solid #e2e8f0; border-radius:12px; padding:14px; margin-bottom:10px; background:#f8fafc; position:relative; }
+  .cv-item .cv-rem { position:absolute; top:10px; right:10px; }
+  .cv-item-tit { font-size:12px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:.4px; margin-bottom:8px; }
+  .cv-dur { font-size:12px; color:#2563eb; margin-top:4px; min-height:14px; }
+  .cv-acoes { position:sticky; bottom:0; background:linear-gradient(180deg,rgba(241,245,249,0),#f1f5f9 35%); padding:16px 0 6px; display:flex; gap:10px; flex-wrap:wrap; }
+  .cv-foto { display:flex; gap:16px; align-items:center; } .cv-foto img, .cv-foto .cv-sem-foto { width:84px; height:84px; border-radius:50%; object-fit:cover; background:#e2e8f0; display:flex; align-items:center; justify-content:center; font-size:32px; flex-shrink:0; }
+`;
 
 async function renderPortalPerfil() {
   const cont = document.getElementById('conteudo');
   cont.innerHTML = '<h1>Meu Currículo</h1><p>Carregando...</p>';
   try {
     const p = await api('/api/portal/me');
+    CV.perfil = p;
+    cvCarregarCidades().then(cvNormalizarCidadesAntigas);
     const rotulosStatus = {
-      pending: 'Em análise pelo Master', approved: 'Aprovado — visível para as empresas',
-      rejected: 'Não aprovado — revise e edite seu currículo',
-      ajustes_solicitados: 'O Master pediu ajustes no seu currículo'
+      pending: ['⏳ Em análise pelo Master', '#fef9c3', '#854d0e'], approved: ['✅ Aprovado — visível para as empresas', '#dcfce7', '#166534'],
+      rejected: ['❌ Não aprovado — revise e edite seu currículo', '#fee2e2', '#991b1b'], ajustes_solicitados: ['✏️ O Master pediu ajustes no seu currículo', '#ffedd5', '#9a3412']
     };
-    const idiomasSelecionados = (p.languages || '').split(',').map(s => s.trim()).filter(Boolean);
-    const estadosSelecionados = (p.desired_states || '').split(',').map(s => s.trim()).filter(Boolean);
-    EXPERIENCIAS_PERFIL_ATUAL = p.experiences_json ? JSON.parse(p.experiences_json) : [];
+    const st = rotulosStatus[p.status] || [p.status, '#f1f5f9', '#334155'];
+    CV.idiomas = cvParseIdiomas(p.languages).map(x => ({ nome: x.nome, nivel: x.nivel || 'Básico' }));
+    CV.regioes = [...String(p.desired_states || '').split(',').map(x => x.trim()).filter(x => /^[A-Z]{2}$/.test(x)), ...String(p.desired_cities || '').split(',').map(x => x.trim()).filter(Boolean)];
+    CV.habilidades = String(p.skills || '').split(',').map(x => x.trim()).filter(Boolean);
+    EXPERIENCIAS_PERFIL_ATUAL = cvJson(p.experiences_json);
+    const sel = (id, lista, valor, vazio = 'Selecione…') => `<select id="${id}"><option value="">${vazio}</option>${lista.map(o => `<option ${valor === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
     cont.innerHTML = `
-      <h1>Meu Currículo</h1>
-      <div class="plano-card" style="max-width:480px;margin-bottom:16px;">
-        <div class="plano-meta">Status: <strong>${escapeHtml(rotulosStatus[p.status] || p.status)}</strong></div>
-        ${p.status === 'ajustes_solicitados' || p.status === 'rejected' ? `<div style="margin-top:8px;"><button class="btn-secundario btn-sm" onclick="TOPICO_MENSAGENS_CANDIDATO='curriculo';irPara('portalMensagens')">Ver mensagem do Master →</button></div>` : ''}
+      <style>${CV_CSS_FORM}</style>
+      <div class="cv-wrap">
+      <h1 style="margin-bottom:4px;">Meu Currículo</h1>
+      <p style="color:#64748b;margin-top:0;">Preencha no padrão que as empresas esperam. Os campos com <span style="color:#dc2626;">*</span> são obrigatórios.</p>
+      <div class="cv-topo">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;">
+          <span style="font-size:12.5px;font-weight:700;background:${st[1]};color:${st[2]};padding:4px 10px;border-radius:999px;">${escapeHtml(st[0])}</span>
+          <div style="display:flex;gap:8px;">
+            ${p.status === 'ajustes_solicitados' || p.status === 'rejected' ? `<button class="btn-secundario btn-sm" onclick="TOPICO_MENSAGENS_CANDIDATO='curriculo';irPara('portalMensagens')">Ver mensagem do Master →</button>` : ''}
+            <button class="btn-secundario btn-sm" onclick="cvPreVisualizar()">👁️ Ver como a empresa vê</button>
+          </div>
+        </div>
+        <div class="cv-barra"><div id="cv-barra" style="width:0%;background:#ef4444;"></div></div>
+        <div style="font-size:12.5px;color:#334155;margin-bottom:6px;"><strong id="cv-pct">0%</strong> completo <span id="cv-falta-txt" style="color:#64748b;"></span></div>
+        <div class="cv-falta" id="cv-falta"></div>
       </div>
-      <div class="formulario">
-        <div class="linha" style="align-items:center;">
-          <div style="display:flex;align-items:center;gap:14px;">
-            <img id="pp-foto-preview" src="${p.photo_url ? escapeHtml(p.photo_url) : ''}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;background:#e2e8f0;${p.photo_url ? '' : 'display:none;'}">
-            <div>
-              <label>Foto de Perfil</label>
-              <input id="pp-photo-file" type="file" accept="image/*">
-              <div id="pp-photo-status" style="font-size:12px;color:#64748b;margin-top:4px;"></div>
-            </div>
-          </div>
+
+      <section class="cv-sec" id="cv-s-pessoal">
+        <h3>👤 Dados pessoais</h3><p>Como as empresas vão te identificar e entrar em contato.</p>
+        <div class="cv-foto" style="margin-bottom:14px;">
+          ${p.photo_url ? `<img id="pp-foto-preview" src="${escapeHtml(p.photo_url)}">` : `<img id="pp-foto-preview" style="display:none;"><div class="cv-sem-foto" id="pp-foto-vazia">👤</div>`}
+          <div class="cv-campo"><label class="cv-ob">Foto de perfil</label><input id="pp-photo-file" type="file" accept="image/*" onchange="cvPreviewFoto(this)"><div id="pp-photo-status" style="font-size:12px;color:#64748b;margin-top:4px;">Foto de rosto, fundo claro, sem óculos escuros.</div></div>
         </div>
-        <div class="linha">
-          <div><label>Nome</label><input value="${escapeHtml(p.name)}" disabled></div>
-          <div><label>E-mail</label><input value="${escapeHtml(p.email)}" disabled></div>
-          <div><label>Telefone</label><input id="pp-phone" value="${escapeHtml(p.phone || '')}"></div>
+        <div class="cv-grade">
+          <div><label class="cv-ob">Nome completo</label><input id="pp-name" value="${escapeHtml(p.name || '')}"></div>
+          <div><label>E-mail (login)</label><input value="${escapeHtml(p.email || '')}" disabled></div>
+          <div><label class="cv-ob">Telefone / WhatsApp</label><input id="pp-phone" inputmode="tel" placeholder="(64) 99999-9999" value="${escapeHtml(p.phone || '')}"></div>
+          <div><label class="cv-ob">Data de nascimento</label><input id="pp-birth" type="date" max="${new Date(Date.now() - 14 * 365.25 * 86400000).toISOString().slice(0, 10)}" value="${escapeHtml(p.birth_date || '')}"></div>
+          <div><label>CEP</label><input id="pp-cep" inputmode="numeric" placeholder="00000-000" value="${escapeHtml(p.cep || '')}" onblur="cvBuscarCep()"></div>
+          <div><label class="cv-ob">Cidade atual</label><input id="pp-city" placeholder="Comece a digitar a cidade…" value="${escapeHtml(p.city || '')}"></div>
+          <div><label>Bairro</label><input id="pp-bairro" value="${escapeHtml(p.neighborhood || '')}"></div>
+          <div><label>LinkedIn</label><input id="pp-linkedin" placeholder="linkedin.com/in/seu-perfil" value="${escapeHtml(p.linkedin_url || '')}"></div>
+          <div><label>Sexo</label>${sel('pp-gender', ['Masculino', 'Feminino', 'Outro'], p.gender, 'Prefiro não informar')}</div>
+          <div><label>CNH</label>${sel('pp-cnh', ['Não possuo', 'A', 'B', 'AB', 'C', 'D', 'E', 'AC', 'AD', 'AE'], p.cnh)}</div>
+          <div><label>Pessoa com deficiência (PcD)</label><input id="pp-pcd" placeholder="Se sim, qual? (opcional)" value="${escapeHtml(p.pcd || '')}"></div>
         </div>
-        <div class="linha">
-          <div><label>Cargo Desejado</label><input id="pp-desired-role" value="${escapeHtml(p.desired_role || '')}"></div>
-          <div><label>Cidade Atual</label><input id="pp-city" value="${escapeHtml(p.city || '')}"></div>
-          <div><label>LinkedIn</label><input id="pp-linkedin" value="${escapeHtml(p.linkedin_url || '')}"></div>
+      </section>
+
+      <section class="cv-sec" id="cv-s-objetivo">
+        <h3>🎯 Objetivo profissional</h3><p>O que você procura. Usamos isso para te mostrar as vagas certas.</p>
+        <div class="cv-grade">
+          <div><label class="cv-ob">Cargo desejado</label><input id="pp-desired-role" placeholder="Comece a digitar o cargo…" value="${escapeHtml(p.desired_role || '')}"></div>
+          <div><label class="cv-ob">Modelo de trabalho</label>${sel('pp-modalidade', ['Presencial', 'Híbrido', 'Remoto', 'Indiferente'], p.modalidade)}</div>
+          <div><label>Pretensão salarial</label><input id="pp-pretensao" placeholder="Ex.: R$ 4.500 ou A combinar" value="${escapeHtml(p.pretensao_salarial || '')}"></div>
+          <div><label>Disponibilidade para começar</label>${sel('pp-inicio', ['Imediata', 'Em 15 dias', 'Em 30 dias', 'A combinar'], p.disponibilidade_inicio)}</div>
         </div>
-        <div class="linha">
-          <div>
-            <label>Sexo</label>
-            <select id="pp-gender">
-              <option value="">Prefiro não informar</option>
-              ${['Masculino','Feminino','Outro'].map(o => `<option ${p.gender === o ? 'selected' : ''}>${o}</option>`).join('')}
-            </select>
-          </div>
-          <div>
-            <label>Escolaridade</label>
-            <select id="pp-education">
-              <option value="">Selecione...</option>
-              ${['Ensino Fundamental incompleto','Ensino Fundamental completo','Ensino Médio incompleto','Ensino Médio completo','Superior incompleto','Superior completo','Pós-graduação','Mestrado','Doutorado']
-                .map(o => `<option ${p.education_level === o ? 'selected' : ''}>${o}</option>`).join('')}
-            </select>
-          </div>
+        <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:13.5px;">
+          <label style="font-weight:400;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="pp-viagem" ${p.disp_viagem ? 'checked' : ''}> Disponível para viagens</label>
+          <label style="font-weight:400;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="pp-mudanca" ${p.disp_mudanca ? 'checked' : ''}> Disponível para mudança de cidade</label>
         </div>
-        <div class="linha" style="flex-direction:column;">
-          <label>Idiomas</label>
-          <div style="display:flex;flex-wrap:wrap;gap:14px;">
-            ${IDIOMAS_PADRAO.map(idioma => `
-              <label style="font-weight:400;display:flex;align-items:center;gap:5px;">
-                <input type="checkbox" class="pp-idioma" value="${idioma}" ${idiomasSelecionados.includes(idioma) ? 'checked' : ''}> ${idioma}
-              </label>
-            `).join('')}
-          </div>
-          <input id="pp-idioma-outro" placeholder="Outro idioma (opcional)" style="margin-top:8px;max-width:260px;"
-            value="${escapeHtml(idiomasSelecionados.filter(i => !IDIOMAS_PADRAO.includes(i)).join(', '))}">
+        <div class="cv-campo" style="margin-top:14px;" id="cv-s-regioes">
+          <label class="cv-ob">Onde deseja trabalhar?</label>
+          <input id="cv-regiao-busca" placeholder="Digite a cidade (ou o estado) e escolha na lista…">
+          <div class="cv-chips" id="cv-chips-regioes"></div>
         </div>
-        <div class="linha" style="flex-direction:column;">
-          <label>Onde deseja ver vagas?</label>
-          <div style="font-size:12px;color:#64748b;margin-bottom:6px;">Selecione um ou mais estados — usamos isso para te mostrar apenas vagas da sua região.</div>
-          <select id="pp-estados" multiple style="min-height:90px;max-width:320px;">
-            ${UFS_BRASIL.map(uf => `<option value="${uf}" ${estadosSelecionados.includes(uf) ? 'selected' : ''}>${uf}</option>`).join('')}
-          </select>
-          <input id="pp-cidades" placeholder="Cidades de interesse (separe por vírgula)" style="margin-top:8px;max-width:400px;" value="${escapeHtml(p.desired_cities || '')}">
+      </section>
+
+      <section class="cv-sec" id="cv-s-resumo">
+        <h3>📝 Resumo profissional</h3><p>3 a 5 linhas sobre você: experiência, pontos fortes e o que busca. É a primeira coisa que o recrutador lê.</p>
+        <textarea id="pp-bio" rows="5" maxlength="1500" placeholder="Ex.: Profissional com 6 anos de experiência em distribuição urbana, liderando equipes de até 40 pessoas, com foco em indicadores de TML, devolução e segurança…">${escapeHtml(p.bio || '')}</textarea>
+        <div style="font-size:12px;color:#64748b;text-align:right;" id="cv-bio-cont"></div>
+      </section>
+
+      <section class="cv-sec" id="cv-s-exp">
+        <h3>💼 Experiência profissional</h3><p>Da mais recente para a mais antiga. Use o calendário para o início e o fim.</p>
+        <label style="display:flex;align-items:center;gap:6px;font-weight:600;margin-bottom:10px;">
+          <input type="checkbox" id="pp-primeiro-emprego" onchange="alternarBlocoExperiencias()" ${p.first_job ? 'checked' : ''}> Ainda não tenho experiência (primeiro emprego)
+        </label>
+        <div id="pp-bloco-experiencias" style="${p.first_job ? 'display:none;' : ''}">
+          <div id="pp-experiencias"></div>
+          <button type="button" class="btn-secundario btn-sm" onclick="adicionarLinhaExperiencia(); cvAtualizarProgresso()">+ Adicionar experiência</button>
         </div>
-        <div class="linha" style="flex-direction:column;">
-          <div style="font-size:13px;color:#334155;">Sobre Mim</div>
-          <textarea id="pp-bio" rows="3">${escapeHtml(p.bio || '')}</textarea>
-        </div>
-        <div class="linha">
-          <div style="flex:2"><label>Habilidades (separe por vírgula)</label><input id="pp-skills" value="${escapeHtml(p.skills || '')}"></div>
-        </div>
-        <div class="linha" style="flex-direction:column;">
-          <label style="display:flex;align-items:center;gap:6px;font-weight:600;">
-            <input type="checkbox" id="pp-primeiro-emprego" onchange="alternarBlocoExperiencias()" ${p.first_job ? 'checked' : ''}> Este é meu primeiro emprego
-          </label>
-          <div id="pp-bloco-experiencias" style="${p.first_job ? 'display:none;' : ''}margin-top:8px;">
-            <label>Experiências Profissionais</label>
-            <div id="pp-experiencias"></div>
-            <button type="button" class="btn-secundario btn-sm" onclick="adicionarLinhaExperiencia()">+ Adicionar Experiência</button>
-          </div>
-        </div>
-        <div class="linha">
-          <div style="flex:2">
-            <label>Currículo (PDF ou Word)</label>
-            ${p.resume_url ? `<div style="margin-bottom:6px;"><a href="${escapeHtml(p.resume_url)}" target="_blank">Ver currículo atual →</a></div>` : ''}
-            <input id="pp-resume-file" type="file" accept=".pdf,.doc,.docx">
-            <div id="pp-upload-status" style="font-size:12px;color:#64748b;margin-top:4px;"></div>
-          </div>
-        </div>
-        <div class="acoes-form">
-          <button class="btn-primario" onclick="salvarPortalPerfil()">Salvar Currículo</button>
-        </div>
+      </section>
+
+      <section class="cv-sec" id="cv-s-formacao">
+        <h3>🎓 Formação acadêmica</h3><p>Escolaridade mais alta e os cursos que você concluiu ou está cursando.</p>
+        <div class="cv-grade" style="margin-bottom:12px;"><div><label class="cv-ob">Escolaridade</label>${sel('pp-education', ['Ensino Fundamental incompleto', 'Ensino Fundamental completo', 'Ensino Médio incompleto', 'Ensino Médio completo', 'Técnico completo', 'Superior incompleto', 'Superior completo', 'Pós-graduação', 'Mestrado', 'Doutorado'], p.education_level)}</div></div>
+        <div id="cv-formacoes"></div>
+        <button type="button" class="btn-secundario btn-sm" onclick="cvAddFormacao(); cvAtualizarProgresso()">+ Adicionar formação</button>
+      </section>
+
+      <section class="cv-sec" id="cv-s-cursos">
+        <h3>📜 Cursos e certificações</h3><p>NRs, cursos técnicos, treinamentos, certificações. (Opcional, mas conta muito.)</p>
+        <div id="cv-cursos"></div>
+        <button type="button" class="btn-secundario btn-sm" onclick="cvAddCurso()">+ Adicionar curso</button>
+      </section>
+
+      <section class="cv-sec" id="cv-s-idiomas">
+        <h3>🌎 Idiomas</h3><p>Pesquise o idioma, selecione e escolha o nível. Pode adicionar quantos quiser.</p>
+        <input id="cv-idioma-busca" placeholder="🔎 Pesquisar idioma…">
+        <div class="cv-chips" id="cv-chips-idiomas"></div>
+      </section>
+
+      <section class="cv-sec" id="cv-s-hab">
+        <h3>⚡ Habilidades <span id="cv-hab-cont" style="font-size:12px;color:#64748b;font-weight:400;"></span></h3><p>Pesquise e selecione (ou digite e aperte Enter para criar a sua).</p>
+        <input id="cv-hab-busca" placeholder="🔎 Ex.: Excel, Liderança, Roteirização…">
+        <div class="cv-chips" id="cv-chips-hab"></div>
+        <div class="cv-sugs" id="cv-hab-sugs"></div>
+      </section>
+
+      <section class="cv-sec">
+        <h3>📎 Currículo em arquivo <span style="font-size:12px;color:#64748b;font-weight:400;">(opcional)</span></h3>
+        ${p.resume_url ? `<div style="margin-bottom:6px;"><a href="${escapeHtml(p.resume_url)}" target="_blank">Ver arquivo atual →</a></div>` : ''}
+        <input id="pp-resume-file" type="file" accept=".pdf,.doc,.docx">
+        <div id="pp-upload-status" style="font-size:12px;color:#64748b;margin-top:4px;"></div>
+      </section>
+
+      <div class="cv-acoes">
+        <button class="btn-primario" style="padding:12px 22px;font-size:15px;background:linear-gradient(135deg,#12a150,#22c55e);border:0;" onclick="salvarPortalPerfil()">💾 Salvar currículo</button>
+        <button class="btn-secundario" onclick="cvPreVisualizar()">👁️ Pré-visualizar</button>
       </div>
+      </div>
+      <div id="modal-area"></div>
     `;
-    if (EXPERIENCIAS_PERFIL_ATUAL.length === 0) adicionarLinhaExperiencia();
+    if (EXPERIENCIAS_PERFIL_ATUAL.length === 0 && !p.first_job) adicionarLinhaExperiencia();
     else EXPERIENCIAS_PERFIL_ATUAL.forEach(exp => adicionarLinhaExperiencia(exp));
+    const forms = cvJson(p.education_json); (forms.length ? forms : [null]).forEach(f => cvAddFormacao(f));
+    cvJson(p.courses_json).forEach(c => cvAddCurso(c));
+    cvDesenharIdiomas(); cvDesenharRegioes(); cvDesenharHabilidades();
+    cvLigarCampos();
+    cvAtualizarProgresso();
   } catch (e) {
     cont.innerHTML = `<h1>Meu Currículo</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
   }
 }
 
+// Cadastros antigos tinham cidade digitada livre ("rio verde"): troca pelo nome oficial "Cidade/UF" quando dá para identificar.
+function cvCidadeOficial(t, ufsPreferidas) {
+  if (!CV.cidades || !CV.cidades.length || !t || String(t).includes('/')) return null;
+  const n = cvSemAcento(t).trim(), achadas = CV.cidades.filter(c => c._n === n);
+  if (!achadas.length) return null;
+  const c = achadas.find(x => (ufsPreferidas || []).includes(x[1])) || (achadas.length === 1 ? achadas[0] : null);
+  return c ? c[0] + '/' + c[1] : null;
+}
+function cvNormalizarCidadesAntigas() {
+  const ufs = CV.regioes.filter(r => /^[A-Z]{2}$/.test(r));
+  let mudou = false;
+  CV.regioes = [...new Set(CV.regioes.map(r => { if (/^[A-Z]{2}$/.test(r)) return r; const o = cvCidadeOficial(r, ufs); if (o) { mudou = true; return o; } return r; }))];
+  if (mudou) cvDesenharRegioes();
+  const inp = document.getElementById('pp-city'); const o = inp && cvCidadeOficial(inp.value, ufs); if (o) inp.value = o;
+  cvAtualizarProgresso();
+}
+function cvLigarCampos() {
+  cvAuto('pp-city', q => cvBuscarCidades(q), (it, inp) => { inp.value = it.value; cvAtualizarProgresso(); });
+  cvAuto('pp-desired-role', q => {
+    const t = cvSemAcento(q).trim(); if (!t) return [];
+    const l = CV_CARGOS.filter(c => cvSemAcento(c).includes(t)).sort((a, b) => cvSemAcento(a).indexOf(t) - cvSemAcento(b).indexOf(t)).slice(0, 8).map(c => ({ label: c, value: c }));
+    if (!CV_CARGOS.some(c => cvSemAcento(c) === t)) l.push({ label: `Usar “${q.trim()}”`, value: q.trim() });
+    return l;
+  }, (it, inp) => { inp.value = it.value; cvAtualizarProgresso(); });
+  cvAuto('cv-regiao-busca', q => {
+    const t = cvSemAcento(q).trim(); if (t.length < 2) return [];
+    const ufs = UFS_BRASIL.filter(uf => cvSemAcento(UF_NOMES[uf]).startsWith(t) || uf.toLowerCase() === t).map(uf => ({ label: `${UF_NOMES[uf]} — todo o estado`, sub: uf, value: uf }));
+    return [...ufs, ...cvBuscarCidades(q, 8)].filter(x => !CV.regioes.includes(x.value)).slice(0, 10);
+  }, (it, inp) => { if (!CV.regioes.includes(it.value)) CV.regioes.push(it.value); inp.value = ''; cvDesenharRegioes(); cvAtualizarProgresso(); });
+  cvAuto('cv-idioma-busca', q => {
+    const t = cvSemAcento(q).trim();
+    const l = CV_IDIOMAS.filter(i => !CV.idiomas.some(x => x.nome === i) && (!t || cvSemAcento(i).includes(t))).slice(0, 10).map(i => ({ label: i, value: i }));
+    if (t && !CV_IDIOMAS.some(i => cvSemAcento(i) === t)) l.push({ label: `Adicionar “${q.trim()}”`, value: q.trim() });
+    return l;
+  }, (it, inp) => { if (!CV.idiomas.some(x => x.nome === it.value)) CV.idiomas.push({ nome: it.value, nivel: 'Básico' }); inp.value = ''; cvDesenharIdiomas(); }, { abrirNoFoco: true, livre: true });
+  const addHab = (v, inp) => { v = String(v || '').trim(); if (v && !CV.habilidades.some(h => cvSemAcento(h) === cvSemAcento(v))) CV.habilidades.push(v); if (inp) inp.value = ''; cvDesenharHabilidades(); cvSugHab(); cvAtualizarProgresso(); };
+  cvAuto('cv-hab-busca', q => {
+    const t = cvSemAcento(q).trim(); if (!t) return [];
+    const l = CV_HABILIDADES.filter(h => !CV.habilidades.includes(h) && cvSemAcento(h).includes(t)).slice(0, 8).map(h => ({ label: h, value: h }));
+    if (!CV_HABILIDADES.some(h => cvSemAcento(h) === t)) l.push({ label: `Adicionar “${q.trim()}”`, value: q.trim() });
+    return l;
+  }, (it, inp) => addHab(it.value, inp), { livre: true });
+  window.cvAddHab = v => addHab(v);
+  cvSugHab();
+  const wrap = document.querySelector('.cv-wrap');
+  let t; wrap.addEventListener('input', () => { clearTimeout(t); t = setTimeout(cvAtualizarProgresso, 250); });
+  wrap.addEventListener('change', () => cvAtualizarProgresso());
+}
+function cvSugHab() {
+  const el = document.getElementById('cv-hab-sugs'); if (!el) return;
+  const cargo = cvSemAcento((document.getElementById('pp-desired-role') || {}).value);
+  const lid = /gerent|coorden|supervis|lider|encarreg|diretor/.test(cargo), log = /logist|motorista|entreg|armaz|distrib|frota|conferent|estoq|expedi/.test(cargo);
+  const base = [...(lid ? ['Liderança de equipes', 'Gestão de pessoas', 'Gestão de indicadores (KPIs)', 'Feedback', 'PDCA'] : []), ...(log ? ['Roteirização', 'Direção defensiva', 'Armazenagem', 'Controle de estoque', 'Gestão de frota'] : []), 'Comunicação', 'Trabalho em equipe', 'Excel', 'Atendimento ao cliente', 'Organização', 'Proatividade', 'Resolução de problemas'];
+  const sug = [...new Set(base)].filter(h => !CV.habilidades.includes(h)).slice(0, 10);
+  el.innerHTML = sug.length ? '<span style="font-size:12px;color:#64748b;align-self:center;">Sugestões:</span>' + sug.map(h => `<button type="button" onclick="cvAddHab(${escapeHtml(JSON.stringify(h))})">+ ${escapeHtml(h)}</button>`).join('') : '';
+}
+function cvPreviewFoto(inp) {
+  const f = inp.files && inp.files[0]; if (!f) return;
+  const img = document.getElementById('pp-foto-preview'); img.src = URL.createObjectURL(f); img.style.display = '';
+  const v = document.getElementById('pp-foto-vazia'); if (v) v.remove();
+  cvAtualizarProgresso();
+}
+async function cvBuscarCep() {
+  const cep = (document.getElementById('pp-cep').value || '').replace(/\D/g, ''); if (cep.length !== 8) return;
+  try {
+    const r = await fetch('/api/public/cep/' + cep); if (!r.ok) return; const j = await r.json();
+    if (j.cidade) document.getElementById('pp-city').value = j.cidade + '/' + j.uf;
+    if (j.bairro) document.getElementById('pp-bairro').value = j.bairro;
+    cvAtualizarProgresso();
+  } catch (e) {}
+}
+
 function alternarBlocoExperiencias() {
   const marcado = document.getElementById('pp-primeiro-emprego').checked;
   document.getElementById('pp-bloco-experiencias').style.display = marcado ? 'none' : '';
+  if (!marcado && !document.querySelector('#pp-experiencias .linha-experiencia')) adicionarLinhaExperiencia();
+  cvAtualizarProgresso();
 }
-
+function cvAtualizarDuracao(el) {
+  const card = el.closest('.cv-item'); const ini = card.querySelector('.exp-inicio, .for-inicio'), fim = card.querySelector('.exp-fim, .for-fim'), atual = card.querySelector('.exp-atual, .for-atual');
+  if (fim) { fim.disabled = !!(atual && atual.checked); if (atual && atual.checked) fim.value = ''; }
+  const lg = card.querySelector('.cv-legado'); if (lg && ini && ini.value) lg.remove();
+  const d = card.querySelector('.cv-dur'); if (d && ini) d.textContent = ini.value ? '⏱️ ' + cvDuracao(ini.value, atual && atual.checked ? '' : fim.value) : '';
+}
+function cvRenumerar(id, rotulo) { document.querySelectorAll('#' + id + ' .cv-item-tit').forEach((t, i) => { t.textContent = rotulo + ' ' + (i + 1); }); }
 function adicionarLinhaExperiencia(exp) {
-  const wrap = document.getElementById('pp-experiencias');
+  exp = exp || {};
+  const wrap = document.getElementById('pp-experiencias'); if (!wrap) return;
   const div = document.createElement('div');
-  div.className = 'linha-experiencia';
-  div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;';
+  div.className = 'cv-item linha-experiencia';
+  const hoje = new Date().toISOString().slice(0, 10);
   div.innerHTML = `
-    <input type="text" class="exp-cargo" placeholder="Cargo" style="flex:1;" value="${exp ? escapeHtml(exp.role || '') : ''}">
-    <input type="text" class="exp-empresa" placeholder="Empresa" style="flex:1;" value="${exp ? escapeHtml(exp.company || '') : ''}">
-    <input type="text" class="exp-periodo" placeholder="Período (ex: 2021 - 2023)" style="flex:1;" value="${exp ? escapeHtml(exp.period || '') : ''}">
-    <button type="button" class="btn-secundario btn-sm" onclick="this.parentElement.remove()">Remover</button>
-  `;
+    <div class="cv-item-tit">Experiência</div>
+    <button type="button" class="btn-perigo btn-sm cv-rem" onclick="this.closest('.cv-item').remove(); cvRenumerar('pp-experiencias','Experiência'); cvAtualizarProgresso()">Remover</button>
+    <div class="cv-grade">
+      <div><label class="cv-ob">Cargo</label><input class="exp-cargo" value="${escapeHtml(exp.role || '')}" placeholder="Ex.: Supervisor de Distribuição"></div>
+      <div><label class="cv-ob">Empresa</label><input class="exp-empresa" value="${escapeHtml(exp.company || '')}"></div>
+      <div><label>Cidade/UF</label><input class="exp-cidade" value="${escapeHtml(exp.city || '')}" placeholder="Ex.: Rio Verde/GO"></div>
+    </div>
+    <div class="cv-grade" style="margin-top:10px;">
+      <div><label class="cv-ob">Início</label><input type="date" class="exp-inicio" max="${hoje}" value="${escapeHtml(exp.start || '')}" onchange="cvAtualizarDuracao(this)"></div>
+      <div><label class="cv-ob">Fim</label><input type="date" class="exp-fim" max="${hoje}" value="${escapeHtml(exp.end || '')}" ${exp.current ? 'disabled' : ''} onchange="cvAtualizarDuracao(this)">
+        <label style="font-weight:400;display:flex;gap:6px;align-items:center;margin-top:6px;"><input type="checkbox" class="exp-atual" ${exp.current ? 'checked' : ''} onchange="cvAtualizarDuracao(this)"> Trabalho aqui atualmente</label></div>
+      <div style="align-self:end;"><div class="cv-dur"></div>${!exp.start && exp.period ? `<div class="cv-legado" style="font-size:12px;color:#b45309;">Período antigo informado: “${escapeHtml(exp.period)}” — selecione as datas.</div>` : ''}</div>
+    </div>
+    <div style="margin-top:10px;"><label class="cv-ob" style="font-size:12.5px;font-weight:700;color:#334155;">Principais atividades e resultados</label>
+      <textarea class="exp-atividades" rows="3" placeholder="Uma atividade ou resultado por linha. Ex.:&#10;Liderança de 25 motoristas e ajudantes&#10;Redução da devolução de 3,2% para 1,1%">${escapeHtml(exp.activities || '')}</textarea></div>`;
   wrap.appendChild(div);
+  cvRenumerar('pp-experiencias', 'Experiência');
+  cvAtualizarDuracao(div.querySelector('.exp-inicio'));
+  const cid = div.querySelector('.exp-cidade'); cid.id = 'exp-cid-' + Math.random().toString(36).slice(2);
+  cvAuto(cid.id, q => cvBuscarCidades(q), (it, inp) => { inp.value = it.value; });
+}
+function cvAddFormacao(f) {
+  f = f || {};
+  const wrap = document.getElementById('cv-formacoes'); if (!wrap) return;
+  const div = document.createElement('div'); div.className = 'cv-item linha-formacao';
+  div.innerHTML = `
+    <div class="cv-item-tit">Formação</div>
+    <button type="button" class="btn-perigo btn-sm cv-rem" onclick="this.closest('.cv-item').remove(); cvRenumerar('cv-formacoes','Formação'); cvAtualizarProgresso()">Remover</button>
+    <div class="cv-grade">
+      <div><label class="cv-ob">Nível</label><select class="for-nivel"><option value="">Selecione…</option>${CV_NIVEIS_FORMACAO.map(n => `<option ${f.level === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      <div><label>Curso</label><input class="for-curso" value="${escapeHtml(f.course || '')}" placeholder="Ex.: Administração, Logística"></div>
+      <div><label class="cv-ob">Instituição</label><input class="for-inst" value="${escapeHtml(f.institution || '')}" placeholder="Escola, faculdade ou SENAI…"></div>
+    </div>
+    <div class="cv-grade" style="margin-top:10px;">
+      <div><label>Início</label><input type="date" class="for-inicio" value="${escapeHtml(f.start || '')}" onchange="cvAtualizarDuracao(this)"></div>
+      <div><label class="cv-ob">Conclusão</label><input type="date" class="for-fim" value="${escapeHtml(f.end || '')}" ${f.current ? 'disabled' : ''} onchange="cvAtualizarDuracao(this)">
+        <label style="font-weight:400;display:flex;gap:6px;align-items:center;margin-top:6px;"><input type="checkbox" class="for-atual" ${f.current ? 'checked' : ''} onchange="cvAtualizarDuracao(this)"> Cursando</label></div>
+      <div></div>
+    </div>`;
+  wrap.appendChild(div); cvRenumerar('cv-formacoes', 'Formação');
+}
+function cvAddCurso(c) {
+  c = c || {};
+  const wrap = document.getElementById('cv-cursos'); if (!wrap) return;
+  const div = document.createElement('div'); div.className = 'cv-item linha-curso';
+  div.innerHTML = `
+    <div class="cv-item-tit">Curso</div>
+    <button type="button" class="btn-perigo btn-sm cv-rem" onclick="this.closest('.cv-item').remove(); cvRenumerar('cv-cursos','Curso')">Remover</button>
+    <div class="cv-grade">
+      <div><label>Nome do curso / certificação</label><input class="cur-nome" value="${escapeHtml(c.name || '')}" placeholder="Ex.: NR-11 Operador de Empilhadeira"></div>
+      <div><label>Instituição</label><input class="cur-inst" value="${escapeHtml(c.institution || '')}"></div>
+      <div><label>Conclusão</label><input type="date" class="cur-fim" value="${escapeHtml(c.end || '')}"></div>
+      <div><label>Carga horária (h)</label><input type="number" min="0" class="cur-horas" value="${escapeHtml(c.hours || '')}"></div>
+    </div>`;
+  wrap.appendChild(div); cvRenumerar('cv-cursos', 'Curso');
 }
 
+function cvColetar() {
+  const g = id => ((document.getElementById(id) || {}).value || '').trim();
+  const ck = id => !!(document.getElementById(id) || {}).checked;
+  const primeiro = ck('pp-primeiro-emprego');
+  const exps = primeiro ? [] : [...document.querySelectorAll('#pp-experiencias .linha-experiencia')].map(l => {
+    const e = { role: l.querySelector('.exp-cargo').value.trim(), company: l.querySelector('.exp-empresa').value.trim(), city: l.querySelector('.exp-cidade').value.trim(),
+      start: l.querySelector('.exp-inicio').value, end: l.querySelector('.exp-atual').checked ? '' : l.querySelector('.exp-fim').value, current: l.querySelector('.exp-atual').checked,
+      activities: l.querySelector('.exp-atividades').value.trim() };
+    e.period = e.start ? `${cvMes(e.start)} – ${e.current ? 'atual' : cvMes(e.end)}` : '';
+    return e;
+  }).filter(e => e.role || e.company || e.start || e.activities);
+  const forms = [...document.querySelectorAll('#cv-formacoes .linha-formacao')].map(l => ({ level: l.querySelector('.for-nivel').value, course: l.querySelector('.for-curso').value.trim(), institution: l.querySelector('.for-inst').value.trim(),
+    start: l.querySelector('.for-inicio').value, end: l.querySelector('.for-atual').checked ? '' : l.querySelector('.for-fim').value, current: l.querySelector('.for-atual').checked })).filter(f => f.institution || f.course || f.level);
+  const cursos = [...document.querySelectorAll('#cv-cursos .linha-curso')].map(l => ({ name: l.querySelector('.cur-nome').value.trim(), institution: l.querySelector('.cur-inst').value.trim(), end: l.querySelector('.cur-fim').value, hours: l.querySelector('.cur-horas').value })).filter(c => c.name);
+  const temFoto = !!(CV.perfil && CV.perfil.photo_url) || !!((document.getElementById('pp-photo-file') || {}).files || [])[0];
+  return {
+    name: g('pp-name'), phone: g('pp-phone'), birth_date: g('pp-birth'), cep: g('pp-cep'), city: g('pp-city'), neighborhood: g('pp-bairro'), linkedin_url: g('pp-linkedin'),
+    gender: g('pp-gender'), cnh: g('pp-cnh'), pcd: g('pp-pcd'), desired_role: g('pp-desired-role'), modalidade: g('pp-modalidade'), pretensao_salarial: g('pp-pretensao'),
+    disponibilidade_inicio: g('pp-inicio'), disp_viagem: ck('pp-viagem'), disp_mudanca: ck('pp-mudanca'), bio: g('pp-bio'), education_level: g('pp-education'),
+    first_job: primeiro, experiences_json: JSON.stringify(exps), education_json: JSON.stringify(forms), courses_json: JSON.stringify(cursos),
+    languages: CV.idiomas.map(i => `${i.nome} (${i.nivel || 'Básico'})`).join(', '), skills: CV.habilidades.join(', '),
+    desired_states: CV.regioes.filter(r => /^[A-Z]{2}$/.test(r)).join(', '), desired_cities: CV.regioes.filter(r => !/^[A-Z]{2}$/.test(r)).join(', '),
+    photo_url: temFoto ? (CV.perfil.photo_url || 'novo') : ''
+  };
+}
+// Mesma regra do servidor (pendenciasCurriculo), com o local de cada campo para destacar.
+function cvPendencias(b) {
+  const f = [], exps = cvJson(b.experiences_json), forms = cvJson(b.education_json);
+  const add = (t, alvo) => f.push({ t, alvo });
+  if (!b.photo_url) add('Foto de perfil', 'pp-photo-file');
+  if (!b.name) add('Nome completo', 'pp-name');
+  if (b.phone.replace(/\D/g, '').length < 10) add('Telefone com DDD', 'pp-phone');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(b.birth_date)) add('Data de nascimento', 'pp-birth');
+  if (!b.city) add('Cidade atual', 'pp-city');
+  else if (CV.cidades && CV.cidades.length && !b.city.includes('/')) add('Cidade atual (escolha na lista)', 'pp-city');
+  if (!b.desired_role) add('Cargo desejado', 'pp-desired-role');
+  if (!b.modalidade) add('Modelo de trabalho', 'pp-modalidade');
+  if (!b.desired_cities && !b.desired_states) add('Onde deseja trabalhar', 'cv-regiao-busca');
+  if (b.bio.length < 60) add('Resumo profissional', 'pp-bio');
+  if (!b.first_job) {
+    if (!exps.length) add('Experiência profissional', 'cv-s-exp');
+    else if (exps.some(e => !e.role || !e.company || !e.start || (!e.end && !e.current) || !e.activities)) add('Completar experiências', 'cv-s-exp');
+    else if (exps.some(e => e.end && e.start && e.end < e.start)) add('Datas das experiências', 'cv-s-exp');
+  }
+  if (!b.education_level) add('Escolaridade', 'pp-education');
+  if (!forms.length) add('Formação', 'cv-s-formacao');
+  else if (forms.some(x => !x.institution || !x.level || (!x.end && !x.current))) add('Completar formação', 'cv-s-formacao');
+  if (b.skills.split(',').filter(x => x.trim()).length < 3) add('Habilidades (mín. 3)', 'cv-hab-busca');
+  return f;
+}
+const CV_TOTAL_REQ = 13;
+function cvAtualizarProgresso() {
+  if (!document.getElementById('cv-barra')) return;
+  const b = cvColetar(), falta = cvPendencias(b);
+  const bioEl = document.getElementById('cv-bio-cont'); if (bioEl) bioEl.textContent = `${b.bio.length} caracteres` + (b.bio.length < 60 ? ' · mínimo 60' : '');
+  const pct = Math.max(0, Math.round(100 * (CV_TOTAL_REQ - falta.length) / CV_TOTAL_REQ));
+  const barra = document.getElementById('cv-barra'); barra.style.width = pct + '%'; barra.style.background = pct >= 100 ? '#16a34a' : pct >= 60 ? '#f59e0b' : '#ef4444';
+  document.getElementById('cv-pct').textContent = pct + '%';
+  document.getElementById('cv-falta-txt').textContent = falta.length ? `· faltam ${falta.length} item(ns) obrigatório(s):` : '· tudo certo! Seu currículo está no padrão. 🎉';
+  document.getElementById('cv-falta').innerHTML = falta.map(x => `<a onclick="cvIrPara('${x.alvo}')">${escapeHtml(x.t)}</a>`).join('');
+  return falta;
+}
+function cvIrPara(id) { const el = document.getElementById(id); if (!el) return; el.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (el.focus) setTimeout(() => el.focus(), 300); el.classList.add('cv-erro'); setTimeout(() => el.classList.remove('cv-erro'), 2500); }
+
+async function cvEnviarArquivo(inputId, statusId, rotulo) {
+  const inp = document.getElementById(inputId); if (!inp || !inp.files || !inp.files[0]) return null;
+  const st = document.getElementById(statusId); const fd = new FormData(); fd.append('file', inp.files[0]);
+  if (st) st.textContent = `Enviando ${rotulo}...`;
+  const r = await fetch('/api/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: fd });
+  const j = await r.json(); if (!r.ok) throw new Error(j.error || `Falha ao enviar ${rotulo}.`);
+  if (st) st.textContent = `${rotulo[0].toUpperCase() + rotulo.slice(1)} enviado(a)!`; return j.url;
+}
 async function salvarPortalPerfil() {
+  const falta = cvAtualizarProgresso();
+  if (falta && falta.length) { mostrarToast('Complete os campos obrigatórios: ' + falta.map(x => x.t).join(', '), true); cvIrPara(falta[0].alvo); return; }
   try {
-    let resumeUrl = null;
-    const arquivoInput = document.getElementById('pp-resume-file');
-    if (arquivoInput && arquivoInput.files && arquivoInput.files[0]) {
-      const statusEl = document.getElementById('pp-upload-status');
-      const formData = new FormData();
-      formData.append('file', arquivoInput.files[0]);
-      if (statusEl) statusEl.textContent = 'Enviando currículo...';
-      const resposta = await fetch('/api/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: formData });
-      const dados = await resposta.json();
-      if (!resposta.ok) throw new Error(dados.error || 'Falha ao enviar arquivo.');
-      resumeUrl = dados.url;
-      if (statusEl) statusEl.textContent = 'Currículo enviado!';
-    }
-    let photoUrl = null;
-    const fotoInput = document.getElementById('pp-photo-file');
-    if (fotoInput && fotoInput.files && fotoInput.files[0]) {
-      const statusEl = document.getElementById('pp-photo-status');
-      const formData = new FormData();
-      formData.append('file', fotoInput.files[0]);
-      if (statusEl) statusEl.textContent = 'Enviando foto...';
-      const resposta = await fetch('/api/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: formData });
-      const dados = await resposta.json();
-      if (!resposta.ok) throw new Error(dados.error || 'Falha ao enviar a foto.');
-      photoUrl = dados.url;
-      if (statusEl) statusEl.textContent = 'Foto enviada!';
-    }
-
-    const primeiroEmprego = document.getElementById('pp-primeiro-emprego').checked;
-    const experiencias = primeiroEmprego ? [] : Array.from(document.querySelectorAll('#pp-experiencias .linha-experiencia'))
-      .map(linha => ({
-        role: linha.querySelector('.exp-cargo').value.trim(),
-        company: linha.querySelector('.exp-empresa').value.trim(),
-        period: linha.querySelector('.exp-periodo').value.trim()
-      }))
-      .filter(e => e.role || e.company || e.period);
-
-    const idiomas = Array.from(document.querySelectorAll('.pp-idioma:checked')).map(el => el.value);
-    const idiomaOutro = document.getElementById('pp-idioma-outro').value.trim();
-    if (idiomaOutro) idiomas.push(idiomaOutro);
-
-    const estados = Array.from(document.getElementById('pp-estados').selectedOptions).map(o => o.value);
-
-    const corpo = {
-      phone: document.getElementById('pp-phone').value,
-      desired_role: document.getElementById('pp-desired-role').value,
-      city: document.getElementById('pp-city').value,
-      linkedin_url: document.getElementById('pp-linkedin').value,
-      bio: document.getElementById('pp-bio').value,
-      skills: document.getElementById('pp-skills').value,
-      gender: document.getElementById('pp-gender').value,
-      education_level: document.getElementById('pp-education').value,
-      languages: idiomas.join(', '),
-      first_job: primeiroEmprego,
-      experiences_json: JSON.stringify(experiencias),
-      desired_states: estados.join(', '),
-      desired_cities: document.getElementById('pp-cidades').value
-    };
-    if (resumeUrl) corpo.resume_url = resumeUrl;
-    if (photoUrl) corpo.photo_url = photoUrl;
-    const atual = await api('/api/portal/me');
-    if (!resumeUrl) corpo.resume_url = atual.resume_url || '';
-    if (!photoUrl) corpo.photo_url = atual.photo_url || '';
-
+    const corpo = cvColetar();
+    const foto = await cvEnviarArquivo('pp-photo-file', 'pp-photo-status', 'foto');
+    const arq = await cvEnviarArquivo('pp-resume-file', 'pp-upload-status', 'currículo');
+    corpo.photo_url = foto || CV.perfil.photo_url || '';
+    corpo.resume_url = arq || CV.perfil.resume_url || '';
     await api('/api/portal/me', { method: 'PUT', body: JSON.stringify(corpo) });
-    mostrarToast('Currículo atualizado!');
+    mostrarToast('Currículo salvo! ✅');
     renderPortalPerfil();
   } catch (e) { mostrarToast(e.message, true); }
+}
+function cvPreVisualizar() {
+  const b = cvColetar();
+  const img = document.getElementById('pp-foto-preview');
+  abrirCurriculoPadrao({ ...CV.perfil, ...b, email: CV.perfil.email, photo_url: img && img.src && img.style.display !== 'none' ? img.src : '' }, { titulo: 'Assim as empresas veem o seu currículo' });
+}
+
+// ---------- Currículo no formato padrão (visto pelas empresas e pelo Master) ----------
+const CV_CSS_DOC = `
+  .cvd { font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#1e293b; background:#fff; max-width:820px; margin:0 auto; line-height:1.45; font-size:13.5px; }
+  .cvd-cab { display:flex; gap:20px; align-items:center; background:linear-gradient(135deg,#0e2a47,#163d66); color:#fff; padding:26px 30px; border-radius:14px 14px 0 0; }
+  .cvd-cab img, .cvd-cab .cvd-ini { width:96px; height:96px; border-radius:50%; object-fit:cover; border:3px solid rgba(255,255,255,.85); flex-shrink:0; background:#1e4a7a; display:flex; align-items:center; justify-content:center; font-size:36px; font-weight:800; }
+  .cvd-nome { font-size:26px; font-weight:800; margin:0; letter-spacing:.2px; color:#fff; }
+  .cvd-cargo { font-size:15px; color:#86efac; font-weight:700; margin-top:2px; }
+  .cvd-contato { display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:10px; font-size:12.5px; color:#dbeafe; }
+  .cvd-contato a { color:#dbeafe; text-decoration:none; }
+  .cvd-corpo { display:grid; grid-template-columns:1fr 250px; gap:0; border:1px solid #e2e8f0; border-top:0; border-radius:0 0 14px 14px; }
+  .cvd-princ { padding:22px 26px; } .cvd-lat { background:#f8fafc; padding:22px 20px; border-left:1px solid #e2e8f0; border-radius:0 0 14px 0; }
+  .cvd h2 { font-size:12.5px; text-transform:uppercase; letter-spacing:1.2px; color:#12a150; margin:0 0 10px; padding-bottom:5px; border-bottom:2px solid #dcfce7; }
+  .cvd-bloco { margin-bottom:20px; }
+  .cvd-exp { position:relative; padding-left:18px; margin-bottom:14px; border-left:2px solid #e2e8f0; }
+  .cvd-exp::before { content:''; position:absolute; left:-6px; top:4px; width:10px; height:10px; border-radius:50%; background:#12a150; }
+  .cvd-exp h4 { margin:0; font-size:14.5px; color:#0f172a; } .cvd-exp .cvd-emp { font-weight:700; color:#334155; }
+  .cvd-per { font-size:12px; color:#64748b; margin:1px 0 5px; }
+  .cvd-exp ul { margin:4px 0 0; padding-left:18px; } .cvd-exp li { margin-bottom:2px; }
+  .cvd-item { margin-bottom:9px; } .cvd-item strong { color:#0f172a; } .cvd-item div { font-size:12px; color:#64748b; }
+  .cvd-tags { display:flex; flex-wrap:wrap; gap:5px; } .cvd-tags span { background:#e0f2fe; color:#075985; border-radius:6px; padding:3px 8px; font-size:12px; }
+  .cvd-dado { font-size:12.5px; margin-bottom:7px; } .cvd-dado b { display:block; font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700; }
+  .cvd-niv { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px; } .cvd-niv span:last-child { color:#64748b; }
+  .cvd-barra { height:5px; background:#e2e8f0; border-radius:999px; margin-bottom:8px; overflow:hidden; } .cvd-barra div { height:100%; background:#12a150; }
+  .cvd-topo button, .cvd-topo a { width:auto !important; margin:0 !important; white-space:nowrap; }
+  .cvd-rod { text-align:center; font-size:11px; color:#94a3b8; margin-top:10px; }
+  @media (max-width:700px) { .cvd-corpo { grid-template-columns:1fr; } .cvd-lat { border-left:0; border-top:1px solid #e2e8f0; border-radius:0 0 14px 14px; } .cvd-cab { flex-direction:column; text-align:center; padding:22px 16px; } .cvd-contato { justify-content:center; } .cvd-princ { padding:18px 16px; } }
+  @media print { .cvd-cab { -webkit-print-color-adjust:exact; print-color-adjust:exact; } .cvd-lat, .cvd-tags span, .cvd-barra div, .cvd-exp::before { -webkit-print-color-adjust:exact; print-color-adjust:exact; } .cvd-exp { break-inside:avoid; } }
+`;
+function cvHtmlPadrao(c) {
+  const e = escapeHtml, exps = cvJson(c.experiences_json), forms = cvJson(c.education_json), cursos = cvJson(c.courses_json);
+  const idiomas = cvParseIdiomas(c.languages), habs = String(c.skills || '').split(',').map(x => x.trim()).filter(Boolean);
+  const idade = cvIdade(c.birth_date), fone = String(c.phone || '').replace(/\D/g, '');
+  const regioes = [...String(c.desired_states || '').split(',').map(x => x.trim()).filter(Boolean).map(uf => UF_NOMES[uf] || uf), ...String(c.desired_cities || '').split(',').map(x => x.trim()).filter(Boolean)];
+  const nivelPct = { 'Básico': 25, 'Intermediário': 50, 'Avançado': 75, 'Fluente': 92, 'Nativo': 100 };
+  const iniciais = String(c.name || '?').trim().split(/\s+/).map(x => x[0]).slice(0, 2).join('').toUpperCase();
+  const ordExp = exps.slice().sort((a, b) => (b.current ? '9' : b.end || b.start || '').localeCompare(a.current ? '9' : a.end || a.start || ''));
+  const totalMeses = exps.reduce((s, x) => { const d = cvDuracao(x.start, x.current ? '' : x.end); const a = (d.match(/(\d+) ano/) || [0, 0])[1], m = (d.match(/(\d+) m/) || [0, 0])[1]; return s + Number(a) * 12 + Number(m); }, 0);
+  const ta = Math.floor(totalMeses / 12), tm = totalMeses % 12;
+  const tempoTotal = totalMeses ? [ta ? ta + (ta > 1 ? ' anos' : ' ano') : '', tm ? tm + (tm > 1 ? ' meses' : ' mês') : ''].filter(Boolean).join(' e ') + ' no total' : '';
+  const dado = (rot, val) => val ? `<div class="cvd-dado"><b>${rot}</b>${val}</div>` : '';
+  return `<div class="cvd">
+    <div class="cvd-cab">
+      ${c.photo_url ? `<img src="${e(c.photo_url)}" alt="">` : `<div class="cvd-ini">${e(iniciais)}</div>`}
+      <div style="min-width:0;">
+        <h1 class="cvd-nome">${e(c.name || '')}</h1>
+        <div class="cvd-cargo">${e(c.desired_role || '')}</div>
+        <div class="cvd-contato">
+          ${c.city ? `<span>📍 ${e(c.city)}${c.neighborhood ? ' · ' + e(c.neighborhood) : ''}</span>` : ''}
+          ${c.phone ? `<span>📱 ${fone ? `<a href="https://wa.me/${fone.length <= 11 ? '55' + fone : fone}" target="_blank">${e(c.phone)}</a>` : e(c.phone)}</span>` : ''}
+          ${c.email ? `<span>✉️ <a href="mailto:${e(c.email)}">${e(c.email)}</a></span>` : ''}
+          ${idade ? `<span>🎂 ${idade} anos</span>` : ''}
+          ${c.linkedin_url ? `<span>🔗 <a href="${e(/^https?:/.test(c.linkedin_url) ? c.linkedin_url : 'https://' + c.linkedin_url)}" target="_blank">LinkedIn</a></span>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="cvd-corpo">
+      <div class="cvd-princ">
+        ${c.bio ? `<div class="cvd-bloco"><h2>Resumo profissional</h2><div style="white-space:pre-wrap;">${e(c.bio)}</div></div>` : ''}
+        <div class="cvd-bloco"><h2>Experiência profissional${tempoTotal ? ` <span style="color:#64748b;text-transform:none;letter-spacing:0;font-weight:600;">· ${tempoTotal}</span>` : ''}</h2>
+          ${ordExp.length ? ordExp.map(x => `<div class="cvd-exp">
+              <h4>${e(x.role || '')}</h4>
+              <div><span class="cvd-emp">${e(x.company || '')}</span>${x.city ? ` · ${e(x.city)}` : ''}</div>
+              <div class="cvd-per">${x.start ? `${cvMes(x.start)} – ${x.current ? 'atual' : cvMes(x.end)} · ${cvDuracao(x.start, x.current ? '' : x.end)}` : e(x.period || '')}</div>
+              ${x.activities ? `<ul>${String(x.activities).split('\n').map(l => l.replace(/^[-•*\s]+/, '').trim()).filter(Boolean).map(l => `<li>${e(l)}</li>`).join('')}</ul>` : ''}
+            </div>`).join('') : `<div style="color:#64748b;">${c.first_job ? 'Em busca do primeiro emprego.' : 'Não informada.'}</div>`}
+        </div>
+        <div class="cvd-bloco"><h2>Formação acadêmica</h2>
+          ${c.education_level ? `<div style="margin-bottom:8px;"><strong>Escolaridade:</strong> ${e(c.education_level)}</div>` : ''}
+          ${forms.map(f => `<div class="cvd-item"><strong>${e(f.course || f.level || '')}</strong>${f.course && f.level ? ` <span style="color:#64748b;">(${e(f.level)})</span>` : ''}<div>${e(f.institution || '')}${f.start || f.end || f.current ? ' · ' + [f.start ? cvMes(f.start) : '', f.current ? 'cursando' : cvMes(f.end)].filter(Boolean).join(' – ') : ''}</div></div>`).join('')}
+        </div>
+        ${cursos.length ? `<div class="cvd-bloco"><h2>Cursos e certificações</h2>${cursos.map(x => `<div class="cvd-item"><strong>${e(x.name)}</strong><div>${[x.institution, x.end ? cvMes(x.end) : '', x.hours ? x.hours + 'h' : ''].filter(Boolean).map(e).join(' · ')}</div></div>`).join('')}</div>` : ''}
+      </div>
+      <aside class="cvd-lat">
+        <div class="cvd-bloco"><h2>Objetivo</h2>
+          ${dado('Cargo desejado', e(c.desired_role || ''))}${dado('Modelo de trabalho', e(c.modalidade || ''))}${dado('Pretensão salarial', e(c.pretensao_salarial || ''))}${dado('Disponibilidade', e(c.disponibilidade_inicio || ''))}
+          ${regioes.length ? dado('Onde deseja trabalhar', e(regioes.join(', '))) : ''}
+        </div>
+        ${habs.length ? `<div class="cvd-bloco"><h2>Habilidades</h2><div class="cvd-tags">${habs.map(h => `<span>${e(h)}</span>`).join('')}</div></div>` : ''}
+        ${idiomas.length ? `<div class="cvd-bloco"><h2>Idiomas</h2>${idiomas.map(i => `<div class="cvd-niv"><span>${e(i.nome)}</span><span>${e(i.nivel || '')}</span></div><div class="cvd-barra"><div style="width:${nivelPct[i.nivel] || 25}%;"></div></div>`).join('')}</div>` : ''}
+        <div class="cvd-bloco"><h2>Informações adicionais</h2>
+          ${dado('CNH', e(c.cnh || 'Não informada'))}
+          ${dado('Viagens', c.disp_viagem ? 'Disponível' : 'Não disponível')}
+          ${dado('Mudança de cidade', c.disp_mudanca ? 'Disponível' : 'Não disponível')}
+          ${c.pcd ? dado('PcD', e(c.pcd)) : ''}
+        </div>
+      </aside>
+    </div>
+    <div class="cvd-rod">Currículo gerado pelo Portal de Vagas Impulsionar V4</div>
+  </div>`;
+}
+function abrirCurriculoPadrao(c, opcoes = {}) {
+  let area = document.getElementById('modal-area');
+  if (!area) { area = document.createElement('div'); area.id = 'modal-area'; document.getElementById('conteudo').appendChild(area); }
+  window._cvAtual = c;
+  const fone = String(c.phone || '').replace(/\D/g, '');
+  area.innerHTML = `<style>${CV_CSS_DOC}</style>
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa" style="max-width:900px;width:96vw;padding:0;background:#f1f5f9;max-height:92vh;overflow:auto;">
+        <div class="cvd-topo" style="position:sticky;top:0;z-index:2;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;background:#fff;border-bottom:1px solid #e2e8f0;padding:10px 14px;">
+          <strong style="font-size:14px;">${escapeHtml(opcoes.titulo || 'Currículo')}</strong>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${opcoes.acoesTopo || ''}
+            ${fone && !opcoes.semContato ? `<a class="btn-secundario btn-sm" style="text-decoration:none;color:#16a34a;" target="_blank" href="https://wa.me/${fone.length <= 11 ? '55' + fone : fone}">💬 WhatsApp</a>` : ''}
+            ${c.resume_url ? `<a class="btn-secundario btn-sm" style="text-decoration:none;" target="_blank" href="${escapeHtml(c.resume_url)}">📎 Arquivo anexado</a>` : ''}
+            <button class="btn-primario btn-sm" onclick="imprimirCurriculoPadrao()">🖨️ Imprimir / PDF</button>
+            <button class="btn-secundario btn-sm" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button>
+          </div>
+        </div>
+        <div style="padding:16px;">${cvHtmlPadrao(c)}</div>
+        ${opcoes.rodape || ''}
+      </div>
+    </div>`;
+  const cx = area.querySelector('.modal-caixa'); if (cx) cx.scrollTop = 0;
+}
+function imprimirCurriculoPadrao() {
+  const c = window._cvAtual; if (!c) return;
+  const w = window.open('', '_blank'); if (!w) return mostrarToast('Permita pop-ups para imprimir.', true);
+  w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Currículo — ${escapeHtml(c.name || '')}</title><style>body{margin:0;padding:18px;background:#fff;} @page{size:A4;margin:12mm;} ${CV_CSS_DOC}</style></head><body>${cvHtmlPadrao(c)}<script>window.onload=function(){setTimeout(function(){window.print();},350);};<\/script></body></html>`);
+  w.document.close();
+}
+async function verCurriculoCandidatoMaster(userId) {
+  try { const c = await api('/api/admin/candidates/' + userId); abrirCurriculoPadrao(c); }
+  catch (e) { mostrarToast(e.message, true); }
 }
 
 // ---------- Master: acessos dos candidatos ----------
@@ -14031,7 +14556,7 @@ function desenharAcessosCandidatos() {
     <div id="modal-area"></div>
     <div style="overflow-x:auto;">
     <table>
-      <thead><tr><th>Candidato</th><th>WhatsApp</th><th>Cidade</th><th>Cargo desejado</th><th>Origem</th><th>Cadastro</th><th>Último acesso</th><th>Currículo</th><th>Status</th><th style="width:150px;">Ações</th></tr></thead>
+      <thead><tr><th>Candidato</th><th>WhatsApp</th><th>Cidade</th><th>Cargo desejado</th><th>Origem</th><th>Cadastro</th><th>Último acesso</th><th>Currículo</th><th>Status</th><th style="width:190px;">Ações</th></tr></thead>
       <tbody>
         ${lista.map(c => `<tr>
           <td><div style="display:flex;gap:8px;align-items:center;">${c.photo_url ? `<img src="${escapeHtml(c.photo_url)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : `<div style="width:32px;height:32px;border-radius:50%;background:#e0e7ff;color:#3730a3;display:flex;align-items:center;justify-content:center;font-weight:800;">${escapeHtml((c.name || '?').trim()[0].toUpperCase())}</div>`}<div><strong>${escapeHtml(c.name)}</strong><div style="font-size:12px;color:#64748b;">${escapeHtml(c.email)}</div></div></div></td>
@@ -14044,6 +14569,7 @@ function desenharAcessosCandidatos() {
           <td style="min-width:90px;"><div style="background:#e2e8f0;border-radius:999px;height:7px;overflow:hidden;"><div style="width:${c.completo}%;height:100%;background:${c.completo >= 75 ? '#16a34a' : c.completo >= 40 ? '#f59e0b' : '#ef4444'};"></div></div><div style="font-size:11.5px;color:#64748b;">${c.completo}% · ${c.candidaturas} candidatura(s)</div></td>
           <td>${acBadge(AC_STATUS, c.status || 'pending', AC_STATUS.pending)}</td>
           <td style="white-space:nowrap;">
+            <button class="btn-secundario btn-sm" title="Ver currículo" onclick="verCurriculoCandidatoMaster(${c.id})">📄</button>
             <button class="btn-secundario btn-sm" title="Editar" onclick="formAcessoCandidato(${c.id})">✏️</button>
             <button class="btn-secundario btn-sm" title="Gerar nova senha" onclick="novaSenhaCandidato(${c.id})">🔑</button>
             <button class="btn-perigo btn-sm" title="Excluir acesso" onclick="excluirAcessoCandidato(${c.id})">🗑️</button>
@@ -14396,25 +14922,56 @@ async function renderPortalCandidaturas() {
   cont.innerHTML = '<h1>Minhas Candidaturas</h1><p>Carregando...</p>';
   try {
     const lista = await api('/api/portal/my-applications');
+    window._minhasCand = lista;
+    const etapas = ['recebida', 'em_analise', 'entrevista', 'resultado'];
+    const etapaIdx = st => st === 'recebida' ? 0 : st === 'em_analise' ? 1 : st === 'entrevista' ? 2 : 3;
     cont.innerHTML = `
+      <style>
+        .mc-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:0 2px 10px rgba(15,23,42,.05); }
+        .mc-passos { display:flex; gap:4px; margin:12px 0; } .mc-passos div { flex:1; text-align:center; font-size:11.5px; color:#94a3b8; }
+        .mc-passos div i { display:block; height:6px; border-radius:999px; background:#e2e8f0; margin-bottom:4px; } .mc-passos div.ok { color:#0f172a; font-weight:700; } .mc-passos div.ok i { background:#12a150; }
+        .mc-passos div.nao i { background:#ef4444; }
+        .mc-card textarea { margin:0; }
+        .mc-card button { width:auto; }
+      </style>
       <h1>Minhas Candidaturas</h1>
-      <table>
-        <thead><tr><th>Vaga</th><th>Empresa</th><th>Local</th><th>Data</th></tr></thead>
-        <tbody>
-          ${lista.map(c => `
-            <tr>
-              <td>${escapeHtml(c.title)}</td>
-              <td>${escapeHtml(c.companyName)}</td>
-              <td>${escapeHtml(c.location || '')}${c.is_remote ? ' (Remoto)' : ''}</td>
-              <td>${new Date(c.applied_at).toLocaleDateString('pt-BR')}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      ${lista.length === 0 ? '<div class="msg-vazio">Você ainda não se candidatou a nenhuma vaga.</div>' : ''}
+      <p style="color:#64748b;margin-top:-8px;">Acompanhe cada vaga: quando a empresa abre seu currículo, marca entrevista ou envia mensagens, aparece aqui.</p>
+      ${lista.map((c, i) => {
+        const idx = etapaIdx(c.status), fim = c.status === 'recusada' ? 'Não selecionado' : c.status === 'aprovado' ? 'Aprovado 🎉' : 'Resultado';
+        return `<div class="mc-card">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            ${c.companyLogo ? `<img src="${escapeHtml(c.companyLogo)}" style="width:46px;height:46px;border-radius:10px;object-fit:contain;background:#f8fafc;">` : '<div style="width:46px;height:46px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:22px;">🏢</div>'}
+            <div style="flex:1;min-width:180px;"><strong style="font-size:16px;color:#0e2a47;">${escapeHtml(c.title)}</strong> ${c.naoLidas ? `<span style="background:#dc2626;color:#fff;border-radius:999px;font-size:11px;padding:1px 7px;">${c.naoLidas} nova(s)</span>` : ''}
+              <div style="font-size:12.5px;color:#64748b;">${escapeHtml(c.companyName)} · ${c.is_remote ? 'Remoto' : escapeHtml(c.location || '')} · enviada em ${candData(c.applied_at)}</div></div>
+            ${candBadge(c.status)}
+          </div>
+          <div class="mc-passos">${['Enviada', 'Em análise', 'Entrevista', fim].map((t, k) => `<div class="${k <= idx && !(k === 2 && idx === 3 && !c.entrevista_em) ? 'ok' : ''} ${k === 3 && c.status === 'recusada' ? 'nao ok' : ''}"><i></i>${t}</div>`).join('')}</div>
+          ${c.status === 'entrevista' ? `<div style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:1px solid #ddd6fe;border-radius:12px;padding:12px 14px;">
+              <div style="font-size:15px;font-weight:800;color:#4c1d95;">📅 Entrevista: ${candEntrevistaTxt(c.entrevista_em)}</div>
+              <div style="font-size:13.5px;color:#334155;margin-top:2px;">📍 ${/^https?:\/\//.test(c.entrevista_local || '') ? `<a href="${escapeHtml(c.entrevista_local)}" target="_blank">${escapeHtml(c.entrevista_local)}</a>` : escapeHtml(c.entrevista_local || '')}</div>
+              <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                ${c.entrevista_resposta === 'confirmado' ? '<span style="color:#166534;font-weight:700;">✅ Você confirmou presença</span>' : `<button class="btn-primario btn-sm" style="background:#16a34a;border:0;" onclick="mcResponder(${i}, 'confirmado')">✅ Confirmar presença</button>`}
+                ${c.entrevista_resposta === 'remarcar' ? '<span style="color:#b45309;font-weight:700;">🔁 Você pediu para remarcar</span>' : `<button class="btn-secundario btn-sm" onclick="mcResponder(${i}, 'remarcar')">🔁 Preciso remarcar</button>`}
+              </div></div>` : ''}
+          ${c.eventos.length ? `<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;border-top:1px solid #f1f5f9;padding-top:12px;">${c.eventos.map(ev => cdBolha(ev, 'candidato')).join('')}</div>` : '<div style="font-size:12.5px;color:#94a3b8;margin-top:6px;">Ainda sem retorno da empresa. Você será avisado aqui e no sininho.</div>'}
+          ${c.eventos.some(ev => ev.autor === 'empresa') ? `<div style="display:flex;gap:8px;margin-top:10px;"><textarea id="mc-msg-${i}" rows="1" placeholder="Responder para a empresa…" style="flex:1;"></textarea><button class="btn-primario btn-sm" onclick="mcResponder(${i})">Enviar</button></div>` : ''}
+        </div>`;
+      }).join('')}
+      ${lista.length === 0 ? `<div class="msg-vazio">Você ainda não se candidatou a nenhuma vaga. <a href="#" onclick="irPara('portalVagas');return false;">Ver vagas →</a></div>` : ''}
     `;
+    if (lista.some(c => c.naoLidas)) api('/api/portal/my-applications/lidas', { method: 'POST' }).catch(() => {});
   } catch (e) {
     cont.innerHTML = `<h1>Minhas Candidaturas</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
   }
+}
+async function mcResponder(i, entrevista) {
+  const c = window._minhasCand[i]; if (!c) return;
+  const inp = document.getElementById('mc-msg-' + i);
+  let mensagem = inp ? inp.value.trim() : '';
+  if (entrevista === 'remarcar') { const m = prompt('Conte para a empresa qual o melhor dia/horário para você:'); if (m === null) return; mensagem = m.trim(); }
+  if (!entrevista && !mensagem) return mostrarToast('Escreva a mensagem.', true);
+  try { const r = await api('/api/portal/applications/' + c.id + '/responder', { method: 'POST', body: JSON.stringify({ mensagem, entrevista }) }); mostrarToast(r.message); renderPortalCandidaturas(); }
+  catch (e) { mostrarToast(e.message, true); }
 }
 
 /* ==========================================================

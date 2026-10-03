@@ -1046,7 +1046,9 @@ function inicializarBase() {
         )`);
         // Colunas do perfil completo de currículo (auto-upgrade de bases já existentes).
         ['photo_url TEXT', 'gender TEXT', 'education_level TEXT', 'languages TEXT', 'first_job INTEGER DEFAULT 0',
-         'experiences_json TEXT', 'desired_states TEXT', 'desired_cities TEXT', 'cep TEXT', 'neighborhood TEXT', 'state TEXT', 'lgpd_at TEXT', 'origem TEXT'].forEach(coluna => {
+         'experiences_json TEXT', 'desired_states TEXT', 'desired_cities TEXT', 'cep TEXT', 'neighborhood TEXT', 'state TEXT', 'lgpd_at TEXT', 'origem TEXT',
+         'birth_date TEXT', 'cnh TEXT', 'pretensao_salarial TEXT', 'modalidade TEXT', 'disp_viagem INTEGER DEFAULT 0', 'disp_mudanca INTEGER DEFAULT 0', 'pcd TEXT',
+         'education_json TEXT', 'courses_json TEXT', 'disponibilidade_inicio TEXT', 'curriculo_completo_em TEXT'].forEach(coluna => {
             db.run(`ALTER TABLE candidate_profiles ADD COLUMN ${coluna}`, () => {});
         });
 
@@ -1159,6 +1161,13 @@ function inicializarBase() {
             FOREIGN KEY(job_posting_id) REFERENCES job_postings(id),
             FOREIGN KEY(candidate_user_id) REFERENCES users(id)
         )`);
+
+        ['status TEXT DEFAULT \'recebida\'', 'status_em TEXT', 'entrevista_em TEXT', 'entrevista_local TEXT', 'entrevista_resposta TEXT', 'visto_empresa_em TEXT'].forEach(c => db.run(`ALTER TABLE job_applications ADD COLUMN ${c}`, () => {}));
+        // Linha do tempo de cada candidatura: entrevista, recusa, mensagens da
+        // empresa e respostas do candidato — tudo aparece para os dois lados.
+        db.run(`CREATE TABLE IF NOT EXISTS application_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, application_id INTEGER NOT NULL, autor TEXT NOT NULL, tipo TEXT NOT NULL,
+            texto TEXT, user_id INTEGER, lido_candidato INTEGER DEFAULT 0, lido_empresa INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
 
         // Curtidas dos candidatos nas vagas do portal — só um "like" por
         // candidato por vaga (o UNIQUE garante isso), pra medir engajamento.
@@ -2576,13 +2585,13 @@ app.get('/api/admin/candidate-accesses', requireRole('admin'), async (req, res) 
     try {
         const lista = await dbAll(`SELECT u.id, u.name, u.email, u.ultimo_login, COALESCE(u.qtd_logins, 0) as qtd_logins,
                 COALESCE(u.criado_em, cp.created_at) as criado_em, cp.phone, cp.city, cp.desired_role, cp.status, cp.origem, cp.resume_url, cp.photo_url,
-                cp.experiences_json, cp.skills, cp.bio,
+                cp.experiences_json, cp.skills, cp.bio, cp.birth_date, cp.modalidade, cp.education_json, cp.education_level, cp.first_job, cp.curriculo_completo_em,
                 (SELECT COUNT(*) FROM job_applications ja WHERE ja.candidate_user_id = u.id) as candidaturas
             FROM users u LEFT JOIN candidate_profiles cp ON cp.user_id = u.id WHERE u.role = 'candidate' ORDER BY COALESCE(u.criado_em, cp.created_at) DESC, u.id DESC`);
         res.json(lista.map(c => {
-            const itens = [c.phone, c.city, c.desired_role, c.photo_url, c.bio, c.skills, c.resume_url, c.experiences_json && c.experiences_json !== '[]' ? 1 : ''];
+            const itens = [c.phone, c.city, c.desired_role, c.photo_url, String(c.bio || '').length >= 60 ? 1 : '', String(c.skills || '').split(',').filter(x => x.trim()).length >= 3 ? 1 : '', c.birth_date, c.modalidade, c.education_level, c.education_json && c.education_json !== '[]' ? 1 : '', c.first_job || (c.experiences_json && c.experiences_json !== '[]') ? 1 : ''];
             const completo = Math.round(100 * itens.filter(Boolean).length / itens.length);
-            const { experiences_json, skills, bio, ...resto } = c;
+            const { experiences_json, skills, bio, birth_date, modalidade, education_json, education_level, first_job, ...resto } = c;
             return { ...resto, completo };
         }));
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar acessos.' }); }
@@ -2810,28 +2819,56 @@ app.get('/api/portal/me', requireRole('candidate'), async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar seu perfil.' }); }
 });
 
-app.put('/api/portal/me', requireRole('candidate'), (req, res) => {
-    const {
-        phone, desired_role, city, bio, skills, linkedin_url, resume_url,
-        photo_url, gender, education_level, languages, first_job, experiences_json,
-        desired_states, desired_cities
-    } = req.body;
-    db.run(
-        `UPDATE candidate_profiles SET phone = ?, desired_role = ?, city = ?, bio = ?, skills = ?, linkedin_url = ?, resume_url = ?,
-            photo_url = ?, gender = ?, education_level = ?, languages = ?, first_job = ?, experiences_json = ?,
-            desired_states = ?, desired_cities = ?
-         WHERE user_id = ?`,
-        [
-            phone || '', desired_role || '', city || '', bio || '', skills || '', linkedin_url || '', resume_url || '',
-            photo_url || '', gender || '', education_level || '', languages || '', first_job ? 1 : 0,
-            experiences_json || '[]', desired_states || '', desired_cities || '',
-            req.user.userId
-        ],
-        (err) => {
-            if (err) return res.status(400).json({ error: err.message });
-            res.json({ message: 'Currículo atualizado!' });
-        }
-    );
+// Campos obrigatórios do currículo padrão — a mesma regra vale na tela (que
+// destaca o que falta) e aqui no servidor (para ninguém salvar incompleto).
+function jsonListaCurriculo(v) { try { const l = JSON.parse(v || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return []; } }
+function pendenciasCurriculo(b) {
+    const falta = [];
+    const txt = k => String(b[k] || '').trim();
+    if (!txt('name')) falta.push('Nome completo');
+    if (txt('phone').replace(/\D/g, '').length < 10) falta.push('Telefone/WhatsApp com DDD');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(txt('birth_date'))) falta.push('Data de nascimento');
+    if (!txt('city')) falta.push('Cidade atual');
+    if (!txt('desired_role')) falta.push('Cargo desejado');
+    if (!txt('modalidade')) falta.push('Modelo de trabalho');
+    if (txt('bio').length < 60) falta.push('Resumo profissional (mín. 60 caracteres)');
+    if (!txt('education_level')) falta.push('Escolaridade');
+    const formacoes = jsonListaCurriculo(b.education_json).filter(f => f && (f.institution || f.course));
+    if (!formacoes.length) falta.push('Formação (ao menos uma)');
+    else if (formacoes.some(f => !f.institution || !f.level || (!f.end && !f.current))) falta.push('Formação: nível, instituição e conclusão');
+    if (!b.first_job) {
+        const exps = jsonListaCurriculo(b.experiences_json).filter(e => e && (e.role || e.company));
+        if (!exps.length) falta.push('Experiência profissional (ou marque primeiro emprego)');
+        else if (exps.some(e => !e.role || !e.company || !e.start || (!e.end && !e.current) || !String(e.activities || '').trim())) falta.push('Experiências: cargo, empresa, início, fim e atividades');
+        else if (exps.some(e => e.end && e.start && e.end < e.start)) falta.push('Experiências: data de fim antes do início');
+    }
+    if (String(b.skills || '').split(',').map(x => x.trim()).filter(Boolean).length < 3) falta.push('Habilidades (mín. 3)');
+    if (!txt('desired_cities') && !txt('desired_states')) falta.push('Onde deseja trabalhar (ao menos uma cidade ou estado)');
+    if (!txt('photo_url')) falta.push('Foto de perfil');
+    return falta;
+}
+app.put('/api/portal/me', requireRole('candidate'), async (req, res) => {
+    const b = req.body || {};
+    const falta = pendenciasCurriculo(b);
+    if (falta.length) return res.status(400).json({ error: 'Complete os campos obrigatórios: ' + falta.join(', ') + '.', falta });
+    const t = (k, n = 2000) => String(b[k] == null ? '' : b[k]).trim().slice(0, n);
+    try {
+        await new Promise((ok, erro) => db.run(`UPDATE users SET name = ? WHERE id = ?`, [t('name', 120), req.user.userId], e => e ? erro(e) : ok()));
+        await new Promise((ok, erro) => db.run(
+            `UPDATE candidate_profiles SET phone = ?, desired_role = ?, city = ?, state = ?, bio = ?, skills = ?, linkedin_url = ?, resume_url = ?,
+                photo_url = ?, gender = ?, education_level = ?, languages = ?, first_job = ?, experiences_json = ?,
+                desired_states = ?, desired_cities = ?, birth_date = ?, cnh = ?, pretensao_salarial = ?, modalidade = ?, disp_viagem = ?, disp_mudanca = ?,
+                pcd = ?, education_json = ?, courses_json = ?, disponibilidade_inicio = ?, cep = ?, neighborhood = ?,
+                curriculo_completo_em = COALESCE(curriculo_completo_em, CURRENT_TIMESTAMP)
+             WHERE user_id = ?`,
+            [t('phone', 30), t('desired_role', 120), t('city', 120), t('city').includes('/') ? t('city').split('/').pop().trim().toUpperCase().slice(0, 2) : '', t('bio', 3000), t('skills', 1500), t('linkedin_url', 300), t('resume_url', 500),
+                t('photo_url', 500), t('gender', 40), t('education_level', 80), t('languages', 600), b.first_job ? 1 : 0, JSON.stringify(jsonListaCurriculo(b.experiences_json)).slice(0, 30000),
+                t('desired_states', 300), t('desired_cities', 1500), t('birth_date', 10), t('cnh', 10), t('pretensao_salarial', 60), t('modalidade', 40), b.disp_viagem ? 1 : 0, b.disp_mudanca ? 1 : 0,
+                t('pcd', 200), JSON.stringify(jsonListaCurriculo(b.education_json)).slice(0, 15000), JSON.stringify(jsonListaCurriculo(b.courses_json)).slice(0, 15000), t('disponibilidade_inicio', 40),
+                t('cep', 9).replace(/\D/g, ''), t('neighborhood', 120), req.user.userId],
+            e => e ? erro(e) : ok()));
+        res.json({ message: 'Currículo atualizado!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar o currículo.' }); }
 });
 
 // Lista as vagas ativas e ainda dentro do prazo pago — visível para o próprio candidato.
@@ -2839,7 +2876,7 @@ app.get('/api/portal/vagas', requireRole('candidate'), async (req, res) => {
     try {
         const perfil = await dbGet(`SELECT desired_states, desired_cities FROM candidate_profiles WHERE user_id = ?`, [req.user.userId]);
         const estadosDesejados = (perfil?.desired_states || '').split(',').map(s => s.trim()).filter(Boolean);
-        const cidadesDesejadas = (perfil?.desired_cities || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        const cidadesDesejadas = (perfil?.desired_cities || '').split(',').map(s => s.split('/')[0].trim().toLowerCase()).filter(Boolean);
         const filtrarPorRegiao = req.query.somenteMinhaRegiao === '1' && (estadosDesejados.length > 0 || cidadesDesejadas.length > 0);
 
         const vagas = await dbAll(
@@ -2868,6 +2905,7 @@ app.post('/api/portal/vagas/:id/apply', requireRole('candidate'), async (req, re
         if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada ou não está mais disponível.' });
         db.run(`INSERT INTO job_applications (job_posting_id, candidate_user_id) VALUES (?, ?)`, [req.params.id, req.user.userId], (err) => {
             if (err) return res.status(400).json({ error: 'Você já se candidatou a esta vaga.' });
+            notificarPorCompanyAdmins(vaga.company_id, 'Nova candidatura 📄', `Novo currículo para "${vaga.title}". Abra em Vagas Ofertadas → Ver currículos.`, 'jobPostings');
             res.json({ message: 'Candidatura enviada!' });
         });
     } catch (e) { res.status(500).json({ error: 'Erro ao se candidatar.' }); }
@@ -2909,13 +2947,120 @@ app.get('/api/public/vagas/:id', async (req, res) => {
 app.get('/api/portal/my-applications', requireRole('candidate'), async (req, res) => {
     try {
         const lista = await dbAll(
-            `SELECT ja.applied_at, jp.title, jp.location, jp.is_remote, c.name as companyName
+            `SELECT ja.id, ja.applied_at, COALESCE(ja.status, 'recebida') as status, ja.status_em, ja.entrevista_em, ja.entrevista_local, ja.entrevista_resposta, ja.visto_empresa_em,
+                    jp.id as vagaId, jp.title, jp.location, jp.state, jp.is_remote, c.name as companyName, c.logo_url as companyLogo
              FROM job_applications ja JOIN job_postings jp ON jp.id = ja.job_posting_id JOIN companies c ON c.id = jp.company_id
              WHERE ja.candidate_user_id = ? ORDER BY ja.applied_at DESC`,
             [req.user.userId]
         );
-        res.json(lista);
+        const ids = lista.map(l => l.id);
+        const eventos = ids.length ? await dbAll(`SELECT id, application_id, autor, tipo, texto, created_at, lido_candidato FROM application_events WHERE application_id IN (${ids.map(() => '?').join(',')}) ORDER BY created_at ASC, id ASC`, ids) : [];
+        res.json(lista.map(l => ({ ...l, eventos: eventos.filter(e => e.application_id === l.id), naoLidas: eventos.filter(e => e.application_id === l.id && e.autor === 'empresa' && !e.lido_candidato).length })));
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar candidaturas.' }); }
+});
+app.post('/api/portal/my-applications/lidas', requireRole('candidate'), (req, res) => {
+    db.run(`UPDATE application_events SET lido_candidato = 1 WHERE autor = 'empresa' AND application_id IN (SELECT id FROM job_applications WHERE candidate_user_id = ?)`, [req.user.userId], () => res.json({ ok: true }));
+});
+
+// ---------- Gestão das candidaturas (empresa dona da vaga ou Master) ----------
+async function candidaturaComAcesso(req, appId) {
+    const a = await dbGet(`SELECT ja.*, jp.company_id, jp.title as vagaTitulo, u.name as candNome, u.email as candEmail, c.name as empresaNome
+        FROM job_applications ja JOIN job_postings jp ON jp.id = ja.job_posting_id JOIN users u ON u.id = ja.candidate_user_id JOIN companies c ON c.id = jp.company_id WHERE ja.id = ?`, [appId]);
+    if (!a) return { erro: [404, 'Candidatura não encontrada.'] };
+    if (req.user.role === 'client_admin' && a.company_id !== req.user.companyId) return { erro: [403, 'Esta candidatura não é de uma vaga da sua empresa.'] };
+    if (req.user.role === 'candidate' && a.candidate_user_id !== req.user.userId) return { erro: [403, 'Candidatura de outra pessoa.'] };
+    return { a };
+}
+function registrarEventoCandidatura(appId, autor, tipo, texto, userId) {
+    return new Promise(ok => db.run(`INSERT INTO application_events (application_id, autor, tipo, texto, user_id, lido_candidato, lido_empresa) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [appId, autor, tipo, String(texto || '').slice(0, 3000), userId || null, autor === 'candidato' ? 1 : 0, autor === 'empresa' ? 1 : 0], () => ok()));
+}
+function avisarCandidatoPorEmail(a, assunto, html) {
+    try { transporter.sendMail({ from: process.env.SMTP_FROM || process.env.SMTP_USER || EMAIL_API.remetente, to: a.candEmail, subject: assunto, html }).catch(() => {}); } catch (e) {}
+}
+app.get('/api/applications/:id/eventos', requireRole('admin', 'client_admin', 'candidate'), async (req, res) => {
+    try {
+        const { a, erro } = await candidaturaComAcesso(req, req.params.id); if (erro) return res.status(erro[0]).json({ error: erro[1] });
+        const eventos = await dbAll(`SELECT id, autor, tipo, texto, created_at FROM application_events WHERE application_id = ? ORDER BY created_at ASC, id ASC`, [a.id]);
+        if (req.user.role === 'candidate') db.run(`UPDATE application_events SET lido_candidato = 1 WHERE application_id = ? AND autor = 'empresa'`, [a.id], () => {});
+        else db.run(`UPDATE application_events SET lido_empresa = 1 WHERE application_id = ? AND autor = 'candidato'`, [a.id], () => {});
+        res.json({ status: a.status || 'recebida', entrevista_em: a.entrevista_em, entrevista_local: a.entrevista_local, entrevista_resposta: a.entrevista_resposta, eventos });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar o histórico.' }); }
+});
+// A empresa abriu o currículo: marca "em análise" (uma vez só) e o candidato fica sabendo.
+app.post('/api/applications/:id/visto', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const { a, erro } = await candidaturaComAcesso(req, req.params.id); if (erro) return res.status(erro[0]).json({ error: erro[1] });
+        if (!a.visto_empresa_em) {
+            db.run(`UPDATE job_applications SET visto_empresa_em = CURRENT_TIMESTAMP, status = CASE WHEN COALESCE(status, 'recebida') = 'recebida' THEN 'em_analise' ELSE status END, status_em = CASE WHEN COALESCE(status, 'recebida') = 'recebida' THEN CURRENT_TIMESTAMP ELSE status_em END WHERE id = ?`, [a.id], () => {});
+            if ((a.status || 'recebida') === 'recebida') {
+                await registrarEventoCandidatura(a.id, 'sistema', 'status', `${a.empresaNome} está analisando o seu currículo.`, req.user.userId);
+                notificar(a.candidate_user_id, 'Seu currículo está em análise 👀', `${a.empresaNome} abriu o seu currículo para a vaga "${a.vagaTitulo}".`, 'portalCandidaturas');
+            }
+        }
+        res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: 'Erro.' }); }
+});
+app.post('/api/applications/:id/acao', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const { a, erro } = await candidaturaComAcesso(req, req.params.id); if (erro) return res.status(erro[0]).json({ error: erro[1] });
+        const b = req.body || {}, tipo = String(b.tipo || ''), msg = String(b.mensagem || '').trim();
+        const upd = (sql, params) => new Promise((ok, er) => db.run(sql, params, e => e ? er(e) : ok()));
+        if (tipo === 'entrevista') {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(b.data || '') || !/^\d{2}:\d{2}$/.test(b.hora || '')) return res.status(400).json({ error: 'Escolha a data e a hora da entrevista.' });
+            const quando = `${b.data}T${b.hora}`, local = String(b.local || '').trim().slice(0, 300);
+            if (!local) return res.status(400).json({ error: 'Informe o local ou o link da entrevista.' });
+            await upd(`UPDATE job_applications SET status = 'entrevista', status_em = CURRENT_TIMESTAMP, entrevista_em = ?, entrevista_local = ?, entrevista_resposta = NULL, visto_empresa_em = COALESCE(visto_empresa_em, CURRENT_TIMESTAMP) WHERE id = ?`, [quando, local, a.id]);
+            const dataBr = b.data.split('-').reverse().join('/');
+            await registrarEventoCandidatura(a.id, 'empresa', 'entrevista', `📅 Entrevista marcada para ${dataBr} às ${b.hora}\n📍 ${local}${msg ? '\n\n' + msg : ''}`, req.user.userId);
+            notificar(a.candidate_user_id, 'Entrevista marcada! 📅', `${a.empresaNome} marcou uma entrevista para "${a.vagaTitulo}" em ${dataBr} às ${b.hora}.`, 'portalCandidaturas');
+            avisarCandidatoPorEmail(a, `Entrevista marcada — ${a.vagaTitulo}`, `<p>Olá, ${String(a.candNome).split(' ')[0]}!</p><p><b>${a.empresaNome}</b> marcou uma entrevista com você para a vaga <b>${a.vagaTitulo}</b>.</p><p>📅 <b>${dataBr} às ${b.hora}</b><br>📍 ${local}</p>${msg ? `<p>${msg.replace(/</g, '&lt;').replace(/\n/g, '<br>')}</p>` : ''}<p>Confirme sua presença no Portal de Vagas Impulsionar, em "Minhas Candidaturas".</p>`);
+            return res.json({ message: 'Entrevista marcada! O candidato foi avisado.' });
+        }
+        if (tipo === 'recusa') {
+            const texto = msg || 'Agradecemos o seu interesse. Analisamos o seu currículo e, neste momento, seguiremos com outros candidatos para esta vaga. Deixaremos o seu currículo salvo para próximas oportunidades.';
+            await upd(`UPDATE job_applications SET status = 'recusada', status_em = CURRENT_TIMESTAMP, visto_empresa_em = COALESCE(visto_empresa_em, CURRENT_TIMESTAMP) WHERE id = ?`, [a.id]);
+            await registrarEventoCandidatura(a.id, 'empresa', 'recusa', texto, req.user.userId);
+            notificar(a.candidate_user_id, 'Atualização da sua candidatura', `${a.empresaNome} respondeu sobre a vaga "${a.vagaTitulo}".`, 'portalCandidaturas');
+            avisarCandidatoPorEmail(a, `Retorno da candidatura — ${a.vagaTitulo}`, `<p>Olá, ${String(a.candNome).split(' ')[0]}!</p><p>${texto.replace(/</g, '&lt;').replace(/\n/g, '<br>')}</p><p>— ${a.empresaNome}</p>`);
+            return res.json({ message: 'Candidatura recusada. O candidato recebeu a mensagem.' });
+        }
+        if (tipo === 'aprovado') {
+            await upd(`UPDATE job_applications SET status = 'aprovado', status_em = CURRENT_TIMESTAMP WHERE id = ?`, [a.id]);
+            await registrarEventoCandidatura(a.id, 'empresa', 'status', `🎉 Parabéns! Você foi aprovado(a) no processo seletivo.${msg ? '\n\n' + msg : ''}`, req.user.userId);
+            notificar(a.candidate_user_id, 'Você foi aprovado(a)! 🎉', `${a.empresaNome} aprovou você na vaga "${a.vagaTitulo}".`, 'portalCandidaturas');
+            return res.json({ message: 'Candidato marcado como aprovado e avisado.' });
+        }
+        if (tipo === 'reabrir') {
+            await upd(`UPDATE job_applications SET status = 'em_analise', status_em = CURRENT_TIMESTAMP WHERE id = ?`, [a.id]);
+            await registrarEventoCandidatura(a.id, 'sistema', 'status', 'Sua candidatura voltou para análise.', req.user.userId);
+            return res.json({ message: 'Candidatura voltou para análise.' });
+        }
+        if (tipo === 'mensagem') {
+            if (!msg) return res.status(400).json({ error: 'Escreva a mensagem.' });
+            await registrarEventoCandidatura(a.id, 'empresa', 'mensagem', msg, req.user.userId);
+            notificar(a.candidate_user_id, `Mensagem de ${a.empresaNome} 💬`, msg.slice(0, 140), 'portalCandidaturas');
+            return res.json({ message: 'Mensagem enviada ao candidato.' });
+        }
+        res.status(400).json({ error: 'Ação inválida.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao registrar a ação.' }); }
+});
+// Candidato responde: mensagem livre ou confirmação/remarcação da entrevista.
+app.post('/api/portal/applications/:id/responder', requireRole('candidate'), async (req, res) => {
+    try {
+        const { a, erro } = await candidaturaComAcesso(req, req.params.id); if (erro) return res.status(erro[0]).json({ error: erro[1] });
+        const b = req.body || {}, msg = String(b.mensagem || '').trim().slice(0, 2000);
+        let texto = msg;
+        if (b.entrevista === 'confirmado' || b.entrevista === 'remarcar') {
+            if (a.status !== 'entrevista') return res.status(400).json({ error: 'Não há entrevista marcada.' });
+            db.run(`UPDATE job_applications SET entrevista_resposta = ? WHERE id = ?`, [b.entrevista, a.id], () => {});
+            texto = (b.entrevista === 'confirmado' ? '✅ Presença confirmada na entrevista.' : '🔁 Preciso remarcar a entrevista.') + (msg ? '\n\n' + msg : '');
+        }
+        if (!texto) return res.status(400).json({ error: 'Escreva a mensagem.' });
+        await registrarEventoCandidatura(a.id, 'candidato', b.entrevista ? 'resposta' : 'mensagem', texto, req.user.userId);
+        notificarPorCompanyAdmins(a.company_id, `${a.candNome} respondeu 💬`, `Vaga "${a.vagaTitulo}": ${texto.slice(0, 120)}`, 'jobPostings');
+        res.json({ message: 'Enviado para a empresa!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao enviar.' }); }
 });
 
 // ---------- Aprovação de currículos pelo Master ----------
@@ -3085,7 +3230,7 @@ app.post('/api/portal/messages', requireRole('candidate'), (req, res) => {
 });
 
 // Empresas veem os candidatos aprovados (equivalente ao Banco de Currículos interno, mas para o público externo).
-app.get('/api/portal/candidates', requireRole('admin', 'client_admin'), async (req, res) => {
+app.get('/api/portal/candidates', requireRole('admin'), async (req, res) => {
     try {
         const { q, desiredRole } = req.query;
         let query = `SELECT u.name, u.email, cp.* FROM candidate_profiles cp JOIN users u ON u.id = cp.user_id WHERE cp.status = 'approved'`;
@@ -3526,7 +3671,8 @@ app.get('/api/job-postings/:id/applications', requireRole('admin', 'client_admin
         if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada.' });
         if (req.user.role === 'client_admin' && vaga.company_id !== req.user.companyId) return res.status(403).json({ error: 'Esta vaga não pertence à sua empresa.' });
         const lista = await dbAll(
-            `SELECT ja.id, u.name, u.email, cp.phone, cp.desired_role, cp.city, cp.bio, cp.resume_url, cp.linkedin_url, ja.applied_at
+            `SELECT cp.*, u.id as userId, u.name, u.email, ja.id, ja.applied_at, COALESCE(ja.status, 'recebida') as appStatus, ja.status_em, ja.entrevista_em, ja.entrevista_local, ja.entrevista_resposta, ja.visto_empresa_em,
+                    (SELECT COUNT(*) FROM application_events ev WHERE ev.application_id = ja.id AND ev.autor = 'candidato' AND ev.lido_empresa = 0) as naoLidas
              FROM job_applications ja JOIN users u ON u.id = ja.candidate_user_id LEFT JOIN candidate_profiles cp ON cp.user_id = u.id
              WHERE ja.job_posting_id = ? ORDER BY ja.applied_at DESC`,
             [req.params.id]
