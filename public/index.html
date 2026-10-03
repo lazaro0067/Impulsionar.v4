@@ -13704,6 +13704,7 @@ function mostrarFormularioVaga(id) {
       <div class="linha">
         <div style="flex:2"><label>Título da vaga (cargo) *</label><input id="vg-title" placeholder="Comece a digitar o cargo…" value="${v ? escapeHtml(v.title) : ''}"></div>
         <div><label>Senioridade</label>${sel('vg-seniority', ['Operacional', 'Estágio', 'Jovem aprendiz', 'Júnior', 'Pleno', 'Sênior', 'Liderança', 'Coordenação', 'Gerência', 'Diretoria'], v && v.seniority)}</div>
+        <div><label>Tipo de vaga *</label><select id="vg-categoria" onchange="this.dataset.manual='1'"><option value="">Selecione…</option>${TIPOS_VAGA.map(([n, ic]) => `<option value="${n}" ${v && v.categoria === n ? 'selected' : ''}>${ic} ${n}</option>`).join('')}</select></div>
         <div><label>Tipo de contrato</label>${sel('vg-contrato', ['CLT', 'PJ', 'Temporário', 'Estágio', 'Jovem aprendiz', 'Autônomo / Freelancer'], v && v.contract_type)}</div>
       </div>
       <div class="linha">
@@ -13792,7 +13793,13 @@ function vgEscolherPlano(id) {
 }
 function vgLinhas(id) { return (document.getElementById(id).value || '').split('\n').map(x => x.trim()).filter(Boolean); }
 function vgAddLinha(id, txt) { const el = document.getElementById(id); const l = vgLinhas(id); if (!l.some(x => cvSemAcento(x) === cvSemAcento(txt))) l.push(txt); el.value = l.join('\n'); vgSugestoes(); }
+function vgAutoCategoria() {
+  const s = document.getElementById('vg-categoria'); if (!s || s.dataset.manual) return;
+  const t = (document.getElementById('vg-title') || {}).value; if (!t) return;
+  s.value = categoriasDaVaga({ title: t, seniority: (document.getElementById('vg-seniority') || {}).value })[0];
+}
 function vgSugestoes() {
+  vgAutoCategoria();
   const titulo = cvSemAcento((document.getElementById('vg-title') || {}).value);
   const resp = (CV_ATIVIDADES.find(([re]) => titulo && re.test(titulo)) || CV_ATIVIDADES[CV_ATIVIDADES.length - 1])[1];
   const lid = /gerente|supervis|coorden|lider|encarreg|diretor|gestor/.test(titulo), mot = /motorista|entregador/.test(titulo), emp = /empilhadeira/.test(titulo);
@@ -13832,6 +13839,7 @@ async function salvarVaga(id) {
     pcd: document.getElementById('vg-pcd').checked,
     work_schedule: document.getElementById('vg-horario').value.trim(),
     contract_type: document.getElementById('vg-contrato').value,
+    categoria: document.getElementById('vg-categoria').value,
     seniority: document.getElementById('vg-seniority').value,
     salary_range: cvMoeda(document.getElementById('vg-salary').value),
     description: document.getElementById('vg-description').value,
@@ -13848,6 +13856,7 @@ async function salvarVaga(id) {
   const selectTaxaFechamento = document.getElementById('vg-closing-fee-plan');
   if (selectTaxaFechamento) corpo.closingFeePlanId = selectTaxaFechamento.value || null;
   if (!corpo.title) { mostrarToast('Informe o título da vaga.', true); return; }
+  if (!corpo.categoria) { mostrarToast('Escolha o tipo de vaga (operacional, liderança…) — é o que direciona a vaga aos candidatos certos.', true); return; }
   if (!corpo.location && !corpo.is_remote) { mostrarToast('Escolha a cidade da vaga (ou marque Remoto).', true); return; }
   if (!id && !corpo.vagaPlanId) { mostrarToast('Selecione um plano de divulgação.', true); return; }
   if (!id && ESTADO.usuario.role === 'admin' && !corpo.company_id) { mostrarToast('Selecione a empresa.', true); return; }
@@ -14051,6 +14060,20 @@ const CV_IDIOMAS = ['Inglês', 'Espanhol', 'Francês', 'Alemão', 'Italiano', 'P
 const CV_NIVEIS_IDIOMA = ['Básico', 'Intermediário', 'Avançado', 'Fluente', 'Nativo'];
 const CV_HABILIDADES = ['Liderança de equipes', 'Gestão de pessoas', 'Comunicação', 'Trabalho em equipe', 'Negociação', 'Resolução de problemas', 'Tomada de decisão', 'Organização', 'Proatividade', 'Foco em resultados', 'Atendimento ao cliente', 'Vendas', 'Gestão de indicadores (KPIs)', 'Planejamento', 'Gestão de rotinas', 'PDCA', 'Lean / Melhoria contínua', 'Kaizen', '5S', 'Six Sigma', 'Gestão de processos', 'Gestão de projetos', 'Logística', 'Roteirização', 'Gestão de frota', 'Distribuição urbana', 'Armazenagem', 'WMS', 'TMS', 'Controle de estoque', 'Inventário', 'Expedição', 'Recebimento de mercadorias', 'Operação de empilhadeira', 'Direção defensiva', 'Segurança do trabalho', 'NR-11', 'NR-35', 'NR-10', 'NR-12', 'Excel', 'Excel avançado', 'Power BI', 'Pacote Office', 'Google Workspace', 'SAP', 'TOTVS', 'Promax', 'ERP', 'SQL', 'Python', 'Análise de dados', 'Gestão financeira', 'Orçamento', 'Contas a pagar e receber', 'Faturamento', 'Departamento pessoal', 'Recrutamento e seleção', 'Treinamento e desenvolvimento', 'Feedback', 'Trade marketing', 'Merchandising', 'Execução de mercado', 'Gestão comercial', 'Prospecção de clientes', 'Pós-venda', 'Manutenção preventiva', 'Manutenção corretiva', 'Mecânica diesel', 'Elétrica industrial', 'Qualidade', 'Auditoria', 'ISO 9001', 'DPO / VPO Ambev', 'Gestão à vista', 'Inteligência emocional', 'Criatividade', 'Pensamento analítico', 'Adaptabilidade', 'Pontualidade'];
 const CV_CARGOS = ["Motorista", "Motorista de caminhão", "Motorista entregador", "Motorista carreteiro", "Motorista de empilhadeira", "Motorista de van", "Motorista particular", "Motoboy", "Ajudante de entrega", "Ajudante de motorista", "Ajudante geral", "Ajudante de carga e descarga", "Auxiliar de logística", "Assistente de logística", "Analista de logística", "Coordenador de logística", "Supervisor de logística", "Gerente de logística", "Conferente", "Conferente de carga", "Conferente de mercadorias", "Operador de empilhadeira", "Operador de armazém", "Auxiliar de armazém", "Estoquista", "Almoxarife", "Auxiliar de almoxarifado", "Separador de mercadorias", "Repositor", "Repositor de mercadorias", "Operador de logística", "Supervisor de armazém", "Encarregado de armazém", "Coordenador de armazém", "Gerente de armazém", "Supervisor de distribuição", "Coordenador de distribuição", "Gerente de distribuição", "Analista de transportes", "Coordenador de transportes", "Supervisor de frota", "Gestor de frota", "Analista de frota", "Roteirizador", "Programador de rotas", "Despachante", "Expedidor", "Auxiliar de expedição", "Supervisor de expedição", "Vendedor", "Vendedor externo", "Vendedor interno", "Representante comercial", "Promotor de vendas", "Promotor de merchandising", "Consultor de vendas", "Assistente comercial", "Auxiliar comercial", "Analista comercial", "Supervisor de vendas", "Coordenador de vendas", "Gerente de vendas", "Gerente comercial", "Diretor comercial", "Executivo de contas", "Key account", "Televendas", "Operador de telemarketing", "Atendente", "Atendente de loja", "Operador de caixa", "Caixa", "Fiscal de loja", "Fiscal de caixa", "Balconista", "Recepcionista", "Auxiliar administrativo", "Assistente administrativo", "Analista administrativo", "Coordenador administrativo", "Gerente administrativo", "Auxiliar de escritório", "Secretária", "Secretária executiva", "Office boy", "Auxiliar financeiro", "Assistente financeiro", "Analista financeiro", "Coordenador financeiro", "Gerente financeiro", "Controller", "Tesoureiro", "Analista de contas a pagar", "Analista de contas a receber", "Analista de crédito e cobrança", "Auxiliar de cobrança", "Faturista", "Auxiliar de faturamento", "Analista de faturamento", "Auxiliar contábil", "Assistente contábil", "Analista contábil", "Contador", "Analista fiscal", "Auxiliar fiscal", "Analista de custos", "Auxiliar de departamento pessoal", "Assistente de departamento pessoal", "Analista de departamento pessoal", "Analista de folha de pagamento", "Auxiliar de RH", "Assistente de RH", "Analista de RH", "Analista de recrutamento e seleção", "Analista de treinamento e desenvolvimento", "Business partner de RH", "Coordenador de RH", "Gerente de RH", "Técnico de segurança do trabalho", "Engenheiro de segurança do trabalho", "Analista de segurança do trabalho", "Coordenador de segurança do trabalho", "Bombeiro civil", "Vigilante", "Porteiro", "Controlador de acesso", "Auxiliar de limpeza", "Zelador", "Copeiro", "Cozinheiro", "Auxiliar de cozinha", "Garçom", "Mecânico", "Mecânico de caminhão", "Mecânico de manutenção", "Mecânico diesel", "Auxiliar de mecânico", "Eletricista", "Eletricista de manutenção", "Eletricista automotivo", "Técnico de manutenção", "Técnico em eletrônica", "Técnico em mecânica", "Supervisor de manutenção", "Coordenador de manutenção", "Gerente de manutenção", "Soldador", "Serralheiro", "Pedreiro", "Pintor", "Borracheiro", "Lavador de veículos", "Funileiro", "Operador de máquinas", "Operador de produção", "Auxiliar de produção", "Líder de produção", "Supervisor de produção", "Coordenador de produção", "Gerente de produção", "Gerente industrial", "Analista de PCP", "Analista de qualidade", "Técnico de qualidade", "Inspetor de qualidade", "Coordenador de qualidade", "Gerente de qualidade", "Analista de processos", "Analista de melhoria contínua", "Engenheiro de produção", "Engenheiro de processos", "Engenheiro mecânico", "Engenheiro civil", "Engenheiro eletricista", "Analista de planejamento", "Analista de dados", "Analista de BI", "Cientista de dados", "Analista de sistemas", "Desenvolvedor", "Programador", "Analista de suporte", "Técnico de informática", "Auxiliar de TI", "Coordenador de TI", "Gerente de TI", "Analista de marketing", "Assistente de marketing", "Coordenador de marketing", "Gerente de marketing", "Designer gráfico", "Social media", "Analista de trade marketing", "Coordenador de trade marketing", "Analista de compras", "Comprador", "Assistente de compras", "Coordenador de compras", "Gerente de compras", "Analista de suprimentos", "Analista jurídico", "Advogado", "Assistente jurídico", "Analista de customer success", "Analista de atendimento ao cliente", "Supervisor de atendimento", "Coordenador de atendimento", "Gerente de atendimento", "Líder de equipe", "Encarregado", "Encarregado de turno", "Supervisor", "Supervisor operacional", "Supervisor de turno", "Coordenador", "Coordenador operacional", "Coordenador de operações", "Gerente", "Gerente de operações", "Gerente operacional", "Gerente geral", "Gerente de unidade", "Gerente regional", "Gerente de projetos", "Gerente de filial", "Gerente de loja", "Subgerente", "Diretor", "Diretor de operações", "Diretor executivo", "CEO", "Sócio-diretor", "Consultor", "Consultor de gestão", "Consultor de processos", "Analista de gente e gestão", "Coordenador de gente e gestão", "Gerente de gente e gestão", "Trainee", "Trainee de liderança", "Estagiário", "Estágio administrativo", "Estágio em logística", "Jovem aprendiz", "Menor aprendiz", "Primeiro emprego", "Professor", "Instrutor", "Enfermeiro", "Técnico de enfermagem", "Auxiliar de enfermagem", "Farmacêutico", "Nutricionista", "Psicólogo", "Assistente social"];
+const TIPOS_VAGA = [['Operacional', '🦺', 'Motorista, ajudante, conferente, operador, armazém…'], ['Administrativo', '🗂️', 'Escritório, financeiro, RH, analista, assistente…'], ['Técnico', '🔧', 'Manutenção, mecânica, elétrica, TI, engenharia…'], ['Comercial', '🤝', 'Vendas, promotor, representante, atendimento…'], ['Liderança', '👔', 'Supervisão, coordenação, gerência, diretoria…'], ['Estágio / Aprendiz', '🎓', 'Primeira oportunidade, estágio, jovem aprendiz, trainee']];
+function categoriasDaVaga(v) {
+  const nomes = TIPOS_VAGA.map(t => t[0]);
+  if (v.categorias && v.categorias.length) return v.categorias;
+  if (v.categoria && nomes.includes(v.categoria)) return [v.categoria];
+  const t = ' ' + cvSemAcento((v.title || '') + ' ' + (v.seniority || '')) + ' ', c = [];
+  if (/lideranca|coordenacao|gerencia|diretoria|gerente|supervis|coorden|lider|encarreg|diretor|gestor|chefe|head /.test(t)) c.push('Liderança');
+  if (/estagi|aprendiz|trainee/.test(t)) c.push('Estágio / Aprendiz');
+  if (/vend|comercial|promotor|represent|televend|key account|executivo de contas/.test(t)) c.push('Comercial');
+  if (/tecnic|mecanic|eletric|manutenc|engenhe|desenvolv|programad| ti |sistemas|dados|soldador/.test(t)) c.push('Técnico');
+  if (/administr|financ|contab|fiscal| rh |recursos humanos|pessoal|analista|assistente|recep|secret|faturist|compras|juridic/.test(t)) c.push('Administrativo');
+  if (/operacional|motorista|ajudante|conferent|operador|empilhadeira|estoqu|armaz|separador|repositor|entregador|auxiliar|expedi|almox|vigilante|porteiro|limpeza|produc|logistic/.test(t) && !c.includes('Liderança')) c.push('Operacional');
+  return c.length ? c : ['Operacional'];
+}
 const CV_NIVEIS_FORMACAO = ['Ensino Fundamental', 'Ensino Médio', 'Curso Técnico', 'Tecnólogo', 'Graduação', 'Pós-graduação / MBA', 'Mestrado', 'Doutorado'];
 let EXPERIENCIAS_PERFIL_ATUAL = [];
 const CV = { cidades: null, idiomas: [], regioes: [], habilidades: [], perfil: null, auto: {} };
@@ -14242,6 +14265,14 @@ async function renderPortalPerfil() {
           <div><label>Pretensão salarial</label><input id="pp-pretensao" inputmode="decimal" placeholder="Ex.: R$ 4.500,00 ou A combinar" value="${escapeHtml(cvMoeda(p.pretensao_salarial || ''))}" onblur="this.value=cvMoeda(this.value)"></div>
           <div><label>Disponibilidade para começar</label>${sel('pp-inicio', ['Imediata', 'Em 15 dias', 'Em 30 dias', 'A combinar'], p.disponibilidade_inicio)}</div>
         </div>
+        <div class="cv-campo" style="margin-top:14px;" id="cv-s-tipos">
+          <label class="cv-ob">Que tipo de vaga você busca? <span style="font-weight:400;color:#64748b;">(pode marcar mais de um — usamos para te mostrar as vagas certas)</span></label>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:6px;">
+            ${TIPOS_VAGA.map(([nome, ic, desc]) => { const on = String(p.tipos_vaga || '').split(',').map(x => x.trim()).includes(nome); return `<label class="cv-tipo" style="display:flex !important;gap:8px;align-items:flex-start;border:2px solid ${on ? '#12a150' : '#e2e8f0'};background:${on ? '#f0fdf4' : '#fff'};border-radius:12px;padding:10px;cursor:pointer;font-weight:400;">
+              <input type="checkbox" class="pp-tipo" value="${nome}" ${on ? 'checked' : ''} onchange="const l=this.closest('label'); l.style.borderColor=this.checked?'#12a150':'#e2e8f0'; l.style.background=this.checked?'#f0fdf4':'#fff';" style="margin-top:3px !important;">
+              <span><strong style="font-size:13.5px;">${ic} ${nome}</strong><br><small style="color:#64748b;">${desc}</small></span></label>`; }).join('')}
+          </div>
+        </div>
         <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:13.5px;">
           <label style="font-weight:400;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="pp-viagem" ${p.disp_viagem ? 'checked' : ''}> Disponível para viagens</label>
           <label style="font-weight:400;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="pp-mudanca" ${p.disp_mudanca ? 'checked' : ''}> Disponível para mudança de cidade</label>
@@ -14316,6 +14347,7 @@ async function renderPortalPerfil() {
     cvJson(p.courses_json).forEach(c => cvAddCurso(c));
     cvDesenharIdiomas(); cvDesenharRegioes(); cvDesenharHabilidades();
     cvLigarCampos();
+    cvSugerirTipos();
     cvAtualizarProgresso();
   } catch (e) {
     cont.innerHTML = `<h1>Meu Currículo</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
@@ -14345,7 +14377,7 @@ function cvLigarCampos() {
     const l = CV_CARGOS.filter(c => cvSemAcento(c).includes(t)).sort((a, b) => cvSemAcento(a).indexOf(t) - cvSemAcento(b).indexOf(t)).slice(0, 8).map(c => ({ label: c, value: c }));
     if (!CV_CARGOS.some(c => cvSemAcento(c) === t)) l.push({ label: `Usar “${q.trim()}”`, value: q.trim() });
     return l;
-  }, (it, inp) => { inp.value = it.value; cvAtualizarProgresso(); });
+  }, (it, inp) => { inp.value = it.value; cvSugerirTipos(); cvAtualizarProgresso(); });
   cvAuto('cv-regiao-busca', q => {
     const t = cvSemAcento(q).trim(); if (t.length < 2) return [];
     const ufs = UFS_BRASIL.filter(uf => cvSemAcento(UF_NOMES[uf]).startsWith(t) || uf.toLowerCase() === t).map(uf => ({ label: `${UF_NOMES[uf]} — todo o estado`, sub: uf, value: uf }));
@@ -14369,6 +14401,11 @@ function cvLigarCampos() {
   const wrap = document.querySelector('.cv-wrap');
   let t; wrap.addEventListener('input', () => { clearTimeout(t); t = setTimeout(cvAtualizarProgresso, 250); });
   wrap.addEventListener('change', () => cvAtualizarProgresso());
+}
+function cvSugerirTipos() {
+  if (document.querySelector('.pp-tipo:checked')) return;
+  const cargo = (document.getElementById('pp-desired-role') || {}).value; if (!cargo) return;
+  categoriasDaVaga({ title: cargo }).forEach(c => { const i = document.querySelector(`.pp-tipo[value="${c}"]`); if (i) { i.checked = true; i.dispatchEvent(new Event('change')); } });
 }
 function cvSugHab() {
   const el = document.getElementById('cv-hab-sugs'); if (!el) return;
@@ -14528,7 +14565,7 @@ function cvColetar() {
   return {
     name: g('pp-name'), phone: g('pp-phone'), birth_date: g('pp-birth'), cep: g('pp-cep'), city: g('pp-city'), neighborhood: g('pp-bairro'), linkedin_url: g('pp-linkedin'),
     gender: g('pp-gender'), cnh: g('pp-cnh'), pcd: ck('pp-pcd-sim') ? (g('pp-pcd-tipo') || 'Sim') : '', desired_role: g('pp-desired-role'), modalidade: g('pp-modalidade'), pretensao_salarial: cvMoeda(g('pp-pretensao')),
-    disponibilidade_inicio: g('pp-inicio'), disp_viagem: ck('pp-viagem'), disp_mudanca: ck('pp-mudanca'), bio: g('pp-bio'), education_level: g('pp-education'),
+    disponibilidade_inicio: g('pp-inicio'), tipos_vaga: [...document.querySelectorAll('.pp-tipo:checked')].map(i => i.value).join(', '), disp_viagem: ck('pp-viagem'), disp_mudanca: ck('pp-mudanca'), bio: g('pp-bio'), education_level: g('pp-education'),
     first_job: primeiro, experiences_json: JSON.stringify(exps), education_json: JSON.stringify(forms), courses_json: JSON.stringify(cursos),
     languages: CV.idiomas.map(i => `${i.nome} (${i.nivel || 'Básico'})`).join(', '), skills: CV.habilidades.join(', '),
     desired_states: CV.regioes.filter(r => /^[A-Z]{2}$/.test(r)).join(', '), desired_cities: CV.regioes.filter(r => !/^[A-Z]{2}$/.test(r)).join(', '),
@@ -14547,6 +14584,7 @@ function cvPendencias(b) {
   else if (CV.cidades && CV.cidades.length && !b.city.includes('/')) add('Cidade atual (escolha na lista)', 'pp-city');
   if (!b.desired_role) add('Cargo desejado', 'pp-desired-role');
   if (!b.modalidade) add('Modelo de trabalho', 'pp-modalidade');
+  if (!b.tipos_vaga) add('Tipo de vaga que busca', 'cv-s-tipos');
   if (!b.desired_cities && !b.desired_states) add('Onde deseja trabalhar', 'cv-regiao-busca');
   if (b.bio.length < 60) add('Resumo profissional', 'pp-bio');
   if (!b.first_job) {
@@ -14561,7 +14599,7 @@ function cvPendencias(b) {
   if (b.skills.split(',').filter(x => x.trim()).length < 3) add('Habilidades (mín. 3)', 'cv-hab-busca');
   return f;
 }
-const CV_TOTAL_REQ = 14;
+const CV_TOTAL_REQ = 15;
 function cvAtualizarProgresso() {
   if (!document.getElementById('cv-barra')) return;
   const b = cvColetar(), falta = cvPendencias(b);
@@ -14682,7 +14720,7 @@ function cvHtmlPadrao(c) {
       </div>
       <aside class="cvd-lat">
         <div class="cvd-bloco"><h2>Objetivo</h2>
-          ${dado('Cargo desejado', e(c.desired_role || ''))}${dado('Modelo de trabalho', e(c.modalidade || ''))}${dado('Pretensão salarial', e(cvMoeda(c.pretensao_salarial || '')))}${dado('Disponibilidade', e(c.disponibilidade_inicio || ''))}
+          ${dado('Cargo desejado', e(c.desired_role || ''))}${dado('Tipo de vaga', e(c.tipos_vaga || ''))}${dado('Modelo de trabalho', e(c.modalidade || ''))}${dado('Pretensão salarial', e(cvMoeda(c.pretensao_salarial || '')))}${dado('Disponibilidade', e(c.disponibilidade_inicio || ''))}
           ${regioes.length ? dado('Onde deseja trabalhar', e(regioes.join(', '))) : ''}
         </div>
         ${habs.length ? `<div class="cvd-bloco"><h2>Habilidades</h2><div class="cvd-tags">${habs.map(h => `<span>${e(h)}</span>`).join('')}</div></div>` : ''}
@@ -14967,7 +15005,7 @@ const GRADIENTES_VAGA = [
 ];
 
 let PV_FILTRO = { q: '', chip: 'todas', ordem: 'recentes' }, PV_PERFIL = null, PV_CONFIG = {};
-const PV_CHIPS = [['todas', 'Todas'], ['combina', '✨ Combinam com você'], ['regiao', '📍 Minha região'], ['remoto', '🏠 Remoto'], ['lideranca', '👔 Liderança'], ['novas', '🆕 Novas']];
+const PV_CHIPS = [['paraVoce', '🎯 Para o seu perfil'], ['todas', 'Todas'], ['combina', '✨ Combinam com você'], ['regiao', '📍 Minha região'], ['remoto', '🏠 Remoto'], ['lideranca', '👔 Liderança'], ['novas', '🆕 Novas']];
 const PV_LID = /(gerente|coordenador|supervisor|lider|líder|encarregado|diretor|chefe|head|gestor|superintendente)/i;
 function pvSemAcento(t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
 function pvDias(d) { if (!d) return null; const x = new Date(String(d).includes('T') ? d : String(d).replace(' ', 'T') + 'Z'); return isNaN(x) ? null : (x - Date.now()) / 86400000; }
@@ -14989,6 +15027,7 @@ async function renderPortalVagas() {
     const [lista, perfil, conf] = await Promise.all([api('/api/portal/vagas'), api('/api/portal/me').catch(() => null), api('/api/portal/config').catch(() => ({}))]);
     PV_PERFIL = perfil; PV_CONFIG = conf || {};
     CACHE_LISTA_VAGAS_PORTAL = lista.map(pvEnriquecer);
+    if (!PV_FILTRO._iniciado) { PV_FILTRO._iniciado = true; if (CACHE_LISTA_VAGAS_PORTAL.some(v => v.paraVoce)) PV_FILTRO.chip = 'paraVoce'; }
     desenharPortalVagas();
   } catch (e) {
     cont.innerHTML = `<h1>Vagas Disponíveis</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
@@ -14999,15 +15038,16 @@ function pvFiltradas() {
   let l = CACHE_LISTA_VAGAS_PORTAL.filter(v => {
     if (q && !pvSemAcento([v.title, v.companyName, v.location, v.state, v.description, v.seniority].join(' ')).includes(q)) return false;
     const c = PV_FILTRO.chip;
-    return c === 'todas' || (c === 'combina' && v.combina) || (c === 'regiao' && v.minhaRegiao) || (c === 'remoto' && v.is_remote) || (c === 'lideranca' && v.lideranca) || (c === 'novas' && v.nova);
+    return c === 'todas' || (c === 'paraVoce' && v.paraVoce) || (c === 'combina' && v.combina) || (c === 'regiao' && v.minhaRegiao) || (c === 'remoto' && v.is_remote) || (c === 'lideranca' && v.lideranca) || (c === 'novas' && v.nova);
   });
   const ord = { recentes: (a, b) => String(b.published_at || '').localeCompare(String(a.published_at || '')), encerrando: (a, b) => (a.expiraEm ?? 999) - (b.expiraEm ?? 999), curtidas: (a, b) => (b.totalCurtidas || 0) - (a.totalCurtidas || 0) };
-  return l.sort(ord[PV_FILTRO.ordem] || ord.recentes);
+  return l.sort((a, b) => (b.paraVoce ? 1 : 0) - (a.paraVoce ? 1 : 0) || (ord[PV_FILTRO.ordem] || ord.recentes)(a, b));
 }
 function pvCard(v, i) {
   const fundo = v.photo_url ? `url('${escapeHtml(v.photo_url)}') center/cover` : GRADIENTES_VAGA[i % GRADIENTES_VAGA.length];
   const selos = [
     v.nova ? '<span class="pv-selo" style="background:#22c55e;color:#fff;">🆕 Nova</span>' : '',
+    v.paraVoce ? '<span class="pv-selo" style="background:#0e2a47;color:#fff;">🎯 Para o seu perfil</span>' : '',
     v.combina ? '<span class="pv-selo" style="background:#fff;color:#7c3aed;">✨ Combina com você</span>' : '',
     v.expiraEm != null && v.expiraEm <= 5 ? `<span class="pv-selo" style="background:#fef3c7;color:#92400e;">⏳ ${v.expiraEm <= 1 ? 'Último dia' : 'Encerra em ' + v.expiraEm + ' dias'}</span>` : ''
   ].join('');
@@ -15023,6 +15063,7 @@ function pvCard(v, i) {
         <h3 class="pv-titulo">${escapeHtml(v.title)}</h3>
         <div class="pv-tags">
           <span>📍 ${pvLocal(v)}</span>
+          ${categoriasDaVaga(v).slice(0, 1).map(c => `<span>${(TIPOS_VAGA.find(t => t[0] === c) || ['', '🏷️'])[1]} ${escapeHtml(c)}</span>`).join('')}
           ${v.seniority ? `<span>📊 ${escapeHtml(v.seniority)}</span>` : ''}
           ${v.education ? `<span>🎓 ${escapeHtml(v.education)}</span>` : ''}
           ${v.work_schedule ? `<span>⏰ ${escapeHtml(v.work_schedule)}</span>` : ''}
@@ -15041,7 +15082,7 @@ function pvCard(v, i) {
 function desenharPortalVagas() {
   const cont = document.getElementById('conteudo');
   const todas = CACHE_LISTA_VAGAS_PORTAL, lista = pvFiltradas();
-  const conta = c => c === 'todas' ? todas.length : todas.filter(v => (c === 'combina' && v.combina) || (c === 'regiao' && v.minhaRegiao) || (c === 'remoto' && v.is_remote) || (c === 'lideranca' && v.lideranca) || (c === 'novas' && v.nova)).length;
+  const conta = c => c === 'todas' ? todas.length : todas.filter(v => (c === 'paraVoce' && v.paraVoce) || (c === 'combina' && v.combina) || (c === 'regiao' && v.minhaRegiao) || (c === 'remoto' && v.is_remote) || (c === 'lideranca' && v.lideranca) || (c === 'novas' && v.nova)).length;
   const primeiro = String((ESTADO.usuario && ESTADO.usuario.name) || '').trim().split(' ')[0];
   const empresas = new Set(todas.map(v => v.companyName)).size;
   cont.innerHTML = `
@@ -15101,9 +15142,10 @@ function desenharPortalVagas() {
       </div>
     </section>
     <div class="pv-chips">
-      ${PV_CHIPS.map(([k, t]) => `<button class="pv-chip ${PV_FILTRO.chip === k ? 'ativo' : ''}" onclick="PV_FILTRO.chip='${k}'; desenharPortalVagas()">${t}<small>${conta(k)}</small></button>`).join('')}
+      ${PV_CHIPS.filter(([k]) => k !== 'paraVoce' || (PV_PERFIL && PV_PERFIL.tipos_vaga)).map(([k, t]) => `<button class="pv-chip ${PV_FILTRO.chip === k ? 'ativo' : ''}" onclick="PV_FILTRO.chip='${k}'; desenharPortalVagas()">${t}<small>${conta(k)}</small></button>`).join('')}
     </div>
     ${PV_PERFIL && PV_PERFIL.disc_liberado && !PV_PERFIL.disc_perfil ? `<div style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:1px solid #ddd6fe;color:#4c1d95;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13.5px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">🧠 <span style="flex:1;min-width:200px;"><strong>Você recebeu o Teste de Perfil DISC!</strong> Faça agora — o resultado entra no seu currículo e chama a atenção das empresas.</span><button class="btn-primario btn-sm" style="width:auto;background:#7c3aed;border:0;" onclick="irPara('discTeste')">Fazer o teste →</button></div>` : ''}
+    ${PV_PERFIL && PV_PERFIL.curriculo_completo_em && !PV_PERFIL.tipos_vaga ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13.5px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">🎯 <span style="flex:1;min-width:200px;"><strong>Diga que tipo de vaga você busca</strong> (operacional, liderança, administrativo…) para mostrarmos primeiro as vagas do seu perfil.</span><button class="btn-primario btn-sm" style="width:auto;" onclick="irPara('portalPerfil')">Escolher agora →</button></div>` : ''}
     ${PV_PERFIL && !PV_PERFIL.curriculo_completo_em ? `<div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13.5px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">📝 <span style="flex:1;min-width:200px;"><strong>Complete o seu currículo</strong> (experiências, atividades e formação) para poder se candidatar às vagas.</span><button class="btn-primario btn-sm" style="width:auto;" onclick="irPara('portalPerfil')">Completar agora →</button></div>` : ''}
     ${!(PV_PERFIL && PV_PERFIL.desired_role) ? `<div style="background:#f5f3ff;border:1px solid #ddd6fe;color:#5b21b6;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;">✨ Informe o seu <strong>cargo desejado</strong> em "Meu Currículo" para destacarmos as vagas que combinam com você.</div>` : ''}
     <div id="modal-area"></div>
