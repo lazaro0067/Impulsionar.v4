@@ -971,7 +971,7 @@ function inicializarBase() {
         )`);
         // Colunas do perfil completo de currículo (auto-upgrade de bases já existentes).
         ['photo_url TEXT', 'gender TEXT', 'education_level TEXT', 'languages TEXT', 'first_job INTEGER DEFAULT 0',
-         'experiences_json TEXT', 'desired_states TEXT', 'desired_cities TEXT'].forEach(coluna => {
+         'experiences_json TEXT', 'desired_states TEXT', 'desired_cities TEXT', 'cep TEXT', 'neighborhood TEXT', 'state TEXT', 'lgpd_at TEXT', 'origem TEXT'].forEach(coluna => {
             db.run(`ALTER TABLE candidate_profiles ADD COLUMN ${coluna}`, () => {});
         });
 
@@ -2502,17 +2502,69 @@ app.post('/api/register-autonomous', async (req, res) => {
 // período (dias) configurado pelo Master em "Planos de Vaga".
 // ============================================================
 
+// Lista oficial de municípios (IBGE) para o cadastro de candidatos escolher a cidade certa.
+// Busca uma vez no IBGE e guarda em memória e em arquivo (sobrevive a reinícios).
+let CIDADES_IBGE = null, CIDADES_IBGE_PROMESSA = null;
+const ARQ_CIDADES_IBGE = path.join(__dirname, 'cidades-ibge.json');
+function semAcentoCidade(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+async function carregarCidadesIbge() {
+    if (CIDADES_IBGE) return CIDADES_IBGE;
+    if (CIDADES_IBGE_PROMESSA) return CIDADES_IBGE_PROMESSA;
+    CIDADES_IBGE_PROMESSA = (async () => {
+        try { const l = JSON.parse(fs.readFileSync(ARQ_CIDADES_IBGE, 'utf8')); if (Array.isArray(l) && l.length > 5000) { CIDADES_IBGE = l; return l; } } catch (e) {}
+        try {
+            const r = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios?view=nivelado');
+            const j = await r.json();
+            const l = j.map(m => [m['municipio-nome'], m['UF-sigla']]).filter(x => x[0] && x[1]).sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'));
+            if (l.length > 5000) { CIDADES_IBGE = l; try { fs.writeFileSync(ARQ_CIDADES_IBGE, JSON.stringify(l)); } catch (e) {} }
+            return CIDADES_IBGE;
+        } catch (e) { console.warn('⚠️  Não consegui baixar a lista de cidades do IBGE:', e.message); return null; }
+        finally { CIDADES_IBGE_PROMESSA = null; }
+    })();
+    return CIDADES_IBGE_PROMESSA;
+}
+app.get('/api/public/cidades', async (req, res) => {
+    const l = await carregarCidadesIbge();
+    if (!l) return res.status(503).json({ error: 'Lista de cidades indisponível no momento.' });
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.json(l);
+});
+app.get('/api/public/cep/:cep', async (req, res) => {
+    const cep = String(req.params.cep || '').replace(/\D/g, '');
+    if (cep.length !== 8) return res.status(400).json({ error: 'CEP inválido.' });
+    for (const url of [`https://viacep.com.br/ws/${cep}/json/`, `https://brasilapi.com.br/api/cep/v1/${cep}`]) {
+        try {
+            const r = await fetch(url); if (!r.ok) continue; const j = await r.json(); if (j.erro) continue;
+            return res.json({ cep, cidade: j.localidade || j.city || '', uf: j.uf || j.state || '', bairro: j.bairro || j.neighborhood || '', rua: j.logradouro || j.street || '' });
+        } catch (e) {}
+    }
+    res.status(404).json({ error: 'CEP não encontrado.' });
+});
+
 app.post('/api/portal/register', async (req, res) => {
-    const { name, email, password, phone, desired_role, city } = req.body;
+    const { name, email, password, phone, desired_role } = req.body;
+    let { city } = req.body;
     if (!name || !email || !password) return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios.' });
+    if (String(password).length < 6) return res.status(400).json({ error: 'A senha precisa ter pelo menos 6 caracteres.' });
     try {
+        // Cidade sempre no formato oficial "Cidade/UF" (lista do IBGE), para não entrar cidade escrita errada.
+        if (city) {
+            const lista = await carregarCidadesIbge();
+            if (lista) {
+                const [nomeCid, ufCid] = String(city).split('/').map(x => x.trim());
+                const achada = lista.find(([n, uf]) => semAcentoCidade(n) === semAcentoCidade(nomeCid) && (!ufCid || uf.toUpperCase() === ufCid.toUpperCase()));
+                if (!achada) return res.status(400).json({ error: 'Escolha a sua cidade na lista (ou preencha o CEP).' });
+                city = `${achada[0]}/${achada[1]}`;
+            }
+        }
         const hash = await bcrypt.hash(password, 10);
         const aprovacaoAutomatica = await automacaoLigada('auto_approve_resumes');
-        db.run(`INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'candidate')`, [name, email, hash], function (err) {
-            if (err) return res.status(400).json({ error: 'E-mail já cadastrado.' });
+        db.run(`INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'candidate')`, [String(name).trim(), String(email).trim().toLowerCase(), hash], function (err) {
+            if (err) return res.status(400).json({ error: 'Este e-mail já está cadastrado. Faça login ou use "Esqueci minha senha".' });
             const userId = this.lastID;
-            db.run(`INSERT INTO candidate_profiles (user_id, phone, desired_role, city, status) VALUES (?, ?, ?, ?, ?)`,
-                [userId, phone || '', desired_role || '', city || '', aprovacaoAutomatica ? 'approved' : 'pending'], (e2) => {
+            const b = req.body;
+            db.run(`INSERT INTO candidate_profiles (user_id, phone, desired_role, city, status, cep, neighborhood, state, first_job, lgpd_at, origem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [userId, phone || '', desired_role || '', city || '', aprovacaoAutomatica ? 'approved' : 'pending', String(b.cep || '').replace(/\D/g, '').slice(0, 8), String(b.neighborhood || '').slice(0, 120), city ? city.split('/')[1] || '' : '', b.first_job ? 1 : 0, b.lgpd ? new Date().toISOString() : null, String(b.origem || '').slice(0, 40)], (e2) => {
                     if (e2) return res.status(500).json({ error: 'Erro ao criar o perfil de candidato.' });
                     res.json({ message: aprovacaoAutomatica
                         ? 'Cadastro realizado! Seu currículo já está aprovado — complete-o para aparecer melhor posicionado para as empresas.'

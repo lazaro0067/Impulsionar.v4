@@ -878,6 +878,9 @@ function esconderEsqueciSenha() {
 }
 
 function mostrarCadastroCandidato() {
+  // Cadastro de candidato fica na página própria (cidade da lista oficial + CEP).
+  // A vaga compartilhada pendente continua guardada nesta aba e abre depois do login.
+  location.href = '/cadastro.html'; return;
   document.getElementById('form-login').classList.add('oculto');
   document.getElementById('form-cadastro-candidato').classList.remove('oculto');
 }
@@ -15454,9 +15457,17 @@ function entrarSalaComoConvidado() {
 // currículo: chega como "#cadastro-curriculo" e já abre o formulário de
 // cadastro de candidato, sem precisar clicar em nada na tela de login.
 (function tratarLinkDivulgacaoCadastro() {
+  if (location.hash.startsWith('#entrar=')) {
+    // vem do cadastro de candidato: deixa o e-mail pronto, só falta a senha
+    const email = decodeURIComponent(location.hash.slice('#entrar='.length));
+    history.replaceState(null, '', location.pathname + location.search);
+    if (ESTADO.token && ESTADO.usuario) return;
+    const el = document.getElementById('login-email'); if (el) { el.value = email; const s = document.getElementById('login-senha'); if (s) s.focus(); }
+    return;
+  }
   if (location.hash !== '#cadastro-curriculo') return;
   if (ESTADO.token && ESTADO.usuario) return; // já logado, não faz sentido mostrar cadastro
-  mostrarCadastroCandidato();
+  location.replace('/cadastro.html' + location.search);
 })();
 
 // Link de vaga compartilhada (WhatsApp/Instagram): chega como "#vaga=<id>".

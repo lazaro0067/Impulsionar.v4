@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1329">
+<title>Cadastre seu currículo — Impulsionar</title>
+<meta name="description" content="Cadastre seu currículo grátis no banco de talentos da Impulsionar e seja encontrado pelas empresas parceiras.">
+<meta property="og:title" content="Cadastre seu currículo grátis — Impulsionar">
+<meta property="og:description" content="Leva 2 minutos. As empresas parceiras procuram talentos no nosso banco.">
+<meta property="og:image" content="/assets/logo-impulsionar.jpg">
+<style>
+  :root { --navy:#0b1329; --navy2:#16213f; --verde:#16a34a; --verde2:#22c55e; --amarelo:#facc15; --texto:#0f172a; --sub:#64748b; --borda:#e2e8f0; --erro:#dc2626; }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; color:var(--texto); background:#f1f5f9; }
+  .hero { position:relative; overflow:hidden; background:radial-gradient(1200px 500px at 85% -10%, #1e3a8a 0%, transparent 60%), linear-gradient(160deg, var(--navy), var(--navy2)); color:#fff; padding:28px 18px 120px; text-align:center; }
+  .hero::after { content:""; position:absolute; width:420px; height:420px; border-radius:50%; background:radial-gradient(circle, rgba(34,197,94,.35), transparent 65%); left:-140px; bottom:-220px; }
+  .logo { display:inline-block; background:#fff; border-radius:14px; padding:8px 12px; margin-bottom:22px; }
+  .logo img { height:46px; display:block; }
+  .selo { display:inline-flex; gap:8px; align-items:center; background:rgba(250,204,21,.15); color:var(--amarelo); border:1px solid rgba(250,204,21,.4); border-radius:999px; padding:6px 14px; font-size:13px; font-weight:800; letter-spacing:.3px; margin-bottom:14px; }
+  .hero h1 { font-size:clamp(28px, 7.5vw, 46px); line-height:1.08; margin:0 auto 14px; max-width:720px; font-weight:900; letter-spacing:-.5px; }
+  .hero h1 span { background:linear-gradient(90deg, var(--verde2), var(--amarelo)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .hero p { font-size:clamp(15px, 4vw, 18px); opacity:.9; max-width:560px; margin:0 auto; line-height:1.5; }
+  .pilulas { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:18px; position:relative; z-index:1; }
+  .pilulas span { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:7px 12px; font-size:13px; font-weight:600; }
+  .wrap { max-width:620px; margin:-92px auto 0; padding:0 14px 40px; position:relative; z-index:2; }
+  .card { background:#fff; border-radius:22px; box-shadow:0 24px 60px rgba(11,19,41,.22); padding:22px 18px 20px; }
+  .progresso { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .progresso .barra { flex:1; height:8px; background:#e2e8f0; border-radius:99px; overflow:hidden; } .progresso .barra i { display:block; height:100%; width:0; background:linear-gradient(90deg, var(--verde), var(--verde2)); transition:width .3s; }
+  .progresso small { font-size:12px; font-weight:800; color:var(--verde); min-width:38px; text-align:right; }
+  .etapa { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:900; color:var(--navy); text-transform:uppercase; letter-spacing:.6px; margin:16px 0 4px; }
+  .etapa b { display:inline-flex; width:24px; height:24px; border-radius:50%; background:var(--navy); color:#fff; align-items:center; justify-content:center; font-size:12px; }
+  label { display:block; font-size:13px; font-weight:700; color:#334155; margin:12px 0 5px; }
+  label .opc { font-weight:400; color:var(--sub); }
+  .campo { position:relative; }
+  input[type=text], input[type=email], input[type=tel], input[type=password] { width:100%; font-size:16px; padding:13px 14px; border:1.5px solid var(--borda); border-radius:12px; background:#fff; color:var(--texto); outline:none; transition:border-color .15s, box-shadow .15s; }
+  input:focus { border-color:var(--verde); box-shadow:0 0 0 4px rgba(22,163,74,.12); }
+  input.ok { border-color:#86efac; } input.invalido { border-color:var(--erro); }
+  .dica { font-size:12px; color:var(--sub); margin-top:4px; min-height:15px; } .dica.erro { color:var(--erro); } .dica.certo { color:var(--verde); font-weight:700; }
+  .duas { display:grid; grid-template-columns:1fr 1fr; gap:10px; } @media (max-width:420px) { .duas { grid-template-columns:1fr; } }
+  .olho { position:absolute; right:8px; top:50%; transform:translateY(-50%); border:0; background:none; font-size:18px; cursor:pointer; padding:6px; }
+  .lista { position:absolute; left:0; right:0; top:100%; margin-top:4px; background:#fff; border:1px solid var(--borda); border-radius:12px; box-shadow:0 14px 30px rgba(11,19,41,.15); z-index:20; max-height:260px; overflow:auto; display:none; }
+  .lista button { display:flex; justify-content:space-between; width:100%; text-align:left; border:0; background:#fff; padding:12px 14px; font-size:15px; cursor:pointer; border-bottom:1px solid #f1f5f9; }
+  .lista button:hover, .lista button.ativo { background:#f0fdf4; } .lista button small { color:var(--sub); font-weight:700; }
+  .lista .vazio { padding:12px 14px; font-size:13px; color:var(--sub); }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; } .chips button { border:1px solid var(--borda); background:#f8fafc; border-radius:999px; padding:7px 12px; font-size:13px; cursor:pointer; color:#334155; }
+  .chips button.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+  .check { display:flex; gap:10px; align-items:flex-start; font-size:13.5px; color:#334155; margin-top:12px; cursor:pointer; } .check input { width:20px; height:20px; margin-top:1px; accent-color:var(--verde); flex-shrink:0; }
+  .enviar { width:100%; margin-top:18px; border:0; border-radius:14px; padding:17px; font-size:18px; font-weight:900; color:#fff; background:linear-gradient(90deg, var(--verde), var(--verde2)); box-shadow:0 12px 26px rgba(22,163,74,.35); cursor:pointer; transition:transform .1s; }
+  .enviar:active { transform:scale(.99); } .enviar:disabled { opacity:.7; }
+  .msg { text-align:center; font-size:14px; margin-top:10px; min-height:18px; } .msg.erro { color:var(--erro); font-weight:700; }
+  .ja { text-align:center; font-size:13.5px; margin-top:14px; color:var(--sub); } .ja a { color:var(--navy); font-weight:800; }
+  .seguro { display:flex; gap:6px; justify-content:center; align-items:center; font-size:12px; color:var(--sub); margin-top:10px; }
+  .beneficios { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:16px; } @media (max-width:520px) { .beneficios { grid-template-columns:1fr; } }
+  .beneficios div { background:#fff; border-radius:16px; padding:14px; box-shadow:0 4px 14px rgba(11,19,41,.06); font-size:13px; color:#475569; } .beneficios strong { display:block; color:var(--navy); font-size:14px; margin:4px 0 2px; } .beneficios .ic { font-size:24px; }
+  .sucesso { text-align:center; padding:18px 6px; } .sucesso .ic { font-size:58px; } .sucesso h2 { font-size:24px; margin:6px 0; color:var(--navy); } .sucesso p { color:#475569; font-size:15px; line-height:1.5; }
+  .sucesso a.bt { display:block; margin-top:14px; border-radius:14px; padding:15px; font-weight:900; text-decoration:none; font-size:16px; }
+  footer { text-align:center; font-size:12px; color:#94a3b8; padding:20px 0 30px; } footer strong { color:var(--navy); }
+</style>
+</head>
+<body>
+<section class="hero">
+  <div class="logo"><img src="/assets/logo-impulsionar.jpg" alt="Impulsionar" onerror="this.parentNode.outerHTML='<div style=&quot;font-weight:900;font-size:22px;letter-spacing:1px;margin-bottom:22px;&quot;>IMPULSIONAR</div>'"></div><br>
+  <div class="selo">🚀 BANCO DE TALENTOS · CADASTRO GRÁTIS</div>
+  <h1>Sua próxima oportunidade <span>começa aqui.</span></h1>
+  <p>Cadastre seu currículo em 2 minutos e seja encontrado pelas empresas parceiras da Impulsionar.</p>
+  <div class="pilulas"><span>✅ 100% gratuito</span><span>📱 Pelo celular</span><span>🔔 Avisos de vagas</span></div>
+</section>
+
+<main class="wrap">
+  <div class="card" id="card">
+    <form id="form" novalidate autocomplete="on">
+      <div class="progresso"><div class="barra"><i id="prog"></i></div><small id="progtxt">0%</small></div>
+
+      <div class="etapa"><b>1</b> Seus dados</div>
+      <label for="nome">Nome completo</label>
+      <input type="text" id="nome" autocomplete="name" placeholder="Como está no seu documento">
+      <div class="dica" id="d-nome"></div>
+      <div class="duas">
+        <div><label for="tel">WhatsApp</label><input type="tel" id="tel" inputmode="tel" autocomplete="tel" placeholder="(00) 00000-0000"><div class="dica" id="d-tel"></div></div>
+        <div><label for="email">E-mail</label><input type="email" id="email" autocomplete="email" placeholder="seuemail@exemplo.com"><div class="dica" id="d-email"></div></div>
+      </div>
+
+      <div class="etapa"><b>2</b> Onde você mora</div>
+      <div class="duas">
+        <div><label for="cep">CEP <span class="opc">(preenche a cidade sozinho)</span></label><input type="text" id="cep" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" maxlength="9"><div class="dica" id="d-cep"></div></div>
+        <div><label for="cidade">Cidade</label><div class="campo"><input type="text" id="cidade" autocomplete="off" placeholder="Comece a digitar…" role="combobox" aria-autocomplete="list" aria-expanded="false"><div class="lista" id="lista-cidade" role="listbox"></div></div><div class="dica" id="d-cidade"></div></div>
+      </div>
+      <input type="hidden" id="bairro">
+
+      <div class="etapa"><b>3</b> Qual vaga você procura</div>
+      <label for="cargo">Cargo desejado</label>
+      <input type="text" id="cargo" autocomplete="off" placeholder="Ex.: Motorista, Auxiliar administrativo…">
+      <div class="chips" id="chips"></div>
+      <div class="dica" id="d-cargo"></div>
+      <label class="check"><input type="checkbox" id="primeiro"> Estou procurando o meu primeiro emprego</label>
+
+      <div class="etapa"><b>4</b> Crie sua senha</div>
+      <label for="senha">Senha <span class="opc">(mínimo 6 caracteres)</span></label>
+      <div class="campo"><input type="password" id="senha" autocomplete="new-password" placeholder="Crie uma senha"><button type="button" class="olho" aria-label="Mostrar senha" onclick="const s=document.getElementById('senha'); s.type = s.type === 'password' ? 'text' : 'password';">👁️</button></div>
+      <div class="dica" id="d-senha"></div>
+
+      <label class="check"><input type="checkbox" id="lgpd"> Autorizo a Impulsionar a guardar meus dados e compartilhar meu currículo com empresas parceiras para processos seletivos (LGPD).</label>
+
+      <button type="submit" class="enviar" id="btn">QUERO ME CADASTRAR 🚀</button>
+      <div class="msg" id="msg"></div>
+      <div class="seguro">🔒 Seus dados ficam protegidos e você pode atualizar quando quiser.</div>
+      <div class="ja">Já tem cadastro? <a href="/">Entrar</a></div>
+    </form>
+  </div>
+
+  <div class="beneficios">
+    <div><span class="ic">🎯</span><strong>Vagas para o seu perfil</strong>Você escolhe o cargo e a cidade e recebe as vagas certas.</div>
+    <div><span class="ic">🏢</span><strong>Empresas parceiras</strong>Seu currículo fica no banco de talentos que as empresas consultam.</div>
+    <div><span class="ic">📈</span><strong>Desenvolvimento</strong>A Impulsionar é especialista em desenvolvimento de lideranças.</div>
+  </div>
+</main>
+<footer>🚀 Powered by <strong>Impulsionar V4</strong></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const CARGOS = ['Motorista', 'Ajudante de entrega', 'Auxiliar de logística', 'Conferente', 'Operador de empilhadeira', 'Repositor', 'Vendedor', 'Promotor de vendas', 'Auxiliar administrativo', 'Assistente financeiro', 'Analista', 'Supervisor', 'Coordenador', 'Gerente', 'Mecânico', 'Recepcionista', 'Jovem aprendiz', 'Estágio'];
+let CIDADES = null, CIDADE_OK = null, IDX = -1, RES = [], ORIGEM = new URLSearchParams(location.search).get('origem') || (document.referrer.includes('instagram') ? 'instagram' : '');
+
+// ---------- lista de cidades (IBGE) ----------
+async function carregarCidades() {
+  if (CIDADES) return CIDADES;
+  try { const r = await fetch('/api/public/cidades'); if (r.ok) { CIDADES = (await r.json()).map(([n, uf]) => ({ n, uf, k: norm(n) })); return CIDADES; } } catch (e) {}
+  try { const r = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios?view=nivelado'); if (r.ok) { CIDADES = (await r.json()).map(m => ({ n: m['municipio-nome'], uf: m['UF-sigla'], k: norm(m['municipio-nome']) })).sort((a, b) => a.n.localeCompare(b.n, 'pt-BR')); return CIDADES; } } catch (e) {}
+  return null;
+}
+carregarCidades();
+function buscarCidades(txt) {
+  const t = norm(txt).replace(/\s*[\/-]\s*[a-z]{2}$/, ''); if (t.length < 2 || !CIDADES) return [];
+  const uf = (norm(txt).match(/[\/-]\s*([a-z]{2})$/) || [])[1];
+  const comeca = [], contem = [];
+  for (const c of CIDADES) { if (uf && c.uf.toLowerCase() !== uf) continue; if (c.k.startsWith(t)) comeca.push(c); else if (c.k.includes(' ' + t) || (t.length >= 4 && c.k.includes(t))) contem.push(c); if (comeca.length >= 12) break; }
+  return comeca.concat(contem).slice(0, 12);
+}
+function mostrarLista() {
+  const inp = $('cidade'), l = $('lista-cidade'), v = inp.value;
+  if (CIDADE_OK && v === `${CIDADE_OK.n}/${CIDADE_OK.uf}`) { l.style.display = 'none'; return; }
+  CIDADE_OK = null; inp.classList.remove('ok');
+  if (norm(v).length < 2) { l.style.display = 'none'; inp.setAttribute('aria-expanded', 'false'); return; }
+  if (!CIDADES) { l.innerHTML = '<div class="vazio">Carregando cidades… ou preencha o CEP.</div>'; l.style.display = 'block'; carregarCidades().then(() => { if (document.activeElement === inp) mostrarLista(); }); return; }
+  const r = buscarCidades(v); RES = r; IDX = -1;
+  l.innerHTML = r.length ? r.map((c, i) => `<button type="button" role="option" data-i="${i}" onmousedown="event.preventDefault()" onclick="escolherCidade(RES[${i}].n, RES[${i}].uf)"><span>${esc(c.n)}</span><small>${c.uf}</small></button>`).join('') : '<div class="vazio">Nenhuma cidade encontrada com esse nome. Confira a escrita ou use o CEP.</div>';
+  l.style.display = 'block'; inp.setAttribute('aria-expanded', 'true');
+}
+function escolherCidade(n, uf) {
+  CIDADE_OK = { n, uf }; const inp = $('cidade'); inp.value = `${n}/${uf}`; inp.classList.add('ok'); inp.classList.remove('invalido');
+  $('lista-cidade').style.display = 'none'; inp.setAttribute('aria-expanded', 'false');
+  dica('cidade', '✔ Cidade confirmada', 'certo'); progresso();
+}
+$('cidade').addEventListener('input', mostrarLista);
+$('cidade').addEventListener('focus', mostrarLista);
+$('cidade').addEventListener('blur', () => setTimeout(() => {
+  $('lista-cidade').style.display = 'none';
+  const v = $('cidade').value; if (!v || CIDADE_OK) return;
+  const r = buscarCidades(v); if (r.length === 1 || (r[0] && r[0].k === norm(v).replace(/\s*[\/-]\s*[a-z]{2}$/, '') && !r.slice(1).some(x => x.k === r[0].k))) escolherCidade(r[0].n, r[0].uf);
+  else dica('cidade', 'Escolha a cidade na lista que aparece ao digitar.', 'erro');
+}, 150));
+$('cidade').addEventListener('keydown', e => {
+  const bts = [...$('lista-cidade').querySelectorAll('button')]; if (!bts.length) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); IDX = (IDX + (e.key === 'ArrowDown' ? 1 : -1) + bts.length) % bts.length; bts.forEach((b, i) => b.classList.toggle('ativo', i === IDX)); bts[IDX].scrollIntoView({ block: 'nearest' }); }
+  if (e.key === 'Enter') { e.preventDefault(); (bts[IDX] || bts[0]).click(); }
+});
+
+// ---------- CEP ----------
+$('cep').addEventListener('input', async e => {
+  let v = e.target.value.replace(/\D/g, '').slice(0, 8); e.target.value = v.length > 5 ? v.slice(0, 5) + '-' + v.slice(5) : v;
+  if (v.length !== 8) { dica('cep', ''); return; }
+  dica('cep', 'Buscando CEP…');
+  let r = null;
+  try { const x = await fetch('/api/public/cep/' + v); if (x.ok) r = await x.json(); } catch (er) {}
+  if (!r) { try { const x = await fetch(`https://viacep.com.br/ws/${v}/json/`); const j = await x.json(); if (!j.erro) r = { cidade: j.localidade, uf: j.uf, bairro: j.bairro }; } catch (er) {} }
+  if (!r || !r.cidade) { dica('cep', 'CEP não encontrado — escolha a cidade na lista.', 'erro'); e.target.classList.add('invalido'); return; }
+  e.target.classList.remove('invalido'); e.target.classList.add('ok');
+  $('bairro').value = r.bairro || '';
+  await carregarCidades();
+  const c = CIDADES && CIDADES.find(x => x.k === norm(r.cidade) && x.uf === r.uf);
+  escolherCidade(c ? c.n : r.cidade, r.uf);
+  dica('cep', `✔ ${r.bairro ? r.bairro + ' · ' : ''}${r.cidade}/${r.uf}`, 'certo');
+});
+
+// ---------- cargo ----------
+$('chips').innerHTML = CARGOS.slice(0, 8).map(c => `<button type="button" onclick="$('cargo').value='${c}'; marcarChips(); progresso();">${c}</button>`).join('');
+function marcarChips() { [...$('chips').children].forEach(b => b.classList.toggle('on', norm(b.textContent) === norm($('cargo').value))); }
+$('cargo').addEventListener('input', () => { marcarChips(); progresso(); });
+
+// ---------- telefone / validação ----------
+$('tel').addEventListener('input', e => {
+  const v = e.target.value.replace(/\D/g, '').slice(0, 11);
+  e.target.value = v.length > 10 ? `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}` : v.length > 6 ? `(${v.slice(0, 2)}) ${v.slice(2, 6)}-${v.slice(6)}` : v.length > 2 ? `(${v.slice(0, 2)}) ${v.slice(2)}` : v;
+});
+function dica(id, txt, tipo) { const d = $('d-' + id); if (!d) return; d.textContent = txt || ''; d.className = 'dica' + (tipo ? ' ' + tipo : ''); }
+const regras = {
+  nome: v => v.trim().split(/\s+/).length >= 2 ? '' : 'Digite nome e sobrenome.',
+  tel: v => v.replace(/\D/g, '').length >= 10 ? '' : 'Digite o WhatsApp com DDD.',
+  email: v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? '' : 'Digite um e-mail válido.',
+  cidade: () => CIDADE_OK ? '' : 'Escolha a cidade na lista (ou preencha o CEP).',
+  cargo: v => v.trim().length >= 3 ? '' : 'Diga qual vaga você procura.',
+  senha: v => v.length >= 6 ? '' : 'A senha precisa ter pelo menos 6 caracteres.'
+};
+Object.keys(regras).forEach(k => { const el = $(k); el.addEventListener('blur', () => { if (k === 'cidade') return; const e = regras[k](el.value); el.classList.toggle('invalido', !!e && el.value !== ''); el.classList.toggle('ok', !e); if (el.value) dica(k, e, e ? 'erro' : ''); progresso(); }); el.addEventListener('input', progresso); });
+function progresso() {
+  const ok = Object.keys(regras).filter(k => !regras[k]($(k).value)).length + ($('lgpd').checked ? 1 : 0), tot = Object.keys(regras).length + 1, p = Math.round(ok / tot * 100);
+  $('prog').style.width = p + '%'; $('progtxt').textContent = p + '%';
+}
+$('lgpd').addEventListener('change', progresso);
+
+// ---------- enviar ----------
+$('form').addEventListener('submit', async e => {
+  e.preventDefault();
+  let primeiroErro = null;
+  Object.keys(regras).forEach(k => { const er = regras[k]($(k).value); if (er) { dica(k, er, 'erro'); $(k).classList.add('invalido'); if (!primeiroErro) primeiroErro = k; } });
+  if (primeiroErro) { $(primeiroErro).focus(); $(primeiroErro).scrollIntoView({ behavior: 'smooth', block: 'center' }); $('msg').className = 'msg erro'; $('msg').textContent = 'Confira os campos em vermelho.'; return; }
+  if (!$('lgpd').checked) { $('msg').className = 'msg erro'; $('msg').textContent = 'Marque a autorização de uso dos dados para continuar.'; return; }
+  const btn = $('btn'); btn.disabled = true; btn.textContent = 'Enviando…'; $('msg').className = 'msg'; $('msg').textContent = '';
+  try {
+    const r = await fetch('/api/portal/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      name: $('nome').value.trim(), email: $('email').value.trim(), password: $('senha').value, phone: $('tel').value.trim(),
+      desired_role: $('cargo').value.trim(), city: `${CIDADE_OK.n}/${CIDADE_OK.uf}`, cep: $('cep').value, neighborhood: $('bairro').value,
+      first_job: $('primeiro').checked, lgpd: true, origem: ORIGEM || 'link' }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'Não foi possível concluir o cadastro.');
+    const email = $('email').value.trim(), primeiroNome = $('nome').value.trim().split(' ')[0];
+    $('card').innerHTML = `<div class="sucesso"><div class="ic">🎉</div><h2>Cadastro feito, ${esc(primeiroNome)}!</h2>
+      <p>${esc(j.message || 'Agora entre para completar o seu currículo.')}</p>
+      <p style="font-size:14px;"><strong>Próximo passo:</strong> entre com seu e-mail e senha e complete o currículo (experiências, formação e foto). Currículo completo aparece primeiro para as empresas.</p>
+      <a class="bt" style="background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;" href="/#entrar=${encodeURIComponent(email)}">Entrar e completar meu currículo →</a>
+      <a class="bt" style="background:#f1f5f9;color:#0b1329;" target="_blank" href="https://wa.me/?text=${encodeURIComponent('Acabei de cadastrar meu currículo no banco de talentos da Impulsionar. Cadastre o seu também, é grátis: ' + location.origin + '/cadastro.html')}">Indicar para um amigo no WhatsApp</a></div>`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (er) { $('msg').className = 'msg erro'; $('msg').textContent = '⚠️ ' + er.message; btn.disabled = false; btn.textContent = 'QUERO ME CADASTRAR 🚀'; }
+});
+progresso();
+</script>
+</body>
+</html>
