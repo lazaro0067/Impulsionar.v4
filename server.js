@@ -65,14 +65,78 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-const transporter = nodemailer.createTransport({
+// ---------- Envio de e-mail ----------
+// O Railway bloqueia SMTP (portas 25/465/587) nos planos Free/Trial/Hobby — a conexão fica
+// "pendurada" até estourar o tempo. Por isso o envio pode ir por API HTTPS (Brevo ou Resend),
+// configurada na tela Meu Perfil do Master; o SMTP do .env fica como alternativa.
+const SMTP_PORTA = Number(process.env.SMTP_PORT) || 2525;
+const smtpTransporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.mailtrap.io',
-    port: Number(process.env.SMTP_PORT) || 2525,
+    port: SMTP_PORTA,
+    secure: SMTP_PORTA === 465,
+    connectionTimeout: 15000, greetingTimeout: 15000, socketTimeout: 25000,
     auth: {
         user: process.env.SMTP_USER || 'seu_usuario_smtp',
         pass: process.env.SMTP_PASS || 'sua_senha_smtp'
     }
 });
+let EMAIL_API = { provedor: process.env.BREVO_API_KEY ? 'brevo' : process.env.RESEND_API_KEY ? 'resend' : '', chave: process.env.BREVO_API_KEY || process.env.RESEND_API_KEY || '', remetente: process.env.EMAIL_FROM || '' };
+function separarRemetenteEmail(txt) {
+    const t = String(txt || '').trim(), m = t.match(/^\s*"?([^"<]*)"?\s*<([^>]+)>\s*$/);
+    return m ? { nome: m[1].trim(), email: m[2].trim() } : { nome: '', email: t };
+}
+function listaEmails(v) { return (Array.isArray(v) ? v : String(v || '').split(',')).map(x => separarRemetenteEmail(x).email).filter(Boolean); }
+function anexosEmailApi(opts) {
+    const l = [];
+    (opts.attachments || []).forEach(a => {
+        let conteudo = a.content;
+        if (conteudo === undefined && a.path) { try { conteudo = fs.readFileSync(a.path); } catch (e) { return; } }
+        if (conteudo === undefined) return;
+        l.push({ nome: a.filename || 'anexo', base64: Buffer.isBuffer(conteudo) ? conteudo.toString('base64') : (a.encoding === 'base64' ? String(conteudo) : Buffer.from(String(conteudo)).toString('base64')) });
+    });
+    if (opts.icalEvent && opts.icalEvent.content) l.push({ nome: opts.icalEvent.filename || 'convite.ics', base64: Buffer.from(String(opts.icalEvent.content)).toString('base64') });
+    return l;
+}
+async function enviarEmailPorApi(opts) {
+    const rem = separarRemetenteEmail(EMAIL_API.remetente || opts.from || '');
+    const doOpts = separarRemetenteEmail(opts.from || '');
+    const nome = rem.nome || doOpts.nome || 'Impulsionar V4';
+    const para = listaEmails(opts.to), cc = listaEmails(opts.cc), bcc = listaEmails(opts.bcc);
+    if (!para.length) throw new Error('Destinatário vazio.');
+    if (!rem.email) throw new Error('Configure o e-mail remetente do envio por API.');
+    const anexos = anexosEmailApi(opts);
+    const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 20000);
+    try {
+        let r;
+        if (EMAIL_API.provedor === 'resend') {
+            r = await fetch('https://api.resend.com/emails', { method: 'POST', signal: ctrl.signal, headers: { Authorization: 'Bearer ' + EMAIL_API.chave, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ from: `${nome} <${rem.email}>`, to: para, cc: cc.length ? cc : undefined, bcc: bcc.length ? bcc : undefined, reply_to: opts.replyTo || undefined, subject: opts.subject || '', html: opts.html || undefined, text: opts.text || undefined, attachments: anexos.length ? anexos.map(a => ({ filename: a.nome, content: a.base64 })) : undefined }) });
+        } else {
+            r = await fetch('https://api.brevo.com/v3/smtp/email', { method: 'POST', signal: ctrl.signal, headers: { 'api-key': EMAIL_API.chave, 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({ sender: { name: nome, email: rem.email }, to: para.map(email => ({ email })), cc: cc.length ? cc.map(email => ({ email })) : undefined, bcc: bcc.length ? bcc.map(email => ({ email })) : undefined, replyTo: opts.replyTo ? { email: separarRemetenteEmail(opts.replyTo).email } : undefined, subject: opts.subject || '(sem assunto)', htmlContent: opts.html || undefined, textContent: opts.html ? undefined : (opts.text || ' '), attachment: anexos.length ? anexos.map(a => ({ name: a.nome, content: a.base64 })) : undefined }) });
+        }
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error((j && (j.message || j.error || j.code)) ? `${EMAIL_API.provedor === 'resend' ? 'Resend' : 'Brevo'}: ${j.message || j.error || j.code}` : `Erro ${r.status} no envio por API.`);
+        return { messageId: j.messageId || j.id || '', accepted: para };
+    } catch (e) {
+        if (e.name === 'AbortError') throw new Error('O serviço de e-mail não respondeu em 20 segundos.');
+        throw e;
+    } finally { clearTimeout(timer); }
+}
+function explicarErroSmtp(e) {
+    const m = String(e && e.message || e);
+    if (/ETIMEDOUT|timeout|Greeting never received|Connection timeout|ECONNREFUSED|ENETUNREACH/i.test(m)) return new Error('O servidor não conseguiu conectar no SMTP (tempo esgotado). No Railway, o SMTP é bloqueado nos planos Free/Trial/Hobby — configure o envio por API (Brevo ou Resend) em Meu Perfil. Detalhe: ' + m);
+    if (/Invalid login|535|Username and Password not accepted|EAUTH/i.test(m)) return new Error('Usuário ou senha do SMTP recusados. No Gmail é preciso usar uma "senha de app" (não a senha normal). Detalhe: ' + m);
+    return e instanceof Error ? e : new Error(m);
+}
+// Mesmo formato do nodemailer (promise ou callback), para não mexer em quem já usa.
+const transporter = {
+    sendMail(opts, cb) {
+        const p = (EMAIL_API.provedor && EMAIL_API.chave ? enviarEmailPorApi(opts) : smtpTransporter.sendMail(opts).catch(e => { throw explicarErroSmtp(e); }));
+        if (typeof cb === 'function') { p.then(info => cb(null, info), err => cb(err)); return undefined; }
+        return p;
+    }
+};
 
 // ---------- Convites de calendário (.ics) — integração com Outlook e Gmail ----------
 // Não precisa de credenciais de API do Google/Microsoft: um e-mail com um anexo
@@ -452,6 +516,12 @@ function inicializarBase() {
         db.run(`ALTER TABLE users ADD COLUMN mentor_id INTEGER`, () => {});
         // Acesso criado pela própria empresa: entra sem permissões e só loga depois que o Master aprovar.
         db.run(`ALTER TABLE users ADD COLUMN aprovacao_pendente INTEGER DEFAULT 0`, () => {});
+        db.run(`ALTER TABLE users ADD COLUMN ultimo_login TEXT`, () => {});
+        db.run(`ALTER TABLE users ADD COLUMN qtd_logins INTEGER DEFAULT 0`, () => {});
+        db.run(`ALTER TABLE users ADD COLUMN criado_em TEXT`, () => {});
+        db.run(`CREATE TABLE IF NOT EXISTS vaga_creditos_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, company_id INTEGER NOT NULL, dias INTEGER NOT NULL, motivo TEXT,
+            tipo TEXT, user_id INTEGER, job_posting_id INTEGER, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
         db.run(`ALTER TABLE users ADD COLUMN whatsapp_number TEXT`, () => {});
         db.run(`ALTER TABLE users ADD COLUMN whatsapp_notifications INTEGER DEFAULT 0`, () => {});
         // Permissão de módulos INDIVIDUAL por acesso (client_admin) dentro da
@@ -498,6 +568,11 @@ function inicializarBase() {
             key TEXT PRIMARY KEY,
             value TEXT
         )`);
+        db.all(`SELECT key, value FROM integration_settings WHERE key IN ('email_api_provedor', 'email_api_chave', 'email_api_remetente')`, [], (err, rows) => {
+            if (err || !rows || !rows.length) return;
+            const m = Object.fromEntries(rows.map(r => [r.key, r.value]));
+            if (m.email_api_provedor && m.email_api_chave) EMAIL_API = { provedor: m.email_api_provedor, chave: m.email_api_chave, remetente: m.email_api_remetente || '' };
+        });
         db.get(`SELECT value FROM integration_settings WHERE key = 'mp_access_token'`, [], (err, row) => {
             if (!err && row && row.value) {
                 configurarMercadoPago(row.value);
@@ -1966,6 +2041,7 @@ app.post('/api/login', (req, res) => {
         if (Number(user.aprovacao_pendente) === 1) {
             return res.status(403).json({ error: 'Seu acesso foi criado e está aguardando a aprovação da Impulsionar. Você será avisado assim que for liberado.' });
         }
+        db.run(`UPDATE users SET ultimo_login = CURRENT_TIMESTAMP, qtd_logins = COALESCE(qtd_logins, 0) + 1 WHERE id = ?`, [user.id], () => {});
 
         const token = jwt.sign(
             { userId: user.id, role: user.role, companyId: user.company_id, employeeId: user.employee_id || null, mentorId: user.mentor_id || null },
@@ -2414,16 +2490,164 @@ app.delete('/api/companies/:id/members/:memberId', requireRole('admin', 'client_
 // Crédito de dias de divulgação de vaga — o Master concede como bônus (soma ao
 // saldo já existente, nunca sobrescreve) e ele é consumido automaticamente
 // quando uma vaga desta empresa é aprovada, em vez de cobrar pelo Mercado Pago.
+function registrarCreditoVaga(companyId, dias, tipo, motivo, userId, jobId) {
+    db.run(`INSERT INTO vaga_creditos_log (company_id, dias, tipo, motivo, user_id, job_posting_id) VALUES (?, ?, ?, ?, ?, ?)`,
+        [companyId, dias, tipo, String(motivo || '').slice(0, 300), userId || null, jobId || null], () => {});
+}
+// Positivo soma ao saldo; negativo retira (nunca deixa o saldo abaixo de zero).
 app.post('/api/companies/:id/credito', requireRole('admin'), async (req, res) => {
-    const dias = Number(req.body.dias);
-    if (!dias || dias <= 0) return res.status(400).json({ error: 'Informe uma quantidade de dias válida.' });
-    db.run(`UPDATE companies SET vaga_credito_dias = COALESCE(vaga_credito_dias, 0) + ? WHERE id = ?`, [dias, req.params.id], function(err) {
-        if (err) return res.status(400).json({ error: 'Erro ao adicionar crédito.' });
-        if (this.changes === 0) return res.status(404).json({ error: 'Empresa não encontrada.' });
-        dbGet(`SELECT vaga_credito_dias FROM companies WHERE id = ?`, [req.params.id]).then(c => {
-            res.json({ message: `+${dias} dias de crédito adicionados!`, total: c.vaga_credito_dias });
+    const dias = Math.trunc(Number(req.body.dias));
+    if (!dias) return res.status(400).json({ error: 'Informe uma quantidade de dias válida.' });
+    try {
+        const emp = await dbGet(`SELECT id, name, COALESCE(vaga_credito_dias, 0) as saldo FROM companies WHERE id = ?`, [req.params.id]);
+        if (!emp) return res.status(404).json({ error: 'Empresa não encontrada.' });
+        const mov = dias < 0 ? -Math.min(-dias, emp.saldo) : dias;
+        if (!mov) return res.status(400).json({ error: 'A empresa não tem saldo para retirar.' });
+        await new Promise((ok, erro) => db.run(`UPDATE companies SET vaga_credito_dias = COALESCE(vaga_credito_dias, 0) + ? WHERE id = ?`, [mov, emp.id], e => e ? erro(e) : ok()));
+        registrarCreditoVaga(emp.id, mov, mov > 0 ? 'concedido' : 'retirado', req.body.motivo, req.user.userId, null);
+        if (mov > 0) notificarPorCompanyAdmins(emp.id, 'Crédito de vagas liberado! 🎁', `A Impulsionar liberou ${mov} dia(s) para você publicar vagas sem pagar.`, 'jobPostings');
+        const total = emp.saldo + mov;
+        res.json({ message: mov > 0 ? `+${mov} dias de crédito adicionados!` : `${-mov} dia(s) retirados do saldo.`, total });
+    } catch (e) { res.status(400).json({ error: 'Erro ao ajustar crédito.' }); }
+});
+
+app.get('/api/admin/vaga-creditos', requireRole('admin'), async (req, res) => {
+    try {
+        const empresas = await dbAll(`SELECT c.id, c.name, c.logo_url, COALESCE(c.vaga_credito_dias, 0) as saldo,
+                (SELECT COUNT(*) FROM job_postings jp WHERE jp.company_id = c.id AND jp.deleted_at IS NULL AND jp.status = 'active' AND jp.expires_at > CURRENT_TIMESTAMP) as ativas,
+                (SELECT COUNT(*) FROM job_postings jp WHERE jp.company_id = c.id AND jp.deleted_at IS NULL AND jp.status = 'pending_payment') as aguardandoPagamento,
+                (SELECT COALESCE(SUM(dias), 0) FROM vaga_creditos_log l WHERE l.company_id = c.id AND l.tipo IN ('concedido')) as totalConcedido,
+                (SELECT COALESCE(-SUM(dias), 0) FROM vaga_creditos_log l WHERE l.company_id = c.id AND l.tipo = 'consumido') as totalConsumido
+            FROM companies c ORDER BY c.name COLLATE NOCASE`);
+        const log = await dbAll(`SELECT l.*, c.name as companyName, u.name as userName, jp.title as vagaTitulo FROM vaga_creditos_log l
+            LEFT JOIN companies c ON c.id = l.company_id LEFT JOIN users u ON u.id = l.user_id LEFT JOIN job_postings jp ON jp.id = l.job_posting_id
+            ORDER BY l.created_at DESC, l.id DESC LIMIT 200`);
+        res.json({ empresas, log });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar créditos.' }); }
+});
+
+app.get('/api/minha-empresa/credito-vagas', requireRole('client_admin'), async (req, res) => {
+    try {
+        const c = await dbGet(`SELECT COALESCE(vaga_credito_dias, 0) as saldo FROM companies WHERE id = ?`, [req.user.companyId]);
+        res.json({ saldo: c ? c.saldo : 0 });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar crédito.' }); }
+});
+
+async function publicarVagaSemPagamento(vaga, dias, userId) {
+    await new Promise((ok, erro) => db.run(
+        `UPDATE job_postings SET status = 'active', approved_by = COALESCE(approved_by, ?), approved_at = COALESCE(approved_at, CURRENT_TIMESTAMP),
+            published_at = CURRENT_TIMESTAMP, expires_at = datetime(CURRENT_TIMESTAMP, '+${Number(dias)} days'), paid_with_credit = 1 WHERE id = ?`,
+        [userId, vaga.id], e => e ? erro(e) : ok()));
+}
+// A empresa (ou o Master) usa o saldo de crédito para publicar uma vaga que
+// está aguardando pagamento.
+app.post('/api/job-postings/:id/usar-credito', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const vaga = await dbGet(`SELECT jp.*, vp.days as planDays FROM job_postings jp LEFT JOIN vaga_plans vp ON vp.id = jp.vaga_plan_id WHERE jp.id = ? AND jp.deleted_at IS NULL`, [req.params.id]);
+        if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada.' });
+        if (req.user.role === 'client_admin' && vaga.company_id !== req.user.companyId) return res.status(403).json({ error: 'Esta vaga não pertence à sua empresa.' });
+        if (vaga.status !== 'pending_payment') return res.status(400).json({ error: 'Esta vaga não está aguardando pagamento.' });
+        const dias = vaga.planDays || 30;
+        const emp = await dbGet(`SELECT COALESCE(vaga_credito_dias, 0) as saldo FROM companies WHERE id = ?`, [vaga.company_id]);
+        if (!emp || emp.saldo < dias) return res.status(400).json({ error: `Crédito insuficiente: esta vaga precisa de ${dias} dia(s) e o saldo é ${emp ? emp.saldo : 0}. Peça para a Impulsionar liberar crédito.` });
+        await publicarVagaSemPagamento(vaga, dias, req.user.userId);
+        db.run(`UPDATE companies SET vaga_credito_dias = vaga_credito_dias - ? WHERE id = ?`, [dias, vaga.company_id], () => {});
+        registrarCreditoVaga(vaga.company_id, -dias, 'consumido', `Vaga "${vaga.title}" publicada com crédito`, req.user.userId, vaga.id);
+        res.json({ message: `Vaga publicada usando ${dias} dia(s) de crédito!` });
+    } catch (e) { res.status(400).json({ error: 'Erro ao publicar com crédito.' }); }
+});
+// Só o Master: libera a vaga como cortesia, sem cobrar e sem mexer no saldo.
+app.post('/api/job-postings/:id/liberar-cortesia', requireRole('admin'), async (req, res) => {
+    try {
+        const vaga = await dbGet(`SELECT jp.*, vp.days as planDays FROM job_postings jp LEFT JOIN vaga_plans vp ON vp.id = jp.vaga_plan_id WHERE jp.id = ? AND jp.deleted_at IS NULL`, [req.params.id]);
+        if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada.' });
+        if (!['pending_payment', 'pendente_aprovacao'].includes(vaga.status)) return res.status(400).json({ error: 'Só dá para liberar vagas aguardando aprovação ou pagamento.' });
+        const dias = Math.max(1, Math.min(365, Math.trunc(Number(req.body.dias)) || vaga.planDays || 30));
+        await publicarVagaSemPagamento(vaga, dias, req.user.userId);
+        registrarCreditoVaga(vaga.company_id, 0, 'cortesia', `Vaga "${vaga.title}" liberada sem pagamento por ${dias} dia(s)${req.body.motivo ? ' — ' + req.body.motivo : ''}`, req.user.userId, vaga.id);
+        notificarPorCompanyAdmins(vaga.company_id, 'Vaga liberada pela Impulsionar! 🎁', `"${vaga.title}" foi publicada sem custo por ${dias} dia(s).`, 'jobPostings');
+        res.json({ message: `Vaga liberada sem pagamento por ${dias} dia(s)!` });
+    } catch (e) { res.status(400).json({ error: 'Erro ao liberar a vaga.' }); }
+});
+
+// ---------- Acessos dos candidatos (visão do Master) ----------
+function senhaAleatoria() { return crypto.randomBytes(6).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 6) + Math.floor(10 + Math.random() * 89); }
+app.get('/api/admin/candidate-accesses', requireRole('admin'), async (req, res) => {
+    try {
+        const lista = await dbAll(`SELECT u.id, u.name, u.email, u.ultimo_login, COALESCE(u.qtd_logins, 0) as qtd_logins,
+                COALESCE(u.criado_em, cp.created_at) as criado_em, cp.phone, cp.city, cp.desired_role, cp.status, cp.origem, cp.resume_url, cp.photo_url,
+                cp.experiences_json, cp.skills, cp.bio,
+                (SELECT COUNT(*) FROM job_applications ja WHERE ja.candidate_user_id = u.id) as candidaturas
+            FROM users u LEFT JOIN candidate_profiles cp ON cp.user_id = u.id WHERE u.role = 'candidate' ORDER BY COALESCE(u.criado_em, cp.created_at) DESC, u.id DESC`);
+        res.json(lista.map(c => {
+            const itens = [c.phone, c.city, c.desired_role, c.photo_url, c.bio, c.skills, c.resume_url, c.experiences_json && c.experiences_json !== '[]' ? 1 : ''];
+            const completo = Math.round(100 * itens.filter(Boolean).length / itens.length);
+            const { experiences_json, skills, bio, ...resto } = c;
+            return { ...resto, completo };
+        }));
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar acessos.' }); }
+});
+app.post('/api/admin/candidate-accesses', requireRole('admin'), async (req, res) => {
+    const b = req.body || {};
+    const name = String(b.name || '').trim(), email = String(b.email || '').trim().toLowerCase();
+    if (!name || !/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: 'Informe nome e um e-mail válido.' });
+    const senha = String(b.password || '').trim() || senhaAleatoria();
+    if (senha.length < 6) return res.status(400).json({ error: 'A senha precisa ter pelo menos 6 caracteres.' });
+    try {
+        const hash = await bcrypt.hash(senha, 10);
+        const userId = await new Promise((ok, erro) => db.run(`INSERT INTO users (name, email, password, role, criado_em) VALUES (?, ?, ?, 'candidate', CURRENT_TIMESTAMP)`, [name, email, hash], function (e) { e ? erro(e) : ok(this.lastID); }))
+            .catch(() => { throw new Error('Este e-mail já tem acesso.'); });
+        const city = String(b.city || '').trim();
+        await new Promise((ok, erro) => db.run(`INSERT INTO candidate_profiles (user_id, phone, desired_role, city, state, status, origem) VALUES (?, ?, ?, ?, ?, ?, 'master')`,
+            [userId, String(b.phone || '').trim(), String(b.desired_role || '').trim(), city, city.includes('/') ? city.split('/')[1].trim().toUpperCase() : '', b.aprovado === false ? 'pending' : 'approved'], e => e ? erro(e) : ok()));
+        const base = appBaseUrlAtiva || process.env.APP_URL || `http://localhost:${PORT}`;
+        let emailEnviado = false;
+        if (b.enviarEmail) {
+            try {
+                await transporter.sendMail({ from: process.env.SMTP_FROM || process.env.SMTP_USER || EMAIL_API.remetente, to: email, subject: 'Seu acesso ao Portal de Vagas Impulsionar',
+                    html: `<p>Olá, ${name.split(' ')[0]}!</p><p>A Impulsionar criou o seu acesso ao Portal de Vagas.</p><p><b>Link:</b> <a href="${base}/#entrar=${encodeURIComponent(email)}">${base}</a><br><b>E-mail:</b> ${email}<br><b>Senha:</b> ${senha}</p><p>Recomendamos trocar a senha no primeiro acesso e completar o seu currículo.</p>` });
+                emailEnviado = true;
+            } catch (e) {}
+        }
+        res.json({ message: 'Acesso criado!', id: userId, senha, link: `${base}/#entrar=${encodeURIComponent(email)}`, emailEnviado });
+    } catch (e) { res.status(400).json({ error: e.message || 'Erro ao criar acesso.' }); }
+});
+app.put('/api/admin/candidate-accesses/:id', requireRole('admin'), async (req, res) => {
+    const b = req.body || {};
+    const name = String(b.name || '').trim(), email = String(b.email || '').trim().toLowerCase();
+    if (!name || !/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: 'Informe nome e um e-mail válido.' });
+    try {
+        const u = await dbGet(`SELECT id FROM users WHERE id = ? AND role = 'candidate'`, [req.params.id]);
+        if (!u) return res.status(404).json({ error: 'Candidato não encontrado.' });
+        await new Promise((ok, erro) => db.run(`UPDATE users SET name = ?, email = ? WHERE id = ?`, [name, email, u.id], e => e ? erro(new Error('Este e-mail já é usado por outro acesso.')) : ok()));
+        const city = String(b.city || '').trim();
+        db.run(`INSERT OR IGNORE INTO candidate_profiles (user_id) VALUES (?)`, [u.id], () => {
+            db.run(`UPDATE candidate_profiles SET phone = ?, desired_role = ?, city = ?, state = CASE WHEN ? <> '' THEN ? ELSE state END WHERE user_id = ?`,
+                [String(b.phone || '').trim(), String(b.desired_role || '').trim(), city, city.includes('/') ? 'x' : '', city.includes('/') ? city.split('/')[1].trim().toUpperCase() : '', u.id], () => res.json({ message: 'Acesso atualizado!' }));
         });
-    });
+    } catch (e) { res.status(400).json({ error: e.message || 'Erro ao atualizar.' }); }
+});
+app.post('/api/admin/candidate-accesses/:id/reset-password', requireRole('admin'), async (req, res) => {
+    try {
+        const u = await dbGet(`SELECT id, email FROM users WHERE id = ? AND role = 'candidate'`, [req.params.id]);
+        if (!u) return res.status(404).json({ error: 'Candidato não encontrado.' });
+        const senha = senhaAleatoria();
+        const hash = await bcrypt.hash(senha, 10);
+        await new Promise((ok, erro) => db.run(`UPDATE users SET password = ? WHERE id = ?`, [hash, u.id], e => e ? erro(e) : ok()));
+        const base = appBaseUrlAtiva || process.env.APP_URL || `http://localhost:${PORT}`;
+        res.json({ message: 'Nova senha gerada!', senha, link: `${base}/#entrar=${encodeURIComponent(u.email)}` });
+    } catch (e) { res.status(400).json({ error: 'Erro ao gerar senha.' }); }
+});
+app.delete('/api/admin/candidate-accesses/:id', requireRole('admin'), async (req, res) => {
+    try {
+        const u = await dbGet(`SELECT id FROM users WHERE id = ? AND role = 'candidate'`, [req.params.id]);
+        if (!u) return res.status(404).json({ error: 'Candidato não encontrado.' });
+        for (const sql of [`DELETE FROM job_applications WHERE candidate_user_id = ?`, `DELETE FROM job_posting_likes WHERE candidate_user_id = ?`,
+            `DELETE FROM candidate_messages WHERE candidate_user_id = ?`, `DELETE FROM candidate_profiles WHERE user_id = ?`, `DELETE FROM users WHERE id = ?`]) {
+            await new Promise(ok => db.run(sql, [u.id], () => ok()));
+        }
+        res.json({ message: 'Acesso excluído.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao excluir.' }); }
 });
 
 app.delete('/api/companies/:id', requireRole('admin'), (req, res) => {
@@ -2563,6 +2787,10 @@ app.post('/api/portal/register', async (req, res) => {
             if (err) return res.status(400).json({ error: 'Este e-mail já está cadastrado. Faça login ou use "Esqueci minha senha".' });
             const userId = this.lastID;
             const b = req.body;
+            db.run(`UPDATE users SET criado_em = CURRENT_TIMESTAMP WHERE id = ?`, [userId], () => {});
+            db.all(`SELECT id FROM users WHERE role = 'admin'`, [], (eA, admins) => {
+                if (!eA) (admins || []).forEach(ad => notificar(ad.id, 'Novo candidato pelo link', `${String(name).trim()}${desired_role ? ' — ' + desired_role : ''}${city ? ' (' + city + ')' : ''}`, 'acessosCandidatos'));
+            });
             db.run(`INSERT INTO candidate_profiles (user_id, phone, desired_role, city, status, cep, neighborhood, state, first_job, lgpd_at, origem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [userId, phone || '', desired_role || '', city || '', aprovacaoAutomatica ? 'approved' : 'pending', String(b.cep || '').replace(/\D/g, '').slice(0, 8), String(b.neighborhood || '').slice(0, 120), city ? city.split('/')[1] || '' : '', b.first_job ? 1 : 0, b.lgpd ? new Date().toISOString() : null, String(b.origem || '').slice(0, 40)], (e2) => {
                     if (e2) return res.status(500).json({ error: 'Erro ao criar o perfil de candidato.' });
@@ -2935,7 +3163,7 @@ app.delete('/api/closing-fee-plans/:id', requireRole('admin'), (req, res) => {
 // ---------- Vagas publicadas pelas empresas ----------
 app.get('/api/job-postings', requireRole('admin', 'client_admin'), async (req, res) => {
     try {
-        let query = `SELECT jp.*, vp.label as planLabel, vp.days as planDays, vp.price as planPrice, c.name as companyName, c.logo_url as companyLogo,
+        let query = `SELECT jp.*, vp.label as planLabel, vp.days as planDays, vp.price as planPrice, c.name as companyName, c.logo_url as companyLogo, COALESCE(c.vaga_credito_dias, 0) as companyCredito,
                      cfp.function_label as closingFeeLabel, cfp.price as closingFeePrice,
                      (SELECT COUNT(*) FROM job_applications ja WHERE ja.job_posting_id = jp.id) as totalCandidaturas,
                      (SELECT COUNT(*) FROM job_posting_likes jl WHERE jl.job_posting_id = jp.id) as totalCurtidas,
@@ -3029,6 +3257,7 @@ app.post('/api/job-postings/:id/approve', requireRole('admin'), async (req, res)
                 [req.user.userId, req.params.id], (err) => err ? reject(err) : resolve()
             ));
             db.run(`UPDATE companies SET vaga_credito_dias = vaga_credito_dias - ? WHERE id = ?`, [dias, vaga.company_id], () => {});
+            registrarCreditoVaga(vaga.company_id, -dias, 'consumido', `Vaga "${vaga.title}" aprovada e publicada com crédito`, req.user.userId, vaga.id);
             notificarPorCompanyAdmins(vaga.company_id, 'Vaga aprovada e publicada!', `"${vaga.title}" já está no ar, usando o crédito de dias da empresa.`, 'jobPostings');
             return res.json({ message: `Aprovada e publicada usando ${dias} dia(s) de crédito da empresa!` });
         }
@@ -5076,20 +5305,45 @@ app.put('/api/platform/profile', requireRole('admin'), (req, res) => {
 app.post('/api/platform/test-email', requireRole('admin'), async (req, res) => {
     const destino = (req.body && req.body.email) || req.user.email;
     if (!destino) return res.status(400).json({ error: 'Informe um e-mail de destino para o teste.' });
-    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        return res.status(400).json({ error: 'SMTP_HOST, SMTP_USER e SMTP_PASS ainda não estão definidos no .env do servidor.' });
+    const viaApi = !!(EMAIL_API.provedor && EMAIL_API.chave);
+    if (!viaApi && (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS)) {
+        return res.status(400).json({ error: 'Nenhum envio configurado: cadastre o envio por API (Brevo ou Resend) aqui em Meu Perfil, ou defina SMTP_HOST, SMTP_USER e SMTP_PASS no servidor.' });
     }
     try {
         const info = await transporter.sendMail({
-            from: process.env.SMTP_FROM || `"Impulsionar V4" <${process.env.SMTP_USER}>`,
+            from: process.env.SMTP_FROM || `"Impulsionar V4" <${process.env.SMTP_USER || EMAIL_API.remetente}>`,
             to: destino,
             subject: 'Teste de envio — Impulsionar V4',
             html: `<p>Se você recebeu este e-mail, o SMTP configurado no <strong>.env</strong> está funcionando corretamente.</p>`
         });
-        res.json({ message: `E-mail de teste enviado para ${destino}! Confira a caixa de entrada (e o spam).`, id: info.messageId });
+        res.json({ message: `E-mail de teste enviado para ${destino} via ${viaApi ? (EMAIL_API.provedor === 'resend' ? 'Resend (API)' : 'Brevo (API)') : 'SMTP'}! Confira a caixa de entrada (e o spam).`, id: info.messageId });
     } catch (e) {
         res.status(400).json({ error: `Falha ao enviar: ${e.message}` });
     }
+});
+
+// Configuração do envio de e-mail por API (Brevo / Resend) — feita pelo Master na tela Meu Perfil.
+app.get('/api/platform/email-api', requireRole('admin'), (req, res) => {
+    res.json({ provedor: EMAIL_API.provedor || '', remetente: EMAIL_API.remetente || '', chavePreview: EMAIL_API.chave ? '••••••••' + EMAIL_API.chave.slice(-5) : null, smtpConfigurado: !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS), smtpHost: process.env.SMTP_HOST || '', smtpPorta: SMTP_PORTA });
+});
+app.put('/api/platform/email-api', requireRole('admin'), async (req, res) => {
+    try {
+        const provedor = String(req.body.provedor || '').toLowerCase();
+        if (!provedor) {
+            await new Promise(r => db.run(`DELETE FROM integration_settings WHERE key IN ('email_api_provedor', 'email_api_chave', 'email_api_remetente')`, [], () => r()));
+            EMAIL_API = { provedor: '', chave: '', remetente: '' };
+            return res.json({ message: 'Envio por API desligado — os e-mails voltam a usar o SMTP.' });
+        }
+        if (!['brevo', 'resend'].includes(provedor)) return res.status(400).json({ error: 'Provedor inválido.' });
+        const chave = String(req.body.chave || '').trim() || (EMAIL_API.provedor === provedor ? EMAIL_API.chave : '');
+        const remetente = String(req.body.remetente || '').trim();
+        if (!chave) return res.status(400).json({ error: 'Informe a chave de API.' });
+        if (!/@/.test(remetente)) return res.status(400).json({ error: 'Informe o e-mail remetente (ex.: Impulsionar <contato@seudominio.com.br>).' });
+        const salvar = (k, v) => new Promise((ok, erro) => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], e => e ? erro(e) : ok()));
+        await salvar('email_api_provedor', provedor); await salvar('email_api_chave', chave); await salvar('email_api_remetente', remetente);
+        EMAIL_API = { provedor, chave, remetente };
+        res.json({ message: 'Envio por API salvo! Use "Testar Envio" para confirmar.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar a configuração de e-mail.' }); }
 });
 
 // ============================================================

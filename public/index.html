@@ -997,7 +997,7 @@ const MENU_POR_PERFIL = {
     ]},
     { group: 'Portal de Vagas', items: [
         ['jobPostings', 'Vagas Publicadas'], ['portalCandidates', 'Candidatos do Portal'],
-        ['candidatesApproval', 'Aprovar Currículos'], ['vagaPlans', 'Planos de Vaga'], ['closingFeePlans', 'Planos de Fechamento']
+        ['acessosCandidatos', 'Acessos de Candidatos'], ['candidatesApproval', 'Aprovar Currículos'], ['creditosVagas', 'Créditos das Empresas'], ['vagaPlans', 'Planos de Vaga'], ['closingFeePlans', 'Planos de Fechamento']
     ]},
     { group: 'Impulsionar V4 DPO Ambev', items: [
         ['dpoPrecos', 'Preços por Pilar'], ['dpoAgenda', 'Agenda de Consultorias'], ['dpoConsultores', 'Cadastro de Consultor'], ['dpoAcompanhamentos', 'Acompanhamentos Impulsionar']
@@ -1339,7 +1339,7 @@ function irPara(aba, semHistorico) {
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
     dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster,
-    discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster
+    discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster, acessosCandidatos: renderAcessosCandidatos, creditosVagas: renderCreditosVagas
   };
   NAV.profundidade++;
   try { (renderizadores[aba] || renderDashboard)(); } finally { NAV.profundidade--; }
@@ -13215,6 +13215,28 @@ function mudarAbaVagasOfertadas(aba) {
   renderJobPostings();
 }
 
+async function publicarVagaComCredito(id, dias) {
+  if (!confirm(`Publicar esta vaga usando ${dias} dia(s) do crédito da empresa?`)) return;
+  try { const r = await api('/api/job-postings/' + id + '/usar-credito', { method: 'POST' }); mostrarToast(r.message); renderJobPostings(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+function liberarVagaCortesia(id, diasPadrao) {
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) this.parentNode.innerHTML=''"><div class="modal-caixa" style="max-width:420px;">
+      <h3 style="margin-top:0;">🎁 Liberar vaga sem pagamento</h3>
+      <p style="font-size:13px;color:#64748b;">A vaga é publicada na hora, sem cobrança e sem usar o saldo de crédito da empresa. Só o Master pode fazer isso.</p>
+      <label>Dias no ar</label><input id="cortesia-dias" type="number" min="1" max="365" value="${diasPadrao}">
+      <label>Motivo (opcional)</label><input id="cortesia-motivo" placeholder="Ex.: parceria, primeira vaga, campanha">
+      <div class="acoes-form"><button class="btn-primario" onclick="confirmarCortesiaVaga(${id})">Liberar e publicar</button><button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button></div>
+    </div></div>`;
+}
+async function confirmarCortesiaVaga(id) {
+  try {
+    const r = await api('/api/job-postings/' + id + '/liberar-cortesia', { method: 'POST', body: JSON.stringify({ dias: Number(document.getElementById('cortesia-dias').value), motivo: document.getElementById('cortesia-motivo').value }) });
+    mostrarToast(r.message); renderJobPostings();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
 async function renderJobPostings() {
   const cont = document.getElementById('conteudo');
   cont.innerHTML = '<h1>Vagas Ofertadas</h1><p>Carregando...</p>';
@@ -13228,6 +13250,8 @@ async function renderJobPostings() {
     }
     const ehAdmin = ESTADO.usuario.role === 'admin';
     const pendentes = lista.filter(v => v.status === 'pendente_aprovacao' && !v.deleted_at);
+    let saldoCredito = 0;
+    if (!ehAdmin) { try { saldoCredito = (await api('/api/minha-empresa/credito-vagas')).saldo || 0; } catch (e) {} }
     const contagens = { abertas: 0, fechadas: 0, excluidas: 0 };
     lista.forEach(v => contagens[classificarAbaVaga(v)]++);
     const abas = [['abertas', 'Vagas Abertas'], ['fechadas', 'Vagas Fechadas'], ['excluidas', 'Vagas Excluídas']];
@@ -13236,6 +13260,7 @@ async function renderJobPostings() {
       <h1>${ehAdmin ? 'Vagas Publicadas' : 'Vagas Ofertadas'}</h1>
       <p style="color:#64748b;margin-top:-8px;">${ehAdmin ? 'Divulgue vagas no portal público de currículos. A vaga fica visível para os candidatos pelo período pago.' : 'Cadastre a vaga que sua empresa quer divulgar — ela passa pela aprovação do Master antes de ir para a rede.'}</p>
       ${ehAdmin && pendentes.length ? `<div class="msg-vazio" style="text-align:left;background:#f5f3ff;border-radius:8px;padding:14px 16px;">🔔 ${pendentes.length} vaga(s) aguardando sua aprovação.</div>` : ''}
+      ${!ehAdmin && saldoCredito > 0 ? `<div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1px solid #a7f3d0;border-radius:12px;padding:12px 16px;margin:8px 0;color:#065f46;">🎟️ Sua empresa tem <strong>${saldoCredito} dia(s) de crédito</strong> liberados pela Impulsionar para publicar vagas sem pagar.</div>` : ''}
       <div class="barra-acoes">
         <div style="display:flex;gap:6px;">
           ${abas.map(([chave, rotulo]) => `<button class="btn-sm ${ABA_VAGAS_OFERTADAS === chave ? 'btn-primario' : 'btn-secundario'}" onclick="mudarAbaVagasOfertadas('${chave}')">${rotulo} (${contagens[chave]})</button>`).join('')}
@@ -13273,7 +13298,9 @@ async function renderJobPostings() {
               ${!excluida ? `<button class="btn-secundario btn-sm" onclick="mostrarFormularioVaga(${v.id})">✏️ Editar</button>` : ''}
               ${ehAdmin && v.status === 'pendente_aprovacao' ? `<button class="btn-primario btn-sm" onclick="aprovarVaga(${v.id})">✓ Aprovar</button><button class="btn-secundario btn-sm" onclick="solicitarAjusteVaga(${v.id})">Solicitar Ajuste</button><button class="btn-perigo btn-sm" onclick="rejeitarVaga(${v.id})">Rejeitar</button>` : ''}
               ${!ehAdmin && v.status === 'ajustes_solicitados' ? `<span class="plano-meta" style="color:#b45309;">Edite e reenvie para nova análise ↑</span>` : ''}
+              ${v.status === 'pending_payment' && Number(v.companyCredito || 0) >= Number(v.planDays || 30) ? `<button class="btn-sm" style="background:#16a34a;color:#fff;border:0;" onclick="publicarVagaComCredito(${v.id}, ${Number(v.planDays || 30)})">🎟️ Publicar com crédito (${Number(v.planDays || 30)} dias)</button>` : ''}
               ${v.status === 'pending_payment' ? `<button class="btn-primario btn-sm" onclick="pagarVaga(${v.id})">Pagar / Reabrir Checkout</button>` : ''}
+              ${ehAdmin && ['pending_payment', 'pendente_aprovacao'].includes(v.status) && !excluida ? `<button class="btn-sm" style="background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;" onclick="liberarVagaCortesia(${v.id}, ${Number(v.planDays || 30)})">🎁 Liberar sem pagamento</button>` : ''}
               ${v.status === 'active' ? `<button class="btn-secundario btn-sm" onclick="compartilharVaga(${v.id})">📤 Compartilhar</button>` : ''}
               ${!excluida && !['pendente_aprovacao', 'fechada'].includes(v.status) ? `<button class="btn-secundario btn-sm" onclick="mostrarFormularioFecharVaga(${v.id})">🔒 Fechar Vaga</button>` : ''}
               ${v.totalCandidaturas > 0 ? `<button class="btn-secundario btn-sm" onclick="verCandidaturasVaga(${v.id})">Ver Candidaturas</button>` : ''}
@@ -13940,6 +13967,213 @@ async function salvarPortalPerfil() {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
+// ---------- Master: acessos dos candidatos ----------
+let AC_LISTA = [], AC_FILTRO = { q: '', origem: '', periodo: '', status: '' };
+const AC_ORIGENS = { master: ['Criado pelo Master', '#ede9fe', '#6d28d9'], instagram: ['Instagram', '#fce7f3', '#be185d'], 'instagram-lideranca': ['Instagram · Liderança', '#fce7f3', '#be185d'], link: ['Link de cadastro', '#dbeafe', '#1d4ed8'], 'link-lideranca': ['Link · Liderança', '#dbeafe', '#1d4ed8'], '-lideranca': ['Link · Liderança', '#dbeafe', '#1d4ed8'] };
+const AC_STATUS = { approved: ['Aprovado', '#dcfce7', '#166534'], pending: ['Em análise', '#fef9c3', '#854d0e'], rejected: ['Reprovado', '#fee2e2', '#991b1b'], ajustes_solicitados: ['Ajustes', '#ffedd5', '#9a3412'] };
+function acData(d) { if (!d) return null; const x = new Date(String(d).includes('T') ? d : String(d).replace(' ', 'T') + 'Z'); return isNaN(x) ? null : x; }
+function acQuando(d) {
+  const x = acData(d); if (!x) return '';
+  const min = Math.round((Date.now() - x) / 60000);
+  if (min < 1) return 'agora'; if (min < 60) return `há ${min} min`; if (min < 1440) return `há ${Math.round(min / 60)} h`;
+  const dias = Math.round(min / 1440); return dias === 1 ? 'ontem' : dias < 30 ? `há ${dias} dias` : x.toLocaleDateString('pt-BR');
+}
+function acBadge(m, chave, padrao) { const [t, bg, cor] = m[chave] || padrao; return `<span style="font-size:11px;font-weight:700;background:${bg};color:${cor};padding:2px 8px;border-radius:999px;white-space:nowrap;">${escapeHtml(t)}</span>`; }
+
+async function renderAcessosCandidatos() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>Acessos de Candidatos</h1><p>Carregando...</p>';
+  try { AC_LISTA = await api('/api/admin/candidate-accesses'); desenharAcessosCandidatos(); }
+  catch (e) { cont.innerHTML = `<h1>Acessos de Candidatos</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+function acFiltrados() {
+  const q = AC_FILTRO.q.trim().toLowerCase(), agora = Date.now();
+  return AC_LISTA.filter(c => {
+    if (q && ![c.name, c.email, c.phone, c.city, c.desired_role].some(v => String(v || '').toLowerCase().includes(q))) return false;
+    if (AC_FILTRO.origem === 'master' && c.origem !== 'master') return false;
+    if (AC_FILTRO.origem === 'link' && (c.origem === 'master' || !c.origem)) return false;
+    if (AC_FILTRO.status && (c.status || 'pending') !== AC_FILTRO.status) return false;
+    if (AC_FILTRO.periodo === 'nunca' && Number(c.qtd_logins) > 0) return false;
+    if (['1', '7', '30'].includes(AC_FILTRO.periodo)) { const d = acData(c.criado_em); if (!d || agora - d > Number(AC_FILTRO.periodo) * 86400000) return false; }
+    return true;
+  });
+}
+function desenharAcessosCandidatos() {
+  const cont = document.getElementById('conteudo'), agora = Date.now();
+  const novos = n => AC_LISTA.filter(c => { const d = acData(c.criado_em); return d && agora - d <= n * 86400000; }).length;
+  const kpis = [
+    ['👥', 'Total de candidatos', AC_LISTA.length, '#0e2a47'],
+    ['🆕', 'Novos nas últimas 24h', novos(1), '#16a34a'],
+    ['📅', 'Novos em 7 dias', novos(7), '#2563eb'],
+    ['🔗', 'Vieram pelo link', AC_LISTA.filter(c => c.origem && c.origem !== 'master').length, '#7c3aed'],
+    ['😴', 'Nunca entraram', AC_LISTA.filter(c => !Number(c.qtd_logins)).length, '#d97706']
+  ];
+  const lista = acFiltrados();
+  const sel = (id, opcoes, valor) => `<select onchange="AC_FILTRO.${id}=this.value; desenharAcessosCandidatos()" style="width:auto;">${opcoes.map(([v, t]) => `<option value="${v}" ${valor === v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
+  cont.innerHTML = `
+    <h1>Acessos de Candidatos</h1>
+    <p style="color:#64748b;margin-top:-8px;">Quem se cadastrou pelo link de candidatos, quando entrou pela última vez e como está o currículo. Você também pode criar acessos por aqui.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:12px 0;">
+      ${kpis.map(([ic, t, n, cor]) => `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;"><div style="font-size:12px;color:#64748b;">${ic} ${t}</div><div style="font-size:26px;font-weight:800;color:${cor};">${n}</div></div>`).join('')}
+    </div>
+    <div class="barra-acoes" style="flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input placeholder="🔎 Buscar nome, e-mail, cidade, cargo…" value="${escapeHtml(AC_FILTRO.q)}" oninput="AC_FILTRO.q=this.value; clearTimeout(window._acT); window._acT=setTimeout(()=>{desenharAcessosCandidatos(); const i=document.getElementById('ac-busca'); if(i){i.focus(); i.setSelectionRange(i.value.length,i.value.length);}},250)" id="ac-busca" style="min-width:240px;width:auto;">
+        ${sel('origem', [['', 'Todas as origens'], ['link', 'Pelo link'], ['master', 'Criados pelo Master']], AC_FILTRO.origem)}
+        ${sel('periodo', [['', 'Qualquer data'], ['1', 'Últimas 24h'], ['7', 'Últimos 7 dias'], ['30', 'Últimos 30 dias'], ['nunca', 'Nunca entraram']], AC_FILTRO.periodo)}
+        ${sel('status', [['', 'Todos os status'], ['pending', 'Em análise'], ['approved', 'Aprovados'], ['ajustes_solicitados', 'Ajustes'], ['rejected', 'Reprovados']], AC_FILTRO.status)}
+      </div>
+      <div class="direita" style="display:flex;gap:8px;">
+        <button class="btn-secundario" onclick="copiarLinkCadastroCandidato()">🔗 Copiar link de cadastro</button>
+        <button class="btn-primario" onclick="formAcessoCandidato()">+ Criar acesso</button>
+      </div>
+    </div>
+    <div id="modal-area"></div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Candidato</th><th>WhatsApp</th><th>Cidade</th><th>Cargo desejado</th><th>Origem</th><th>Cadastro</th><th>Último acesso</th><th>Currículo</th><th>Status</th><th style="width:150px;">Ações</th></tr></thead>
+      <tbody>
+        ${lista.map(c => `<tr>
+          <td><div style="display:flex;gap:8px;align-items:center;">${c.photo_url ? `<img src="${escapeHtml(c.photo_url)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : `<div style="width:32px;height:32px;border-radius:50%;background:#e0e7ff;color:#3730a3;display:flex;align-items:center;justify-content:center;font-weight:800;">${escapeHtml((c.name || '?').trim()[0].toUpperCase())}</div>`}<div><strong>${escapeHtml(c.name)}</strong><div style="font-size:12px;color:#64748b;">${escapeHtml(c.email)}</div></div></div></td>
+          <td style="white-space:nowrap;">${c.phone ? `<a href="https://wa.me/${acFone(c.phone)}" target="_blank" style="color:#16a34a;text-decoration:none;">💬 ${escapeHtml(c.phone)}</a>` : '<span style="color:#94a3b8;">—</span>'}</td>
+          <td>${escapeHtml(c.city || '—')}</td>
+          <td>${escapeHtml(c.desired_role || '—')}</td>
+          <td>${acBadge(AC_ORIGENS, c.origem || '', [c.origem ? c.origem : 'Cadastro direto', '#f1f5f9', '#475569'])}</td>
+          <td style="white-space:nowrap;font-size:12.5px;">${acData(c.criado_em) ? acData(c.criado_em).toLocaleDateString('pt-BR') : '—'}<div style="color:#94a3b8;font-size:11.5px;">${acQuando(c.criado_em)}</div></td>
+          <td style="white-space:nowrap;font-size:12.5px;">${Number(c.qtd_logins) ? `${acQuando(c.ultimo_login)}<div style="color:#94a3b8;font-size:11.5px;">${c.qtd_logins} acesso(s)</div>` : '<span style="color:#d97706;font-weight:700;">Nunca entrou</span>'}</td>
+          <td style="min-width:90px;"><div style="background:#e2e8f0;border-radius:999px;height:7px;overflow:hidden;"><div style="width:${c.completo}%;height:100%;background:${c.completo >= 75 ? '#16a34a' : c.completo >= 40 ? '#f59e0b' : '#ef4444'};"></div></div><div style="font-size:11.5px;color:#64748b;">${c.completo}% · ${c.candidaturas} candidatura(s)</div></td>
+          <td>${acBadge(AC_STATUS, c.status || 'pending', AC_STATUS.pending)}</td>
+          <td style="white-space:nowrap;">
+            <button class="btn-secundario btn-sm" title="Editar" onclick="formAcessoCandidato(${c.id})">✏️</button>
+            <button class="btn-secundario btn-sm" title="Gerar nova senha" onclick="novaSenhaCandidato(${c.id})">🔑</button>
+            <button class="btn-perigo btn-sm" title="Excluir acesso" onclick="excluirAcessoCandidato(${c.id})">🗑️</button>
+          </td></tr>`).join('')}
+      </tbody>
+    </table></div>
+    ${lista.length === 0 ? '<div class="msg-vazio">Nenhum candidato encontrado com esses filtros.</div>' : `<div style="font-size:12px;color:#64748b;margin-top:6px;">${lista.length} de ${AC_LISTA.length} candidato(s)</div>`}`;
+}
+function acFone(t) { let d = String(t || '').replace(/\D/g, ''); if (d.length <= 11) d = '55' + d; return d; }
+function copiarLinkCadastroCandidato() {
+  const url = location.origin + '/cadastro.html';
+  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => mostrarToast('Link copiado: ' + url)).catch(() => prompt('Copie o link:', url));
+}
+function formAcessoCandidato(id) {
+  const c = id ? AC_LISTA.find(x => x.id === id) || {} : {};
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) this.parentNode.innerHTML=''"><div class="modal-caixa" style="max-width:520px;">
+      <h3 style="margin-top:0;">${id ? '✏️ Editar acesso' : '➕ Criar acesso de candidato'}</h3>
+      <div class="linha"><div style="flex:2"><label>Nome completo *</label><input id="ac-nome" value="${escapeHtml(c.name || '')}"></div></div>
+      <div class="linha"><div><label>E-mail (login) *</label><input id="ac-email" type="email" value="${escapeHtml(c.email || '')}"></div><div><label>WhatsApp</label><input id="ac-fone" placeholder="(64) 99999-9999" value="${escapeHtml(c.phone || '')}"></div></div>
+      <div class="linha"><div><label>Cidade/UF</label><input id="ac-cidade" placeholder="Rio Verde/GO" value="${escapeHtml(c.city || '')}"></div><div><label>Cargo desejado</label><input id="ac-cargo" value="${escapeHtml(c.desired_role || '')}"></div></div>
+      ${id ? '' : `<div class="linha"><div><label>Senha (vazio = gerar automática)</label><input id="ac-senha" placeholder="mín. 6 caracteres"></div></div>
+      <label style="font-weight:400;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="ac-aprovado" checked> Já aprovar o currículo (aparece para as empresas)</label>
+      <label style="font-weight:400;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="ac-enviar"> Enviar os dados de acesso por e-mail</label>`}
+      <div class="acoes-form"><button class="btn-primario" onclick="salvarAcessoCandidato(${id || 0})">${id ? 'Salvar' : 'Criar acesso'}</button><button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button></div>
+    </div></div>`;
+}
+async function salvarAcessoCandidato(id) {
+  const g = k => (document.getElementById(k) || {}).value || '';
+  const corpo = { name: g('ac-nome'), email: g('ac-email'), phone: g('ac-fone'), city: g('ac-cidade'), desired_role: g('ac-cargo') };
+  try {
+    if (id) { const r = await api('/api/admin/candidate-accesses/' + id, { method: 'PUT', body: JSON.stringify(corpo) }); mostrarToast(r.message); return renderAcessosCandidatos(); }
+    Object.assign(corpo, { password: g('ac-senha'), aprovado: document.getElementById('ac-aprovado').checked, enviarEmail: document.getElementById('ac-enviar').checked });
+    const r = await api('/api/admin/candidate-accesses', { method: 'POST', body: JSON.stringify(corpo) });
+    AC_LISTA = await api('/api/admin/candidate-accesses'); desenharAcessosCandidatos();
+    mostrarCredenciaisCandidato(corpo.name, corpo.email, corpo.phone, r.senha, r.link, r.emailEnviado);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+function mostrarCredenciaisCandidato(nome, email, fone, senha, link, emailEnviado) {
+  const msg = `Olá, ${String(nome || '').split(' ')[0]}! Seu acesso ao Portal de Vagas da Impulsionar está pronto 🚀\n\nLink: ${link}\nE-mail: ${email}\nSenha: ${senha}\n\nEntre, complete seu currículo e candidate-se às vagas.`;
+  window._acMsg = msg;
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) this.parentNode.innerHTML=''"><div class="modal-caixa" style="max-width:460px;">
+      <h3 style="margin-top:0;">✅ Acesso pronto</h3>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;font-size:13.5px;line-height:1.7;">
+        <div><strong>E-mail:</strong> ${escapeHtml(email)}</div><div><strong>Senha:</strong> <code style="font-size:15px;">${escapeHtml(senha)}</code></div><div><strong>Link:</strong> ${escapeHtml(link)}</div>
+      </div>
+      ${emailEnviado ? '<p style="color:#16a34a;font-size:13px;">📧 Dados enviados por e-mail.</p>' : ''}
+      <div class="acoes-form" style="flex-wrap:wrap;">
+        <a class="btn-primario" style="background:#16a34a;text-decoration:none;" target="_blank" href="https://wa.me/${fone ? acFone(fone) : ''}?text=${encodeURIComponent(msg)}">💬 Enviar no WhatsApp</a>
+        <button class="btn-secundario" onclick="navigator.clipboard && navigator.clipboard.writeText(window._acMsg).then(()=>mostrarToast('Copiado!'))">📋 Copiar mensagem</button>
+        <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button>
+      </div>
+      <p style="font-size:12px;color:#94a3b8;">A senha só aparece agora. Se perder, gere outra com 🔑.</p>
+    </div></div>`;
+}
+async function novaSenhaCandidato(id) {
+  const c = AC_LISTA.find(x => x.id === id) || {};
+  if (!confirm(`Gerar uma nova senha para ${c.name}? A senha atual deixa de funcionar.`)) return;
+  try { const r = await api('/api/admin/candidate-accesses/' + id + '/reset-password', { method: 'POST' }); mostrarCredenciaisCandidato(c.name, c.email, c.phone, r.senha, r.link, false); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function excluirAcessoCandidato(id) {
+  const c = AC_LISTA.find(x => x.id === id) || {};
+  if (!confirm(`Excluir o acesso de ${c.name}? O currículo e as candidaturas dele também serão apagados.`)) return;
+  try { const r = await api('/api/admin/candidate-accesses/' + id, { method: 'DELETE' }); mostrarToast(r.message); renderAcessosCandidatos(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+// ---------- Master: créditos de vagas das empresas ----------
+let CV_DADOS = { empresas: [], log: [] }, CV_BUSCA = '';
+async function renderCreditosVagas() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<h1>Créditos das Empresas</h1><p>Carregando...</p>';
+  try { CV_DADOS = await api('/api/admin/vaga-creditos'); desenharCreditosVagas(); }
+  catch (e) { cont.innerHTML = `<h1>Créditos das Empresas</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+function desenharCreditosVagas() {
+  const cont = document.getElementById('conteudo');
+  const emps = CV_DADOS.empresas.filter(e => !CV_BUSCA || e.name.toLowerCase().includes(CV_BUSCA.toLowerCase()));
+  const tot = k => CV_DADOS.empresas.reduce((s, e) => s + Number(e[k] || 0), 0);
+  const rotTipo = { concedido: ['➕ Concedido', '#16a34a'], retirado: ['➖ Retirado', '#dc2626'], consumido: ['🎟️ Usado em vaga', '#2563eb'], cortesia: ['🎁 Cortesia', '#7c3aed'] };
+  cont.innerHTML = `
+    <h1>Créditos das Empresas</h1>
+    <p style="color:#64748b;margin-top:-8px;">Libere dias de divulgação para a empresa publicar vagas sem pagar. Só o Master concede. O crédito é usado automaticamente quando você aprova a vaga, ou pela empresa no botão "Publicar com crédito".</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0;">
+      ${[['🏢', 'Empresas com saldo', CV_DADOS.empresas.filter(e => e.saldo > 0).length, '#0e2a47'], ['🎟️', 'Dias em saldo (total)', tot('saldo'), '#16a34a'], ['📈', 'Dias já concedidos', tot('totalConcedido'), '#7c3aed'], ['⏳', 'Vagas aguardando pagamento', tot('aguardandoPagamento'), '#d97706']]
+        .map(([ic, t, n, cor]) => `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;"><div style="font-size:12px;color:#64748b;">${ic} ${t}</div><div style="font-size:26px;font-weight:800;color:${cor};">${n}</div></div>`).join('')}
+    </div>
+    <div class="barra-acoes"><input placeholder="🔎 Buscar empresa" value="${escapeHtml(CV_BUSCA)}" id="cv-busca" oninput="CV_BUSCA=this.value; clearTimeout(window._cvT); window._cvT=setTimeout(()=>{desenharCreditosVagas(); const i=document.getElementById('cv-busca'); i.focus(); i.setSelectionRange(i.value.length,i.value.length);},250)" style="max-width:300px;"></div>
+    <div id="modal-area"></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">
+      ${emps.map(e => `
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px;">
+          <div style="display:flex;gap:10px;align-items:center;">
+            ${e.logo_url ? `<img src="${escapeHtml(e.logo_url)}" style="width:38px;height:38px;border-radius:8px;object-fit:contain;background:#f8fafc;">` : '<div style="width:38px;height:38px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;">🏢</div>'}
+            <div style="flex:1;min-width:0;"><strong style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(e.name)}</strong><span style="font-size:12px;color:#64748b;">${e.ativas} vaga(s) no ar${e.aguardandoPagamento ? ` · <span style="color:#d97706;">${e.aguardandoPagamento} aguardando pagamento</span>` : ''}</span></div>
+            <div style="text-align:right;"><div style="font-size:24px;font-weight:900;color:${e.saldo > 0 ? '#16a34a' : '#94a3b8'};line-height:1;">${e.saldo}</div><div style="font-size:11px;color:#64748b;">dias de crédito</div></div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;">
+            ${[30, 60, 90].map(d => `<button class="btn-secundario btn-sm" onclick="ajustarCreditoVagas(${e.id}, ${d})">+${d} dias</button>`).join('')}
+            <button class="btn-primario btn-sm" onclick="formCreditoVagas(${e.id})">Outro valor…</button>
+            ${e.saldo > 0 ? `<button class="btn-perigo btn-sm" onclick="formCreditoVagas(${e.id}, true)">Retirar</button>` : ''}
+          </div>
+        </div>`).join('')}
+    </div>
+    ${emps.length === 0 ? '<div class="msg-vazio">Nenhuma empresa encontrada.</div>' : ''}
+    <h3 style="margin-top:26px;">Histórico de movimentações</h3>
+    <table><thead><tr><th>Data</th><th>Empresa</th><th>Movimento</th><th>Dias</th><th>Detalhe</th><th>Por</th></tr></thead><tbody>
+      ${CV_DADOS.log.map(l => { const [t, cor] = rotTipo[l.tipo] || [l.tipo, '#475569']; return `<tr><td style="white-space:nowrap;">${acData(l.created_at) ? acData(l.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''}</td><td>${escapeHtml(l.companyName || '')}</td><td style="color:${cor};font-weight:700;white-space:nowrap;">${t}</td><td style="font-weight:700;">${l.dias > 0 ? '+' : ''}${l.dias || '—'}</td><td style="font-size:12.5px;">${escapeHtml(l.motivo || '')}</td><td style="font-size:12.5px;">${escapeHtml(l.userName || '')}</td></tr>`; }).join('')}
+    </tbody></table>
+    ${CV_DADOS.log.length === 0 ? '<div class="msg-vazio">Nenhuma movimentação ainda.</div>' : ''}`;
+}
+function formCreditoVagas(id, retirar) {
+  const e = CV_DADOS.empresas.find(x => x.id === id) || {};
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) this.parentNode.innerHTML=''"><div class="modal-caixa" style="max-width:420px;">
+      <h3 style="margin-top:0;">${retirar ? '➖ Retirar crédito' : '🎁 Liberar crédito'} — ${escapeHtml(e.name || '')}</h3>
+      <p style="font-size:13px;color:#64748b;">Saldo atual: <strong>${e.saldo || 0} dia(s)</strong>. Cada vaga consome os dias do plano escolhido (ex.: plano de 30 dias = 30 dias de crédito).</p>
+      <label>Quantidade de dias</label><input id="cv-dias" type="number" min="1" value="${retirar ? e.saldo : 30}">
+      <label>Motivo</label><input id="cv-motivo" placeholder="${retirar ? 'Ex.: ajuste de saldo' : 'Ex.: cortesia de parceria, cliente consultoria'}">
+      <div class="acoes-form"><button class="${retirar ? 'btn-perigo' : 'btn-primario'}" onclick="ajustarCreditoVagas(${id}, ${retirar ? -1 : 1} * Number(document.getElementById('cv-dias').value), document.getElementById('cv-motivo').value)">${retirar ? 'Retirar' : 'Liberar crédito'}</button><button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button></div>
+    </div></div>`;
+}
+async function ajustarCreditoVagas(id, dias, motivo) {
+  if (!dias) return mostrarToast('Informe a quantidade de dias.', true);
+  try { const r = await api('/api/companies/' + id + '/credito', { method: 'POST', body: JSON.stringify({ dias, motivo: motivo || '' }) }); mostrarToast(r.message); renderCreditosVagas(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
 // ---------- Candidato: vagas disponíveis ----------
 let FILTRO_REGIAO_VAGAS = false;
 
@@ -13954,61 +14188,143 @@ const GRADIENTES_VAGA = [
   'linear-gradient(135deg,#4f46e5,#0ea5e9)'
 ];
 
+let PV_FILTRO = { q: '', chip: 'todas', ordem: 'recentes' }, PV_PERFIL = null;
+const PV_CHIPS = [['todas', 'Todas'], ['combina', '✨ Combinam com você'], ['regiao', '📍 Minha região'], ['remoto', '🏠 Remoto'], ['lideranca', '👔 Liderança'], ['novas', '🆕 Novas']];
+const PV_LID = /(gerente|coordenador|supervisor|lider|líder|encarregado|diretor|chefe|head|gestor|superintendente)/i;
+function pvSemAcento(t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+function pvDias(d) { if (!d) return null; const x = new Date(String(d).includes('T') ? d : String(d).replace(' ', 'T') + 'Z'); return isNaN(x) ? null : (x - Date.now()) / 86400000; }
+function pvCombina(v) {
+  const alvo = pvSemAcento(PV_PERFIL && PV_PERFIL.desired_role); if (!alvo) return false;
+  const t = pvSemAcento(v.title);
+  return alvo.split(/[^a-z0-9]+/).filter(w => w.length > 3).some(w => t.includes(w));
+}
+function pvLocal(v) { return v.is_remote ? 'Remoto' : (escapeHtml(v.location || 'A combinar') + (v.state && !String(v.location || '').includes('/') ? '/' + escapeHtml(v.state) : '')); }
+function pvEnriquecer(v) {
+  const publicada = pvDias(v.published_at), expira = pvDias(v.expires_at);
+  return { ...v, nova: publicada != null && publicada > -3, expiraEm: expira == null ? null : Math.max(0, Math.ceil(expira)), combina: pvCombina(v), lideranca: PV_LID.test(v.title || '') || PV_LID.test(v.seniority || '') };
+}
+
 async function renderPortalVagas() {
   const cont = document.getElementById('conteudo');
   cont.innerHTML = '<h1>Vagas Disponíveis</h1><p>Carregando...</p>';
   try {
-    const lista = await api('/api/portal/vagas' + (FILTRO_REGIAO_VAGAS ? '?somenteMinhaRegiao=1' : ''));
-    cont.innerHTML = `
-      <h1>Vagas Disponíveis</h1>
-      <p style="color:#64748b;margin-top:-8px;">Vagas publicadas pelas empresas parceiras da Impulsionar V4.</p>
-      <label style="font-weight:400;display:flex;align-items:center;gap:6px;margin-bottom:12px;">
-        <input type="checkbox" id="filtro-minha-regiao" ${FILTRO_REGIAO_VAGAS ? 'checked' : ''} onchange="alternarFiltroRegiaoVagas()">
-        Mostrar só vagas da minha região (defina em "Meu Currículo")
-      </label>
-      <div id="modal-area"></div>
-      <div class="grid-3">
-        ${lista.map((v, i) => `
-          <div style="border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.12);background:#fff;display:flex;flex-direction:column;">
-            <div style="background:${v.photo_url ? `url('${escapeHtml(v.photo_url)}') center/cover` : GRADIENTES_VAGA[i % GRADIENTES_VAGA.length]};padding:16px;color:#fff;min-height:110px;position:relative;">
-              ${v.photo_url ? `<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.55));"></div>` : ''}
-              <div style="position:relative;">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">
-                  <div style="font-size:11px;font-weight:700;background:rgba(0,0,0,.35);display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:999px;">📌 ${v.is_remote ? 'Remoto' : (escapeHtml(v.location || 'A combinar') + (v.state ? '/' + escapeHtml(v.state) : ''))}</div>
-                  ${v.minhaRegiao ? '<div style="font-size:11px;font-weight:700;background:rgba(255,255,255,.3);padding:3px 9px;border-radius:999px;white-space:nowrap;">⭐ Sua região</div>' : ''}
-                </div>
-                <h4 style="margin:14px 0 4px;font-size:18px;text-shadow:0 1px 4px rgba(0,0,0,.4);">${escapeHtml(v.title)}</h4>
-                <div style="font-size:13px;opacity:.95;display:flex;align-items:center;gap:6px;text-shadow:0 1px 4px rgba(0,0,0,.4);">
-                  ${v.companyLogo ? `<img src="${escapeHtml(v.companyLogo)}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;background:#fff;">` : '🏢'}
-                  ${escapeHtml(v.companyName)}
-                </div>
-              </div>
-            </div>
-            <div style="padding:16px;flex:1;display:flex;flex-direction:column;">
-              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
-                ${v.seniority ? `<span style="font-size:11px;background:#eff6ff;color:#2563eb;padding:3px 9px;border-radius:999px;">${escapeHtml(v.seniority)}</span>` : ''}
-                ${v.education ? `<span style="font-size:11px;background:#fdf4ff;color:#a21caf;padding:3px 9px;border-radius:999px;">🎓 ${escapeHtml(v.education)}</span>` : ''}
-                ${v.languages ? `<span style="font-size:11px;background:#fff7ed;color:#c2410c;padding:3px 9px;border-radius:999px;">🗣️ ${escapeHtml(v.languages)}</span>` : ''}
-              </div>
-              <div style="font-size:14px;font-weight:700;color:#0b1329;margin-bottom:8px;">
-                💰 ${v.salary_range ? escapeHtml(v.salary_range) : 'Salário a combinar'}
-              </div>
-              <p style="font-size:13px;color:#334155;margin:0 0 10px;flex:1;">${escapeHtml((v.description || '').slice(0, 140))}${(v.description || '').length > 140 ? '…' : ''}</p>
-              <div style="display:flex;gap:8px;margin-bottom:8px;">
-                <button id="curtir-btn-${v.id}" class="btn-secundario btn-sm" style="flex:1;" onclick="curtirVagaPortal(${v.id})">${v.euCurti ? '❤️' : '🤍'} ${v.totalCurtidas || 0}</button>
-                <button class="btn-secundario btn-sm" style="flex:2;" onclick="verDetalhesVagaPortal(${v.id})">Ver detalhes completos</button>
-              </div>
-              <button class="${v.jaCandidatei ? 'btn-secundario' : 'btn-primario'} btn-sm" style="width:100%;" ${v.jaCandidatei ? 'disabled' : ''} onclick="candidatarVaga(${v.id})">${v.jaCandidatei ? '✓ Você já se candidatou' : 'Candidatar-se →'}</button>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-      ${lista.length === 0 ? '<div class="msg-vazio">Nenhuma vaga disponível no momento.</div>' : ''}
-    `;
-    CACHE_LISTA_VAGAS_PORTAL = lista;
+    const [lista, perfil] = await Promise.all([api('/api/portal/vagas'), api('/api/portal/me').catch(() => null)]);
+    PV_PERFIL = perfil;
+    CACHE_LISTA_VAGAS_PORTAL = lista.map(pvEnriquecer);
+    desenharPortalVagas();
   } catch (e) {
     cont.innerHTML = `<h1>Vagas Disponíveis</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
   }
+}
+function pvFiltradas() {
+  const q = pvSemAcento(PV_FILTRO.q.trim());
+  let l = CACHE_LISTA_VAGAS_PORTAL.filter(v => {
+    if (q && !pvSemAcento([v.title, v.companyName, v.location, v.state, v.description, v.seniority].join(' ')).includes(q)) return false;
+    const c = PV_FILTRO.chip;
+    return c === 'todas' || (c === 'combina' && v.combina) || (c === 'regiao' && v.minhaRegiao) || (c === 'remoto' && v.is_remote) || (c === 'lideranca' && v.lideranca) || (c === 'novas' && v.nova);
+  });
+  const ord = { recentes: (a, b) => String(b.published_at || '').localeCompare(String(a.published_at || '')), encerrando: (a, b) => (a.expiraEm ?? 999) - (b.expiraEm ?? 999), curtidas: (a, b) => (b.totalCurtidas || 0) - (a.totalCurtidas || 0) };
+  return l.sort(ord[PV_FILTRO.ordem] || ord.recentes);
+}
+function pvCard(v, i) {
+  const fundo = v.photo_url ? `url('${escapeHtml(v.photo_url)}') center/cover` : GRADIENTES_VAGA[i % GRADIENTES_VAGA.length];
+  const selos = [
+    v.nova ? '<span class="pv-selo" style="background:#22c55e;color:#fff;">🆕 Nova</span>' : '',
+    v.combina ? '<span class="pv-selo" style="background:#fff;color:#7c3aed;">✨ Combina com você</span>' : '',
+    v.expiraEm != null && v.expiraEm <= 5 ? `<span class="pv-selo" style="background:#fef3c7;color:#92400e;">⏳ ${v.expiraEm <= 1 ? 'Último dia' : 'Encerra em ' + v.expiraEm + ' dias'}</span>` : ''
+  ].join('');
+  return `
+    <article class="pv-card" onclick="if(!event.target.closest('button')) verDetalhesVagaPortal(${v.id})">
+      <div class="pv-capa" style="background:${fundo};">
+        <div class="pv-capa-sombra"></div>
+        <div class="pv-selos">${selos}</div>
+        <div class="pv-logo">${v.companyLogo ? `<img src="${escapeHtml(v.companyLogo)}" alt="">` : '🏢'}</div>
+      </div>
+      <div class="pv-corpo">
+        <div class="pv-empresa">${escapeHtml(v.companyName || '')}</div>
+        <h3 class="pv-titulo">${escapeHtml(v.title)}</h3>
+        <div class="pv-tags">
+          <span>📍 ${pvLocal(v)}</span>
+          ${v.seniority ? `<span>📊 ${escapeHtml(v.seniority)}</span>` : ''}
+          ${v.education ? `<span>🎓 ${escapeHtml(v.education)}</span>` : ''}
+        </div>
+        <div class="pv-salario">💰 ${v.salary_range ? escapeHtml(v.salary_range) : 'Salário a combinar'}</div>
+        <p class="pv-desc">${escapeHtml((v.description || '').slice(0, 120))}${(v.description || '').length > 120 ? '…' : ''}</p>
+        <div class="pv-rodape">
+          <button id="curtir-btn-${v.id}" class="pv-curtir" onclick="curtirVagaPortal(${v.id})">${v.euCurti ? '❤️' : '🤍'} ${v.totalCurtidas || 0}</button>
+          <button class="pv-candidatar ${v.jaCandidatei ? 'feito' : ''}" ${v.jaCandidatei ? 'disabled' : ''} onclick="candidatarVaga(${v.id})">${v.jaCandidatei ? '✓ Candidatura enviada' : 'Quero me candidatar →'}</button>
+        </div>
+      </div>
+    </article>`;
+}
+function desenharPortalVagas() {
+  const cont = document.getElementById('conteudo');
+  const todas = CACHE_LISTA_VAGAS_PORTAL, lista = pvFiltradas();
+  const conta = c => c === 'todas' ? todas.length : todas.filter(v => (c === 'combina' && v.combina) || (c === 'regiao' && v.minhaRegiao) || (c === 'remoto' && v.is_remote) || (c === 'lideranca' && v.lideranca) || (c === 'novas' && v.nova)).length;
+  const primeiro = String((ESTADO.usuario && ESTADO.usuario.name) || '').trim().split(' ')[0];
+  const empresas = new Set(todas.map(v => v.companyName)).size;
+  cont.innerHTML = `
+    <style>
+      .pv-hero { background: radial-gradient(circle at 85% 20%, rgba(34,197,94,.35), transparent 45%), linear-gradient(135deg,#0e2a47 0%,#123a63 55%,#12a150 130%); color:#fff; border-radius:20px; padding:26px 26px 22px; margin-bottom:16px; position:relative; overflow:hidden; }
+      .pv-hero h1 { color:#fff; margin:0 0 4px; font-size:26px; }
+      .pv-hero p { margin:0; opacity:.9; font-size:14.5px; }
+      .pv-nums { display:flex; gap:18px; margin:14px 0 16px; flex-wrap:wrap; }
+      .pv-nums div { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18); border-radius:12px; padding:8px 14px; font-size:12.5px; }
+      .pv-nums strong { display:block; font-size:22px; }
+      .pv-busca { display:flex; gap:8px; background:#fff; border-radius:14px; padding:6px; box-shadow:0 8px 24px rgba(0,0,0,.18); }
+      .pv-busca { align-items:center; }
+      .pv-busca input { border:0; font-size:15px; padding:10px; flex:1; outline:none; background:transparent; color:#0f172a; margin:0; box-shadow:none; }
+      .pv-busca select { border:0; background:#f1f5f9; border-radius:10px; padding:0 10px; width:auto; font-size:13px; color:#0f172a; }
+      .pv-chips { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 16px; }
+      .pv-chip { border:1px solid #e2e8f0; background:#fff; border-radius:999px; padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer; color:#334155; }
+      .pv-chip.ativo { background:#0e2a47; color:#fff; border-color:#0e2a47; }
+      .pv-chip small { opacity:.7; margin-left:4px; }
+      .pv-grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:16px; }
+      .pv-card { background:#fff; border-radius:18px; overflow:hidden; border:1px solid #e8edf3; box-shadow:0 2px 10px rgba(15,23,42,.06); display:flex; flex-direction:column; cursor:pointer; transition:transform .18s, box-shadow .18s; }
+      .pv-card:hover { transform:translateY(-4px); box-shadow:0 14px 30px rgba(15,23,42,.14); }
+      .pv-capa { height:108px; position:relative; }
+      .pv-capa-sombra { position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.25)); }
+      .pv-selos { position:absolute; top:10px; left:10px; right:10px; display:flex; gap:6px; flex-wrap:wrap; }
+      .pv-selo { font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; box-shadow:0 2px 6px rgba(0,0,0,.15); }
+      .pv-logo { position:absolute; left:16px; bottom:-24px; width:52px; height:52px; border-radius:14px; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,.15); display:flex; align-items:center; justify-content:center; font-size:22px; overflow:hidden; border:3px solid #fff; }
+      .pv-logo img { width:100%; height:100%; object-fit:contain; }
+      .pv-corpo { padding:32px 16px 16px; display:flex; flex-direction:column; flex:1; }
+      .pv-empresa { font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.4px; }
+      .pv-titulo { margin:2px 0 10px; font-size:18px; color:#0b1329; line-height:1.25; }
+      .pv-tags { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+      .pv-tags span { font-size:11.5px; background:#f1f5f9; color:#334155; padding:4px 9px; border-radius:8px; }
+      .pv-salario { font-size:14.5px; font-weight:800; color:#15803d; margin-bottom:6px; }
+      .pv-desc { font-size:13px; color:#475569; margin:0 0 14px; flex:1; line-height:1.45; }
+      .pv-rodape { display:flex; gap:8px; }
+      .pv-curtir { border:1px solid #e2e8f0; background:#fff; border-radius:12px; padding:10px 12px; font-weight:700; cursor:pointer; }
+      .pv-candidatar { flex:1; border:0; border-radius:12px; padding:10px; font-weight:800; font-size:14px; color:#fff; background:linear-gradient(135deg,#12a150,#22c55e); cursor:pointer; box-shadow:0 4px 12px rgba(18,161,80,.3); }
+      .pv-candidatar.feito { background:#e2e8f0; color:#475569; box-shadow:none; cursor:default; }
+      .pv-vazio { text-align:center; background:#fff; border:2px dashed #e2e8f0; border-radius:18px; padding:40px 20px; color:#64748b; }
+      @media (max-width:600px) { .pv-hero { padding:20px 16px; } .pv-hero h1 { font-size:21px; } .pv-busca select { display:none; } }
+    </style>
+    <section class="pv-hero">
+      <h1>${primeiro ? `Olá, ${escapeHtml(primeiro)}! ` : ''}Sua próxima oportunidade está aqui 🚀</h1>
+      <p>Vagas reais de empresas parceiras da Impulsionar V4. Candidate-se com 1 clique.</p>
+      <div class="pv-nums">
+        <div><strong>${todas.length}</strong>vaga(s) aberta(s)</div>
+        <div><strong>${empresas}</strong>empresa(s) contratando</div>
+        ${conta('combina') ? `<div><strong>${conta('combina')}</strong>combinam com você</div>` : ''}
+      </div>
+      <div class="pv-busca">
+        <input id="pv-busca" placeholder="🔎 Buscar cargo, empresa ou cidade…" value="${escapeHtml(PV_FILTRO.q)}" oninput="PV_FILTRO.q=this.value; clearTimeout(window._pvT); window._pvT=setTimeout(()=>{desenharPortalVagas(); const i=document.getElementById('pv-busca'); i.focus(); i.setSelectionRange(i.value.length,i.value.length);},250)">
+        <select onchange="PV_FILTRO.ordem=this.value; desenharPortalVagas()">
+          <option value="recentes" ${PV_FILTRO.ordem === 'recentes' ? 'selected' : ''}>Mais recentes</option>
+          <option value="encerrando" ${PV_FILTRO.ordem === 'encerrando' ? 'selected' : ''}>Encerram antes</option>
+          <option value="curtidas" ${PV_FILTRO.ordem === 'curtidas' ? 'selected' : ''}>Mais curtidas</option>
+        </select>
+      </div>
+    </section>
+    <div class="pv-chips">
+      ${PV_CHIPS.map(([k, t]) => `<button class="pv-chip ${PV_FILTRO.chip === k ? 'ativo' : ''}" onclick="PV_FILTRO.chip='${k}'; desenharPortalVagas()">${t}<small>${conta(k)}</small></button>`).join('')}
+    </div>
+    ${!(PV_PERFIL && PV_PERFIL.desired_role) ? `<div style="background:#f5f3ff;border:1px solid #ddd6fe;color:#5b21b6;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;">✨ Informe o seu <strong>cargo desejado</strong> em "Meu Currículo" para destacarmos as vagas que combinam com você.</div>` : ''}
+    <div id="modal-area"></div>
+    ${lista.length ? `<div class="pv-grade">${lista.map(pvCard).join('')}</div>` : `<div class="pv-vazio"><div style="font-size:40px;">🔍</div><strong style="color:#0f172a;">Nenhuma vaga com esse filtro agora.</strong><div style="margin-top:4px;">${todas.length ? 'Tente outro filtro ou limpe a busca.' : 'Novas vagas entram toda semana. Mantenha seu currículo completo para ser encontrado pelas empresas!'}</div>${todas.length ? `<button class="pv-chip" style="margin-top:12px;" onclick="PV_FILTRO={q:'',chip:'todas',ordem:'recentes'}; desenharPortalVagas()">Ver todas as vagas</button>` : ''}</div>`}`;
 }
 
 let CACHE_LISTA_VAGAS_PORTAL = [];
@@ -14035,7 +14351,8 @@ function verDetalhesVagaPortal(id) {
           </div>
         </div>
         <div style="padding:20px;max-height:55vh;overflow-y:auto;">
-          <div style="font-size:15px;font-weight:700;color:#0b1329;margin-bottom:12px;">💰 ${v.salary_range ? escapeHtml(v.salary_range) : 'Salário a combinar'} ${v.seniority ? ' · ' + escapeHtml(v.seniority) : ''}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">${v.nova ? '<span style="font-size:11px;font-weight:800;background:#dcfce7;color:#166534;padding:3px 9px;border-radius:999px;">🆕 Nova</span>' : ''}${v.combina ? '<span style="font-size:11px;font-weight:800;background:#f5f3ff;color:#6d28d9;padding:3px 9px;border-radius:999px;">✨ Combina com você</span>' : ''}${v.expiraEm != null ? `<span style="font-size:11px;font-weight:800;background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:999px;">⏳ ${v.expiraEm <= 1 ? 'Último dia para se candidatar' : 'Aberta por mais ' + v.expiraEm + ' dias'}</span>` : ''}</div>
+          <div style="font-size:15px;font-weight:800;color:#15803d;margin-bottom:12px;">💰 ${v.salary_range ? escapeHtml(v.salary_range) : 'Salário a combinar'} ${v.seniority ? '<span style="color:#0b1329;font-weight:700;"> · ' + escapeHtml(v.seniority) + '</span>' : ''}</div>
           ${v.description ? `<p style="font-size:13px;color:#334155;">${escapeHtml(v.description)}</p>` : ''}
           ${v.education ? `<div style="margin-top:10px;"><strong>🎓 Formação</strong><div style="font-size:13px;color:#334155;">${escapeHtml(v.education)}</div></div>` : ''}
           ${v.languages ? `<div style="margin-top:10px;"><strong>🗣️ Idiomas</strong><div style="font-size:13px;color:#334155;">${escapeHtml(v.languages)}</div></div>` : ''}
@@ -14043,7 +14360,8 @@ function verDetalhesVagaPortal(id) {
           ${responsabilidades.length ? `<div style="margin-top:10px;"><strong>📋 Responsabilidades</strong><ul style="margin:4px 0 0 18px;padding:0;font-size:13px;color:#334155;">${responsabilidades.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul></div>` : ''}
           ${beneficios.length ? `<div style="margin-top:10px;"><strong>🎁 Benefícios</strong><ul style="margin:4px 0 0 18px;padding:0;font-size:13px;color:#334155;">${beneficios.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul></div>` : ''}
           <div class="acoes-form" style="margin-top:16px;flex-wrap:wrap;">
-            <button class="${v.jaCandidatei ? 'btn-secundario' : 'btn-primario'} btn-sm" ${v.jaCandidatei ? 'disabled' : ''} onclick="candidatarVaga(${v.id})">${v.jaCandidatei ? '✓ Você já se candidatou' : 'Candidatar-se →'}</button>
+            <button class="${v.jaCandidatei ? 'btn-secundario' : 'btn-primario'} btn-sm" style="${v.jaCandidatei ? '' : 'background:linear-gradient(135deg,#12a150,#22c55e);border:0;'}" ${v.jaCandidatei ? 'disabled' : ''} onclick="candidatarVaga(${v.id})">${v.jaCandidatei ? '✓ Você já se candidatou' : 'Quero me candidatar →'}</button>
+            <a class="btn-secundario btn-sm" style="text-decoration:none;" target="_blank" href="https://wa.me/?text=${encodeURIComponent('Olha essa vaga: ' + v.title + ' — ' + (v.companyName || '') + ' ' + location.origin + '/#vaga=' + v.id)}">📲 Indicar no WhatsApp</a>
             <button id="curtir-btn-modal-${v.id}" class="btn-secundario btn-sm" onclick="curtirVagaPortal(${v.id})">${v.euCurti ? '❤️ Curtido' : '🤍 Curtir'} · ${v.totalCurtidas || 0}</button>
             <button class="btn-secundario btn-sm" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button>
           </div>
@@ -14065,10 +14383,7 @@ async function curtirVagaPortal(id) {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
-function alternarFiltroRegiaoVagas() {
-  FILTRO_REGIAO_VAGAS = document.getElementById('filtro-minha-regiao').checked;
-  renderPortalVagas();
-}
+function alternarFiltroRegiaoVagas() { PV_FILTRO.chip = PV_FILTRO.chip === 'regiao' ? 'todas' : 'regiao'; desenharPortalVagas(); }
 
 async function candidatarVaga(id) {
   try { await api('/api/portal/vagas/' + id + '/apply', { method: 'POST' }); mostrarToast('Candidatura enviada!'); renderPortalVagas(); }
@@ -14532,12 +14847,13 @@ async function renderMeuPerfilImpulsionar() {
   const cont = document.getElementById('conteudo');
   cont.innerHTML = '<h1>Meu Perfil</h1><p>Carregando...</p>';
   try {
-    const [perfil, whats, mp, appUrl, dbInfo] = await Promise.all([
+    const [perfil, whats, mp, appUrl, dbInfo, emailApi] = await Promise.all([
       api('/api/platform/profile'),
       api('/api/me/whatsapp'),
       api('/api/integrations/mercadopago').catch(() => ({ configured: false, tokenPreview: null })),
       api('/api/integrations/app-url').catch(() => ({ url: '', isPublica: false })),
-      api('/api/admin/database-info').catch(() => ({ persistente: false, caminho: '' }))
+      api('/api/admin/database-info').catch(() => ({ persistente: false, caminho: '' })),
+      api('/api/platform/email-api').catch(() => ({ provedor: '', remetente: '', chavePreview: '', smtpConfigurado: false }))
     ]);
     cont.innerHTML = `
       <h1>Meu Perfil</h1>
@@ -14623,8 +14939,31 @@ async function renderMeuPerfilImpulsionar() {
         <div class="acoes-form"><button class="btn-secundario" onclick="baixarBackupBanco()">⬇️ Baixar Backup Agora (.sqlite)</button></div>
       </div>
 
-      <h3 style="margin-top:28px;">Teste de Envio de E-mail (SMTP)</h3>
-      <p style="color:#64748b;margin-top:-8px;">Verifique aqui se o SMTP_HOST/PORT/USER/PASS do arquivo .env está funcionando, sem precisar olhar o console do servidor — o resultado (ou o erro exato do Gmail/provedor) aparece direto embaixo.</p>
+      <h3 style="margin-top:28px;">Envio de E-mail por API (recomendado no Railway)</h3>
+      <p style="color:#64748b;margin-top:-8px;">O Railway bloqueia SMTP (Gmail, Outlook etc.) nos planos Free/Trial/Hobby — por isso o teste ficava travado em "Enviando...". Usando a API da <strong>Brevo</strong> (grátis até 300 e-mails/dia) ou da <strong>Resend</strong>, o envio sai por HTTPS e funciona em qualquer plano. Ao salvar, todos os e-mails do sistema (lembretes do 5S, recuperação de senha, convites) passam a usar a API.</p>
+      <div class="formulario" style="max-width:640px;">
+        <div class="plano-meta" style="margin-bottom:8px;">
+          Canal atual: ${emailApi.provedor
+            ? `<strong style="color:#16a34a;">API ${emailApi.provedor === 'brevo' ? 'Brevo' : 'Resend'}</strong> (${escapeHtml(emailApi.chavePreview || '')}) · remetente ${escapeHtml(emailApi.remetente || '—')}`
+            : `<strong style="color:#c9a227;">SMTP</strong> ${emailApi.smtpConfigurado ? `(${escapeHtml(emailApi.smtpHost || '')}:${escapeHtml(String(emailApi.smtpPorta || ''))})` : '— não configurado'}`}
+        </div>
+        <div class="linha">
+          <div><label>Provedor</label><select id="mp-email-prov">
+            <option value="brevo" ${emailApi.provedor === 'brevo' ? 'selected' : ''}>Brevo (Sendinblue)</option>
+            <option value="resend" ${emailApi.provedor === 'resend' ? 'selected' : ''}>Resend</option>
+            <option value="" ${!emailApi.provedor ? 'selected' : ''}>Desligado (usar SMTP do .env)</option>
+          </select></div>
+          <div style="flex:2"><label>Chave de API ${emailApi.provedor ? '(deixe vazio para manter a atual)' : ''}</label><input id="mp-email-chave" type="password" autocomplete="off" placeholder="xkeysib-... (Brevo) ou re_... (Resend)"></div>
+        </div>
+        <div class="linha">
+          <div style="flex:2"><label>Remetente (e-mail verificado no provedor)</label><input id="mp-email-rem" placeholder="Impulsionar &lt;contato@seudominio.com.br&gt;" value="${escapeHtml(emailApi.remetente || '')}"></div>
+        </div>
+        <div class="acoes-form"><button class="btn-primario" onclick="salvarEmailApi()">Salvar canal de e-mail</button></div>
+        <div id="mp-email-api-resultado" style="font-size:13px;margin-top:6px;"></div>
+      </div>
+
+      <h3 style="margin-top:28px;">Teste de Envio de E-mail</h3>
+      <p style="color:#64748b;margin-top:-8px;">Envia um e-mail de teste pelo canal atual (API ou SMTP). O resultado — ou o erro exato do provedor — aparece logo abaixo.</p>
       <div class="formulario" style="max-width:640px;">
         <div class="linha">
           <div style="flex:2"><label>Enviar e-mail de teste para</label><input id="mp-teste-email" type="email" value="${escapeHtml(ESTADO.usuario.email || '')}"></div>
@@ -14638,11 +14977,25 @@ async function renderMeuPerfilImpulsionar() {
   }
 }
 
+async function salvarEmailApi() {
+  const res = document.getElementById('mp-email-api-resultado');
+  const provedor = document.getElementById('mp-email-prov').value;
+  const chave = document.getElementById('mp-email-chave').value.trim();
+  const remetente = document.getElementById('mp-email-rem').value.trim();
+  if (provedor && !remetente) { res.style.color = '#dc2626'; res.textContent = '✗ Informe o remetente (e-mail verificado no provedor).'; return; }
+  res.style.color = '#64748b'; res.textContent = 'Salvando...';
+  try {
+    await api('/api/platform/email-api', { method: 'PUT', body: JSON.stringify({ provedor, chave, remetente }) });
+    mostrarToast(provedor ? 'Canal de e-mail salvo. Faça um teste de envio.' : 'API desligada — voltando ao SMTP.');
+    renderMeuPerfilImpulsionar();
+  } catch (e) { res.style.color = '#dc2626'; res.textContent = '✗ ' + e.message; }
+}
+
 async function testarEmailSmtp() {
   const resultado = document.getElementById('mp-teste-resultado');
   const email = document.getElementById('mp-teste-email').value;
   resultado.style.color = '#64748b';
-  resultado.textContent = 'Enviando...';
+  resultado.textContent = 'Enviando... (pode levar até 30 segundos)';
   try {
     const r = await api('/api/platform/test-email', { method: 'POST', body: JSON.stringify({ email }) });
     resultado.style.color = '#16a34a';
