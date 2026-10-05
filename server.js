@@ -7122,6 +7122,10 @@ app.post('/api/admin/dpo/sessoes/:id/status', requireRole('admin'), async (req, 
         if (!atual) return res.status(404).json({ error: 'Agendamento não encontrado.' });
         await new Promise(r => db.run(`UPDATE dpo_sessoes SET status = ?, sequencia = sequencia + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [st, atual.id], () => r()));
         let msg = 'Status atualizado.';
+        if (st === 'agendada' && atual.status === 'cancelada') {
+            const r = await sincronizarSessaoDpo(atual.id, 'update');
+            msg = r.ok ? 'Consultoria reativada — o convite foi enviado de novo para as agendas.' : 'Reativada, mas ' + r.erro;
+        } else if (st === 'agendada') msg = 'Voltou para agendada.';
         if (st === 'cancelada' && atual.status !== 'cancelada') {
             const r = await sincronizarSessaoDpo(atual.id, 'cancel');
             msg = r.ok ? 'Consultoria cancelada — o cancelamento foi enviado para as agendas.' : 'Cancelada, mas ' + r.erro;

@@ -6807,6 +6807,8 @@ function agdCartaoHtml(s, ehMaster) {
           <button class="btn-secundario btn-sm" onclick="reenviarSessaoDpo(${s.id})">🔁 Reenviar convite</button>
           <button class="btn-secundario btn-sm" onclick="statusSessaoDpo(${s.id}, 'realizada')">✔ Realizada</button>
           <button class="btn-perigo btn-sm" onclick="statusSessaoDpo(${s.id}, 'cancelada')">Cancelar</button>` : ''}
+          ${s.status === 'realizada' ? `<button class="btn-secundario btn-sm" onclick="statusSessaoDpo(${s.id}, 'agendada')">↩ Voltar para agendada</button>` : ''}
+          ${s.status === 'cancelada' ? `<button class="btn-secundario btn-sm" onclick="statusSessaoDpo(${s.id}, 'agendada')">↩ Reativar consultoria</button>` : ''}
           <button class="btn-perigo btn-sm" onclick="excluirSessaoDpo(${s.id})">🗑</button>` : ''}
       </div>
     </div>
@@ -6977,7 +6979,9 @@ async function reenviarSessaoDpo(id) {
 }
 async function statusSessaoDpo(id, status) {
   if (status === 'cancelada' && !confirm('Cancelar esta consultoria? O cancelamento vai para a agenda de todos os convidados.')) return;
-  try { const r = await api('/api/admin/dpo/sessoes/' + id + '/status', { method: 'POST', body: JSON.stringify({ status }) }); mostrarToast(r.message); carregarSessoesDpoMaster(); }
+  if (status === 'realizada' && !confirm('Marcar esta consultoria como realizada?')) return;
+  if (status === 'agendada' && !confirm('Voltar esta consultoria para agendada?')) return;
+  try { const r = await api('/api/admin/dpo/sessoes/' + id + '/status', { method: 'POST', body: JSON.stringify({ status }) }); mostrarToast(r.message); if (status === 'agendada') AGD.filtro = 'proximas'; carregarSessoesDpoMaster(); }
   catch (e) { mostrarToast(e.message, true); }
 }
 async function excluirSessaoDpo(id) {
