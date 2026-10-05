@@ -1416,6 +1416,29 @@ function inicializarBase() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME
         )`);
+        // "Material DPO": biblioteca do Master (por pilar + pergunta). Cada material
+        // só aparece para a empresa quando o Master o disponibiliza para ela
+        // (pasta "📂 Material Impulsionar" dentro da pergunta). Desmarcar = some.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_material_impulsionar (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pillar_key TEXT NOT NULL,
+            question_numero TEXT NOT NULL,
+            titulo TEXT NOT NULL,
+            descricao TEXT,
+            url TEXT NOT NULL,
+            original_name TEXT,
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME
+        )`);
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_material_impulsionar_share (
+            material_id INTEGER NOT NULL,
+            company_id INTEGER NOT NULL,
+            shared_by INTEGER,
+            shared_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            acessos INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (material_id, company_id)
+        )`);
         // Ferramentas digitais por pergunta (SWOT da Gestão 1.3, PPR do Planejamento 1.1).
         db.run(`CREATE TABLE IF NOT EXISTS dpo_ferramentas_digitais (
             company_id INTEGER NOT NULL,
@@ -8785,6 +8808,146 @@ app.post('/api/dpo/ferramentas/:id/acesso', requireRole('admin', 'client_admin')
 });
 
 // ======================================================================
+// DPO — MATERIAL DPO (biblioteca do Master + compartilhamento por empresa)
+// ======================================================================
+function validarMaterialImpulsionarDpo(body, parcial) {
+    const erros = []; const dados = {};
+    if (!parcial || body.pillarKey !== undefined) {
+        if (!DPO_PILARES_ORDEM.includes(body.pillarKey)) erros.push('Escolha o pilar.');
+        else dados.pillar_key = body.pillarKey;
+    }
+    if (!parcial || body.questionNumero !== undefined) {
+        const pk = body.pillarKey;
+        const q = String(body.questionNumero || '').trim();
+        if (!q || (pk && !textoDaPerguntaDpo(pk, q))) erros.push('Escolha a pergunta do pilar.');
+        else dados.question_numero = q;
+    }
+    if (!parcial || body.titulo !== undefined) {
+        const t = String(body.titulo || '').trim().slice(0, 200);
+        if (!t) erros.push('Informe o título do material.'); else dados.titulo = t;
+    }
+    if (body.descricao !== undefined) dados.descricao = String(body.descricao || '').trim().slice(0, 2000) || null;
+    if (!parcial || body.url !== undefined) {
+        const u = String(body.url || '').trim();
+        if (!/^https?:\/\/\S+$/i.test(u) && !/^\/uploads\/[\w.\-]+$/.test(u)) erros.push('Envie o arquivo ou informe um link válido.');
+        else { dados.url = u; dados.original_name = body.originalName ? String(body.originalName).slice(0, 200) : null; }
+    }
+    return { erros, dados };
+}
+
+function estruturaPilaresDpo() {
+    return DPO_PILARES_ORDEM.filter(k => DPO_AMBEV_DATA[k]).map(k => ({
+        key: k, label: DPO_AMBEV_DATA[k].label,
+        grupos: (DPO_AMBEV_DATA[k].grupos || []).map(g => ({ numero: g.numero, titulo: g.titulo, perguntas: g.perguntas.map(q => ({ numero: q.numero, questao: q.questao })) }))
+    }));
+}
+
+app.get('/api/admin/material-dpo', requireRole('admin'), async (req, res) => {
+    try {
+        const materiais = await dbAll(`SELECT * FROM dpo_material_impulsionar ORDER BY created_at DESC, id DESC`);
+        const shares = await dbAll(`SELECT s.*, c.name as companyName FROM dpo_material_impulsionar_share s LEFT JOIN companies c ON c.id = s.company_id`);
+        const porMat = {}; shares.forEach(s => (porMat[s.material_id] = porMat[s.material_id] || []).push({ companyId: s.company_id, companyName: s.companyName, sharedAt: s.shared_at, acessos: s.acessos || 0 }));
+        const empresas = await dbAll(`SELECT id, name, enabled_modules FROM companies ORDER BY name COLLATE NOCASE`);
+        res.json({
+            materiais: materiais.map(m => ({ ...m, perguntaTexto: textoDaPerguntaDpo(m.pillar_key, m.question_numero), compartilhado: porMat[m.id] || [] })),
+            empresas: empresas.map(e => {
+                let dpo = true;
+                try { const mods = e.enabled_modules ? JSON.parse(e.enabled_modules) : null; if (Array.isArray(mods)) dpo = mods.includes('dpoAmbev'); } catch (x) { /* sem restrição */ }
+                return { id: e.id, name: e.name, dpo };
+            }),
+            pilares: estruturaPilaresDpo()
+        });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar o Material DPO.' }); }
+});
+
+app.post('/api/admin/material-dpo', requireRole('admin'), async (req, res) => {
+    const { erros, dados } = validarMaterialImpulsionarDpo(req.body, false);
+    if (erros.length) return res.status(400).json({ error: erros[0] });
+    try {
+        const id = await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_material_impulsionar (pillar_key, question_numero, titulo, descricao, url, original_name, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [dados.pillar_key, dados.question_numero, dados.titulo, dados.descricao || null, dados.url, dados.original_name, req.user.userId],
+            function (err) { err ? reject(err) : resolve(this.lastID); }));
+        res.json({ message: 'Material salvo!', id });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar o material.' }); }
+});
+
+app.put('/api/admin/material-dpo/:id', requireRole('admin'), async (req, res) => {
+    try {
+        const atual = await dbGet(`SELECT * FROM dpo_material_impulsionar WHERE id = ?`, [req.params.id]);
+        if (!atual) return res.status(404).json({ error: 'Material não encontrado.' });
+        const corpo = { ...req.body };
+        if (corpo.questionNumero !== undefined && corpo.pillarKey === undefined) corpo.pillarKey = atual.pillar_key;
+        const { erros, dados } = validarMaterialImpulsionarDpo(corpo, true);
+        if (erros.length) return res.status(400).json({ error: erros[0] });
+        const campos = Object.keys(dados);
+        if (!campos.length) return res.json({ message: 'Nada para alterar.' });
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE dpo_material_impulsionar SET ${campos.map(c => c + ' = ?').join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            [...campos.map(c => dados[c]), atual.id], (err) => err ? reject(err) : resolve()));
+        res.json({ message: 'Material atualizado!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o material.' }); }
+});
+
+app.delete('/api/admin/material-dpo/:id', requireRole('admin'), async (req, res) => {
+    try {
+        await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_material_impulsionar_share WHERE material_id = ?`, [req.params.id], (err) => err ? reject(err) : resolve()));
+        await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_material_impulsionar WHERE id = ?`, [req.params.id], (err) => err ? reject(err) : resolve()));
+        res.json({ message: 'Material removido!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao remover o material.' }); }
+});
+
+// Disponibiliza / retira o material para uma ou mais empresas.
+// body: { companyIds: [..], compartilhar: true|false }  (ou { todas: true, compartilhar })
+app.put('/api/admin/material-dpo/:id/compartilhar', requireRole('admin'), async (req, res) => {
+    try {
+        const mat = await dbGet(`SELECT * FROM dpo_material_impulsionar WHERE id = ?`, [req.params.id]);
+        if (!mat) return res.status(404).json({ error: 'Material não encontrado.' });
+        const compartilhar = req.body.compartilhar !== false;
+        let ids = Array.isArray(req.body.companyIds) ? req.body.companyIds.map(Number).filter(n => n > 0) : [];
+        if (req.body.todas) ids = (await dbAll(`SELECT id FROM companies`)).map(c => c.id);
+        if (!ids.length) return res.status(400).json({ error: 'Escolha ao menos uma empresa.' });
+        let novos = 0;
+        for (const cid of ids) {
+            if (compartilhar) {
+                const r = await new Promise((resolve, reject) => db.run(
+                    `INSERT OR IGNORE INTO dpo_material_impulsionar_share (material_id, company_id, shared_by) VALUES (?, ?, ?)`,
+                    [mat.id, cid, req.user.userId], function (err) { err ? reject(err) : resolve(this.changes); }));
+                if (r) {
+                    novos++;
+                    const pilar = DPO_AMBEV_DATA[mat.pillar_key];
+                    notificarPorCompanyAdmins(cid, '📂 Novo Material Impulsionar',
+                        `A Impulsionar disponibilizou "${mat.titulo}" na pergunta ${mat.question_numero} de ${pilar ? pilar.label : mat.pillar_key}.`, 'dpoHome');
+                }
+            } else {
+                await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_material_impulsionar_share WHERE material_id = ? AND company_id = ?`, [mat.id, cid], (err) => err ? reject(err) : resolve()));
+            }
+        }
+        res.json({ message: compartilhar ? (novos ? `Disponibilizado para ${novos} empresa(s)!` : 'Já estava disponível.') : 'Compartilhamento removido.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao alterar o compartilhamento.' }); }
+});
+
+// Materiais disponibilizados para a empresa (só os compartilhados com ela).
+app.get('/api/dpo/material-impulsionar', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const companyId = req.user.role === 'admin' ? Number(req.query.company_id) : req.user.companyId;
+        if (!companyId) return res.json([]);
+        const params = [companyId];
+        let filtro = '';
+        if (req.query.pillar) { filtro = ' AND m.pillar_key = ?'; params.push(String(req.query.pillar)); }
+        const lista = await dbAll(`SELECT m.id, m.pillar_key, m.question_numero, m.titulo, m.descricao, m.url, m.original_name, s.shared_at
+            FROM dpo_material_impulsionar m JOIN dpo_material_impulsionar_share s ON s.material_id = m.id
+            WHERE s.company_id = ?${filtro} ORDER BY s.shared_at DESC, m.id DESC`, params);
+        res.json(lista.map(m => ({ ...m, perguntaTexto: textoDaPerguntaDpo(m.pillar_key, m.question_numero) })));
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar o Material Impulsionar.' }); }
+});
+
+app.post('/api/dpo/material-impulsionar/:id/acesso', requireRole('admin', 'client_admin'), (req, res) => {
+    if (req.user.role === 'admin') return res.json({ ok: true });
+    db.run(`UPDATE dpo_material_impulsionar_share SET acessos = acessos + 1 WHERE material_id = ? AND company_id = ?`, [req.params.id, req.user.companyId], () => res.json({ ok: true }));
+});
+
+// ======================================================================
 // DPO — FERRAMENTAS DIGITAIS por pergunta do checklist
 //   swot         -> Gestão 1.3 (SWOT por área: Armazém, Distribuição, Frota, Gente)
 //   Simulador de Dimensionamento -> Planejamento 1.1, em pastas:
@@ -9136,7 +9299,7 @@ app.post('/api/dpo/ferramentas-digitais/:chave/novo-ano', requireRole('admin', '
                 };
                 else if (chave === 'swot') base = { areas: origem.areas, sonho: origem.sonho, responsaveis: origem.responsaveis, vinculoDNMP: origem.vinculoDNMP, vinculoDNMPTexto: origem.vinculoDNMPTexto };
                 else if (chave === 'orcamento') base = { raci: origem.raci, kpis: origem.kpis, processo: origem.processo };
-                else if (chave === 'sonho') base = { frase: origem.frase, conexao: origem.conexao, exposicao: origem.exposicao, kpis: (origem.kpis || []).map(k => ({ id: k.id, nome: k.nome, pilar: k.pilar, sentido: k.sentido, meta: k.meta, unidade: k.unidade, acumula: k.acumula, real: [] })) };
+                else if (chave === 'sonho') base = { frase: origem.frase, conexao: origem.conexao, exposicao: origem.exposicao, kpis: (origem.kpis || []).map(k => ({ id: k.id, nome: k.nome, pilar: k.pilar, sentido: k.sentido, meta: k.meta, unidade: k.unidade, acumula: k.acumula, nivel: k.nivel, pai: k.pai, cor: k.cor, rotuloMeta: k.rotuloMeta, slot: k.slot, real: [] })) };
                 else if (chave === 'ans') base = { acordo: origem.acordo, volPadrao: origem.volPadrao, tolerancia: origem.tolerancia };
                 else if (chave === 'visibilidade') base = { colaboradores: origem.colaboradores, indicadores: origem.indicadores, incentivo: origem.incentivo };
                 else if (chave === 'riscos') base = { riscos: origem.riscos, respostas: origem.respostas, retomada: origem.retomada, retomadaRevisao: origem.retomadaRevisao, retomadaLocal: origem.retomadaLocal, revisoes: origem.revisoes };
@@ -9646,10 +9809,11 @@ function exportarExclusivaDpo(chave, add, dados) {
         const linhasSonho = [];
         (d.kpis || []).filter(k => k.nome).forEach(k => {
             const meta = numDpo(k.meta);
-            linhasSonho.push({ nome: k.nome, pilar: k.pilar || '', sentido: k.sentido === 'menor' ? '↓ menor melhor' : '↑ maior melhor', unidade: k.unidade || '', tipo: 'Meta', ...Object.fromEntries(M.map((m, i) => { const v = numDpo((k.metaMes || [])[i]); return ['m' + i, v === null || v === '' ? meta : v]; })), ytd: meta });
-            linhasSonho.push({ nome: '', pilar: '', sentido: '', unidade: '', tipo: 'Real', ...Object.fromEntries(M.map((m, i) => ['m' + i, numDpo((k.real || [])[i])])), ytd: ytdSonho(k) });
+            const pai = (d.kpis || []).find(x => x.id === k.pai);
+            linhasSonho.push({ nivel: k.nivel === 'estrategia' ? 'Estratégia' : 'Sonho', ligado: pai ? pai.nome : '', nome: k.nome, pilar: k.pilar || '', sentido: k.sentido === 'menor' ? '↓ menor melhor' : '↑ maior melhor', unidade: k.unidade || '', tipo: 'Meta', ...Object.fromEntries(M.map((m, i) => { const v = numDpo((k.metaMes || [])[i]); return ['m' + i, v === null || v === '' ? meta : v]; })), ytd: meta });
+            linhasSonho.push({ nivel: '', ligado: '', nome: '', pilar: '', sentido: '', unidade: '', tipo: 'Real', ...Object.fromEntries(M.map((m, i) => ['m' + i, numDpo((k.real || [])[i])])), ytd: ytdSonho(k) });
         });
-        add('Meta e Real', [['KPI', 'nome', 30], ['Pilar', 'pilar', 20], ['Sentido', 'sentido', 16], ['Unid.', 'unidade', 7], ['', 'tipo', 7], ...M.map((m, i) => [m, 'm' + i, 9]), ['Ano / YTD', 'ytd', 11]], linhasSonho);
+        add('Meta e Real', [['Nível', 'nivel', 11], ['Ligado a', 'ligado', 22], ['KPI', 'nome', 30], ['Pilar', 'pilar', 20], ['Sentido', 'sentido', 16], ['Unid.', 'unidade', 7], ['', 'tipo', 7], ...M.map((m, i) => [m, 'm' + i, 9]), ['Ano / YTD', 'ytd', 11]], linhasSonho);
         tabela('Propostas dos grupos', d.propostas, [['Grupo', 'grupo', 14], ['Proposta de Sonho', 'texto', 90], ['Escolhida?', 'escolhida', 10]]);
         tabela('Comunicação', d.comunicacoes, [['Data', 'data', 12], ['Canal', 'canal', 20], ['Público', 'publico', 25], ['Descrição', 'descricao', 60]]);
     } else if (chave === 'ans') {

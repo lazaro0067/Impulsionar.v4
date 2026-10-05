@@ -482,6 +482,22 @@
   .chamado-anexo { display: inline-block; margin-top: 6px; font-size: 12.5px; color: #2563eb; }
   .chamado-msg-sistema { align-self: center; font-size: 12px; color: #475569; background: #f1f5f9; border-radius: 999px; padding: 4px 12px; text-align: center; }
   .chamado-msg-sistema span { color: #94a3b8; }
+  .matimp-chip { display:inline-block; margin-left:6px; background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; border-radius:999px; font-size:11px; font-weight:700; padding:1px 8px; }
+  .matimp-cont { background:#ea580c; color:#fff; border-radius:999px; font-size:10.5px; padding:0 6px; margin-left:4px; }
+  .matimp-pasta { border:1px solid #fed7aa; background:linear-gradient(180deg,#fffbf5,#fff); border-radius:10px; padding:10px 12px; margin-bottom:10px; }
+  .matimp-pasta-tit { font-weight:800; color:#9a3412; font-size:13px; display:flex; align-items:center; gap:8px; }
+  .matimp-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px dashed #fde2c4; }
+  .matimp-item:first-of-type { border-top:none; }
+  .matimp-ico { width:34px; height:34px; border-radius:8px; background:#ffedd5; display:flex; align-items:center; justify-content:center; font-size:17px; flex:0 0 34px; }
+  .matimp-item a.btn-sm { width:auto; white-space:nowrap; text-decoration:none; }
+  .mdpo-pergunta { border:1px solid var(--cinza-200); border-radius:10px; padding:10px 12px; margin-bottom:8px; background:#fff; }
+  .mdpo-pergunta.tem { border-left:4px solid #ea580c; }
+  .mdpo-mat { display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-top:1px dashed var(--cinza-200); flex-wrap:wrap; }
+  .mdpo-mat button, .mdpo-mat a { width:auto !important; }
+  .mdpo-toggle { border-radius:999px !important; font-weight:700; }
+  .mdpo-toggle.on { background:#16a34a !important; color:#fff !important; border-color:#16a34a !important; }
+  .mdpo-emp-lista label { display:flex; align-items:center; gap:8px; padding:5px 4px; font-weight:500; cursor:pointer; }
+  .mdpo-emp-lista input[type=checkbox] { width:auto; margin:0; }
   .ferr-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
   .ferr-card { display: flex; gap: 12px; background: #fff; border: 1px solid var(--cinza-200); border-radius: 12px; padding: 12px 14px; }
   .ferr-card.inativa { opacity: .6; border-style: dashed; }
@@ -1014,7 +1030,7 @@ const MENU_POR_PERFIL = {
         ['acessosCandidatos', 'Acessos de Candidatos'], ['candidatesApproval', 'Aprovar Currículos'], ['creditosVagas', 'Créditos das Empresas'], ['vagaPlans', 'Planos de Vaga'], ['closingFeePlans', 'Planos de Fechamento']
     ]},
     { group: 'Impulsionar V4 DPO Ambev', items: [
-        ['dpoPrecos', 'Preços por Pilar'], ['dpoAgenda', 'Agenda de Consultorias'], ['dpoConsultores', 'Cadastro de Consultor'], ['dpoAcompanhamentos', 'Acompanhamentos Impulsionar']
+        ['dpoPrecos', 'Preços por Pilar'], ['dpoAgenda', 'Agenda de Consultorias'], ['dpoConsultores', 'Cadastro de Consultor'], ['dpoAcompanhamentos', 'Acompanhamentos Impulsionar'], ['materialDpo', 'Material DPO']
     ]},
     { group: 'Teste DISC', items: [
         ['discTesteMaster', 'Testar & Enviar Teste DISC']
@@ -1352,7 +1368,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster,
+    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster,
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster, acessosCandidatos: renderAcessosCandidatos, creditosVagas: renderCreditosVagas
   };
   NAV.profundidade++;
@@ -7434,7 +7450,7 @@ async function abrirOuCriarPilarDpo(pillarKey) {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
-const ABAS_PILAR_DPO = { checklist: '📝 Gestão', batepapo: '📁 Conhecimento do Time', material: '📂 Material do Pilar', ferramentas: '🧰 Ferramentas Impulsionar' };
+const ABAS_PILAR_DPO = { checklist: '📝 Gestão', batepapo: '📁 Conhecimento do Time', material: '📂 Material do Pilar', impulsionar: '📂 Material Impulsionar', ferramentas: '🧰 Ferramentas Impulsionar' };
 
 async function abrirVisualizacaoCicloDpo(ciclo, somenteLeitura, pilarKeyInicial) {
   let pastas = { checklist: true, batepapo: false, material: false, ferramentas: false };
@@ -7445,8 +7461,10 @@ async function abrirVisualizacaoCicloDpo(ciclo, somenteLeitura, pilarKeyInicial)
   let acomps = [];
   let acompsLista = [];
   try { acompsLista = await api('/api/dpo/acompanhamentos' + (ESTADO.usuario.role === 'admin' && ciclo.company_id ? '?company_id=' + ciclo.company_id : '')); acomps = acompsLista.map(a => a.questionKey); } catch (e) { acomps = []; }
+  let matImp = [];
+  try { matImp = await api('/api/dpo/material-impulsionar' + (ESTADO.usuario.role === 'admin' ? '?company_id=' + (ciclo.company_id || '') : '')); } catch (e) { matImp = []; }
   MATERIAL_DPO_ABERTAS.clear();
-  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key), aba: null, pastas, niveis, acomps, acompsLista };
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key), aba: null, pastas, niveis, acomps, acompsLista, matImp };
   renderCicloDpoAtual();
 }
 
@@ -7461,7 +7479,8 @@ function renderCicloDpoAtual() {
   const mediaScore = validos.length ? (validos.reduce((s, p) => s + p.score, 0) / validos.length).toFixed(1) : null;
   const pastas = ESTADO_DPO_VIEW.pastas || { checklist: true, batepapo: false, material: false, ferramentas: false };
   const temAcompPilar = (ESTADO_DPO_VIEW.acomps || []).some(k => k.startsWith(pilar.key + ':'));
-  const abasLiberadas = Object.keys(ABAS_PILAR_DPO).filter(a => pastas[a] || (a === 'ferramentas' && temAcompPilar));
+  const temMatImp = (ESTADO_DPO_VIEW.matImp || []).some(m => m.pillar_key === pilar.key);
+  const abasLiberadas = Object.keys(ABAS_PILAR_DPO).filter(a => a === 'impulsionar' ? temMatImp : (pastas[a] || (a === 'ferramentas' && temAcompPilar)));
   if (!abasLiberadas.includes(ESTADO_DPO_VIEW.aba)) ESTADO_DPO_VIEW.aba = abasLiberadas[0] || null;
   const aba = ESTADO_DPO_VIEW.aba;
   cont.innerHTML = `
@@ -7478,11 +7497,12 @@ function renderCicloDpoAtual() {
       ${ciclo.pilares.map(p => `<button class="btn-sm ${p.key === pilar.key ? 'btn-primario' : 'btn-secundario'}" onclick="trocarPilarCicloDpo('${p.key}')">${escapeHtml(p.label)}</button>`).join('')}
     </div>
     ${abasLiberadas.length ? `<div class="dpo-subabas">
-      ${abasLiberadas.map(a => `<button class="dpo-subaba ${aba === a ? 'ativa' : ''}" onclick="trocarAbaPilarDpo('${a}')">${ABAS_PILAR_DPO[a]}</button>`).join('')}
+      ${abasLiberadas.map(a => `<button class="dpo-subaba ${aba === a ? 'ativa' : ''}" onclick="trocarAbaPilarDpo('${a}')">${ABAS_PILAR_DPO[a]}${a === 'impulsionar' ? ` <span class="matimp-cont">${(ESTADO_DPO_VIEW.matImp || []).filter(m => m.pillar_key === pilar.key).length}</span>` : ''}</button>`).join('')}
     </div>` : ''}
     ${!aba ? `<div class="msg-vazio">Nenhuma pasta deste pilar foi liberada para sua empresa ainda. Fale com o Master.</div>`
       : aba === 'batepapo' ? `<div id="dpo-batepapo-area"><p>Carregando...</p></div>`
       : aba === 'material' ? `<div id="dpo-material-area"><p>Carregando...</p></div>`
+      : aba === 'impulsionar' ? matImpAbaHtml(pilar)
       : aba === 'ferramentas' ? `<div id="dpo-ferramentas-area"><p>Carregando...</p></div>` : `
     ${(() => {
       const nv = ((ESTADO_DPO_VIEW.niveis && ESTADO_DPO_VIEW.niveis.pilares) || {})[pilar.key];
@@ -7699,6 +7719,7 @@ function renderPerguntaDpo(p, somenteLeitura) {
         <div>
           <span class="dpo-pergunta-titulo">${escapeHtml(p.numero)} ${escapeHtml(p.questao)}</span>
           ${p.mandatoria ? '<span style="color:#dc2626;font-size:11px;font-weight:700;"> · Mandatória</span>' : ''}
+          ${matImpDaPergunta(p.questionKey).length ? `<span class="matimp-chip">📂 Material Impulsionar (${matImpDaPergunta(p.questionKey).length})</span>` : ''}
           <div style="font-size:11.5px;color:#94a3b8;">Peso ${p.peso || 0}${p.aplicabilidade ? ' · ' + escapeHtml(p.aplicabilidade) : ''}</div>
         </div>
         <span class="dpo-score-badge" style="background:${cor}20;color:${cor};">${textoNota}</span>
@@ -7708,6 +7729,7 @@ function renderPerguntaDpo(p, somenteLeitura) {
         <details style="margin-bottom:10px;"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#4338ca;">❓ How to Check (tirar dúvidas)</summary>
           <div style="font-size:12.5px;color:#334155;white-space:pre-line;margin-top:6px;">${escapeHtml(p.how_to_check || '')}</div>
         </details>
+        ${matImpPastaHtml(p.questionKey, false)}
         ${FD_PERGUNTAS[p.questionKey] ? fdCaixaPerguntaHtml(p) : ''}
         <div style="font-size:12.5px;background:#f8fafc;border:1px solid var(--cinza-200);border-radius:8px;padding:8px 10px;">
           <strong>Nota na última autoavaliação${nv ? ' (' + escapeHtml(nv.referenciaLabel) + ')' : ''}:</strong> <span style="color:${cor};font-weight:800;">${textoNota}</span>${explicacaoNota ? ' — ' + escapeHtml(explicacaoNota) : ''}
@@ -7810,7 +7832,7 @@ async function recarregarCicloDpoAtual() {
   const pilarAtivo = ESTADO_DPO_VIEW.pilarAtivo;
   const somenteLeitura = ESTADO_DPO_VIEW.somenteLeitura;
   const ciclo = await api('/api/dpo/cycles/' + cicloId);
-  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo, aba: ESTADO_DPO_VIEW.aba, pastas: ESTADO_DPO_VIEW.pastas, niveis: ESTADO_DPO_VIEW.niveis, acomps: ESTADO_DPO_VIEW.acomps, acompsLista: ESTADO_DPO_VIEW.acompsLista };
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo, aba: ESTADO_DPO_VIEW.aba, pastas: ESTADO_DPO_VIEW.pastas, niveis: ESTADO_DPO_VIEW.niveis, acomps: ESTADO_DPO_VIEW.acomps, acompsLista: ESTADO_DPO_VIEW.acompsLista, matImp: ESTADO_DPO_VIEW.matImp };
   renderCicloDpoAtual();
 }
 
@@ -9059,6 +9081,271 @@ function fecharChamadoComAvaliacao(id) {
 async function liberarAjusteChamado(id) {
   if (!confirm('Reabrir a autoavaliação para a empresa ajustar as notas?')) return;
   try { const r = await api('/api/chamados/' + id + '/liberar-ajuste', { method: 'POST' }); mostrarToast(r.message); abrirChamado(id); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+// ----- "Material Impulsionar" (material do Master compartilhado com a empresa) -----
+function matImpIcone(m) {
+  const n = String(m.original_name || m.url || '').toLowerCase();
+  if (/^https?:/.test(m.url || '')) return '🔗';
+  if (/\.pdf$/.test(n)) return '📕';
+  if (/\.(xlsx?|xlsm|xlsb|csv)$/.test(n)) return '📊';
+  if (/\.(pptx?)$/.test(n)) return '📽️';
+  if (/\.(docx?|txt)$/.test(n)) return '📄';
+  if (/\.(png|jpe?g|gif|webp)$/.test(n)) return '🖼️';
+  if (/\.(mp4|mov|webm|avi)$/.test(n)) return '🎬';
+  return '📎';
+}
+function matImpDaPergunta(questionKey) {
+  const [pk, num] = String(questionKey).split(':');
+  return ((ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.matImp) || []).filter(m => m.pillar_key === pk && m.question_numero === num);
+}
+function registrarAcessoMatImp(id) { api('/api/dpo/material-impulsionar/' + id + '/acesso', { method: 'POST' }).catch(() => {}); }
+function matImpItemHtml(m) {
+  const ehLink = /^https?:/i.test(m.url);
+  return `<div class="matimp-item">
+    <div class="matimp-ico">${matImpIcone(m)}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-weight:700;font-size:13px;color:#1e293b;">${escapeHtml(m.titulo)}</div>
+      ${m.descricao ? `<div style="font-size:12px;color:#64748b;white-space:pre-line;">${escapeHtml(m.descricao)}</div>` : ''}
+    </div>
+    <a class="btn-primario btn-sm" href="${escapeHtml(m.url)}" target="_blank" rel="noopener" ${ehLink ? '' : `download="${escapeHtml(m.original_name || '')}"`} onclick="registrarAcessoMatImp(${m.id})">${ehLink ? '↗ Abrir' : '⬇ Baixar'}</a>
+  </div>`;
+}
+// Pasta dentro do card da pergunta — só aparece se houver material compartilhado.
+function matImpPastaHtml(questionKey) {
+  const l = matImpDaPergunta(questionKey);
+  if (!l.length) return '';
+  return `<div class="matimp-pasta">
+    <div class="matimp-pasta-tit">📂 Material Impulsionar <span style="font-weight:600;color:#c2410c;font-size:11.5px;">${l.length} arquivo(s) disponibilizado(s) pela Impulsionar</span></div>
+    ${l.map(matImpItemHtml).join('')}
+  </div>`;
+}
+// Aba do pilar: lista apenas as perguntas que têm material compartilhado.
+function matImpAbaHtml(pilar) {
+  const perguntas = pilar.grupos.flatMap(g => g.perguntas).filter(p => matImpDaPergunta(p.questionKey).length);
+  if (!perguntas.length) return '<div class="msg-vazio">Nenhum material disponibilizado para este pilar.</div>';
+  return `<div class="plano-meta" style="margin-bottom:12px;">📂 Materiais que a Impulsionar disponibilizou para sua empresa em ${escapeHtml(pilar.label)} — organizados pela pergunta do pilar.</div>
+    ${perguntas.map(p => `<div class="dpo-grupo" style="margin-bottom:12px;">
+      <div class="dpo-grupo-titulo">${escapeHtml(p.numero)} ${escapeHtml(p.questao)}</div>
+      ${matImpPastaHtml(p.questionKey)}
+    </div>`).join('')}`;
+}
+
+// ----- Master: "Material DPO" (biblioteca + disponibilizar por empresa) -----
+let MDPO = { dados: null, pilar: '', empresa: '', busca: '', soComMaterial: false };
+
+async function renderMaterialDpoMaster() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<p>Carregando...</p>';
+  try {
+    MDPO.dados = await api('/api/admin/material-dpo');
+    if (!MDPO.pilar || !MDPO.dados.pilares.some(p => p.key === MDPO.pilar)) MDPO.pilar = (MDPO.dados.pilares[0] || {}).key || '';
+    desenharMaterialDpoMaster();
+  } catch (e) { cont.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+function desenharMaterialDpoMaster() {
+  const cont = document.getElementById('conteudo');
+  const d = MDPO.dados; if (!d) return;
+  const pilar = d.pilares.find(p => p.key === MDPO.pilar) || d.pilares[0];
+  const emp = MDPO.empresa ? d.empresas.find(e => String(e.id) === String(MDPO.empresa)) : null;
+  const busca = MDPO.busca.toLowerCase();
+  const doPilar = d.materiais.filter(m => m.pillar_key === (pilar && pilar.key));
+  const empresasOrd = [...d.empresas].sort((a, b) => (b.dpo - a.dpo) || a.name.localeCompare(b.name));
+  const contaPilar = k => d.materiais.filter(m => m.pillar_key === k).length;
+  const totalCompart = emp ? d.materiais.filter(m => m.compartilhado.some(c => String(c.companyId) === String(emp.id))).length : 0;
+  cont.innerHTML = `
+    <h1>📂 Material DPO</h1>
+    <p style="color:#64748b;margin-top:-8px;">Sua biblioteca de materiais por pergunta do DPO. Quando uma empresa precisar, clique em <strong>Disponibilizar</strong>: o material aparece para ela na pergunta, na pasta <strong>📂 Material Impulsionar</strong>. A empresa só enxerga as perguntas com material compartilhado — e você pode desmarcar a qualquer momento.</p>
+    <div class="painel" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
+      <div style="flex:1;min-width:240px;">
+        <label style="font-size:12px;">Disponibilizar para a empresa</label>
+        <select id="mdpo-empresa" style="margin:0;" onchange="MDPO.empresa=this.value; desenharMaterialDpoMaster();">
+          <option value="">— escolha a empresa para marcar/desmarcar rápido —</option>
+          ${empresasOrd.map(e => `<option value="${e.id}" ${String(MDPO.empresa) === String(e.id) ? 'selected' : ''}>${escapeHtml(e.name)}${e.dpo ? '' : ' (sem módulo DPO)'}</option>`).join('')}
+        </select>
+      </div>
+      <div style="min-width:220px;">
+        <label style="font-size:12px;">Buscar</label>
+        <input id="mdpo-busca" style="margin:0;" placeholder="🔎 Pergunta ou material..." value="${escapeHtml(MDPO.busca)}" oninput="MDPO.busca=this.value; clearTimeout(window.__tMdpo); window.__tMdpo=setTimeout(()=>{ desenharMaterialDpoMaster(); const el=document.getElementById('mdpo-busca'); if(el){el.focus(); el.setSelectionRange(el.value.length, el.value.length);} }, 250);">
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0 0 8px;"><input type="checkbox" style="width:auto;margin:0;" ${MDPO.soComMaterial ? 'checked' : ''} onchange="MDPO.soComMaterial=this.checked; desenharMaterialDpoMaster();"> Só perguntas com material</label>
+      <button class="btn-primario btn-sm" style="width:auto;margin-bottom:6px;" onclick="abrirModalMaterialDpo()">+ Novo material</button>
+    </div>
+    ${emp ? `<div class="plano-meta" style="margin:-4px 0 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 10px;">🏢 <strong>${escapeHtml(emp.name)}</strong>: ${totalCompart} material(is) disponibilizado(s). Clique em <strong>Disponibilizar</strong> / <strong>✅ Disponível</strong> para marcar ou desmarcar.</div>` : ''}
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+      ${d.pilares.map(p => `<button class="btn-sm ${p.key === (pilar && pilar.key) ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="MDPO.pilar='${p.key}'; desenharMaterialDpoMaster();">${escapeHtml(p.label)} <span style="opacity:.75;">(${contaPilar(p.key)})</span></button>`).join('')}
+    </div>
+    ${!pilar ? '<div class="msg-vazio">Nenhum pilar.</div>' : pilar.grupos.map(g => {
+      const perguntas = g.perguntas.map(q => ({ q, mats: doPilar.filter(m => m.question_numero === q.numero) }))
+        .filter(({ q, mats }) => (!MDPO.soComMaterial || mats.length) && (!busca || [q.numero, q.questao, ...mats.map(m => m.titulo + ' ' + (m.descricao || ''))].join(' ').toLowerCase().includes(busca)));
+      if (!perguntas.length) return '';
+      return `<div class="dpo-grupo"><div class="dpo-grupo-titulo">${escapeHtml(g.numero)} ${escapeHtml(g.titulo)}</div>
+        ${perguntas.map(({ q, mats }) => `<div class="mdpo-pergunta ${mats.length ? 'tem' : ''}">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <div style="flex:1;font-size:13px;"><strong>${escapeHtml(q.numero)}</strong> ${escapeHtml(q.questao)}</div>
+            <button class="btn-secundario btn-sm" style="width:auto;white-space:nowrap;" onclick="abrirModalMaterialDpo(null, '${escapeHtml(q.numero)}')">+ Material</button>
+          </div>
+          ${mats.map(m => {
+            const ehLink = /^https?:/i.test(m.url);
+            const on = emp && m.compartilhado.some(c => String(c.companyId) === String(emp.id));
+            const acessos = m.compartilhado.reduce((s, c) => s + (c.acessos || 0), 0);
+            return `<div class="mdpo-mat">
+              <div class="matimp-ico">${matImpIcone(m)}</div>
+              <div style="flex:1;min-width:200px;">
+                <div style="font-weight:700;font-size:13px;">${escapeHtml(m.titulo)}</div>
+                ${m.descricao ? `<div style="font-size:12px;color:#64748b;white-space:pre-line;">${escapeHtml(m.descricao)}</div>` : ''}
+                <div style="font-size:11.5px;color:#64748b;margin-top:2px;">${m.compartilhado.length ? `🤝 Disponível para ${m.compartilhado.length} empresa(s): ${m.compartilhado.slice(0, 4).map(c => escapeHtml(c.companyName || '#' + c.companyId)).join(', ')}${m.compartilhado.length > 4 ? '…' : ''} · ${acessos} acesso(s)` : '🔒 Ainda não disponibilizado para nenhuma empresa'}</div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                ${emp ? `<button class="btn-secundario btn-sm mdpo-toggle ${on ? 'on' : ''}" title="${on ? 'Clique para desmarcar o compartilhamento' : 'Disponibilizar para ' + escapeHtml(emp.name)}" onclick="alternarCompartMaterialDpo(${m.id}, ${emp.id}, ${!on})">${on ? '✅ Disponível' : '📤 Disponibilizar'}</button>` : ''}
+                <button class="btn-secundario btn-sm" onclick="abrirModalCompartMaterialDpo(${m.id})">🏢 Empresas</button>
+                <a class="btn-secundario btn-sm" href="${escapeHtml(m.url)}" target="_blank" rel="noopener" ${ehLink ? '' : `download="${escapeHtml(m.original_name || '')}"`}>${ehLink ? '↗' : '⬇'}</a>
+                <button class="btn-secundario btn-sm" onclick="abrirModalMaterialDpo(${m.id})">Editar</button>
+                <button class="btn-perigo btn-sm" onclick="excluirMaterialDpo(${m.id})">Excluir</button>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`).join('')}
+      </div>`;
+    }).join('') || '<div class="msg-vazio">Nada encontrado neste filtro.</div>'}
+    <div id="modal-area"></div>`;
+}
+
+async function alternarCompartMaterialDpo(id, companyId, compartilhar) {
+  try {
+    const r = await api('/api/admin/material-dpo/' + id + '/compartilhar', { method: 'PUT', body: JSON.stringify({ companyIds: [companyId], compartilhar }) });
+    mostrarToast(r.message);
+    MDPO.dados = await api('/api/admin/material-dpo');
+    desenharMaterialDpoMaster();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+function abrirModalCompartMaterialDpo(id) {
+  const m = MDPO.dados.materiais.find(x => x.id === id); if (!m) return;
+  const marcados = new Set(m.compartilhado.map(c => String(c.companyId)));
+  const empresas = [...MDPO.dados.empresas].sort((a, b) => (b.dpo - a.dpo) || a.name.localeCompare(b.name));
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa" style="max-width:520px;max-height:92vh;overflow-y:auto;">
+        <h3 style="margin-top:0;">🏢 Disponibilizar “${escapeHtml(m.titulo)}”</h3>
+        <div class="plano-meta" style="margin-bottom:8px;">Pergunta ${escapeHtml(m.question_numero)} — ${escapeHtml(m.perguntaTexto || '')}</div>
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <button class="btn-secundario btn-sm" style="width:auto;" onclick="document.querySelectorAll('.mdpo-emp-lista input').forEach(i => i.checked = true)">Marcar todas</button>
+          <button class="btn-secundario btn-sm" style="width:auto;" onclick="document.querySelectorAll('.mdpo-emp-lista input').forEach(i => i.checked = false)">Desmarcar todas</button>
+        </div>
+        <div class="mdpo-emp-lista" style="border:1px solid var(--cinza-200);border-radius:8px;padding:6px 10px;max-height:46vh;overflow-y:auto;">
+          ${empresas.map(e => `<label><input type="checkbox" value="${e.id}" ${marcados.has(String(e.id)) ? 'checked' : ''}> ${escapeHtml(e.name)}${e.dpo ? '' : ' <span style="color:#94a3b8;font-size:11px;">(sem módulo DPO)</span>'}</label>`).join('') || '<div class="msg-vazio">Nenhuma empresa cadastrada.</div>'}
+        </div>
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" id="mdpo-comp-salvar" onclick="salvarCompartMaterialDpo(${m.id})">Salvar</button>
+          <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function salvarCompartMaterialDpo(id) {
+  const m = MDPO.dados.materiais.find(x => x.id === id); if (!m) return;
+  const antes = new Set(m.compartilhado.map(c => String(c.companyId)));
+  const agora = new Set([...document.querySelectorAll('.mdpo-emp-lista input:checked')].map(i => i.value));
+  const add = [...agora].filter(x => !antes.has(x)).map(Number);
+  const rem = [...antes].filter(x => !agora.has(x)).map(Number);
+  const b = document.getElementById('mdpo-comp-salvar'); if (b) b.disabled = true;
+  try {
+    if (add.length) await api('/api/admin/material-dpo/' + id + '/compartilhar', { method: 'PUT', body: JSON.stringify({ companyIds: add, compartilhar: true }) });
+    if (rem.length) await api('/api/admin/material-dpo/' + id + '/compartilhar', { method: 'PUT', body: JSON.stringify({ companyIds: rem, compartilhar: false }) });
+    mostrarToast(add.length || rem.length ? 'Compartilhamento atualizado!' : 'Nada mudou.');
+    MDPO.dados = await api('/api/admin/material-dpo');
+    desenharMaterialDpoMaster();
+  } catch (e) { mostrarToast(e.message, true); if (b) b.disabled = false; }
+}
+
+function abrirModalMaterialDpo(id, perguntaInicial) {
+  const d = MDPO.dados;
+  const m = id ? d.materiais.find(x => x.id === id) : null;
+  const pilarKey = m ? m.pillar_key : MDPO.pilar;
+  const ehLink = m && /^https?:/i.test(m.url);
+  window.CTX_MDPO = { id: m ? m.id : null, url: m ? m.url : null, originalName: m ? m.original_name : null };
+  const opcoesPerguntas = pk => {
+    const p = d.pilares.find(x => x.key === pk); if (!p) return '';
+    const sel = m ? m.question_numero : (perguntaInicial || '');
+    return p.grupos.map(g => `<optgroup label="${escapeHtml(g.numero + ' ' + g.titulo)}">${g.perguntas.map(q => `<option value="${escapeHtml(q.numero)}" ${sel === q.numero ? 'selected' : ''}>${escapeHtml(q.numero)} — ${escapeHtml(q.questao.length > 110 ? q.questao.slice(0, 110) + '…' : q.questao)}</option>`).join('')}</optgroup>`).join('');
+  };
+  window.__mdpoOpcoes = opcoesPerguntas;
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa" style="max-width:600px;max-height:92vh;overflow-y:auto;">
+        <h3 style="margin-top:0;">📂 ${m ? 'Editar' : 'Novo'} material DPO</h3>
+        <label>Pilar</label>
+        <select id="md-pilar" onchange="document.getElementById('md-pergunta').innerHTML = window.__mdpoOpcoes(this.value)">${d.pilares.map(p => `<option value="${p.key}" ${p.key === pilarKey ? 'selected' : ''}>${escapeHtml(p.label)}</option>`).join('')}</select>
+        <label>Pergunta</label>
+        <select id="md-pergunta">${opcoesPerguntas(pilarKey)}</select>
+        <label>Título</label>
+        <input id="md-titulo" maxlength="200" placeholder="ex: Padrão de recebimento — modelo" value="${escapeHtml(m ? m.titulo : '')}">
+        <label>Descrição / como usar (opcional)</label>
+        <textarea id="md-descricao" rows="3" placeholder="O que é e como a empresa deve usar">${escapeHtml(m && m.descricao ? m.descricao : '')}</textarea>
+        <label>Conteúdo</label>
+        <select id="md-origem" onchange="document.getElementById('md-arquivo-area').style.display = this.value === 'arquivo' ? '' : 'none'; document.getElementById('md-link-area').style.display = this.value === 'link' ? '' : 'none';">
+          <option value="arquivo" ${!ehLink ? 'selected' : ''}>Enviar arquivo</option>
+          <option value="link" ${ehLink ? 'selected' : ''}>Link (site, vídeo, drive)</option>
+        </select>
+        <div id="md-arquivo-area" style="${ehLink ? 'display:none;' : ''}">
+          <input id="md-arquivo" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.ppt,.pptx,.csv,.txt,image/*,video/*">
+          ${m && !ehLink ? `<div class="plano-meta" style="font-size:11.5px;">Arquivo atual: ${escapeHtml(m.original_name || m.url)} (deixe vazio para manter)</div>` : ''}
+        </div>
+        <div id="md-link-area" style="${ehLink ? '' : 'display:none;'}"><input id="md-link" placeholder="https://..." value="${ehLink ? escapeHtml(m.url) : ''}"></div>
+        ${!m && MDPO.empresa ? `<label style="display:flex;align-items:center;gap:6px;font-weight:600;margin-top:10px;"><input type="checkbox" id="md-ja-compart" style="width:auto;margin:0;" checked> Já disponibilizar para ${escapeHtml((d.empresas.find(e => String(e.id) === String(MDPO.empresa)) || {}).name || '')}</label>` : ''}
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" id="md-salvar" onclick="salvarMaterialDpo()">Salvar</button>
+          <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function salvarMaterialDpo() {
+  const ctx = window.CTX_MDPO || {};
+  const b = document.getElementById('md-salvar');
+  const origem = document.getElementById('md-origem').value;
+  const corpo = {
+    pillarKey: document.getElementById('md-pilar').value,
+    questionNumero: document.getElementById('md-pergunta').value,
+    titulo: document.getElementById('md-titulo').value.trim(),
+    descricao: document.getElementById('md-descricao').value
+  };
+  if (!corpo.titulo) return mostrarToast('Informe o título.', true);
+  b.disabled = true; const rot = b.textContent; b.textContent = 'Salvando...';
+  try {
+    if (origem === 'link') {
+      corpo.url = document.getElementById('md-link').value.trim(); corpo.originalName = null;
+    } else {
+      const f = document.getElementById('md-arquivo').files[0];
+      if (f) {
+        const fd = new FormData(); fd.append('file', f);
+        const r = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: fd });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j.error || 'Falha no envio do arquivo.');
+        corpo.url = j.url; corpo.originalName = j.originalName;
+      } else if (ctx.url && !/^https?:/i.test(ctx.url)) { corpo.url = ctx.url; corpo.originalName = ctx.originalName; }
+      else throw new Error('Escolha o arquivo.');
+    }
+    let id = ctx.id;
+    if (id) await api('/api/admin/material-dpo/' + id, { method: 'PUT', body: JSON.stringify(corpo) });
+    else id = (await api('/api/admin/material-dpo', { method: 'POST', body: JSON.stringify(corpo) })).id;
+    const ja = document.getElementById('md-ja-compart');
+    if (ja && ja.checked && MDPO.empresa) await api('/api/admin/material-dpo/' + id + '/compartilhar', { method: 'PUT', body: JSON.stringify({ companyIds: [Number(MDPO.empresa)], compartilhar: true }) });
+    mostrarToast('Material salvo!');
+    MDPO.pilar = corpo.pillarKey;
+    MDPO.dados = await api('/api/admin/material-dpo');
+    desenharMaterialDpoMaster();
+  } catch (e) { mostrarToast(e.message, true); b.disabled = false; b.textContent = rot; }
+}
+
+async function excluirMaterialDpo(id) {
+  if (!confirm('Excluir este material? Ele some também para as empresas que o recebiam.')) return;
+  try { await api('/api/admin/material-dpo/' + id, { method: 'DELETE' }); mostrarToast('Material removido!'); MDPO.dados = await api('/api/admin/material-dpo'); desenharMaterialDpoMaster(); }
   catch (e) { mostrarToast(e.message, true); }
 }
 

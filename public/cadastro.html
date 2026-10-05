@@ -44,8 +44,6 @@
   .lista button { display:flex; justify-content:space-between; width:100%; text-align:left; border:0; background:#fff; padding:12px 14px; font-size:15px; cursor:pointer; border-bottom:1px solid #f1f5f9; }
   .lista button:hover, .lista button.ativo { background:#f0fdf4; } .lista button small { color:var(--sub); font-weight:700; }
   .lista .vazio { padding:12px 14px; font-size:13px; color:var(--sub); }
-  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; } .chips button { border:1px solid var(--borda); background:#f8fafc; border-radius:999px; padding:7px 12px; font-size:13px; cursor:pointer; color:#334155; }
-  .chips button.on { background:var(--navy); color:#fff; border-color:var(--navy); }
   .check { display:flex; gap:10px; align-items:flex-start; font-size:13.5px; color:#334155; margin-top:12px; cursor:pointer; } .check input { width:20px; height:20px; margin-top:1px; accent-color:var(--verde); flex-shrink:0; }
   .enviar { width:100%; margin-top:18px; border:0; border-radius:14px; padding:17px; font-size:18px; font-weight:900; color:#fff; background:linear-gradient(90deg, var(--verde), var(--verde2)); box-shadow:0 12px 26px rgba(22,163,74,.35); cursor:pointer; transition:transform .1s; }
   .enviar:active { transform:scale(.99); } .enviar:disabled { opacity:.7; }
@@ -62,10 +60,10 @@
 <body>
 <section class="hero">
   <div class="logo"><img src="/assets/logo-impulsionar.jpg" alt="Impulsionar" onerror="this.parentNode.outerHTML='<div style=&quot;font-weight:900;font-size:22px;letter-spacing:1px;margin-bottom:22px;&quot;>IMPULSIONAR</div>'"></div><br>
-  <div class="selo">🚀 BANCO DE TALENTOS · CADASTRO GRÁTIS</div>
-  <h1>Sua próxima oportunidade <span>começa aqui.</span></h1>
-  <p>Cadastre seu currículo em 2 minutos e seja encontrado pelas empresas parceiras da Impulsionar.</p>
-  <div class="pilulas"><span>✅ 100% gratuito</span><span>📱 Pelo celular</span><span>🔔 Avisos de vagas</span></div>
+  <div class="selo" id="h-selo">🚀 BANCO DE TALENTOS · CADASTRO GRÁTIS</div>
+  <h1 id="h-tit">Sua próxima oportunidade <span>começa aqui.</span></h1>
+  <p id="h-sub">Cadastre seu currículo em 2 minutos e seja encontrado pelas empresas parceiras da Impulsionar.</p>
+  <div class="pilulas" id="h-pil"><span>✅ 100% gratuito</span><span>📱 Pelo celular</span><span>🔔 Avisos de vagas</span></div>
 </section>
 
 <main class="wrap">
@@ -91,8 +89,7 @@
 
       <div class="etapa"><b>3</b> Qual vaga você procura</div>
       <label for="cargo">Cargo desejado</label>
-      <input type="text" id="cargo" autocomplete="off" placeholder="Ex.: Motorista, Auxiliar administrativo…">
-      <div class="chips" id="chips"></div>
+      <div class="campo"><input type="text" id="cargo" autocomplete="off" placeholder="Comece a digitar a função…" role="combobox" aria-autocomplete="list" aria-expanded="false"><div class="lista" id="lista-cargo" role="listbox"></div></div>
       <div class="dica" id="d-cargo"></div>
       <label class="check"><input type="checkbox" id="primeiro"> Estou procurando o meu primeiro emprego</label>
 
@@ -122,8 +119,20 @@
 const $ = id => document.getElementById(id);
 const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const CARGOS = ['Motorista', 'Ajudante de entrega', 'Auxiliar de logística', 'Conferente', 'Operador de empilhadeira', 'Repositor', 'Vendedor', 'Promotor de vendas', 'Auxiliar administrativo', 'Assistente financeiro', 'Analista', 'Supervisor', 'Coordenador', 'Gerente', 'Mecânico', 'Recepcionista', 'Jovem aprendiz', 'Estágio'];
-let CIDADES = null, CIDADE_OK = null, IDX = -1, RES = [], ORIGEM = new URLSearchParams(location.search).get('origem') || (document.referrer.includes('instagram') ? 'instagram' : '');
+const CARGOS = ["Motorista", "Motorista de caminhão", "Motorista entregador", "Motorista carreteiro", "Motorista de empilhadeira", "Motorista de van", "Motorista particular", "Motoboy", "Ajudante de entrega", "Ajudante de motorista", "Ajudante geral", "Ajudante de carga e descarga", "Auxiliar de logística", "Assistente de logística", "Analista de logística", "Coordenador de logística", "Supervisor de logística", "Gerente de logística", "Conferente", "Conferente de carga", "Conferente de mercadorias", "Operador de empilhadeira", "Operador de armazém", "Auxiliar de armazém", "Estoquista", "Almoxarife", "Auxiliar de almoxarifado", "Separador de mercadorias", "Repositor", "Repositor de mercadorias", "Operador de logística", "Supervisor de armazém", "Encarregado de armazém", "Coordenador de armazém", "Gerente de armazém", "Supervisor de distribuição", "Coordenador de distribuição", "Gerente de distribuição", "Analista de transportes", "Coordenador de transportes", "Supervisor de frota", "Gestor de frota", "Analista de frota", "Roteirizador", "Programador de rotas", "Despachante", "Expedidor", "Auxiliar de expedição", "Supervisor de expedição", "Vendedor", "Vendedor externo", "Vendedor interno", "Representante comercial", "Promotor de vendas", "Promotor de merchandising", "Consultor de vendas", "Assistente comercial", "Auxiliar comercial", "Analista comercial", "Supervisor de vendas", "Coordenador de vendas", "Gerente de vendas", "Gerente comercial", "Diretor comercial", "Executivo de contas", "Key account", "Televendas", "Operador de telemarketing", "Atendente", "Atendente de loja", "Operador de caixa", "Caixa", "Fiscal de loja", "Fiscal de caixa", "Balconista", "Recepcionista", "Auxiliar administrativo", "Assistente administrativo", "Analista administrativo", "Coordenador administrativo", "Gerente administrativo", "Auxiliar de escritório", "Secretária", "Secretária executiva", "Office boy", "Auxiliar financeiro", "Assistente financeiro", "Analista financeiro", "Coordenador financeiro", "Gerente financeiro", "Controller", "Tesoureiro", "Analista de contas a pagar", "Analista de contas a receber", "Analista de crédito e cobrança", "Auxiliar de cobrança", "Faturista", "Auxiliar de faturamento", "Analista de faturamento", "Auxiliar contábil", "Assistente contábil", "Analista contábil", "Contador", "Analista fiscal", "Auxiliar fiscal", "Analista de custos", "Auxiliar de departamento pessoal", "Assistente de departamento pessoal", "Analista de departamento pessoal", "Analista de folha de pagamento", "Auxiliar de RH", "Assistente de RH", "Analista de RH", "Analista de recrutamento e seleção", "Analista de treinamento e desenvolvimento", "Business partner de RH", "Coordenador de RH", "Gerente de RH", "Técnico de segurança do trabalho", "Engenheiro de segurança do trabalho", "Analista de segurança do trabalho", "Coordenador de segurança do trabalho", "Bombeiro civil", "Vigilante", "Porteiro", "Controlador de acesso", "Auxiliar de limpeza", "Zelador", "Copeiro", "Cozinheiro", "Auxiliar de cozinha", "Garçom", "Mecânico", "Mecânico de caminhão", "Mecânico de manutenção", "Mecânico diesel", "Auxiliar de mecânico", "Eletricista", "Eletricista de manutenção", "Eletricista automotivo", "Técnico de manutenção", "Técnico em eletrônica", "Técnico em mecânica", "Supervisor de manutenção", "Coordenador de manutenção", "Gerente de manutenção", "Soldador", "Serralheiro", "Pedreiro", "Pintor", "Borracheiro", "Lavador de veículos", "Funileiro", "Operador de máquinas", "Operador de produção", "Auxiliar de produção", "Líder de produção", "Supervisor de produção", "Coordenador de produção", "Gerente de produção", "Gerente industrial", "Analista de PCP", "Analista de qualidade", "Técnico de qualidade", "Inspetor de qualidade", "Coordenador de qualidade", "Gerente de qualidade", "Analista de processos", "Analista de melhoria contínua", "Engenheiro de produção", "Engenheiro de processos", "Engenheiro mecânico", "Engenheiro civil", "Engenheiro eletricista", "Analista de planejamento", "Analista de dados", "Analista de BI", "Cientista de dados", "Analista de sistemas", "Desenvolvedor", "Programador", "Analista de suporte", "Técnico de informática", "Auxiliar de TI", "Coordenador de TI", "Gerente de TI", "Analista de marketing", "Assistente de marketing", "Coordenador de marketing", "Gerente de marketing", "Designer gráfico", "Social media", "Analista de trade marketing", "Coordenador de trade marketing", "Analista de compras", "Comprador", "Assistente de compras", "Coordenador de compras", "Gerente de compras", "Analista de suprimentos", "Analista jurídico", "Advogado", "Assistente jurídico", "Analista de customer success", "Analista de atendimento ao cliente", "Supervisor de atendimento", "Coordenador de atendimento", "Gerente de atendimento", "Líder de equipe", "Encarregado", "Encarregado de turno", "Supervisor", "Supervisor operacional", "Supervisor de turno", "Coordenador", "Coordenador operacional", "Coordenador de operações", "Gerente", "Gerente de operações", "Gerente operacional", "Gerente geral", "Gerente de unidade", "Gerente regional", "Gerente de projetos", "Gerente de filial", "Gerente de loja", "Subgerente", "Diretor", "Diretor de operações", "Diretor executivo", "CEO", "Sócio-diretor", "Consultor", "Consultor de gestão", "Consultor de processos", "Analista de gente e gestão", "Coordenador de gente e gestão", "Gerente de gente e gestão", "Trainee", "Trainee de liderança", "Estagiário", "Estágio administrativo", "Estágio em logística", "Jovem aprendiz", "Menor aprendiz", "Primeiro emprego", "Professor", "Instrutor", "Enfermeiro", "Técnico de enfermagem", "Auxiliar de enfermagem", "Farmacêutico", "Nutricionista", "Psicólogo", "Assistente social"];
+const CARGOS_LID = /supervisor|coordenador|gerente|diretor|lider|líder|encarregado|ceo|controller|trainee de lideran|head|sócio/i;
+// Versão para LIDERANÇA (link da divulgação): /cadastro.html?foco=lideranca
+const FOCO_LID = /lideran/i.test(new URLSearchParams(location.search).get('foco') || '');
+if (FOCO_LID) {
+  $('h-selo').textContent = '⭐ BANCO DE TALENTOS · LIDERANÇA';
+  $('h-tit').innerHTML = 'Líderes que fazem <span>a diferença.</span>';
+  $('h-sub').textContent = 'Supervisores, coordenadores e gerentes: cadastre seu currículo grátis e entre no radar das empresas que buscam liderança com a Impulsionar, especialista em desenvolvimento de líderes.';
+  $('h-pil').innerHTML = '<span>🎯 Vagas de liderança</span><span>🤝 Mentoria e desenvolvimento</span><span>✅ 100% gratuito</span>';
+  document.title = 'Banco de Talentos de Liderança — Impulsionar';
+  $('cargo').placeholder = 'Ex.: Supervisor, Coordenador, Gerente…';
+  const pe = $('primeiro').closest('label'); if (pe) pe.style.display = 'none';
+}
+let CIDADES = null, CIDADE_OK = null, IDX = -1, RES = [], ORIGEM = (new URLSearchParams(location.search).get('origem') || (document.referrer.includes('instagram') ? 'instagram' : '')) + (FOCO_LID ? '-lideranca' : '');
 
 // ---------- lista de cidades (IBGE) ----------
 async function carregarCidades() {
@@ -187,9 +196,42 @@ $('cep').addEventListener('input', async e => {
 });
 
 // ---------- cargo ----------
-$('chips').innerHTML = CARGOS.slice(0, 8).map(c => `<button type="button" onclick="$('cargo').value='${c}'; marcarChips(); progresso();">${c}</button>`).join('');
-function marcarChips() { [...$('chips').children].forEach(b => b.classList.toggle('on', norm(b.textContent) === norm($('cargo').value))); }
-$('cargo').addEventListener('input', () => { marcarChips(); progresso(); });
+let CARGO_OK = null, RES_C = [], IDX_C = -1;
+function buscarCargos(txt) {
+  const t = norm(txt); if (t.length < 2) return [];
+  const pal = t.split(' ').filter(Boolean), com = [], cont = [];
+  CARGOS.forEach(c => { const k = norm(c); if (!pal.every(p => k.includes(p))) return; (k.startsWith(t) || k.split(' ').some(w => w.startsWith(pal[0])) ? com : cont).push(c); });
+  const ord = l => FOCO_LID ? l.sort((a, b) => (CARGOS_LID.test(b) - CARGOS_LID.test(a))) : l;
+  return ord(com).concat(ord(cont)).slice(0, 10);
+}
+function mostrarCargos() {
+  const inp = $('cargo'), l = $('lista-cargo'), v = inp.value;
+  if (CARGO_OK && v === CARGO_OK) { l.style.display = 'none'; return; }
+  CARGO_OK = null; inp.classList.remove('ok');
+  if (norm(v).length < 2) { l.style.display = 'none'; inp.setAttribute('aria-expanded', 'false'); progresso(); return; }
+  RES_C = buscarCargos(v); IDX_C = -1;
+  const exato = RES_C.some(c => norm(c) === norm(v));
+  l.innerHTML = RES_C.map((c, i) => `<button type="button" role="option" onmousedown="event.preventDefault()" onclick="escolherCargo(RES_C[${i}])"><span>${esc(c)}</span></button>`).join('')
+    + (!exato && v.trim().length >= 4 && (RES_C.length < 3 || v.trim().length >= 8) ? `<button type="button" role="option" onmousedown="event.preventDefault()" onclick="escolherCargo($('cargo').value.trim(), true)"><span style="color:#64748b;">Não encontrei — usar “${esc(v.trim())}”</span></button>` : '');
+  if (!l.innerHTML) l.innerHTML = '<div class="vazio">Continue digitando…</div>';
+  l.style.display = 'block'; inp.setAttribute('aria-expanded', 'true'); progresso();
+}
+function escolherCargo(c, livre) {
+  if (livre) c = c.replace(/\s+/g, ' ').replace(/(^|\s)\S/g, x => x.toUpperCase()).replace(/\b(De|Da|Do|Das|Dos|E|Em)\b/g, x => x.toLowerCase());
+  CARGO_OK = c; const inp = $('cargo'); inp.value = c; inp.classList.add('ok'); inp.classList.remove('invalido');
+  $('lista-cargo').style.display = 'none'; inp.setAttribute('aria-expanded', 'false'); dica('cargo', '✔ Função confirmada', 'certo'); progresso();
+}
+$('cargo').addEventListener('input', mostrarCargos);
+$('cargo').addEventListener('focus', mostrarCargos);
+$('cargo').addEventListener('blur', () => setTimeout(() => {
+  $('lista-cargo').style.display = 'none'; const v = $('cargo').value.trim(); if (!v || CARGO_OK) return;
+  const ex = CARGOS.find(c => norm(c) === norm(v)); if (ex) escolherCargo(ex); else dica('cargo', 'Escolha a função na lista que aparece ao digitar.', 'erro');
+}, 150));
+$('cargo').addEventListener('keydown', e => {
+  const bts = [...$('lista-cargo').querySelectorAll('button')]; if (!bts.length) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); IDX_C = (IDX_C + (e.key === 'ArrowDown' ? 1 : -1) + bts.length) % bts.length; bts.forEach((b, i) => b.classList.toggle('ativo', i === IDX_C)); bts[IDX_C].scrollIntoView({ block: 'nearest' }); }
+  if (e.key === 'Enter') { e.preventDefault(); (bts[IDX_C] || bts[0]).click(); }
+});
 
 // ---------- telefone / validação ----------
 $('tel').addEventListener('input', e => {
@@ -202,10 +244,10 @@ const regras = {
   tel: v => v.replace(/\D/g, '').length >= 10 ? '' : 'Digite o WhatsApp com DDD.',
   email: v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? '' : 'Digite um e-mail válido.',
   cidade: () => CIDADE_OK ? '' : 'Escolha a cidade na lista (ou preencha o CEP).',
-  cargo: v => v.trim().length >= 3 ? '' : 'Diga qual vaga você procura.',
+  cargo: () => CARGO_OK ? '' : 'Escolha a função na lista que aparece ao digitar.',
   senha: v => v.length >= 6 ? '' : 'A senha precisa ter pelo menos 6 caracteres.'
 };
-Object.keys(regras).forEach(k => { const el = $(k); el.addEventListener('blur', () => { if (k === 'cidade') return; const e = regras[k](el.value); el.classList.toggle('invalido', !!e && el.value !== ''); el.classList.toggle('ok', !e); if (el.value) dica(k, e, e ? 'erro' : ''); progresso(); }); el.addEventListener('input', progresso); });
+Object.keys(regras).forEach(k => { const el = $(k); el.addEventListener('blur', () => { if (k === 'cidade' || k === 'cargo') return; const e = regras[k](el.value); el.classList.toggle('invalido', !!e && el.value !== ''); el.classList.toggle('ok', !e); if (el.value) dica(k, e, e ? 'erro' : ''); progresso(); }); el.addEventListener('input', progresso); });
 function progresso() {
   const ok = Object.keys(regras).filter(k => !regras[k]($(k).value)).length + ($('lgpd').checked ? 1 : 0), tot = Object.keys(regras).length + 1, p = Math.round(ok / tot * 100);
   $('prog').style.width = p + '%'; $('progtxt').textContent = p + '%';
@@ -223,7 +265,7 @@ $('form').addEventListener('submit', async e => {
   try {
     const r = await fetch('/api/portal/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
       name: $('nome').value.trim(), email: $('email').value.trim(), password: $('senha').value, phone: $('tel').value.trim(),
-      desired_role: $('cargo').value.trim(), city: `${CIDADE_OK.n}/${CIDADE_OK.uf}`, cep: $('cep').value, neighborhood: $('bairro').value,
+      desired_role: CARGO_OK, city: `${CIDADE_OK.n}/${CIDADE_OK.uf}`, cep: $('cep').value, neighborhood: $('bairro').value,
       first_job: $('primeiro').checked, lgpd: true, origem: ORIGEM || 'link' }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error || 'Não foi possível concluir o cadastro.');
