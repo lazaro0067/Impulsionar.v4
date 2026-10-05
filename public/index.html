@@ -7282,44 +7282,52 @@ function calcularSituacaoPrazoDpo(plano) {
 
 // "Meus Planos DPO" — todos os planos de ação já criados pela empresa,
 // consolidados por pilar, juntando todos os ciclos (não só o mais recente).
+let DPO_MP = { porPilar: [], filtro: '' };
 async function renderDpoMeusPlanos() {
   const cont = document.getElementById('conteudo');
-  cont.innerHTML = '<h1>Meus Planos DPO</h1><p>Carregando...</p>';
-  try {
-    const porPilar = await api('/api/dpo/meus-planos');
-    const todosPlanos = porPilar.flatMap(p => p.planos);
-    const totalPlanos = todosPlanos.length;
-    const contagem = { 'No prazo': 0, 'Vencida': 0, 'Em andamento': 0, 'Concluída': 0 };
-    todosPlanos.forEach(pl => { contagem[calcularSituacaoPrazoDpo(pl).texto]++; });
-    cont.innerHTML = `
-      <h1>Meus Planos DPO</h1>
-      <p style="color:#64748b;margin-top:-8px;">Todos os planos de ação já criados pela sua empresa no DPO Ambev, consolidados por pilar (juntando todos os ciclos/meses). Clique na pergunta para ver a verificação completa.</p>
-      <div class="barra-acoes">
-        <div></div>
-        <div class="direita">
-          <button class="btn-secundario" onclick="baixarExcelDpo('planos')">📊 Baixar Excel dos Planos</button>
-          <button class="btn-secundario" onclick="baixarExcelDpo('checklist')">📊 Baixar Excel da Autoavaliação</button>
-          <button class="btn-secundario" onclick="renderDpoHome()">← Voltar ao DPO Ambev</button>
-        </div>
+  if (!DPO_MP.porPilar.length) cont.innerHTML = '<h1>Meus Planos DPO</h1><p>Carregando...</p>';
+  try { DPO_MP.porPilar = await api('/api/dpo/meus-planos'); desenharDpoMeusPlanos(); }
+  catch (e) { cont.innerHTML = `<h1>Meus Planos DPO</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+function filtrarMeusPlanosDpo(f) { DPO_MP.filtro = DPO_MP.filtro === f ? '' : f; desenharDpoMeusPlanos(); }
+function desenharDpoMeusPlanos() {
+  const cont = document.getElementById('conteudo');
+  const porPilar = DPO_MP.porPilar;
+  const todosPlanos = porPilar.flatMap(p => p.planos);
+  const totalPlanos = todosPlanos.length;
+  const contagem = { 'No prazo': 0, 'Vencida': 0, 'Em andamento': 0, 'Concluída': 0 };
+  todosPlanos.forEach(pl => { contagem[calcularSituacaoPrazoDpo(pl).texto]++; });
+  const f = DPO_MP.filtro;
+  const cards = [['No prazo', 'No prazo', 'linear-gradient(135deg,#1e3a8a,#1d4ed8)', '#fff'], ['Vencida', 'Vencida(s)', '#fef2f2', '#dc2626'], ['Em andamento', 'Em andamento', 'linear-gradient(135deg,#b45309,#d97706)', '#fff'], ['Concluída', 'Concluída(s)', 'linear-gradient(135deg,#166534,#16a34a)', '#fff']];
+  const grupos = porPilar.map(p => ({ ...p, planos: f ? p.planos.filter(pl => calcularSituacaoPrazoDpo(pl).texto === f) : p.planos })).filter(p => p.planos.length);
+  cont.innerHTML = `
+    <h1>Meus Planos DPO</h1>
+    <p style="color:#64748b;margin-top:-8px;">Todos os planos de ação já criados pela sua empresa no DPO Ambev, consolidados por pilar (juntando todos os ciclos/meses). Clique em um quadro para ver só as ações daquela situação.</p>
+    <div class="barra-acoes">
+      <div></div>
+      <div class="direita">
+        <button class="btn-secundario" onclick="baixarExcelDpo('planos')">📊 Baixar Excel dos Planos</button>
+        <button class="btn-secundario" onclick="baixarExcelDpo('checklist')">📊 Baixar Excel da Autoavaliação</button>
+        <button class="btn-secundario" onclick="renderDpoHome()">← Voltar ao DPO Ambev</button>
       </div>
-      ${totalPlanos === 0 ? '' : `
-      <div class="kpis" style="margin-bottom:18px;">
-        <div class="kpi-card kpi-azul"><div class="valor">${contagem['No prazo']}</div><div class="rotulo">No prazo</div></div>
-        <div class="kpi-card" style="background:#fef2f2;"><div class="valor" style="color:#dc2626;">${contagem['Vencida']}</div><div class="rotulo" style="color:#dc2626;">Vencida(s)</div></div>
-        <div class="kpi-card kpi-laranja"><div class="valor">${contagem['Em andamento']}</div><div class="rotulo">Em andamento</div></div>
-        <div class="kpi-card kpi-verde"><div class="valor">${contagem['Concluída']}</div><div class="rotulo">Concluída(s)</div></div>
-      </div>`}
-      ${totalPlanos === 0 ? `<div class="msg-vazio">Nenhum plano de ação criado ainda.</div>` : porPilar.map(p => `
-        <div style="margin-top:22px;">
-          <h3 style="margin-bottom:10px;">🧭 ${escapeHtml(p.label)} <span style="font-weight:400;color:#64748b;font-size:13px;">(${p.planos.length} plano${p.planos.length === 1 ? '' : 's'})</span></h3>
-          ${p.planos.map(pl => renderPlanoAcaoDpo(pl, false, 'recarregarMeusPlanosDpo')).join('')}
-        </div>
-      `).join('')}
-      <div id="modal-area"></div>
-    `;
-  } catch (e) {
-    cont.innerHTML = `<h1>Meus Planos DPO</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`;
-  }
+    </div>
+    ${totalPlanos === 0 ? '' : `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:12px;">
+      ${cards.map(([k, rot, bg, cor]) => `<button type="button" onclick="filtrarMeusPlanosDpo('${k}')" style="all:unset;box-sizing:border-box;cursor:pointer;background:${bg};color:${cor};border-radius:14px;padding:18px 22px;box-shadow:${f === k ? '0 0 0 4px rgba(15,23,42,.25), 0 8px 20px rgba(15,23,42,.18)' : '0 2px 8px rgba(15,23,42,.08)'};transform:${f === k ? 'translateY(-2px)' : 'none'};opacity:${f && f !== k ? '.55' : '1'};transition:all .15s;${k === 'Vencida' ? 'border:1px solid #fecaca;' : ''}">
+        <div style="font-size:34px;font-weight:900;line-height:1.1;">${contagem[k]}</div>
+        <div style="font-size:14px;font-weight:600;opacity:.95;">${rot}</div>
+        <div style="font-size:11.5px;opacity:.8;margin-top:4px;">${f === k ? '✔ filtrando — clique para ver todos' : 'clique para ver as ações'}</div>
+      </button>`).join('')}
+    </div>
+    ${f ? `<div style="display:flex;align-items:center;gap:10px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:8px 12px;font-size:13px;color:#3730a3;">🔎 Mostrando só as ações <strong>${escapeHtml(cards.find(c => c[0] === f)[1])}</strong> (${contagem[f]}) <button class="btn-secundario btn-sm" style="width:auto;margin-left:auto;" onclick="filtrarMeusPlanosDpo('${f}')">Ver todas</button></div>` : ''}`}
+    ${totalPlanos === 0 ? `<div class="msg-vazio">Nenhum plano de ação criado ainda.</div>` : grupos.length ? grupos.map(p => `
+      <div style="margin-top:22px;">
+        <h3 style="margin-bottom:10px;">🧭 ${escapeHtml(p.label)} <span style="font-weight:400;color:#64748b;font-size:13px;">(${p.planos.length} plano${p.planos.length === 1 ? '' : 's'})</span></h3>
+        ${p.planos.map(pl => renderPlanoAcaoDpo(pl, false, 'recarregarMeusPlanosDpo')).join('')}
+      </div>
+    `).join('') : `<div class="msg-vazio" style="margin-top:16px;">Nenhuma ação nesta situação. 🎉</div>`}
+    <div id="modal-area"></div>
+  `;
 }
 
 function recarregarMeusPlanosDpo() { renderDpoMeusPlanos(); }
@@ -9436,6 +9444,7 @@ function fdDesenhar() {
       <span id="fd-nota">${ehEx ? fdChipNota(FD.validacao, "fdTrocarAba('valida')") : eh5s ? c5Chip() : ehGop ? gopChip() : fdChipNota(FD.validacao, ehAcomp ? "fdTrocarAba('itens')" : undefined)}</span>
     </div>
     ${anosHtml}
+    ${FD.chave === 'swot' ? swotBarraAreaTopo() : ''}
     <div class="fd-abas">${abas.map(([k, r]) => `<button class="fd-aba ${FD.aba === k ? 'ativa' : ''}" onclick="fdTrocarAba('${k}')">${r}</button>`).join('')}</div>
     <div id="fd-corpo">${fdHtmlAba()}</div>
     <div id="modal-area"></div>
@@ -9490,11 +9499,13 @@ function fdTabela(path, colunas, opts) {
     <div class="fd-tabela-wrap"><table class="fd-tabela">
       <thead><tr>${opts.numerar ? '<th style="width:34px;">#</th>' : ''}${colunas.map(c => `<th style="${c.largura ? 'min-width:' + c.largura + 'px;' : ''}">${escapeHtml(c.rotulo)}</th>`).join('')}<th style="width:40px;"></th></tr></thead>
       <tbody>
-        ${linhas.map((l, i) => `<tr>${opts.numerar ? `<td style="text-align:center;color:#94a3b8;">${i + 1}</td>` : ''}${colunas.map(c => `<td>${cel(c, l, i)}</td>`).join('')}<td><button class="fd-remover" title="Remover" onclick="fdRemoverLinha('${path}', ${i})">✕</button></td></tr>`).join('')}
-        ${!linhas.length ? `<tr><td colspan="${colunas.length + 2}" style="text-align:center;color:#94a3b8;padding:14px;">Nenhuma linha ainda.</td></tr>` : ''}
+        ${(() => { let n = 0; return linhas.map((l, i) => opts.filtro && !opts.filtro(l) ? '' : `<tr>${opts.numerar ? `<td style="text-align:center;color:#94a3b8;">${++n}</td>` : ''}${colunas.map(c => `<td>${cel(c, l, i)}</td>`).join('')}<td><button class="fd-remover" title="Remover" onclick="fdRemoverLinha('${path}', ${i})">✕</button></td></tr>`).join(''); })()}
+        ${!(opts.filtro ? linhas.filter(opts.filtro) : linhas).length ? `<tr><td colspan="${colunas.length + 2}" style="text-align:center;color:#94a3b8;padding:14px;">Nenhuma linha ainda.</td></tr>` : ''}
       </tbody>
     </table></div>
     <button class="btn-secundario btn-sm" style="margin-top:8px;" onclick="fdAdicionarLinha('${path}')">+ ${escapeHtml(opts.botao || 'Adicionar linha')}</button>`;
+  // (opts.padrao: valores iniciais de cada linha nova, ex.: a área selecionada)
+
 }
 let FD_AO_EDITAR = null;
 function fdEditarLinha(path, i, campo, valor, recarregar) {
@@ -9505,7 +9516,8 @@ function fdEditarLinha(path, i, campo, valor, recarregar) {
   fdAgendarSalvar();
   if (recarregar) fdCorpoRender();
 }
-function fdAdicionarLinha(path) { fdLista(path).push({ id: fdId() }); fdAgendarSalvar(); fdCorpoRender(); }
+let FD_PADRAO_LINHA = {};
+function fdAdicionarLinha(path) { fdLista(path).push({ id: fdId(), ...(FD_PADRAO_LINHA[path] || {}) }); fdAgendarSalvar(); fdCorpoRender(); }
 function fdRemoverLinha(path, i) { if (!confirm('Remover esta linha?')) return; fdLista(path).splice(i, 1); fdAgendarSalvar(); fdCorpoRender(); }
 
 // ---- validação do checklist ----
@@ -9672,6 +9684,20 @@ function swotRotuloItem(q, i) { return `${QUADRANTES_SWOT_FRONT[q].rotulo} · ${
 function swotTipoDoRotulo(rotulo) { return String(rotulo || '').split(' · ')[0].split(':')[0].trim(); }
 
 function swotAreaCompleta(area) { return Object.keys(QUADRANTES_SWOT_FRONT).every(q => swotItensPontuados(q, area).length > 0); }
+const SWOT_ICONE_AREA = { 'Armazém': '🏭', 'Distribuição': '🚚', 'Frota': '🛻', 'Gente': '👥' };
+function swotAreaDoRotulo(rot) { const m = String(rot || '').match(/ · ([^:]+):/); return m ? m[1].trim() : ''; }
+function swotNaArea(a) { return SWOT_AREA === '__todas' || !a || a === SWOT_AREA; }
+function swotBarraAreaTopo() {
+  const areas = swotAreas();
+  return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:10px 12px;margin:6px 0 10px;">
+    <div style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">1º escolha a área da SWOT</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      ${areas.map(a => `<button onclick="SWOT_AREA='${escapeHtml(a)}'; fdDesenhar();" style="cursor:pointer;border:2px solid ${SWOT_AREA === a ? '#0e2a47' : '#e2e8f0'};background:${SWOT_AREA === a ? '#0e2a47' : '#fff'};color:${SWOT_AREA === a ? '#fff' : '#0f172a'};border-radius:12px;padding:9px 16px;font-size:14px;font-weight:800;width:auto;">${SWOT_ICONE_AREA[a] || '🏷️'} ${escapeHtml(a)} <span style="font-size:12px;">${swotAreaCompleta(a) ? '✅' : '🟡'}</span></button>`).join('')}
+      <button onclick="SWOT_AREA='__todas'; fdDesenhar();" style="cursor:pointer;border:2px dashed ${SWOT_AREA === '__todas' ? '#7c3aed' : '#cbd5e1'};background:${SWOT_AREA === '__todas' ? '#f5f3ff' : '#fff'};color:#5b21b6;border-radius:12px;padding:9px 16px;font-size:14px;font-weight:800;width:auto;">🧩 Consolidado da unidade</button>
+    </div>
+    <div style="font-size:12px;color:#64748b;margin-top:6px;">${SWOT_AREA === '__todas' ? 'Visão da unidade inteira: todas as áreas juntas (para consulta e para cadastrar/remover áreas).' : `Você está na SWOT de <strong>${escapeHtml(SWOT_AREA)}</strong> — todas as abas abaixo mostram só ${escapeHtml(SWOT_AREA)}.`}</div>
+  </div>`;
+}
 function swotHtmlSeletorArea(permiteTodas) {
   return `<div class="fd-areas">
     ${swotAreas().map(a => `<button class="fd-area ${SWOT_AREA === a ? 'ativa' : ''}" onclick="SWOT_AREA='${escapeHtml(a)}'; fdCorpoRender();">${swotAreaCompleta(a) ? '✅' : '🟡'} ${escapeHtml(a)}</button>`).join('')}
@@ -9681,7 +9707,8 @@ function swotHtmlSeletorArea(permiteTodas) {
 
 function swotHtmlInicio() {
   const d = FD.dados;
-  const areas = swotAreas();
+  const areas = SWOT_AREA === '__todas' ? swotAreas() : [SWOT_AREA];
+  FD_PADRAO_LINHA.responsaveis = SWOT_AREA !== '__todas' ? { area: SWOT_AREA } : {};
   return `
     <div class="fd-passos">
       ${[['1', 'Áreas e Sonho', 'Armazém, Distribuição, Frota, Gente'], ['2', 'SWOT por área', 'Cada área pontua seus 4 fatores'], ['3', 'Matriz', 'Top 5 por área e consolidado'], ['4', 'Cruzamentos', 'Estratégias'], ['5', 'Objetivos e planos', 'Priorização até março']].map(([n, t, s]) => `<div class="fd-passo"><span>${n}</span><strong>${t}</strong><small>${s}</small></div>`).join('')}
@@ -9697,7 +9724,8 @@ function swotHtmlInicio() {
           ${!AREAS_SWOT_PADRAO.includes(a) ? `<button class="fd-remover" onclick="if(confirm('Remover a área ${escapeHtml(a)} e os itens dela?')){ FD.dados.areas = swotAreas().filter(x => x !== '${escapeHtml(a)}'); delete FD.dados.itensPorArea['${escapeHtml(a)}']; fdAgendarSalvar(); fdCorpoRender(); }">✕ remover</button>` : ''}
         </div>`).join('')}
       </div>
-      <div style="display:flex;gap:6px;margin-top:10px;"><input id="fd-nova-area" placeholder="Adicionar outra área (ex: Puxada, Gestão)" style="margin:0;"><button class="btn-secundario btn-sm" onclick="const v=document.getElementById('fd-nova-area').value.replace(/[.'&quot;<>]/g,'').trim(); if(v && !swotAreas().includes(v)){ FD.dados.areas.push(v); fdAgendarSalvar(); fdCorpoRender(); }">Adicionar</button></div>
+      ${SWOT_AREA !== '__todas' ? '<div style="font-size:12px;color:#64748b;margin-top:8px;">Para cadastrar ou remover áreas, abra o 🧩 Consolidado da unidade.</div>' : ''}
+      <div style="display:${SWOT_AREA === '__todas' ? 'flex' : 'none'};gap:6px;margin-top:10px;"><input id="fd-nova-area" placeholder="Adicionar outra área (ex: Puxada, Gestão)" style="margin:0;"><button class="btn-secundario btn-sm" onclick="const v=document.getElementById('fd-nova-area').value.replace(/[.'&quot;<>]/g,'').trim(); if(v && !swotAreas().includes(v)){ FD.dados.areas.push(v); fdAgendarSalvar(); fdCorpoRender(); }">Adicionar</button></div>
     </div>
     <div class="painel" style="margin-bottom:14px;">
       <label style="margin-top:0;">🌟 Sonho da unidade</label>
@@ -9708,7 +9736,7 @@ function swotHtmlInicio() {
     </div>
     <div class="painel" style="margin-bottom:14px;">
       <h3 style="margin-top:0;">👥 Responsáveis por área</h3>
-      ${fdTabela('responsaveis', [{ campo: 'nome', rotulo: 'Nome', largura: 220 }, { campo: 'area', rotulo: 'Área', tipo: 'select', opcoes: () => swotAreas(), largura: 160 }], { botao: 'Adicionar responsável' })}
+      ${fdTabela('responsaveis', [{ campo: 'nome', rotulo: 'Nome', largura: 220 }, { campo: 'area', rotulo: 'Área', tipo: 'select', opcoes: () => swotAreas(), largura: 160 }], { botao: 'Adicionar responsável', filtro: l => SWOT_AREA === '__todas' || l.area === SWOT_AREA || !l.area })}
     </div>
     <div class="painel">
       <h3 style="margin-top:0;">🔗 Vínculo com Descrição de Negócio e Mapeamento de Processo</h3>
@@ -9721,7 +9749,7 @@ function swotHtmlQuadrante(q) {
   const cfg = QUADRANTES_SWOT_FRONT[q];
   if (SWOT_AREA === '__todas') {
     const itens = swotItensPontuados(q);
-    return `${swotHtmlSeletorArea(true)}
+    return `
       <div class="fd-quadrante-topo" style="border-left-color:${cfg.cor};"><div style="font-size:18px;font-weight:800;">${cfg.icone} ${cfg.plural} — consolidado de todas as áreas</div>
       <div style="font-size:12.5px;color:#475569;">Visão só de leitura. Para editar, escolha uma área acima. Total: <strong>${swotTotal(q)}</strong></div></div>
       <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th>#</th><th>Área</th><th>Item</th><th>Importância</th><th>${cfg.c2rot}</th><th>Tendência</th><th>Pontuação</th></tr></thead><tbody>
@@ -9736,7 +9764,7 @@ function swotHtmlQuadrante(q) {
     const el = document.getElementById('sw-pts-' + i);
     if (el) el.textContent = swotPontos(q, fdLista(p)[i]) || '—';
   };
-  return `${swotHtmlSeletorArea(true)}
+  return `
     <div class="fd-quadrante-topo" style="border-left-color:${cfg.cor};">
       <div style="font-size:18px;font-weight:800;">${cfg.icone} ${cfg.plural} — ${escapeHtml(area)}</div>
       <div style="font-size:12.5px;color:#475569;">${cfg.dica}</div>
@@ -9778,12 +9806,12 @@ function swotHtmlMatriz() {
       ${t.length ? t.map((i, n) => `<div class="fd-matriz-i"><span>${n + 1}. ${escapeHtml(i.texto)}${area === '__todas' ? ` <small>(${escapeHtml(i.area)})</small>` : ''}</span><strong>${i.pontos}</strong></div>`).join('') : '<div style="color:#94a3b8;font-size:12.5px;">Sem itens pontuados.</div>'}
     </div>`;
   };
-  return `${swotHtmlSeletorArea(true)}
+  return `
     <div class="painel" style="margin-bottom:14px;">
-      <h3 style="margin-top:0;">📋 Resumo da SWOT por área</h3>
+      <h3 style="margin-top:0;">📋 ${area === '__todas' ? 'Resumo da SWOT por área' : 'Resumo da SWOT — ' + escapeHtml(area)}</h3>
       <div class="fd-tabela-wrap"><table class="fd-tabela">
         <thead><tr><th>Área</th>${qs.map(q => `<th>${QUADRANTES_SWOT_FRONT[q].icone} ${QUADRANTES_SWOT_FRONT[q].plural}</th>`).join('')}<th>Índice de favorabilidade</th><th>Situação</th></tr></thead>
-        <tbody>${swotAreas().concat(['__todas']).map(a => { const i = swotIndice(a), [c, k] = swotClassificacao(i); return `<tr style="${a === '__todas' ? 'font-weight:800;background:#f8fafc;' : ''}">
+        <tbody>${(area === '__todas' ? swotAreas().concat(['__todas']) : [area]).map(a => { const i = swotIndice(a), [c, k] = swotClassificacao(i); return `<tr style="${a === '__todas' ? 'font-weight:800;background:#f8fafc;' : ''}">
           <td>${a === '__todas' ? '🧩 Unidade (consolidado)' : escapeHtml(a)}</td>${qs.map(q => `<td>${swotItensPontuados(q, a).length} itens · ${swotTotal(q, a)} pts</td>`).join('')}
           <td style="color:${k};font-weight:800;">${i === null ? '—' : fdPct(i, 1)} · ${c}</td><td>${a === '__todas' ? '' : swotAreaCompleta(a) ? '✅ completa' : '🟡 incompleta'}</td></tr>`; }).join('')}</tbody>
       </table></div>
@@ -9809,10 +9837,11 @@ function swotHtmlMatriz() {
       ${FD.dados.resumo ? `<div style="margin-top:8px;font-size:13px;"><strong>Resumindo a SWOT:</strong> ${escapeHtml(FD.dados.resumo)}</div>` : ''}</div>`;
 }
 
-function swotOpcoesPorArea(qsLista) { return swotAreas().flatMap(a => qsLista.flatMap(q => swotTop5(q, a).map(i => swotRotuloItem(q, i)))); }
+function swotOpcoesPorArea(qsLista) { return swotAreas().filter(a => swotNaArea(a)).flatMap(a => qsLista.flatMap(q => swotTop5(q, a).map(i => swotRotuloItem(q, i)))); }
 function swotEstrategia(l) { return ESTRATEGIAS_SWOT[swotTipoDoRotulo(l.interno) + '|' + swotTipoDoRotulo(l.externo)] || null; }
 function swotHtmlCruzamentos() {
-  FD_AO_EDITAR = (path, i) => { if (path === 'cruzamentos') { const l = fdLista(path)[i]; const e = swotEstrategia(l); l.estrategia = e ? e[0] : ''; } };
+  FD_AO_EDITAR = (path, i) => { if (path === 'cruzamentos') { const l = fdLista(path)[i]; const e = swotEstrategia(l); l.estrategia = e ? e[0] : ''; if (!l.area || l.area === '__todas') l.area = swotAreaDoRotulo(l.interno) || swotAreaDoRotulo(l.externo) || l.area; } };
+  FD_PADRAO_LINHA.cruzamentos = SWOT_AREA !== '__todas' ? { area: SWOT_AREA } : {};
   return `
     <div class="painel" style="margin-bottom:12px;font-size:12.5px;color:#475569;">Cruze os itens do Top 5 de cada área: internos (forças/fraquezas) com externos (oportunidades/ameaças). O tipo de estratégia sai automático:
       <div class="fd-estrategias">${Object.entries(ESTRATEGIAS_SWOT).map(([k, [n, t]]) => `<div><strong>${n}</strong><small>${k.replace('|', ' + ')}</small>${escapeHtml(t)}</div>`).join('')}</div></div>
@@ -9820,12 +9849,13 @@ function swotHtmlCruzamentos() {
       { campo: 'interno', rotulo: 'Força / Fraqueza (Top 5 da área)', tipo: 'select', opcoes: () => swotOpcoesPorArea(['forcas', 'fraquezas']), largura: 280, recarregar: true },
       { campo: 'externo', rotulo: 'Oportunidade / Ameaça (Top 5 da área)', tipo: 'select', opcoes: () => swotOpcoesPorArea(['oportunidades', 'ameacas']), largura: 280, recarregar: true },
       { campo: 'estrategia', rotulo: 'Estratégia / recomendação', tipo: 'calc', valor: l => { const e = swotEstrategia(l); return e ? `<strong>${e[0]}</strong><div style="font-size:11.5px;color:#475569;">${escapeHtml(e[1])}</div>` : '—'; } }
-    ], { numerar: true, botao: 'Adicionar cruzamento' })}`;
+    ], { numerar: true, botao: SWOT_AREA === '__todas' ? 'Adicionar cruzamento' : 'Adicionar cruzamento de ' + SWOT_AREA, filtro: l => swotNaArea(l.area || swotAreaDoRotulo(l.interno) || swotAreaDoRotulo(l.externo)) })}`;
 }
 
-function swotTodosItens() { return Object.keys(QUADRANTES_SWOT_FRONT).flatMap(q => swotItensPontuados(q).map(i => swotRotuloItem(q, i))); }
+function swotTodosItens() { return Object.keys(QUADRANTES_SWOT_FRONT).flatMap(q => swotItensPontuados(q, SWOT_AREA).map(i => swotRotuloItem(q, i))); }
 function swotHtmlObjetivos() {
   FD_AO_EDITAR = null;
+  FD_PADRAO_LINHA.objetivos = SWOT_AREA !== '__todas' ? { area: SWOT_AREA } : {};
   return `
     <div class="painel" style="margin-bottom:12px;font-size:12.5px;color:#475569;">
       ${FD.dados.sonho ? `<div style="font-size:13.5px;color:#0f172a;margin-bottom:6px;">🌟 <strong>Sonho:</strong> ${escapeHtml(FD.dados.sonho)}</div>` : '<div style="color:#b45309;">⚠️ Escreva o Sonho na aba Início.</div>'}
@@ -9838,7 +9868,7 @@ function swotHtmlObjetivos() {
       { campo: 'obstaculo', rotulo: 'Obstáculo ao Sonho que ataca', largura: 220 },
       { campo: 'itemRelacionado', rotulo: 'Item da SWOT relacionado', tipo: 'select', opcoes: swotTodosItens, largura: 260 },
       { campo: 'desdobramento', rotulo: 'Desdobra em', tipo: 'select', opcoes: DESDOBRAMENTOS_SWOT, largura: 150 }
-    ], { botao: 'Adicionar objetivo' })}`;
+    ], { botao: SWOT_AREA === '__todas' ? 'Adicionar objetivo' : 'Adicionar objetivo de ' + SWOT_AREA, filtro: l => SWOT_AREA === '__todas' || l.area === SWOT_AREA || (!l.area) })}`;
 }
 
 function swotStatusPlano(p) {
@@ -9851,7 +9881,8 @@ function swotStatusPlano(p) {
 }
 function swotHtmlPlanos() {
   FD_AO_EDITAR = null;
-  const planos = fdLista('planos');
+  FD_PADRAO_LINHA.planos = SWOT_AREA !== '__todas' ? { area: SWOT_AREA } : {};
+  const planos = fdLista('planos').filter(p => SWOT_AREA === '__todas' || p.area === SWOT_AREA || !p.area);
   const cont = {};
   planos.forEach(p => { const s = swotStatusPlano(p)[0]; cont[s] = (cont[s] || 0) + 1; });
   const fatores = Object.values(QUADRANTES_SWOT_FRONT).map(c => c.rotulo);
@@ -9870,7 +9901,7 @@ function swotHtmlPlanos() {
       { campo: 'andamento', rotulo: 'Andamento', tipo: 'select', opcoes: ['Não iniciado', 'Em andamento', 'Concluído'], largura: 130, recarregar: true },
       { campo: 'desdobramento', rotulo: 'Desdobra em', tipo: 'select', opcoes: DESDOBRAMENTOS_SWOT, largura: 140 },
       { campo: 'status', rotulo: 'Status', tipo: 'calc', valor: l => { const [s, c] = swotStatusPlano(l); return `<span class="dpo-chip-nivel" style="background:${c};color:#fff;">${s}</span>`; } }
-    ], { numerar: true, botao: 'Adicionar plano de ação' })}`;
+    ], { numerar: true, botao: SWOT_AREA === '__todas' ? 'Adicionar plano de ação' : 'Adicionar plano de ação de ' + SWOT_AREA, filtro: l => SWOT_AREA === '__todas' || l.area === SWOT_AREA || !l.area })}`;
 }
 
 // ======================= SIMULADOR DE DIMENSIONAMENTO (Planejamento 1.1) =======================
@@ -11820,7 +11851,7 @@ function exPreparar() {
   if (c === 'riscos') rcPreparar(d);
   if (c === 'visibilidade') visPreparar(d);
   if (c === 'sonho') {
-    if (!Array.isArray(d.kpis) || !d.kpis.length) d.kpis = SONHO_KPIS_PADRAO.map(([nome, pilar, sentido, meta, unidade]) => ({ id: fdId(), nome, pilar, sentido, meta, unidade, acumula: unidade === 'nº' ? 'soma' : 'media', real: [] }));
+    sonhoMigrar(d);
     ['propostas', 'comunicacoes'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
   } else if (c === 'ans') {
     d.volPadrao = d.volPadrao || { 1: 2000, 2: 1800, 3: 1700, 4: 1600, 5: 1400, 6: 900, 0: 0 };
@@ -12206,48 +12237,142 @@ function rcHtmlTime() {
 }
 
 // ======================= DPO SONHO (Gestão 1.2) =======================
+// Estrutura igual ao quadro padrão do Sonho: frase no topo, KPIs do Sonho (nível 1)
+// com YTD × Obj (Ano) e seta de sentido, e abaixo a ESTRATÉGIA: KPIs de nível 2
+// ligados ("cascateados") a um KPI do Sonho ou a outro KPI de estratégia.
 const SONHO_PILARES = ['Gente', 'Segurança', 'Custo / Produtividade', 'Nível de Serviço'];
+const SONHO_CORES = [['#E39B2D', 'Laranja ouro'], ['#1C8AD1', 'Azul'], ['#E2621B', 'Laranja'], ['#16a34a', 'Verde'], ['#7c3aed', 'Roxo'], ['#dc2626', 'Vermelho'], ['#0e2a47', 'Azul marinho'], ['#64748b', 'Cinza']];
+// [nome, pilar, sentido, meta, unidade, nível, pai (nome), cor, rótulo da meta]
 const SONHO_KPIS_PADRAO = [
-  ['LTI', 'Segurança', 'menor', 0, 'nº'], ['NPS', 'Nível de Serviço', 'maior', 65, '%'], ['Engagement', 'Gente', 'maior', 85, '%'], ['Disp. OBZ total logística', 'Custo / Produtividade', 'menor', 5, '%'],
-  ['Gabaritos de segurança', 'Segurança', 'maior', 100, '%'], ['Bate-papo de novos', 'Gente', 'maior', 100, '%'], ['Relatos', 'Segurança', 'maior', 90, '%'], ['OTIF', 'Nível de Serviço', 'maior', 85, '%'],
-  ['Turnover de novos', 'Gente', 'menor', 20, '%'], ['Devolução PDV', 'Nível de Serviço', 'menor', 2.5, '%']
+  ['LTI', 'Segurança', 'menor', 0, 'nº', 'sonho', '', '#E39B2D', 'Obj (Ano)'],
+  ['Engagement', 'Gente', 'maior', 85, '%', 'sonho', '', '#1C8AD1', 'Obj (Ano)'],
+  ['NPS', 'Nível de Serviço', 'maior', 60, '%', 'sonho', '', '#E2621B', 'Obj (Ano)'],
+  ['DQI', 'Custo / Produtividade', 'maior', '', '%', 'sonho', '', '#E39B2D', 'Meta'],
+  ['Gabaritos de segurança', 'Segurança', 'maior', 100, '%', 'estrategia', 'LTI', '#E39B2D', 'Meta'],
+  ['Relatos', 'Segurança', 'maior', 90, '%', 'estrategia', 'Gabaritos de segurança', '#E39B2D', 'Meta'],
+  ['Turnover novos', 'Gente', 'menor', 20, '%', 'estrategia', 'Engagement', '#1C8AD1', 'Meta'],
+  ['Bate-papo de novos', 'Gente', 'maior', 100, '%', 'estrategia', 'Turnover novos', '#1C8AD1', 'Meta'],
+  ['OTIF', 'Nível de Serviço', 'maior', 85, '%', 'estrategia', 'NPS', '#E2621B', 'Meta'],
+  ['Devolução PDV', 'Nível de Serviço', 'menor', 3, '%', 'estrategia', 'OTIF', '#E2621B', 'Meta']
 ];
+function sonhoKpisPadrao() {
+  const lista = SONHO_KPIS_PADRAO.map(([nome, pilar, sentido, meta, unidade, nivel, paiNome, cor, rotuloMeta]) => ({ id: fdId(), nome, pilar, sentido, meta, unidade, nivel, paiNome, cor, rotuloMeta, acumula: unidade === 'nº' ? 'soma' : 'media', real: [] }));
+  lista.forEach(k => { const p = lista.find(x => x.nome === k.paiNome); k.pai = p ? p.id : ''; delete k.paiNome; });
+  return lista;
+}
+// Cadastros antigos (lista simples) → estrutura Sonho / Estratégia.
+function sonhoMigrar(d) {
+  if (!Array.isArray(d.kpis) || !d.kpis.length) { d.kpis = sonhoKpisPadrao(); return; }
+  if (d.kpis.some(k => k.nivel)) return;
+  const norm = t => cvSemAcento(t).replace(/[^a-z0-9]/g, '');
+  const mapa = Object.fromEntries(SONHO_KPIS_PADRAO.map(r => [norm(r[0]), r]));
+  mapa[norm('Turnover de novos')] = mapa[norm('Turnover novos')];
+  d.kpis.forEach(k => { const r = mapa[norm(k.nome)]; if (r) { k.nivel = r[5]; k.cor = k.cor || r[7]; k.rotuloMeta = r[8]; k._paiNome = r[6]; } else { k.nivel = 'estrategia'; k.rotuloMeta = 'Meta'; } });
+  // Disp. OBZ do modelo antigo sem nenhum dado → sai; o DQI entra no lugar dele no topo.
+  d.kpis = d.kpis.filter(k => !(norm(k.nome) === norm('Disp. OBZ total logística') && !(k.real || []).some(v => exNum(v) !== null)));
+  if (!d.kpis.some(k => norm(k.nome) === 'dqi')) { const r = SONHO_KPIS_PADRAO[3]; d.kpis.splice(3, 0, { id: fdId(), nome: r[0], pilar: r[1], sentido: r[2], meta: r[3], unidade: r[4], nivel: 'sonho', cor: r[7], rotuloMeta: r[8], acumula: 'media', real: [] }); }
+  const ordemPadrao = n => { const i = SONHO_KPIS_PADRAO.findIndex(r => norm(r[0]) === norm(n) || (norm(r[0]) === norm('Turnover novos') && norm(n) === norm('Turnover de novos'))); return i < 0 ? 99 : i; };
+  d.kpis.sort((a, b) => ordemPadrao(a.nome) - ordemPadrao(b.nome));
+  d.kpis.forEach(k => { if (k._paiNome) { const p = d.kpis.find(x => norm(x.nome) === norm(k._paiNome) || (norm(k._paiNome) === norm('Turnover novos') && norm(x.nome) === norm('Turnover de novos'))); k.pai = p ? p.id : ''; } delete k._paiNome; });
+}
+function sonhoTops(d) { return (d.kpis || []).filter(k => k.nivel !== 'estrategia'); }
+function sonhoFilhos(d, id) { return (d.kpis || []).filter(k => k.nivel === 'estrategia' && k.pai === id); }
+function sonhoCadeia(d, id, prof = 0, vistos = new Set()) { // descendentes em ordem (pai → filho → neto)
+  return sonhoFilhos(d, id).filter(k => !vistos.has(k.id)).flatMap(k => { vistos.add(k.id); return [{ k, prof }, ...sonhoCadeia(d, k.id, prof + 1, vistos)]; });
+}
+function sonhoOrfaos(d) { const ids = new Set((d.kpis || []).map(k => k.id)); return (d.kpis || []).filter(k => k.nivel === 'estrategia' && (!k.pai || !ids.has(k.pai))); }
 function sonhoYtd(k) {
   const v = (k.real || []).map(exNum).filter(x => x !== null);
   if (!v.length) return null;
   return k.acumula === 'soma' ? v.reduce((a, b) => a + b, 0) : k.acumula === 'ultimo' ? v[v.length - 1] : v.reduce((a, b) => a + b, 0) / v.length;
 }
 function sonhoOk(k, v) { const meta = exNum(k.meta); if (v === null || v === undefined || meta === null) return null; return k.sentido === 'menor' ? v <= meta : v >= meta; }
-function sonhoFmt(k, v) { return v === null || v === undefined ? '—' : fdFmt(v, Math.abs(v) < 10 && v % 1 ? 1 : 0) + (k.unidade === '%' ? '%' : ''); }
+function sonhoFmt(k, v) { return v === null || v === undefined ? '' : (Math.abs(v) < 1000 && v % 1 ? v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : fdFmt(v, 0)) + (k.unidade === '%' ? '%' : ''); }
 function sonhoValidar(d) {
   const rev = d.dataRevisao || '', revOk = rev && rev.slice(0, 4) === String(FD.ano) && Number(rev.slice(5, 7)) <= 3;
   const kpis = (d.kpis || []).filter(k => String(k.nome || '').trim() && exNum(k.meta) !== null);
   const pilares = new Set(kpis.map(k => k.pilar).filter(Boolean));
+  const tops = sonhoTops(d).filter(k => String(k.nome || '').trim()), estr = (d.kpis || []).filter(k => k.nivel === 'estrategia' && k.pai);
   const temFoto = (FD.arquivos || []).some(a => a.tipo === 'exposicao');
   const props = (d.propostas || []).filter(p => String(p.texto || '').trim());
   return [
     { v: 'V.1', titulo: 'Sonho revisado no ciclo (jan–mar) e em vigor', st: exSt(String(d.frase || '').trim() && revOk, String(d.frase || '').trim()), txt: `${String(d.frase || '').trim() ? 'Frase do Sonho preenchida' : 'Falta a frase do Sonho'} · revisão ${rev ? new Date(rev + 'T12:00:00').toLocaleDateString('pt-BR') : 'sem data'}${rev && !revOk ? ' (fora do ciclo jan–mar deste ano)' : ''}.`, ir: 'sonho' },
-    { v: 'V.2', titulo: 'KPIs do Sonho definidos e cascateados', st: exSt(kpis.length >= 4 && pilares.size >= 4, kpis.length >= 1), txt: `${kpis.length} KPI(s) com meta · pilares cobertos: ${[...pilares].join(', ') || 'nenhum'} (precisa de Gente, Segurança, Custo/Produtividade e Nível de Serviço).`, ir: 'kpis' },
+    { v: 'V.2', titulo: 'KPIs do Sonho definidos e cascateados', st: exSt(kpis.length >= 4 && pilares.size >= 4 && estr.length >= 1, kpis.length >= 1), txt: `${tops.length} KPI(s) do Sonho e ${estr.length} de estratégia cascateados · pilares cobertos: ${[...pilares].join(', ') || 'nenhum'} (precisa de Gente, Segurança, Custo/Produtividade e Nível de Serviço).`, ir: 'kpis' },
     { v: 'V.3', titulo: 'Conectado à estratégia ABI e comunicado', st: exSt(String(d.conexao || '').trim().length > 10 && (d.comunicacoes || []).length >= 1, String(d.conexao || '').trim() || (d.comunicacoes || []).length), txt: `${String(d.conexao || '').trim() ? 'Conexão com a estratégia descrita' : 'Descreva a conexão com a estratégia ABI'} · ${(d.comunicacoes || []).length} comunicação(ões) registrada(s).`, ir: 'sonho' },
     { v: 'V.4', titulo: 'Sonho exposto fisicamente e visível', st: exSt(String(d.exposicao || '').trim() && temFoto, String(d.exposicao || '').trim() || temFoto), txt: `${String(d.exposicao || '').trim() ? 'Local: ' + d.exposicao : 'Informe onde o Sonho está exposto'} · ${temFoto ? 'foto anexada' : 'anexe a foto em 📎 Evidências (tipo "Foto do Sonho exposto")'}.`, ir: 'sonho' },
     { v: 'V.5', titulo: 'Construído com o envolvimento de todos', st: exSt(props.length >= 2 && String(d.construcao || '').trim(), props.length >= 1 || String(d.construcao || '').trim()), txt: `${props.length} proposta(s) de grupos registradas · ${exNum(d.participantes) ? exNum(d.participantes) + ' participante(s)' : 'informe quantos participaram'}.`, ir: 'sonho' }
   ];
 }
-function sonhoHtmlPainel() {
-  const d = FD.dados;
-  return `<div class="sonho-painel">
-    <div class="sonho-topo"><div class="sonho-tag">SONHO ${FD.ano}</div><div class="sonho-frase">${d.frase ? escapeHtml(d.frase) : '<span style="opacity:.6;">Escreva a frase do Sonho abaixo</span>'}</div></div>
-    <div class="sonho-kpis">${(d.kpis || []).filter(k => k.nome).map(k => { const y = sonhoYtd(k), ok = sonhoOk(k, y); return `<div class="sonho-kpi ${ok === true ? 'ok' : ok === false ? 'nok' : ''}"><div class="sonho-kpi-nome">${escapeHtml(k.nome)} <span>${k.sentido === 'menor' ? '↓' : '↑'}</span></div><div class="sonho-kpi-linha"><div><small>YTD</small><strong>${sonhoFmt(k, y)}</strong></div><div><small>Meta</small><strong>${sonhoFmt(k, exNum(k.meta))}</strong></div></div></div>`; }).join('')}</div>
+const SONHO_CSS = `
+  .sq { font-family:Calibri,'Segoe UI',Arial,sans-serif; background:#fff; color:#111; padding:14px 16px 10px; border-radius:6px; }
+  .sq-tit { color:#c00000; font-size:30px; font-weight:800; margin:0 0 6px; }
+  .sq-borda { border:2px dashed #333; padding:16px 16px 12px 44px; position:relative; }
+  .sq-topo { display:flex; align-items:center; gap:16px; }
+  .sq-abi { font-weight:800; font-size:20px; white-space:nowrap; display:flex; align-items:center; gap:4px; letter-spacing:-.3px; }
+  .sq-abi span { color:#f5a623; font-size:22px; }
+  .sq-frase { flex:1; border:2px solid #111; padding:12px 18px; text-align:center; font-weight:700; font-size:16px; line-height:1.4; min-height:58px; display:flex; align-items:center; justify-content:center; }
+  .sq-grade { display:grid; gap:18px 26px; }
+  .sq-seta { width:0; height:0; margin:10px auto 6px; border-left:12px solid transparent; border-right:12px solid transparent; border-top:14px solid #c0392b; position:relative; }
+  .sq-seta::before { content:''; position:absolute; left:-5px; top:-26px; width:10px; height:13px; background:#c0392b; }
+  .sq-kpi { width:100%; max-width:230px; margin:0 auto; }
+  .sq-cab { color:#fff; font-weight:800; text-align:center; font-size:13px; padding:6px 4px; text-transform:uppercase; letter-spacing:.3px; }
+  .sq-tab { display:grid; grid-template-columns:1fr 1fr 22px; font-size:12px; text-align:center; }
+  .sq-tab div { padding:4px 2px; border:1px solid #e5e7eb; }
+  .sq-h { background:#d9d9d9; font-weight:800; } .sq-v { background:#f2f2f2; }
+  .sq-dir { background:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; color:#374151; grid-row:span 2; }
+  .sq-atualizar { background:#ffff00 !important; font-weight:700; }
+  .sq-ok, .sq-nok { color:#111; }
+  .sq-linha { border-top:1.5px solid #64748b; margin:22px 0 18px; }
+  .sq-estr { position:relative; }
+  .sq-estr-lado { position:absolute; left:-38px; top:50%; transform:translateY(-50%) rotate(180deg); writing-mode:vertical-rl; font-weight:800; font-size:12px; letter-spacing:1px; color:#111; }
+  .sq-nota { font-size:11px; margin-top:6px; color:#111; }
+  @media print { .sq, .sq * { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+`;
+function sonhoCartaoKpi(k) {
+  const y = sonhoYtd(k), ok = sonhoOk(k, y), meta = exNum(k.meta);
+  return `<div class="sq-kpi">
+    <div class="sq-cab" style="background:${k.cor || '#E39B2D'};">${escapeHtml(k.nome || '')}</div>
+    <div class="sq-tab"><div class="sq-h">YTD</div><div class="sq-h">${escapeHtml(k.rotuloMeta || (k.nivel === 'estrategia' ? 'Meta' : 'Obj (Ano)'))}</div><div class="sq-dir">${k.sentido === 'menor' ? '↓' : '↑'}</div>
+      <div class="sq-v ${y === null ? 'sq-atualizar' : ok === true ? 'sq-ok' : ok === false ? 'sq-nok' : ''}">${y === null ? 'ATUALIZAR' : sonhoFmt(k, y)}</div><div class="sq-v">${meta === null ? '' : sonhoFmt(k, meta)}</div></div>
   </div>`;
+}
+function sonhoHtmlPainel() {
+  const d = FD.dados, tops = sonhoTops(d).filter(k => k.nome), orf = sonhoOrfaos(d).filter(k => k.nome);
+  const cols = tops.length + (orf.length ? 1 : 0) || 1;
+  const colunas = tops.map(t => sonhoCadeia(d, t.id).filter(x => x.k.nome));
+  const temEstr = colunas.some(c => c.length) || orf.length;
+  return `<div class="sq" id="sonho-quadro"><style>${SONHO_CSS}</style>
+    <div class="sq-tit">Sonho</div>
+    <div class="sq-borda">
+      <div class="sq-topo"><div class="sq-abi"><span>✺</span>ABInBev</div>
+        <div class="sq-frase">${d.frase ? escapeHtml(d.frase) : '<span style="color:#94a3b8;font-weight:400;">Escreva a frase do Sonho na aba 🌟 Sonho</span>'}</div></div>
+      <div class="sq-grade" style="grid-template-columns:repeat(${cols},minmax(150px,1fr));margin-top:6px;">
+        ${tops.map(t => `<div><div class="sq-seta"></div>${sonhoCartaoKpi(t)}</div>`).join('')}${orf.length ? '<div></div>' : ''}
+      </div>
+      ${temEstr ? `<div class="sq-linha"></div>
+      <div class="sq-estr"><div class="sq-estr-lado">ESTRATÉGIA</div>
+      <div class="sq-grade" style="grid-template-columns:repeat(${cols},minmax(150px,1fr));align-items:start;">
+        ${colunas.map(c => `<div>${c.map((x, n) => `${n && x.prof > 0 ? '<div class="sq-seta" style="margin:8px auto 6px;"></div>' : n ? '<div style="height:18px;"></div>' : ''}${sonhoCartaoKpi(x.k)}`).join('')}</div>`).join('')}
+        ${orf.length ? `<div>${orf.map((k, n) => `${n ? '<div style="height:18px;"></div>' : ''}${sonhoCartaoKpi(k)}`).join('')}</div>` : ''}
+      </div></div>` : ''}
+    </div>
+    <div class="sq-nota">Nota: Para imprimir este painel, todos os itens devem estar legíveis.</div>
+  </div>`;
+}
+function sonhoImprimir() {
+  const w = window.open('', '_blank'); if (!w) return mostrarToast('Permita pop-ups para imprimir.', true);
+  w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Sonho ${FD.ano}</title><style>body{margin:0;padding:14px;background:#fff;} @page{size:A4 landscape;margin:10mm;}</style></head><body>${sonhoHtmlPainel()}<script>window.onload=function(){setTimeout(function(){window.print();},300);};<\/script></body></html>`);
+  w.document.close();
 }
 function sonhoHtmlSonho() {
   const d = FD.dados; exAoEditar();
   const campo = (k, rot, ph, tipo) => `<div><label>${rot}</label>${tipo === 'area' ? `<textarea rows="3" placeholder="${escapeHtml(ph || '')}" onchange="fdDefinir('${k}', this.value); exValidar();">${escapeHtml(d[k] || '')}</textarea>` : `<input type="${tipo || 'text'}" placeholder="${escapeHtml(ph || '')}" value="${escapeHtml(d[k] || '')}" onchange="fdDefinir('${k}', this.value); exValidar(); ${k === 'frase' ? 'fdCorpoRender();' : ''}">`}</div>`;
   return `
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px;"><button class="btn-secundario btn-sm" style="width:auto;" onclick="fdTrocarAba('kpis')">🎯 Montar KPIs do Sonho e estratégia</button><button class="btn-primario btn-sm" style="width:auto;" onclick="sonhoImprimir()">🖨️ Imprimir quadro do Sonho</button></div>
     ${sonhoHtmlPainel()}
     <div class="painel" style="margin:12px 0;">
       <h3 style="margin-top:0;">✍️ Definição do Sonho</h3>
-      <label>Frase do Sonho</label><textarea rows="3" placeholder="Ex.: Ser uma revenda certificada, entre as 10 melhores do PEX, com time engajado e seguro, ampliando resultados com foco em produtividade e nível de serviço." onchange="fdDefinir('frase', this.value); exValidar(); fdCorpoRender();">${escapeHtml(d.frase || '')}</textarea>
+      <label>Frase do Sonho</label><textarea rows="3" placeholder="Ex.: Ser uma revenda sustentável, entre as 10 melhores do PEX, sendo referência em segurança, engajamento, rentabilidade e nível de serviço." onchange="fdDefinir('frase', this.value); exValidar(); fdCorpoRender();">${escapeHtml(d.frase || '')}</textarea>
       <div class="linha" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
         ${campo('dataRevisao', 'Data da revisão (DPO Day — até março)', '', 'date')}
         ${campo('participantes', 'Participantes na construção', 'nº de pessoas', 'number')}
@@ -12263,36 +12388,63 @@ function sonhoHtmlSonho() {
     <div class="painel"><h3 style="margin-top:0;">📣 Comunicação do Sonho</h3>
       ${fdTabela('comunicacoes', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'canal', rotulo: 'Canal', tipo: 'select', opcoes: ['Team Room', 'Matinal', 'Quadro de gestão à vista', 'Reunião geral', 'WhatsApp / e-mail', 'Integração de novos', 'Outro'], largura: 170 }, { campo: 'publico', rotulo: 'Público', largura: 160 }, { campo: 'descricao', rotulo: 'O que foi comunicado', largura: 320 }], { botao: 'Registrar comunicação' })}</div>`;
 }
+function sonhoIdx(id) { return FD.dados.kpis.findIndex(k => k.id === id); }
 function sonhoHtmlKpis() {
   const d = FD.dados, cfg = !!FD.sonhoConfig;
   const metaMes = (k, m) => { const v = exNum((k.metaMes || [])[m]); return v === null ? exNum(k.meta) : v; };
+  const tops = sonhoTops(d);
+  // ordem igual ao quadro: cada KPI do Sonho seguido da sua estratégia (filho → neto)
+  const ordem = [...tops.flatMap(t => [{ k: t, prof: -1 }, ...sonhoCadeia(d, t.id)]), ...sonhoOrfaos(d).map(k => ({ k, prof: 0, orfao: true }))];
+  const opcoesPai = k => (d.kpis || []).filter(x => x.id !== k.id && x.nome).map(x => `<option value="${x.id}" ${x.id === k.pai ? 'selected' : ''}>${x.nivel === 'estrategia' ? '↳ ' : '★ '}${escapeHtml(x.nome)}</option>`).join('');
   const linhaCfg = (k, i) => `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">
+        <select style="width:auto;margin:0;font-size:11.5px;" onchange="sonhoNivel(${i}, this.value)"><option value="sonho" ${k.nivel !== 'estrategia' ? 'selected' : ''}>★ KPI do Sonho (topo)</option><option value="estrategia" ${k.nivel === 'estrategia' ? 'selected' : ''}>↳ KPI de estratégia</option></select>
+        ${k.nivel === 'estrategia' ? `<select style="width:auto;margin:0;font-size:11.5px;" onchange="sonhoKpi(${i}, 'pai', this.value)"><option value="">Ligado a…</option>${opcoesPai(k)}</select>` : ''}
         <select style="width:auto;margin:0;font-size:11.5px;" onchange="sonhoKpi(${i}, 'pilar', this.value)"><option value="">Pilar...</option>${SONHO_PILARES.map(p => `<option ${p === k.pilar ? 'selected' : ''}>${p}</option>`).join('')}</select>
         <select style="width:auto;margin:0;font-size:11.5px;" onchange="sonhoKpi(${i}, 'sentido', this.value)"><option value="maior" ${k.sentido !== 'menor' ? 'selected' : ''}>↑ quanto maior melhor</option><option value="menor" ${k.sentido === 'menor' ? 'selected' : ''}>↓ quanto menor melhor</option></select>
         <select style="width:auto;margin:0;font-size:11.5px;" onchange="sonhoKpi(${i}, 'unidade', this.value)"><option ${k.unidade === '%' ? 'selected' : ''}>%</option><option ${k.unidade === 'nº' ? 'selected' : ''}>nº</option></select>
+        <select style="width:auto;margin:0;font-size:11.5px;" onchange="sonhoKpi(${i}, 'rotuloMeta', this.value)">${['Obj (Ano)', 'Meta'].map(o => `<option ${(k.rotuloMeta || (k.nivel === 'estrategia' ? 'Meta' : 'Obj (Ano)')) === o ? 'selected' : ''}>${o}</option>`).join('')}</select>
         <select style="width:auto;margin:0;font-size:11.5px;" onchange="sonhoKpi(${i}, 'acumula', this.value)"><option value="media" ${k.acumula === 'media' ? 'selected' : ''}>YTD = média</option><option value="soma" ${k.acumula === 'soma' ? 'selected' : ''}>YTD = soma</option><option value="ultimo" ${k.acumula === 'ultimo' ? 'selected' : ''}>YTD = último mês</option></select>
-        <button class="fd-remover" title="Remover KPI" onclick="if(confirm('Remover este KPI?')) { FD.dados.kpis.splice(${i}, 1); fdAgendarSalvar(); exRedesenhar(); }">✕</button></div>`;
+        <span style="display:inline-flex;gap:3px;align-items:center;">${SONHO_CORES.map(([c, n]) => `<button title="${n}" onclick="sonhoKpi(${i}, 'cor', '${c}')" style="width:18px;height:18px;padding:0;border-radius:50%;background:${c};border:2px solid ${k.cor === c ? '#111' : '#fff'};box-shadow:0 0 0 1px #cbd5e1;cursor:pointer;"></button>`).join('')}</span>
+        <button class="fd-remover" title="Remover KPI" onclick="sonhoRemover(${i})">✕</button></div>`;
   return `
     <div class="painel" style="margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:#475569;">
-      <div style="flex:1;min-width:260px;">Preencha só a <strong>Meta</strong> e o <strong>Real</strong> de cada mês. A meta do mês vem da meta anual — digite só se for diferente. Os KPIs cobrem <strong>Gente, Segurança, Custo/Produtividade e Nível de Serviço</strong>; o YTD é calculado automaticamente.</div>
-      <button class="btn-secundario btn-sm" style="width:auto;" onclick="FD.sonhoConfig = !FD.sonhoConfig; fdCorpoRender();">${cfg ? '✔ Concluir configuração' : '⚙️ Configurar KPIs'}</button>
+      <div style="flex:1;min-width:260px;">A estrutura é a mesma do quadro do Sonho: <strong>★ KPIs do Sonho</strong> no topo e, abaixo de cada um, a <strong>↳ estratégia</strong> ligada a ele. Preencha a <strong>Meta</strong> e o <strong>Real</strong> de cada mês — o YTD é calculado sozinho (sem real aparece <span style="background:#ffff00;padding:0 4px;">ATUALIZAR</span>).</div>
+      <button class="btn-secundario btn-sm" style="width:auto;" onclick="FD.sonhoConfig = !FD.sonhoConfig; fdCorpoRender();">${cfg ? '✔ Concluir estrutura' : '⚙️ Montar estrutura (KPIs, ligações e cores)'}</button>
       <button class="btn-secundario btn-sm" style="width:auto;" onclick="baixarArquivoDpo('/api/dpo/ferramentas-digitais/sonho/export?ano=${FD.ano}${FD.companyId ? '&company_id=' + FD.companyId : ''}', 'sonho-meta-real-${FD.ano}.xlsx')">📊 Baixar Excel</button>
+      <button class="btn-primario btn-sm" style="width:auto;" onclick="sonhoImprimir()">🖨️ Imprimir quadro</button>
     </div>
     <div class="fd-tabela-wrap"><table class="fd-tabela sonho-tab">
-      <thead><tr><th style="min-width:200px;">KPI</th><th>Meta ano</th><th></th>${MESES_FD.map(m => `<th>${m}</th>`).join('')}<th>YTD</th></tr></thead>
-      <tbody>${d.kpis.map((k, i) => { const y = sonhoYtd(k), ok = sonhoOk(k, y), fundo = i % 2 ? '#fafafa' : '#fff'; return `
-        <tr style="background:${fundo};"><td rowspan="2" style="vertical-align:top;">${cfg ? `<input value="${escapeHtml(k.nome || '')}" onchange="sonhoKpi(${i}, 'nome', this.value)" style="margin:0;">` : `<strong>${escapeHtml(k.nome || '(sem nome)')}</strong>`}
-            <div style="font-size:11px;color:#64748b;">${escapeHtml(k.pilar || 'sem pilar')} · ${k.sentido === 'menor' ? '↓ menor melhor' : '↑ maior melhor'}</div>${cfg ? linhaCfg(k, i) : ''}</td>
-          <td rowspan="2" style="vertical-align:top;">${simInp(k.meta, k.unidade === '%' ? 'pct' : 'num', `sonhoKpi(${i}, 'meta', fdParse(this.value))`, '', 'width:78px;')}</td>
+      <thead><tr><th style="min-width:230px;">KPI</th><th>${'Obj / Meta ano'}</th><th></th>${MESES_FD.map(m => `<th>${m}</th>`).join('')}<th>YTD</th></tr></thead>
+      <tbody>${ordem.map(({ k, prof, orfao }, n) => { const i = sonhoIdx(k.id), y = sonhoYtd(k), ok = sonhoOk(k, y), topo = k.nivel !== 'estrategia', fundo = topo ? '#fff' : '#fafafa'; return `
+        ${topo && n ? '<tr><td colspan="16" style="padding:0;height:6px;background:#e2e8f0;"></td></tr>' : ''}
+        <tr style="background:${fundo};"><td rowspan="2" style="vertical-align:top;border-left:6px solid ${k.cor || '#E39B2D'};padding-left:${topo ? 8 : 8 + (prof + 1) * 16}px;">
+            ${cfg ? `<input value="${escapeHtml(k.nome || '')}" onchange="sonhoKpi(${i}, 'nome', this.value)" style="margin:0;font-weight:${topo ? 800 : 600};">` : `<strong style="font-size:${topo ? 14 : 13}px;">${topo ? '★ ' : '↳ '}${escapeHtml(k.nome || '(sem nome)')}</strong>`}
+            <div style="font-size:11px;color:#64748b;">${topo ? 'KPI do Sonho' : orfao ? '<span style="color:#b45309;">estratégia sem ligação — escolha "Ligado a"</span>' : 'Estratégia de ' + escapeHtml((d.kpis.find(x => x.id === k.pai) || {}).nome || '')} · ${escapeHtml(k.pilar || 'sem pilar')} · ${k.sentido === 'menor' ? '↓ menor melhor' : '↑ maior melhor'}</div></td>
+          <td rowspan="2" style="vertical-align:top;">${simInp(k.meta, k.unidade === '%' ? 'pct' : 'num', `sonhoKpi(${i}, 'meta', fdParse(this.value))`, '', 'width:78px;')}<div style="font-size:10.5px;color:#94a3b8;">${escapeHtml(k.rotuloMeta || (topo ? 'Obj (Ano)' : 'Meta'))}</div></td>
           <td style="font-size:11px;font-weight:800;color:#4338ca;">Meta</td>
           ${MESES_FD.map((_, m) => `<td>${simInp((k.metaMes || [])[m], 'num', `sonhoMeta(${i}, ${m}, this.value)`, exNum(k.meta) === null ? '' : fdFmt(exNum(k.meta), exNum(k.meta) % 1 ? 1 : 0), 'width:64px;')}</td>`).join('')}
-          <td style="font-size:11.5px;color:#64748b;">${sonhoFmt(k, exNum(k.meta))}</td></tr>
+          <td style="font-size:11.5px;color:#64748b;">${sonhoFmt(k, exNum(k.meta)) || '—'}</td></tr>
         <tr style="background:${fundo};"><td style="font-size:11px;font-weight:800;color:#0f766e;">Real</td>
           ${MESES_FD.map((_, m) => { const v = exNum((k.real || [])[m]), okm = sonhoOk({ ...k, meta: metaMes(k, m) }, v); return `<td style="${okm === true ? 'background:#dcfce7;' : okm === false ? 'background:#fee2e2;' : ''}">${simInp((k.real || [])[m], 'num', `sonhoReal(${i}, ${m}, this.value)`, '', 'width:64px;')}</td>`; }).join('')}
-          <td style="font-weight:800;${ok === true ? 'color:#166534;' : ok === false ? 'color:#991b1b;' : ''}">${sonhoFmt(k, y)}</td></tr>`; }).join('')}</tbody>
+          <td style="font-weight:800;${y === null ? 'background:#ffff00;' : ok === true ? 'color:#166534;' : ok === false ? 'color:#991b1b;' : ''}">${y === null ? 'ATUALIZAR' : sonhoFmt(k, y)}</td></tr>
+        ${cfg ? `<tr style="background:${fundo};"><td colspan="16" style="border-left:6px solid ${k.cor || '#E39B2D'};padding:4px 8px 10px ${topo ? 8 : 8 + (prof + 1) * 16}px;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">${linhaCfg(k, i)}
+          <button class="btn-secundario btn-sm" style="width:auto;margin-top:4px;font-size:11px;" onclick="sonhoNovo('estrategia', '${k.id}')">+ ${topo ? 'Estratégia ligada a ' + escapeHtml(k.nome || 'este KPI') : 'KPI abaixo deste'}</button></div></td></tr>` : ''}`; }).join('')}</tbody>
     </table></div>
-    ${cfg ? `<button class="btn-secundario btn-sm" style="margin-top:8px;" onclick="FD.dados.kpis.push({ id: fdId(), sentido: 'maior', unidade: '%', acumula: 'media', real: [] }); fdAgendarSalvar(); exRedesenhar();">+ Adicionar KPI</button>` : ''}
+    ${cfg ? `<button class="btn-secundario btn-sm" style="margin-top:8px;width:auto;" onclick="sonhoNovo('sonho')">+ Adicionar KPI do Sonho (topo)</button>` : ''}
     <div style="margin-top:14px;">${sonhoHtmlPainel()}</div>`;
+}
+function sonhoNovo(nivel, pai) {
+  const p = pai ? FD.dados.kpis.find(k => k.id === pai) : null;
+  const novo = { id: fdId(), nome: '', nivel, pai: pai || '', cor: p ? p.cor : SONHO_CORES[sonhoTops(FD.dados).length % 4][0], pilar: p ? p.pilar : '', sentido: 'maior', unidade: '%', acumula: 'media', rotuloMeta: nivel === 'estrategia' ? 'Meta' : 'Obj (Ano)', real: [] };
+  const lista = FD.dados.kpis;
+  if (pai) { const ult = [pai, ...sonhoCadeia(FD.dados, pai).map(x => x.k.id)].pop(); lista.splice(sonhoIdx(ult) + 1, 0, novo); } else lista.push(novo);
+  FD.sonhoConfig = true; fdAgendarSalvar(); exRedesenhar();
+}
+function sonhoNivel(i, v) { const k = FD.dados.kpis[i]; k.nivel = v; if (v !== 'estrategia') k.pai = ''; k.rotuloMeta = v === 'estrategia' ? 'Meta' : 'Obj (Ano)'; fdAgendarSalvar(); exRedesenhar(); }
+function sonhoRemover(i) {
+  const k = FD.dados.kpis[i]; if (!confirm(`Remover o KPI "${k.nome || ''}"?${sonhoFilhos(FD.dados, k.id).length ? ' Os KPIs ligados a ele ficam sem ligação.' : ''}`)) return;
+  FD.dados.kpis.splice(i, 1); fdAgendarSalvar(); exRedesenhar();
 }
 function sonhoMeta(i, m, v) { const k = FD.dados.kpis[i]; k.metaMes = k.metaMes || []; while (k.metaMes.length < 12) k.metaMes.push(''); k.metaMes[m] = fdParse(v); fdAgendarSalvar(); exRedesenhar(); }
 function sonhoKpi(i, campo, v) { FD.dados.kpis[i][campo] = v; fdAgendarSalvar(); exRedesenhar(); }

@@ -1323,6 +1323,7 @@ function inicializarBase() {
         )`);
         // Foto de evidência de cada follow-up (ex: print/foto do que foi feito).
         db.run(`ALTER TABLE dpo_follow_ups ADD COLUMN foto_url TEXT`, () => {});
+        db.run(`ALTER TABLE dpo_follow_ups ADD COLUMN autor TEXT`, () => {});
 
         // "Perguntas Bate-Papo" — pasta dentro de cada pilar onde a empresa (ou o
         // Master/consultor) registra perguntas feitas no bate-papo e as respostas,
@@ -8456,6 +8457,7 @@ const CATEGORIAS_CHAMADO = {
     suporte_tecnico: 'Problema no sistema',
     financeiro: 'Financeiro / pagamento',
     sugestao: 'Sugestão de melhoria',
+    liberar_ferramenta: 'Liberação de ferramenta Impulsionar',
     outro: 'Outro assunto'
 };
 const PRIORIDADES_CHAMADO = ['baixa', 'media', 'alta', 'urgente'];
@@ -8545,6 +8547,10 @@ app.post('/api/chamados', requireRole('admin', 'client_admin'), async (req, res)
     if (!anexoValidoChamado(anexo_url)) return res.status(400).json({ error: 'Anexo inválido.' });
     try {
         let refTipo = null, refId = null;
+        if (categoria === 'liberar_ferramenta') {
+            const jaAberto = await dbGet(`SELECT id FROM chamados WHERE company_id = ? AND categoria = 'liberar_ferramenta' AND assunto = ? AND status NOT IN ('resolvido', 'fechado')`, [companyId, assunto]);
+            if (jaAberto) return res.status(400).json({ error: `Você já pediu esta liberação — chamado ${numeroChamado(jaAberto.id)} em andamento. O Master vai avisar quando liberar.` });
+        }
         if (categoria === 'ajuste_autoavaliacao') {
             const av = ref_id ? await dbGet(`SELECT * FROM dpo_self_assessments WHERE id = ? AND company_id = ?`, [ref_id, companyId]) : null;
             if (!av) return res.status(400).json({ error: 'Escolha qual autoavaliação precisa de ajuste.' });
@@ -8948,13 +8954,14 @@ async function resolverFerramentaDigitalDpo(req, res, chave, companyIdInformado)
     if (chave === 'cinco_s') {
         const companyId = await resolverEmpresaPastaDpo(req, res, 'gestao', companyIdInformado, null);
         if (!companyId) return null;
+        if (req.user.role === 'client_admin' && !(await acompLiberadoDpo(companyId, 'gestao:3.1'))) { res.status(403).json({ error: 'Esta ferramenta Impulsionar ainda não foi liberada para sua empresa. Abra um chamado para o Master autorizar.' }); return null; }
         return { titulo: 'Gerenciador 5S', pilarLabel: 'Gestão Revenda', pergunta: '3.1', perguntaTexto: '5S', companyId, modelo5s: CINCO_S_MODELO_DPO };
     }
     if (chave === 'gop') {
         const companyId = req.user.role === 'client_admin' ? req.user.companyId : companyIdInformado;
         if (!companyId) { res.status(400).json({ error: 'Informe a empresa (company_id).' }); return null; }
         if (req.user.role === 'client_admin' && !(await pilaresAtivosDaEmpresa(companyId)).length) { res.status(403).json({ error: 'Sua empresa ainda não tem o DPO contratado.' }); return null; }
-        if (req.user.role === 'client_admin' && !(await acompLiberadoDpo(companyId, 'gestao:4.6')) && !(await empresaTemPastaDpo(req, res, companyId, 'gop'))) return null;
+        if (req.user.role === 'client_admin' && !(await acompLiberadoDpo(companyId, 'gestao:4.6'))) { res.status(403).json({ error: 'Esta ferramenta Impulsionar ainda não foi liberada para sua empresa. Abra um chamado para o Master autorizar.' }); return null; }
         return { titulo: 'Gerenciador GOP — Revendas', pilarLabel: 'GOP', pergunta: '', perguntaTexto: '', companyId, modeloGop: GOP_MODELO_DPO };
     }
     const f = FERRAMENTAS_DIGITAIS_DPO[chave];
@@ -8962,7 +8969,11 @@ async function resolverFerramentaDigitalDpo(req, res, chave, companyIdInformado)
     const companyId = await resolverEmpresaPastaDpo(req, res, f.pilar, companyIdInformado, TOOLS_EXCLUSIVAS_DPO[chave] ? null : 'checklist');
     if (!companyId) return null;
     if (TOOLS_EXCLUSIVAS_DPO[chave] && req.user.role === 'client_admin' && !(await acompLiberadoDpo(companyId, TOOLS_EXCLUSIVAS_DPO[chave]))) {
-        res.status(403).json({ error: 'Esta ferramenta ainda não foi liberada para sua empresa. Fale com o Master.' });
+        res.status(403).json({ error: 'Esta ferramenta Impulsionar ainda não foi liberada para sua empresa. Abra um chamado para o Master autorizar.' });
+        return null;
+    }
+    if (!TOOLS_EXCLUSIVAS_DPO[chave] && req.user.role === 'client_admin' && !(await acompLiberadoDpo(companyId, `${f.pilar}:${f.pergunta}`))) {
+        res.status(403).json({ error: 'Esta ferramenta Impulsionar ainda não foi liberada para sua empresa. Abra um chamado para o Master autorizar.' });
         return null;
     }
     return { ...f, companyId };
@@ -9125,7 +9136,7 @@ app.post('/api/dpo/ferramentas-digitais/:chave/novo-ano', requireRole('admin', '
                 };
                 else if (chave === 'swot') base = { areas: origem.areas, sonho: origem.sonho, responsaveis: origem.responsaveis, vinculoDNMP: origem.vinculoDNMP, vinculoDNMPTexto: origem.vinculoDNMPTexto };
                 else if (chave === 'orcamento') base = { raci: origem.raci, kpis: origem.kpis, processo: origem.processo };
-                else if (chave === 'sonho') base = { frase: origem.frase, conexao: origem.conexao, exposicao: origem.exposicao, kpis: (origem.kpis || []).map(k => ({ id: k.id, nome: k.nome, pilar: k.pilar, sentido: k.sentido, meta: k.meta, unidade: k.unidade, acumula: k.acumula, real: [] })) };
+                else if (chave === 'sonho') base = { frase: origem.frase, conexao: origem.conexao, exposicao: origem.exposicao, kpis: (origem.kpis || []).map(k => ({ id: k.id, nome: k.nome, pilar: k.pilar, sentido: k.sentido, meta: k.meta, unidade: k.unidade, acumula: k.acumula, nivel: k.nivel, pai: k.pai, cor: k.cor, rotuloMeta: k.rotuloMeta, real: [] })) };
                 else if (chave === 'ans') base = { acordo: origem.acordo, volPadrao: origem.volPadrao, tolerancia: origem.tolerancia };
                 else if (chave === 'visibilidade') base = { colaboradores: origem.colaboradores, indicadores: origem.indicadores, incentivo: origem.incentivo };
                 else if (chave === 'riscos') base = { riscos: origem.riscos, respostas: origem.respostas, retomada: origem.retomada, retomadaRevisao: origem.retomadaRevisao, retomadaLocal: origem.retomadaLocal, revisoes: origem.revisoes };
@@ -9635,10 +9646,11 @@ function exportarExclusivaDpo(chave, add, dados) {
         const linhasSonho = [];
         (d.kpis || []).filter(k => k.nome).forEach(k => {
             const meta = numDpo(k.meta);
-            linhasSonho.push({ nome: k.nome, pilar: k.pilar || '', sentido: k.sentido === 'menor' ? '↓ menor melhor' : '↑ maior melhor', unidade: k.unidade || '', tipo: 'Meta', ...Object.fromEntries(M.map((m, i) => { const v = numDpo((k.metaMes || [])[i]); return ['m' + i, v === null || v === '' ? meta : v]; })), ytd: meta });
-            linhasSonho.push({ nome: '', pilar: '', sentido: '', unidade: '', tipo: 'Real', ...Object.fromEntries(M.map((m, i) => ['m' + i, numDpo((k.real || [])[i])])), ytd: ytdSonho(k) });
+            const pai = (d.kpis || []).find(x => x.id === k.pai);
+            linhasSonho.push({ nivel: k.nivel === 'estrategia' ? 'Estratégia' : 'Sonho', ligado: pai ? pai.nome : '', nome: k.nome, pilar: k.pilar || '', sentido: k.sentido === 'menor' ? '↓ menor melhor' : '↑ maior melhor', unidade: k.unidade || '', tipo: 'Meta', ...Object.fromEntries(M.map((m, i) => { const v = numDpo((k.metaMes || [])[i]); return ['m' + i, v === null || v === '' ? meta : v]; })), ytd: meta });
+            linhasSonho.push({ nivel: '', ligado: '', nome: '', pilar: '', sentido: '', unidade: '', tipo: 'Real', ...Object.fromEntries(M.map((m, i) => ['m' + i, numDpo((k.real || [])[i])])), ytd: ytdSonho(k) });
         });
-        add('Meta e Real', [['KPI', 'nome', 30], ['Pilar', 'pilar', 20], ['Sentido', 'sentido', 16], ['Unid.', 'unidade', 7], ['', 'tipo', 7], ...M.map((m, i) => [m, 'm' + i, 9]), ['Ano / YTD', 'ytd', 11]], linhasSonho);
+        add('Meta e Real', [['Nível', 'nivel', 11], ['Ligado a', 'ligado', 22], ['KPI', 'nome', 30], ['Pilar', 'pilar', 20], ['Sentido', 'sentido', 16], ['Unid.', 'unidade', 7], ['', 'tipo', 7], ...M.map((m, i) => [m, 'm' + i, 9]), ['Ano / YTD', 'ytd', 11]], linhasSonho);
         tabela('Propostas dos grupos', d.propostas, [['Grupo', 'grupo', 14], ['Proposta de Sonho', 'texto', 90], ['Escolhida?', 'escolhida', 10]]);
         tabela('Comunicação', d.comunicacoes, [['Data', 'data', 12], ['Canal', 'canal', 20], ['Público', 'publico', 25], ['Descrição', 'descricao', 60]]);
     } else if (chave === 'ans') {
@@ -10419,6 +10431,30 @@ app.delete('/api/dpo/action-plans/:id', requireRole('admin', 'client_admin'), as
     } catch (e) { res.status(400).json({ error: 'Erro ao remover o plano de ação.' }); }
 });
 
+// Correção de texto (ortografia/acentuação/pontuação em pt-BR). Usa a IA quando
+// a chave estiver configurada; sem ela, aplica um corretor local de regras.
+const CORRECOES_PTBR = { concluida: 'concluída', concluido: 'concluído', concluidas: 'concluídas', concluidos: 'concluídos', saida: 'saída', saidas: 'saídas', ferias: 'férias', obrigatorio: 'obrigatório', obrigatoria: 'obrigatória', necessario: 'necessário', necessaria: 'necessária', inventario: 'inventário', usuario: 'usuário', usuarios: 'usuários', horario: 'horário', horarios: 'horários', semanal: 'semanal', mensal: 'mensal', experiencia: 'experiência', frequencia: 'frequência', sequencia: 'sequência', ocorrencia: 'ocorrência', ocorrencias: 'ocorrências', auditoria: 'auditoria', ciclo: 'ciclo', nao: 'não', voce: 'você', voces: 'vocês', tambem: 'também', ate: 'até', entao: 'então', ja: 'já', sera: 'será', acao: 'ação', acoes: 'ações', avaliacao: 'avaliação', autoavaliacao: 'autoavaliação', validacao: 'validação', correcao: 'correção', reuniao: 'reunião', reunioes: 'reuniões', gestao: 'gestão', producao: 'produção', manutencao: 'manutenção', distribuicao: 'distribuição', informacao: 'informação', informacoes: 'informações', comunicacao: 'comunicação', operacao: 'operação', operacoes: 'operações', area: 'área', areas: 'áreas', analise: 'análise', numero: 'número', proximo: 'próximo', proxima: 'próxima', periodo: 'período', inicio: 'início', conclusao: 'conclusão', armazem: 'armazém', veiculo: 'veículo', veiculos: 'veículos', caminhao: 'caminhão', caminhoes: 'caminhões', padrao: 'padrão', padroes: 'padrões', revisao: 'revisão', implantacao: 'implantação', execucao: 'execução', confeccao: 'confecção', evidencia: 'evidência', evidencias: 'evidências', responsavel: 'responsável', responsaveis: 'responsáveis', funcionario: 'funcionário', funcionarios: 'funcionários', indicador: 'indicador', calendario: 'calendário', relatorio: 'relatório', relatorios: 'relatórios', reuniao: 'reunião', diario: 'diário', diaria: 'diária', mes: 'mês', tres: 'três', sao: 'são', apos: 'após', tambem: 'também', etica: 'ética', anticorrupcao: 'anticorrupção', corrupcao: 'corrupção', seguranca: 'segurança', lideranca: 'liderança', organizacao: 'organização', manutençao: 'manutenção', atraves: 'através', alem: 'além', especifico: 'específico', minimo: 'mínimo', maximo: 'máximo', unico: 'único', otimo: 'ótimo', pratica: 'prática', praticas: 'práticas', tecnico: 'técnico', tecnica: 'técnica', logistica: 'logística', critico: 'crítico', criticos: 'críticos', historico: 'histórico', basico: 'básico', publico: 'público', saude: 'saúde', possivel: 'possível', disponivel: 'disponível', nivel: 'nível', niveis: 'níveis', util: 'útil', facil: 'fácil', dificil: 'difícil', agua: 'água', voce: 'você', porem: 'porém', alguem: 'alguém', ninguem: 'ninguém', tem: 'tem', ultimo: 'último', ultima: 'última', pagina: 'página', estrategia: 'estratégia', cascateamento: 'cascateamento', kpis: 'KPIs', kpi: 'KPI', swot: 'SWOT', dpo: 'DPO', vpo: 'VPO', rh: 'RH', ti: 'TI' };
+function corrigirTextoLocal(t) {
+    let x = String(t || '').replace(/\r/g, '');
+    x = x.replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').trim();
+    x = x.replace(/\b(anti|pré|pós|pró|ex|vice|auto|semi)-\s+(\p{L})/giu, '$1-$2').replace(/\banti-\s*corrup/giu, 'anticorrup');
+    x = x.replace(/\s+([,.;:!?%)])/g, '$1').replace(/([,;:!?])(?=[^\s\d\n)])/g, '$1 ').replace(/\.(?=[A-Za-zÀ-ú]{2})/g, '. ').replace(/\(\s+/g, '(');
+    x = x.replace(/\s*,\s*/g, ', ').replace(/\s+\n/g, '\n');
+    x = x.replace(/\p{L}+/gu, w => { const k = w.toLowerCase(); const c = CORRECOES_PTBR[k]; if (!c) return w; if (c === c.toUpperCase()) return c; return w[0] === w[0].toUpperCase() ? c[0].toUpperCase() + c.slice(1) : c; });
+    x = x.replace(/(^|[.!?]\s+|\n)(\p{Ll})/gu, (m, a, b) => a + b.toUpperCase());
+    return x;
+}
+app.post('/api/corrigir-texto', async (req, res) => {
+    const texto = String((req.body || {}).texto || '').slice(0, 4000);
+    if (!texto.trim()) return res.status(400).json({ error: 'Escreva o texto primeiro.' });
+    if (ANTHROPIC_API_KEY) {
+        try {
+            const r = await perguntarIA('Você é um revisor de textos em português do Brasil. Corrija ortografia, acentuação, concordância, pontuação e espaçamento, mantendo o sentido, o tom e os termos técnicos/siglas (DPO, KPI, SWOT, 5S, PDV etc.). Não acrescente informação nem explicações. Responda SOMENTE com o texto corrigido.', texto, 900);
+            if (r) return res.json({ texto: r.replace(/^["“]|["”]$/g, '').trim(), viaIA: true });
+        } catch (e) { /* cai no corretor local */ }
+    }
+    res.json({ texto: corrigirTextoLocal(texto), viaIA: false });
+});
 app.post('/api/dpo/action-plans/:id/follow-ups', requireRole('admin', 'client_admin'), async (req, res) => {
     const { texto, data_prevista, foto_url } = req.body;
     if (!texto) return res.status(400).json({ error: 'Descreva o follow-up.' });
@@ -10430,8 +10466,8 @@ app.post('/api/dpo/action-plans/:id/follow-ups', requireRole('admin', 'client_ad
         const ultimo = await dbGet(`SELECT MAX(numero) as maximo FROM dpo_follow_ups WHERE action_plan_id = ?`, [req.params.id]);
         const numero = (ultimo && ultimo.maximo) ? ultimo.maximo + 1 : 1;
         const resultado = await new Promise((resolve, reject) => db.run(
-            `INSERT INTO dpo_follow_ups (action_plan_id, numero, texto, data_prevista, foto_url) VALUES (?, ?, ?, ?, ?)`,
-            [req.params.id, numero, texto, data_prevista || null, foto_url || null], function (err) { err ? reject(err) : resolve(this.lastID); }
+            `INSERT INTO dpo_follow_ups (action_plan_id, numero, texto, data_prevista, foto_url, autor) VALUES (?, ?, ?, ?, ?, (SELECT name FROM users WHERE id = ?))`,
+            [req.params.id, numero, texto, data_prevista || null, foto_url || null, req.user.userId], function (err) { err ? reject(err) : resolve(this.lastID); }
         ));
         res.json({ message: `Follow ${numero} adicionado!`, id: resultado, numero });
     } catch (e) { res.status(400).json({ error: 'Erro ao adicionar o follow-up.' }); }
