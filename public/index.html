@@ -490,6 +490,8 @@
   .agd-linha { font-size:12.5px; color:#475569; margin-top:3px; }
   .agd-card .btn-sm, .agd-card a.btn-sm { width:auto !important; text-decoration:none; }
   .agd-teams { background:#5b5fc7 !important; color:#fff !important; border:none; border-radius:8px; padding:6px 12px; font-weight:700; }
+  .agd-solic-box { background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:10px 12px; margin:12px 0; }
+  .agd-solic { display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap; padding:9px 10px; border:1px solid #fde68a; border-radius:10px; background:#fff; margin-top:6px; }
   .agd-grade3 { display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:10px; }
   .agd-chips { display:flex; flex-wrap:wrap; gap:6px; }
   .agd-chip { display:inline-flex !important; align-items:center; gap:5px; border:1px solid var(--cinza-200); border-radius:999px; padding:4px 10px; font-size:12px; font-weight:600; cursor:pointer; margin:0; }
@@ -6753,7 +6755,8 @@ async function excluirDpoConsultor(id) {
 let CACHE_DPO_EMPRESAS_TODAS = [];
 
 // ----- Agenda de consultorias (data/hora) com convite Outlook / Teams -----
-let AGD = { sessoes: [], consultores: [], empresas: [], ms365: null, filtro: 'proximas' };
+let AGD = { sessoes: [], consultores: [], empresas: [], ms365: null, filtro: 'proximas', solicitacoes: [] };
+const STATUS_SOLIC_DPO = { pendente: { t: 'Aguardando agendamento', c: '#b45309', f: '#fef3c7' }, agendada: { t: 'Agendada', c: '#15803d', f: '#dcfce7' }, recusada: { t: 'Respondida', c: '#b91c1c', f: '#fee2e2' } };
 const STATUS_SESSAO_DPO = { agendada: { t: 'Agendada', c: '#1d4ed8', f: '#dbeafe' }, realizada: { t: 'Realizada', c: '#15803d', f: '#dcfce7' }, cancelada: { t: 'Cancelada', c: '#b91c1c', f: '#fee2e2' } };
 function agdDataBr(d) { return d ? d.split('-').reverse().join('/') : ''; }
 function agdDiaSemana(d) { try { return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }); } catch (e) { return ''; } }
@@ -6813,8 +6816,8 @@ function agdCartaoHtml(s, ehMaster) {
 async function carregarSessoesDpoMaster() {
   const area = document.getElementById('dpo-sessoes-area'); if (!area) return;
   try {
-    const [sessoes, consultores, ms365] = await Promise.all([api('/api/dpo/sessoes'), api('/api/admin/dpo/consultants'), api('/api/admin/dpo/ms365').catch(() => null)]);
-    AGD.sessoes = sessoes; AGD.consultores = consultores; AGD.ms365 = ms365;
+    const [sessoes, consultores, ms365, solic] = await Promise.all([api('/api/dpo/sessoes'), api('/api/admin/dpo/consultants'), api('/api/admin/dpo/ms365').catch(() => null), api('/api/dpo/solicitacoes').catch(() => [])]);
+    AGD.sessoes = sessoes; AGD.consultores = consultores; AGD.ms365 = ms365; AGD.solicitacoes = solic;
     AGD.empresas = (typeof CACHE_DPO_EMPRESAS_TODAS !== 'undefined' && CACHE_DPO_EMPRESAS_TODAS) || [];
     desenharSessoesDpoMaster();
   } catch (e) { area.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
@@ -6837,6 +6840,19 @@ function desenharSessoesDpoMaster() {
           <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirFormSessaoDpo()">+ Agendar consultoria</button>
         </div>
       </div>
+      ${(() => { const pend = AGD.solicitacoes.filter(x => x.status === 'pendente'); return pend.length ? `<div class="agd-solic-box">
+        <div style="font-weight:800;color:#92400e;margin-bottom:6px;">📨 Solicitações das empresas (${pend.length} aguardando você)</div>
+        ${pend.map(x => `<div class="agd-solic">
+          <div style="flex:1;min-width:220px;">
+            <strong>${escapeHtml(x.companyName || '')}</strong> <span style="font-size:12px;color:#64748b;">· pedido por ${escapeHtml(x.solicitanteNome || '')} em ${new Date(String(x.created_at).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR')}</span>
+            <div class="agd-linha">🗓️ Sugestão: ${x.data_sugerida ? escapeHtml(agdDataBr(x.data_sugerida)) + (x.hora_sugerida ? ' · ' + x.hora_sugerida + (x.hora_fim_sugerida ? ' às ' + x.hora_fim_sugerida : '') : '') : 'sem data preferida'} · ${x.formato === 'presencial' ? '📍 Presencial' : '🎥 Teams'}</div>
+            ${x.pilaresLabel.length ? `<div class="agd-linha">🧩 ${x.pilaresLabel.map(escapeHtml).join(', ')}</div>` : ''}
+            <div class="agd-linha" style="white-space:pre-line;color:#1e293b;">💬 ${escapeHtml(x.assunto || '')}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start;">
+            <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirFormSessaoDpo(null, ${x.id})">📅 Agendar</button>
+            <button class="btn-secundario btn-sm" style="width:auto;" onclick="recusarSolicitacaoDpo(${x.id})">Responder / recusar</button>
+          </div></div>`).join('')}</div>` : ''; })()}
       <div style="display:flex;gap:6px;margin:12px 0;">
         <button class="btn-sm ${AGD.filtro === 'proximas' ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="AGD.filtro='proximas'; desenharSessoesDpoMaster();">Próximas (${prox.length})</button>
         <button class="btn-sm ${AGD.filtro === 'historico' ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="AGD.filtro='historico'; desenharSessoesDpoMaster();">Realizadas / canceladas (${hist.length})</button>
@@ -6846,8 +6862,12 @@ function desenharSessoesDpoMaster() {
 }
 
 let AGD_PART = [];
-async function abrirFormSessaoDpo(id) {
-  const s = id ? AGD.sessoes.find(x => x.id === id) : null;
+async function abrirFormSessaoDpo(id, solId) {
+  const s0 = id ? AGD.sessoes.find(x => x.id === id) : null;
+  const sol = solId ? AGD.solicitacoes.find(x => x.id === solId) : null;
+  window.AGD_SOL = sol ? sol.id : null;
+  // Pedido da empresa vira um rascunho de agendamento (o Master ajusta e confirma).
+  const s = s0 || (sol ? { __rascunho: true, company_id: sol.company_id, titulo: '', data: sol.data_sugerida || '', hora_inicio: sol.hora_sugerida || '09:00', hora_fim: sol.hora_fim_sugerida || '', pilares: sol.pilares || [], formato: sol.formato, observacao: sol.assunto, participantes: sol.solicitanteEmail ? [{ email: String(sol.solicitanteEmail).toLowerCase(), papel: 'empresa' }] : [], teams_link: '', local: '' } : null);
   const empresas = AGD.empresas.filter(e => (e.pilaresAtivos || []).length || (s && e.id === s.company_id));
   const consultores = AGD.consultores.filter(c => c.active || (s && c.id === s.consultant_id));
   const pilares = (CACHE_DPO_PILARES && CACHE_DPO_PILARES.pilares) || [];
@@ -6856,7 +6876,8 @@ async function abrirFormSessaoDpo(id) {
   document.getElementById('modal-area').innerHTML = `
     <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
       <div class="modal-caixa agd-form" style="max-width:640px;max-height:92vh;overflow-y:auto;">
-        <h3 style="margin-top:0;">📅 ${s ? 'Editar / reagendar' : 'Agendar'} consultoria</h3>
+        <h3 style="margin-top:0;">📅 ${s && !s.__rascunho ? 'Editar / reagendar' : 'Agendar'} consultoria</h3>
+        ${sol ? `<div class="plano-meta" style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin-bottom:6px;">📨 A partir da solicitação de <strong>${escapeHtml(sol.solicitanteNome || sol.companyName || '')}</strong> — ajuste a data/hora se precisar e confirme.</div>` : ''}
         <label>Empresa</label>
         <select id="agd-empresa" ${s ? 'disabled' : ''} onchange="agdCarregarParticipantes(this.value)">
           <option value="">— escolha —</option>
@@ -6865,12 +6886,12 @@ async function abrirFormSessaoDpo(id) {
         <label>Consultor</label>
         <select id="agd-consultor">
           <option value="">— sem consultor —</option>
-          ${consultores.map(c => `<option value="${c.id}" ${(s ? s.consultant_id === c.id : consultores.length === 1) ? 'selected' : ''}>${escapeHtml(c.name)}${c.email ? ' — ' + escapeHtml(c.email) : ' (sem e-mail)'}</option>`).join('')}
+          ${consultores.map(c => `<option value="${c.id}" ${(s && !s.__rascunho ? s.consultant_id === c.id : consultores.length === 1) ? 'selected' : ''}>${escapeHtml(c.name)}${c.email ? ' — ' + escapeHtml(c.email) : ' (sem e-mail)'}</option>`).join('')}
         </select>
         <label>Título</label>
         <input id="agd-titulo" maxlength="200" placeholder="Consultoria DPO — (empresa)" value="${escapeHtml(s ? s.titulo : '')}">
         <div class="agd-grade3">
-          <div><label>Data</label><input id="agd-data" type="date" value="${s ? s.data : ''}" min="${s ? '' : agdHoje()}"></div>
+          <div><label>Data</label><input id="agd-data" type="date" value="${s ? s.data : ''}" min="${s && !s.__rascunho ? '' : agdHoje()}"></div>
           <div><label>Hora início</label><input id="agd-ini" type="time" value="${s ? s.hora_inicio : '09:00'}" onchange="agdSugerirFim()"></div>
           <div><label>Hora final</label><input id="agd-fim" type="time" value="${s ? s.hora_fim : '10:00'}"></div>
         </div>
@@ -6894,14 +6915,15 @@ async function abrirFormSessaoDpo(id) {
         <label>Observação / pauta (opcional)</label>
         <textarea id="agd-obs" rows="3" placeholder="Pauta da consultoria">${escapeHtml(s && s.observacao ? s.observacao : '')}</textarea>
         <div class="acoes-form" style="margin-top:14px;">
-          <button class="btn-primario" id="agd-salvar" onclick="salvarSessaoDpo(${s ? s.id : 'null'})">${s ? 'Salvar e atualizar convite' : '📨 Agendar e enviar convite'}</button>
+          <button class="btn-primario" id="agd-salvar" onclick="salvarSessaoDpo(${s && !s.__rascunho ? s.id : 'null'})">${s && !s.__rascunho ? 'Salvar e atualizar convite' : '📨 Agendar e enviar convite'}</button>
           <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button>
         </div>
       </div>
     </div>`;
   agdFormato();
-  AGD_PART = s ? s.participantes.filter(p => p.papel !== 'extra').map(p => p.email) : null;
-  if (s) agdCarregarParticipantes(s.company_id);
+  AGD_PART = s && !s.__rascunho ? s.participantes.filter(p => p.papel !== 'extra').map(p => p.email) : null;
+  if (s && s.__rascunho && !s.hora_fim) agdSugerirFim();
+  if (s) agdCarregarParticipantes(s.company_id, s.__rascunho ? s.participantes.map(p => p.email) : null);
 }
 function agdFormato() {
   const f = (document.getElementById('agd-formato') || {}).value;
@@ -6913,14 +6935,15 @@ function agdSugerirFim() {
   if (!i) return; const [h, m] = i.split(':').map(Number);
   if (!f.value || f.value <= i) f.value = `${String(Math.min(h + 1, 23)).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
-async function agdCarregarParticipantes(companyId) {
+async function agdCarregarParticipantes(companyId, extrasMarcados) {
   const box = document.getElementById('agd-part'); if (!box) return;
   if (!companyId) { box.innerHTML = '<div class="plano-meta">Escolha a empresa para listar os usuários.</div>'; return; }
   box.innerHTML = '<div class="plano-meta">Carregando...</div>';
   try {
     const l = await api('/api/admin/dpo/sessoes/participantes?company_id=' + companyId);
     const marcados = AGD_PART;
-    box.innerHTML = l.length ? l.map(u => `<label><input type="checkbox" value="${escapeHtml(u.email)}" data-nome="${escapeHtml(u.nome || '')}" ${marcados ? (marcados.includes(String(u.email).toLowerCase()) ? 'checked' : '') : (u.papel === 'gestor' ? 'checked' : '')}> ${escapeHtml(u.nome || '')} <span style="color:#64748b;">— ${escapeHtml(u.email)}</span>${u.papel === 'gestor' ? ' <span class="agd-tag">gestor</span>' : ''}</label>`).join('')
+    const extra = (extrasMarcados || []).map(e => String(e).toLowerCase());
+    box.innerHTML = l.length ? l.map(u => `<label><input type="checkbox" value="${escapeHtml(u.email)}" data-nome="${escapeHtml(u.nome || '')}" ${marcados ? (marcados.includes(String(u.email).toLowerCase()) ? 'checked' : '') : (u.papel === 'gestor' || extra.includes(String(u.email).toLowerCase()) ? 'checked' : '')}> ${escapeHtml(u.nome || '')} <span style="color:#64748b;">— ${escapeHtml(u.email)}</span>${u.papel === 'gestor' ? ' <span class="agd-tag">gestor</span>' : ''}</label>`).join('')
       : '<div class="plano-meta">Essa empresa não tem usuários com e-mail. Use "Outros e-mails".</div>';
   } catch (e) { box.innerHTML = `<div class="plano-meta">${escapeHtml(e.message)}</div>`; }
 }
@@ -6932,8 +6955,10 @@ async function salvarSessaoDpo(id) {
     company_id: Number(v('agd-empresa')) || undefined, consultant_id: Number(v('agd-consultor')) || null, titulo: v('agd-titulo'),
     data: v('agd-data'), hora_inicio: v('agd-ini'), hora_fim: v('agd-fim'), formato: v('agd-formato'),
     teams_link: v('agd-link'), local: v('agd-local'), observacao: v('agd-obs'), participantes,
-    pilares: [...document.querySelectorAll('.agd-chips input:checked')].map(i => i.value)
+    pilares: [...document.querySelectorAll('.agd-chips input:checked')].map(i => i.value),
+    solicitacao_id: !id ? (window.AGD_SOL || undefined) : undefined
   };
+  if (!corpo.company_id && window.AGD_SOL) { const so = AGD.solicitacoes.find(x => x.id === window.AGD_SOL); if (so) corpo.company_id = so.company_id; }
   if (!id && !corpo.company_id) return mostrarToast('Escolha a empresa.', true);
   if (!corpo.data) return mostrarToast('Escolha a data.', true);
   if (!corpo.hora_inicio || !corpo.hora_fim) return mostrarToast('Informe hora de início e final.', true);
@@ -6996,14 +7021,81 @@ async function salvarConfigMs365(limpar) {
   } catch (e) { mostrarToast(e.message, true); if (b) { b.disabled = false; b.textContent = 'Salvar e testar'; } }
 }
 // Empresa: próximas consultorias no topo do DPO Ambev.
+let AGD_SOLIC_EMP = [];
 async function carregarSessoesDpoEmpresa() {
   const area = document.getElementById('dpo-sessoes-empresa'); if (!area) return;
   try {
     const hoje = agdHoje();
-    const l = (await api('/api/dpo/sessoes')).filter(s => s.status === 'agendada' && s.data >= hoje).sort((a, b) => (a.data + a.hora_inicio).localeCompare(b.data + b.hora_inicio));
-    area.innerHTML = l.length ? `<div class="painel" style="margin-bottom:16px;border-left:4px solid #5b5fc7;">
-      <h3 style="margin:0 0 8px;">📅 Próximas consultorias</h3>${l.map(s => agdCartaoHtml(s, false)).join('')}</div>` : '';
+    const [todas, solic] = await Promise.all([api('/api/dpo/sessoes'), api('/api/dpo/solicitacoes').catch(() => [])]);
+    const l = todas.filter(s => s.status === 'agendada' && s.data >= hoje).sort((a, b) => (a.data + a.hora_inicio).localeCompare(b.data + b.hora_inicio));
+    AGD_SOLIC_EMP = solic;
+    const abertas = solic.filter(x => x.status === 'pendente' || (x.status === 'recusada' && (Date.now() - new Date(String(x.updated_at || x.created_at).replace(' ', 'T') + 'Z')) < 30 * 864e5));
+    area.innerHTML = `<div class="painel" style="margin-bottom:16px;border-left:4px solid #5b5fc7;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+        <h3 style="margin:0;">📅 Consultorias com a Impulsionar</h3>
+        <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirSolicitarConsultoriaDpo()">📨 Solicitar consultoria</button>
+      </div>
+      ${l.length ? l.map(s => agdCartaoHtml(s, false)).join('') : '<div style="font-size:12.5px;color:#64748b;">Nenhuma consultoria agendada. Precisa de uma? Clique em <strong>Solicitar consultoria</strong> — a Impulsionar agenda e o convite chega no seu Outlook/Teams.</div>'}
+      ${abertas.length ? `<div style="margin-top:10px;font-weight:700;font-size:13px;">Minhas solicitações</div>${abertas.map(x => { const st = STATUS_SOLIC_DPO[x.status] || STATUS_SOLIC_DPO.pendente; return `<div class="agd-solic" style="background:#fff;">
+        <div style="flex:1;min-width:200px;">
+          <span class="dpo-score-badge" style="background:${st.f};color:${st.c};">${st.t}</span>
+          <span style="font-size:12px;color:#64748b;"> ${x.data_sugerida ? 'sugestão ' + escapeHtml(agdDataBr(x.data_sugerida)) + (x.hora_sugerida ? ' ' + x.hora_sugerida : '') : ''}</span>
+          <div class="agd-linha" style="white-space:pre-line;">💬 ${escapeHtml(x.assunto || '')}</div>
+          ${x.resposta ? `<div class="agd-linha" style="color:#b91c1c;">↩️ Impulsionar: ${escapeHtml(x.resposta)}</div>` : ''}
+        </div>
+        ${x.status === 'pendente' ? `<button class="btn-secundario btn-sm" style="width:auto;" onclick="cancelarSolicitacaoDpo(${x.id})">Cancelar pedido</button>` : ''}
+      </div>`; }).join('')}` : ''}
+    </div>`;
   } catch (e) { area.innerHTML = ''; }
+}
+
+function abrirSolicitarConsultoriaDpo() {
+  const pilares = (CACHE_DPO_PILARES && CACHE_DPO_PILARES.pilares) || [];
+  let ma = document.getElementById('modal-area');
+  if (!ma) { document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>'); ma = document.getElementById('modal-area'); }
+  ma.innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa agd-form" style="max-width:560px;max-height:92vh;overflow-y:auto;">
+        <h3 style="margin-top:0;">📨 Solicitar consultoria</h3>
+        <div class="plano-meta" style="margin-bottom:6px;">Sugira a melhor data e horário. A Impulsionar confirma o agendamento e o convite chega no seu e-mail/Outlook e no Teams.</div>
+        <div class="agd-grade3">
+          <div><label>Data preferida</label><input id="sol-data" type="date" min="${agdHoje()}"></div>
+          <div><label>Início</label><input id="sol-ini" type="time" value="09:00"></div>
+          <div><label>Fim</label><input id="sol-fim" type="time" value="10:00"></div>
+        </div>
+        <label>Pilar(es)</label>
+        <div class="agd-chips" id="sol-pilares">${pilares.map(p => `<label class="agd-chip"><input type="checkbox" value="${p.key}"> ${escapeHtml(p.label)}</label>`).join('')}</div>
+        <label>Formato</label>
+        <select id="sol-formato"><option value="teams">🎥 Online — Microsoft Teams</option><option value="presencial">📍 Presencial</option></select>
+        <label>O que precisa tratar?</label>
+        <textarea id="sol-assunto" rows="4" placeholder="ex: revisar os planos de ação do pilar Gente e preparar a auditoria"></textarea>
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" id="sol-enviar" onclick="enviarSolicitacaoConsultoriaDpo()">Enviar solicitação</button>
+          <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+}
+async function enviarSolicitacaoConsultoriaDpo() {
+  const v = x => (document.getElementById(x) || {}).value || '';
+  const corpo = { data_sugerida: v('sol-data') || null, hora_sugerida: v('sol-ini') || null, hora_fim_sugerida: v('sol-fim') || null, formato: v('sol-formato'), assunto: v('sol-assunto').trim(),
+    pilares: [...document.querySelectorAll('#sol-pilares input:checked')].map(i => i.value) };
+  if (!corpo.assunto) return mostrarToast('Conte o que precisa tratar na consultoria.', true);
+  if (!corpo.data_sugerida) { corpo.hora_sugerida = null; corpo.hora_fim_sugerida = null; }
+  const b = document.getElementById('sol-enviar'); b.disabled = true;
+  try { const r = await api('/api/dpo/solicitacoes', { method: 'POST', body: JSON.stringify(corpo) }); mostrarToast(r.message); document.getElementById('modal-area').innerHTML = ''; carregarSessoesDpoEmpresa(); }
+  catch (e) { mostrarToast(e.message, true); b.disabled = false; }
+}
+async function cancelarSolicitacaoDpo(id) {
+  if (!confirm('Cancelar esta solicitação?')) return;
+  try { const r = await api('/api/dpo/solicitacoes/' + id, { method: 'DELETE' }); mostrarToast(r.message); carregarSessoesDpoEmpresa(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function recusarSolicitacaoDpo(id) {
+  const resposta = prompt('Mensagem para a empresa (ex: sugerir outra data):', 'Essa data não está disponível. Podemos agendar em outro dia?');
+  if (resposta === null) return;
+  try { const r = await api('/api/admin/dpo/solicitacoes/' + id + '/recusar', { method: 'POST', body: JSON.stringify({ resposta }) }); mostrarToast(r.message); carregarSessoesDpoMaster(); }
+  catch (e) { mostrarToast(e.message, true); }
 }
 
 async function renderDpoAgenda() {
