@@ -9136,7 +9136,7 @@ app.post('/api/dpo/ferramentas-digitais/:chave/novo-ano', requireRole('admin', '
                 };
                 else if (chave === 'swot') base = { areas: origem.areas, sonho: origem.sonho, responsaveis: origem.responsaveis, vinculoDNMP: origem.vinculoDNMP, vinculoDNMPTexto: origem.vinculoDNMPTexto };
                 else if (chave === 'orcamento') base = { raci: origem.raci, kpis: origem.kpis, processo: origem.processo };
-                else if (chave === 'sonho') base = { frase: origem.frase, conexao: origem.conexao, exposicao: origem.exposicao, kpis: (origem.kpis || []).map(k => ({ id: k.id, nome: k.nome, pilar: k.pilar, sentido: k.sentido, meta: k.meta, unidade: k.unidade, acumula: k.acumula, nivel: k.nivel, pai: k.pai, cor: k.cor, rotuloMeta: k.rotuloMeta, real: [] })) };
+                else if (chave === 'sonho') base = { frase: origem.frase, conexao: origem.conexao, exposicao: origem.exposicao, kpis: (origem.kpis || []).map(k => ({ id: k.id, nome: k.nome, pilar: k.pilar, sentido: k.sentido, meta: k.meta, unidade: k.unidade, acumula: k.acumula, nivel: k.nivel, pai: k.pai, cor: k.cor, rotuloMeta: k.rotuloMeta, slot: k.slot, real: [] })) };
                 else if (chave === 'ans') base = { acordo: origem.acordo, volPadrao: origem.volPadrao, tolerancia: origem.tolerancia };
                 else if (chave === 'visibilidade') base = { colaboradores: origem.colaboradores, indicadores: origem.indicadores, incentivo: origem.incentivo };
                 else if (chave === 'riscos') base = { riscos: origem.riscos, respostas: origem.respostas, retomada: origem.retomada, retomadaRevisao: origem.retomadaRevisao, retomadaLocal: origem.retomadaLocal, revisoes: origem.revisoes };
