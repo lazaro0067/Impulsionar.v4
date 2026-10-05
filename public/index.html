@@ -130,6 +130,9 @@
   .cv-auto-lista { position:absolute; left:0; right:0; top:100%; z-index:40; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 12px 28px rgba(15,23,42,.16); max-height:260px; overflow:auto; margin-top:2px; }
   .cv-auto-lista button { display:flex !important; justify-content:space-between; width:100% !important; text-align:left; border:0 !important; background:#fff; padding:9px 12px !important; font-size:14px; cursor:pointer; color:#0f172a; font-weight:400; margin:0 !important; border-radius:0 !important; }
   .cv-auto-lista button small { color:#64748b; margin-left:10px; } .cv-auto-lista button.ativo, .cv-auto-lista button:hover { background:#eff6ff; }
+  details.dpo-plano > summary::-webkit-details-marker { display:none; }
+  details.dpo-plano[open] > summary .dpo-plano-seta { transform:rotate(90deg); }
+  details.dpo-plano > summary:hover { background:#f8fafc; border-radius:10px; }
   .marca-rodape-sidebar {
     text-align: center; font-size: 11px; color: #94a3b8; padding: 10px 16px 4px;
     border-top: 1px solid rgba(255,255,255,.08); letter-spacing: .2px;
@@ -6946,7 +6949,8 @@ function abrirModalPlanoAcaoDpo(opts) {
         <label>Verificação (nº)</label>
         <input id="pa-dpo-verificacao" placeholder="Número da verificação" value="${escapeHtml(planoExistente?.verificacao_numero || '')}">
         <label>Descrição do plano</label>
-        <textarea id="pa-dpo-texto" rows="3" placeholder="Descreva o plano de ação...">${escapeHtml(planoExistente?.texto || '')}</textarea>
+        <textarea id="pa-dpo-texto" rows="3" spellcheck="true" lang="pt-BR" placeholder="Descreva o plano de ação...">${escapeHtml(planoExistente?.texto || '')}</textarea>
+        <div style="text-align:right;margin-top:4px;"><button type="button" class="btn-secundario btn-sm" style="width:auto;" onclick="corrigirTextoCampo('pa-dpo-texto', this)">✨ Corrigir texto</button></div>
         <label>Dono da ação</label>
         <input id="pa-dpo-owner" placeholder="Responsável pela ação" value="${escapeHtml(planoExistente?.owner || '')}">
         <label>Status</label>
@@ -7696,12 +7700,7 @@ function renderPerguntaDpo(p, somenteLeitura) {
         <details style="margin-bottom:10px;"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#4338ca;">❓ How to Check (tirar dúvidas)</summary>
           <div style="font-size:12.5px;color:#334155;white-space:pre-line;margin-top:6px;">${escapeHtml(p.how_to_check || '')}</div>
         </details>
-        ${FD_PERGUNTAS[p.questionKey] ? `
-        <div class="fd-caixa-pergunta">
-          <div><strong>🧩 Ferramenta digital Impulsionar desta pergunta</strong>
-            <div style="font-size:12px;color:#475569;">${FD_DESCRICOES[FD_PERGUNTAS[p.questionKey]][0]}</div></div>
-          <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirFerramentaDigitalDpo('${FD_PERGUNTAS[p.questionKey]}', ${ESTADO.usuario.role === 'admin' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo ? ESTADO_DPO_VIEW.ciclo.company_id : 'null'})">${FD_DESCRICOES[FD_PERGUNTAS[p.questionKey]][1]}</button>
-        </div>` : ''}
+        ${FD_PERGUNTAS[p.questionKey] ? fdCaixaPerguntaHtml(p) : ''}
         <div style="font-size:12.5px;background:#f8fafc;border:1px solid var(--cinza-200);border-radius:8px;padding:8px 10px;">
           <strong>Nota na última autoavaliação${nv ? ' (' + escapeHtml(nv.referenciaLabel) + ')' : ''}:</strong> <span style="color:${cor};font-weight:800;">${textoNota}</span>${explicacaoNota ? ' — ' + escapeHtml(explicacaoNota) : ''}
           <div style="font-size:11.5px;color:#64748b;margin-top:2px;">Para dar ou mudar a nota, use a pasta 📊 Autoavaliação Mensal.</div>
@@ -7725,47 +7724,77 @@ function renderPerguntaDpo(p, somenteLeitura) {
 // recarregarMeusPlanosDpo) — assim os botões de editar/excluir/follow deste
 // mesmo card funcionam em qualquer lugar que o chame, sem depender de estado
 // global (usa plano.cycle_id, que já vem em qualquer uma das duas consultas).
+const DPO_PLANOS_ABERTOS = new Set();
+function dpoDataHoraBr(d) { if (!d) return ''; const x = new Date(String(d).includes('T') ? d : String(d).replace(' ', 'T') + 'Z'); return isNaN(x) ? '' : x.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
 function renderPlanoAcaoDpo(plano, somenteLeitura, aoRecarregar) {
   const statusInfo = ROTULOS_STATUS_PLANO_DPO[plano.status] || ROTULOS_STATUS_PLANO_DPO.nao_iniciada;
   const recarregar = aoRecarregar || 'recarregarCicloDpoAtual';
   MAPA_PLANOS_ACAO_DPO[plano.id] = plano;
+  const follows = plano.follows || [];
+  const concluidos = follows.filter(f => f.status === 'concluido').length;
+  const prazo = plano.data_prevista ? new Date(String(plano.data_prevista).slice(0, 10) + 'T00:00:00') : null;
+  const atrasado = prazo && plano.status !== 'concluida' && prazo < new Date(new Date().toDateString());
   return `
-    <div style="background:linear-gradient(180deg,#ffffff,#f8fafc);border:1px solid var(--cinza-200);border-left:4px solid ${statusInfo.cor};border-radius:10px;padding:12px 14px;margin-top:8px;box-shadow:0 1px 3px rgba(15,23,42,.06);">
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
-        <div style="font-size:13.5px;color:#1e293b;font-weight:600;flex:1;">${escapeHtml(plano.texto)}${plano.perguntaNumero ? `<div style="font-size:11px;font-weight:400;color:#94a3b8;margin-top:2px;">Pergunta ${escapeHtml(String(plano.perguntaNumero))}${plano.cicloReferencia ? ' · ' + escapeHtml(plano.cicloReferencia) : ''}</div>` : ''}</div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;">
-          <span class="dpo-score-badge" style="background:${statusInfo.cor}20;color:${statusInfo.cor};white-space:nowrap;">${escapeHtml(statusInfo.texto)}</span>
-          ${!somenteLeitura
-            ? `<input type="date" value="${plano.data_prevista || ''}" onchange="salvarPrazoPlanoDpo(${plano.id}, this.value, ${recarregar})" title="Prazo do plano" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid var(--cinza-200);color:#64748b;background:#fff;">`
-            : (plano.data_prevista ? `<span style="font-size:11px;color:#64748b;">📅 ${new Date(plano.data_prevista + 'T00:00:00').toLocaleDateString('pt-BR')}</span>` : '')}
+    <details class="dpo-plano" data-plano="${plano.id}" ${DPO_PLANOS_ABERTOS.has(plano.id) ? 'open' : ''} ontoggle="this.open ? DPO_PLANOS_ABERTOS.add(${plano.id}) : DPO_PLANOS_ABERTOS.delete(${plano.id})" style="background:#fff;border:1px solid var(--cinza-200);border-left:4px solid ${statusInfo.cor};border-radius:10px;margin-top:6px;box-shadow:0 1px 2px rgba(15,23,42,.05);">
+      <summary style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;">
+        <span class="dpo-plano-seta" style="color:#94a3b8;font-size:11px;transition:transform .15s;">▶</span>
+        <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:#1e293b;" title="${escapeHtml(plano.texto)}">${escapeHtml(plano.texto)}${plano.perguntaNumero ? ` <span style="font-weight:400;color:#94a3b8;">· Pergunta ${escapeHtml(String(plano.perguntaNumero))}</span>` : ''}</span>
+        ${plano.owner ? `<span style="font-size:11.5px;color:#64748b;white-space:nowrap;">👤 ${escapeHtml(plano.owner)}</span>` : ''}
+        ${prazo ? `<span style="font-size:11.5px;white-space:nowrap;color:${atrasado ? '#dc2626' : '#64748b'};font-weight:${atrasado ? '700' : '400'};">📅 ${prazo.toLocaleDateString('pt-BR')}${atrasado ? ' (atrasado)' : ''}</span>` : ''}
+        ${follows.length ? `<span style="font-size:11.5px;color:#64748b;white-space:nowrap;">🔁 ${concluidos}/${follows.length}</span>` : ''}
+        <span class="dpo-score-badge" style="background:${statusInfo.cor}20;color:${statusInfo.cor};white-space:nowrap;">${escapeHtml(statusInfo.texto)}</span>
+      </summary>
+      <div style="padding:4px 14px 12px;border-top:1px dashed var(--cinza-200);">
+        <div style="font-size:13.5px;color:#1e293b;margin-top:8px;white-space:pre-line;">${escapeHtml(plano.texto)}</div>
+        ${plano.perguntaNumero ? `<div style="font-size:11px;color:#94a3b8;margin-top:2px;">Pergunta ${escapeHtml(String(plano.perguntaNumero))}${plano.cicloReferencia ? ' · ' + escapeHtml(plano.cicloReferencia) : ''}</div>` : ''}
+        <div style="font-size:12px;color:#64748b;margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+          ${plano.verificacao_numero ? `<span><strong>Verificação:</strong> ${escapeHtml(plano.verificacao_numero)}</span>` : ''}
+          ${plano.owner ? `<span><strong>Dono:</strong> ${escapeHtml(plano.owner)}</span>` : ''}
+          <span><strong>Prazo:</strong> ${!somenteLeitura
+            ? `<input type="date" value="${plano.data_prevista ? String(plano.data_prevista).slice(0, 10) : ''}" onchange="salvarPrazoPlanoDpo(${plano.id}, this.value, ${recarregar})" style="font-size:11.5px;padding:2px 4px;border-radius:6px;border:1px solid var(--cinza-200);color:#475569;background:#fff;width:auto;display:inline-block;">`
+            : (prazo ? prazo.toLocaleDateString('pt-BR') : '—')}</span>
         </div>
+        ${!somenteLeitura ? `
+        <div style="margin-top:8px;display:flex;gap:6px;">
+          <button class="btn-secundario btn-sm" style="padding:2px 8px;width:auto;" onclick='abrirModalPlanoAcaoDpo({ questionKey: ${JSON.stringify(plano.question_key)}, cycleId: ${plano.cycle_id}, planoId: ${plano.id}, aoSalvar: ${recarregar} })'>✏️ Editar</button>
+          <button class="btn-perigo btn-sm" style="padding:2px 8px;width:auto;" onclick="excluirPlanoAcaoDpo(${plano.id}, ${recarregar})">✕ Excluir</button>
+        </div>` : ''}
+        ${follows.length ? `<div style="margin-top:10px;font-size:12px;font-weight:700;color:#334155;">Follow-ups</div>` : ''}
+        ${follows.map(f => `
+          <div class="dpo-follow" style="display:flex;gap:10px;align-items:flex-start;">
+            ${f.foto_url ? `<a href="${escapeHtml(f.foto_url)}" target="_blank"><img src="${escapeHtml(f.foto_url)}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;"></a>` : ''}
+            <div style="flex:1;min-width:0;">
+              <div><strong>Follow ${f.numero}:</strong> ${escapeHtml(f.texto)}</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">🕒 ${dpoDataHoraBr(f.created_at) || (f.data_prevista ? new Date(f.data_prevista).toLocaleDateString('pt-BR') : '')}${f.autor ? ' · ' + escapeHtml(f.autor) : ''}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span style="font-weight:700;font-size:11.5px;color:${f.status === 'concluido' ? '#16a34a' : f.status === 'em_andamento' ? '#c9a227' : '#94a3b8'};">${f.status === 'concluido' ? '✓ concluído' : escapeHtml(f.status)}</span>
+              ${!somenteLeitura ? `<button class="btn-secundario btn-sm" style="padding:1px 6px;font-size:11px;width:auto;" onclick="marcarFollowDpo(${f.id}, '${f.status === 'concluido' ? 'pendente' : 'concluido'}', ${recarregar})">${f.status === 'concluido' ? 'Reabrir' : 'Concluir'}</button>` : ''}
+            </div>
+          </div>
+        `).join('')}
+        ${!somenteLeitura ? `
+        <div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+          <input id="dpo-follow-texto-${plano.id}" spellcheck="true" lang="pt-BR" placeholder="Novo follow-up… (data e hora são registradas automaticamente)" style="flex:1;min-width:220px;font-size:12.5px;padding:6px 9px;margin:0;" onkeydown="if(event.key==='Enter'){event.preventDefault(); adicionarFollowDpo(${plano.id}, ${recarregar});}">
+          <button type="button" class="btn-secundario btn-sm" style="width:auto;" title="Corrigir ortografia e pontuação" onclick="corrigirTextoCampo('dpo-follow-texto-${plano.id}', this)">✨ Corrigir</button>
+          <label class="btn-secundario btn-sm" style="width:auto;cursor:pointer;margin:0;" title="Anexar foto de evidência">📷<input id="dpo-follow-foto-${plano.id}" type="file" accept="image/*" style="display:none;" onchange="this.parentNode.style.background=this.files.length?'#dcfce7':''"></label>
+          <button class="btn-primario btn-sm" style="width:auto;" onclick="adicionarFollowDpo(${plano.id}, ${recarregar})">+ Follow</button>
+        </div>` : ''}
       </div>
-      <div style="font-size:11.5px;color:#64748b;margin-top:6px;display:flex;gap:12px;flex-wrap:wrap;">
-        ${plano.verificacao_numero ? `<span><strong>Verificação:</strong> ${escapeHtml(plano.verificacao_numero)}</span>` : ''}
-        ${plano.owner ? `<span><strong>Dono:</strong> ${escapeHtml(plano.owner)}</span>` : ''}
-      </div>
-      ${!somenteLeitura ? `
-      <div style="margin-top:8px;">
-        <button class="btn-secundario btn-sm" style="padding:2px 8px;" onclick='abrirModalPlanoAcaoDpo({ questionKey: ${JSON.stringify(plano.question_key)}, cycleId: ${plano.cycle_id}, planoId: ${plano.id}, aoSalvar: ${recarregar} })'>✏️ Editar</button>
-        <button class="btn-perigo btn-sm" style="padding:2px 8px;" onclick="excluirPlanoAcaoDpo(${plano.id}, ${recarregar})">✕ Excluir</button>
-      </div>` : ''}
-      ${(plano.follows || []).map(f => `
-        <div class="dpo-follow">
-          <strong>Follow ${f.numero}:</strong> ${escapeHtml(f.texto)}${f.data_prevista ? ' · ' + new Date(f.data_prevista).toLocaleDateString('pt-BR') : ''}
-          <span style="float:right;font-weight:700;color:${f.status === 'concluido' ? '#16a34a' : f.status === 'em_andamento' ? '#c9a227' : '#94a3b8'};">${escapeHtml(f.status)}</span>
-          ${f.foto_url ? `<div style="clear:both;margin-top:4px;"><a href="${escapeHtml(f.foto_url)}" target="_blank"><img src="${escapeHtml(f.foto_url)}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;"></a></div>` : ''}
-          ${!somenteLeitura ? `<div style="margin-top:4px;clear:both;"><button class="btn-secundario btn-sm" style="padding:1px 6px;font-size:11px;" onclick="marcarFollowDpo(${f.id}, '${f.status === 'concluido' ? 'pendente' : 'concluido'}', ${recarregar})">${f.status === 'concluido' ? 'Reabrir' : 'Concluir'}</button></div>` : ''}
-        </div>
-      `).join('')}
-      ${!somenteLeitura ? `
-      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
-        <input id="dpo-follow-texto-${plano.id}" placeholder="Novo follow-up..." style="flex:1;font-size:12px;padding:5px 8px;">
-        <input id="dpo-follow-data-${plano.id}" type="date" style="font-size:12px;padding:5px 8px;">
-        <input id="dpo-follow-foto-${plano.id}" type="file" accept="image/*" style="font-size:11px;max-width:150px;">
-        <button class="btn-secundario btn-sm" onclick="adicionarFollowDpo(${plano.id}, ${recarregar})">+ Follow</button>
-      </div>` : ''}
-    </div>
+    </details>
   `;
+}
+
+async function corrigirTextoCampo(id, btn) {
+  const el = document.getElementById(id); if (!el) return;
+  const original = el.value; if (!original.trim()) return mostrarToast('Escreva o texto primeiro.', true);
+  const rot = btn ? btn.innerHTML : ''; if (btn) { btn.disabled = true; btn.innerHTML = '⏳'; }
+  try {
+    const r = await api('/api/corrigir-texto', { method: 'POST', body: JSON.stringify({ texto: original }) });
+    if (r.texto === original) mostrarToast('Texto já está correto ✅');
+    else { el.value = r.texto; el.dispatchEvent(new Event('input')); mostrarToast('Texto corrigido ✨'); }
+  } catch (e) { mostrarToast(e.message, true); }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = rot; } }
 }
 
 async function recarregarCicloDpoAtual() {
@@ -7794,11 +7823,11 @@ async function excluirPlanoAcaoDpo(id, aoRecarregar) {
 
 async function adicionarFollowDpo(planoId, aoRecarregar) {
   const texto = document.getElementById('dpo-follow-texto-' + planoId).value.trim();
-  const data = document.getElementById('dpo-follow-data-' + planoId).value;
   if (!texto) { mostrarToast('Descreva o follow-up.', true); return; }
+  DPO_PLANOS_ABERTOS.add(planoId);
   try {
     const foto_url = await uploadArquivoGenerico('dpo-follow-foto-' + planoId);
-    await api('/api/dpo/action-plans/' + planoId + '/follow-ups', { method: 'POST', body: JSON.stringify({ texto, data_prevista: data || null, foto_url }) });
+    await api('/api/dpo/action-plans/' + planoId + '/follow-ups', { method: 'POST', body: JSON.stringify({ texto, data_prevista: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10), foto_url }) });
     mostrarToast('Follow-up adicionado!');
     (aoRecarregar || recarregarCicloDpoAtual)();
   } catch (e) { mostrarToast(e.message, true); }
@@ -8758,7 +8787,7 @@ const PRIORIDADE_CHAMADO_VISUAL = {
 };
 const CATEGORIAS_CHAMADO_FRONT = {
   ajuste_autoavaliacao: '🛠️ Ajuste de autoavaliação DPO', duvida_dpo: '❓ Dúvida sobre o DPO', suporte_tecnico: '💻 Problema no sistema',
-  financeiro: '💳 Financeiro / pagamento', sugestao: '💡 Sugestão de melhoria', outro: '📌 Outro assunto'
+  financeiro: '💳 Financeiro / pagamento', sugestao: '💡 Sugestão de melhoria', liberar_ferramenta: '🔓 Liberação de ferramenta Impulsionar', outro: '📌 Outro assunto'
 };
 let ESTADO_CHAMADOS = { filtro: 'ativos', empresa: '', dados: null };
 
@@ -9227,6 +9256,60 @@ const FD_DESCRICOES = {
   ans: ['ANS de Volume: acompanhamento diário negociado × real, dispersão acima de ±10% gera ação automaticamente, acordo e rotina com vendas.', '🤝 Abrir ANS de Volume'],
   gop: ['Gerenciador GOP: Inventário, Obsolescence, TQI Armazém, Rating, TQI Distribuição e OTIF — SIM/NÃO por mês, plano de ação obrigatório em todo mês NOK e importação da planilha Gerenciador GOP.', '📋 Abrir Gerenciador GOP']
 };
+
+// Ferramenta digital da pergunta: só aparece liberada quando o Master autorizou
+// (Acompanhamentos Impulsionar). Para a empresa sem liberação aparece uma prévia
+// bloqueada com o botão para abrir chamado pedindo a autorização.
+const FD_ICONES = { swot: '🧭', dimensionamento: '📐', cinco_s: '🧹', visibilidade: '📲', riscos: '🛡️', sonho: '🌟', manutencao: '🛠️', p3a: '🧭', capex: '🏗️', ans: '🤝', gop: '📋' };
+function fdLiberadaPergunta(questionKey) {
+  if (ESTADO.usuario.role === 'admin') return true;
+  return ((ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.acomps) || []).includes(questionKey);
+}
+function fdCaixaPerguntaHtml(p) {
+  const chave = FD_PERGUNTAS[p.questionKey], desc = FD_DESCRICOES[chave];
+  if (fdLiberadaPergunta(p.questionKey)) return `
+        <div class="fd-caixa-pergunta">
+          <div><strong>🧩 Ferramenta digital Impulsionar desta pergunta</strong>
+            <div style="font-size:12px;color:#475569;">${desc[0]}</div></div>
+          <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirFerramentaDigitalDpo('${chave}', ${ESTADO.usuario.role === 'admin' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo ? ESTADO_DPO_VIEW.ciclo.company_id : 'null'})">${desc[1]}</button>
+        </div>`;
+  const nome = desc[1].replace(/^\S+\s+Abrir\s+/i, '');
+  const barras = [72, 48, 86, 60, 38, 92, 54];
+  return `
+        <div class="fd-bloqueada" style="position:relative;border:1px solid #fde68a;border-radius:14px;overflow:hidden;margin-bottom:10px;background:#fffbeb;">
+          <div aria-hidden="true" style="filter:blur(2.5px);opacity:.55;padding:14px 16px;pointer-events:none;user-select:none;">
+            <div style="display:flex;gap:8px;margin-bottom:10px;">${['#0e2a47', '#12a150', '#f59e0b', '#2563eb'].map(c => `<div style="height:22px;flex:1;border-radius:6px;background:${c};"></div>`).join('')}</div>
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;">
+              <div>${barras.map(w => `<div style="height:10px;width:${w}%;background:#cbd5e1;border-radius:6px;margin-bottom:8px;"></div>`).join('')}</div>
+              <div style="display:flex;align-items:flex-end;gap:6px;height:90px;">${[40, 65, 52, 80, 70, 95].map(h => `<div style="flex:1;height:${h}%;background:#12a150;border-radius:4px 4px 0 0;"></div>`).join('')}</div>
+            </div>
+          </div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:10px;background:linear-gradient(180deg,rgba(255,251,235,.35),rgba(255,251,235,.85));">
+            <div style="background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(15,23,42,.15);padding:14px 18px;max-width:560px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+              <div style="font-size:34px;line-height:1;">🔒</div>
+              <div style="flex:1;min-width:220px;">
+                <div style="font-weight:800;color:#0e2a47;">${FD_ICONES[chave] || '🧩'} ${escapeHtml(nome)} — ferramenta Impulsionar</div>
+                <div style="font-size:12.5px;color:#475569;margin-top:2px;">Esta pergunta tem uma ferramenta digital pronta da Impulsionar. Para usar, abra um chamado e o Master autoriza a liberação para a sua empresa.</div>
+              </div>
+              <button class="btn-primario btn-sm" style="width:auto;background:linear-gradient(135deg,#f59e0b,#d97706);border:0;" onclick="pedirLiberacaoFerramentaDpo('${p.questionKey}', '${chave}', this)">📨 Abrir chamado para liberar</button>
+            </div>
+          </div>
+        </div>`;
+}
+async function pedirLiberacaoFerramentaDpo(questionKey, chave, btn) {
+  const desc = FD_DESCRICOES[chave] || ['', chave];
+  const nome = desc[1].replace(/^\S+\s+Abrir\s+/i, '');
+  const [pilar, numero] = String(questionKey).split(':');
+  if (!confirm(`Abrir chamado pedindo ao Master a liberação da ferramenta "${nome}" (pergunta ${numero})?`)) return;
+  if (btn) btn.disabled = true;
+  try {
+    const r = await api('/api/chamados', { method: 'POST', body: JSON.stringify({ categoria: 'liberar_ferramenta', prioridade: 'media',
+      assunto: `Liberar ferramenta Impulsionar: ${nome} (${pilar} ${numero})`,
+      descricao: `Olá! Gostaríamos de usar a ferramenta digital "${nome}" da pergunta ${numero} (pilar ${pilar}).\n\n${desc[0]}\n\nPodem liberar para a nossa empresa?` }) });
+    mostrarToast(r.message || 'Chamado aberto! O Master vai avisar quando liberar.');
+    if (btn) btn.textContent = '✅ Chamado aberto';
+  } catch (e) { mostrarToast(e.message, true); if (btn) btn.disabled = false; }
+}
 
 function fdNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? null : Number(v); }
 function fdFmt(v, dec) { return v === null || v === undefined || !isFinite(v) ? '—' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 }); }
@@ -13464,10 +13547,11 @@ function verDetalhesVaga(id) {
     <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
       <div class="modal-caixa" style="max-width:560px;padding:0;overflow:hidden;">
         <div style="background:${v.photo_url ? `url('${escapeHtml(v.photo_url)}') center/cover` : GRADIENTES_VAGA[id % GRADIENTES_VAGA.length]};min-height:120px;padding:16px;color:#fff;position:relative;">
+          ${vagaSeloValidada()}
           <div style="position:absolute;top:12px;left:12px;font-size:11px;font-weight:700;background:rgba(0,0,0,.4);padding:3px 10px;border-radius:999px;">📍 ${escapeHtml(v.location || 'A combinar')}${v.state ? '/' + escapeHtml(v.state) : ''}${v.is_remote ? ' · Remoto' : ''}</div>
           <h3 style="margin:32px 0 4px;text-shadow:0 1px 4px rgba(0,0,0,.4);">${escapeHtml(v.title)}</h3>
-          <div style="font-size:13px;opacity:.95;display:flex;align-items:center;gap:6px;text-shadow:0 1px 4px rgba(0,0,0,.4);">
-            ${v.companyLogo ? `<img src="${escapeHtml(v.companyLogo)}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;background:#fff;">` : '🏢'}
+          <div style="font-size:15px;font-weight:700;opacity:.98;display:flex;align-items:center;gap:12px;margin-top:6px;text-shadow:0 1px 4px rgba(0,0,0,.4);">
+            ${vagaLogoEmpresa(v)}
             ${escapeHtml(v.companyName || '')}
           </div>
         </div>
@@ -13625,12 +13709,12 @@ async function abrirVagaCompartilhada(id) {
         <div class="modal-caixa" style="max-width:560px;padding:0;overflow:hidden;">
           <div style="background:${v.photo_url ? `url('${escapeHtml(v.photo_url)}') center/cover` : GRADIENTES_VAGA[id % GRADIENTES_VAGA.length]};min-height:130px;padding:16px;color:#fff;position:relative;">
             <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.55));"></div>
-            <img src="/assets/logo-impulsionar.jpg" style="position:absolute;top:12px;right:12px;height:24px;border-radius:4px;" onerror="this.style.display='none'">
+            ${vagaSeloValidada()}
             <div style="position:relative;">
               <div style="font-size:11px;font-weight:700;background:rgba(0,0,0,.4);display:inline-block;padding:3px 10px;border-radius:999px;">📌 ${v.is_remote ? 'Remoto' : (escapeHtml(v.location || 'A combinar') + (v.state ? '/' + escapeHtml(v.state) : ''))}</div>
               <h3 style="margin:20px 0 4px;text-shadow:0 1px 4px rgba(0,0,0,.4);">${escapeHtml(v.title)}</h3>
-              <div style="font-size:13px;opacity:.95;display:flex;align-items:center;gap:6px;text-shadow:0 1px 4px rgba(0,0,0,.4);">
-                ${v.companyLogo ? `<img src="${escapeHtml(v.companyLogo)}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;background:#fff;">` : '🏢'}
+              <div style="font-size:15px;font-weight:700;opacity:.98;display:flex;align-items:center;gap:12px;margin-top:6px;text-shadow:0 1px 4px rgba(0,0,0,.4);">
+                ${vagaLogoEmpresa(v)}
                 ${escapeHtml(v.companyName)} · ❤️ ${v.totalCurtidas || 0}
               </div>
             </div>
@@ -14086,6 +14170,15 @@ function cvMoeda(t) {
   if (/^[\d.,]+$/.test(sem)) return fmt(sem);
   const m = sem.match(/^([\d.,]+)\s*(?:a|até|-|–)\s*([\d.,]+)$/i); if (m) return fmt(m[1]) + ' a ' + fmt(m[2]);
   return txt;
+}
+function vagaLogoEmpresa(v, tam = 58) {
+  return v.companyLogo
+    ? `<span style="min-width:${tam}px;max-width:${tam * 2.6}px;height:${tam}px;flex-shrink:0;background:#fff;border-radius:14px;padding:6px 10px;box-shadow:0 4px 14px rgba(0,0,0,.25);display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;"><img src="${escapeHtml(v.companyLogo)}" alt="" style="max-width:100%;height:100%;object-fit:contain;"></span>`
+    : `<span style="width:${tam}px;height:${tam}px;flex-shrink:0;background:#fff;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:${Math.round(tam / 2)}px;box-shadow:0 4px 14px rgba(0,0,0,.25);">🏢</span>`;
+}
+function vagaSeloValidada(estatico) {
+  return `<div title="Vaga revisada e aprovada pela equipe Impulsionar V4" style="${estatico ? '' : 'position:absolute;top:12px;right:12px;z-index:2;'}display:inline-flex;align-items:center;gap:6px;background:#fff;color:#0e2a47;border-radius:999px;padding:3px 10px 3px 4px;box-shadow:0 3px 10px rgba(0,0,0,.25);font-size:11px;font-weight:800;line-height:1.1;text-shadow:none;">
+    <img src="/assets/logo-impulsionar.jpg" alt="" style="height:22px;width:auto;border-radius:6px;" onerror="this.style.display='none'"><span>✔ Vaga validada<br><span style="font-weight:600;color:#12a150;">pela Impulsionar</span></span></div>`;
 }
 function vagaDiasAberta(v) { const d = v && (v.published_at || v.approved_at); if (!d) return null; const x = new Date(String(d).includes('T') ? d : String(d).replace(' ', 'T') + 'Z'); if (isNaN(x)) return null; return Math.max(0, Math.floor((Date.now() - x) / 86400000)); }
 function vagaAbertaTxt(v) { const n = vagaDiasAberta(v); return n == null ? '' : n === 0 ? 'Aberta hoje' : n === 1 ? 'Aberta há 1 dia' : `Aberta há ${n} dias`; }
@@ -15060,6 +15153,7 @@ function pvCard(v, i) {
       </div>
       <div class="pv-corpo">
         <div class="pv-empresa">${escapeHtml(v.companyName || '')}</div>
+        <div style="font-size:11px;font-weight:700;color:#12a150;margin-top:2px;">✔ Vaga validada pela Impulsionar</div>
         <h3 class="pv-titulo">${escapeHtml(v.title)}</h3>
         <div class="pv-tags">
           <span>📍 ${pvLocal(v)}</span>
@@ -15108,9 +15202,9 @@ function desenharPortalVagas() {
       .pv-capa-sombra { position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.25)); }
       .pv-selos { position:absolute; top:10px; left:10px; right:10px; display:flex; gap:6px; flex-wrap:wrap; }
       .pv-selo { font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; box-shadow:0 2px 6px rgba(0,0,0,.15); }
-      .pv-logo { position:absolute; left:16px; bottom:-24px; width:52px; height:52px; border-radius:14px; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,.15); display:flex; align-items:center; justify-content:center; font-size:22px; overflow:hidden; border:3px solid #fff; }
-      .pv-logo img { width:100%; height:100%; object-fit:contain; }
-      .pv-corpo { padding:32px 16px 16px; display:flex; flex-direction:column; flex:1; }
+      .pv-logo { position:absolute; left:16px; bottom:-30px; min-width:66px; max-width:170px; width:auto; padding:4px 8px; box-sizing:border-box; height:66px; border-radius:14px; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,.15); display:flex; align-items:center; justify-content:center; font-size:22px; overflow:hidden; border:3px solid #fff; }
+      .pv-logo img { width:auto; max-width:100%; height:100%; object-fit:contain; }
+      .pv-corpo { padding:38px 16px 16px; display:flex; flex-direction:column; flex:1; }
       .pv-empresa { font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.4px; }
       .pv-titulo { margin:2px 0 10px; font-size:18px; color:#0b1329; line-height:1.25; }
       .pv-tags { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
@@ -15166,11 +15260,12 @@ function verDetalhesVagaPortal(id) {
       <div class="modal-caixa" style="max-width:560px;padding:0;overflow:hidden;">
         <div style="background:${v.photo_url ? `url('${escapeHtml(v.photo_url)}') center/cover` : GRADIENTES_VAGA[id % GRADIENTES_VAGA.length]};min-height:120px;padding:16px;color:#fff;position:relative;">
           <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.5));"></div>
+          ${vagaSeloValidada()}
           <div style="position:relative;">
             <div style="font-size:11px;font-weight:700;background:rgba(0,0,0,.4);display:inline-block;padding:3px 10px;border-radius:999px;">📌 ${v.is_remote ? 'Remoto' : (escapeHtml(v.location || 'A combinar') + (v.state ? '/' + escapeHtml(v.state) : ''))}</div>
             <h3 style="margin:20px 0 4px;text-shadow:0 1px 4px rgba(0,0,0,.4);">${escapeHtml(v.title)}</h3>
-            <div style="font-size:13px;opacity:.95;display:flex;align-items:center;gap:6px;text-shadow:0 1px 4px rgba(0,0,0,.4);">
-              ${v.companyLogo ? `<img src="${escapeHtml(v.companyLogo)}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;background:#fff;">` : '🏢'}
+            <div style="font-size:15px;font-weight:700;opacity:.98;display:flex;align-items:center;gap:12px;margin-top:6px;text-shadow:0 1px 4px rgba(0,0,0,.4);">
+              ${vagaLogoEmpresa(v)}
               ${escapeHtml(v.companyName)}
             </div>
           </div>

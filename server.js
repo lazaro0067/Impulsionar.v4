@@ -1050,7 +1050,7 @@ function inicializarBase() {
          'experiences_json TEXT', 'desired_states TEXT', 'desired_cities TEXT', 'cep TEXT', 'neighborhood TEXT', 'state TEXT', 'lgpd_at TEXT', 'origem TEXT',
          'birth_date TEXT', 'cnh TEXT', 'pretensao_salarial TEXT', 'modalidade TEXT', 'disp_viagem INTEGER DEFAULT 0', 'disp_mudanca INTEGER DEFAULT 0', 'pcd TEXT',
          'education_json TEXT', 'courses_json TEXT', 'disponibilidade_inicio TEXT', 'curriculo_completo_em TEXT',
-         'disc_liberado INTEGER DEFAULT 0', 'disc_liberado_em TEXT', 'disc_perfil TEXT', 'disc_json TEXT', 'disc_em TEXT'].forEach(coluna => {
+         'tipos_vaga TEXT', 'disc_liberado INTEGER DEFAULT 0', 'disc_liberado_em TEXT', 'disc_perfil TEXT', 'disc_json TEXT', 'disc_em TEXT'].forEach(coluna => {
             db.run(`ALTER TABLE candidate_profiles ADD COLUMN ${coluna}`, () => {});
         });
 
@@ -1120,7 +1120,7 @@ function inicializarBase() {
         db.run(`ALTER TABLE job_postings ADD COLUMN approved_at DATETIME`, () => {});
         db.run(`ALTER TABLE job_postings ADD COLUMN rejection_reason TEXT`, () => {});
         db.run(`ALTER TABLE job_postings ADD COLUMN paid_with_credit INTEGER DEFAULT 0`, () => {});
-        ['work_schedule TEXT', 'pcd INTEGER DEFAULT 0', 'contract_type TEXT'].forEach(c => db.run(`ALTER TABLE job_postings ADD COLUMN ${c}`, () => {}));
+        ['work_schedule TEXT', 'pcd INTEGER DEFAULT 0', 'contract_type TEXT', 'categoria TEXT'].forEach(c => db.run(`ALTER TABLE job_postings ADD COLUMN ${c}`, () => {}));
         // Banco de currículos da empresa: candidatos do portal guardados por função para próximas vagas.
         db.run(`CREATE TABLE IF NOT EXISTS company_talent_bank (
             id INTEGER PRIMARY KEY AUTOINCREMENT, company_id INTEGER NOT NULL, candidate_user_id INTEGER NOT NULL, funcao TEXT, observacao TEXT,
@@ -1323,6 +1323,7 @@ function inicializarBase() {
         )`);
         // Foto de evidência de cada follow-up (ex: print/foto do que foi feito).
         db.run(`ALTER TABLE dpo_follow_ups ADD COLUMN foto_url TEXT`, () => {});
+        db.run(`ALTER TABLE dpo_follow_ups ADD COLUMN autor TEXT`, () => {});
 
         // "Perguntas Bate-Papo" — pasta dentro de cada pilar onde a empresa (ou o
         // Master/consultor) registra perguntas feitas no bate-papo e as respostas,
@@ -1803,6 +1804,72 @@ function ensureRecordAccess(table) {
         }
     };
 }
+
+// ------------------------------------------------------------
+// Cópia de segurança dos uploads dentro do banco: se a pasta de uploads não
+// for persistente (sem Volume / UPLOADS_PATH), cada novo deploy apagava as
+// fotos. Agora todo arquivo enviado (até 25 MB — fotos, PDFs, anexos) também
+// é guardado no banco e, se sumir do disco, é restaurado na hora em que for
+// pedido. Vídeos grandes continuam só no disco.
+// ------------------------------------------------------------
+const LIMITE_COPIA_UPLOAD = 25 * 1024 * 1024;
+db.run(`CREATE TABLE IF NOT EXISTS arquivos_persistidos (nome TEXT PRIMARY KEY, mime TEXT, tamanho INTEGER, dados BLOB, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+function copiarUploadParaBanco(f) {
+    try {
+        if (!f || !f.filename || !f.path || !(f.size <= LIMITE_COPIA_UPLOAD)) return;
+        fs.readFile(f.path, (err, dados) => {
+            if (err) return;
+            db.run(`INSERT OR REPLACE INTO arquivos_persistidos (nome, mime, tamanho, dados) VALUES (?, ?, ?, ?)`, [f.filename, f.mimetype || '', f.size || dados.length, dados], () => {});
+        });
+    } catch (e) {}
+}
+app.use((req, res, next) => {
+    res.on('finish', () => {
+        if (res.statusCode >= 400) return;
+        const lista = [];
+        if (req.file) lista.push(req.file);
+        if (Array.isArray(req.files)) lista.push(...req.files);
+        else if (req.files && typeof req.files === 'object') Object.values(req.files).forEach(v => Array.isArray(v) && lista.push(...v));
+        lista.forEach(copiarUploadParaBanco);
+    });
+    next();
+});
+function restaurarUploadDoBanco(nome) {
+    return new Promise(ok => {
+        const limpo = path.basename(String(nome || ''));
+        if (!limpo) return ok(null);
+        db.get(`SELECT mime, dados FROM arquivos_persistidos WHERE nome = ?`, [limpo], (err, row) => {
+            if (err || !row || !row.dados) return ok(null);
+            const destino = path.join(PASTA_UPLOADS, limpo);
+            fs.writeFile(destino, row.dados, () => ok({ caminho: destino, mime: row.mime, dados: row.dados }));
+        });
+    });
+}
+// Arquivo pedido em /uploads/... que não está no disco (apagado no deploy) → volta do banco.
+app.get('/uploads/:nome', async (req, res, next) => {
+    const nome = path.basename(req.params.nome || '');
+    if (!nome || fs.existsSync(path.join(PASTA_UPLOADS, nome))) return next();
+    const r = await restaurarUploadDoBanco(nome);
+    if (!r) return next();
+    if (r.mime) res.type(r.mime);
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.send(r.dados);
+});
+// Ao subir o servidor, já guarda no banco os arquivos que ainda estão no disco e não têm cópia.
+setTimeout(() => {
+    try {
+        fs.readdir(PASTA_UPLOADS, (err, nomes) => {
+            if (err) return;
+            db.all(`SELECT nome FROM arquivos_persistidos`, [], (e2, rows) => {
+                const ja = new Set((rows || []).map(r => r.nome));
+                (nomes || []).filter(n => !ja.has(n)).forEach(n => {
+                    const caminho = path.join(PASTA_UPLOADS, n);
+                    fs.stat(caminho, (e3, st) => { if (!e3 && st.isFile() && st.size <= LIMITE_COPIA_UPLOAD) copiarUploadParaBanco({ filename: n, path: caminho, size: st.size, mimetype: ({ '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif', '.pdf': 'application/pdf' })[path.extname(n).toLowerCase()] || '' }); });
+                });
+            });
+        });
+    } catch (e) {}
+}, 8000);
 
 app.use(authenticateToken);
 
@@ -2845,6 +2912,7 @@ function pendenciasCurriculo(b) {
     if (!txt('city')) falta.push('Cidade atual');
     if (!txt('desired_role')) falta.push('Cargo desejado');
     if (!txt('modalidade')) falta.push('Modelo de trabalho');
+    if (!txt('tipos_vaga')) falta.push('Tipo de vaga que busca');
     if (txt('bio').length < 60) falta.push('Resumo profissional (mín. 60 caracteres)');
     if (!txt('education_level')) falta.push('Escolaridade');
     const formacoes = jsonListaCurriculo(b.education_json).filter(f => f && (f.institution || f.course));
@@ -2873,14 +2941,14 @@ app.put('/api/portal/me', requireRole('candidate'), async (req, res) => {
             `UPDATE candidate_profiles SET phone = ?, desired_role = ?, city = ?, state = ?, bio = ?, skills = ?, linkedin_url = ?, resume_url = ?,
                 photo_url = ?, gender = ?, education_level = ?, languages = ?, first_job = ?, experiences_json = ?,
                 desired_states = ?, desired_cities = ?, birth_date = ?, cnh = ?, pretensao_salarial = ?, modalidade = ?, disp_viagem = ?, disp_mudanca = ?,
-                pcd = ?, education_json = ?, courses_json = ?, disponibilidade_inicio = ?, cep = ?, neighborhood = ?,
+                pcd = ?, education_json = ?, courses_json = ?, disponibilidade_inicio = ?, cep = ?, neighborhood = ?, tipos_vaga = ?,
                 curriculo_completo_em = COALESCE(curriculo_completo_em, CURRENT_TIMESTAMP)
              WHERE user_id = ?`,
             [t('phone', 30), t('desired_role', 120), t('city', 120), t('city').includes('/') ? t('city').split('/').pop().trim().toUpperCase().slice(0, 2) : '', t('bio', 3000), t('skills', 1500), t('linkedin_url', 300), t('resume_url', 500),
                 t('photo_url', 500), t('gender', 40), t('education_level', 80), t('languages', 600), b.first_job ? 1 : 0, JSON.stringify(jsonListaCurriculo(b.experiences_json)).slice(0, 30000),
                 t('desired_states', 300), t('desired_cities', 1500), t('birth_date', 10), t('cnh', 10), t('pretensao_salarial', 60), t('modalidade', 40), b.disp_viagem ? 1 : 0, b.disp_mudanca ? 1 : 0,
                 t('pcd', 200), JSON.stringify(jsonListaCurriculo(b.education_json)).slice(0, 15000), JSON.stringify(jsonListaCurriculo(b.courses_json)).slice(0, 15000), t('disponibilidade_inicio', 40),
-                t('cep', 9).replace(/\D/g, ''), t('neighborhood', 120), req.user.userId],
+                t('cep', 9).replace(/\D/g, ''), t('neighborhood', 120), String(b.tipos_vaga || '').split(',').map(x => x.trim()).filter(x => TIPOS_VAGA.includes(x)).join(', '), req.user.userId],
             e => e ? erro(e) : ok()));
         res.json({ message: 'Currículo atualizado!' });
     } catch (e) { res.status(400).json({ error: 'Erro ao salvar o currículo.' }); }
@@ -2889,7 +2957,8 @@ app.put('/api/portal/me', requireRole('candidate'), async (req, res) => {
 // Lista as vagas ativas e ainda dentro do prazo pago — visível para o próprio candidato.
 app.get('/api/portal/vagas', requireRole('candidate'), async (req, res) => {
     try {
-        const perfil = await dbGet(`SELECT desired_states, desired_cities FROM candidate_profiles WHERE user_id = ?`, [req.user.userId]);
+        const perfil = await dbGet(`SELECT desired_states, desired_cities, tipos_vaga FROM candidate_profiles WHERE user_id = ?`, [req.user.userId]);
+        const tiposCand = String(perfil?.tipos_vaga || '').split(',').map(x => x.trim()).filter(Boolean);
         const estadosDesejados = (perfil?.desired_states || '').split(',').map(s => s.trim()).filter(Boolean);
         const cidadesDesejadas = (perfil?.desired_cities || '').split(',').map(s => s.split('/')[0].trim().toLowerCase()).filter(Boolean);
         const filtrarPorRegiao = req.query.somenteMinhaRegiao === '1' && (estadosDesejados.length > 0 || cidadesDesejadas.length > 0);
@@ -2907,7 +2976,8 @@ app.get('/api/portal/vagas', requireRole('candidate'), async (req, res) => {
         const comFlag = vagas.map(v => {
             const bateEstado = estadosDesejados.length > 0 && estadosDesejados.includes((v.state || '').toUpperCase());
             const bateCidade = cidadesDesejadas.length > 0 && cidadesDesejadas.some(c => (v.location || '').toLowerCase().includes(c));
-            return { ...v, jaCandidatei: !!v.jaCandidatei, euCurti: !!v.euCurti, minhaRegiao: !!(v.is_remote || bateEstado || bateCidade || (estadosDesejados.length === 0 && cidadesDesejadas.length === 0)) };
+            const categorias = categoriasDaVaga(v);
+            return { ...v, categorias, paraVoce: tiposCand.length ? categorias.some(c => tiposCand.includes(c)) : false, jaCandidatei: !!v.jaCandidatei, euCurti: !!v.euCurti, minhaRegiao: !!(v.is_remote || bateEstado || bateCidade || (estadosDesejados.length === 0 && cidadesDesejadas.length === 0)) };
         });
         const resultado = filtrarPorRegiao ? comFlag.filter(v => v.minhaRegiao) : comFlag;
         res.json(resultado);
@@ -3380,9 +3450,24 @@ app.get('/api/job-postings', requireRole('admin', 'client_admin'), async (req, r
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar vagas.' }); }
 });
 
+// Tipos de vaga usados para direcionar as vagas ao perfil do candidato.
+const TIPOS_VAGA = ['Operacional', 'Administrativo', 'Técnico', 'Comercial', 'Liderança', 'Estágio / Aprendiz'];
+function categoriasDaVaga(v) {
+    if (v.categoria && TIPOS_VAGA.includes(v.categoria)) return [v.categoria];
+    const t = ' ' + String((v.title || '') + ' ' + (v.seniority || '')).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase() + ' ';
+    const c = [];
+    if (/lideranca|coordenacao|gerencia|diretoria|gerente|supervis|coorden|lider|encarreg|diretor|gestor|chefe|head /.test(t)) c.push('Liderança');
+    if (/estagi|aprendiz|trainee/.test(t)) c.push('Estágio / Aprendiz');
+    if (/vend|comercial|promotor|represent|televend|key account|executivo de contas/.test(t)) c.push('Comercial');
+    if (/tecnic|mecanic|eletric|manutenc|engenhe|desenvolv|programad| ti |sistemas|dados|soldador/.test(t)) c.push('Técnico');
+    if (/administr|financ|contab|fiscal| rh |recursos humanos|pessoal|analista|assistente|recep|secret|faturist|compras|juridic/.test(t)) c.push('Administrativo');
+    if (/operacional|motorista|ajudante|conferent|operador|empilhadeira|estoqu|armaz|separador|repositor|entregador|auxiliar|expedi|almox|vigilante|porteiro|limpeza|produc|logistic/.test(t) && !c.includes('Liderança')) c.push('Operacional');
+    if (!c.length) c.push('Operacional');
+    return c;
+}
 function salvarCamposExtrasVaga(id, b) {
-    db.run(`UPDATE job_postings SET work_schedule = ?, pcd = ?, contract_type = ? WHERE id = ?`,
-        [String(b.work_schedule || '').trim().slice(0, 150), b.pcd ? 1 : 0, String(b.contract_type || '').trim().slice(0, 40), id], () => {});
+    db.run(`UPDATE job_postings SET work_schedule = ?, pcd = ?, contract_type = ?, categoria = ? WHERE id = ?`,
+        [String(b.work_schedule || '').trim().slice(0, 150), b.pcd ? 1 : 0, String(b.contract_type || '').trim().slice(0, 40), TIPOS_VAGA.includes(b.categoria) ? b.categoria : null, id], () => {});
 }
 app.post('/api/job-postings', requireRole('admin', 'client_admin'), async (req, res) => {
     const { title, description, location, state, is_remote, seniority, salary_range, vagaPlanId, closingFeePlanId, company_id,
@@ -8372,6 +8457,7 @@ const CATEGORIAS_CHAMADO = {
     suporte_tecnico: 'Problema no sistema',
     financeiro: 'Financeiro / pagamento',
     sugestao: 'Sugestão de melhoria',
+    liberar_ferramenta: 'Liberação de ferramenta Impulsionar',
     outro: 'Outro assunto'
 };
 const PRIORIDADES_CHAMADO = ['baixa', 'media', 'alta', 'urgente'];
@@ -8461,6 +8547,10 @@ app.post('/api/chamados', requireRole('admin', 'client_admin'), async (req, res)
     if (!anexoValidoChamado(anexo_url)) return res.status(400).json({ error: 'Anexo inválido.' });
     try {
         let refTipo = null, refId = null;
+        if (categoria === 'liberar_ferramenta') {
+            const jaAberto = await dbGet(`SELECT id FROM chamados WHERE company_id = ? AND categoria = 'liberar_ferramenta' AND assunto = ? AND status NOT IN ('resolvido', 'fechado')`, [companyId, assunto]);
+            if (jaAberto) return res.status(400).json({ error: `Você já pediu esta liberação — chamado ${numeroChamado(jaAberto.id)} em andamento. O Master vai avisar quando liberar.` });
+        }
         if (categoria === 'ajuste_autoavaliacao') {
             const av = ref_id ? await dbGet(`SELECT * FROM dpo_self_assessments WHERE id = ? AND company_id = ?`, [ref_id, companyId]) : null;
             if (!av) return res.status(400).json({ error: 'Escolha qual autoavaliação precisa de ajuste.' });
@@ -8864,13 +8954,14 @@ async function resolverFerramentaDigitalDpo(req, res, chave, companyIdInformado)
     if (chave === 'cinco_s') {
         const companyId = await resolverEmpresaPastaDpo(req, res, 'gestao', companyIdInformado, null);
         if (!companyId) return null;
+        if (req.user.role === 'client_admin' && !(await acompLiberadoDpo(companyId, 'gestao:3.1'))) { res.status(403).json({ error: 'Esta ferramenta Impulsionar ainda não foi liberada para sua empresa. Abra um chamado para o Master autorizar.' }); return null; }
         return { titulo: 'Gerenciador 5S', pilarLabel: 'Gestão Revenda', pergunta: '3.1', perguntaTexto: '5S', companyId, modelo5s: CINCO_S_MODELO_DPO };
     }
     if (chave === 'gop') {
         const companyId = req.user.role === 'client_admin' ? req.user.companyId : companyIdInformado;
         if (!companyId) { res.status(400).json({ error: 'Informe a empresa (company_id).' }); return null; }
         if (req.user.role === 'client_admin' && !(await pilaresAtivosDaEmpresa(companyId)).length) { res.status(403).json({ error: 'Sua empresa ainda não tem o DPO contratado.' }); return null; }
-        if (req.user.role === 'client_admin' && !(await acompLiberadoDpo(companyId, 'gestao:4.6')) && !(await empresaTemPastaDpo(req, res, companyId, 'gop'))) return null;
+        if (req.user.role === 'client_admin' && !(await acompLiberadoDpo(companyId, 'gestao:4.6'))) { res.status(403).json({ error: 'Esta ferramenta Impulsionar ainda não foi liberada para sua empresa. Abra um chamado para o Master autorizar.' }); return null; }
         return { titulo: 'Gerenciador GOP — Revendas', pilarLabel: 'GOP', pergunta: '', perguntaTexto: '', companyId, modeloGop: GOP_MODELO_DPO };
     }
     const f = FERRAMENTAS_DIGITAIS_DPO[chave];
@@ -8878,7 +8969,11 @@ async function resolverFerramentaDigitalDpo(req, res, chave, companyIdInformado)
     const companyId = await resolverEmpresaPastaDpo(req, res, f.pilar, companyIdInformado, TOOLS_EXCLUSIVAS_DPO[chave] ? null : 'checklist');
     if (!companyId) return null;
     if (TOOLS_EXCLUSIVAS_DPO[chave] && req.user.role === 'client_admin' && !(await acompLiberadoDpo(companyId, TOOLS_EXCLUSIVAS_DPO[chave]))) {
-        res.status(403).json({ error: 'Esta ferramenta ainda não foi liberada para sua empresa. Fale com o Master.' });
+        res.status(403).json({ error: 'Esta ferramenta Impulsionar ainda não foi liberada para sua empresa. Abra um chamado para o Master autorizar.' });
+        return null;
+    }
+    if (!TOOLS_EXCLUSIVAS_DPO[chave] && req.user.role === 'client_admin' && !(await acompLiberadoDpo(companyId, `${f.pilar}:${f.pergunta}`))) {
+        res.status(403).json({ error: 'Esta ferramenta Impulsionar ainda não foi liberada para sua empresa. Abra um chamado para o Master autorizar.' });
         return null;
     }
     return { ...f, companyId };
@@ -10335,6 +10430,30 @@ app.delete('/api/dpo/action-plans/:id', requireRole('admin', 'client_admin'), as
     } catch (e) { res.status(400).json({ error: 'Erro ao remover o plano de ação.' }); }
 });
 
+// Correção de texto (ortografia/acentuação/pontuação em pt-BR). Usa a IA quando
+// a chave estiver configurada; sem ela, aplica um corretor local de regras.
+const CORRECOES_PTBR = { concluida: 'concluída', concluido: 'concluído', concluidas: 'concluídas', concluidos: 'concluídos', saida: 'saída', saidas: 'saídas', ferias: 'férias', obrigatorio: 'obrigatório', obrigatoria: 'obrigatória', necessario: 'necessário', necessaria: 'necessária', inventario: 'inventário', usuario: 'usuário', usuarios: 'usuários', horario: 'horário', horarios: 'horários', semanal: 'semanal', mensal: 'mensal', experiencia: 'experiência', frequencia: 'frequência', sequencia: 'sequência', ocorrencia: 'ocorrência', ocorrencias: 'ocorrências', auditoria: 'auditoria', ciclo: 'ciclo', nao: 'não', voce: 'você', voces: 'vocês', tambem: 'também', ate: 'até', entao: 'então', ja: 'já', sera: 'será', acao: 'ação', acoes: 'ações', avaliacao: 'avaliação', autoavaliacao: 'autoavaliação', validacao: 'validação', correcao: 'correção', reuniao: 'reunião', reunioes: 'reuniões', gestao: 'gestão', producao: 'produção', manutencao: 'manutenção', distribuicao: 'distribuição', informacao: 'informação', informacoes: 'informações', comunicacao: 'comunicação', operacao: 'operação', operacoes: 'operações', area: 'área', areas: 'áreas', analise: 'análise', numero: 'número', proximo: 'próximo', proxima: 'próxima', periodo: 'período', inicio: 'início', conclusao: 'conclusão', armazem: 'armazém', veiculo: 'veículo', veiculos: 'veículos', caminhao: 'caminhão', caminhoes: 'caminhões', padrao: 'padrão', padroes: 'padrões', revisao: 'revisão', implantacao: 'implantação', execucao: 'execução', confeccao: 'confecção', evidencia: 'evidência', evidencias: 'evidências', responsavel: 'responsável', responsaveis: 'responsáveis', funcionario: 'funcionário', funcionarios: 'funcionários', indicador: 'indicador', calendario: 'calendário', relatorio: 'relatório', relatorios: 'relatórios', reuniao: 'reunião', diario: 'diário', diaria: 'diária', mes: 'mês', tres: 'três', sao: 'são', apos: 'após', tambem: 'também', etica: 'ética', anticorrupcao: 'anticorrupção', corrupcao: 'corrupção', seguranca: 'segurança', lideranca: 'liderança', organizacao: 'organização', manutençao: 'manutenção', atraves: 'através', alem: 'além', especifico: 'específico', minimo: 'mínimo', maximo: 'máximo', unico: 'único', otimo: 'ótimo', pratica: 'prática', praticas: 'práticas', tecnico: 'técnico', tecnica: 'técnica', logistica: 'logística', critico: 'crítico', criticos: 'críticos', historico: 'histórico', basico: 'básico', publico: 'público', saude: 'saúde', possivel: 'possível', disponivel: 'disponível', nivel: 'nível', niveis: 'níveis', util: 'útil', facil: 'fácil', dificil: 'difícil', agua: 'água', voce: 'você', porem: 'porém', alguem: 'alguém', ninguem: 'ninguém', tem: 'tem', ultimo: 'último', ultima: 'última', pagina: 'página', estrategia: 'estratégia', cascateamento: 'cascateamento', kpis: 'KPIs', kpi: 'KPI', swot: 'SWOT', dpo: 'DPO', vpo: 'VPO', rh: 'RH', ti: 'TI' };
+function corrigirTextoLocal(t) {
+    let x = String(t || '').replace(/\r/g, '');
+    x = x.replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').trim();
+    x = x.replace(/\b(anti|pré|pós|pró|ex|vice|auto|semi)-\s+(\p{L})/giu, '$1-$2').replace(/\banti-\s*corrup/giu, 'anticorrup');
+    x = x.replace(/\s+([,.;:!?%)])/g, '$1').replace(/([,;:!?])(?=[^\s\d\n)])/g, '$1 ').replace(/\.(?=[A-Za-zÀ-ú]{2})/g, '. ').replace(/\(\s+/g, '(');
+    x = x.replace(/\s*,\s*/g, ', ').replace(/\s+\n/g, '\n');
+    x = x.replace(/\p{L}+/gu, w => { const k = w.toLowerCase(); const c = CORRECOES_PTBR[k]; if (!c) return w; if (c === c.toUpperCase()) return c; return w[0] === w[0].toUpperCase() ? c[0].toUpperCase() + c.slice(1) : c; });
+    x = x.replace(/(^|[.!?]\s+|\n)(\p{Ll})/gu, (m, a, b) => a + b.toUpperCase());
+    return x;
+}
+app.post('/api/corrigir-texto', async (req, res) => {
+    const texto = String((req.body || {}).texto || '').slice(0, 4000);
+    if (!texto.trim()) return res.status(400).json({ error: 'Escreva o texto primeiro.' });
+    if (ANTHROPIC_API_KEY) {
+        try {
+            const r = await perguntarIA('Você é um revisor de textos em português do Brasil. Corrija ortografia, acentuação, concordância, pontuação e espaçamento, mantendo o sentido, o tom e os termos técnicos/siglas (DPO, KPI, SWOT, 5S, PDV etc.). Não acrescente informação nem explicações. Responda SOMENTE com o texto corrigido.', texto, 900);
+            if (r) return res.json({ texto: r.replace(/^["“]|["”]$/g, '').trim(), viaIA: true });
+        } catch (e) { /* cai no corretor local */ }
+    }
+    res.json({ texto: corrigirTextoLocal(texto), viaIA: false });
+});
 app.post('/api/dpo/action-plans/:id/follow-ups', requireRole('admin', 'client_admin'), async (req, res) => {
     const { texto, data_prevista, foto_url } = req.body;
     if (!texto) return res.status(400).json({ error: 'Descreva o follow-up.' });
@@ -10346,8 +10465,8 @@ app.post('/api/dpo/action-plans/:id/follow-ups', requireRole('admin', 'client_ad
         const ultimo = await dbGet(`SELECT MAX(numero) as maximo FROM dpo_follow_ups WHERE action_plan_id = ?`, [req.params.id]);
         const numero = (ultimo && ultimo.maximo) ? ultimo.maximo + 1 : 1;
         const resultado = await new Promise((resolve, reject) => db.run(
-            `INSERT INTO dpo_follow_ups (action_plan_id, numero, texto, data_prevista, foto_url) VALUES (?, ?, ?, ?, ?)`,
-            [req.params.id, numero, texto, data_prevista || null, foto_url || null], function (err) { err ? reject(err) : resolve(this.lastID); }
+            `INSERT INTO dpo_follow_ups (action_plan_id, numero, texto, data_prevista, foto_url, autor) VALUES (?, ?, ?, ?, ?, (SELECT name FROM users WHERE id = ?))`,
+            [req.params.id, numero, texto, data_prevista || null, foto_url || null, req.user.userId], function (err) { err ? reject(err) : resolve(this.lastID); }
         ));
         res.json({ message: `Follow ${numero} adicionado!`, id: resultado, numero });
     } catch (e) { res.status(400).json({ error: 'Erro ao adicionar o follow-up.' }); }
