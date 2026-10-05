@@ -1235,6 +1235,32 @@ function inicializarBase() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
 
+        // Agenda de consultorias (data + hora início/fim) — gera convite no
+        // Outlook/Teams do consultor e dos usuários da empresa (pelo e-mail).
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_sessoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER NOT NULL,
+            consultant_id INTEGER,
+            titulo TEXT NOT NULL,
+            pilares TEXT,
+            data TEXT NOT NULL,
+            hora_inicio TEXT NOT NULL,
+            hora_fim TEXT NOT NULL,
+            formato TEXT DEFAULT 'teams',
+            local TEXT,
+            teams_link TEXT,
+            participantes TEXT,
+            observacao TEXT,
+            status TEXT DEFAULT 'agendada',
+            uid TEXT,
+            sequencia INTEGER DEFAULT 0,
+            graph_event_id TEXT,
+            ultimo_envio TEXT,
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME
+        )`);
+
         // Compra de um pilar avulso ou da consultoria completa por uma empresa —
         // cobrança única via Mercado Pago (Checkout Pro), no mesmo padrão já
         // usado para divulgação de vagas e taxa de fechamento.
@@ -6773,6 +6799,339 @@ app.delete('/api/admin/dpo/consultants/:id', requireRole('admin'), async (req, r
         if (err) return res.status(400).json({ error: 'Erro ao remover o consultor.' });
         res.json({ message: 'Consultor removido!' });
     });
+});
+
+// ======================================================================
+// DPO — AGENDA DE CONSULTORIAS com convite no Outlook / Teams
+//  • Sempre: e-mail com convite de calendário (.ics) para o consultor e para
+//    os usuários da empresa — o Outlook/Teams mostra "Aceitar" e coloca na agenda.
+//  • Se a integração Microsoft 365 estiver configurada (Azure: tenant, client id,
+//    secret e a caixa organizadora), o evento é criado direto no Outlook pelo
+//    Microsoft Graph com reunião do Teams gerada automaticamente; a própria
+//    Microsoft envia os convites e as atualizações/cancelamentos.
+// ======================================================================
+const MS365_CHAVES = ['ms365_tenant', 'ms365_client_id', 'ms365_client_secret', 'ms365_organizador'];
+async function lerConfigMs365() {
+    const rows = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN (${MS365_CHAVES.map(() => '?').join(',')})`, MS365_CHAVES);
+    const m = Object.fromEntries(rows.map(r => [r.key, r.value]));
+    return {
+        tenant: m.ms365_tenant || process.env.MS365_TENANT_ID || '',
+        clientId: m.ms365_client_id || process.env.MS365_CLIENT_ID || '',
+        secret: m.ms365_client_secret || process.env.MS365_CLIENT_SECRET || '',
+        organizador: m.ms365_organizador || process.env.MS365_ORGANIZER || ''
+    };
+}
+function ms365Ativo(c) { return !!(c && c.tenant && c.clientId && c.secret && c.organizador); }
+let CACHE_TOKEN_MS365 = { token: '', expira: 0, chave: '' };
+async function tokenMs365(c) {
+    const chave = c.tenant + '|' + c.clientId;
+    if (CACHE_TOKEN_MS365.token && CACHE_TOKEN_MS365.chave === chave && Date.now() < CACHE_TOKEN_MS365.expira) return CACHE_TOKEN_MS365.token;
+    const corpo = new URLSearchParams({ client_id: c.clientId, client_secret: c.secret, scope: 'https://graph.microsoft.com/.default', grant_type: 'client_credentials' });
+    const r = await fetch(`https://login.microsoftonline.com/${encodeURIComponent(c.tenant)}/oauth2/v2.0/token`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: corpo });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.access_token) throw new Error('Microsoft 365: não foi possível autenticar (' + (j.error_description || j.error || r.status) + '). Confira Tenant, Client ID e Secret.');
+    CACHE_TOKEN_MS365 = { token: j.access_token, expira: Date.now() + ((j.expires_in || 3600) - 120) * 1000, chave };
+    return j.access_token;
+}
+async function graphMs365(c, metodo, caminho, corpo) {
+    const token = await tokenMs365(c);
+    const r = await fetch('https://graph.microsoft.com/v1.0' + caminho, { method: metodo, headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', Prefer: 'outlook.timezone="America/Sao_Paulo"' }, body: corpo ? JSON.stringify(corpo) : undefined });
+    if (r.status === 204 || r.status === 202) return {};
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error('Microsoft 365: ' + ((j.error && j.error.message) || ('erro ' + r.status)) + (r.status === 403 ? ' — dê ao app a permissão de aplicativo "Calendars.ReadWrite" com consentimento do administrador.' : ''));
+    return j;
+}
+
+const HORA_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+// Brasil (America/Sao_Paulo) está fixo em UTC-3 desde 2019.
+function dataHoraUtcDpo(data, hora) { return new Date(`${data}T${hora}:00-03:00`); }
+function icsData(d) { return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); }
+function icsTexto(t) { return String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+function icsDobrar(linha) { const out = []; let l = linha; while (l.length > 73) { out.push(l.slice(0, 73)); l = ' ' + l.slice(73); } out.push(l); return out.join('\r\n'); }
+
+async function montarSessaoDpo(id) {
+    const s = await dbGet(`SELECT s.*, c.name as companyName, k.name as consultorNome, k.email as consultorEmail, k.phone as consultorTelefone
+        FROM dpo_sessoes s LEFT JOIN companies c ON c.id = s.company_id LEFT JOIN dpo_consultants k ON k.id = s.consultant_id WHERE s.id = ?`, [id]);
+    if (!s) return null;
+    let participantes = []; try { participantes = JSON.parse(s.participantes || '[]'); } catch (e) { participantes = []; }
+    let pilares = []; try { pilares = JSON.parse(s.pilares || '[]'); } catch (e) { pilares = []; }
+    return { ...s, participantes, pilares, pilaresLabel: pilares.map(p => (DPO_AMBEV_DATA[p] || {}).label || p) };
+}
+
+// Convidados = consultor + e-mails escolhidos (usuários da empresa e extras), sem repetir.
+function convidadosSessaoDpo(s) {
+    const lista = [];
+    const add = (email, nome, papel) => { const e = String(email || '').trim().toLowerCase(); if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && !lista.some(x => x.email === e)) lista.push({ email: e, nome: nome || '', papel }); };
+    if (s.consultorEmail) add(s.consultorEmail, s.consultorNome, 'consultor');
+    (s.participantes || []).forEach(p => add(p.email, p.nome, p.papel || 'empresa'));
+    return lista;
+}
+
+function descricaoSessaoDpo(s, linkTeams) {
+    return [
+        `Consultoria DPO Ambev — ${s.companyName || ''}`,
+        s.pilaresLabel && s.pilaresLabel.length ? `Pilar(es): ${s.pilaresLabel.join(', ')}` : '',
+        s.consultorNome ? `Consultor: ${s.consultorNome}${s.consultorTelefone ? ' · ' + s.consultorTelefone : ''}` : '',
+        `Data: ${s.data.split('-').reverse().join('/')} · ${s.hora_inicio} às ${s.hora_fim} (horário de Brasília)`,
+        linkTeams ? `Entrar na reunião do Teams: ${linkTeams}` : (s.formato === 'presencial' && s.local ? `Local: ${s.local}` : ''),
+        s.observacao ? `\n${s.observacao}` : '',
+        '\nAgendado pela plataforma Impulsionar V4.'
+    ].filter(Boolean).join('\n');
+}
+
+function gerarIcsSessaoDpo(s, metodo) {
+    const ini = dataHoraUtcDpo(s.data, s.hora_inicio), fim = dataHoraUtcDpo(s.data, s.hora_fim);
+    const org = separarRemetenteEmail(EMAIL_API.remetente || process.env.SMTP_FROM || process.env.SMTP_USER || '').email || 'agenda@impulsionarv4.com.br';
+    const local = s.teams_link ? 'Microsoft Teams' : (s.formato === 'presencial' ? (s.local || 'Presencial') : (s.local || 'Online'));
+    const linhas = [
+        'BEGIN:VCALENDAR', 'PRODID:-//Impulsionar V4//Agenda DPO//PT-BR', 'VERSION:2.0', 'CALSCALE:GREGORIAN', 'METHOD:' + metodo,
+        'BEGIN:VEVENT',
+        'UID:' + s.uid,
+        'SEQUENCE:' + (s.sequencia || 0),
+        'DTSTAMP:' + icsData(new Date()),
+        'DTSTART:' + icsData(ini),
+        'DTEND:' + icsData(fim),
+        'SUMMARY:' + icsTexto(s.titulo),
+        'DESCRIPTION:' + icsTexto(descricaoSessaoDpo(s, s.teams_link)),
+        'LOCATION:' + icsTexto(local),
+        s.teams_link ? 'URL:' + s.teams_link : '',
+        'ORGANIZER;CN=Impulsionar V4:mailto:' + org,
+        ...convidadosSessaoDpo(s).map(c => `ATTENDEE;CN=${icsTexto(c.nome || c.email)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${c.email}`),
+        'STATUS:' + (metodo === 'CANCEL' ? 'CANCELLED' : 'CONFIRMED'),
+        'BEGIN:VALARM', 'TRIGGER:-PT30M', 'ACTION:DISPLAY', 'DESCRIPTION:Consultoria DPO em 30 minutos', 'END:VALARM',
+        'END:VEVENT', 'END:VCALENDAR'
+    ].filter(Boolean);
+    return linhas.map(icsDobrar).join('\r\n') + '\r\n';
+}
+
+function htmlConviteSessaoDpo(s, tipo) {
+    const cab = tipo === 'cancel' ? '❌ Consultoria cancelada' : tipo === 'update' ? '🔄 Consultoria reagendada / atualizada' : '📅 Nova consultoria agendada';
+    const linha = (r, v) => v ? `<tr><td style="padding:4px 12px 4px 0;color:#64748b;">${r}</td><td style="padding:4px 0;font-weight:600;">${v}</td></tr>` : '';
+    const esc = t => String(t || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    return `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+      <div style="background:#0b1324;color:#fff;padding:16px 20px;font-size:18px;font-weight:700;">${cab}</div>
+      <div style="padding:18px 20px;color:#1e293b;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:10px;">${esc(s.titulo)}</div>
+        <table style="font-size:14px;border-collapse:collapse;">
+          ${linha('Empresa', esc(s.companyName))}
+          ${linha('Data', esc(s.data.split('-').reverse().join('/')))}
+          ${linha('Horário', esc(`${s.hora_inicio} às ${s.hora_fim} (Brasília)`))}
+          ${linha('Consultor', esc(s.consultorNome))}
+          ${linha('Pilar(es)', esc((s.pilaresLabel || []).join(', ')))}
+          ${s.formato === 'presencial' ? linha('Local', esc(s.local)) : ''}
+        </table>
+        ${s.observacao ? `<p style="font-size:14px;white-space:pre-line;">${esc(s.observacao)}</p>` : ''}
+        ${tipo !== 'cancel' && s.teams_link ? `<p style="margin:18px 0;"><a href="${esc(s.teams_link)}" style="background:#5b5fc7;color:#fff;padding:11px 18px;border-radius:8px;text-decoration:none;font-weight:700;">🎥 Entrar na reunião do Teams</a></p>` : ''}
+        ${tipo !== 'cancel' ? '<p style="font-size:12.5px;color:#64748b;">O convite vai anexo (convite.ics). No Outlook/Teams clique em <strong>Aceitar</strong> para colocar na sua agenda.</p>' : '<p style="font-size:12.5px;color:#64748b;">Abra o anexo para remover o compromisso da sua agenda.</p>'}
+      </div></div>`;
+}
+
+// Envia/atualiza/cancela o convite. tipo: 'novo' | 'update' | 'cancel'
+async function sincronizarSessaoDpo(id, tipo) {
+    const s = await montarSessaoDpo(id);
+    if (!s) return { ok: false, erro: 'Agendamento não encontrado.' };
+    const convidados = convidadosSessaoDpo(s);
+    const cfg = await lerConfigMs365();
+    let via = 'email', aviso = '';
+    if (ms365Ativo(cfg)) {
+        try {
+            const base = `/users/${encodeURIComponent(cfg.organizador)}/events`;
+            if (tipo === 'cancel') {
+                if (s.graph_event_id) await graphMs365(cfg, 'POST', `${base}/${encodeURIComponent(s.graph_event_id)}/cancel`, { comment: 'Consultoria cancelada pela Impulsionar.' });
+            } else {
+                const corpo = {
+                    subject: s.titulo,
+                    body: { contentType: 'HTML', content: descricaoSessaoDpo(s, null).replace(/\n/g, '<br>') },
+                    start: { dateTime: `${s.data}T${s.hora_inicio}:00`, timeZone: 'America/Sao_Paulo' },
+                    end: { dateTime: `${s.data}T${s.hora_fim}:00`, timeZone: 'America/Sao_Paulo' },
+                    location: { displayName: s.formato === 'presencial' ? (s.local || 'Presencial') : 'Microsoft Teams' },
+                    attendees: convidados.map(c => ({ emailAddress: { address: c.email, name: c.nome || c.email }, type: 'required' })),
+                    reminderMinutesBeforeStart: 30, isReminderOn: true
+                };
+                if (s.formato !== 'presencial') { corpo.isOnlineMeeting = true; corpo.onlineMeetingProvider = 'teamsForBusiness'; }
+                let ev;
+                if (s.graph_event_id) ev = await graphMs365(cfg, 'PATCH', `${base}/${encodeURIComponent(s.graph_event_id)}`, corpo);
+                else ev = await graphMs365(cfg, 'POST', base, corpo);
+                const link = (ev.onlineMeeting && ev.onlineMeeting.joinUrl) || s.teams_link || null;
+                await new Promise(r => db.run(`UPDATE dpo_sessoes SET graph_event_id = COALESCE(?, graph_event_id), teams_link = ? WHERE id = ?`, [ev.id || null, link, s.id], () => r()));
+            }
+            via = 'microsoft365';
+        } catch (e) {
+            aviso = e.message + ' — enviei o convite por e-mail (.ics) no lugar.';
+        }
+    }
+    if (via === 'email') {
+        const s2 = await montarSessaoDpo(id);
+        if (!convidados.length) return { ok: false, via, erro: 'Nenhum e-mail para convidar (cadastre o e-mail do consultor ou escolha os participantes).' };
+        const metodo = tipo === 'cancel' ? 'CANCEL' : 'REQUEST';
+        const assunto = (tipo === 'cancel' ? 'Cancelada: ' : tipo === 'update' ? 'Atualizada: ' : 'Convite: ') + s2.titulo + ` — ${s2.data.split('-').reverse().join('/')} ${s2.hora_inicio}`;
+        try {
+            await transporter.sendMail({
+                from: process.env.SMTP_FROM || `"Impulsionar V4" <${process.env.SMTP_USER || EMAIL_API.remetente}>`,
+                to: convidados.map(c => c.email).join(', '),
+                subject: assunto,
+                html: htmlConviteSessaoDpo(s2, tipo === 'novo' ? 'novo' : tipo),
+                icalEvent: { filename: 'convite.ics', method: metodo, content: gerarIcsSessaoDpo(s2, metodo) }
+            });
+        } catch (e) { return { ok: false, via, erro: 'Agendamento salvo, mas o e-mail não saiu: ' + e.message }; }
+    }
+    await new Promise(r => db.run(`UPDATE dpo_sessoes SET ultimo_envio = ? WHERE id = ?`, [`${via}|${new Date().toISOString()}|${convidados.length}`, s.id], () => r()));
+    // Aviso dentro da plataforma para os gestores da empresa.
+    const titulo = tipo === 'cancel' ? '❌ Consultoria cancelada' : tipo === 'update' ? '🔄 Consultoria atualizada' : '📅 Consultoria agendada';
+    notificarPorCompanyAdmins(s.company_id, titulo, `${s.titulo} — ${s.data.split('-').reverse().join('/')} das ${s.hora_inicio} às ${s.hora_fim}${s.consultorNome ? ' com ' + s.consultorNome : ''}.`, 'dpoHome');
+    return { ok: true, via, convidados: convidados.length, aviso };
+}
+
+function validarSessaoDpo(b) {
+    const erros = [];
+    if (!b.company_id) erros.push('Escolha a empresa.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(b.data || ''))) erros.push('Escolha a data.');
+    if (!HORA_RE.test(String(b.hora_inicio || ''))) erros.push('Informe a hora de início.');
+    if (!HORA_RE.test(String(b.hora_fim || ''))) erros.push('Informe a hora de término.');
+    if (!erros.length && b.hora_fim <= b.hora_inicio) erros.push('A hora de término precisa ser depois do início.');
+    if (b.teams_link && !/^https?:\/\/\S+$/i.test(String(b.teams_link).trim())) erros.push('Link do Teams inválido.');
+    return erros;
+}
+function participantesLimposDpo(lista) {
+    return (Array.isArray(lista) ? lista : []).map(p => ({ email: String(p.email || '').trim().toLowerCase().slice(0, 200), nome: String(p.nome || '').trim().slice(0, 120), papel: p.papel === 'extra' ? 'extra' : 'empresa' }))
+        .filter(p => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email)).slice(0, 40);
+}
+
+app.get('/api/admin/dpo/ms365', requireRole('admin'), async (req, res) => {
+    const c = await lerConfigMs365();
+    res.json({ ativo: ms365Ativo(c), tenant: c.tenant, clientId: c.clientId, organizador: c.organizador, secretPreview: c.secret ? '••••••' + c.secret.slice(-4) : null });
+});
+app.put('/api/admin/dpo/ms365', requireRole('admin'), async (req, res) => {
+    try {
+        const atual = await lerConfigMs365();
+        const novo = {
+            ms365_tenant: String(req.body.tenant || '').trim(),
+            ms365_client_id: String(req.body.clientId || '').trim(),
+            ms365_client_secret: String(req.body.secret || '').trim() || (req.body.limpar ? '' : atual.secret),
+            ms365_organizador: String(req.body.organizador || '').trim()
+        };
+        if (req.body.limpar) Object.keys(novo).forEach(k => novo[k] = '');
+        for (const [k, v] of Object.entries(novo)) await new Promise(r => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => r()));
+        CACHE_TOKEN_MS365 = { token: '', expira: 0, chave: '' };
+        const c = await lerConfigMs365();
+        if (ms365Ativo(c) && req.body.testar !== false) {
+            try { await graphMs365(c, 'GET', `/users/${encodeURIComponent(c.organizador)}/calendar`); }
+            catch (e) { return res.status(400).json({ error: 'Salvo, mas o teste falhou: ' + e.message }); }
+            return res.json({ message: 'Microsoft 365 conectado! Os agendamentos vão direto para o Outlook com link do Teams.' });
+        }
+        res.json({ message: req.body.limpar ? 'Integração removida — convites seguem por e-mail (.ics).' : 'Configuração salva.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar a integração.' }); }
+});
+
+// E-mails da empresa para convidar (gestores e acessos da empresa).
+app.get('/api/admin/dpo/sessoes/participantes', requireRole('admin'), async (req, res) => {
+    try {
+        const users = await dbAll(`SELECT name, email, role FROM users WHERE company_id = ? AND email IS NOT NULL AND email <> '' AND role IN ('client_admin', 'autonomous', 'employee') ORDER BY CASE role WHEN 'client_admin' THEN 0 ELSE 1 END, name`, [req.query.company_id]);
+        res.json(users.map(u => ({ nome: u.name, email: u.email, papel: u.role === 'client_admin' ? 'gestor' : 'acesso' })));
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar os participantes.' }); }
+});
+
+app.get('/api/dpo/sessoes', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const params = []; let filtro = '';
+        if (req.user.role === 'client_admin') { filtro = 'WHERE s.company_id = ?'; params.push(req.user.companyId); }
+        else if (req.query.company_id) { filtro = 'WHERE s.company_id = ?'; params.push(req.query.company_id); }
+        const ids = await dbAll(`SELECT s.id FROM dpo_sessoes s ${filtro} ORDER BY s.data DESC, s.hora_inicio DESC LIMIT 300`, params);
+        const lista = [];
+        for (const r of ids) {
+            const s = await montarSessaoDpo(r.id);
+            if (req.user.role !== 'admin') { delete s.graph_event_id; delete s.ultimo_envio; }
+            lista.push(s);
+        }
+        res.json(lista);
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar a agenda.' }); }
+});
+
+app.post('/api/admin/dpo/sessoes', requireRole('admin'), async (req, res) => {
+    const b = req.body || {};
+    const erros = validarSessaoDpo(b);
+    if (erros.length) return res.status(400).json({ error: erros[0] });
+    try {
+        const emp = await dbGet(`SELECT id, name FROM companies WHERE id = ?`, [b.company_id]);
+        if (!emp) return res.status(400).json({ error: 'Empresa inválida.' });
+        const pilares = (Array.isArray(b.pilares) ? b.pilares : []).filter(p => DPO_PILARES_ORDEM.includes(p));
+        const titulo = String(b.titulo || '').trim().slice(0, 200) || `Consultoria DPO — ${emp.name}`;
+        const uid = `dpo-${Date.now()}-${crypto.randomBytes(5).toString('hex')}@impulsionarv4`;
+        const id = await new Promise((ok, ko) => db.run(
+            `INSERT INTO dpo_sessoes (company_id, consultant_id, titulo, pilares, data, hora_inicio, hora_fim, formato, local, teams_link, participantes, observacao, uid, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [emp.id, b.consultant_id || null, titulo, JSON.stringify(pilares), b.data, b.hora_inicio, b.hora_fim, b.formato === 'presencial' ? 'presencial' : 'teams', String(b.local || '').trim().slice(0, 300) || null, String(b.teams_link || '').trim() || null, JSON.stringify(participantesLimposDpo(b.participantes)), String(b.observacao || '').trim().slice(0, 2000) || null, uid, req.user.userId],
+            function (err) { err ? ko(err) : ok(this.lastID); }));
+        const r = await sincronizarSessaoDpo(id, 'novo');
+        res.json({ id, message: r.ok ? `Consultoria agendada! Convite enviado para ${r.convidados} e-mail(s)${r.via === 'microsoft365' ? ' pelo Outlook/Teams' : ''}.` : r.erro, aviso: r.aviso || '', enviado: r.ok });
+    } catch (e) { res.status(400).json({ error: 'Erro ao agendar a consultoria.' }); }
+});
+
+app.put('/api/admin/dpo/sessoes/:id', requireRole('admin'), async (req, res) => {
+    const b = req.body || {};
+    try {
+        const atual = await dbGet(`SELECT * FROM dpo_sessoes WHERE id = ?`, [req.params.id]);
+        if (!atual) return res.status(404).json({ error: 'Agendamento não encontrado.' });
+        const m = { ...atual, ...b, company_id: atual.company_id };
+        const erros = validarSessaoDpo(m);
+        if (erros.length) return res.status(400).json({ error: erros[0] });
+        const pilares = b.pilares !== undefined ? (Array.isArray(b.pilares) ? b.pilares : []).filter(p => DPO_PILARES_ORDEM.includes(p)) : JSON.parse(atual.pilares || '[]');
+        await new Promise((ok, ko) => db.run(
+            `UPDATE dpo_sessoes SET consultant_id = ?, titulo = ?, pilares = ?, data = ?, hora_inicio = ?, hora_fim = ?, formato = ?, local = ?, teams_link = ?, participantes = ?, observacao = ?, status = 'agendada', sequencia = sequencia + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            [m.consultant_id || null, String(m.titulo || '').trim().slice(0, 200) || atual.titulo, JSON.stringify(pilares), m.data, m.hora_inicio, m.hora_fim, m.formato === 'presencial' ? 'presencial' : 'teams', String(m.local || '').trim().slice(0, 300) || null, String(m.teams_link || '').trim() || null,
+             JSON.stringify(b.participantes !== undefined ? participantesLimposDpo(b.participantes) : JSON.parse(atual.participantes || '[]')), String(m.observacao || '').trim().slice(0, 2000) || null, atual.id],
+            (err) => err ? ko(err) : ok()));
+        const r = b.reenviar === false ? { ok: true, convidados: 0 } : await sincronizarSessaoDpo(atual.id, 'update');
+        res.json({ message: r.ok ? `Agendamento atualizado${r.convidados ? ' — convite atualizado para ' + r.convidados + ' e-mail(s)' : ''}.` : r.erro, aviso: r.aviso || '' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o agendamento.' }); }
+});
+
+app.post('/api/admin/dpo/sessoes/:id/reenviar', requireRole('admin'), async (req, res) => {
+    try {
+        const r = await sincronizarSessaoDpo(req.params.id, 'update');
+        if (!r.ok) return res.status(400).json({ error: r.erro });
+        res.json({ message: `Convite reenviado para ${r.convidados} e-mail(s).`, aviso: r.aviso || '' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao reenviar o convite.' }); }
+});
+
+app.post('/api/admin/dpo/sessoes/:id/status', requireRole('admin'), async (req, res) => {
+    const st = ['agendada', 'realizada', 'cancelada'].includes(req.body.status) ? req.body.status : null;
+    if (!st) return res.status(400).json({ error: 'Status inválido.' });
+    try {
+        const atual = await dbGet(`SELECT * FROM dpo_sessoes WHERE id = ?`, [req.params.id]);
+        if (!atual) return res.status(404).json({ error: 'Agendamento não encontrado.' });
+        await new Promise(r => db.run(`UPDATE dpo_sessoes SET status = ?, sequencia = sequencia + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [st, atual.id], () => r()));
+        let msg = 'Status atualizado.';
+        if (st === 'cancelada' && atual.status !== 'cancelada') {
+            const r = await sincronizarSessaoDpo(atual.id, 'cancel');
+            msg = r.ok ? 'Consultoria cancelada — o cancelamento foi enviado para as agendas.' : 'Cancelada, mas ' + r.erro;
+        }
+        res.json({ message: msg });
+    } catch (e) { res.status(400).json({ error: 'Erro ao alterar o status.' }); }
+});
+
+app.delete('/api/admin/dpo/sessoes/:id', requireRole('admin'), async (req, res) => {
+    try {
+        const atual = await dbGet(`SELECT * FROM dpo_sessoes WHERE id = ?`, [req.params.id]);
+        if (!atual) return res.status(404).json({ error: 'Agendamento não encontrado.' });
+        if (atual.status === 'agendada' && atual.data >= new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10)) {
+            await new Promise(r => db.run(`UPDATE dpo_sessoes SET sequencia = sequencia + 1 WHERE id = ?`, [atual.id], () => r()));
+            await sincronizarSessaoDpo(atual.id, 'cancel').catch(() => {});
+        }
+        await new Promise(r => db.run(`DELETE FROM dpo_sessoes WHERE id = ?`, [atual.id], () => r()));
+        res.json({ message: 'Agendamento excluído.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao excluir.' }); }
+});
+
+// Arquivo .ics para "Adicionar à minha agenda" (Outlook, Google, Apple).
+app.get('/api/dpo/sessoes/:id/ics', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const s = await montarSessaoDpo(req.params.id);
+        if (!s) return res.status(404).json({ error: 'Agendamento não encontrado.' });
+        if (req.user.role === 'client_admin' && String(s.company_id) !== String(req.user.companyId)) return res.status(403).json({ error: 'Sem acesso.' });
+        res.set('Content-Type', 'text/calendar; charset=utf-8');
+        res.set('Content-Disposition', `attachment; filename="consultoria-dpo-${s.data}.ics"`);
+        res.send(gerarIcsSessaoDpo(s, s.status === 'cancelada' ? 'CANCEL' : 'PUBLISH'));
+    } catch (e) { res.status(500).json({ error: 'Erro ao gerar o convite.' }); }
 });
 
 // Master visualiza o conteúdo completo de um pilar (perguntas, verificação,

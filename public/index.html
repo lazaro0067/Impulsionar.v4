@@ -482,6 +482,22 @@
   .chamado-anexo { display: inline-block; margin-top: 6px; font-size: 12.5px; color: #2563eb; }
   .chamado-msg-sistema { align-self: center; font-size: 12px; color: #475569; background: #f1f5f9; border-radius: 999px; padding: 4px 12px; text-align: center; }
   .chamado-msg-sistema span { color: #94a3b8; }
+  .agd-card { display:flex; gap:14px; align-items:flex-start; padding:12px; border:1px solid var(--cinza-200); border-radius:12px; margin-bottom:10px; background:#fff; }
+  .agd-card.cancelada { opacity:.65; }
+  .agd-dia { width:64px; flex:0 0 64px; text-align:center; border-radius:10px; background:#0b1324; color:#fff; padding:8px 0; }
+  .agd-dia-n { font-size:24px; font-weight:800; line-height:1; }
+  .agd-dia-m { font-size:11px; text-transform:uppercase; opacity:.85; margin-top:3px; }
+  .agd-linha { font-size:12.5px; color:#475569; margin-top:3px; }
+  .agd-card .btn-sm, .agd-card a.btn-sm { width:auto !important; text-decoration:none; }
+  .agd-teams { background:#5b5fc7 !important; color:#fff !important; border:none; border-radius:8px; padding:6px 12px; font-weight:700; }
+  .agd-grade3 { display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:10px; }
+  .agd-chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .agd-chip { display:inline-flex !important; align-items:center; gap:5px; border:1px solid var(--cinza-200); border-radius:999px; padding:4px 10px; font-size:12px; font-weight:600; cursor:pointer; margin:0; }
+  .agd-chip input, .agd-part input { width:auto !important; margin:0 !important; }
+  .agd-part { border:1px solid var(--cinza-200); border-radius:8px; padding:6px 10px; max-height:200px; overflow-y:auto; }
+  .agd-part label { display:flex; align-items:center; gap:8px; font-weight:500; font-size:13px; padding:4px 0; margin:0; cursor:pointer; }
+  .agd-tag { background:#e0e7ff; color:#3730a3; border-radius:999px; font-size:10.5px; padding:0 7px; font-weight:700; }
+  @media (max-width:600px) { .agd-grade3 { grid-template-columns:1fr 1fr; } .agd-card { flex-direction:column; } }
   .matimp-chip { display:inline-block; margin-left:6px; background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; border-radius:999px; font-size:11px; font-weight:700; padding:1px 8px; }
   .matimp-cont { background:#ea580c; color:#fff; border-radius:999px; font-size:10.5px; padding:0 6px; margin-left:4px; }
   .matimp-pasta { border:1px solid #fed7aa; background:linear-gradient(180deg,#fffbf5,#fff); border-radius:10px; padding:10px 12px; margin-bottom:10px; }
@@ -6736,6 +6752,260 @@ async function excluirDpoConsultor(id) {
 // ----- Master: agenda de consultorias (ciclos) -----
 let CACHE_DPO_EMPRESAS_TODAS = [];
 
+// ----- Agenda de consultorias (data/hora) com convite Outlook / Teams -----
+let AGD = { sessoes: [], consultores: [], empresas: [], ms365: null, filtro: 'proximas' };
+const STATUS_SESSAO_DPO = { agendada: { t: 'Agendada', c: '#1d4ed8', f: '#dbeafe' }, realizada: { t: 'Realizada', c: '#15803d', f: '#dcfce7' }, cancelada: { t: 'Cancelada', c: '#b91c1c', f: '#fee2e2' } };
+function agdDataBr(d) { return d ? d.split('-').reverse().join('/') : ''; }
+function agdDiaSemana(d) { try { return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }); } catch (e) { return ''; } }
+function agdHoje() { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; }
+
+async function baixarIcsSessaoDpo(id) {
+  try {
+    const r = await fetch('/api/dpo/sessoes/' + id + '/ics', { headers: { 'Authorization': 'Bearer ' + ESTADO.token } });
+    if (!r.ok) throw new Error('Não foi possível gerar o convite.');
+    const blob = await r.blob(); const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'consultoria-dpo-' + id + '.ics'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+function linkOutlookWebSessaoDpo(s) {
+  const p = new URLSearchParams({ path: '/calendar/action/compose', rru: 'addevent', subject: s.titulo,
+    startdt: `${s.data}T${s.hora_inicio}:00-03:00`, enddt: `${s.data}T${s.hora_fim}:00-03:00`,
+    body: `Consultoria DPO${s.consultorNome ? ' com ' + s.consultorNome : ''}${s.teams_link ? '\nTeams: ' + s.teams_link : ''}`,
+    location: s.teams_link ? 'Microsoft Teams' : (s.local || '') });
+  return 'https://outlook.office.com/calendar/0/deeplink/compose?' + p.toString();
+}
+
+function agdCartaoHtml(s, ehMaster) {
+  const st = STATUS_SESSAO_DPO[s.status] || STATUS_SESSAO_DPO.agendada;
+  const [ano, mes, dia] = s.data.split('-');
+  const mesTxt = new Date(s.data + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+  const envio = ehMaster && s.ultimo_envio ? s.ultimo_envio.split('|') : null;
+  return `<div class="agd-card ${s.status}">
+    <div class="agd-dia"><div class="agd-dia-n">${dia}</div><div class="agd-dia-m">${escapeHtml(mesTxt)} ${ano}</div></div>
+    <div style="flex:1;min-width:220px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <strong style="font-size:14.5px;">${escapeHtml(s.titulo)}</strong>
+        <span class="dpo-score-badge" style="background:${st.f};color:${st.c};">${st.t}</span>
+      </div>
+      <div class="agd-linha">🕘 ${escapeHtml(agdDiaSemana(s.data))}, ${s.hora_inicio} às ${s.hora_fim} · ${s.formato === 'presencial' ? '📍 ' + escapeHtml(s.local || 'Presencial') : '🎥 Microsoft Teams'}</div>
+      ${ehMaster ? `<div class="agd-linha">🏢 ${escapeHtml(s.companyName || '')}</div>` : ''}
+      ${s.consultorNome ? `<div class="agd-linha">👤 Consultor: ${escapeHtml(s.consultorNome)}${s.consultorEmail && ehMaster ? ' · ' + escapeHtml(s.consultorEmail) : ''}</div>` : ''}
+      ${s.pilaresLabel && s.pilaresLabel.length ? `<div class="agd-linha">🧩 ${s.pilaresLabel.map(escapeHtml).join(', ')}</div>` : ''}
+      ${ehMaster && s.participantes.length ? `<div class="agd-linha">✉️ ${s.participantes.map(p => escapeHtml(p.email)).join(', ')}</div>` : ''}
+      ${s.observacao ? `<div class="agd-linha" style="white-space:pre-line;">📝 ${escapeHtml(s.observacao)}</div>` : ''}
+      ${envio ? `<div class="agd-linha" style="color:#15803d;">✅ Convite enviado ${envio[0] === 'microsoft365' ? 'pelo Outlook/Teams (Microsoft 365)' : 'por e-mail (.ics)'} para ${envio[2]} e-mail(s) em ${new Date(envio[1]).toLocaleString('pt-BR')}</div>` : ''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+        ${s.teams_link && s.status !== 'cancelada' ? `<a class="btn-sm agd-teams" href="${escapeHtml(s.teams_link)}" target="_blank" rel="noopener">🎥 Entrar no Teams</a>` : ''}
+        ${s.status !== 'cancelada' ? `<button class="btn-secundario btn-sm" onclick="baixarIcsSessaoDpo(${s.id})">📅 Adicionar à agenda (.ics)</button>
+        <a class="btn-secundario btn-sm" href="${escapeHtml(linkOutlookWebSessaoDpo(s))}" target="_blank" rel="noopener">📧 Outlook web</a>` : ''}
+        ${ehMaster ? `
+          ${s.status === 'agendada' ? `<button class="btn-secundario btn-sm" onclick="abrirFormSessaoDpo(${s.id})">✏️ Editar / reagendar</button>
+          <button class="btn-secundario btn-sm" onclick="reenviarSessaoDpo(${s.id})">🔁 Reenviar convite</button>
+          <button class="btn-secundario btn-sm" onclick="statusSessaoDpo(${s.id}, 'realizada')">✔ Realizada</button>
+          <button class="btn-perigo btn-sm" onclick="statusSessaoDpo(${s.id}, 'cancelada')">Cancelar</button>` : ''}
+          <button class="btn-perigo btn-sm" onclick="excluirSessaoDpo(${s.id})">🗑</button>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+async function carregarSessoesDpoMaster() {
+  const area = document.getElementById('dpo-sessoes-area'); if (!area) return;
+  try {
+    const [sessoes, consultores, ms365] = await Promise.all([api('/api/dpo/sessoes'), api('/api/admin/dpo/consultants'), api('/api/admin/dpo/ms365').catch(() => null)]);
+    AGD.sessoes = sessoes; AGD.consultores = consultores; AGD.ms365 = ms365;
+    AGD.empresas = (typeof CACHE_DPO_EMPRESAS_TODAS !== 'undefined' && CACHE_DPO_EMPRESAS_TODAS) || [];
+    desenharSessoesDpoMaster();
+  } catch (e) { area.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+function desenharSessoesDpoMaster() {
+  const area = document.getElementById('dpo-sessoes-area'); if (!area) return;
+  const hoje = agdHoje();
+  const prox = AGD.sessoes.filter(s => s.status === 'agendada' && s.data >= hoje).sort((a, b) => (a.data + a.hora_inicio).localeCompare(b.data + b.hora_inicio));
+  const hist = AGD.sessoes.filter(s => !(s.status === 'agendada' && s.data >= hoje));
+  const lista = AGD.filtro === 'proximas' ? prox : hist;
+  const m = AGD.ms365;
+  area.innerHTML = `
+    <div class="painel" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div><h2 style="margin:0;">📅 Agenda de consultorias</h2>
+          <div style="font-size:12.5px;color:#64748b;">Ao agendar, o convite vai para o Outlook/Teams do consultor e dos usuários da empresa (pelo e-mail cadastrado).</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn-secundario btn-sm" style="width:auto;" onclick="abrirConfigMs365()">${m && m.ativo ? '🟢 Microsoft 365 conectado' : '⚙️ Conectar Teams/Outlook'}</button>
+          <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirFormSessaoDpo()">+ Agendar consultoria</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin:12px 0;">
+        <button class="btn-sm ${AGD.filtro === 'proximas' ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="AGD.filtro='proximas'; desenharSessoesDpoMaster();">Próximas (${prox.length})</button>
+        <button class="btn-sm ${AGD.filtro === 'historico' ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="AGD.filtro='historico'; desenharSessoesDpoMaster();">Realizadas / canceladas (${hist.length})</button>
+      </div>
+      ${lista.length ? lista.map(s => agdCartaoHtml(s, true)).join('') : `<div class="msg-vazio">${AGD.filtro === 'proximas' ? 'Nenhuma consultoria agendada. Clique em <strong>+ Agendar consultoria</strong>.' : 'Nada no histórico ainda.'}</div>`}
+    </div>`;
+}
+
+let AGD_PART = [];
+async function abrirFormSessaoDpo(id) {
+  const s = id ? AGD.sessoes.find(x => x.id === id) : null;
+  const empresas = AGD.empresas.filter(e => (e.pilaresAtivos || []).length || (s && e.id === s.company_id));
+  const consultores = AGD.consultores.filter(c => c.active || (s && c.id === s.consultant_id));
+  const pilares = (CACHE_DPO_PILARES && CACHE_DPO_PILARES.pilares) || [];
+  const ms = AGD.ms365 && AGD.ms365.ativo;
+  document.getElementById('modal-area') || document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>');
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa agd-form" style="max-width:640px;max-height:92vh;overflow-y:auto;">
+        <h3 style="margin-top:0;">📅 ${s ? 'Editar / reagendar' : 'Agendar'} consultoria</h3>
+        <label>Empresa</label>
+        <select id="agd-empresa" ${s ? 'disabled' : ''} onchange="agdCarregarParticipantes(this.value)">
+          <option value="">— escolha —</option>
+          ${empresas.map(e => `<option value="${e.id}" ${s && s.company_id === e.id ? 'selected' : ''}>${escapeHtml(e.name)}</option>`).join('')}
+        </select>
+        <label>Consultor</label>
+        <select id="agd-consultor">
+          <option value="">— sem consultor —</option>
+          ${consultores.map(c => `<option value="${c.id}" ${(s ? s.consultant_id === c.id : consultores.length === 1) ? 'selected' : ''}>${escapeHtml(c.name)}${c.email ? ' — ' + escapeHtml(c.email) : ' (sem e-mail)'}</option>`).join('')}
+        </select>
+        <label>Título</label>
+        <input id="agd-titulo" maxlength="200" placeholder="Consultoria DPO — (empresa)" value="${escapeHtml(s ? s.titulo : '')}">
+        <div class="agd-grade3">
+          <div><label>Data</label><input id="agd-data" type="date" value="${s ? s.data : ''}" min="${s ? '' : agdHoje()}"></div>
+          <div><label>Hora início</label><input id="agd-ini" type="time" value="${s ? s.hora_inicio : '09:00'}" onchange="agdSugerirFim()"></div>
+          <div><label>Hora final</label><input id="agd-fim" type="time" value="${s ? s.hora_fim : '10:00'}"></div>
+        </div>
+        <label>Pilar(es) da consultoria (opcional)</label>
+        <div class="agd-chips">${pilares.map(p => `<label class="agd-chip"><input type="checkbox" value="${p.key}" ${s && s.pilares.includes(p.key) ? 'checked' : ''}> ${escapeHtml(p.label)}</label>`).join('')}</div>
+        <label>Formato</label>
+        <select id="agd-formato" onchange="agdFormato()">
+          <option value="teams" ${!s || s.formato !== 'presencial' ? 'selected' : ''}>🎥 Online — Microsoft Teams</option>
+          <option value="presencial" ${s && s.formato === 'presencial' ? 'selected' : ''}>📍 Presencial</option>
+        </select>
+        <div id="agd-teams-area">
+          ${ms ? `<div class="plano-meta" style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:8px 10px;margin-top:6px;">🟢 Microsoft 365 conectado: o link do Teams é criado automaticamente e o evento cai direto no Outlook de todos.</div>`
+               : `<label>Link da reunião do Teams (opcional)</label><input id="agd-link" placeholder="https://teams.microsoft.com/l/meetup-join/..." value="${escapeHtml(s && s.teams_link ? s.teams_link : '')}">
+                  <div class="plano-meta" style="font-size:11.5px;">Cole o link da reunião criada no seu Teams — ou conecte o Microsoft 365 para gerar automático.</div>`}
+        </div>
+        <div id="agd-local-area" style="display:none;"><label>Local</label><input id="agd-local" placeholder="Endereço / sala" value="${escapeHtml(s && s.local ? s.local : '')}"></div>
+        <label style="margin-top:10px;">Convidados da empresa (puxados pelo e-mail cadastrado)</label>
+        <div id="agd-part" class="agd-part"><div class="plano-meta">Escolha a empresa para listar os usuários.</div></div>
+        <label>Outros e-mails (separados por vírgula)</label>
+        <input id="agd-extras" placeholder="ex: gerente@revenda.com.br, rh@revenda.com.br" value="${escapeHtml(s ? s.participantes.filter(p => p.papel === 'extra').map(p => p.email).join(', ') : '')}">
+        <label>Observação / pauta (opcional)</label>
+        <textarea id="agd-obs" rows="3" placeholder="Pauta da consultoria">${escapeHtml(s && s.observacao ? s.observacao : '')}</textarea>
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" id="agd-salvar" onclick="salvarSessaoDpo(${s ? s.id : 'null'})">${s ? 'Salvar e atualizar convite' : '📨 Agendar e enviar convite'}</button>
+          <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+  agdFormato();
+  AGD_PART = s ? s.participantes.filter(p => p.papel !== 'extra').map(p => p.email) : null;
+  if (s) agdCarregarParticipantes(s.company_id);
+}
+function agdFormato() {
+  const f = (document.getElementById('agd-formato') || {}).value;
+  const t = document.getElementById('agd-teams-area'), l = document.getElementById('agd-local-area');
+  if (t) t.style.display = f === 'presencial' ? 'none' : ''; if (l) l.style.display = f === 'presencial' ? '' : 'none';
+}
+function agdSugerirFim() {
+  const i = document.getElementById('agd-ini').value, f = document.getElementById('agd-fim');
+  if (!i) return; const [h, m] = i.split(':').map(Number);
+  if (!f.value || f.value <= i) f.value = `${String(Math.min(h + 1, 23)).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+async function agdCarregarParticipantes(companyId) {
+  const box = document.getElementById('agd-part'); if (!box) return;
+  if (!companyId) { box.innerHTML = '<div class="plano-meta">Escolha a empresa para listar os usuários.</div>'; return; }
+  box.innerHTML = '<div class="plano-meta">Carregando...</div>';
+  try {
+    const l = await api('/api/admin/dpo/sessoes/participantes?company_id=' + companyId);
+    const marcados = AGD_PART;
+    box.innerHTML = l.length ? l.map(u => `<label><input type="checkbox" value="${escapeHtml(u.email)}" data-nome="${escapeHtml(u.nome || '')}" ${marcados ? (marcados.includes(String(u.email).toLowerCase()) ? 'checked' : '') : (u.papel === 'gestor' ? 'checked' : '')}> ${escapeHtml(u.nome || '')} <span style="color:#64748b;">— ${escapeHtml(u.email)}</span>${u.papel === 'gestor' ? ' <span class="agd-tag">gestor</span>' : ''}</label>`).join('')
+      : '<div class="plano-meta">Essa empresa não tem usuários com e-mail. Use "Outros e-mails".</div>';
+  } catch (e) { box.innerHTML = `<div class="plano-meta">${escapeHtml(e.message)}</div>`; }
+}
+async function salvarSessaoDpo(id) {
+  const v = x => (document.getElementById(x) || {}).value || '';
+  const participantes = [...document.querySelectorAll('#agd-part input:checked')].map(i => ({ email: i.value, nome: i.dataset.nome, papel: 'empresa' }))
+    .concat(v('agd-extras').split(/[,;\s]+/).map(e => e.trim()).filter(Boolean).map(email => ({ email, papel: 'extra' })));
+  const corpo = {
+    company_id: Number(v('agd-empresa')) || undefined, consultant_id: Number(v('agd-consultor')) || null, titulo: v('agd-titulo'),
+    data: v('agd-data'), hora_inicio: v('agd-ini'), hora_fim: v('agd-fim'), formato: v('agd-formato'),
+    teams_link: v('agd-link'), local: v('agd-local'), observacao: v('agd-obs'), participantes,
+    pilares: [...document.querySelectorAll('.agd-chips input:checked')].map(i => i.value)
+  };
+  if (!id && !corpo.company_id) return mostrarToast('Escolha a empresa.', true);
+  if (!corpo.data) return mostrarToast('Escolha a data.', true);
+  if (!corpo.hora_inicio || !corpo.hora_fim) return mostrarToast('Informe hora de início e final.', true);
+  if (corpo.hora_fim <= corpo.hora_inicio) return mostrarToast('A hora final precisa ser depois do início.', true);
+  const b = document.getElementById('agd-salvar'); b.disabled = true; const rot = b.textContent; b.textContent = 'Enviando convites...';
+  try {
+    const r = await api('/api/admin/dpo/sessoes' + (id ? '/' + id : ''), { method: id ? 'PUT' : 'POST', body: JSON.stringify(corpo) });
+    mostrarToast(r.message + (r.aviso ? ' ⚠️ ' + r.aviso : ''), r.enviado === false);
+    document.getElementById('modal-area').innerHTML = '';
+    AGD.filtro = 'proximas'; carregarSessoesDpoMaster();
+  } catch (e) { mostrarToast(e.message, true); b.disabled = false; b.textContent = rot; }
+}
+async function reenviarSessaoDpo(id) {
+  try { const r = await api('/api/admin/dpo/sessoes/' + id + '/reenviar', { method: 'POST' }); mostrarToast(r.message + (r.aviso ? ' ⚠️ ' + r.aviso : '')); carregarSessoesDpoMaster(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function statusSessaoDpo(id, status) {
+  if (status === 'cancelada' && !confirm('Cancelar esta consultoria? O cancelamento vai para a agenda de todos os convidados.')) return;
+  try { const r = await api('/api/admin/dpo/sessoes/' + id + '/status', { method: 'POST', body: JSON.stringify({ status }) }); mostrarToast(r.message); carregarSessoesDpoMaster(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function excluirSessaoDpo(id) {
+  if (!confirm('Excluir este agendamento? Se ainda estiver agendado, o cancelamento é enviado para os convidados.')) return;
+  try { const r = await api('/api/admin/dpo/sessoes/' + id, { method: 'DELETE' }); mostrarToast(r.message); carregarSessoesDpoMaster(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+function abrirConfigMs365() {
+  const m = AGD.ms365 || {};
+  document.getElementById('modal-area') || document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>');
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa" style="max-width:600px;max-height:92vh;overflow-y:auto;">
+        <h3 style="margin-top:0;">⚙️ Integração Microsoft 365 (Teams + Outlook)</h3>
+        <div class="plano-meta" style="margin-bottom:8px;">${m.ativo ? '🟢 <strong>Conectado.</strong> Os agendamentos são criados direto no Outlook com reunião do Teams.' : '⚪ Não conectado — os convites vão por e-mail com o arquivo de calendário (.ics), que o Outlook/Teams aceita e coloca na agenda.'}</div>
+        <details style="margin-bottom:10px;"><summary style="cursor:pointer;font-weight:700;color:#4338ca;font-size:13px;">Como conectar (feito uma vez pelo administrador do Microsoft 365)</summary>
+          <ol style="font-size:12.5px;color:#334155;padding-left:18px;line-height:1.55;">
+            <li>Acesse <strong>portal.azure.com → Microsoft Entra ID → Registros de aplicativo → Novo registro</strong> (nome: Impulsionar Agenda).</li>
+            <li>Copie o <strong>ID do diretório (tenant)</strong> e o <strong>ID do aplicativo (client)</strong>.</li>
+            <li>Em <strong>Certificados e segredos</strong>, crie um <strong>segredo do cliente</strong> e copie o <strong>Valor</strong>.</li>
+            <li>Em <strong>Permissões de API → Microsoft Graph → Permissões de aplicativo</strong>, adicione <strong>Calendars.ReadWrite</strong> e clique em <strong>Conceder consentimento do administrador</strong>.</li>
+            <li>Em "Caixa organizadora" informe o e-mail Microsoft 365 que vai organizar as reuniões (ex: agenda@impulsionarv4.com.br) — precisa ter licença do Teams.</li>
+          </ol></details>
+        <label>ID do diretório (Tenant ID)</label><input id="ms-tenant" value="${escapeHtml(m.tenant || '')}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        <label>ID do aplicativo (Client ID)</label><input id="ms-client" value="${escapeHtml(m.clientId || '')}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        <label>Segredo do cliente (Client Secret)</label><input id="ms-secret" type="password" placeholder="${m.secretPreview ? 'salvo: ' + escapeHtml(m.secretPreview) + ' (deixe vazio para manter)' : 'cole o Valor do segredo'}">
+        <label>Caixa organizadora (e-mail Microsoft 365)</label><input id="ms-org" value="${escapeHtml(m.organizador || '')}" placeholder="agenda@suaempresa.com.br">
+        <div class="acoes-form" style="margin-top:14px;flex-wrap:wrap;">
+          <button class="btn-primario" id="ms-salvar" onclick="salvarConfigMs365()">Salvar e testar</button>
+          ${m.ativo ? '<button class="btn-perigo" onclick="salvarConfigMs365(true)">Desconectar</button>' : ''}
+          <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button>
+        </div>
+      </div>
+    </div>`;
+}
+async function salvarConfigMs365(limpar) {
+  const b = document.getElementById('ms-salvar'); if (b) { b.disabled = true; b.textContent = 'Testando...'; }
+  try {
+    const r = await api('/api/admin/dpo/ms365', { method: 'PUT', body: JSON.stringify(limpar ? { limpar: true } : { tenant: document.getElementById('ms-tenant').value, clientId: document.getElementById('ms-client').value, secret: document.getElementById('ms-secret').value, organizador: document.getElementById('ms-org').value }) });
+    mostrarToast(r.message); document.getElementById('modal-area').innerHTML = ''; carregarSessoesDpoMaster();
+  } catch (e) { mostrarToast(e.message, true); if (b) { b.disabled = false; b.textContent = 'Salvar e testar'; } }
+}
+// Empresa: próximas consultorias no topo do DPO Ambev.
+async function carregarSessoesDpoEmpresa() {
+  const area = document.getElementById('dpo-sessoes-empresa'); if (!area) return;
+  try {
+    const hoje = agdHoje();
+    const l = (await api('/api/dpo/sessoes')).filter(s => s.status === 'agendada' && s.data >= hoje).sort((a, b) => (a.data + a.hora_inicio).localeCompare(b.data + b.hora_inicio));
+    area.innerHTML = l.length ? `<div class="painel" style="margin-bottom:16px;border-left:4px solid #5b5fc7;">
+      <h3 style="margin:0 0 8px;">📅 Próximas consultorias</h3>${l.map(s => agdCartaoHtml(s, false)).join('')}</div>` : '';
+  } catch (e) { area.innerHTML = ''; }
+}
+
 async function renderDpoAgenda() {
   const cont = document.getElementById('conteudo');
   cont.innerHTML = '<h1>Impulsionar V4 — DPO Ambev — Agenda de Consultorias</h1><p>Carregando...</p>';
@@ -6750,6 +7020,7 @@ async function renderDpoAgenda() {
     cont.innerHTML = `
       <h1>Impulsionar V4 — DPO Ambev — Gestão das revendas</h1>
       <p style="color:#64748b;margin-top:-8px;">Aqui aparecem apenas as revendas com pacote DPO contratado. Como Master você pode abrir, editar (em qualquer status — fica registrado no histórico) ou excluir as autoavaliações feitas.</p>
+      <div id="dpo-sessoes-area"><p>Carregando agenda...</p></div>
 
       <h2 style="margin-top:18px;">📊 Autoavaliações feitas</h2>
       ${!AVS_MASTER.length ? '<div class="msg-vazio">Nenhuma revenda com pacote contratado ainda.</div>' : AVS_MASTER.map(emp => `
@@ -6907,6 +7178,7 @@ async function renderDpoAgenda() {
       </div>
       <div id="modal-area"></div>
     `;
+    carregarSessoesDpoMaster();
   } catch (e) { cont.innerHTML = `<h1>Impulsionar V4 — DPO Ambev — Agenda de Consultorias</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
 
@@ -7209,6 +7481,7 @@ async function renderDpoHome() {
     cont.innerHTML = `
       <h1>Impulsionar V4 — DPO Ambev</h1>
       <p style="color:#64748b;margin-top:-8px;">Consultoria de processos por pilar, com autoavaliação mensal e planos de ação.</p>
+      <div id="dpo-sessoes-empresa"></div>
       ${minhaEmpresaDpo && minhaEmpresaDpo.dpo_auditoria_oficial_data ? `
       <div class="msg-vazio" style="color:#7c3aed;border-color:#7c3aed;text-align:left;">
         🗓️ <strong>Auditoria Oficial Ambev marcada para ${new Date(minhaEmpresaDpo.dpo_auditoria_oficial_data + 'T00:00:00').toLocaleDateString('pt-BR')}</strong>
@@ -7280,6 +7553,7 @@ async function renderDpoHome() {
         </div>
       </div>` : ''}
     `;
+    carregarSessoesDpoEmpresa();
   } catch (e) { cont.innerHTML = `<h1>Impulsionar V4 — DPO Ambev</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
 
