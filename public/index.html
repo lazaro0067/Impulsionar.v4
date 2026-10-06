@@ -508,6 +508,14 @@
   .matimp-item:first-of-type { border-top:none; }
   .matimp-ico { width:34px; height:34px; border-radius:8px; background:#ffedd5; display:flex; align-items:center; justify-content:center; font-size:17px; flex:0 0 34px; }
   .matimp-item a.btn-sm { width:auto; white-space:nowrap; text-decoration:none; }
+  .cki-passo { font-weight:700; font-size:13.5px; color:#0f172a; display:flex; align-items:center; gap:8px; }
+  .cki-passo span { background:#0b1324; color:#fff; border-radius:999px; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; flex:0 0 22px; }
+  .cki-previa { border:1px solid var(--cinza-200); border-radius:10px; padding:10px; background:#f8fafc; }
+  .cki-tab { width:100%; font-size:12.5px; border-collapse:collapse; }
+  .cki-tab th, .cki-tab td { padding:6px 8px; border-bottom:1px solid var(--cinza-200); text-align:left; vertical-align:top; }
+  .cki-tab tr.erro td { background:#fef2f2; color:#991b1b; }
+  .cki-emp { border:1px solid var(--cinza-200); border-radius:8px; padding:6px 10px; max-height:240px; overflow-y:auto; columns:2; }
+  @media (max-width:700px) { .cki-emp { columns:1; } }
   .mdpo-pergunta { border:1px solid var(--cinza-200); border-radius:10px; padding:10px 12px; margin-bottom:8px; background:#fff; }
   .mdpo-pergunta.tem { border-left:4px solid #ea580c; }
   .mdpo-mat { display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-top:1px dashed var(--cinza-200); flex-wrap:wrap; }
@@ -7932,6 +7940,7 @@ async function carregarBatePapoDpo() {
         <div class="plano-meta">📁 ${escapeHtml(pilar.label)} · ${CACHE_BATE_PAPO_DPO.length} pergunta(s) registrada(s)</div>
         <div class="direita">
           <button class="btn-secundario btn-sm" onclick="baixarExcelBatePapoDpo()" ${CACHE_BATE_PAPO_DPO.length ? '' : 'disabled'}>📊 Baixar Excel</button>
+          ${ESTADO.usuario.role === 'admin' && ESTADO_DPO_VIEW.ciclo && ESTADO_DPO_VIEW.ciclo.company_id ? `<label class="btn-secundario btn-sm" style="cursor:pointer;margin:0;">📎 Subir planilha<input type="file" accept=".xlsx,.xlsm,.csv" style="display:none;" onchange="importarConhecimentoNaEmpresaDpo(this)"></label>` : ''}
           <button class="btn-primario btn-sm" onclick="abrirModalBatePapoDpo()">+ Adicionar</button>
         </div>
       </div>
@@ -7942,9 +7951,9 @@ async function carregarBatePapoDpo() {
             <div class="dpo-pergunta dpo-batepapo-item">
               <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
                 <div style="flex:1;min-width:0;">
-                  <div class="dpo-pergunta-titulo">❓ ${i + 1}. ${escapeHtml(item.pergunta)}</div>
+                  <div class="dpo-pergunta-titulo">❓ ${i + 1}. ${escapeHtml(item.pergunta)}${item.origem === 'impulsionar' ? ' <span class="matimp-chip">📎 Impulsionar</span>' : ''}</div>
                   <div class="dpo-batepapo-resposta">${item.resposta ? '💬 ' + escapeHtml(item.resposta) : '<em style="color:#94a3b8;">Sem resposta ainda</em>'}</div>
-                  <div class="plano-meta" style="margin-top:6px;font-size:11px;">${item.autorNome ? escapeHtml(item.autorNome) + ' · ' : ''}${item.created_at ? new Date(String(item.created_at).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : ''}</div>
+                  <div class="plano-meta" style="margin-top:6px;font-size:11px;">${item.origem === 'impulsionar' ? 'Impulsionar · ' : item.autorNome ? escapeHtml(item.autorNome) + ' · ' : ''}${item.created_at ? new Date(String(item.created_at).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : ''}</div>
                 </div>
                 <div style="display:flex;gap:6px;flex-shrink:0;">
                   <button class="btn-secundario btn-sm" onclick="abrirModalBatePapoDpo(${item.id})">Editar</button>
@@ -7957,6 +7966,21 @@ async function carregarBatePapoDpo() {
       `).join('')}
     `;
   } catch (e) { area.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+async function importarConhecimentoNaEmpresaDpo(inp) {
+  const f = inp.files[0]; if (!f) return;
+  const pilar = pilarAtualDpo(), cid = ESTADO_DPO_VIEW.ciclo.company_id;
+  const fd = (extra) => { const x = new FormData(); x.append('file', f); x.append('pillarKey', pilar.key); Object.entries(extra).forEach(([k, v]) => x.append(k, v)); return x; };
+  try {
+    const pv = await fetch('/api/admin/dpo/bate-papo/importar', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: fd({ previa: '1' }) }).then(async r => { const j = await r.json(); if (!r.ok) throw new Error(j.error); return j; });
+    if (!pv.validas) throw new Error('Nenhuma pergunta válida na planilha (confira o nº da pergunta do pilar).');
+    if (!confirm(`Adicionar ${pv.validas} pergunta(s) da planilha no Conhecimento do Time desta empresa?${pv.linhas.length - pv.validas ? `\n(${pv.linhas.length - pv.validas} linha(s) com problema serão ignoradas)` : ''}`)) { inp.value = ''; return; }
+    const r = await fetch('/api/admin/dpo/bate-papo/importar', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: fd({ companyIds: JSON.stringify([cid]) }) });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error);
+    mostrarToast(j.message); carregarBatePapoDpo();
+  } catch (e) { mostrarToast(e.message, true); }
+  inp.value = '';
 }
 
 // Modal: escolhe a pergunta do pilar e registra uma ou mais perguntas/respostas.
@@ -9502,8 +9526,92 @@ function matImpAbaHtml(pilar) {
     </div>`).join('')}`;
 }
 
+
+// ----- Master: planilha (anexo) que vira perguntas do "Conhecimento do Time" -----
+let CKI = { arquivo: null, linhas: null, empresas: new Set() };
+function desenharConhecimentoMaster() {
+  const cont = document.getElementById('conteudo');
+  const d = MDPO.dados;
+  const pilar = d.pilares.find(p => p.key === MDPO.pilar) || d.pilares[0];
+  const empresasOrd = [...d.empresas].sort((a, b) => (b.dpo - a.dpo) || a.name.localeCompare(b.name));
+  const l = CKI.linhas;
+  const validas = l ? l.filter(x => !x.erro) : [];
+  cont.innerHTML = `
+    <h1>📂 Material DPO</h1>
+    ${mdpoAbasHtml()}
+    <p style="color:#64748b;margin-top:-4px;">Suba uma planilha com perguntas e respostas: elas aparecem para as empresas escolhidas na aba <strong>📁 Conhecimento do Time</strong> de cada pilar, organizadas pela pergunta do pilar (marcadas como <strong>Impulsionar</strong>).</p>
+    <div class="painel" style="margin-bottom:14px;">
+      <div class="cki-passo"><span>1</span> Escolha o pilar e baixe o modelo (já vem com todas as perguntas do pilar — preencha "Pergunta ao time" e "Resposta"; pode repetir a linha para mais de uma pergunta).</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px;">
+        ${d.pilares.map(p => `<button class="btn-sm ${p.key === pilar.key ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="MDPO.pilar='${p.key}'; CKI.linhas=null; desenharConhecimentoMaster();">${escapeHtml(p.label)}</button>`).join('')}
+        <button class="btn-secundario btn-sm" style="width:auto;margin-left:auto;" onclick="baixarModeloConhecimentoDpo('${pilar.key}')">⬇ Baixar modelo Excel — ${escapeHtml(pilar.label)}</button>
+      </div>
+      <div class="cki-passo"><span>2</span> Suba a planilha (.xlsx ou .csv). Também aceita o Excel baixado em "Conhecimento do Time".</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:8px 0 14px;">
+        <div style="flex:1;min-width:240px;"><input id="cki-arquivo" type="file" accept=".xlsx,.xlsm,.csv" style="margin:0;" onchange="CKI.arquivo=this.files[0]||null; previaConhecimentoDpo()">${CKI.arquivo && CKI.arquivo.name ? `<div class="plano-meta" style="font-size:12px;margin-top:4px;">📎 Arquivo carregado: <strong>${escapeHtml(CKI.arquivo.name)}</strong></div>` : ''}</div>
+        <div style="min-width:260px;"><label style="font-size:12px;">Se a planilha não tiver o nº da pergunta, usar:</label>
+          <select id="cki-num" style="margin:0;" onchange="if(CKI.arquivo) previaConhecimentoDpo()"><option value="">— a planilha já informa —</option>
+          ${pilar.grupos.map(g => `<optgroup label="${escapeHtml(g.numero + ' ' + g.titulo)}">${g.perguntas.map(q => `<option value="${escapeHtml(q.numero)}">${escapeHtml(q.numero)} — ${escapeHtml(q.questao.length > 70 ? q.questao.slice(0, 70) + '…' : q.questao)}</option>`).join('')}</optgroup>`).join('')}</select></div>
+      </div>
+      ${l ? `<div class="cki-previa">
+        <div style="font-weight:700;margin-bottom:6px;">Pré-visualização: ${validas.length} pergunta(s) válida(s)${l.length - validas.length ? ` · <span style="color:#b91c1c;">${l.length - validas.length} com problema (serão ignoradas)</span>` : ''}</div>
+        <div style="max-height:320px;overflow:auto;"><table class="cki-tab"><thead><tr><th>Pilar</th><th>Nº</th><th>Pergunta ao time</th><th>Resposta</th><th></th></tr></thead><tbody>
+        ${l.map(x => `<tr class="${x.erro ? 'erro' : ''}"><td>${escapeHtml((d.pilares.find(p => p.key === x.pillar_key) || {}).label || '—')}</td><td>${escapeHtml(x.question_numero || '—')}</td><td>${escapeHtml(x.pergunta)}</td><td>${escapeHtml(x.resposta || '')}</td><td>${x.erro ? '⚠️ ' + escapeHtml(x.erro) : '✅'}</td></tr>`).join('')}
+        </tbody></table></div></div>` : ''}
+      <div class="cki-passo" style="margin-top:14px;"><span>3</span> Escolha as empresas que vão receber.</div>
+      <div style="display:flex;gap:6px;margin:8px 0 6px;">
+        <button class="btn-secundario btn-sm" style="width:auto;" onclick="empresasOrdCki().forEach(e => CKI.empresas.add(String(e.id))); desenharConhecimentoMaster();">Marcar todas com DPO</button>
+        <button class="btn-secundario btn-sm" style="width:auto;" onclick="CKI.empresas.clear(); desenharConhecimentoMaster();">Desmarcar</button>
+      </div>
+      <div class="mdpo-emp-lista cki-emp">${empresasOrd.map(e => `<label><input type="checkbox" value="${e.id}" ${CKI.empresas.has(String(e.id)) ? 'checked' : ''} onchange="this.checked ? CKI.empresas.add(this.value) : CKI.empresas.delete(this.value); document.getElementById('cki-enviar-txt').textContent = CKI.empresas.size"> ${escapeHtml(e.name)}${e.dpo ? '' : ' <span style="color:#94a3b8;font-size:11px;">(sem módulo DPO)</span>'}</label>`).join('')}</div>
+      <div class="acoes-form" style="margin-top:14px;">
+        <button class="btn-primario" id="cki-enviar" style="width:auto;" onclick="enviarConhecimentoDpo()" ${validas.length ? '' : 'disabled'}>📤 Enviar ${validas.length} pergunta(s) para <span id="cki-enviar-txt">${CKI.empresas.size}</span> empresa(s)</button>
+      </div>
+      <div class="plano-meta" style="font-size:11.5px;margin-top:6px;">Perguntas iguais que já existem na empresa não são duplicadas (só a resposta é atualizada). A empresa precisa ter a pasta "Conhecimento do Time" liberada para ver a aba.</div>
+    </div>
+    <div id="modal-area"></div>`;
+}
+function empresasOrdCki() { return (MDPO.dados.empresas || []).filter(e => e.dpo); }
+async function baixarModeloConhecimentoDpo(pk) {
+  try {
+    const r = await fetch('/api/admin/dpo/bate-papo/modelo/' + pk, { headers: { 'Authorization': 'Bearer ' + ESTADO.token } });
+    if (!r.ok) throw new Error('Não foi possível gerar o modelo.');
+    const blob = await r.blob(); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'modelo-conhecimento-do-time-' + pk + '.xlsx'; document.body.appendChild(a); a.click(); a.remove();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function enviarPlanilhaConhecimentoDpo(extra) {
+  const fd = new FormData(); fd.append('file', CKI.arquivo); fd.append('pillarKey', MDPO.pilar || '');
+  const num = document.getElementById('cki-num'); fd.append('questionNumero', num ? num.value : '');
+  Object.entries(extra).forEach(([k, v]) => fd.append(k, v));
+  const r = await fetch('/api/admin/dpo/bate-papo/importar', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: fd });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Erro ao ler a planilha.');
+  return j;
+}
+async function previaConhecimentoDpo() {
+  if (!CKI.arquivo) { CKI.linhas = null; return desenharConhecimentoMaster(); }
+  const numSel = (document.getElementById('cki-num') || {}).value || '';
+  try {
+    const j = await enviarPlanilhaConhecimentoDpo({ previa: '1' });
+    CKI.linhas = j.linhas;
+    if (!j.linhas.length) mostrarToast('Não achei perguntas na planilha. Use o modelo: coluna "Pergunta ao time" preenchida.', true);
+  } catch (e) { CKI.linhas = null; mostrarToast(e.message, true); }
+  desenharConhecimentoMaster();
+  const sel = document.getElementById('cki-num'); if (sel) sel.value = numSel;
+}
+async function enviarConhecimentoDpo() {
+  if (!CKI.arquivo) return mostrarToast('Suba a planilha primeiro.', true);
+  if (!CKI.empresas.size) return mostrarToast('Escolha ao menos uma empresa.', true);
+  const b = document.getElementById('cki-enviar'); b.disabled = true;
+  try {
+    const j = await enviarPlanilhaConhecimentoDpo({ companyIds: JSON.stringify([...CKI.empresas].map(Number)) });
+    mostrarToast(j.message);
+    CKI.arquivo = null; CKI.linhas = null; desenharConhecimentoMaster();
+  } catch (e) { mostrarToast(e.message, true); b.disabled = false; }
+}
+
 // ----- Master: "Material DPO" (biblioteca + disponibilizar por empresa) -----
-let MDPO = { dados: null, pilar: '', empresa: '', busca: '', soComMaterial: false };
+let MDPO = { dados: null, pilar: '', empresa: '', busca: '', soComMaterial: false, aba: 'material' };
 
 async function renderMaterialDpoMaster() {
   const cont = document.getElementById('conteudo');
@@ -9515,9 +9623,16 @@ async function renderMaterialDpoMaster() {
   } catch (e) { cont.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
 
+function mdpoAbasHtml() {
+  return `<div class="dpo-subabas" style="margin-bottom:14px;">
+    <button class="dpo-subaba ${MDPO.aba === 'material' ? 'ativa' : ''}" onclick="MDPO.aba='material'; desenharMaterialDpoMaster();">📂 Materiais (arquivos)</button>
+    <button class="dpo-subaba ${MDPO.aba === 'conhecimento' ? 'ativa' : ''}" onclick="MDPO.aba='conhecimento'; desenharMaterialDpoMaster();">📁 Conhecimento do Time (perguntas)</button>
+  </div>`;
+}
 function desenharMaterialDpoMaster() {
   const cont = document.getElementById('conteudo');
   const d = MDPO.dados; if (!d) return;
+  if (MDPO.aba === 'conhecimento') return desenharConhecimentoMaster();
   const pilar = d.pilares.find(p => p.key === MDPO.pilar) || d.pilares[0];
   const emp = MDPO.empresa ? d.empresas.find(e => String(e.id) === String(MDPO.empresa)) : null;
   const busca = MDPO.busca.toLowerCase();
@@ -9527,6 +9642,7 @@ function desenharMaterialDpoMaster() {
   const totalCompart = emp ? d.materiais.filter(m => m.compartilhado.some(c => String(c.companyId) === String(emp.id))).length : 0;
   cont.innerHTML = `
     <h1>📂 Material DPO</h1>
+    ${mdpoAbasHtml()}
     <p style="color:#64748b;margin-top:-8px;">Sua biblioteca de materiais por pergunta do DPO. Quando uma empresa precisar, clique em <strong>Disponibilizar</strong>: o material aparece para ela na pergunta, na pasta <strong>📂 Material Impulsionar</strong>. A empresa só enxerga as perguntas com material compartilhado — e você pode desmarcar a qualquer momento.</p>
     <div class="painel" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
       <div style="flex:1;min-width:240px;">
