@@ -1665,6 +1665,16 @@ function inicializarBase() {
             ip TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
+        db.run(`CREATE TABLE IF NOT EXISTS treinamentos_mt_gravacoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            treinamento_id INTEGER NOT NULL,
+            origem TEXT,
+            url TEXT NOT NULL,
+            nome TEXT,
+            tamanho INTEGER,
+            duracao_seg INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
         db.run(`CREATE TABLE IF NOT EXISTS treinamentos_mt_respostas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             check_id INTEGER NOT NULL,
@@ -8796,7 +8806,8 @@ app.get('/api/admin/treinamentos-mt/:id', requireRole('admin'), async (req, res)
         const cfg = await lerConfigMt();
         const tk = await garantirAtaTokenMt(t);
         const nAss = await dbGet(`SELECT COUNT(*) n FROM treinamentos_mt_presencas WHERE treinamento_id = ?`, [t.id]);
-        res.json({ ...t, modulos, check, ata: { link: `${baseUrlPublicaDpo(req)}/assinatura.html?t=${tk}`, ativa: t.ata_ativa !== 0, assinaturas: nAss ? nAss.n : 0 },
+        const nGrav = await dbGet(`SELECT COUNT(*) n FROM treinamentos_mt_gravacoes WHERE treinamento_id = ?`, [t.id]);
+        res.json({ ...t, modulos, check, gravacoes: nGrav ? nGrav.n : 0, ata: { link: `${baseUrlPublicaDpo(req)}/assinatura.html?t=${tk}`, ativa: t.ata_ativa !== 0, assinaturas: nAss ? nAss.n : 0 },
             divulgacao: divulgacaoMt(cfg) });
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar o treinamento.' }); }
 });
@@ -8842,6 +8853,7 @@ app.delete('/api/admin/treinamentos-mt/:id', requireRole('admin'), async (req, r
         for (const c of checks) await new Promise(r => db.run(`DELETE FROM treinamentos_mt_respostas WHERE check_id = ?`, [c.id], () => r()));
         await new Promise(r => db.run(`DELETE FROM treinamentos_mt_checks WHERE treinamento_id = ?`, [req.params.id], () => r()));
         await new Promise(r => db.run(`DELETE FROM treinamentos_mt_presencas WHERE treinamento_id = ?`, [req.params.id], () => r()));
+        await new Promise(r => db.run(`DELETE FROM treinamentos_mt_gravacoes WHERE treinamento_id = ?`, [req.params.id], () => r()));
         await new Promise(r => db.run(`DELETE FROM treinamentos_mt WHERE id = ?`, [req.params.id], () => r()));
         res.json({ message: 'Treinamento excluído.' });
     } catch (e) { res.status(400).json({ error: 'Erro ao excluir.' }); }
@@ -8955,6 +8967,59 @@ app.post('/api/admin/treinamentos-mt/:id/controle', requireRole('admin'), async 
         if (!codigo) { codigo = crypto.randomBytes(6).toString('hex'); CONTROLES_MT.set(codigo, { treinamentoId: t.id, titulo: consertarAcentoMt(t.titulo), criado: agora, userId: req.user.userId }); }
         res.json({ codigo, link: `${baseUrlPublicaDpo(req)}/controle.html?c=${codigo}` });
     } catch (e) { res.status(500).json({ error: 'Erro ao gerar o controle.' }); }
+});
+
+// ----- Gravações (tela do apresentador e câmera do celular) -----
+const uploadGravacaoMt = multer({
+    storage: armazenamentoUpload,
+    limits: { fileSize: 1024 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => (/^(video|audio)\//.test(file.mimetype) || /\.(webm|mp4|mov|m4a|ogg)$/i.test(file.originalname || '')) ? cb(null, true) : cb(new Error('Envie um vídeo.'))
+});
+async function salvarGravacaoMt(treinamentoId, f, origem, duracao) {
+    const nome = consertarAcentoMt(f.originalname || f.filename);
+    const id = await new Promise((ok, ko) => db.run(`INSERT INTO treinamentos_mt_gravacoes (treinamento_id, origem, url, nome, tamanho, duracao_seg) VALUES (?, ?, ?, ?, ?, ?)`,
+        [treinamentoId, origem === 'celular' ? 'celular' : 'tela', '/uploads/' + f.filename, nome, f.size || 0, Number(duracao) > 0 ? Math.round(Number(duracao)) : null], function (e) { e ? ko(e) : ok(this.lastID); }));
+    return id;
+}
+app.post('/api/admin/treinamentos-mt/:id/gravacoes', requireRole('admin'), (req, res) => {
+    uploadGravacaoMt.single('file')(req, res, async (err) => {
+        if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Gravação muito grande (máximo 1GB).' : err.message });
+        if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo recebido.' });
+        try {
+            const t = await dbGet(`SELECT id FROM treinamentos_mt WHERE id = ?`, [req.params.id]);
+            if (!t) return res.status(404).json({ error: 'Treinamento não encontrado.' });
+            const id = await salvarGravacaoMt(t.id, req.file, req.body.origem, req.body.duracao);
+            res.json({ id, url: '/uploads/' + req.file.filename, message: 'Gravação salva no treinamento!' });
+        } catch (e) { res.status(400).json({ error: 'Erro ao salvar a gravação.' }); }
+    });
+});
+// Celular (sem login) envia a filmagem usando o código do controle.
+app.post('/api/public/controle/:codigo/gravacao', (req, res) => {
+    const c = CONTROLES_MT.get(String(req.params.codigo || ''));
+    if (!c) return res.status(404).json({ error: 'Link de controle expirado. Gere um novo na apresentação.' });
+    uploadGravacaoMt.single('file')(req, res, async (err) => {
+        if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Gravação muito grande (máximo 1GB).' : err.message });
+        if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo recebido.' });
+        try {
+            const id = await salvarGravacaoMt(c.treinamentoId, req.file, 'celular', req.body.duracao);
+            io.to('mtc:' + req.params.codigo).emit('mt-gravacao-recebida', { id, origem: 'celular' });
+            res.json({ id, message: 'Filmagem enviada para o treinamento!' });
+        } catch (e) { res.status(400).json({ error: 'Erro ao salvar a filmagem.' }); }
+    });
+});
+app.get('/api/admin/treinamentos-mt/:id/gravacoes', requireRole('admin'), async (req, res) => {
+    try { res.json(await dbAll(`SELECT * FROM treinamentos_mt_gravacoes WHERE treinamento_id = ? ORDER BY created_at DESC, id DESC`, [req.params.id])); }
+    catch (e) { res.status(500).json({ error: 'Erro ao carregar as gravações.' }); }
+});
+app.delete('/api/admin/treinamentos-mt/gravacoes/:gid', requireRole('admin'), async (req, res) => {
+    try {
+        const g = await dbGet(`SELECT * FROM treinamentos_mt_gravacoes WHERE id = ?`, [req.params.gid]);
+        if (!g) return res.status(404).json({ error: 'Gravação não encontrada.' });
+        try { fs.unlinkSync(caminhoUploadMt(g.url)); } catch (e) { /* já não estava no disco */ }
+        db.run(`DELETE FROM arquivos_persistidos WHERE nome = ?`, [path.basename(g.url)], () => {});
+        await new Promise(ok => db.run(`DELETE FROM treinamentos_mt_gravacoes WHERE id = ?`, [g.id], () => ok()));
+        res.json({ message: 'Gravação excluída.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao excluir.' }); }
 });
 
 // ----- Ata de presença com assinatura (link público) -----
@@ -12099,6 +12164,14 @@ io.on('connection', (socket) => {
         const m = socket.data.mtc; if (!m || m.papel !== 'controle') return;
         if (!['proximo', 'anterior', 'ir', 'pedir-estado'].includes(cmd)) return;
         socket.to('mtc:' + m.codigo).emit('mt-comando', { cmd, i: Number(i) || 0 });
+    });
+    socket.on('mt-gravar', ({ acao } = {}) => {
+        const m = socket.data.mtc; if (!m || m.papel !== 'apresentador' || !['iniciar', 'parar'].includes(acao)) return;
+        socket.to('mtc:' + m.codigo).emit('mt-gravar', { acao });
+    });
+    socket.on('mt-gravacao-status', (st = {}) => {
+        const m = socket.data.mtc; if (!m || m.papel !== 'controle') return;
+        socket.to('mtc:' + m.codigo).emit('mt-gravacao-status', { gravando: !!st.gravando, camera: !!st.camera, enviando: !!st.enviando });
     });
     socket.on('mt-estado', (estado = {}) => {
         const m = socket.data.mtc; if (!m || m.papel !== 'apresentador') return;
