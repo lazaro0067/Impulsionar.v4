@@ -482,6 +482,199 @@
   .chamado-anexo { display: inline-block; margin-top: 6px; font-size: 12.5px; color: #2563eb; }
   .chamado-msg-sistema { align-self: center; font-size: 12px; color: #475569; background: #f1f5f9; border-radius: 999px; padding: 4px 12px; text-align: center; }
   .chamado-msg-sistema span { color: #94a3b8; }
+  .pa-novo-resp { border:1px dashed #a5b4fc; background:#eef2ff; border-radius:10px; padding:8px 10px; margin-top:6px; }
+  .pa-novo-resp input { margin:0 0 6px !important; }
+  .resp-form { background:#f8fafc; border:1px solid var(--cinza-200); border-radius:12px; padding:10px 12px; margin-bottom:10px; }
+  .resp-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; align-items:center; }
+  .resp-grid input { margin:0 !important; }
+  .resp-sec { font-weight:800; font-size:13px; margin:14px 0 4px; color:#334155; } .resp-sec span { font-weight:500; color:#94a3b8; font-size:12px; }
+  .resp-item { display:flex; gap:10px; align-items:center; padding:8px 4px; border-bottom:1px solid var(--cinza-200); flex-wrap:wrap; }
+  .resp-item.inativo { opacity:.55; }
+  .resp-av { width:34px; height:34px; border-radius:50%; background:#dc4c4c; color:#fff; font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; flex:0 0 34px; }
+  .resp-av.sis { background:#1d4ed8; } .resp-av.fun { background:#0f766e; }
+  .resp-chip { font-size:11px; font-weight:700; background:#fef3c7; color:#92400e; border-radius:999px; padding:2px 8px; } .resp-chip.vazio { background:#f1f5f9; color:#94a3b8; }
+  @media (max-width:640px) { .resp-grid { grid-template-columns:1fr; } }
+  /* ===== Ministrar Treinamento ===== */
+  #mt-show a, .mt-ck a, .mt-arq a, .mt-card a { text-decoration:none !important; display:inline-flex; align-items:center; justify-content:center; }
+  .mt-sl-fim .mt-sb { font-size:15px !important; padding:10px 16px !important; }
+  .mt-topo { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  .mt-kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-bottom:16px; }
+  .mt-kpi { background:#fff; border:1px solid var(--cinza-200); border-radius:14px; padding:12px 14px; display:flex; gap:10px; align-items:center; }
+  .mt-kpi-ico { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:19px; flex:0 0 40px; }
+  .mt-kpi-n { font-size:22px; font-weight:800; color:#0f172a; line-height:1.1; }
+  .mt-kpi-r { font-size:11.5px; color:#64748b; }
+  .mt-prox { display:flex; gap:16px; align-items:center; flex-wrap:wrap; background:#fff; border:1px solid var(--cinza-200); border-left:5px solid var(--c); border-radius:14px; padding:14px 16px; margin-bottom:16px; }
+  .mt-prox-data { width:64px; text-align:center; background:var(--c); color:#fff; border-radius:12px; padding:8px 0; }
+  .mt-prox-data div { font-size:26px; font-weight:800; line-height:1; } .mt-prox-data span { font-size:11px; text-transform:uppercase; }
+  .mt-prox-rot { font-size:10.5px; font-weight:800; letter-spacing:.08em; color:var(--c); }
+  .mt-prox-tit { font-size:17px; font-weight:800; color:#0f172a; } .mt-prox-meta { font-size:12.5px; color:#475569; }
+  .mt-btn-play { background:#dc4c4c !important; border-color:#dc4c4c !important; }
+  .mt-filtros { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+  .mt-chip { width:auto !important; border:1px solid var(--cinza-200); background:#fff; border-radius:999px; padding:6px 12px; font-size:12.5px; font-weight:700; color:#334155; cursor:pointer; margin:0; }
+  .mt-chip.on { background:#0b1324; color:#fff; border-color:#0b1324; }
+  .mt-sep { width:1px; height:22px; background:var(--cinza-200); margin:0 4px; }
+  .mt-busca { width:220px !important; margin:0 0 0 auto !important; }
+  .mt-grade { display:grid; grid-template-columns:repeat(auto-fill, minmax(290px, 1fr)); gap:14px; }
+  .mt-card { background:#fff; border:1px solid var(--cinza-200); border-radius:16px; overflow:hidden; display:flex; flex-direction:column; transition:transform .15s, box-shadow .15s; }
+  .mt-card:hover { transform:translateY(-2px); box-shadow:0 10px 24px rgba(15,23,42,.08); }
+  .mt-card-capa { position:relative; padding:16px; color:#fff; min-height:104px; cursor:pointer; }
+  .mt-card-pub { font-size:11.5px; font-weight:700; opacity:.92; }
+  .mt-card-tit { font-size:17px; font-weight:800; margin-top:6px; line-height:1.25; padding-right:10px; }
+  .mt-card-st { position:absolute; top:12px; right:12px; font-size:10.5px; font-weight:800; border-radius:999px; padding:2px 9px; }
+  .mt-card-corpo { padding:12px 16px; flex:1; }
+  .mt-linha { font-size:12.5px; color:#475569; margin-bottom:4px; }
+  .mt-card-acoes { display:flex; gap:6px; padding:10px 12px; border-top:1px solid var(--cinza-200); flex-wrap:wrap; }
+  .mt-card-acoes .btn-sm { width:auto !important; }
+  .mt-vazio { background:#fff; border:2px dashed var(--cinza-200); border-radius:16px; padding:34px 20px; text-align:center; color:#475569; margin-top:10px; }
+  .mt-vazio h3 { margin:6px 0; color:#0f172a; }
+  /* editor */
+  .mt-ed-barra { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px; position:sticky; top:0; z-index:5; background:var(--cinza-50, #f4f6f9); padding:8px 0; }
+  .mt-salvo { font-size:12px; color:#15803d; }
+  .mt-ed-titulo { font-size:26px !important; font-weight:800 !important; border:none !important; border-bottom:2px dashed var(--cinza-200) !important; border-radius:0 !important; background:transparent !important; padding:6px 2px !important; margin-bottom:12px !important; }
+  .mt-ed-titulo:focus { outline:none; border-bottom-color:#dc4c4c !important; }
+  .mt-ed-info { background:#fff; border:1px solid var(--cinza-200); border-radius:14px; padding:14px 16px; margin-bottom:14px; }
+  .mt-ed-pubs { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:10px; }
+  .mt-pub { width:auto !important; border:2px solid var(--cinza-200) !important; background:#fff !important; color:#334155 !important; border-radius:12px !important; padding:10px 6px !important; font-weight:800 !important; font-size:13px !important; display:flex; flex-direction:column; align-items:center; gap:2px; margin:0 !important; cursor:pointer; }
+  .mt-pub span { font-size:22px; }
+  .mt-pub.on { border-color:var(--c) !important; background:color-mix(in srgb, var(--c) 10%, #fff) !important; color:var(--c) !important; }
+  .mt-ed-grade { display:grid; grid-template-columns:repeat(3, 1fr); gap:0 12px; }
+  .mt-ed-mods { display:grid; grid-template-columns:270px 1fr; gap:14px; align-items:start; }
+  .mt-ed-lista { background:#fff; border:1px solid var(--cinza-200); border-radius:14px; padding:12px; position:sticky; top:58px; }
+  .mt-mod { display:flex; gap:8px; align-items:center; padding:8px; border-radius:10px; cursor:pointer; border:1px solid transparent; margin-bottom:4px; }
+  .mt-mod:hover { background:#f8fafc; }
+  .mt-mod.on { background:color-mix(in srgb, var(--c) 9%, #fff); border-color:color-mix(in srgb, var(--c) 40%, #fff); }
+  .mt-mod-n { width:26px; height:26px; border-radius:8px; background:#0b1324; color:#fff; font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; flex:0 0 26px; }
+  .mt-mod.on .mt-mod-n { background:var(--c); }
+  .mt-mod-t { font-weight:700; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mt-mod-s { font-size:11px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mt-mod-bt { display:flex; flex-direction:column; }
+  .mt-mod-bt button { width:auto !important; padding:0 4px !important; font-size:9px !important; background:none !important; border:none !important; color:#94a3b8 !important; margin:0 !important; cursor:pointer; }
+  .mt-add { width:100% !important; margin-top:6px !important; }
+  .mt-ed-mod { background:#fff; border:1px solid var(--cinza-200); border-radius:14px; padding:14px 16px; min-height:300px; }
+  .mt-mod-tit-in { flex:1; min-width:200px; font-size:17px !important; font-weight:800 !important; margin:0 !important; }
+  .mt-sl-ed { display:flex; gap:14px; padding:12px 0; border-top:1px solid var(--cinza-200); flex-wrap:wrap; }
+  .mt-sl-mini { width:260px; flex:0 0 260px; cursor:pointer; font-size:4.33px; border-radius:6px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.15); align-self:flex-start; }
+  .mt-ic { width:auto !important; border:1px solid var(--cinza-200) !important; background:#fff !important; color:#475569 !important; border-radius:6px !important; padding:2px 7px !important; font-size:11px !important; margin:0 !important; cursor:pointer; }
+  .mt-ic.perigo { color:#dc2626 !important; }
+  .mt-add-sl { width:100% !important; border:2px dashed var(--cinza-200) !important; background:#f8fafc !important; margin-top:10px !important; }
+  .mt-drop { display:flex; flex-direction:column; align-items:center; gap:4px; padding:34px; border:2px dashed #cbd5e1; border-radius:14px; cursor:pointer; text-align:center; color:#475569; background:#f8fafc; font-weight:500; }
+  .mt-drop:hover { border-color:#dc4c4c; }
+  .mt-drop span { font-size:12px; color:#64748b; }
+  .mt-dica { background:#eef2ff; border:1px solid #c7d2fe; border-radius:10px; padding:8px 12px; font-size:13px; margin-bottom:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .mt-arq-prev { border:1px solid var(--cinza-200); border-radius:10px; overflow:hidden; aspect-ratio:16/9; background:#0f172a; }
+  /* slide */
+  .mt-sl { position:relative; aspect-ratio:16/9; width:100%; background:#fff; color:#0f172a; overflow:hidden; font-family:inherit; }
+  .mt-sl-barra { position:absolute; left:0; top:0; bottom:0; width:1.1em; background:var(--c); }
+  .mt-sl-tit { padding:2.2em 3em 0.6em 3.6em; font-size:2.6em; font-weight:800; line-height:1.15; color:#0f172a; min-height:1.2em; }
+  .mt-sl-tit:after { content:''; display:block; width:2.4em; height:.16em; background:var(--c); margin-top:.35em; border-radius:2px; }
+  .mt-sl-corpo { padding:0 4em 4em 9.4em; font-size:1em; display:flex; gap:3em; }
+  .mt-sl-corpo.com-img .mt-sl-txt { flex:1.2; }
+  .mt-sl-txt { font-size:1.7em; line-height:1.45; color:#334155; flex:1; }
+  .mt-sl-txt p { margin:0 0 .45em; } .mt-sl-txt ul { margin:0; padding-left:1.1em; } .mt-sl-txt li { margin-bottom:.4em; }
+  .mt-sl-txt li::marker { color:var(--c); }
+  .mt-sl-fig { flex:1; display:flex; align-items:center; justify-content:center; } .mt-sl-fig img { max-width:100%; max-height:28em; border-radius:.6em; box-shadow:0 .4em 1.2em rgba(0,0,0,.15); }
+  .mt-sl-rod { position:absolute; right:2em; bottom:1.4em; font-size:1em; font-weight:800; color:#94a3b8; letter-spacing:.05em; }
+  .mt-sl-dest { background:var(--c); color:#fff; display:flex; flex-direction:column; justify-content:center; padding:4em 6em; }
+  .mt-sl-dest-t { font-size:4em; font-weight:800; line-height:1.1; }
+  .mt-sl-dest-x { font-size:1.9em; margin-top:.8em; opacity:.92; line-height:1.4; } .mt-sl-dest-x ul { padding-left:1.1em; }
+  .mt-sl-img { background-size:cover; background-position:center; background-color:#0f172a; }
+  .mt-sl-legenda { position:absolute; left:0; right:0; bottom:0; padding:1.4em 3em; background:linear-gradient(transparent, rgba(0,0,0,.75)); color:#fff; font-size:2.4em; font-weight:800; }
+  .mt-sl-capa { background:radial-gradient(circle at 85% 15%, color-mix(in srgb, var(--c) 55%, #0b1324), #0b1324 60%); color:#fff; display:flex; flex-direction:column; justify-content:center; padding:4em 6em; }
+  .mt-capa-pub { font-size:1.6em; font-weight:700; color:color-mix(in srgb, var(--c) 45%, #fff); }
+  .mt-capa-tit { font-size:4.6em; font-weight:800; line-height:1.08; margin:.25em 0; }
+  .mt-capa-obj { font-size:1.8em; opacity:.85; max-width:80%; line-height:1.4; }
+  .mt-capa-meta { font-size:1.5em; margin-top:1.6em; opacity:.9; }
+  .mt-capa-marca { position:absolute; right:3em; bottom:2em; font-weight:800; font-size:1.4em; opacity:.6; }
+  .mt-sl-mod { background:#0b1324; color:#fff; display:flex; flex-direction:column; justify-content:center; padding:4em 6em; border-left:1.6em solid var(--c); }
+  .mt-mod-num { font-size:1.8em; font-weight:800; letter-spacing:.12em; color:var(--c); }
+  .mt-mod-nome { font-size:4.4em; font-weight:800; line-height:1.1; margin-top:.2em; }
+  .mt-mod-de { font-size:1.4em; opacity:.6; margin-top:1em; }
+  .mt-sl-arq { background:#0f172a; }
+  .mt-pdf { width:100%; height:100%; border:none; background:#fff; }
+  .mt-arq-img { width:100%; height:100%; object-fit:contain; }
+  .mt-arq-vid { width:100%; height:100%; background:#000; }
+  .mt-sl-vazio { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#e2e8f0; font-size:16px; gap:6px; }
+  .mt-sl-fim { background:#0b1324; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:3em; font-size:1em; }
+  .mt-sl-fim .mt-capa-obj { max-width:none; }
+  .mt-sl-fim button, .mt-sl-fim a { font-size:15px; }
+  .mt-fim-check { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.2); border-radius:1em; padding:1.2em 2em; margin-top:1em; font-size:1.5em; }
+  .mt-fim-link { font-size:.8em; opacity:.85; word-break:break-all; margin-top:.3em; }
+  /* show */
+  #mt-show { position:fixed; inset:0; z-index:9999; background:#05080f; color:#fff; display:flex; flex-direction:column; }
+  .mt-show-top { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 14px; background:rgba(255,255,255,.04); }
+  .mt-show-tt { font-size:13.5px; font-weight:700; opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .mt-show-tt span { opacity:.65; font-weight:500; }
+  .mt-show-rel { font-variant-numeric:tabular-nums; font-size:13px; opacity:.75; margin-right:6px; }
+  .mt-sb { width:auto !important; background:rgba(255,255,255,.08) !important; color:#fff !important; border:1px solid rgba(255,255,255,.15) !important; border-radius:8px !important; padding:6px 11px !important; font-size:12.5px !important; font-weight:700 !important; margin:0 !important; cursor:pointer; }
+  .mt-sb:disabled { opacity:.3; cursor:default; }
+  .mt-sb.on { background:#fff !important; color:#0b1324 !important; }
+  .mt-sb.salvar { background:#16a34a !important; border-color:#16a34a !important; }
+  .mt-show-palco { flex:1; display:flex; gap:14px; align-items:center; justify-content:center; padding:14px; min-height:0; }
+  .mt-show-slide { width:min(100%, calc((100vh - 130px) * 16 / 9)); border-radius:8px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+  .mt-show-palco.com-notas .mt-show-slide { width:min(68%, calc((100vh - 130px) * 16 / 9)); }
+  .mt-show-slide.editando { outline:3px dashed #facc15; outline-offset:4px; }
+  .mt-show-slide [contenteditable="true"] { outline:none; background:rgba(250,204,21,.12); border-radius:.2em; cursor:text; }
+  .mt-show-notas { flex:1; max-width:32%; align-self:stretch; background:rgba(255,255,255,.06); border-radius:10px; padding:14px; overflow-y:auto; font-size:15px; line-height:1.5; }
+  .mt-prox-sl { margin-top:16px; } .mt-prox-sl-box { border-radius:6px; overflow:hidden; opacity:.85; }
+  .mt-show-nav { display:flex; align-items:center; gap:10px; padding:8px 14px; justify-content:center; }
+  .mt-show-pontos { display:flex; gap:4px; flex-wrap:wrap; max-width:60vw; justify-content:center; }
+  .mt-show-pontos span { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.25); cursor:pointer; }
+  .mt-show-pontos span.mod { background:rgba(255,255,255,.55); border-radius:2px; }
+  .mt-show-pontos span.on { background:#fff; transform:scale(1.4); }
+  .mt-show-cont { font-size:12.5px; opacity:.7; font-variant-numeric:tabular-nums; }
+  .mt-show-prog { height:3px; background:rgba(255,255,255,.08); } .mt-show-prog div { height:100%; transition:width .25s; }
+  /* check */
+  .mt-ia-box { display:flex; gap:10px; align-items:center; flex-wrap:wrap; background:linear-gradient(135deg,#eef2ff,#faf5ff); border:1px solid #ddd6fe; border-radius:12px; padding:12px; margin-bottom:10px; }
+  .mt-ck-link { display:flex; gap:8px; align-items:center; flex-wrap:wrap; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:10px 12px; }
+  .mt-q { border:1px solid var(--cinza-200); border-radius:10px; padding:10px 12px; margin-top:10px; background:#fff; }
+  .mt-op { display:flex; gap:8px; align-items:center; margin-top:4px; border-radius:8px; padding:2px 6px; }
+  .mt-op.certa { background:#f0fdf4; }
+  .mt-op input[type=radio] { width:auto !important; margin:0 !important; accent-color:#16a34a; }
+  .mt-op input:not([type]) { margin:0 !important; }
+  .mt-bar { display:flex; align-items:center; gap:10px; font-size:12.5px; margin-bottom:6px; }
+  .mt-bar-t { flex:1; min-width:0; } .mt-bar-b { width:160px; height:9px; background:#e2e8f0; border-radius:999px; overflow:hidden; } .mt-bar-b div { height:100%; }
+  @media (max-width:900px) { .mt-ed-mods { grid-template-columns:1fr; } .mt-ed-lista { position:static; } .mt-ed-grade { grid-template-columns:1fr 1fr; } .mt-ed-pubs { grid-template-columns:1fr 1fr; } .mt-sl-mini { width:100%; flex-basis:100%; font-size:1.5vw; } .mt-show-notas { display:none; } .mt-show-palco.com-notas .mt-show-slide { width:100%; } }
+  .agd-card { display:flex; gap:14px; align-items:flex-start; padding:12px; border:1px solid var(--cinza-200); border-radius:12px; margin-bottom:10px; background:#fff; }
+  .agd-card.cancelada { opacity:.65; }
+  .agd-dia { width:64px; flex:0 0 64px; text-align:center; border-radius:10px; background:#0b1324; color:#fff; padding:8px 0; }
+  .agd-dia-n { font-size:24px; font-weight:800; line-height:1; }
+  .agd-dia-m { font-size:11px; text-transform:uppercase; opacity:.85; margin-top:3px; }
+  .agd-linha { font-size:12.5px; color:#475569; margin-top:3px; }
+  .agd-card .btn-sm, .agd-card a.btn-sm { width:auto !important; text-decoration:none; }
+  .agd-teams { background:#5b5fc7 !important; color:#fff !important; border:none; border-radius:8px; padding:6px 12px; font-weight:700; }
+  .agd-solic-box { background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:10px 12px; margin:12px 0; }
+  .agd-solic { display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap; padding:9px 10px; border:1px solid #fde68a; border-radius:10px; background:#fff; margin-top:6px; }
+  .agd-grade3 { display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:10px; }
+  .agd-chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .agd-chip { display:inline-flex !important; align-items:center; gap:5px; border:1px solid var(--cinza-200); border-radius:999px; padding:4px 10px; font-size:12px; font-weight:600; cursor:pointer; margin:0; }
+  .agd-chip input, .agd-part input { width:auto !important; margin:0 !important; }
+  .agd-part { border:1px solid var(--cinza-200); border-radius:8px; padding:6px 10px; max-height:200px; overflow-y:auto; }
+  .agd-part label { display:flex; align-items:center; gap:8px; font-weight:500; font-size:13px; padding:4px 0; margin:0; cursor:pointer; }
+  .agd-tag { background:#e0e7ff; color:#3730a3; border-radius:999px; font-size:10.5px; padding:0 7px; font-weight:700; }
+  @media (max-width:600px) { .agd-grade3 { grid-template-columns:1fr 1fr; } .agd-card { flex-direction:column; } }
+  .matimp-chip { display:inline-block; margin-left:6px; background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; border-radius:999px; font-size:11px; font-weight:700; padding:1px 8px; }
+  .matimp-cont { background:#ea580c; color:#fff; border-radius:999px; font-size:10.5px; padding:0 6px; margin-left:4px; }
+  .matimp-pasta { border:1px solid #fed7aa; background:linear-gradient(180deg,#fffbf5,#fff); border-radius:10px; padding:10px 12px; margin-bottom:10px; }
+  .matimp-pasta-tit { font-weight:800; color:#9a3412; font-size:13px; display:flex; align-items:center; gap:8px; }
+  .matimp-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px dashed #fde2c4; }
+  .matimp-item:first-of-type { border-top:none; }
+  .matimp-ico { width:34px; height:34px; border-radius:8px; background:#ffedd5; display:flex; align-items:center; justify-content:center; font-size:17px; flex:0 0 34px; }
+  .matimp-item a.btn-sm { width:auto; white-space:nowrap; text-decoration:none; }
+  .cki-passo { font-weight:700; font-size:13.5px; color:#0f172a; display:flex; align-items:center; gap:8px; }
+  .cki-passo span { background:#0b1324; color:#fff; border-radius:999px; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; flex:0 0 22px; }
+  .cki-previa { border:1px solid var(--cinza-200); border-radius:10px; padding:10px; background:#f8fafc; }
+  .cki-tab { width:100%; font-size:12.5px; border-collapse:collapse; }
+  .cki-tab th, .cki-tab td { padding:6px 8px; border-bottom:1px solid var(--cinza-200); text-align:left; vertical-align:top; }
+  .cki-tab tr.erro td { background:#fef2f2; color:#991b1b; }
+  .cki-emp { border:1px solid var(--cinza-200); border-radius:8px; padding:6px 10px; max-height:240px; overflow-y:auto; columns:2; }
+  @media (max-width:700px) { .cki-emp { columns:1; } }
+  .mdpo-pergunta { border:1px solid var(--cinza-200); border-radius:10px; padding:10px 12px; margin-bottom:8px; background:#fff; }
+  .mdpo-pergunta.tem { border-left:4px solid #ea580c; }
+  .mdpo-mat { display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-top:1px dashed var(--cinza-200); flex-wrap:wrap; }
+  .mdpo-mat button, .mdpo-mat a { width:auto !important; }
+  .mdpo-toggle { border-radius:999px !important; font-weight:700; }
+  .mdpo-toggle.on { background:#16a34a !important; color:#fff !important; border-color:#16a34a !important; }
+  .mdpo-emp-lista label { display:flex; align-items:center; gap:8px; padding:5px 4px; font-weight:500; cursor:pointer; }
+  .mdpo-emp-lista input[type=checkbox] { width:auto; margin:0; }
   .ferr-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
   .ferr-card { display: flex; gap: 12px; background: #fff; border: 1px solid var(--cinza-200); border-radius: 12px; padding: 12px 14px; }
   .ferr-card.inativa { opacity: .6; border-style: dashed; }
@@ -1014,7 +1207,10 @@ const MENU_POR_PERFIL = {
         ['acessosCandidatos', 'Acessos de Candidatos'], ['candidatesApproval', 'Aprovar Currículos'], ['creditosVagas', 'Créditos das Empresas'], ['vagaPlans', 'Planos de Vaga'], ['closingFeePlans', 'Planos de Fechamento']
     ]},
     { group: 'Impulsionar V4 DPO Ambev', items: [
-        ['dpoPrecos', 'Preços por Pilar'], ['dpoAgenda', 'Agenda de Consultorias'], ['dpoConsultores', 'Cadastro de Consultor'], ['dpoAcompanhamentos', 'Acompanhamentos Impulsionar']
+        ['dpoPrecos', 'Preços por Pilar'], ['dpoAgenda', 'Agenda de Consultorias'], ['dpoConsultores', 'Cadastro de Consultor'], ['dpoAcompanhamentos', 'Acompanhamentos Impulsionar'], ['materialDpo', 'Material DPO']
+    ]},
+    { group: 'Ministrar Treinamento', items: [
+        ['ministrarTreinamento', 'Meus Treinamentos']
     ]},
     { group: 'Teste DISC', items: [
         ['discTesteMaster', 'Testar & Enviar Teste DISC']
@@ -1352,7 +1548,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster,
+    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento,
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster, acessosCandidatos: renderAcessosCandidatos, creditosVagas: renderCreditosVagas
   };
   NAV.profundidade++;
@@ -6720,6 +6916,354 @@ async function excluirDpoConsultor(id) {
 // ----- Master: agenda de consultorias (ciclos) -----
 let CACHE_DPO_EMPRESAS_TODAS = [];
 
+// ----- Agenda de consultorias (data/hora) com convite Outlook / Teams -----
+let AGD = { sessoes: [], consultores: [], empresas: [], ms365: null, filtro: 'proximas', solicitacoes: [] };
+const STATUS_SOLIC_DPO = { pendente: { t: 'Aguardando agendamento', c: '#b45309', f: '#fef3c7' }, agendada: { t: 'Agendada', c: '#15803d', f: '#dcfce7' }, recusada: { t: 'Respondida', c: '#b91c1c', f: '#fee2e2' } };
+const STATUS_SESSAO_DPO = { agendada: { t: 'Agendada', c: '#1d4ed8', f: '#dbeafe' }, realizada: { t: 'Realizada', c: '#15803d', f: '#dcfce7' }, cancelada: { t: 'Cancelada', c: '#b91c1c', f: '#fee2e2' } };
+function agdDataBr(d) { return d ? d.split('-').reverse().join('/') : ''; }
+function agdDiaSemana(d) { try { return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }); } catch (e) { return ''; } }
+function agdHoje() { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; }
+
+async function baixarIcsSessaoDpo(id) {
+  try {
+    const r = await fetch('/api/dpo/sessoes/' + id + '/ics', { headers: { 'Authorization': 'Bearer ' + ESTADO.token } });
+    if (!r.ok) throw new Error('Não foi possível gerar o convite.');
+    const blob = await r.blob(); const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'consultoria-dpo-' + id + '.ics'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+function linkOutlookWebSessaoDpo(s) {
+  const p = new URLSearchParams({ path: '/calendar/action/compose', rru: 'addevent', subject: s.titulo,
+    startdt: `${s.data}T${s.hora_inicio}:00-03:00`, enddt: `${s.data}T${s.hora_fim}:00-03:00`,
+    body: `Consultoria DPO${s.consultorNome ? ' com ' + s.consultorNome : ''}${s.teams_link ? '\nTeams: ' + s.teams_link : ''}`,
+    location: s.teams_link ? 'Microsoft Teams' : (s.local || '') });
+  return 'https://outlook.office.com/calendar/0/deeplink/compose?' + p.toString();
+}
+
+function agdCartaoHtml(s, ehMaster) {
+  const st = STATUS_SESSAO_DPO[s.status] || STATUS_SESSAO_DPO.agendada;
+  const [ano, mes, dia] = s.data.split('-');
+  const mesTxt = new Date(s.data + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+  const envio = ehMaster && s.ultimo_envio ? s.ultimo_envio.split('|') : null;
+  return `<div class="agd-card ${s.status}">
+    <div class="agd-dia"><div class="agd-dia-n">${dia}</div><div class="agd-dia-m">${escapeHtml(mesTxt)} ${ano}</div></div>
+    <div style="flex:1;min-width:220px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <strong style="font-size:14.5px;">${escapeHtml(s.titulo)}</strong>
+        <span class="dpo-score-badge" style="background:${st.f};color:${st.c};">${st.t}</span>
+      </div>
+      <div class="agd-linha">🕘 ${escapeHtml(agdDiaSemana(s.data))}, ${s.hora_inicio} às ${s.hora_fim} · ${s.formato === 'presencial' ? '📍 ' + escapeHtml(s.local || 'Presencial') : '🎥 Microsoft Teams'}</div>
+      ${ehMaster ? `<div class="agd-linha">🏢 ${escapeHtml(s.companyName || '')}</div>` : ''}
+      ${s.consultorNome ? `<div class="agd-linha">👤 Consultor: ${escapeHtml(s.consultorNome)}${s.consultorEmail && ehMaster ? ' · ' + escapeHtml(s.consultorEmail) : ''}</div>` : ''}
+      ${s.pilaresLabel && s.pilaresLabel.length ? `<div class="agd-linha">🧩 ${s.pilaresLabel.map(escapeHtml).join(', ')}</div>` : ''}
+      ${ehMaster && s.participantes.length ? `<div class="agd-linha">✉️ ${s.participantes.map(p => escapeHtml(p.email)).join(', ')}</div>` : ''}
+      ${s.observacao ? `<div class="agd-linha" style="white-space:pre-line;">📝 ${escapeHtml(s.observacao)}</div>` : ''}
+      ${envio ? `<div class="agd-linha" style="color:#15803d;">✅ Convite enviado ${envio[0] === 'microsoft365' ? 'pelo Outlook/Teams (Microsoft 365)' : 'por e-mail (.ics)'} para ${envio[2]} e-mail(s) em ${new Date(envio[1]).toLocaleString('pt-BR')}</div>` : ''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+        ${s.teams_link && s.status !== 'cancelada' ? `<a class="btn-sm agd-teams" href="${escapeHtml(s.teams_link)}" target="_blank" rel="noopener">🎥 Entrar no Teams</a>` : ''}
+        ${s.status !== 'cancelada' ? `<button class="btn-secundario btn-sm" onclick="baixarIcsSessaoDpo(${s.id})">📅 Adicionar à agenda (.ics)</button>
+        <a class="btn-secundario btn-sm" href="${escapeHtml(linkOutlookWebSessaoDpo(s))}" target="_blank" rel="noopener">📧 Outlook web</a>` : ''}
+        ${ehMaster ? `
+          ${s.status === 'agendada' ? `<button class="btn-secundario btn-sm" onclick="abrirFormSessaoDpo(${s.id})">✏️ Editar / reagendar</button>
+          <button class="btn-secundario btn-sm" onclick="reenviarSessaoDpo(${s.id})">🔁 Reenviar convite</button>
+          <button class="btn-secundario btn-sm" onclick="statusSessaoDpo(${s.id}, 'realizada')">✔ Realizada</button>
+          <button class="btn-perigo btn-sm" onclick="statusSessaoDpo(${s.id}, 'cancelada')">Cancelar</button>` : ''}
+          ${s.status === 'realizada' ? `<button class="btn-secundario btn-sm" onclick="statusSessaoDpo(${s.id}, 'agendada')">↩ Voltar para agendada</button>` : ''}
+          ${s.status === 'cancelada' ? `<button class="btn-secundario btn-sm" onclick="statusSessaoDpo(${s.id}, 'agendada')">↩ Reativar consultoria</button>` : ''}
+          <button class="btn-perigo btn-sm" onclick="excluirSessaoDpo(${s.id})">🗑</button>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+async function carregarSessoesDpoMaster() {
+  const area = document.getElementById('dpo-sessoes-area'); if (!area) return;
+  try {
+    const [sessoes, consultores, ms365, solic] = await Promise.all([api('/api/dpo/sessoes'), api('/api/admin/dpo/consultants'), api('/api/admin/dpo/ms365').catch(() => null), api('/api/dpo/solicitacoes').catch(() => [])]);
+    AGD.sessoes = sessoes; AGD.consultores = consultores; AGD.ms365 = ms365; AGD.solicitacoes = solic;
+    AGD.empresas = (typeof CACHE_DPO_EMPRESAS_TODAS !== 'undefined' && CACHE_DPO_EMPRESAS_TODAS) || [];
+    desenharSessoesDpoMaster();
+  } catch (e) { area.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+function desenharSessoesDpoMaster() {
+  const area = document.getElementById('dpo-sessoes-area'); if (!area) return;
+  const hoje = agdHoje();
+  const prox = AGD.sessoes.filter(s => s.status === 'agendada' && s.data >= hoje).sort((a, b) => (a.data + a.hora_inicio).localeCompare(b.data + b.hora_inicio));
+  const hist = AGD.sessoes.filter(s => !(s.status === 'agendada' && s.data >= hoje));
+  const lista = AGD.filtro === 'proximas' ? prox : hist;
+  const m = AGD.ms365;
+  area.innerHTML = `
+    <div class="painel" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div><h2 style="margin:0;">📅 Agenda de consultorias</h2>
+          <div style="font-size:12.5px;color:#64748b;">Ao agendar, o convite vai para o Outlook/Teams do consultor e dos usuários da empresa (pelo e-mail cadastrado).</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn-secundario btn-sm" style="width:auto;" onclick="abrirConfigMs365()">${m && m.ativo ? '🟢 Microsoft 365 conectado' : '⚙️ Conectar Teams/Outlook'}</button>
+          <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirFormSessaoDpo()">+ Agendar consultoria</button>
+        </div>
+      </div>
+      ${(() => { const pend = AGD.solicitacoes.filter(x => x.status === 'pendente'); return pend.length ? `<div class="agd-solic-box">
+        <div style="font-weight:800;color:#92400e;margin-bottom:6px;">📨 Solicitações das empresas (${pend.length} aguardando você)</div>
+        ${pend.map(x => `<div class="agd-solic">
+          <div style="flex:1;min-width:220px;">
+            <strong>${escapeHtml(x.companyName || '')}</strong> <span style="font-size:12px;color:#64748b;">· pedido por ${escapeHtml(x.solicitanteNome || '')} em ${new Date(String(x.created_at).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR')}</span>
+            <div class="agd-linha">🗓️ Sugestão: ${x.data_sugerida ? escapeHtml(agdDataBr(x.data_sugerida)) + (x.hora_sugerida ? ' · ' + x.hora_sugerida + (x.hora_fim_sugerida ? ' às ' + x.hora_fim_sugerida : '') : '') : 'sem data preferida'} · ${x.formato === 'presencial' ? '📍 Presencial' : '🎥 Teams'}</div>
+            ${x.pilaresLabel.length ? `<div class="agd-linha">🧩 ${x.pilaresLabel.map(escapeHtml).join(', ')}</div>` : ''}
+            <div class="agd-linha" style="white-space:pre-line;color:#1e293b;">💬 ${escapeHtml(x.assunto || '')}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start;">
+            <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirFormSessaoDpo(null, ${x.id})">📅 Agendar</button>
+            <button class="btn-secundario btn-sm" style="width:auto;" onclick="recusarSolicitacaoDpo(${x.id})">Responder / recusar</button>
+          </div></div>`).join('')}</div>` : ''; })()}
+      <div style="display:flex;gap:6px;margin:12px 0;">
+        <button class="btn-sm ${AGD.filtro === 'proximas' ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="AGD.filtro='proximas'; desenharSessoesDpoMaster();">Próximas (${prox.length})</button>
+        <button class="btn-sm ${AGD.filtro === 'historico' ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="AGD.filtro='historico'; desenharSessoesDpoMaster();">Realizadas / canceladas (${hist.length})</button>
+      </div>
+      ${lista.length ? lista.map(s => agdCartaoHtml(s, true)).join('') : `<div class="msg-vazio">${AGD.filtro === 'proximas' ? 'Nenhuma consultoria agendada. Clique em <strong>+ Agendar consultoria</strong>.' : 'Nada no histórico ainda.'}</div>`}
+    </div>`;
+}
+
+let AGD_PART = [];
+async function abrirFormSessaoDpo(id, solId) {
+  const s0 = id ? AGD.sessoes.find(x => x.id === id) : null;
+  const sol = solId ? AGD.solicitacoes.find(x => x.id === solId) : null;
+  window.AGD_SOL = sol ? sol.id : null;
+  // Pedido da empresa vira um rascunho de agendamento (o Master ajusta e confirma).
+  const s = s0 || (sol ? { __rascunho: true, company_id: sol.company_id, titulo: '', data: sol.data_sugerida || '', hora_inicio: sol.hora_sugerida || '09:00', hora_fim: sol.hora_fim_sugerida || '', pilares: sol.pilares || [], formato: sol.formato, observacao: sol.assunto, participantes: sol.solicitanteEmail ? [{ email: String(sol.solicitanteEmail).toLowerCase(), papel: 'empresa' }] : [], teams_link: '', local: '' } : null);
+  const empresas = AGD.empresas.filter(e => (e.pilaresAtivos || []).length || (s && e.id === s.company_id));
+  const consultores = AGD.consultores.filter(c => c.active || (s && c.id === s.consultant_id));
+  const pilares = (CACHE_DPO_PILARES && CACHE_DPO_PILARES.pilares) || [];
+  const ms = AGD.ms365 && AGD.ms365.ativo;
+  document.getElementById('modal-area') || document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>');
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa agd-form" style="max-width:640px;max-height:92vh;overflow-y:auto;">
+        <h3 style="margin-top:0;">📅 ${s && !s.__rascunho ? 'Editar / reagendar' : 'Agendar'} consultoria</h3>
+        ${sol ? `<div class="plano-meta" style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin-bottom:6px;">📨 A partir da solicitação de <strong>${escapeHtml(sol.solicitanteNome || sol.companyName || '')}</strong> — ajuste a data/hora se precisar e confirme.</div>` : ''}
+        <label>Empresa</label>
+        <select id="agd-empresa" ${s ? 'disabled' : ''} onchange="agdCarregarParticipantes(this.value)">
+          <option value="">— escolha —</option>
+          ${empresas.map(e => `<option value="${e.id}" ${s && s.company_id === e.id ? 'selected' : ''}>${escapeHtml(e.name)}</option>`).join('')}
+        </select>
+        <label>Consultor</label>
+        <select id="agd-consultor">
+          <option value="">— sem consultor —</option>
+          ${consultores.map(c => `<option value="${c.id}" ${(s && !s.__rascunho ? s.consultant_id === c.id : consultores.length === 1) ? 'selected' : ''}>${escapeHtml(c.name)}${c.email ? ' — ' + escapeHtml(c.email) : ' (sem e-mail)'}</option>`).join('')}
+        </select>
+        <label>Título</label>
+        <input id="agd-titulo" maxlength="200" placeholder="Consultoria DPO — (empresa)" value="${escapeHtml(s ? s.titulo : '')}">
+        <div class="agd-grade3">
+          <div><label>Data</label><input id="agd-data" type="date" value="${s ? s.data : ''}" min="${s && !s.__rascunho ? '' : agdHoje()}"></div>
+          <div><label>Hora início</label><input id="agd-ini" type="time" value="${s ? s.hora_inicio : '09:00'}" onchange="agdSugerirFim()"></div>
+          <div><label>Hora final</label><input id="agd-fim" type="time" value="${s ? s.hora_fim : '10:00'}"></div>
+        </div>
+        <label>Pilar(es) da consultoria (opcional)</label>
+        <div class="agd-chips">${pilares.map(p => `<label class="agd-chip"><input type="checkbox" value="${p.key}" ${s && s.pilares.includes(p.key) ? 'checked' : ''}> ${escapeHtml(p.label)}</label>`).join('')}</div>
+        <label>Formato</label>
+        <select id="agd-formato" onchange="agdFormato()">
+          <option value="teams" ${!s || s.formato !== 'presencial' ? 'selected' : ''}>🎥 Online — Microsoft Teams</option>
+          <option value="presencial" ${s && s.formato === 'presencial' ? 'selected' : ''}>📍 Presencial</option>
+        </select>
+        <div id="agd-teams-area">
+          ${ms ? `<div class="plano-meta" style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:8px 10px;margin-top:6px;">🟢 Microsoft 365 conectado: o link do Teams é criado automaticamente e o evento cai direto no Outlook de todos.</div>`
+               : `<label>Link da reunião do Teams (opcional)</label><input id="agd-link" placeholder="https://teams.microsoft.com/l/meetup-join/..." value="${escapeHtml(s && s.teams_link ? s.teams_link : '')}">
+                  <div class="plano-meta" style="font-size:11.5px;">Cole o link da reunião criada no seu Teams — ou conecte o Microsoft 365 para gerar automático.</div>`}
+        </div>
+        <div id="agd-local-area" style="display:none;"><label>Local</label><input id="agd-local" placeholder="Endereço / sala" value="${escapeHtml(s && s.local ? s.local : '')}"></div>
+        <label style="margin-top:10px;">Convidados da empresa (puxados pelo e-mail cadastrado)</label>
+        <div id="agd-part" class="agd-part"><div class="plano-meta">Escolha a empresa para listar os usuários.</div></div>
+        <label>Outros e-mails (separados por vírgula)</label>
+        <input id="agd-extras" placeholder="ex: gerente@revenda.com.br, rh@revenda.com.br" value="${escapeHtml(s ? s.participantes.filter(p => p.papel === 'extra').map(p => p.email).join(', ') : '')}">
+        <label>Observação / pauta (opcional)</label>
+        <textarea id="agd-obs" rows="3" placeholder="Pauta da consultoria">${escapeHtml(s && s.observacao ? s.observacao : '')}</textarea>
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" id="agd-salvar" onclick="salvarSessaoDpo(${s && !s.__rascunho ? s.id : 'null'})">${s && !s.__rascunho ? 'Salvar e atualizar convite' : '📨 Agendar e enviar convite'}</button>
+          <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+  agdFormato();
+  AGD_PART = s && !s.__rascunho ? s.participantes.filter(p => p.papel !== 'extra').map(p => p.email) : null;
+  if (s && s.__rascunho && !s.hora_fim) agdSugerirFim();
+  if (s) agdCarregarParticipantes(s.company_id, s.__rascunho ? s.participantes.map(p => p.email) : null);
+}
+function agdFormato() {
+  const f = (document.getElementById('agd-formato') || {}).value;
+  const t = document.getElementById('agd-teams-area'), l = document.getElementById('agd-local-area');
+  if (t) t.style.display = f === 'presencial' ? 'none' : ''; if (l) l.style.display = f === 'presencial' ? '' : 'none';
+}
+function agdSugerirFim() {
+  const i = document.getElementById('agd-ini').value, f = document.getElementById('agd-fim');
+  if (!i) return; const [h, m] = i.split(':').map(Number);
+  if (!f.value || f.value <= i) f.value = `${String(Math.min(h + 1, 23)).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+async function agdCarregarParticipantes(companyId, extrasMarcados) {
+  const box = document.getElementById('agd-part'); if (!box) return;
+  if (!companyId) { box.innerHTML = '<div class="plano-meta">Escolha a empresa para listar os usuários.</div>'; return; }
+  box.innerHTML = '<div class="plano-meta">Carregando...</div>';
+  try {
+    const l = await api('/api/admin/dpo/sessoes/participantes?company_id=' + companyId);
+    const marcados = AGD_PART;
+    const extra = (extrasMarcados || []).map(e => String(e).toLowerCase());
+    box.innerHTML = l.length ? l.map(u => `<label><input type="checkbox" value="${escapeHtml(u.email)}" data-nome="${escapeHtml(u.nome || '')}" ${marcados ? (marcados.includes(String(u.email).toLowerCase()) ? 'checked' : '') : (u.papel === 'gestor' || extra.includes(String(u.email).toLowerCase()) ? 'checked' : '')}> ${escapeHtml(u.nome || '')} <span style="color:#64748b;">— ${escapeHtml(u.email)}</span>${u.papel === 'gestor' ? ' <span class="agd-tag">gestor</span>' : ''}</label>`).join('')
+      : '<div class="plano-meta">Essa empresa não tem usuários com e-mail. Use "Outros e-mails".</div>';
+  } catch (e) { box.innerHTML = `<div class="plano-meta">${escapeHtml(e.message)}</div>`; }
+}
+async function salvarSessaoDpo(id) {
+  const v = x => (document.getElementById(x) || {}).value || '';
+  const participantes = [...document.querySelectorAll('#agd-part input:checked')].map(i => ({ email: i.value, nome: i.dataset.nome, papel: 'empresa' }))
+    .concat(v('agd-extras').split(/[,;\s]+/).map(e => e.trim()).filter(Boolean).map(email => ({ email, papel: 'extra' })));
+  const corpo = {
+    company_id: Number(v('agd-empresa')) || undefined, consultant_id: Number(v('agd-consultor')) || null, titulo: v('agd-titulo'),
+    data: v('agd-data'), hora_inicio: v('agd-ini'), hora_fim: v('agd-fim'), formato: v('agd-formato'),
+    teams_link: v('agd-link'), local: v('agd-local'), observacao: v('agd-obs'), participantes,
+    pilares: [...document.querySelectorAll('.agd-chips input:checked')].map(i => i.value),
+    solicitacao_id: !id ? (window.AGD_SOL || undefined) : undefined
+  };
+  if (!corpo.company_id && window.AGD_SOL) { const so = AGD.solicitacoes.find(x => x.id === window.AGD_SOL); if (so) corpo.company_id = so.company_id; }
+  if (!id && !corpo.company_id) return mostrarToast('Escolha a empresa.', true);
+  if (!corpo.data) return mostrarToast('Escolha a data.', true);
+  if (!corpo.hora_inicio || !corpo.hora_fim) return mostrarToast('Informe hora de início e final.', true);
+  if (corpo.hora_fim <= corpo.hora_inicio) return mostrarToast('A hora final precisa ser depois do início.', true);
+  const b = document.getElementById('agd-salvar'); b.disabled = true; const rot = b.textContent; b.textContent = 'Enviando convites...';
+  try {
+    const r = await api('/api/admin/dpo/sessoes' + (id ? '/' + id : ''), { method: id ? 'PUT' : 'POST', body: JSON.stringify(corpo) });
+    mostrarToast(r.message + (r.aviso ? ' ⚠️ ' + r.aviso : ''), r.enviado === false);
+    document.getElementById('modal-area').innerHTML = '';
+    AGD.filtro = 'proximas'; carregarSessoesDpoMaster();
+  } catch (e) { mostrarToast(e.message, true); b.disabled = false; b.textContent = rot; }
+}
+async function reenviarSessaoDpo(id) {
+  try { const r = await api('/api/admin/dpo/sessoes/' + id + '/reenviar', { method: 'POST' }); mostrarToast(r.message + (r.aviso ? ' ⚠️ ' + r.aviso : '')); carregarSessoesDpoMaster(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function statusSessaoDpo(id, status) {
+  if (status === 'cancelada' && !confirm('Cancelar esta consultoria? O cancelamento vai para a agenda de todos os convidados.')) return;
+  if (status === 'realizada' && !confirm('Marcar esta consultoria como realizada?')) return;
+  if (status === 'agendada' && !confirm('Voltar esta consultoria para agendada?')) return;
+  try { const r = await api('/api/admin/dpo/sessoes/' + id + '/status', { method: 'POST', body: JSON.stringify({ status }) }); mostrarToast(r.message); if (status === 'agendada') AGD.filtro = 'proximas'; carregarSessoesDpoMaster(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function excluirSessaoDpo(id) {
+  if (!confirm('Excluir este agendamento? Se ainda estiver agendado, o cancelamento é enviado para os convidados.')) return;
+  try { const r = await api('/api/admin/dpo/sessoes/' + id, { method: 'DELETE' }); mostrarToast(r.message); carregarSessoesDpoMaster(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+function abrirConfigMs365() {
+  const m = AGD.ms365 || {};
+  document.getElementById('modal-area') || document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>');
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa" style="max-width:600px;max-height:92vh;overflow-y:auto;">
+        <h3 style="margin-top:0;">⚙️ Integração Microsoft 365 (Teams + Outlook)</h3>
+        <div class="plano-meta" style="margin-bottom:8px;">${m.ativo ? '🟢 <strong>Conectado.</strong> Os agendamentos são criados direto no Outlook com reunião do Teams.' : '⚪ Não conectado — os convites vão por e-mail com o arquivo de calendário (.ics), que o Outlook/Teams aceita e coloca na agenda.'}</div>
+        <details style="margin-bottom:10px;"><summary style="cursor:pointer;font-weight:700;color:#4338ca;font-size:13px;">Como conectar (feito uma vez pelo administrador do Microsoft 365)</summary>
+          <ol style="font-size:12.5px;color:#334155;padding-left:18px;line-height:1.55;">
+            <li>Acesse <strong>portal.azure.com → Microsoft Entra ID → Registros de aplicativo → Novo registro</strong> (nome: Impulsionar Agenda).</li>
+            <li>Copie o <strong>ID do diretório (tenant)</strong> e o <strong>ID do aplicativo (client)</strong>.</li>
+            <li>Em <strong>Certificados e segredos</strong>, crie um <strong>segredo do cliente</strong> e copie o <strong>Valor</strong>.</li>
+            <li>Em <strong>Permissões de API → Microsoft Graph → Permissões de aplicativo</strong>, adicione <strong>Calendars.ReadWrite</strong> e clique em <strong>Conceder consentimento do administrador</strong>.</li>
+            <li>Em "Caixa organizadora" informe o e-mail Microsoft 365 que vai organizar as reuniões (ex: agenda@impulsionarv4.com.br) — precisa ter licença do Teams.</li>
+          </ol></details>
+        <label>ID do diretório (Tenant ID)</label><input id="ms-tenant" value="${escapeHtml(m.tenant || '')}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        <label>ID do aplicativo (Client ID)</label><input id="ms-client" value="${escapeHtml(m.clientId || '')}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        <label>Segredo do cliente (Client Secret)</label><input id="ms-secret" type="password" placeholder="${m.secretPreview ? 'salvo: ' + escapeHtml(m.secretPreview) + ' (deixe vazio para manter)' : 'cole o Valor do segredo'}">
+        <label>Caixa organizadora (e-mail Microsoft 365)</label><input id="ms-org" value="${escapeHtml(m.organizador || '')}" placeholder="agenda@suaempresa.com.br">
+        <div class="acoes-form" style="margin-top:14px;flex-wrap:wrap;">
+          <button class="btn-primario" id="ms-salvar" onclick="salvarConfigMs365()">Salvar e testar</button>
+          ${m.ativo ? '<button class="btn-perigo" onclick="salvarConfigMs365(true)">Desconectar</button>' : ''}
+          <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button>
+        </div>
+      </div>
+    </div>`;
+}
+async function salvarConfigMs365(limpar) {
+  const b = document.getElementById('ms-salvar'); if (b) { b.disabled = true; b.textContent = 'Testando...'; }
+  try {
+    const r = await api('/api/admin/dpo/ms365', { method: 'PUT', body: JSON.stringify(limpar ? { limpar: true } : { tenant: document.getElementById('ms-tenant').value, clientId: document.getElementById('ms-client').value, secret: document.getElementById('ms-secret').value, organizador: document.getElementById('ms-org').value }) });
+    mostrarToast(r.message); document.getElementById('modal-area').innerHTML = ''; carregarSessoesDpoMaster();
+  } catch (e) { mostrarToast(e.message, true); if (b) { b.disabled = false; b.textContent = 'Salvar e testar'; } }
+}
+// Empresa: próximas consultorias no topo do DPO Ambev.
+let AGD_SOLIC_EMP = [];
+async function carregarSessoesDpoEmpresa() {
+  const area = document.getElementById('dpo-sessoes-empresa'); if (!area) return;
+  try {
+    const hoje = agdHoje();
+    const [todas, solic] = await Promise.all([api('/api/dpo/sessoes'), api('/api/dpo/solicitacoes').catch(() => [])]);
+    const l = todas.filter(s => s.status === 'agendada' && s.data >= hoje).sort((a, b) => (a.data + a.hora_inicio).localeCompare(b.data + b.hora_inicio));
+    AGD_SOLIC_EMP = solic;
+    const abertas = solic.filter(x => x.status === 'pendente' || (x.status === 'recusada' && (Date.now() - new Date(String(x.updated_at || x.created_at).replace(' ', 'T') + 'Z')) < 30 * 864e5));
+    area.innerHTML = `<div class="painel" style="margin-bottom:16px;border-left:4px solid #5b5fc7;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+        <h3 style="margin:0;">📅 Consultorias com a Impulsionar</h3>
+        <button class="btn-primario btn-sm" style="width:auto;" onclick="abrirSolicitarConsultoriaDpo()">📨 Solicitar consultoria</button>
+      </div>
+      ${l.length ? l.map(s => agdCartaoHtml(s, false)).join('') : '<div style="font-size:12.5px;color:#64748b;">Nenhuma consultoria agendada. Precisa de uma? Clique em <strong>Solicitar consultoria</strong> — a Impulsionar agenda e o convite chega no seu Outlook/Teams.</div>'}
+      ${abertas.length ? `<div style="margin-top:10px;font-weight:700;font-size:13px;">Minhas solicitações</div>${abertas.map(x => { const st = STATUS_SOLIC_DPO[x.status] || STATUS_SOLIC_DPO.pendente; return `<div class="agd-solic" style="background:#fff;">
+        <div style="flex:1;min-width:200px;">
+          <span class="dpo-score-badge" style="background:${st.f};color:${st.c};">${st.t}</span>
+          <span style="font-size:12px;color:#64748b;"> ${x.data_sugerida ? 'sugestão ' + escapeHtml(agdDataBr(x.data_sugerida)) + (x.hora_sugerida ? ' ' + x.hora_sugerida : '') : ''}</span>
+          <div class="agd-linha" style="white-space:pre-line;">💬 ${escapeHtml(x.assunto || '')}</div>
+          ${x.resposta ? `<div class="agd-linha" style="color:#b91c1c;">↩️ Impulsionar: ${escapeHtml(x.resposta)}</div>` : ''}
+        </div>
+        ${x.status === 'pendente' ? `<button class="btn-secundario btn-sm" style="width:auto;" onclick="cancelarSolicitacaoDpo(${x.id})">Cancelar pedido</button>` : ''}
+      </div>`; }).join('')}` : ''}
+    </div>`;
+  } catch (e) { area.innerHTML = ''; }
+}
+
+function abrirSolicitarConsultoriaDpo() {
+  const pilares = (CACHE_DPO_PILARES && CACHE_DPO_PILARES.pilares) || [];
+  let ma = document.getElementById('modal-area');
+  if (!ma) { document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>'); ma = document.getElementById('modal-area'); }
+  ma.innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa agd-form" style="max-width:560px;max-height:92vh;overflow-y:auto;">
+        <h3 style="margin-top:0;">📨 Solicitar consultoria</h3>
+        <div class="plano-meta" style="margin-bottom:6px;">Sugira a melhor data e horário. A Impulsionar confirma o agendamento e o convite chega no seu e-mail/Outlook e no Teams.</div>
+        <div class="agd-grade3">
+          <div><label>Data preferida</label><input id="sol-data" type="date" min="${agdHoje()}"></div>
+          <div><label>Início</label><input id="sol-ini" type="time" value="09:00"></div>
+          <div><label>Fim</label><input id="sol-fim" type="time" value="10:00"></div>
+        </div>
+        <label>Pilar(es)</label>
+        <div class="agd-chips" id="sol-pilares">${pilares.map(p => `<label class="agd-chip"><input type="checkbox" value="${p.key}"> ${escapeHtml(p.label)}</label>`).join('')}</div>
+        <label>Formato</label>
+        <select id="sol-formato"><option value="teams">🎥 Online — Microsoft Teams</option><option value="presencial">📍 Presencial</option></select>
+        <label>O que precisa tratar?</label>
+        <textarea id="sol-assunto" rows="4" placeholder="ex: revisar os planos de ação do pilar Gente e preparar a auditoria"></textarea>
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" id="sol-enviar" onclick="enviarSolicitacaoConsultoriaDpo()">Enviar solicitação</button>
+          <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+}
+async function enviarSolicitacaoConsultoriaDpo() {
+  const v = x => (document.getElementById(x) || {}).value || '';
+  const corpo = { data_sugerida: v('sol-data') || null, hora_sugerida: v('sol-ini') || null, hora_fim_sugerida: v('sol-fim') || null, formato: v('sol-formato'), assunto: v('sol-assunto').trim(),
+    pilares: [...document.querySelectorAll('#sol-pilares input:checked')].map(i => i.value) };
+  if (!corpo.assunto) return mostrarToast('Conte o que precisa tratar na consultoria.', true);
+  if (!corpo.data_sugerida) { corpo.hora_sugerida = null; corpo.hora_fim_sugerida = null; }
+  const b = document.getElementById('sol-enviar'); b.disabled = true;
+  try { const r = await api('/api/dpo/solicitacoes', { method: 'POST', body: JSON.stringify(corpo) }); mostrarToast(r.message); document.getElementById('modal-area').innerHTML = ''; carregarSessoesDpoEmpresa(); }
+  catch (e) { mostrarToast(e.message, true); b.disabled = false; }
+}
+async function cancelarSolicitacaoDpo(id) {
+  if (!confirm('Cancelar esta solicitação?')) return;
+  try { const r = await api('/api/dpo/solicitacoes/' + id, { method: 'DELETE' }); mostrarToast(r.message); carregarSessoesDpoEmpresa(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function recusarSolicitacaoDpo(id) {
+  const resposta = prompt('Mensagem para a empresa (ex: sugerir outra data):', 'Essa data não está disponível. Podemos agendar em outro dia?');
+  if (resposta === null) return;
+  try { const r = await api('/api/admin/dpo/solicitacoes/' + id + '/recusar', { method: 'POST', body: JSON.stringify({ resposta }) }); mostrarToast(r.message); carregarSessoesDpoMaster(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
 async function renderDpoAgenda() {
   const cont = document.getElementById('conteudo');
   cont.innerHTML = '<h1>Impulsionar V4 — DPO Ambev — Agenda de Consultorias</h1><p>Carregando...</p>';
@@ -6734,6 +7278,7 @@ async function renderDpoAgenda() {
     cont.innerHTML = `
       <h1>Impulsionar V4 — DPO Ambev — Gestão das revendas</h1>
       <p style="color:#64748b;margin-top:-8px;">Aqui aparecem apenas as revendas com pacote DPO contratado. Como Master você pode abrir, editar (em qualquer status — fica registrado no histórico) ou excluir as autoavaliações feitas.</p>
+      <div id="dpo-sessoes-area"><p>Carregando agenda...</p></div>
 
       <h2 style="margin-top:18px;">📊 Autoavaliações feitas</h2>
       ${!AVS_MASTER.length ? '<div class="msg-vazio">Nenhuma revenda com pacote contratado ainda.</div>' : AVS_MASTER.map(emp => `
@@ -6891,6 +7436,7 @@ async function renderDpoAgenda() {
       </div>
       <div id="modal-area"></div>
     `;
+    carregarSessoesDpoMaster();
   } catch (e) { cont.innerHTML = `<h1>Impulsionar V4 — DPO Ambev — Agenda de Consultorias</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
 
@@ -6942,7 +7488,7 @@ function abrirModalPlanoAcaoDpo(opts) {
         <div style="font-size:13px;color:#334155;background:#f8fafc;border:1px solid var(--cinza-200);border-radius:8px;padding:8px 10px;margin-bottom:8px;white-space:pre-wrap;">${escapeHtml(pergunta)}</div>
         ${precisaEscolherCiclo ? `
         <label>Ciclo / Empresa</label>
-        <select id="pa-dpo-ciclo">
+        <select id="pa-dpo-ciclo" onchange="carregarDonosPlanoDpo()">
           <option value="">Selecione o ciclo...</option>
           ${ciclosDisponiveis.map(c => `<option value="${c.id}">${escapeHtml(c.companyName || '')} — ${escapeHtml(c.referencia || '')}</option>`).join('')}
         </select>` : (!cycleId ? `<div class="msg-vazio">Nenhum ciclo com este pilar encontrado para escolher.</div>` : '')}
@@ -6951,8 +7497,15 @@ function abrirModalPlanoAcaoDpo(opts) {
         <label>Descrição do plano</label>
         <textarea id="pa-dpo-texto" rows="3" spellcheck="true" lang="pt-BR" placeholder="Descreva o plano de ação...">${escapeHtml(planoExistente?.texto || '')}</textarea>
         <div style="text-align:right;margin-top:4px;"><button type="button" class="btn-secundario btn-sm" style="width:auto;" onclick="corrigirTextoCampo('pa-dpo-texto', this)">✨ Corrigir texto</button></div>
-        <label>Dono da ação</label>
-        <input id="pa-dpo-owner" placeholder="Responsável pela ação" value="${escapeHtml(planoExistente?.owner || '')}">
+        <label style="display:flex;justify-content:space-between;align-items:center;">Dono da ação <a href="javascript:void(0)" style="font-size:11.5px;font-weight:600;" onclick="abrirCadastroResponsaveisDpo(empresaDoModalPlanoDpo(), true)">👥 Gerenciar responsáveis</a></label>
+        <select id="pa-dpo-owner-sel" onchange="trocarDonoPlanoDpo(this.value)"><option value="${escapeHtml(planoExistente?.owner || '')}">${escapeHtml(planoExistente?.owner || 'Carregando responsáveis...')}</option></select>
+        <input id="pa-dpo-owner" style="display:none;" placeholder="Digite o nome do dono da ação" value="${escapeHtml(planoExistente?.owner || '')}">
+        <div id="pa-dpo-novo-resp" class="pa-novo-resp" style="display:none;">
+          <div style="font-weight:700;font-size:12.5px;margin-bottom:4px;">＋ Cadastrar responsável</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><input id="pa-nr-nome" placeholder="Nome *"><input id="pa-nr-cargo" placeholder="Cargo / área"></div>
+          <input id="pa-nr-email" placeholder="E-mail (opcional)">
+          <div style="display:flex;gap:6px;"><button type="button" class="btn-primario btn-sm" style="width:auto;" onclick="cadastrarRespNoPlanoDpo()">Cadastrar e usar</button><button type="button" class="btn-secundario btn-sm" style="width:auto;" onclick="document.getElementById('pa-dpo-novo-resp').style.display='none'; carregarDonosPlanoDpo()">Cancelar</button></div>
+        </div>
         <label>Status</label>
         <select id="pa-dpo-status">
           <option value="nao_iniciada" ${(!planoExistente || planoExistente.status === 'nao_iniciada') ? 'selected' : ''}>Não iniciada</option>
@@ -6968,6 +7521,131 @@ function abrirModalPlanoAcaoDpo(opts) {
       </div>
     </div>
   `;
+  window.ESTADO_MODAL_PLANO_DPO.ciclos = ciclosDisponiveis;
+  window.ESTADO_MODAL_PLANO_DPO.donoAtual = planoExistente?.owner || '';
+  carregarDonosPlanoDpo();
+}
+
+// ----- Dono da ação: escolhe entre responsáveis cadastrados e usuários da empresa -----
+function empresaDoModalPlanoDpo() {
+  if (ESTADO.usuario.role !== 'admin') return ESTADO.usuario.companyId || null;
+  const ctx = window.ESTADO_MODAL_PLANO_DPO || {};
+  const sel = document.getElementById('pa-dpo-ciclo');
+  const cid = ctx.cycleId || (sel ? Number(sel.value) : null);
+  if (typeof ESTADO_DPO_VIEW !== 'undefined' && ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.ciclo && (!cid || ESTADO_DPO_VIEW.ciclo.id === cid)) return ESTADO_DPO_VIEW.ciclo.company_id;
+  const c = (ctx.ciclos || []).find(x => x.id === cid);
+  return c ? c.company_id : null;
+}
+let CACHE_DONOS_DPO = { cid: null, dados: null };
+async function carregarDonosPlanoDpo(manter) {
+  const sel = document.getElementById('pa-dpo-owner-sel'); if (!sel) return;
+  const ctx = window.ESTADO_MODAL_PLANO_DPO || {};
+  const atual = manter !== undefined ? manter : (document.getElementById('pa-dpo-owner').value || ctx.donoAtual || '');
+  const cid = empresaDoModalPlanoDpo();
+  let d = { cadastrados: [], usuarios: [], funcionarios: [] };
+  if (cid || ESTADO.usuario.role !== 'admin') {
+    try { d = await api('/api/dpo/responsaveis' + (ESTADO.usuario.role === 'admin' ? '?company_id=' + cid : '')); CACHE_DONOS_DPO = { cid, dados: d }; } catch (e) {}
+  }
+  const vistos = new Set();
+  const opt = (nome, extra) => { const k = String(nome || '').trim().toLowerCase(); if (!k || vistos.has(k)) return ''; vistos.add(k); return `<option value="${escapeHtml(nome)}" ${String(atual).trim().toLowerCase() === k ? 'selected' : ''}>${escapeHtml(nome)}${extra ? ' — ' + escapeHtml(extra) : ''}</option>`; };
+  const g1 = d.cadastrados.filter(r => r.ativo).map(r => opt(r.nome, [r.cargo, r.area].filter(Boolean).join(' · '))).join('');
+  const g2 = d.usuarios.map(u => opt(u.nome, u.email)).join('');
+  const g3 = d.funcionarios.map(f => opt(f.nome, f.cargo)).join('');
+  const antigo = atual && !vistos.has(String(atual).trim().toLowerCase()) ? `<option value="${escapeHtml(atual)}" selected>${escapeHtml(atual)} (atual)</option>` : '';
+  sel.innerHTML = `<option value="" ${!atual ? 'selected' : ''}>— Selecione o dono da ação —</option>${antigo}
+    ${g1 ? `<optgroup label="👥 Responsáveis cadastrados">${g1}</optgroup>` : ''}
+    ${g2 ? `<optgroup label="🔑 Usuários do sistema">${g2}</optgroup>` : ''}
+    ${g3 ? `<optgroup label="🧑‍🤝‍🧑 Funcionários cadastrados">${g3}</optgroup>` : ''}
+    <optgroup label="Outras opções"><option value="__novo">＋ Cadastrar novo responsável</option><option value="__outro">✏️ Digitar outro nome</option></optgroup>`;
+  document.getElementById('pa-dpo-owner').value = atual;
+  document.getElementById('pa-dpo-owner').style.display = 'none';
+}
+function trocarDonoPlanoDpo(v) {
+  const inp = document.getElementById('pa-dpo-owner'), novo = document.getElementById('pa-dpo-novo-resp');
+  novo.style.display = 'none'; inp.style.display = 'none';
+  if (v === '__outro') { inp.value = ''; inp.style.display = ''; inp.focus(); return; }
+  if (v === '__novo') { novo.style.display = ''; document.getElementById('pa-nr-nome').focus(); return; }
+  inp.value = v;
+}
+async function cadastrarRespNoPlanoDpo() {
+  const nome = document.getElementById('pa-nr-nome').value.trim();
+  if (!nome) return mostrarToast('Informe o nome.', true);
+  const cid = empresaDoModalPlanoDpo();
+  if (ESTADO.usuario.role === 'admin' && !cid) return mostrarToast('Selecione o ciclo/empresa primeiro.', true);
+  const cargo = document.getElementById('pa-nr-cargo').value.trim();
+  try {
+    await api('/api/dpo/responsaveis', { method: 'POST', body: JSON.stringify({ company_id: cid, nome, cargo, email: document.getElementById('pa-nr-email').value.trim() }) });
+    mostrarToast('Responsável cadastrado!');
+    document.getElementById('pa-dpo-novo-resp').style.display = 'none';
+    ['pa-nr-nome', 'pa-nr-cargo', 'pa-nr-email'].forEach(i => document.getElementById(i).value = '');
+    carregarDonosPlanoDpo(nome);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+// ----- Cadastro de responsáveis (tela/modal) -----
+let RESP_DPO = { cid: null, dados: null, voltarPlano: false, edit: null };
+async function abrirCadastroResponsaveisDpo(cid, doPlano) {
+  if (ESTADO.usuario.role === 'admin' && !cid) return mostrarToast('Selecione o ciclo/empresa primeiro.', true);
+  RESP_DPO = { cid: cid || ESTADO.usuario.companyId, dados: null, voltarPlano: !!doPlano, edit: null };
+  let cam = document.getElementById('modal-resp-dpo');
+  if (!cam) { cam = document.createElement('div'); cam.id = 'modal-resp-dpo'; document.body.appendChild(cam); }
+  await recarregarResponsaveisDpo();
+}
+async function recarregarResponsaveisDpo() {
+  try { RESP_DPO.dados = await api('/api/dpo/responsaveis' + (ESTADO.usuario.role === 'admin' ? '?company_id=' + RESP_DPO.cid : '')); } catch (e) { return mostrarToast(e.message, true); }
+  desenharResponsaveisDpo();
+}
+function fecharResponsaveisDpo() {
+  const el = document.getElementById('modal-resp-dpo'); if (el) el.remove();
+  if (RESP_DPO.voltarPlano && document.getElementById('pa-dpo-owner-sel')) carregarDonosPlanoDpo();
+  if (document.querySelector('.dpo-mp-resp')) renderDpoMeusPlanos();
+}
+function desenharResponsaveisDpo() {
+  const el = document.getElementById('modal-resp-dpo'); if (!el) return;
+  const d = RESP_DPO.dados, e = RESP_DPO.edit;
+  const chip = a => a && a.total ? `<span class="resp-chip" title="ações abertas / total">${a.abertas} aberta(s) · ${a.total} total</span>` : '<span class="resp-chip vazio">sem ações</span>';
+  el.innerHTML = `<div class="modal-fundo" style="z-index:10050;" onclick="if(event.target===this) fecharResponsaveisDpo()">
+    <div class="modal-caixa" style="max-width:720px;max-height:92vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;"><h3 style="margin:0;">👥 Responsáveis pelas ações</h3><button class="btn-secundario btn-sm" style="width:auto;" onclick="fecharResponsaveisDpo()">✕</button></div>
+      <div class="plano-meta" style="margin:4px 0 12px;">Cadastre as pessoas uma vez e escolha na hora de criar cada ação. Os usuários do sistema e os funcionários cadastrados também aparecem para seleção automaticamente.</div>
+      <div class="resp-form">
+        <div style="font-weight:700;font-size:13px;margin-bottom:6px;">${e ? '✏️ Editar responsável' : '＋ Novo responsável'}</div>
+        <div class="resp-grid">
+          <input id="rp-nome" placeholder="Nome *" value="${escapeHtml(e ? e.nome : '')}">
+          <input id="rp-cargo" placeholder="Cargo" value="${escapeHtml(e ? e.cargo || '' : '')}">
+          <input id="rp-area" placeholder="Área (ex: Armazém)" value="${escapeHtml(e ? e.area || '' : '')}">
+          <input id="rp-email" placeholder="E-mail" value="${escapeHtml(e ? e.email || '' : '')}">
+          <input id="rp-tel" placeholder="Telefone" value="${escapeHtml(e ? e.telefone || '' : '')}">
+          <div style="display:flex;gap:6px;"><button class="btn-primario btn-sm" style="width:auto;" onclick="salvarResponsavelDpo()">${e ? 'Salvar' : 'Cadastrar'}</button>${e ? '<button class="btn-secundario btn-sm" style="width:auto;" onclick="RESP_DPO.edit=null; desenharResponsaveisDpo()">Cancelar</button>' : ''}</div>
+        </div>
+        ${e && e.acoes && e.acoes.total ? '<div class="plano-meta" style="font-size:11.5px;margin-top:4px;">Se mudar o nome, as ações dessa pessoa são atualizadas com o nome novo.</div>' : ''}
+      </div>
+      <div class="resp-sec">👥 Cadastrados (${d.cadastrados.length})</div>
+      ${d.cadastrados.length ? d.cadastrados.map(r => `<div class="resp-item ${r.ativo ? '' : 'inativo'}">
+        <div class="resp-av">${escapeHtml((r.nome || '?').trim().split(/\s+/).map(x => x[0]).slice(0, 2).join('').toUpperCase())}</div>
+        <div style="flex:1;min-width:160px;"><strong>${escapeHtml(r.nome)}</strong>${r.ativo ? '' : ' <span style="color:#94a3b8;font-size:11px;">(inativo)</span>'}<div class="plano-meta" style="font-size:11.5px;">${escapeHtml([r.cargo, r.area, r.email, r.telefone].filter(Boolean).join(' · ') || '—')}</div></div>
+        ${chip(r.acoes)}
+        <div style="display:flex;gap:4px;"><button class="btn-secundario btn-sm" style="width:auto;" onclick="RESP_DPO.edit=RESP_DPO.dados.cadastrados.find(x=>x.id===${r.id}); desenharResponsaveisDpo(); document.getElementById('rp-nome').focus()">Editar</button>
+          <button class="btn-secundario btn-sm" style="width:auto;" onclick="alternarResponsavelDpo(${r.id}, ${!r.ativo})">${r.ativo ? 'Inativar' : 'Ativar'}</button>
+          <button class="btn-perigo btn-sm" style="width:auto;" onclick="excluirResponsavelDpo(${r.id})">🗑</button></div>
+      </div>`).join('') : '<div class="plano-meta" style="padding:6px 0;">Nenhum responsável cadastrado ainda.</div>'}
+      ${d.usuarios.length ? `<div class="resp-sec">🔑 Usuários do sistema (${d.usuarios.length}) <span>— aparecem automaticamente</span></div>${d.usuarios.map(u => `<div class="resp-item"><div class="resp-av sis">${escapeHtml((u.nome || '?').trim().split(/\s+/).map(x => x[0]).slice(0, 2).join('').toUpperCase())}</div><div style="flex:1;min-width:160px;"><strong>${escapeHtml(u.nome)}</strong><div class="plano-meta" style="font-size:11.5px;">${escapeHtml(u.email || '')}</div></div>${chip(u.acoes)}</div>`).join('')}` : ''}
+      ${d.funcionarios.length ? `<div class="resp-sec">🧑‍🤝‍🧑 Funcionários cadastrados (${d.funcionarios.length}) <span>— aparecem automaticamente</span></div>${d.funcionarios.map(u => `<div class="resp-item"><div class="resp-av fun">${escapeHtml((u.nome || '?').trim().split(/\s+/).map(x => x[0]).slice(0, 2).join('').toUpperCase())}</div><div style="flex:1;min-width:160px;"><strong>${escapeHtml(u.nome)}</strong><div class="plano-meta" style="font-size:11.5px;">${escapeHtml([u.cargo, u.email].filter(Boolean).join(' · '))}</div></div>${chip(u.acoes)}</div>`).join('')}` : ''}
+    </div></div>`;
+}
+async function salvarResponsavelDpo() {
+  const v = id => document.getElementById(id).value.trim();
+  const corpo = { company_id: RESP_DPO.cid, nome: v('rp-nome'), cargo: v('rp-cargo'), area: v('rp-area'), email: v('rp-email'), telefone: v('rp-tel') };
+  if (!corpo.nome) return mostrarToast('Informe o nome.', true);
+  try {
+    const r = RESP_DPO.edit ? await api('/api/dpo/responsaveis/' + RESP_DPO.edit.id, { method: 'PUT', body: JSON.stringify(corpo) }) : await api('/api/dpo/responsaveis', { method: 'POST', body: JSON.stringify(corpo) });
+    mostrarToast(r.message); RESP_DPO.edit = null; recarregarResponsaveisDpo();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function alternarResponsavelDpo(id, ativo) { try { await api('/api/dpo/responsaveis/' + id, { method: 'PUT', body: JSON.stringify({ ativo }) }); recarregarResponsaveisDpo(); } catch (e) { mostrarToast(e.message, true); } }
+async function excluirResponsavelDpo(id) {
+  if (!confirm('Remover este responsável do cadastro? As ações dele continuam com o nome.')) return;
+  try { const r = await api('/api/dpo/responsaveis/' + id, { method: 'DELETE' }); mostrarToast(r.message); recarregarResponsaveisDpo(); } catch (e) { mostrarToast(e.message, true); }
 }
 
 function fecharModalPlanoAcaoDpo() {
@@ -6983,6 +7661,8 @@ async function salvarNovoPlanoAcaoDpo() {
   const cycleId = ctx.cycleId || (cicloSelect ? Number(cicloSelect.value) : null);
   const texto = document.getElementById('pa-dpo-texto').value.trim();
   const verificacao_numero = document.getElementById('pa-dpo-verificacao').value.trim();
+  const selDono = document.getElementById('pa-dpo-owner-sel');
+  if (selDono && selDono.value === '__novo') { mostrarToast('Termine de cadastrar o responsável (ou escolha outro).', true); return; }
   const owner = document.getElementById('pa-dpo-owner').value.trim();
   const status = document.getElementById('pa-dpo-status').value;
   const data_prevista = document.getElementById('pa-dpo-data-prevista').value || null;
@@ -7193,6 +7873,7 @@ async function renderDpoHome() {
     cont.innerHTML = `
       <h1>Impulsionar V4 — DPO Ambev</h1>
       <p style="color:#64748b;margin-top:-8px;">Consultoria de processos por pilar, com autoavaliação mensal e planos de ação.</p>
+      <div id="dpo-sessoes-empresa"></div>
       ${minhaEmpresaDpo && minhaEmpresaDpo.dpo_auditoria_oficial_data ? `
       <div class="msg-vazio" style="color:#7c3aed;border-color:#7c3aed;text-align:left;">
         🗓️ <strong>Auditoria Oficial Ambev marcada para ${new Date(minhaEmpresaDpo.dpo_auditoria_oficial_data + 'T00:00:00').toLocaleDateString('pt-BR')}</strong>
@@ -7264,6 +7945,7 @@ async function renderDpoHome() {
         </div>
       </div>` : ''}
     `;
+    carregarSessoesDpoEmpresa();
   } catch (e) { cont.innerHTML = `<h1>Impulsionar V4 — DPO Ambev</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
 
@@ -7306,6 +7988,7 @@ function desenharDpoMeusPlanos() {
     <div class="barra-acoes">
       <div></div>
       <div class="direita">
+        <button class="btn-primario dpo-mp-resp" style="width:auto;" onclick="abrirCadastroResponsaveisDpo()">👥 Responsáveis</button>
         <button class="btn-secundario" onclick="baixarExcelDpo('planos')">📊 Baixar Excel dos Planos</button>
         <button class="btn-secundario" onclick="baixarExcelDpo('checklist')">📊 Baixar Excel da Autoavaliação</button>
         <button class="btn-secundario" onclick="renderDpoHome()">← Voltar ao DPO Ambev</button>
@@ -7434,7 +8117,7 @@ async function abrirOuCriarPilarDpo(pillarKey) {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
-const ABAS_PILAR_DPO = { checklist: '📝 Gestão', batepapo: '📁 Conhecimento do Time', material: '📂 Material do Pilar', ferramentas: '🧰 Ferramentas Impulsionar' };
+const ABAS_PILAR_DPO = { checklist: '📝 Gestão', batepapo: '📁 Conhecimento do Time', material: '📂 Material do Pilar', impulsionar: '📂 Material Impulsionar', ferramentas: '🧰 Ferramentas Impulsionar' };
 
 async function abrirVisualizacaoCicloDpo(ciclo, somenteLeitura, pilarKeyInicial) {
   let pastas = { checklist: true, batepapo: false, material: false, ferramentas: false };
@@ -7445,8 +8128,10 @@ async function abrirVisualizacaoCicloDpo(ciclo, somenteLeitura, pilarKeyInicial)
   let acomps = [];
   let acompsLista = [];
   try { acompsLista = await api('/api/dpo/acompanhamentos' + (ESTADO.usuario.role === 'admin' && ciclo.company_id ? '?company_id=' + ciclo.company_id : '')); acomps = acompsLista.map(a => a.questionKey); } catch (e) { acomps = []; }
+  let matImp = [];
+  try { matImp = await api('/api/dpo/material-impulsionar' + (ESTADO.usuario.role === 'admin' ? '?company_id=' + (ciclo.company_id || '') : '')); } catch (e) { matImp = []; }
   MATERIAL_DPO_ABERTAS.clear();
-  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key), aba: null, pastas, niveis, acomps, acompsLista };
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo: pilarKeyInicial || (ciclo.pilares[0] && ciclo.pilares[0].key), aba: null, pastas, niveis, acomps, acompsLista, matImp };
   renderCicloDpoAtual();
 }
 
@@ -7461,7 +8146,8 @@ function renderCicloDpoAtual() {
   const mediaScore = validos.length ? (validos.reduce((s, p) => s + p.score, 0) / validos.length).toFixed(1) : null;
   const pastas = ESTADO_DPO_VIEW.pastas || { checklist: true, batepapo: false, material: false, ferramentas: false };
   const temAcompPilar = (ESTADO_DPO_VIEW.acomps || []).some(k => k.startsWith(pilar.key + ':'));
-  const abasLiberadas = Object.keys(ABAS_PILAR_DPO).filter(a => pastas[a] || (a === 'ferramentas' && temAcompPilar));
+  const temMatImp = (ESTADO_DPO_VIEW.matImp || []).some(m => m.pillar_key === pilar.key);
+  const abasLiberadas = Object.keys(ABAS_PILAR_DPO).filter(a => a === 'impulsionar' ? temMatImp : (pastas[a] || (a === 'ferramentas' && temAcompPilar)));
   if (!abasLiberadas.includes(ESTADO_DPO_VIEW.aba)) ESTADO_DPO_VIEW.aba = abasLiberadas[0] || null;
   const aba = ESTADO_DPO_VIEW.aba;
   cont.innerHTML = `
@@ -7478,11 +8164,12 @@ function renderCicloDpoAtual() {
       ${ciclo.pilares.map(p => `<button class="btn-sm ${p.key === pilar.key ? 'btn-primario' : 'btn-secundario'}" onclick="trocarPilarCicloDpo('${p.key}')">${escapeHtml(p.label)}</button>`).join('')}
     </div>
     ${abasLiberadas.length ? `<div class="dpo-subabas">
-      ${abasLiberadas.map(a => `<button class="dpo-subaba ${aba === a ? 'ativa' : ''}" onclick="trocarAbaPilarDpo('${a}')">${ABAS_PILAR_DPO[a]}</button>`).join('')}
+      ${abasLiberadas.map(a => `<button class="dpo-subaba ${aba === a ? 'ativa' : ''}" onclick="trocarAbaPilarDpo('${a}')">${ABAS_PILAR_DPO[a]}${a === 'impulsionar' ? ` <span class="matimp-cont">${(ESTADO_DPO_VIEW.matImp || []).filter(m => m.pillar_key === pilar.key).length}</span>` : ''}</button>`).join('')}
     </div>` : ''}
     ${!aba ? `<div class="msg-vazio">Nenhuma pasta deste pilar foi liberada para sua empresa ainda. Fale com o Master.</div>`
       : aba === 'batepapo' ? `<div id="dpo-batepapo-area"><p>Carregando...</p></div>`
       : aba === 'material' ? `<div id="dpo-material-area"><p>Carregando...</p></div>`
+      : aba === 'impulsionar' ? matImpAbaHtml(pilar)
       : aba === 'ferramentas' ? `<div id="dpo-ferramentas-area"><p>Carregando...</p></div>` : `
     ${(() => {
       const nv = ((ESTADO_DPO_VIEW.niveis && ESTADO_DPO_VIEW.niveis.pilares) || {})[pilar.key];
@@ -7542,6 +8229,7 @@ async function carregarBatePapoDpo() {
         <div class="plano-meta">📁 ${escapeHtml(pilar.label)} · ${CACHE_BATE_PAPO_DPO.length} pergunta(s) registrada(s)</div>
         <div class="direita">
           <button class="btn-secundario btn-sm" onclick="baixarExcelBatePapoDpo()" ${CACHE_BATE_PAPO_DPO.length ? '' : 'disabled'}>📊 Baixar Excel</button>
+          ${ESTADO.usuario.role === 'admin' && ESTADO_DPO_VIEW.ciclo && ESTADO_DPO_VIEW.ciclo.company_id ? `<label class="btn-secundario btn-sm" style="cursor:pointer;margin:0;">📎 Subir planilha<input type="file" accept=".xlsx,.xlsm,.csv" style="display:none;" onchange="importarConhecimentoNaEmpresaDpo(this)"></label>` : ''}
           <button class="btn-primario btn-sm" onclick="abrirModalBatePapoDpo()">+ Adicionar</button>
         </div>
       </div>
@@ -7552,9 +8240,9 @@ async function carregarBatePapoDpo() {
             <div class="dpo-pergunta dpo-batepapo-item">
               <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
                 <div style="flex:1;min-width:0;">
-                  <div class="dpo-pergunta-titulo">❓ ${i + 1}. ${escapeHtml(item.pergunta)}</div>
+                  <div class="dpo-pergunta-titulo">❓ ${i + 1}. ${escapeHtml(item.pergunta)}${item.origem === 'impulsionar' ? ' <span class="matimp-chip">📎 Impulsionar</span>' : ''}</div>
                   <div class="dpo-batepapo-resposta">${item.resposta ? '💬 ' + escapeHtml(item.resposta) : '<em style="color:#94a3b8;">Sem resposta ainda</em>'}</div>
-                  <div class="plano-meta" style="margin-top:6px;font-size:11px;">${item.autorNome ? escapeHtml(item.autorNome) + ' · ' : ''}${item.created_at ? new Date(String(item.created_at).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : ''}</div>
+                  <div class="plano-meta" style="margin-top:6px;font-size:11px;">${item.origem === 'impulsionar' ? 'Impulsionar · ' : item.autorNome ? escapeHtml(item.autorNome) + ' · ' : ''}${item.created_at ? new Date(String(item.created_at).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : ''}</div>
                 </div>
                 <div style="display:flex;gap:6px;flex-shrink:0;">
                   <button class="btn-secundario btn-sm" onclick="abrirModalBatePapoDpo(${item.id})">Editar</button>
@@ -7567,6 +8255,21 @@ async function carregarBatePapoDpo() {
       `).join('')}
     `;
   } catch (e) { area.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+async function importarConhecimentoNaEmpresaDpo(inp) {
+  const f = inp.files[0]; if (!f) return;
+  const pilar = pilarAtualDpo(), cid = ESTADO_DPO_VIEW.ciclo.company_id;
+  const fd = (extra) => { const x = new FormData(); x.append('file', f); x.append('pillarKey', pilar.key); Object.entries(extra).forEach(([k, v]) => x.append(k, v)); return x; };
+  try {
+    const pv = await fetch('/api/admin/dpo/bate-papo/importar', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: fd({ previa: '1' }) }).then(async r => { const j = await r.json(); if (!r.ok) throw new Error(j.error); return j; });
+    if (!pv.validas) throw new Error('Nenhuma pergunta válida na planilha (confira o nº da pergunta do pilar).');
+    if (!confirm(`Adicionar ${pv.validas} pergunta(s) da planilha no Conhecimento do Time desta empresa?${pv.linhas.length - pv.validas ? `\n(${pv.linhas.length - pv.validas} linha(s) com problema serão ignoradas)` : ''}`)) { inp.value = ''; return; }
+    const r = await fetch('/api/admin/dpo/bate-papo/importar', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: fd({ companyIds: JSON.stringify([cid]) }) });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error);
+    mostrarToast(j.message); carregarBatePapoDpo();
+  } catch (e) { mostrarToast(e.message, true); }
+  inp.value = '';
 }
 
 // Modal: escolhe a pergunta do pilar e registra uma ou mais perguntas/respostas.
@@ -7699,6 +8402,7 @@ function renderPerguntaDpo(p, somenteLeitura) {
         <div>
           <span class="dpo-pergunta-titulo">${escapeHtml(p.numero)} ${escapeHtml(p.questao)}</span>
           ${p.mandatoria ? '<span style="color:#dc2626;font-size:11px;font-weight:700;"> · Mandatória</span>' : ''}
+          ${matImpDaPergunta(p.questionKey).length ? `<span class="matimp-chip">📂 Material Impulsionar (${matImpDaPergunta(p.questionKey).length})</span>` : ''}
           <div style="font-size:11.5px;color:#94a3b8;">Peso ${p.peso || 0}${p.aplicabilidade ? ' · ' + escapeHtml(p.aplicabilidade) : ''}</div>
         </div>
         <span class="dpo-score-badge" style="background:${cor}20;color:${cor};">${textoNota}</span>
@@ -7708,6 +8412,7 @@ function renderPerguntaDpo(p, somenteLeitura) {
         <details style="margin-bottom:10px;"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#4338ca;">❓ How to Check (tirar dúvidas)</summary>
           <div style="font-size:12.5px;color:#334155;white-space:pre-line;margin-top:6px;">${escapeHtml(p.how_to_check || '')}</div>
         </details>
+        ${matImpPastaHtml(p.questionKey, false)}
         ${FD_PERGUNTAS[p.questionKey] ? fdCaixaPerguntaHtml(p) : ''}
         <div style="font-size:12.5px;background:#f8fafc;border:1px solid var(--cinza-200);border-radius:8px;padding:8px 10px;">
           <strong>Nota na última autoavaliação${nv ? ' (' + escapeHtml(nv.referenciaLabel) + ')' : ''}:</strong> <span style="color:${cor};font-weight:800;">${textoNota}</span>${explicacaoNota ? ' — ' + escapeHtml(explicacaoNota) : ''}
@@ -7810,7 +8515,7 @@ async function recarregarCicloDpoAtual() {
   const pilarAtivo = ESTADO_DPO_VIEW.pilarAtivo;
   const somenteLeitura = ESTADO_DPO_VIEW.somenteLeitura;
   const ciclo = await api('/api/dpo/cycles/' + cicloId);
-  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo, aba: ESTADO_DPO_VIEW.aba, pastas: ESTADO_DPO_VIEW.pastas, niveis: ESTADO_DPO_VIEW.niveis, acomps: ESTADO_DPO_VIEW.acomps, acompsLista: ESTADO_DPO_VIEW.acompsLista };
+  ESTADO_DPO_VIEW = { ciclo, somenteLeitura, pilarAtivo, aba: ESTADO_DPO_VIEW.aba, pastas: ESTADO_DPO_VIEW.pastas, niveis: ESTADO_DPO_VIEW.niveis, acomps: ESTADO_DPO_VIEW.acomps, acompsLista: ESTADO_DPO_VIEW.acompsLista, matImp: ESTADO_DPO_VIEW.matImp };
   renderCicloDpoAtual();
 }
 
@@ -9060,6 +9765,923 @@ async function liberarAjusteChamado(id) {
   if (!confirm('Reabrir a autoavaliação para a empresa ajustar as notas?')) return;
   try { const r = await api('/api/chamados/' + id + '/liberar-ajuste', { method: 'POST' }); mostrarToast(r.message); abrirChamado(id); }
   catch (e) { mostrarToast(e.message, true); }
+}
+
+// ----- "Material Impulsionar" (material do Master compartilhado com a empresa) -----
+function matImpIcone(m) {
+  const n = String(m.original_name || m.url || '').toLowerCase();
+  if (/^https?:/.test(m.url || '')) return '🔗';
+  if (/\.pdf$/.test(n)) return '📕';
+  if (/\.(xlsx?|xlsm|xlsb|csv)$/.test(n)) return '📊';
+  if (/\.(pptx?)$/.test(n)) return '📽️';
+  if (/\.(docx?|txt)$/.test(n)) return '📄';
+  if (/\.(png|jpe?g|gif|webp)$/.test(n)) return '🖼️';
+  if (/\.(mp4|mov|webm|avi)$/.test(n)) return '🎬';
+  return '📎';
+}
+function matImpDaPergunta(questionKey) {
+  const [pk, num] = String(questionKey).split(':');
+  return ((ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.matImp) || []).filter(m => m.pillar_key === pk && m.question_numero === num);
+}
+function registrarAcessoMatImp(id) { api('/api/dpo/material-impulsionar/' + id + '/acesso', { method: 'POST' }).catch(() => {}); }
+function matImpItemHtml(m) {
+  const ehLink = /^https?:/i.test(m.url);
+  return `<div class="matimp-item">
+    <div class="matimp-ico">${matImpIcone(m)}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-weight:700;font-size:13px;color:#1e293b;">${escapeHtml(m.titulo)}</div>
+      ${m.descricao ? `<div style="font-size:12px;color:#64748b;white-space:pre-line;">${escapeHtml(m.descricao)}</div>` : ''}
+    </div>
+    <a class="btn-primario btn-sm" href="${escapeHtml(m.url)}" target="_blank" rel="noopener" ${ehLink ? '' : `download="${escapeHtml(m.original_name || '')}"`} onclick="registrarAcessoMatImp(${m.id})">${ehLink ? '↗ Abrir' : '⬇ Baixar'}</a>
+  </div>`;
+}
+// Pasta dentro do card da pergunta — só aparece se houver material compartilhado.
+function matImpPastaHtml(questionKey) {
+  const l = matImpDaPergunta(questionKey);
+  if (!l.length) return '';
+  return `<div class="matimp-pasta">
+    <div class="matimp-pasta-tit">📂 Material Impulsionar <span style="font-weight:600;color:#c2410c;font-size:11.5px;">${l.length} arquivo(s) disponibilizado(s) pela Impulsionar</span></div>
+    ${l.map(matImpItemHtml).join('')}
+  </div>`;
+}
+// Aba do pilar: lista apenas as perguntas que têm material compartilhado.
+function matImpAbaHtml(pilar) {
+  const perguntas = pilar.grupos.flatMap(g => g.perguntas).filter(p => matImpDaPergunta(p.questionKey).length);
+  if (!perguntas.length) return '<div class="msg-vazio">Nenhum material disponibilizado para este pilar.</div>';
+  return `<div class="plano-meta" style="margin-bottom:12px;">📂 Materiais que a Impulsionar disponibilizou para sua empresa em ${escapeHtml(pilar.label)} — organizados pela pergunta do pilar.</div>
+    ${perguntas.map(p => `<div class="dpo-grupo" style="margin-bottom:12px;">
+      <div class="dpo-grupo-titulo">${escapeHtml(p.numero)} ${escapeHtml(p.questao)}</div>
+      ${matImpPastaHtml(p.questionKey)}
+    </div>`).join('')}`;
+}
+
+
+// ----- Master: planilha (anexo) que vira perguntas do "Conhecimento do Time" -----
+let CKI = { arquivo: null, linhas: null, empresas: new Set() };
+function desenharConhecimentoMaster() {
+  const cont = document.getElementById('conteudo');
+  const d = MDPO.dados;
+  const pilar = d.pilares.find(p => p.key === MDPO.pilar) || d.pilares[0];
+  const empresasOrd = [...d.empresas].sort((a, b) => (b.dpo - a.dpo) || a.name.localeCompare(b.name));
+  const l = CKI.linhas;
+  const validas = l ? l.filter(x => !x.erro) : [];
+  cont.innerHTML = `
+    <h1>📂 Material DPO</h1>
+    ${mdpoAbasHtml()}
+    <p style="color:#64748b;margin-top:-4px;">Suba uma planilha com perguntas e respostas: elas aparecem para as empresas escolhidas na aba <strong>📁 Conhecimento do Time</strong> de cada pilar, organizadas pela pergunta do pilar (marcadas como <strong>Impulsionar</strong>).</p>
+    <div class="painel" style="margin-bottom:14px;">
+      <div class="cki-passo"><span>1</span> Escolha o pilar e baixe o modelo (já vem com todas as perguntas do pilar — preencha "Pergunta ao time" e "Resposta"; pode repetir a linha para mais de uma pergunta).</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px;">
+        ${d.pilares.map(p => `<button class="btn-sm ${p.key === pilar.key ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="MDPO.pilar='${p.key}'; CKI.linhas=null; desenharConhecimentoMaster();">${escapeHtml(p.label)}</button>`).join('')}
+        <button class="btn-secundario btn-sm" style="width:auto;margin-left:auto;" onclick="baixarModeloConhecimentoDpo('${pilar.key}')">⬇ Baixar modelo Excel — ${escapeHtml(pilar.label)}</button>
+      </div>
+      <div class="cki-passo"><span>2</span> Suba a planilha (.xlsx ou .csv). Também aceita o Excel baixado em "Conhecimento do Time".</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:8px 0 14px;">
+        <div style="flex:1;min-width:240px;"><input id="cki-arquivo" type="file" accept=".xlsx,.xlsm,.csv" style="margin:0;" onchange="CKI.arquivo=this.files[0]||null; previaConhecimentoDpo()">${CKI.arquivo && CKI.arquivo.name ? `<div class="plano-meta" style="font-size:12px;margin-top:4px;">📎 Arquivo carregado: <strong>${escapeHtml(CKI.arquivo.name)}</strong></div>` : ''}</div>
+        <div style="min-width:260px;"><label style="font-size:12px;">Se a planilha não tiver o nº da pergunta, usar:</label>
+          <select id="cki-num" style="margin:0;" onchange="if(CKI.arquivo) previaConhecimentoDpo()"><option value="">— a planilha já informa —</option>
+          ${pilar.grupos.map(g => `<optgroup label="${escapeHtml(g.numero + ' ' + g.titulo)}">${g.perguntas.map(q => `<option value="${escapeHtml(q.numero)}">${escapeHtml(q.numero)} — ${escapeHtml(q.questao.length > 70 ? q.questao.slice(0, 70) + '…' : q.questao)}</option>`).join('')}</optgroup>`).join('')}</select></div>
+      </div>
+      ${l ? `<div class="cki-previa">
+        <div style="font-weight:700;margin-bottom:6px;">Pré-visualização: ${validas.length} pergunta(s) válida(s)${l.length - validas.length ? ` · <span style="color:#b91c1c;">${l.length - validas.length} com problema (serão ignoradas)</span>` : ''}</div>
+        <div style="max-height:320px;overflow:auto;"><table class="cki-tab"><thead><tr><th>Pilar</th><th>Nº</th><th>Pergunta ao time</th><th>Resposta</th><th></th></tr></thead><tbody>
+        ${l.map(x => `<tr class="${x.erro ? 'erro' : ''}"><td>${escapeHtml((d.pilares.find(p => p.key === x.pillar_key) || {}).label || '—')}</td><td>${escapeHtml(x.question_numero || '—')}</td><td>${escapeHtml(x.pergunta)}</td><td>${escapeHtml(x.resposta || '')}</td><td>${x.erro ? '⚠️ ' + escapeHtml(x.erro) : '✅'}</td></tr>`).join('')}
+        </tbody></table></div></div>` : ''}
+      <div class="cki-passo" style="margin-top:14px;"><span>3</span> Escolha as empresas que vão receber.</div>
+      <div style="display:flex;gap:6px;margin:8px 0 6px;">
+        <button class="btn-secundario btn-sm" style="width:auto;" onclick="empresasOrdCki().forEach(e => CKI.empresas.add(String(e.id))); desenharConhecimentoMaster();">Marcar todas com DPO</button>
+        <button class="btn-secundario btn-sm" style="width:auto;" onclick="CKI.empresas.clear(); desenharConhecimentoMaster();">Desmarcar</button>
+      </div>
+      <div class="mdpo-emp-lista cki-emp">${empresasOrd.map(e => `<label><input type="checkbox" value="${e.id}" ${CKI.empresas.has(String(e.id)) ? 'checked' : ''} onchange="this.checked ? CKI.empresas.add(this.value) : CKI.empresas.delete(this.value); document.getElementById('cki-enviar-txt').textContent = CKI.empresas.size"> ${escapeHtml(e.name)}${e.dpo ? '' : ' <span style="color:#94a3b8;font-size:11px;">(sem módulo DPO)</span>'}</label>`).join('')}</div>
+      <div class="acoes-form" style="margin-top:14px;">
+        <button class="btn-primario" id="cki-enviar" style="width:auto;" onclick="enviarConhecimentoDpo()" ${validas.length ? '' : 'disabled'}>📤 Enviar ${validas.length} pergunta(s) para <span id="cki-enviar-txt">${CKI.empresas.size}</span> empresa(s)</button>
+      </div>
+      <div class="plano-meta" style="font-size:11.5px;margin-top:6px;">Perguntas iguais que já existem na empresa não são duplicadas (só a resposta é atualizada). A empresa precisa ter a pasta "Conhecimento do Time" liberada para ver a aba.</div>
+    </div>
+    <div id="modal-area"></div>`;
+}
+function empresasOrdCki() { return (MDPO.dados.empresas || []).filter(e => e.dpo); }
+async function baixarModeloConhecimentoDpo(pk) {
+  try {
+    const r = await fetch('/api/admin/dpo/bate-papo/modelo/' + pk, { headers: { 'Authorization': 'Bearer ' + ESTADO.token } });
+    if (!r.ok) throw new Error('Não foi possível gerar o modelo.');
+    const blob = await r.blob(); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'modelo-conhecimento-do-time-' + pk + '.xlsx'; document.body.appendChild(a); a.click(); a.remove();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function enviarPlanilhaConhecimentoDpo(extra) {
+  const fd = new FormData(); fd.append('file', CKI.arquivo); fd.append('pillarKey', MDPO.pilar || '');
+  const num = document.getElementById('cki-num'); fd.append('questionNumero', num ? num.value : '');
+  Object.entries(extra).forEach(([k, v]) => fd.append(k, v));
+  const r = await fetch('/api/admin/dpo/bate-papo/importar', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: fd });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Erro ao ler a planilha.');
+  return j;
+}
+async function previaConhecimentoDpo() {
+  if (!CKI.arquivo) { CKI.linhas = null; return desenharConhecimentoMaster(); }
+  const numSel = (document.getElementById('cki-num') || {}).value || '';
+  try {
+    const j = await enviarPlanilhaConhecimentoDpo({ previa: '1' });
+    CKI.linhas = j.linhas;
+    if (!j.linhas.length) mostrarToast('Não achei perguntas na planilha. Use o modelo: coluna "Pergunta ao time" preenchida.', true);
+  } catch (e) { CKI.linhas = null; mostrarToast(e.message, true); }
+  desenharConhecimentoMaster();
+  const sel = document.getElementById('cki-num'); if (sel) sel.value = numSel;
+}
+async function enviarConhecimentoDpo() {
+  if (!CKI.arquivo) return mostrarToast('Suba a planilha primeiro.', true);
+  if (!CKI.empresas.size) return mostrarToast('Escolha ao menos uma empresa.', true);
+  const b = document.getElementById('cki-enviar'); b.disabled = true;
+  try {
+    const j = await enviarPlanilhaConhecimentoDpo({ companyIds: JSON.stringify([...CKI.empresas].map(Number)) });
+    mostrarToast(j.message);
+    CKI.arquivo = null; CKI.linhas = null; desenharConhecimentoMaster();
+  } catch (e) { mostrarToast(e.message, true); b.disabled = false; }
+}
+
+// ----- Master: "Material DPO" (biblioteca + disponibilizar por empresa) -----
+let MDPO = { dados: null, pilar: '', empresa: '', busca: '', soComMaterial: false, aba: 'material' };
+
+async function renderMaterialDpoMaster() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<p>Carregando...</p>';
+  try {
+    MDPO.dados = await api('/api/admin/material-dpo');
+    if (!MDPO.pilar || !MDPO.dados.pilares.some(p => p.key === MDPO.pilar)) MDPO.pilar = (MDPO.dados.pilares[0] || {}).key || '';
+    desenharMaterialDpoMaster();
+  } catch (e) { cont.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+
+function mdpoAbasHtml() {
+  return `<div class="dpo-subabas" style="margin-bottom:14px;">
+    <button class="dpo-subaba ${MDPO.aba === 'material' ? 'ativa' : ''}" onclick="MDPO.aba='material'; desenharMaterialDpoMaster();">📂 Materiais (arquivos)</button>
+    <button class="dpo-subaba ${MDPO.aba === 'conhecimento' ? 'ativa' : ''}" onclick="MDPO.aba='conhecimento'; desenharMaterialDpoMaster();">📁 Conhecimento do Time (perguntas)</button>
+  </div>`;
+}
+function desenharMaterialDpoMaster() {
+  const cont = document.getElementById('conteudo');
+  const d = MDPO.dados; if (!d) return;
+  if (MDPO.aba === 'conhecimento') return desenharConhecimentoMaster();
+  const pilar = d.pilares.find(p => p.key === MDPO.pilar) || d.pilares[0];
+  const emp = MDPO.empresa ? d.empresas.find(e => String(e.id) === String(MDPO.empresa)) : null;
+  const busca = MDPO.busca.toLowerCase();
+  const doPilar = d.materiais.filter(m => m.pillar_key === (pilar && pilar.key));
+  const empresasOrd = [...d.empresas].sort((a, b) => (b.dpo - a.dpo) || a.name.localeCompare(b.name));
+  const contaPilar = k => d.materiais.filter(m => m.pillar_key === k).length;
+  const totalCompart = emp ? d.materiais.filter(m => m.compartilhado.some(c => String(c.companyId) === String(emp.id))).length : 0;
+  cont.innerHTML = `
+    <h1>📂 Material DPO</h1>
+    ${mdpoAbasHtml()}
+    <p style="color:#64748b;margin-top:-8px;">Sua biblioteca de materiais por pergunta do DPO. Quando uma empresa precisar, clique em <strong>Disponibilizar</strong>: o material aparece para ela na pergunta, na pasta <strong>📂 Material Impulsionar</strong>. A empresa só enxerga as perguntas com material compartilhado — e você pode desmarcar a qualquer momento.</p>
+    <div class="painel" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
+      <div style="flex:1;min-width:240px;">
+        <label style="font-size:12px;">Disponibilizar para a empresa</label>
+        <select id="mdpo-empresa" style="margin:0;" onchange="MDPO.empresa=this.value; desenharMaterialDpoMaster();">
+          <option value="">— escolha a empresa para marcar/desmarcar rápido —</option>
+          ${empresasOrd.map(e => `<option value="${e.id}" ${String(MDPO.empresa) === String(e.id) ? 'selected' : ''}>${escapeHtml(e.name)}${e.dpo ? '' : ' (sem módulo DPO)'}</option>`).join('')}
+        </select>
+      </div>
+      <div style="min-width:220px;">
+        <label style="font-size:12px;">Buscar</label>
+        <input id="mdpo-busca" style="margin:0;" placeholder="🔎 Pergunta ou material..." value="${escapeHtml(MDPO.busca)}" oninput="MDPO.busca=this.value; clearTimeout(window.__tMdpo); window.__tMdpo=setTimeout(()=>{ desenharMaterialDpoMaster(); const el=document.getElementById('mdpo-busca'); if(el){el.focus(); el.setSelectionRange(el.value.length, el.value.length);} }, 250);">
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0 0 8px;"><input type="checkbox" style="width:auto;margin:0;" ${MDPO.soComMaterial ? 'checked' : ''} onchange="MDPO.soComMaterial=this.checked; desenharMaterialDpoMaster();"> Só perguntas com material</label>
+      <button class="btn-primario btn-sm" style="width:auto;margin-bottom:6px;" onclick="abrirModalMaterialDpo()">+ Novo material</button>
+    </div>
+    ${emp ? `<div class="plano-meta" style="margin:-4px 0 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 10px;">🏢 <strong>${escapeHtml(emp.name)}</strong>: ${totalCompart} material(is) disponibilizado(s). Clique em <strong>Disponibilizar</strong> / <strong>✅ Disponível</strong> para marcar ou desmarcar.</div>` : ''}
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+      ${d.pilares.map(p => `<button class="btn-sm ${p.key === (pilar && pilar.key) ? 'btn-primario' : 'btn-secundario'}" style="width:auto;" onclick="MDPO.pilar='${p.key}'; desenharMaterialDpoMaster();">${escapeHtml(p.label)} <span style="opacity:.75;">(${contaPilar(p.key)})</span></button>`).join('')}
+    </div>
+    ${!pilar ? '<div class="msg-vazio">Nenhum pilar.</div>' : pilar.grupos.map(g => {
+      const perguntas = g.perguntas.map(q => ({ q, mats: doPilar.filter(m => m.question_numero === q.numero) }))
+        .filter(({ q, mats }) => (!MDPO.soComMaterial || mats.length) && (!busca || [q.numero, q.questao, ...mats.map(m => m.titulo + ' ' + (m.descricao || ''))].join(' ').toLowerCase().includes(busca)));
+      if (!perguntas.length) return '';
+      return `<div class="dpo-grupo"><div class="dpo-grupo-titulo">${escapeHtml(g.numero)} ${escapeHtml(g.titulo)}</div>
+        ${perguntas.map(({ q, mats }) => `<div class="mdpo-pergunta ${mats.length ? 'tem' : ''}">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <div style="flex:1;font-size:13px;"><strong>${escapeHtml(q.numero)}</strong> ${escapeHtml(q.questao)}</div>
+            <button class="btn-secundario btn-sm" style="width:auto;white-space:nowrap;" onclick="abrirModalMaterialDpo(null, '${escapeHtml(q.numero)}')">+ Material</button>
+          </div>
+          ${mats.map(m => {
+            const ehLink = /^https?:/i.test(m.url);
+            const on = emp && m.compartilhado.some(c => String(c.companyId) === String(emp.id));
+            const acessos = m.compartilhado.reduce((s, c) => s + (c.acessos || 0), 0);
+            return `<div class="mdpo-mat">
+              <div class="matimp-ico">${matImpIcone(m)}</div>
+              <div style="flex:1;min-width:200px;">
+                <div style="font-weight:700;font-size:13px;">${escapeHtml(m.titulo)}</div>
+                ${m.descricao ? `<div style="font-size:12px;color:#64748b;white-space:pre-line;">${escapeHtml(m.descricao)}</div>` : ''}
+                <div style="font-size:11.5px;color:#64748b;margin-top:2px;">${m.compartilhado.length ? `🤝 Disponível para ${m.compartilhado.length} empresa(s): ${m.compartilhado.slice(0, 4).map(c => escapeHtml(c.companyName || '#' + c.companyId)).join(', ')}${m.compartilhado.length > 4 ? '…' : ''} · ${acessos} acesso(s)` : '🔒 Ainda não disponibilizado para nenhuma empresa'}</div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                ${emp ? `<button class="btn-secundario btn-sm mdpo-toggle ${on ? 'on' : ''}" title="${on ? 'Clique para desmarcar o compartilhamento' : 'Disponibilizar para ' + escapeHtml(emp.name)}" onclick="alternarCompartMaterialDpo(${m.id}, ${emp.id}, ${!on})">${on ? '✅ Disponível' : '📤 Disponibilizar'}</button>` : ''}
+                <button class="btn-secundario btn-sm" onclick="abrirModalCompartMaterialDpo(${m.id})">🏢 Empresas</button>
+                <a class="btn-secundario btn-sm" href="${escapeHtml(m.url)}" target="_blank" rel="noopener" ${ehLink ? '' : `download="${escapeHtml(m.original_name || '')}"`}>${ehLink ? '↗' : '⬇'}</a>
+                <button class="btn-secundario btn-sm" onclick="abrirModalMaterialDpo(${m.id})">Editar</button>
+                <button class="btn-perigo btn-sm" onclick="excluirMaterialDpo(${m.id})">Excluir</button>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`).join('')}
+      </div>`;
+    }).join('') || '<div class="msg-vazio">Nada encontrado neste filtro.</div>'}
+    <div id="modal-area"></div>`;
+}
+
+async function alternarCompartMaterialDpo(id, companyId, compartilhar) {
+  try {
+    const r = await api('/api/admin/material-dpo/' + id + '/compartilhar', { method: 'PUT', body: JSON.stringify({ companyIds: [companyId], compartilhar }) });
+    mostrarToast(r.message);
+    MDPO.dados = await api('/api/admin/material-dpo');
+    desenharMaterialDpoMaster();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+function abrirModalCompartMaterialDpo(id) {
+  const m = MDPO.dados.materiais.find(x => x.id === id); if (!m) return;
+  const marcados = new Set(m.compartilhado.map(c => String(c.companyId)));
+  const empresas = [...MDPO.dados.empresas].sort((a, b) => (b.dpo - a.dpo) || a.name.localeCompare(b.name));
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa" style="max-width:520px;max-height:92vh;overflow-y:auto;">
+        <h3 style="margin-top:0;">🏢 Disponibilizar “${escapeHtml(m.titulo)}”</h3>
+        <div class="plano-meta" style="margin-bottom:8px;">Pergunta ${escapeHtml(m.question_numero)} — ${escapeHtml(m.perguntaTexto || '')}</div>
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <button class="btn-secundario btn-sm" style="width:auto;" onclick="document.querySelectorAll('.mdpo-emp-lista input').forEach(i => i.checked = true)">Marcar todas</button>
+          <button class="btn-secundario btn-sm" style="width:auto;" onclick="document.querySelectorAll('.mdpo-emp-lista input').forEach(i => i.checked = false)">Desmarcar todas</button>
+        </div>
+        <div class="mdpo-emp-lista" style="border:1px solid var(--cinza-200);border-radius:8px;padding:6px 10px;max-height:46vh;overflow-y:auto;">
+          ${empresas.map(e => `<label><input type="checkbox" value="${e.id}" ${marcados.has(String(e.id)) ? 'checked' : ''}> ${escapeHtml(e.name)}${e.dpo ? '' : ' <span style="color:#94a3b8;font-size:11px;">(sem módulo DPO)</span>'}</label>`).join('') || '<div class="msg-vazio">Nenhuma empresa cadastrada.</div>'}
+        </div>
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" id="mdpo-comp-salvar" onclick="salvarCompartMaterialDpo(${m.id})">Salvar</button>
+          <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function salvarCompartMaterialDpo(id) {
+  const m = MDPO.dados.materiais.find(x => x.id === id); if (!m) return;
+  const antes = new Set(m.compartilhado.map(c => String(c.companyId)));
+  const agora = new Set([...document.querySelectorAll('.mdpo-emp-lista input:checked')].map(i => i.value));
+  const add = [...agora].filter(x => !antes.has(x)).map(Number);
+  const rem = [...antes].filter(x => !agora.has(x)).map(Number);
+  const b = document.getElementById('mdpo-comp-salvar'); if (b) b.disabled = true;
+  try {
+    if (add.length) await api('/api/admin/material-dpo/' + id + '/compartilhar', { method: 'PUT', body: JSON.stringify({ companyIds: add, compartilhar: true }) });
+    if (rem.length) await api('/api/admin/material-dpo/' + id + '/compartilhar', { method: 'PUT', body: JSON.stringify({ companyIds: rem, compartilhar: false }) });
+    mostrarToast(add.length || rem.length ? 'Compartilhamento atualizado!' : 'Nada mudou.');
+    MDPO.dados = await api('/api/admin/material-dpo');
+    desenharMaterialDpoMaster();
+  } catch (e) { mostrarToast(e.message, true); if (b) b.disabled = false; }
+}
+
+function abrirModalMaterialDpo(id, perguntaInicial) {
+  const d = MDPO.dados;
+  const m = id ? d.materiais.find(x => x.id === id) : null;
+  const pilarKey = m ? m.pillar_key : MDPO.pilar;
+  const ehLink = m && /^https?:/i.test(m.url);
+  window.CTX_MDPO = { id: m ? m.id : null, url: m ? m.url : null, originalName: m ? m.original_name : null };
+  const opcoesPerguntas = pk => {
+    const p = d.pilares.find(x => x.key === pk); if (!p) return '';
+    const sel = m ? m.question_numero : (perguntaInicial || '');
+    return p.grupos.map(g => `<optgroup label="${escapeHtml(g.numero + ' ' + g.titulo)}">${g.perguntas.map(q => `<option value="${escapeHtml(q.numero)}" ${sel === q.numero ? 'selected' : ''}>${escapeHtml(q.numero)} — ${escapeHtml(q.questao.length > 110 ? q.questao.slice(0, 110) + '…' : q.questao)}</option>`).join('')}</optgroup>`).join('');
+  };
+  window.__mdpoOpcoes = opcoesPerguntas;
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+      <div class="modal-caixa" style="max-width:600px;max-height:92vh;overflow-y:auto;">
+        <h3 style="margin-top:0;">📂 ${m ? 'Editar' : 'Novo'} material DPO</h3>
+        <label>Pilar</label>
+        <select id="md-pilar" onchange="document.getElementById('md-pergunta').innerHTML = window.__mdpoOpcoes(this.value)">${d.pilares.map(p => `<option value="${p.key}" ${p.key === pilarKey ? 'selected' : ''}>${escapeHtml(p.label)}</option>`).join('')}</select>
+        <label>Pergunta</label>
+        <select id="md-pergunta">${opcoesPerguntas(pilarKey)}</select>
+        <label>Título</label>
+        <input id="md-titulo" maxlength="200" placeholder="ex: Padrão de recebimento — modelo" value="${escapeHtml(m ? m.titulo : '')}">
+        <label>Descrição / como usar (opcional)</label>
+        <textarea id="md-descricao" rows="3" placeholder="O que é e como a empresa deve usar">${escapeHtml(m && m.descricao ? m.descricao : '')}</textarea>
+        <label>Conteúdo</label>
+        <select id="md-origem" onchange="document.getElementById('md-arquivo-area').style.display = this.value === 'arquivo' ? '' : 'none'; document.getElementById('md-link-area').style.display = this.value === 'link' ? '' : 'none';">
+          <option value="arquivo" ${!ehLink ? 'selected' : ''}>Enviar arquivo</option>
+          <option value="link" ${ehLink ? 'selected' : ''}>Link (site, vídeo, drive)</option>
+        </select>
+        <div id="md-arquivo-area" style="${ehLink ? 'display:none;' : ''}">
+          <input id="md-arquivo" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.ppt,.pptx,.csv,.txt,image/*,video/*">
+          ${m && !ehLink ? `<div class="plano-meta" style="font-size:11.5px;">Arquivo atual: ${escapeHtml(m.original_name || m.url)} (deixe vazio para manter)</div>` : ''}
+        </div>
+        <div id="md-link-area" style="${ehLink ? '' : 'display:none;'}"><input id="md-link" placeholder="https://..." value="${ehLink ? escapeHtml(m.url) : ''}"></div>
+        ${!m && MDPO.empresa ? `<label style="display:flex;align-items:center;gap:6px;font-weight:600;margin-top:10px;"><input type="checkbox" id="md-ja-compart" style="width:auto;margin:0;" checked> Já disponibilizar para ${escapeHtml((d.empresas.find(e => String(e.id) === String(MDPO.empresa)) || {}).name || '')}</label>` : ''}
+        <div class="acoes-form" style="margin-top:14px;">
+          <button class="btn-primario" id="md-salvar" onclick="salvarMaterialDpo()">Salvar</button>
+          <button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function salvarMaterialDpo() {
+  const ctx = window.CTX_MDPO || {};
+  const b = document.getElementById('md-salvar');
+  const origem = document.getElementById('md-origem').value;
+  const corpo = {
+    pillarKey: document.getElementById('md-pilar').value,
+    questionNumero: document.getElementById('md-pergunta').value,
+    titulo: document.getElementById('md-titulo').value.trim(),
+    descricao: document.getElementById('md-descricao').value
+  };
+  if (!corpo.titulo) return mostrarToast('Informe o título.', true);
+  b.disabled = true; const rot = b.textContent; b.textContent = 'Salvando...';
+  try {
+    if (origem === 'link') {
+      corpo.url = document.getElementById('md-link').value.trim(); corpo.originalName = null;
+    } else {
+      const f = document.getElementById('md-arquivo').files[0];
+      if (f) {
+        const fd = new FormData(); fd.append('file', f);
+        const r = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: fd });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j.error || 'Falha no envio do arquivo.');
+        corpo.url = j.url; corpo.originalName = j.originalName;
+      } else if (ctx.url && !/^https?:/i.test(ctx.url)) { corpo.url = ctx.url; corpo.originalName = ctx.originalName; }
+      else throw new Error('Escolha o arquivo.');
+    }
+    let id = ctx.id;
+    if (id) await api('/api/admin/material-dpo/' + id, { method: 'PUT', body: JSON.stringify(corpo) });
+    else id = (await api('/api/admin/material-dpo', { method: 'POST', body: JSON.stringify(corpo) })).id;
+    const ja = document.getElementById('md-ja-compart');
+    if (ja && ja.checked && MDPO.empresa) await api('/api/admin/material-dpo/' + id + '/compartilhar', { method: 'PUT', body: JSON.stringify({ companyIds: [Number(MDPO.empresa)], compartilhar: true }) });
+    mostrarToast('Material salvo!');
+    MDPO.pilar = corpo.pillarKey;
+    MDPO.dados = await api('/api/admin/material-dpo');
+    desenharMaterialDpoMaster();
+  } catch (e) { mostrarToast(e.message, true); b.disabled = false; b.textContent = rot; }
+}
+
+async function excluirMaterialDpo(id) {
+  if (!confirm('Excluir este material? Ele some também para as empresas que o recebiam.')) return;
+  try { await api('/api/admin/material-dpo/' + id, { method: 'DELETE' }); mostrarToast('Material removido!'); MDPO.dados = await api('/api/admin/material-dpo'); desenharMaterialDpoMaster(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+// ======================================================================
+// MINISTRAR TREINAMENTO (Master)
+// ======================================================================
+const PUBLICOS_MT = {
+  administrativo: { rot: 'Administrativo', ico: '📋', cor: '#0B7DBF' },
+  lideranca: { rot: 'Liderança', ico: '🧭', cor: '#7c3aed' },
+  operacional: { rot: 'Operacional', ico: '🦺', cor: '#E2621B' },
+  todos: { rot: 'Todos', ico: '👥', cor: '#16a34a' }
+};
+const STATUS_MT = { rascunho: { t: 'Rascunho', c: '#475569', f: '#e2e8f0' }, pronto: { t: 'Pronto p/ ministrar', c: '#1d4ed8', f: '#dbeafe' }, realizado: { t: 'Realizado', c: '#15803d', f: '#dcfce7' } };
+let MT = { lista: [], fStatus: 'todos', fPublico: '', busca: '', doc: null, modSel: 0, sujo: false, timer: null, salvoEm: null, empresas: null };
+function mtPub(k) { return PUBLICOS_MT[k] || PUBLICOS_MT.todos; }
+function mtDataTxt(d, comHora = true) {
+  if (!d) return 'Sem data';
+  const [dia, hora] = String(d).split('T');
+  const dt = new Date(dia + 'T12:00:00');
+  return dt.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '') + (comHora && hora ? ' · ' + hora : '');
+}
+function mtHoje() { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; }
+function mtUid() { return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+// ---------- Gestão (lista) ----------
+async function renderMinistrarTreinamento() {
+  const cont = document.getElementById('conteudo');
+  if (MT.sujo && MT.doc && MT.doc.id) { try { await mtSalvar(true); } catch (e) {} }
+  clearInterval(MT.timer); MT.doc = null; MT.sujo = false;
+  cont.innerHTML = '<h1>🎤 Ministrar Treinamento</h1><p>Carregando...</p>';
+  try { MT.lista = await api('/api/admin/treinamentos-mt'); mtDesenharLista(); }
+  catch (e) { cont.innerHTML = `<h1>🎤 Ministrar Treinamento</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+function mtDesenharLista() {
+  const cont = document.getElementById('conteudo');
+  const hoje = mtHoje();
+  const L = MT.lista;
+  const proximos = L.filter(t => t.status !== 'realizado' && t.data_treinamento && t.data_treinamento.slice(0, 10) >= hoje).sort((a, b) => a.data_treinamento.localeCompare(b.data_treinamento));
+  const resp = L.reduce((s, t) => s + (t.check ? t.check.respostas : 0), 0);
+  const medias = L.filter(t => t.check && t.check.media !== null);
+  const media = medias.length ? Math.round(medias.reduce((s, t) => s + t.check.media, 0) / medias.length) : null;
+  const busca = MT.busca.toLowerCase();
+  const filtrados = L.filter(t => (MT.fStatus === 'todos' || (MT.fStatus === 'agendados' ? (t.status !== 'realizado' && t.data_treinamento && t.data_treinamento.slice(0, 10) >= hoje) : t.status === MT.fStatus))
+    && (!MT.fPublico || t.publico === MT.fPublico) && (!busca || [t.titulo, t.instrutor, t.companyName, t.objetivo].join(' ').toLowerCase().includes(busca)));
+  const prox = proximos[0];
+  const kpi = (ico, n, rot, cor) => `<div class="mt-kpi"><div class="mt-kpi-ico" style="background:${cor}1a;color:${cor};">${ico}</div><div><div class="mt-kpi-n">${n}</div><div class="mt-kpi-r">${rot}</div></div></div>`;
+  cont.innerHTML = `
+    <div class="mt-topo">
+      <div><h1 style="margin:0;">🎤 Ministrar Treinamento</h1>
+        <div style="color:#64748b;font-size:13.5px;">Monte seus treinamentos em módulos, apresente direto no sistema e meça a retenção com check gerado por IA.</div></div>
+      <button class="btn-primario" style="width:auto;" onclick="mtNovo()">+ Criar treinamento</button>
+    </div>
+    <div class="mt-kpis">
+      ${kpi('📚', L.length, 'Treinamentos', '#0f172a')}
+      ${kpi('📝', L.filter(t => t.status === 'rascunho').length, 'Rascunhos', '#475569')}
+      ${kpi('📅', proximos.length, 'Agendados', '#1d4ed8')}
+      ${kpi('✅', L.filter(t => t.status === 'realizado').length, 'Realizados', '#15803d')}
+      ${kpi('🧠', resp, 'Respostas de check', '#7c3aed')}
+      ${kpi('🎯', media === null ? '—' : media + '%', 'Retenção média', '#E2621B')}
+    </div>
+    ${prox ? `<div class="mt-prox" style="--c:${mtPub(prox.publico).cor}">
+      <div class="mt-prox-data"><div>${escapeHtml(prox.data_treinamento.slice(8, 10))}</div><span>${escapeHtml(new Date(prox.data_treinamento.slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''))}</span></div>
+      <div style="flex:1;min-width:200px;"><div class="mt-prox-rot">PRÓXIMO TREINAMENTO</div>
+        <div class="mt-prox-tit">${escapeHtml(prox.titulo)}</div>
+        <div class="mt-prox-meta">${mtPub(prox.publico).ico} ${mtPub(prox.publico).rot} · ${escapeHtml(mtDataTxt(prox.data_treinamento))}${prox.local ? ' · 📍 ' + escapeHtml(prox.local) : ''}${prox.instrutor ? ' · 🎙️ ' + escapeHtml(prox.instrutor) : ''}</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-secundario" style="width:auto;" onclick="mtAbrirEditor(${prox.id})">✏️ Editar</button><button class="btn-primario mt-btn-play" style="width:auto;" onclick="mtApresentarId(${prox.id})">▶ Apresentar</button></div>
+    </div>` : ''}
+    <div class="mt-filtros">
+      ${[['todos', 'Todos'], ['rascunho', '📝 Rascunhos'], ['agendados', '📅 Agendados'], ['pronto', '🔵 Prontos'], ['realizado', '✅ Realizados']].map(([k, r]) => `<button class="mt-chip ${MT.fStatus === k ? 'on' : ''}" onclick="MT.fStatus='${k}'; mtDesenharLista()">${r}</button>`).join('')}
+      <span class="mt-sep"></span>
+      ${Object.entries(PUBLICOS_MT).map(([k, p]) => `<button class="mt-chip ${MT.fPublico === k ? 'on' : ''}" style="${MT.fPublico === k ? `background:${p.cor};border-color:${p.cor};` : ''}" onclick="MT.fPublico = MT.fPublico === '${k}' ? '' : '${k}'; mtDesenharLista()">${p.ico} ${p.rot}</button>`).join('')}
+      <input class="mt-busca" placeholder="🔎 Buscar treinamento..." value="${escapeHtml(MT.busca)}" oninput="MT.busca=this.value; clearTimeout(window.__tMt); window.__tMt=setTimeout(()=>{ mtDesenharLista(); const el=document.querySelector('.mt-busca'); if(el){el.focus(); el.setSelectionRange(el.value.length, el.value.length);} }, 250)">
+    </div>
+    ${!L.length ? `<div class="mt-vazio"><div style="font-size:46px;">🎤</div><h3>Nenhum treinamento ainda</h3><p>Crie o primeiro: dê um nome, escolha o público, monte os módulos (slides no sistema ou arquivos) e apresente daqui mesmo.</p><button class="btn-primario" style="width:auto;" onclick="mtNovo()">+ Criar treinamento</button></div>`
+      : !filtrados.length ? '<div class="msg-vazio">Nenhum treinamento neste filtro.</div>'
+      : `<div class="mt-grade">${filtrados.map(mtCardHtml).join('')}</div>`}
+    <div id="modal-area"></div>`;
+}
+function mtCardHtml(t) {
+  const p = mtPub(t.publico), st = STATUS_MT[t.status] || STATUS_MT.rascunho;
+  return `<div class="mt-card">
+    <div class="mt-card-capa" style="background:linear-gradient(135deg, ${p.cor}, ${p.cor}cc);" onclick="mtAbrirEditor(${t.id})">
+      <div class="mt-card-pub">${p.ico} ${p.rot}</div>
+      <div class="mt-card-tit">${escapeHtml(t.titulo)}</div>
+      <span class="mt-card-st" style="background:${st.f};color:${st.c};">${st.t}</span>
+    </div>
+    <div class="mt-card-corpo">
+      <div class="mt-linha">📅 ${escapeHtml(mtDataTxt(t.data_treinamento))}${t.duracao_min ? ' · ⏱️ ' + t.duracao_min + ' min' : ''}</div>
+      ${t.instrutor || t.local ? `<div class="mt-linha">${t.instrutor ? '🎙️ ' + escapeHtml(t.instrutor) : ''}${t.instrutor && t.local ? ' · ' : ''}${t.local ? '📍 ' + escapeHtml(t.local) : ''}</div>` : ''}
+      ${t.companyName ? `<div class="mt-linha">🏢 ${escapeHtml(t.companyName)}</div>` : ''}
+      <div class="mt-linha">🧩 ${t.qtdModulos} módulo(s) · ${t.qtdSlides} tela(s)</div>
+      <div class="mt-linha">${t.check ? `🧠 Check: ${t.check.respostas} resposta(s)${t.check.media !== null ? ' · <strong>' + t.check.media + '% de acerto</strong>' : ''}${t.check.ativo ? '' : ' · encerrado'}` : '<span style="color:#94a3b8;">🧠 Sem check de retenção</span>'}</div>
+    </div>
+    <div class="mt-card-acoes">
+      <button class="btn-primario btn-sm mt-btn-play" onclick="mtApresentarId(${t.id})" ${t.qtdModulos ? '' : 'disabled title="Adicione módulos primeiro"'}>▶ Apresentar</button>
+      <button class="btn-secundario btn-sm" onclick="mtAbrirEditor(${t.id})">✏️ Editar</button>
+      <button class="btn-secundario btn-sm" onclick="mtAbrirCheckId(${t.id})">🧠 Check</button>
+      <button class="btn-secundario btn-sm" title="Duplicar" onclick="mtDuplicar(${t.id})">⧉</button>
+      <button class="btn-perigo btn-sm" title="Excluir" onclick="mtExcluir(${t.id})">🗑</button>
+    </div>
+  </div>`;
+}
+async function mtNovo() {
+  const titulo = prompt('Nome do treinamento:');
+  if (!titulo || !titulo.trim()) return;
+  try { const r = await api('/api/admin/treinamentos-mt', { method: 'POST', body: JSON.stringify({ titulo: titulo.trim(), publico: 'todos' }) }); mtAbrirEditor(r.id); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function mtDuplicar(id) { try { const r = await api('/api/admin/treinamentos-mt/' + id + '/duplicar', { method: 'POST' }); mostrarToast(r.message); renderMinistrarTreinamento(); } catch (e) { mostrarToast(e.message, true); } }
+async function mtExcluir(id) {
+  const t = MT.lista.find(x => x.id === id);
+  if (!confirm(`Excluir o treinamento "${t ? t.titulo : ''}"? O check de retenção e as respostas também serão apagados.`)) return;
+  try { await api('/api/admin/treinamentos-mt/' + id, { method: 'DELETE' }); mostrarToast('Treinamento excluído.'); renderMinistrarTreinamento(); } catch (e) { mostrarToast(e.message, true); }
+}
+
+// ---------- Editor ----------
+async function mtAbrirEditor(id) {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<p>Carregando treinamento...</p>';
+  try {
+    MT.doc = await api('/api/admin/treinamentos-mt/' + id);
+    if (!MT.empresas) MT.empresas = await api('/api/admin/dpo/companies?all=1').catch(() => []);
+    MT.modSel = 0; MT.sujo = false; MT.salvoEm = MT.doc.updated_at ? new Date(String(MT.doc.updated_at).replace(' ', 'T') + 'Z') : null;
+    clearInterval(MT.timer);
+    MT.timer = setInterval(() => { if (MT.sujo && MT.doc && document.getElementById('mt-editor')) mtSalvar(true); }, 25000);
+    mtDesenharEditor();
+  } catch (e) { cont.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+function mtMarcarSujo() {
+  MT.sujo = true;
+  const el = document.getElementById('mt-salvo'); if (el) el.innerHTML = '<span style="color:#b45309;">● Alterações não salvas</span>';
+}
+function mtCampo(k, v) { MT.doc[k] = v; mtMarcarSujo(); }
+function mtSalvoTxt() { return MT.salvoEm ? '✓ Salvo às ' + MT.salvoEm.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''; }
+async function mtSalvar(silencioso, extra) {
+  const d = MT.doc; if (!d) return;
+  if (!String(d.titulo || '').trim()) { if (!silencioso) mostrarToast('Dê um nome ao treinamento.', true); return; }
+  const corpo = { titulo: d.titulo, objetivo: d.objetivo, publico: d.publico, data_treinamento: d.data_treinamento || null, duracao_min: d.duracao_min, local: d.local, instrutor: d.instrutor, company_id: d.company_id || null, participantes: d.participantes, status: d.status, modulos: d.modulos, ...(extra || {}) };
+  try {
+    await api('/api/admin/treinamentos-mt/' + d.id, { method: 'PUT', body: JSON.stringify(corpo) });
+    MT.sujo = false; MT.salvoEm = new Date();
+    const el = document.getElementById('mt-salvo'); if (el) el.textContent = (silencioso ? '☁️ Rascunho salvo automaticamente às ' : '✓ Salvo às ') + MT.salvoEm.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    if (!silencioso) mostrarToast(d.status === 'rascunho' ? 'Rascunho salvo!' : 'Treinamento salvo!');
+  } catch (e) { if (!silencioso) mostrarToast(e.message, true); throw e; }
+}
+async function mtMudarStatus(st) {
+  if (st !== 'rascunho' && !MT.doc.modulos.length) return mostrarToast('Adicione pelo menos um módulo antes.', true);
+  if (st === 'pronto' && !MT.doc.data_treinamento && !confirm('O treinamento ainda não tem data. Marcar como pronto mesmo assim?')) return;
+  MT.doc.status = st; await mtSalvar(false).catch(() => {}); mtDesenharEditor();
+}
+function mtDesenharEditor() {
+  const cont = document.getElementById('conteudo');
+  const d = MT.doc, p = mtPub(d.publico), st = STATUS_MT[d.status] || STATUS_MT.rascunho;
+  if (MT.modSel >= d.modulos.length) MT.modSel = Math.max(0, d.modulos.length - 1);
+  const m = d.modulos[MT.modSel];
+  cont.innerHTML = `<div id="mt-editor">
+    <div class="mt-ed-barra">
+      <button class="btn-secundario btn-sm" style="width:auto;" onclick="renderMinistrarTreinamento()">← Treinamentos</button>
+      <span class="mt-card-st" style="background:${st.f};color:${st.c};position:static;">${st.t}</span>
+      <span id="mt-salvo" class="mt-salvo">${MT.sujo ? '<span style="color:#b45309;">● Alterações não salvas</span>' : escapeHtml(mtSalvoTxt())}</span>
+      <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn-secundario btn-sm" style="width:auto;" onclick="mtSalvar(false)">💾 Salvar rascunho</button>
+        ${d.status === 'rascunho' ? `<button class="btn-secundario btn-sm" style="width:auto;" onclick="mtMudarStatus('pronto')">✅ Pronto para ministrar</button>` : d.status === 'pronto' ? `<button class="btn-secundario btn-sm" style="width:auto;" onclick="mtMudarStatus('realizado')">🏁 Marcar como realizado</button><button class="btn-secundario btn-sm" style="width:auto;" onclick="mtMudarStatus('rascunho')">↩ Voltar p/ rascunho</button>` : `<button class="btn-secundario btn-sm" style="width:auto;" onclick="mtMudarStatus('pronto')">↩ Reabrir</button>`}
+        <button class="btn-secundario btn-sm" style="width:auto;" onclick="mtAbrirCheck()">🧠 Check de retenção${d.check ? ' (' + d.check.respostas + ')' : ''}</button>
+        <button class="btn-primario btn-sm mt-btn-play" style="width:auto;" onclick="mtApresentar(0)" ${d.modulos.length ? '' : 'disabled'}>▶ Apresentar</button>
+      </div>
+    </div>
+    <input class="mt-ed-titulo" value="${escapeHtml(d.titulo)}" placeholder="Nome do treinamento" oninput="mtCampo('titulo', this.value)">
+    <div class="mt-ed-info">
+      <div class="mt-ed-pubs">${Object.entries(PUBLICOS_MT).map(([k, x]) => `<button class="mt-pub ${d.publico === k ? 'on' : ''}" style="--c:${x.cor}" onclick="mtCampo('publico','${k}'); mtDesenharEditor()"><span>${x.ico}</span>${x.rot}</button>`).join('')}</div>
+      <div class="mt-ed-grade">
+        <div><label>Data e hora do treinamento</label><input type="datetime-local" value="${escapeHtml(d.data_treinamento || '')}" onchange="mtCampo('data_treinamento', this.value)"></div>
+        <div><label>Duração (min)</label><input type="number" min="0" value="${d.duracao_min || ''}" oninput="mtCampo('duracao_min', this.value)"></div>
+        <div><label>Instrutor</label><input value="${escapeHtml(d.instrutor || '')}" placeholder="Quem vai ministrar" oninput="mtCampo('instrutor', this.value)"></div>
+        <div><label>Local / formato</label><input value="${escapeHtml(d.local || '')}" placeholder="Sala, Teams, auditório..." oninput="mtCampo('local', this.value)"></div>
+        <div><label>Empresa (opcional)</label><select onchange="mtCampo('company_id', this.value)"><option value="">— Impulsionar / geral —</option>${(MT.empresas || []).map(e => `<option value="${e.id}" ${String(d.company_id) === String(e.id) ? 'selected' : ''}>${escapeHtml(e.name)}</option>`).join('')}</select></div>
+        <div><label>Participantes ${d.status === 'realizado' ? '' : 'previstos'}</label><input type="number" min="0" value="${d.participantes ?? ''}" oninput="mtCampo('participantes', this.value)"></div>
+      </div>
+      <label>Objetivo do treinamento</label>
+      <textarea rows="2" placeholder="O que o time vai aprender / mudar depois desse treinamento" oninput="mtCampo('objetivo', this.value)">${escapeHtml(d.objetivo || '')}</textarea>
+    </div>
+    <div class="mt-ed-mods">
+      <div class="mt-ed-lista">
+        <div style="font-weight:800;font-size:13px;color:#334155;margin-bottom:8px;">🧩 MÓDULOS (${d.modulos.length})</div>
+        ${d.modulos.map((x, i) => `<div class="mt-mod ${i === MT.modSel ? 'on' : ''}" onclick="MT.modSel=${i}; mtDesenharEditor()" style="--c:${p.cor}">
+          <div class="mt-mod-n">${i + 1}</div>
+          <div style="flex:1;min-width:0;"><div class="mt-mod-t">${escapeHtml(x.titulo || 'Sem título')}</div><div class="mt-mod-s">${x.tipo === 'slides' ? '🖼️ ' + (x.slides || []).length + ' slide(s)' : '📎 ' + escapeHtml((x.arquivo && x.arquivo.nome) || 'sem arquivo')}</div></div>
+          <div class="mt-mod-bt"><button title="Subir" onclick="event.stopPropagation(); mtMoverMod(${i}, -1)">▲</button><button title="Descer" onclick="event.stopPropagation(); mtMoverMod(${i}, 1)">▼</button></div>
+        </div>`).join('') || '<div class="plano-meta" style="margin-bottom:8px;">Nenhum módulo ainda.</div>'}
+        <button class="btn-secundario btn-sm mt-add" onclick="mtAddMod('slides')">+ Módulo de slides</button>
+        <button class="btn-secundario btn-sm mt-add" onclick="mtAddMod('arquivo')">+ Módulo com arquivo</button>
+        <div class="plano-meta" style="font-size:11px;margin-top:8px;">Arquivo: PDF, PowerPoint, Word, imagem ou vídeo. PowerPoint/Word também viram slides editáveis.</div>
+      </div>
+      <div class="mt-ed-mod">${m ? mtModuloEditorHtml(m) : `<div class="mt-vazio" style="margin:0;"><div style="font-size:40px;">🧩</div><h3>Monte o conteúdo</h3><p>Crie um módulo de slides (escreve no próprio sistema) ou suba um arquivo pronto.</p></div>`}</div>
+    </div>
+    <div id="modal-area"></div>
+  </div>`;
+}
+function mtModuloEditorHtml(m) {
+  const i = MT.modSel;
+  let html = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+      <input class="mt-mod-tit-in" value="${escapeHtml(m.titulo || '')}" placeholder="Título do módulo" oninput="MT.doc.modulos[${i}].titulo=this.value; mtMarcarSujo(); const t=document.querySelectorAll('.mt-mod-t')[${i}]; if(t) t.textContent=this.value">
+      <button class="btn-secundario btn-sm" style="width:auto;" onclick="mtApresentarModulo(${i})">▶ Apresentar este módulo</button>
+      <button class="btn-perigo btn-sm" style="width:auto;" onclick="mtRemoverMod(${i})">🗑 Módulo</button>
+    </div>`;
+  if (m.tipo === 'slides') {
+    html += (m.slides || []).map((s, j) => `<div class="mt-sl-ed">
+        <div class="mt-sl-mini" onclick="mtApresentarModulo(${i}, ${j})" title="Apresentar a partir daqui">${mtSlideHtml(s, mtPub(MT.doc.publico).cor, true)}</div>
+        <div style="flex:1;min-width:240px;">
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;"><strong style="font-size:12.5px;color:#64748b;">Slide ${j + 1}</strong>
+            <select style="width:auto;margin:0 0 0 auto;padding:4px 8px;font-size:12px;" onchange="mtSl(${j},'layout',this.value,true)">${[['padrao', 'Título + texto'], ['destaque', 'Destaque (frase grande)'], ['imagem', 'Imagem em tela cheia']].map(([k, r]) => `<option value="${k}" ${s.layout === k ? 'selected' : ''}>${r}</option>`).join('')}</select>
+            <button class="mt-ic" title="Subir" onclick="mtMoverSl(${j},-1)">▲</button><button class="mt-ic" title="Descer" onclick="mtMoverSl(${j},1)">▼</button><button class="mt-ic" title="Duplicar" onclick="mtDupSl(${j})">⧉</button><button class="mt-ic perigo" title="Excluir" onclick="mtDelSl(${j})">✕</button></div>
+          <input placeholder="Título do slide" value="${escapeHtml(s.titulo || '')}" oninput="mtSl(${j},'titulo',this.value)">
+          <textarea rows="4" placeholder="Texto do slide — cada linha começando com • ou - vira um tópico" oninput="mtSl(${j},'texto',this.value)">${escapeHtml(s.texto || '')}</textarea>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <label class="btn-secundario btn-sm" style="cursor:pointer;margin:0;width:auto;">🖼️ ${s.imagem ? 'Trocar imagem' : 'Imagem'}<input type="file" accept="image/*" style="display:none;" onchange="mtImgSl(${j}, this)"></label>
+            ${s.imagem ? `<button class="btn-secundario btn-sm" style="width:auto;" onclick="mtSl(${j},'imagem','',true)">Remover imagem</button>` : ''}
+            <details style="flex:1;min-width:200px;"><summary style="cursor:pointer;font-size:12px;color:#4338ca;font-weight:700;">🗒️ Notas do apresentador${s.notas ? ' ✓' : ''}</summary><textarea rows="2" placeholder="Só você vê durante a apresentação" oninput="mtSl(${j},'notas',this.value)">${escapeHtml(s.notas || '')}</textarea></details>
+          </div>
+        </div>
+      </div>`).join('');
+    html += `<button class="btn-secundario mt-add-sl" onclick="mtAddSl()">+ Adicionar slide</button>`;
+  } else {
+    const a = m.arquivo || {};
+    html += `<div class="mt-arq">
+      ${a.url ? `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+          <div style="font-size:30px;">${/pdf/.test(a.mime) || /\.pdf$/i.test(a.nome) ? '📕' : /presentation|\.pptx?$/i.test(a.mime + a.nome) ? '📽️' : /word|\.docx?$/i.test(a.mime + a.nome) ? '📄' : /^image/.test(a.mime) ? '🖼️' : /^video/.test(a.mime) ? '🎬' : '📎'}</div>
+          <div style="flex:1;min-width:180px;"><strong>${escapeHtml(a.nome || 'arquivo')}</strong><div class="plano-meta" style="font-size:11.5px;">${a.pdfUrl ? 'Pronto para apresentar' : (a.slidesExtraidos || []).length ? 'Apresenta pelos slides lidos do arquivo' : /^image|^video/.test(a.mime) ? 'Pronto para apresentar' : 'Sem pré-visualização — na apresentação aparece o botão para abrir'}</div></div>
+          <a class="btn-secundario btn-sm" style="width:auto;" href="${escapeHtml(a.url)}" target="_blank" rel="noopener">⬇ Baixar</a>
+          <label class="btn-secundario btn-sm" style="cursor:pointer;margin:0;width:auto;">Trocar arquivo<input type="file" style="display:none;" onchange="mtUploadArq(this)"></label>
+        </div>
+        ${(a.slidesExtraidos || []).length ? `<div class="mt-dica">✨ Li <strong>${a.slidesExtraidos.length} slide(s)</strong> deste arquivo. <button class="btn-primario btn-sm" style="width:auto;" onclick="mtConverterEmSlides()">Transformar em slides editáveis</button></div>` : ''}
+        <div class="mt-arq-prev">${mtArquivoHtml(a, true)}</div>`
+      : `<label class="mt-drop"><input type="file" style="display:none;" accept=".pdf,.ppt,.pptx,.doc,.docx,.odp,.txt,image/*,video/*" onchange="mtUploadArq(this)"><div style="font-size:38px;">📤</div><strong>Clique para subir o arquivo do módulo</strong><span>PDF, PowerPoint, Word, imagem ou vídeo (até 100MB)</span></label>`}
+      <details style="margin-top:10px;"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:#4338ca;">🧠 Texto do arquivo usado pela IA no check de retenção${m.texto ? ' (' + m.texto.length + ' caracteres)' : ''}</summary>
+        <div class="plano-meta" style="font-size:11.5px;margin:4px 0;">${/\.pdf$/i.test(a.nome || '') && !m.texto ? 'PDF: a IA lê o arquivo direto. Se quiser, cole aqui um resumo.' : 'Pode ajustar ou complementar.'}</div>
+        <textarea rows="6" oninput="MT.doc.modulos[${i}].texto=this.value; mtMarcarSujo()">${escapeHtml(m.texto || '')}</textarea></details>
+    </div>`;
+  }
+  return html;
+}
+function mtAddMod(tipo) {
+  const n = MT.doc.modulos.length + 1;
+  MT.doc.modulos.push(tipo === 'slides' ? { id: mtUid(), titulo: `Módulo ${n}`, tipo: 'slides', slides: [{ titulo: '', texto: '', imagem: '', notas: '', layout: 'padrao' }] } : { id: mtUid(), titulo: `Módulo ${n}`, tipo: 'arquivo', arquivo: {}, texto: '' });
+  MT.modSel = MT.doc.modulos.length - 1; mtMarcarSujo(); mtDesenharEditor();
+}
+function mtRemoverMod(i) { if (!confirm('Remover este módulo?')) return; MT.doc.modulos.splice(i, 1); mtMarcarSujo(); mtDesenharEditor(); }
+function mtMoverMod(i, dir) { const L = MT.doc.modulos, j = i + dir; if (j < 0 || j >= L.length) return; [L[i], L[j]] = [L[j], L[i]]; MT.modSel = j; mtMarcarSujo(); mtDesenharEditor(); }
+function mtSl(j, k, v, redesenhar) {
+  MT.doc.modulos[MT.modSel].slides[j][k] = v; mtMarcarSujo();
+  if (redesenhar) return mtDesenharEditor();
+  const mini = document.querySelectorAll('.mt-sl-mini')[j]; if (mini) mini.innerHTML = mtSlideHtml(MT.doc.modulos[MT.modSel].slides[j], mtPub(MT.doc.publico).cor, true);
+}
+function mtAddSl() { MT.doc.modulos[MT.modSel].slides.push({ titulo: '', texto: '', imagem: '', notas: '', layout: 'padrao' }); mtMarcarSujo(); mtDesenharEditor(); setTimeout(() => { const l = document.querySelectorAll('.mt-sl-ed input'); if (l.length) { l[l.length - 1].focus(); l[l.length - 1].scrollIntoView({ block: 'center' }); } }, 50); }
+function mtDelSl(j) { const L = MT.doc.modulos[MT.modSel].slides; if ((L[j].titulo || L[j].texto) && !confirm('Excluir este slide?')) return; L.splice(j, 1); mtMarcarSujo(); mtDesenharEditor(); }
+function mtDupSl(j) { const L = MT.doc.modulos[MT.modSel].slides; L.splice(j + 1, 0, { ...L[j] }); mtMarcarSujo(); mtDesenharEditor(); }
+function mtMoverSl(j, dir) { const L = MT.doc.modulos[MT.modSel].slides, k = j + dir; if (k < 0 || k >= L.length) return; [L[j], L[k]] = [L[k], L[j]]; mtMarcarSujo(); mtDesenharEditor(); }
+async function mtEnviarArquivo(file) {
+  const fd = new FormData(); fd.append('file', file);
+  const r = await fetch('/api/admin/treinamentos-mt/arquivo', { method: 'POST', headers: { 'Authorization': 'Bearer ' + ESTADO.token }, body: fd });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Falha no envio.');
+  return j;
+}
+async function mtImgSl(j, inp) {
+  const f = inp.files[0]; if (!f) return;
+  mostrarToast('Enviando imagem...');
+  try { const r = await mtEnviarArquivo(f); mtSl(j, 'imagem', r.url, true); } catch (e) { mostrarToast(e.message, true); }
+}
+async function mtUploadArq(inp) {
+  const f = inp.files[0]; if (!f) return;
+  const box = document.querySelector('.mt-arq'); if (box) box.innerHTML = `<div class="mt-vazio" style="margin:0;"><div style="font-size:34px;">⏳</div><h3>Enviando e lendo "${escapeHtml(f.name)}"...</h3><p>Arquivos do PowerPoint/Word são convertidos para apresentar — pode levar alguns segundos.</p></div>`;
+  try {
+    const r = await mtEnviarArquivo(f);
+    const m = MT.doc.modulos[MT.modSel];
+    m.arquivo = { url: r.url, nome: r.nome, mime: r.mime, pdfUrl: r.pdfUrl || '', slidesExtraidos: r.slidesExtraidos || [] };
+    m.texto = r.texto || '';
+    if (/^Módulo \d+$/.test(m.titulo || '')) m.titulo = String(r.nome || '').replace(/\.[^.]+$/, '').slice(0, 120) || m.titulo;
+    mtMarcarSujo(); await mtSalvar(true).catch(() => {}); mtDesenharEditor();
+    mostrarToast('Arquivo pronto!');
+  } catch (e) { mostrarToast(e.message, true); mtDesenharEditor(); }
+}
+function mtConverterEmSlides() {
+  const m = MT.doc.modulos[MT.modSel];
+  if (!confirm('Transformar este arquivo em slides editáveis no sistema? (o arquivo original continua disponível para download)')) return;
+  const orig = m.arquivo;
+  MT.doc.modulos[MT.modSel] = { id: m.id, titulo: m.titulo, tipo: 'slides', slides: orig.slidesExtraidos.map(s => ({ titulo: s.titulo, texto: s.texto, imagem: '', notas: '', layout: 'padrao' })) };
+  mtMarcarSujo(); mtDesenharEditor(); mostrarToast('Pronto! Agora dá para editar slide por slide.');
+}
+
+// ---------- Slide / arquivo (renderização) ----------
+function mtTextoHtml(t) {
+  const linhas = String(t || '').split('\n');
+  let html = '', lista = false;
+  linhas.forEach(l => {
+    const b = l.match(/^\s*[•\-\*–]\s*(.*)$/);
+    if (b) { if (!lista) { html += '<ul>'; lista = true; } html += `<li>${escapeHtml(b[1])}</li>`; }
+    else { if (lista) { html += '</ul>'; lista = false; } if (l.trim()) html += `<p>${escapeHtml(l)}</p>`; }
+  });
+  if (lista) html += '</ul>';
+  return html;
+}
+function mtSlideHtml(s, cor, mini) {
+  const lay = s.layout || 'padrao';
+  if (lay === 'imagem' && s.imagem) return `<div class="mt-sl mt-sl-img ${mini ? 'mini' : ''}" style="--c:${cor};background-image:url('${escapeHtml(s.imagem)}')">${s.titulo ? `<div class="mt-sl-legenda" data-campo="titulo">${escapeHtml(s.titulo)}</div>` : ''}</div>`;
+  if (lay === 'destaque') return `<div class="mt-sl mt-sl-dest ${mini ? 'mini' : ''}" style="--c:${cor}"><div class="mt-sl-dest-t" data-campo="titulo">${escapeHtml(s.titulo || '')}</div><div class="mt-sl-dest-x" data-campo="texto">${mtTextoHtml(s.texto)}</div></div>`;
+  return `<div class="mt-sl ${mini ? 'mini' : ''}" style="--c:${cor}">
+    <div class="mt-sl-barra"></div>
+    <div class="mt-sl-tit" data-campo="titulo">${escapeHtml(s.titulo || '') || (mini ? '<span style="opacity:.35">Título</span>' : '')}</div>
+    <div class="mt-sl-corpo ${s.imagem ? 'com-img' : ''}"><div class="mt-sl-txt" data-campo="texto">${mtTextoHtml(s.texto)}</div>${s.imagem ? `<div class="mt-sl-fig"><img src="${escapeHtml(s.imagem)}" alt=""></div>` : ''}</div>
+    <div class="mt-sl-rod">Impulsionar V4</div>
+  </div>`;
+}
+function mtArquivoHtml(a, prev) {
+  if (!a || !a.url) return '<div class="mt-sl-vazio">Sem arquivo</div>';
+  if (a.pdfUrl) return `<iframe class="mt-pdf" src="${escapeHtml(a.pdfUrl)}#toolbar=${prev ? 1 : 0}&navpanes=0&view=FitH"></iframe>`;
+  if (/^image\//.test(a.mime)) return `<img class="mt-arq-img" src="${escapeHtml(a.url)}" alt="">`;
+  if (/^video\//.test(a.mime)) return `<video class="mt-arq-vid" src="${escapeHtml(a.url)}" controls></video>`;
+  return `<div class="mt-sl-vazio"><div style="font-size:44px;">📎</div><div>${escapeHtml(a.nome || '')}</div><a class="btn-primario" style="width:auto;margin-top:10px;" href="${escapeHtml(a.url)}" target="_blank" rel="noopener">Abrir arquivo</a></div>`;
+}
+
+// ---------- Apresentação ----------
+let MTS = null;
+async function mtApresentarId(id) {
+  try { MT.doc = await api('/api/admin/treinamentos-mt/' + id); MT.modSel = 0; MT.sujo = false; MT.__voltarLista = !document.getElementById('mt-editor'); mtApresentar(0); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+function mtMontarDeck() {
+  const d = MT.doc, deck = [{ tipo: 'capa' }];
+  d.modulos.forEach((m, mi) => {
+    deck.push({ tipo: 'modulo', mi });
+    if (m.tipo === 'slides') (m.slides || []).forEach((s, si) => deck.push({ tipo: 'slide', mi, si }));
+    else if (m.arquivo && !m.arquivo.pdfUrl && !/^image|^video/.test(m.arquivo.mime || '') && (m.arquivo.slidesExtraidos || []).length) m.arquivo.slidesExtraidos.forEach((s, xi) => deck.push({ tipo: 'extraido', mi, xi }));
+    else deck.push({ tipo: 'arquivo', mi });
+  });
+  deck.push({ tipo: 'fim' });
+  return deck;
+}
+function mtApresentarModulo(mi, si) {
+  const deck = mtMontarDeck();
+  let idx = deck.findIndex(x => x.mi === mi && (si === undefined ? x.tipo === 'modulo' : x.si === si));
+  mtApresentar(idx < 0 ? 0 : idx);
+}
+function mtApresentar(idx) {
+  const deck = mtMontarDeck();
+  MTS = { deck, i: Math.max(0, Math.min(idx || 0, deck.length - 1)), editando: false, notas: false, ini: Date.now() };
+  let el = document.getElementById('mt-show');
+  if (!el) { el = document.createElement('div'); el.id = 'mt-show'; document.body.appendChild(el); }
+  document.addEventListener('keydown', mtTecla);
+  clearInterval(MTS.relogio); MTS.relogio = setInterval(() => { const r = document.getElementById('mt-relogio'); if (r) r.textContent = mtCronometro(); }, 1000);
+  mtDesenharShow();
+}
+function mtCronometro() { const s = Math.floor((Date.now() - MTS.ini) / 1000); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
+function mtTecla(e) {
+  if (!MTS) return;
+  if (MTS.editando && e.key !== 'Escape') return;
+  if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); mtIr(1); }
+  else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); mtIr(-1); }
+  else if (e.key === 'Escape') { if (MTS.editando) mtAlternarEdicao(); else if (!document.fullscreenElement) mtFecharShow(); }
+  else if (e.key === 'f' || e.key === 'F') mtTelaCheia();
+  else if (e.key === 'n' || e.key === 'N') { MTS.notas = !MTS.notas; mtDesenharShow(); }
+}
+function mtIr(dir) { if (!MTS) return; if (MTS.editando) mtAlternarEdicao(); const n = MTS.i + dir; if (n < 0 || n >= MTS.deck.length) return; MTS.i = n; mtDesenharShow(); }
+function mtIrPara(n) { MTS.i = n; mtDesenharShow(); }
+function mtTelaCheia() { const el = document.getElementById('mt-show'); if (!document.fullscreenElement) (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el); else document.exitFullscreen(); }
+function mtConteudoDeck(it) {
+  const d = MT.doc, cor = mtPub(d.publico).cor;
+  if (it.tipo === 'capa') return `<div class="mt-sl mt-sl-capa" style="--c:${cor}">
+      <div class="mt-capa-pub">${mtPub(d.publico).ico} Treinamento · ${mtPub(d.publico).rot}</div>
+      <div class="mt-capa-tit">${escapeHtml(d.titulo)}</div>
+      ${d.objetivo ? `<div class="mt-capa-obj">${escapeHtml(d.objetivo)}</div>` : ''}
+      <div class="mt-capa-meta">${d.instrutor ? '🎙️ ' + escapeHtml(d.instrutor) + '&nbsp;&nbsp;' : ''}${d.data_treinamento ? '📅 ' + escapeHtml(mtDataTxt(d.data_treinamento)) : ''}</div>
+      <div class="mt-capa-marca">Impulsionar V4</div></div>`;
+  if (it.tipo === 'modulo') { const m = d.modulos[it.mi]; return `<div class="mt-sl mt-sl-mod" style="--c:${cor}"><div class="mt-mod-num">MÓDULO ${it.mi + 1}</div><div class="mt-mod-nome">${escapeHtml(m.titulo || '')}</div><div class="mt-mod-de">${it.mi + 1} de ${d.modulos.length}</div></div>`; }
+  if (it.tipo === 'slide') return mtSlideHtml(d.modulos[it.mi].slides[it.si], cor);
+  if (it.tipo === 'extraido') return mtSlideHtml({ ...d.modulos[it.mi].arquivo.slidesExtraidos[it.xi], layout: 'padrao' }, cor);
+  if (it.tipo === 'arquivo') return `<div class="mt-sl mt-sl-arq">${mtArquivoHtml(d.modulos[it.mi].arquivo)}</div>`;
+  const ck = d.check;
+  return `<div class="mt-sl mt-sl-fim" style="--c:${cor}"><div style="font-size:64px;">🎉</div><div class="mt-capa-tit" style="font-size:2.6em;">Obrigado!</div>
+    ${ck && ck.ativo ? `<div class="mt-fim-check"><div style="font-weight:800;">🧠 Responda o check de retenção</div><div class="mt-fim-link">${escapeHtml(ck.link || '')}</div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px;"><button class="btn-primario" style="width:auto;" onclick="mtCopiar('${escapeHtml(ck.link || '')}')">📋 Copiar link</button><a class="mt-sb" style="width:auto;" target="_blank" href="https://wa.me/?text=${encodeURIComponent('Check de retenção do treinamento ' + d.titulo + ': ' + (ck.link || ''))}">WhatsApp</a></div></div>`
+      : `<div class="mt-capa-obj">Dúvidas? Fale com ${escapeHtml(d.instrutor || 'o instrutor')}.</div><button class="btn-secundario" style="width:auto;margin-top:12px;" onclick="mtFecharShow(); mtAbrirCheck()">🧠 Criar check de retenção</button>`}
+    ${d.status !== 'realizado' ? `<button class="btn-primario" style="width:auto;margin-top:16px;background:#16a34a;border-color:#16a34a;" onclick="mtConcluirApresentacao()">🏁 Marcar treinamento como realizado</button>` : '<div style="margin-top:14px;color:#15803d;font-weight:700;">✅ Treinamento realizado</div>'}
+  </div>`;
+}
+function mtDesenharShow() {
+  const el = document.getElementById('mt-show'); if (!el || !MTS) return;
+  const it = MTS.deck[MTS.i], d = MT.doc;
+  const m = it.mi !== undefined ? d.modulos[it.mi] : null;
+  const notas = it.tipo === 'slide' ? d.modulos[it.mi].slides[it.si].notas : '';
+  const editavel = it.tipo === 'slide';
+  el.innerHTML = `
+    <div class="mt-show-top">
+      <div class="mt-show-tt">${escapeHtml(d.titulo)}${m ? ' · <span>' + escapeHtml(m.titulo) + '</span>' : ''}</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span class="mt-show-rel" id="mt-relogio">${mtCronometro()}</span>
+        ${editavel ? `<button class="mt-sb ${MTS.editando ? 'on' : ''}" onclick="mtAlternarEdicao()" title="Editar este slide">✏️ ${MTS.editando ? 'Concluir edição' : 'Editar'}</button>` : ''}
+        ${MT.sujo ? `<button class="mt-sb salvar" onclick="mtSalvarShow()">💾 Salvar</button>` : ''}
+        <button class="mt-sb ${MTS.notas ? 'on' : ''}" onclick="MTS.notas=!MTS.notas; mtDesenharShow()" title="Notas (N)">🗒️ Notas</button>
+        <button class="mt-sb" onclick="mtTelaCheia()" title="Tela cheia (F)">⛶</button>
+        <button class="mt-sb" onclick="mtFecharShow()" title="Sair (Esc)">✕ Sair</button>
+      </div>
+    </div>
+    <div class="mt-show-palco ${MTS.notas ? 'com-notas' : ''}">
+      <div class="mt-show-slide ${MTS.editando ? 'editando' : ''}" id="mt-slide-atual">${mtConteudoDeck(it)}</div>
+      ${MTS.notas ? `<div class="mt-show-notas"><div style="font-weight:800;margin-bottom:6px;">🗒️ Notas do apresentador</div>${notas ? mtTextoHtml(notas) : '<span style="opacity:.6">Sem notas neste slide.</span>'}
+        ${MTS.deck[MTS.i + 1] ? `<div class="mt-prox-sl"><div style="font-size:11px;opacity:.7;margin-bottom:4px;">PRÓXIMO</div><div class="mt-prox-sl-box">${mtConteudoDeck(MTS.deck[MTS.i + 1])}</div></div>` : ''}</div>` : ''}
+    </div>
+    <div class="mt-show-nav">
+      <button class="mt-sb" onclick="mtIr(-1)" ${MTS.i ? '' : 'disabled'}>◀</button>
+      <div class="mt-show-pontos">${MTS.deck.map((x, k) => `<span class="${k === MTS.i ? 'on' : x.tipo === 'modulo' ? 'mod' : ''}" title="${x.tipo === 'modulo' ? escapeHtml(d.modulos[x.mi].titulo) : ''}" onclick="mtIrPara(${k})"></span>`).join('')}</div>
+      <span class="mt-show-cont">${MTS.i + 1} / ${MTS.deck.length}</span>
+      <button class="mt-sb" onclick="mtIr(1)" ${MTS.i < MTS.deck.length - 1 ? '' : 'disabled'}>▶</button>
+    </div>
+    <div class="mt-show-prog"><div style="width:${Math.round((MTS.i + 1) * 100 / MTS.deck.length)}%;background:${mtPub(d.publico).cor};"></div></div>`;
+  mtAjustarEscala();
+  if (MTS.editando) mtLigarEdicao();
+}
+function mtAjustarEscala() {
+  const box = document.getElementById('mt-slide-atual'); if (!box) return;
+  box.style.fontSize = Math.max(8, box.clientWidth / 60) + 'px';
+  document.querySelectorAll('.mt-prox-sl-box').forEach(b => b.style.fontSize = Math.max(3, b.clientWidth / 60) + 'px');
+}
+window.addEventListener('resize', () => { if (MTS) mtAjustarEscala(); });
+function mtAlternarEdicao() {
+  const it = MTS.deck[MTS.i]; if (it.tipo !== 'slide') return;
+  if (MTS.editando) {
+    const s = MT.doc.modulos[it.mi].slides[it.si];
+    const t = document.querySelector('#mt-slide-atual [data-campo="titulo"]'), x = document.querySelector('#mt-slide-atual [data-campo="texto"]');
+    if (t) s.titulo = t.innerText.trim();
+    if (x) s.texto = mtHtmlParaTexto(x);
+    mtMarcarSujo();
+  }
+  MTS.editando = !MTS.editando; mtDesenharShow();
+}
+function mtHtmlParaTexto(el) {
+  const out = [];
+  el.childNodes.forEach(n => {
+    if (n.nodeName === 'UL') n.querySelectorAll('li').forEach(li => li.innerText.trim() && out.push('• ' + li.innerText.trim()));
+    else { const t = (n.innerText !== undefined ? n.innerText : n.textContent || '').trim(); if (t) t.split('\n').forEach(l => l.trim() && out.push(l.trim())); }
+  });
+  return out.join('\n');
+}
+function mtLigarEdicao() {
+  const it = MTS.deck[MTS.i];
+  const s = MT.doc.modulos[it.mi].slides[it.si];
+  const t = document.querySelector('#mt-slide-atual [data-campo="titulo"]');
+  let x = document.querySelector('#mt-slide-atual [data-campo="texto"]');
+  if (t) { t.contentEditable = 'true'; if (!s.titulo) t.innerHTML = ''; t.focus(); }
+  if (x) { x.contentEditable = 'true'; if (!x.innerHTML.trim()) x.innerHTML = '<ul><li></li></ul>'; }
+}
+async function mtSalvarShow() {
+  if (MTS && MTS.editando) mtAlternarEdicao();
+  try { await mtSalvar(false); mtDesenharShow(); } catch (e) {}
+}
+async function mtConcluirApresentacao() {
+  const n = prompt('Quantas pessoas participaram? (opcional)', MT.doc.participantes || '');
+  if (n === null) return;
+  MT.doc.status = 'realizado'; if (n !== '') MT.doc.participantes = n;
+  try { await mtSalvar(false, { marcarApresentado: true }); mostrarToast('Treinamento marcado como realizado! 🎉'); mtDesenharShow(); } catch (e) {}
+}
+async function mtFecharShow() {
+  if (MTS && MTS.editando) mtAlternarEdicao();
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  document.removeEventListener('keydown', mtTecla);
+  if (MTS) clearInterval(MTS.relogio);
+  const el = document.getElementById('mt-show'); if (el) el.remove();
+  MTS = null;
+  if (MT.sujo) { try { await mtSalvar(true); } catch (e) {} }
+  if (MT.__voltarLista) { MT.__voltarLista = false; renderMinistrarTreinamento(); }
+  else if (document.getElementById('mt-editor')) mtDesenharEditor();
+}
+function mtCopiar(t) { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => mostrarToast('Link copiado!')).catch(() => prompt('Copie o link:', t)); }
+
+// ---------- Check de retenção ----------
+let MTC = null;
+async function mtAbrirCheckId(id) {
+  try { MT.doc = await api('/api/admin/treinamentos-mt/' + id); MT.__checkDaLista = true; mtAbrirCheck(); } catch (e) { mostrarToast(e.message, true); }
+}
+async function mtAbrirCheck() {
+  if (MT.sujo) { try { await mtSalvar(true); } catch (e) {} }
+  const ck = MT.doc.check;
+  MTC = { titulo: ck ? ck.titulo : `Check de retenção — ${MT.doc.titulo}`, perguntas: ck ? JSON.parse(JSON.stringify(ck.perguntas)) : [], ativo: ck ? ck.ativo : true, link: ck ? ck.link : '', ia: ck ? ck.gerado_por_ia : false, aba: 'perguntas', respostas: null, gerando: false };
+  mtDesenharCheck();
+}
+function mtFecharCheck() { document.getElementById('modal-area').innerHTML = ''; if (MT.__checkDaLista) { MT.__checkDaLista = false; renderMinistrarTreinamento(); } else if (document.getElementById('mt-editor')) mtDesenharEditor(); }
+function mtDesenharCheck() {
+  let ma = document.getElementById('modal-area');
+  if (!ma) { document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>'); ma = document.getElementById('modal-area'); }
+  const P = MTC.perguntas;
+  ma.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) mtFecharCheck()">
+    <div class="modal-caixa mt-ck" style="max-width:820px;max-height:92vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><h3 style="margin:0;">🧠 Check de retenção</h3><button class="mt-ic" onclick="mtFecharCheck()">✕</button></div>
+      <div class="plano-meta" style="margin-bottom:10px;">${escapeHtml(MT.doc.titulo)} · opcional — envie o link para quem participou e acompanhe o acerto.</div>
+      ${MTC.link ? `<div class="mt-ck-link"><div style="flex:1;min-width:200px;"><div style="font-size:11.5px;color:#64748b;">Link para os participantes ${MTC.ativo ? '' : '<strong style="color:#b91c1c;">(encerrado)</strong>'}</div><div style="font-weight:700;word-break:break-all;">${escapeHtml(MTC.link)}</div></div>
+        <button class="btn-secundario btn-sm" style="width:auto;" onclick="mtCopiar('${escapeHtml(MTC.link)}')">📋 Copiar</button>
+        <a class="btn-secundario btn-sm" style="width:auto;" target="_blank" href="https://wa.me/?text=${encodeURIComponent('Responda o check de retenção do treinamento ' + MT.doc.titulo + ': ' + MTC.link)}">WhatsApp</a>
+        <a class="btn-secundario btn-sm" style="width:auto;" target="_blank" href="${escapeHtml(MTC.link)}">Abrir</a></div>
+        <div class="dpo-subabas" style="margin:10px 0;"><button class="dpo-subaba ${MTC.aba === 'perguntas' ? 'ativa' : ''}" onclick="MTC.aba='perguntas'; mtDesenharCheck()">Perguntas</button><button class="dpo-subaba ${MTC.aba === 'respostas' ? 'ativa' : ''}" onclick="mtVerRespostasCheck()">Respostas${MT.doc.check ? ' (' + MT.doc.check.respostas + ')' : ''}</button></div>` : ''}
+      ${MTC.aba === 'respostas' ? mtRespostasHtml() : `
+      <div class="mt-ia-box">
+        <div style="flex:1;min-width:220px;"><strong>✨ Gerar com IA a partir do treinamento</strong><div style="font-size:12px;color:#64748b;">A IA lê os slides, os textos e os arquivos (PDF/PowerPoint/Word) de todos os módulos e monta as perguntas.</div></div>
+        <label style="font-size:12px;margin:0;">Perguntas <input id="mtc-qtd" type="number" min="3" max="20" value="8" style="width:64px;margin:0;"></label>
+        <label style="font-size:12px;margin:0;">Abertas <input id="mtc-ab" type="number" min="0" max="5" value="0" style="width:56px;margin:0;"></label>
+        <button class="btn-primario btn-sm" style="width:auto;" onclick="mtGerarCheckIa()" ${MTC.gerando ? 'disabled' : ''}>${MTC.gerando ? '⏳ Lendo o treinamento...' : P.length ? '🔄 Gerar de novo' : '✨ Gerar check'}</button>
+      </div>
+      <label>Título do check</label><input value="${escapeHtml(MTC.titulo)}" oninput="MTC.titulo=this.value">
+      ${P.map((q, i) => `<div class="mt-q">
+        <div style="display:flex;gap:6px;align-items:center;"><strong>${i + 1}.</strong>
+          <select style="width:auto;margin:0;padding:4px 8px;font-size:12px;" onchange="MTC.perguntas[${i}].tipo=this.value; if(this.value==='multipla' && !(MTC.perguntas[${i}].opcoes||[]).length){MTC.perguntas[${i}].opcoes=['','','',''];MTC.perguntas[${i}].correta=0;} mtDesenharCheck()"><option value="multipla" ${q.tipo === 'multipla' ? 'selected' : ''}>Múltipla escolha</option><option value="aberta" ${q.tipo === 'aberta' ? 'selected' : ''}>Aberta</option></select>
+          <button class="mt-ic perigo" style="margin-left:auto;" onclick="MTC.perguntas.splice(${i},1); mtDesenharCheck()">✕</button></div>
+        <textarea rows="2" oninput="MTC.perguntas[${i}].texto=this.value">${escapeHtml(q.texto)}</textarea>
+        ${q.tipo === 'multipla' ? (q.opcoes || []).map((o, j) => `<div class="mt-op ${q.correta === j ? 'certa' : ''}"><input type="radio" name="mtq${i}" ${q.correta === j ? 'checked' : ''} title="Resposta correta" onchange="MTC.perguntas[${i}].correta=${j}; mtDesenharCheck()"><input value="${escapeHtml(o)}" placeholder="Alternativa ${'ABCDEFGH'[j]}" oninput="MTC.perguntas[${i}].opcoes[${j}]=this.value">${q.opcoes.length > 2 ? `<button class="mt-ic" onclick="MTC.perguntas[${i}].opcoes.splice(${j},1); if(MTC.perguntas[${i}].correta>=${j}) MTC.perguntas[${i}].correta=Math.max(0,MTC.perguntas[${i}].correta-1); mtDesenharCheck()">✕</button>` : ''}</div>`).join('') + (q.opcoes.length < 6 ? `<button class="btn-secundario btn-sm" style="width:auto;margin-top:4px;" onclick="MTC.perguntas[${i}].opcoes.push(''); mtDesenharCheck()">+ alternativa</button>` : '') : ''}
+      </div>`).join('')}
+      <button class="btn-secundario btn-sm" style="width:auto;margin-top:8px;" onclick="MTC.perguntas.push({texto:'',tipo:'multipla',opcoes:['','','',''],correta:0}); mtDesenharCheck()">+ Pergunta manual</button>
+      <div class="acoes-form" style="margin-top:16px;flex-wrap:wrap;">
+        <button class="btn-primario" style="width:auto;" onclick="mtSalvarCheck()" ${P.length ? '' : 'disabled'}>💾 Salvar check${MTC.link ? '' : ' e gerar link'}</button>
+        ${MTC.link ? `<button class="btn-secundario" style="width:auto;" onclick="MTC.ativo=!MTC.ativo; mtSalvarCheck()">${MTC.ativo ? '⏸ Encerrar respostas' : '▶ Reabrir respostas'}</button>` : ''}
+        <button class="btn-secundario" style="width:auto;" onclick="mtFecharCheck()">Fechar</button>
+      </div>`}
+    </div></div>`;
+}
+async function mtGerarCheckIa() {
+  const qtd = Number(document.getElementById('mtc-qtd').value) || 8, abertas = Number(document.getElementById('mtc-ab').value) || 0;
+  if (MTC.perguntas.length && !confirm('Substituir as perguntas atuais pelas que a IA vai gerar?')) return;
+  MTC.gerando = true; mtDesenharCheck();
+  try {
+    const r = await api('/api/admin/treinamentos-mt/' + MT.doc.id + '/check/gerar', { method: 'POST', body: JSON.stringify({ qtd, abertas }) });
+    MTC.perguntas = r.perguntas; if (r.titulo) MTC.titulo = r.titulo; MTC.ia = !!r.gerado_por_ia;
+    mostrarToast(r.aviso || `✨ ${r.perguntas.length} pergunta(s) geradas — revise e salve.`, !!r.aviso);
+  } catch (e) { mostrarToast(e.message, true); }
+  MTC.gerando = false; mtDesenharCheck();
+}
+async function mtSalvarCheck() {
+  const P = MTC.perguntas.map(q => ({ ...q, texto: String(q.texto || '').trim(), opcoes: (q.opcoes || []).map(o => String(o || '').trim()) }));
+  const ruim = P.findIndex(q => !q.texto || (q.tipo === 'multipla' && q.opcoes.filter(Boolean).length < 2));
+  if (ruim >= 0) return mostrarToast(`Complete a pergunta ${ruim + 1} (texto e ao menos 2 alternativas).`, true);
+  try {
+    const r = await api('/api/admin/treinamentos-mt/' + MT.doc.id + '/check', { method: 'PUT', body: JSON.stringify({ titulo: MTC.titulo, perguntas: P.map(q => q.tipo === 'multipla' ? { ...q, opcoes: q.opcoes.filter(Boolean) } : q), ativo: MTC.ativo, gerado_por_ia: MTC.ia }) });
+    MTC.link = r.link; MTC.ativo = r.ativo;
+    MT.doc = await api('/api/admin/treinamentos-mt/' + MT.doc.id);
+    mostrarToast(r.message); mtDesenharCheck();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function mtVerRespostasCheck() {
+  MTC.aba = 'respostas'; MTC.respostas = null; mtDesenharCheck();
+  try { MTC.respostas = await api('/api/admin/treinamentos-mt/' + MT.doc.id + '/check/respostas'); } catch (e) { MTC.respostas = { perguntas: [], respostas: [] }; mostrarToast(e.message, true); }
+  mtDesenharCheck();
+}
+function mtRespostasHtml() {
+  const R = MTC.respostas;
+  if (!R) return '<p>Carregando...</p>';
+  if (!R.respostas.length) return '<div class="msg-vazio">Ninguém respondeu ainda. Envie o link para os participantes.</div>';
+  const objs = R.perguntas.map((q, i) => ({ q, i })).filter(x => x.q.tipo === 'multipla' && x.q.correta !== null && x.q.correta !== undefined);
+  const porQ = objs.map(({ q, i }) => ({ q, i, pct: Math.round(R.respostas.filter(r => r.respostas[i] === q.correta).length * 100 / R.respostas.length) }));
+  return `<div class="mt-ck-res">
+    ${porQ.length ? `<div style="font-weight:800;margin-bottom:6px;">Acerto por pergunta</div>${porQ.map(x => `<div class="mt-bar"><div class="mt-bar-t">${x.i + 1}. ${escapeHtml(x.q.texto.length > 90 ? x.q.texto.slice(0, 90) + '…' : x.q.texto)}</div><div class="mt-bar-b"><div style="width:${x.pct}%;background:${x.pct >= 70 ? '#16a34a' : x.pct >= 50 ? '#d97706' : '#dc2626'};"></div></div><span>${x.pct}%</span></div>`).join('')}` : ''}
+    <div style="font-weight:800;margin:14px 0 6px;">Participantes (${R.respostas.length})</div>
+    <table><thead><tr><th>Nome</th><th>Matrícula</th><th>Acertos</th><th>Data</th></tr></thead><tbody>
+    ${R.respostas.map(r => `<tr><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.matricula || '')}</td><td>${r.total_objetivas ? `<strong style="color:${r.acertos / r.total_objetivas >= 0.7 ? '#15803d' : '#b91c1c'}">${r.acertos}/${r.total_objetivas} (${Math.round(r.acertos * 100 / r.total_objetivas)}%)</strong>` : '—'}</td><td>${new Date(String(r.created_at).replace(' ', 'T') + 'Z').toLocaleString('pt-BR')}</td></tr>`).join('')}
+    </tbody></table></div>`;
 }
 
 // ----- Pasta "Ferramentas Impulsionar" (biblioteca do Master por pilar) -----

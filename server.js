@@ -1235,6 +1235,49 @@ function inicializarBase() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
 
+        // Agenda de consultorias (data + hora início/fim) — gera convite no
+        // Outlook/Teams do consultor e dos usuários da empresa (pelo e-mail).
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_sessoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER NOT NULL,
+            consultant_id INTEGER,
+            titulo TEXT NOT NULL,
+            pilares TEXT,
+            data TEXT NOT NULL,
+            hora_inicio TEXT NOT NULL,
+            hora_fim TEXT NOT NULL,
+            formato TEXT DEFAULT 'teams',
+            local TEXT,
+            teams_link TEXT,
+            participantes TEXT,
+            observacao TEXT,
+            status TEXT DEFAULT 'agendada',
+            uid TEXT,
+            sequencia INTEGER DEFAULT 0,
+            graph_event_id TEXT,
+            ultimo_envio TEXT,
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME
+        )`);
+
+        // Empresa só SOLICITA a consultoria; quem agenda é o Master.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_sessao_solicitacoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER NOT NULL,
+            user_id INTEGER,
+            pilares TEXT,
+            data_sugerida TEXT,
+            hora_sugerida TEXT,
+            hora_fim_sugerida TEXT,
+            formato TEXT,
+            assunto TEXT,
+            status TEXT DEFAULT 'pendente',
+            resposta TEXT,
+            sessao_id INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME
+        )`);
         // Compra de um pilar avulso ou da consultoria completa por uma empresa —
         // cobrança única via Mercado Pago (Checkout Pro), no mesmo padrão já
         // usado para divulgação de vagas e taxa de fechamento.
@@ -1342,6 +1385,8 @@ function inicializarBase() {
             updated_at DATETIME,
             FOREIGN KEY(company_id) REFERENCES companies(id)
         )`);
+        // origem = 'impulsionar' quando veio da planilha que o Master subiu.
+        db.run(`ALTER TABLE dpo_chat_questions ADD COLUMN origem TEXT`, () => {});
         // Autoavaliação MENSAL (separada da gestão): uma por empresa por mês
         // (referencia = 'AAAA-MM'), cobrindo todos os pilares liberados. Cada
         // pergunta recebe 3, 1, 0 ou N/A.
@@ -1415,6 +1460,29 @@ function inicializarBase() {
             created_by INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME
+        )`);
+        // "Material DPO": biblioteca do Master (por pilar + pergunta). Cada material
+        // só aparece para a empresa quando o Master o disponibiliza para ela
+        // (pasta "📂 Material Impulsionar" dentro da pergunta). Desmarcar = some.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_material_impulsionar (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pillar_key TEXT NOT NULL,
+            question_numero TEXT NOT NULL,
+            titulo TEXT NOT NULL,
+            descricao TEXT,
+            url TEXT NOT NULL,
+            original_name TEXT,
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME
+        )`);
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_material_impulsionar_share (
+            material_id INTEGER NOT NULL,
+            company_id INTEGER NOT NULL,
+            shared_by INTEGER,
+            shared_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            acessos INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (material_id, company_id)
         )`);
         // Ferramentas digitais por pergunta (SWOT da Gestão 1.3, PPR do Planejamento 1.1).
         db.run(`CREATE TABLE IF NOT EXISTS dpo_ferramentas_digitais (
@@ -1533,6 +1601,60 @@ function inicializarBase() {
             perguntas TEXT NOT NULL,
             ativo INTEGER NOT NULL DEFAULT 1,
             created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+        // Responsáveis (donos de ação) cadastrados pela empresa para os planos do DPO.
+        db.run(`CREATE TABLE IF NOT EXISTS dpo_responsaveis (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER NOT NULL,
+            nome TEXT NOT NULL,
+            cargo TEXT,
+            area TEXT,
+            email TEXT,
+            telefone TEXT,
+            ativo INTEGER DEFAULT 1,
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+        // "Ministrar Treinamento" (Master): treinamento com módulos (slides feitos
+        // no sistema ou arquivos), público, data, rascunho e check de retenção.
+        db.run(`CREATE TABLE IF NOT EXISTS treinamentos_mt (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo TEXT NOT NULL,
+            objetivo TEXT,
+            publico TEXT DEFAULT 'todos',
+            data_treinamento TEXT,
+            duracao_min INTEGER,
+            local TEXT,
+            instrutor TEXT,
+            company_id INTEGER,
+            participantes INTEGER,
+            status TEXT DEFAULT 'rascunho',
+            modulos TEXT DEFAULT '[]',
+            apresentado_em DATETIME,
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME
+        )`);
+        db.run(`CREATE TABLE IF NOT EXISTS treinamentos_mt_checks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            treinamento_id INTEGER NOT NULL,
+            titulo TEXT NOT NULL,
+            token TEXT UNIQUE NOT NULL,
+            perguntas TEXT NOT NULL,
+            ativo INTEGER NOT NULL DEFAULT 1,
+            gerado_por_ia INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME
+        )`);
+        db.run(`CREATE TABLE IF NOT EXISTS treinamentos_mt_respostas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            check_id INTEGER NOT NULL,
+            nome TEXT NOT NULL,
+            matricula TEXT,
+            respostas TEXT NOT NULL,
+            acertos INTEGER,
+            total_objetivas INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
         db.run(`CREATE TABLE IF NOT EXISTS dpo_retention_responses (
@@ -6752,6 +6874,403 @@ app.delete('/api/admin/dpo/consultants/:id', requireRole('admin'), async (req, r
     });
 });
 
+// ======================================================================
+// DPO — AGENDA DE CONSULTORIAS com convite no Outlook / Teams
+//  • Sempre: e-mail com convite de calendário (.ics) para o consultor e para
+//    os usuários da empresa — o Outlook/Teams mostra "Aceitar" e coloca na agenda.
+//  • Se a integração Microsoft 365 estiver configurada (Azure: tenant, client id,
+//    secret e a caixa organizadora), o evento é criado direto no Outlook pelo
+//    Microsoft Graph com reunião do Teams gerada automaticamente; a própria
+//    Microsoft envia os convites e as atualizações/cancelamentos.
+// ======================================================================
+const MS365_CHAVES = ['ms365_tenant', 'ms365_client_id', 'ms365_client_secret', 'ms365_organizador'];
+async function lerConfigMs365() {
+    const rows = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN (${MS365_CHAVES.map(() => '?').join(',')})`, MS365_CHAVES);
+    const m = Object.fromEntries(rows.map(r => [r.key, r.value]));
+    return {
+        tenant: m.ms365_tenant || process.env.MS365_TENANT_ID || '',
+        clientId: m.ms365_client_id || process.env.MS365_CLIENT_ID || '',
+        secret: m.ms365_client_secret || process.env.MS365_CLIENT_SECRET || '',
+        organizador: m.ms365_organizador || process.env.MS365_ORGANIZER || ''
+    };
+}
+function ms365Ativo(c) { return !!(c && c.tenant && c.clientId && c.secret && c.organizador); }
+let CACHE_TOKEN_MS365 = { token: '', expira: 0, chave: '' };
+async function tokenMs365(c) {
+    const chave = c.tenant + '|' + c.clientId;
+    if (CACHE_TOKEN_MS365.token && CACHE_TOKEN_MS365.chave === chave && Date.now() < CACHE_TOKEN_MS365.expira) return CACHE_TOKEN_MS365.token;
+    const corpo = new URLSearchParams({ client_id: c.clientId, client_secret: c.secret, scope: 'https://graph.microsoft.com/.default', grant_type: 'client_credentials' });
+    const r = await fetch(`https://login.microsoftonline.com/${encodeURIComponent(c.tenant)}/oauth2/v2.0/token`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: corpo });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.access_token) throw new Error('Microsoft 365: não foi possível autenticar (' + (j.error_description || j.error || r.status) + '). Confira Tenant, Client ID e Secret.');
+    CACHE_TOKEN_MS365 = { token: j.access_token, expira: Date.now() + ((j.expires_in || 3600) - 120) * 1000, chave };
+    return j.access_token;
+}
+async function graphMs365(c, metodo, caminho, corpo) {
+    const token = await tokenMs365(c);
+    const r = await fetch('https://graph.microsoft.com/v1.0' + caminho, { method: metodo, headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', Prefer: 'outlook.timezone="America/Sao_Paulo"' }, body: corpo ? JSON.stringify(corpo) : undefined });
+    if (r.status === 204 || r.status === 202) return {};
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error('Microsoft 365: ' + ((j.error && j.error.message) || ('erro ' + r.status)) + (r.status === 403 ? ' — dê ao app a permissão de aplicativo "Calendars.ReadWrite" com consentimento do administrador.' : ''));
+    return j;
+}
+
+const HORA_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+// Brasil (America/Sao_Paulo) está fixo em UTC-3 desde 2019.
+function dataHoraUtcDpo(data, hora) { return new Date(`${data}T${hora}:00-03:00`); }
+function icsData(d) { return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); }
+function icsTexto(t) { return String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+function icsDobrar(linha) { const out = []; let l = linha; while (l.length > 73) { out.push(l.slice(0, 73)); l = ' ' + l.slice(73); } out.push(l); return out.join('\r\n'); }
+
+async function montarSessaoDpo(id) {
+    const s = await dbGet(`SELECT s.*, c.name as companyName, k.name as consultorNome, k.email as consultorEmail, k.phone as consultorTelefone
+        FROM dpo_sessoes s LEFT JOIN companies c ON c.id = s.company_id LEFT JOIN dpo_consultants k ON k.id = s.consultant_id WHERE s.id = ?`, [id]);
+    if (!s) return null;
+    let participantes = []; try { participantes = JSON.parse(s.participantes || '[]'); } catch (e) { participantes = []; }
+    let pilares = []; try { pilares = JSON.parse(s.pilares || '[]'); } catch (e) { pilares = []; }
+    return { ...s, participantes, pilares, pilaresLabel: pilares.map(p => (DPO_AMBEV_DATA[p] || {}).label || p) };
+}
+
+// Convidados = consultor + e-mails escolhidos (usuários da empresa e extras), sem repetir.
+function convidadosSessaoDpo(s) {
+    const lista = [];
+    const add = (email, nome, papel) => { const e = String(email || '').trim().toLowerCase(); if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && !lista.some(x => x.email === e)) lista.push({ email: e, nome: nome || '', papel }); };
+    if (s.consultorEmail) add(s.consultorEmail, s.consultorNome, 'consultor');
+    (s.participantes || []).forEach(p => add(p.email, p.nome, p.papel || 'empresa'));
+    return lista;
+}
+
+function descricaoSessaoDpo(s, linkTeams) {
+    return [
+        `Consultoria DPO Ambev — ${s.companyName || ''}`,
+        s.pilaresLabel && s.pilaresLabel.length ? `Pilar(es): ${s.pilaresLabel.join(', ')}` : '',
+        s.consultorNome ? `Consultor: ${s.consultorNome}${s.consultorTelefone ? ' · ' + s.consultorTelefone : ''}` : '',
+        `Data: ${s.data.split('-').reverse().join('/')} · ${s.hora_inicio} às ${s.hora_fim} (horário de Brasília)`,
+        linkTeams ? `Entrar na reunião do Teams: ${linkTeams}` : (s.formato === 'presencial' && s.local ? `Local: ${s.local}` : ''),
+        s.observacao ? `\n${s.observacao}` : '',
+        '\nAgendado pela plataforma Impulsionar V4.'
+    ].filter(Boolean).join('\n');
+}
+
+function gerarIcsSessaoDpo(s, metodo) {
+    const ini = dataHoraUtcDpo(s.data, s.hora_inicio), fim = dataHoraUtcDpo(s.data, s.hora_fim);
+    const org = separarRemetenteEmail(EMAIL_API.remetente || process.env.SMTP_FROM || process.env.SMTP_USER || '').email || 'agenda@impulsionarv4.com.br';
+    const local = s.teams_link ? 'Microsoft Teams' : (s.formato === 'presencial' ? (s.local || 'Presencial') : (s.local || 'Online'));
+    const linhas = [
+        'BEGIN:VCALENDAR', 'PRODID:-//Impulsionar V4//Agenda DPO//PT-BR', 'VERSION:2.0', 'CALSCALE:GREGORIAN', 'METHOD:' + metodo,
+        'BEGIN:VEVENT',
+        'UID:' + s.uid,
+        'SEQUENCE:' + (s.sequencia || 0),
+        'DTSTAMP:' + icsData(new Date()),
+        'DTSTART:' + icsData(ini),
+        'DTEND:' + icsData(fim),
+        'SUMMARY:' + icsTexto(s.titulo),
+        'DESCRIPTION:' + icsTexto(descricaoSessaoDpo(s, s.teams_link)),
+        'LOCATION:' + icsTexto(local),
+        s.teams_link ? 'URL:' + s.teams_link : '',
+        'ORGANIZER;CN=Impulsionar V4:mailto:' + org,
+        ...convidadosSessaoDpo(s).map(c => `ATTENDEE;CN=${icsTexto(c.nome || c.email)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${c.email}`),
+        'STATUS:' + (metodo === 'CANCEL' ? 'CANCELLED' : 'CONFIRMED'),
+        'BEGIN:VALARM', 'TRIGGER:-PT30M', 'ACTION:DISPLAY', 'DESCRIPTION:Consultoria DPO em 30 minutos', 'END:VALARM',
+        'END:VEVENT', 'END:VCALENDAR'
+    ].filter(Boolean);
+    return linhas.map(icsDobrar).join('\r\n') + '\r\n';
+}
+
+function htmlConviteSessaoDpo(s, tipo) {
+    const cab = tipo === 'cancel' ? '❌ Consultoria cancelada' : tipo === 'update' ? '🔄 Consultoria reagendada / atualizada' : '📅 Nova consultoria agendada';
+    const linha = (r, v) => v ? `<tr><td style="padding:4px 12px 4px 0;color:#64748b;">${r}</td><td style="padding:4px 0;font-weight:600;">${v}</td></tr>` : '';
+    const esc = t => String(t || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    return `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+      <div style="background:#0b1324;color:#fff;padding:16px 20px;font-size:18px;font-weight:700;">${cab}</div>
+      <div style="padding:18px 20px;color:#1e293b;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:10px;">${esc(s.titulo)}</div>
+        <table style="font-size:14px;border-collapse:collapse;">
+          ${linha('Empresa', esc(s.companyName))}
+          ${linha('Data', esc(s.data.split('-').reverse().join('/')))}
+          ${linha('Horário', esc(`${s.hora_inicio} às ${s.hora_fim} (Brasília)`))}
+          ${linha('Consultor', esc(s.consultorNome))}
+          ${linha('Pilar(es)', esc((s.pilaresLabel || []).join(', ')))}
+          ${s.formato === 'presencial' ? linha('Local', esc(s.local)) : ''}
+        </table>
+        ${s.observacao ? `<p style="font-size:14px;white-space:pre-line;">${esc(s.observacao)}</p>` : ''}
+        ${tipo !== 'cancel' && s.teams_link ? `<p style="margin:18px 0;"><a href="${esc(s.teams_link)}" style="background:#5b5fc7;color:#fff;padding:11px 18px;border-radius:8px;text-decoration:none;font-weight:700;">🎥 Entrar na reunião do Teams</a></p>` : ''}
+        ${tipo !== 'cancel' ? '<p style="font-size:12.5px;color:#64748b;">O convite vai anexo (convite.ics). No Outlook/Teams clique em <strong>Aceitar</strong> para colocar na sua agenda.</p>' : '<p style="font-size:12.5px;color:#64748b;">Abra o anexo para remover o compromisso da sua agenda.</p>'}
+      </div></div>`;
+}
+
+// Envia/atualiza/cancela o convite. tipo: 'novo' | 'update' | 'cancel'
+async function sincronizarSessaoDpo(id, tipo) {
+    const s = await montarSessaoDpo(id);
+    if (!s) return { ok: false, erro: 'Agendamento não encontrado.' };
+    const convidados = convidadosSessaoDpo(s);
+    const cfg = await lerConfigMs365();
+    let via = 'email', aviso = '';
+    if (ms365Ativo(cfg)) {
+        try {
+            const base = `/users/${encodeURIComponent(cfg.organizador)}/events`;
+            if (tipo === 'cancel') {
+                if (s.graph_event_id) await graphMs365(cfg, 'POST', `${base}/${encodeURIComponent(s.graph_event_id)}/cancel`, { comment: 'Consultoria cancelada pela Impulsionar.' });
+            } else {
+                const corpo = {
+                    subject: s.titulo,
+                    body: { contentType: 'HTML', content: descricaoSessaoDpo(s, null).replace(/\n/g, '<br>') },
+                    start: { dateTime: `${s.data}T${s.hora_inicio}:00`, timeZone: 'America/Sao_Paulo' },
+                    end: { dateTime: `${s.data}T${s.hora_fim}:00`, timeZone: 'America/Sao_Paulo' },
+                    location: { displayName: s.formato === 'presencial' ? (s.local || 'Presencial') : 'Microsoft Teams' },
+                    attendees: convidados.map(c => ({ emailAddress: { address: c.email, name: c.nome || c.email }, type: 'required' })),
+                    reminderMinutesBeforeStart: 30, isReminderOn: true
+                };
+                if (s.formato !== 'presencial') { corpo.isOnlineMeeting = true; corpo.onlineMeetingProvider = 'teamsForBusiness'; }
+                let ev;
+                if (s.graph_event_id) ev = await graphMs365(cfg, 'PATCH', `${base}/${encodeURIComponent(s.graph_event_id)}`, corpo);
+                else ev = await graphMs365(cfg, 'POST', base, corpo);
+                const link = (ev.onlineMeeting && ev.onlineMeeting.joinUrl) || s.teams_link || null;
+                await new Promise(r => db.run(`UPDATE dpo_sessoes SET graph_event_id = COALESCE(?, graph_event_id), teams_link = ? WHERE id = ?`, [ev.id || null, link, s.id], () => r()));
+            }
+            via = 'microsoft365';
+        } catch (e) {
+            aviso = e.message + ' — enviei o convite por e-mail (.ics) no lugar.';
+        }
+    }
+    if (via === 'email') {
+        const s2 = await montarSessaoDpo(id);
+        if (!convidados.length) return { ok: false, via, erro: 'Nenhum e-mail para convidar (cadastre o e-mail do consultor ou escolha os participantes).' };
+        const metodo = tipo === 'cancel' ? 'CANCEL' : 'REQUEST';
+        const assunto = (tipo === 'cancel' ? 'Cancelada: ' : tipo === 'update' ? 'Atualizada: ' : 'Convite: ') + s2.titulo + ` — ${s2.data.split('-').reverse().join('/')} ${s2.hora_inicio}`;
+        try {
+            await transporter.sendMail({
+                from: process.env.SMTP_FROM || `"Impulsionar V4" <${process.env.SMTP_USER || EMAIL_API.remetente}>`,
+                to: convidados.map(c => c.email).join(', '),
+                subject: assunto,
+                html: htmlConviteSessaoDpo(s2, tipo === 'novo' ? 'novo' : tipo),
+                icalEvent: { filename: 'convite.ics', method: metodo, content: gerarIcsSessaoDpo(s2, metodo) }
+            });
+        } catch (e) { return { ok: false, via, erro: 'Agendamento salvo, mas o e-mail não saiu: ' + e.message }; }
+    }
+    await new Promise(r => db.run(`UPDATE dpo_sessoes SET ultimo_envio = ? WHERE id = ?`, [`${via}|${new Date().toISOString()}|${convidados.length}`, s.id], () => r()));
+    // Aviso dentro da plataforma para os gestores da empresa.
+    const titulo = tipo === 'cancel' ? '❌ Consultoria cancelada' : tipo === 'update' ? '🔄 Consultoria atualizada' : '📅 Consultoria agendada';
+    notificarPorCompanyAdmins(s.company_id, titulo, `${s.titulo} — ${s.data.split('-').reverse().join('/')} das ${s.hora_inicio} às ${s.hora_fim}${s.consultorNome ? ' com ' + s.consultorNome : ''}.`, 'dpoHome');
+    return { ok: true, via, convidados: convidados.length, aviso };
+}
+
+function validarSessaoDpo(b) {
+    const erros = [];
+    if (!b.company_id) erros.push('Escolha a empresa.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(b.data || ''))) erros.push('Escolha a data.');
+    if (!HORA_RE.test(String(b.hora_inicio || ''))) erros.push('Informe a hora de início.');
+    if (!HORA_RE.test(String(b.hora_fim || ''))) erros.push('Informe a hora de término.');
+    if (!erros.length && b.hora_fim <= b.hora_inicio) erros.push('A hora de término precisa ser depois do início.');
+    if (b.teams_link && !/^https?:\/\/\S+$/i.test(String(b.teams_link).trim())) erros.push('Link do Teams inválido.');
+    return erros;
+}
+function participantesLimposDpo(lista) {
+    return (Array.isArray(lista) ? lista : []).map(p => ({ email: String(p.email || '').trim().toLowerCase().slice(0, 200), nome: String(p.nome || '').trim().slice(0, 120), papel: p.papel === 'extra' ? 'extra' : 'empresa' }))
+        .filter(p => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email)).slice(0, 40);
+}
+
+app.get('/api/admin/dpo/ms365', requireRole('admin'), async (req, res) => {
+    const c = await lerConfigMs365();
+    res.json({ ativo: ms365Ativo(c), tenant: c.tenant, clientId: c.clientId, organizador: c.organizador, secretPreview: c.secret ? '••••••' + c.secret.slice(-4) : null });
+});
+app.put('/api/admin/dpo/ms365', requireRole('admin'), async (req, res) => {
+    try {
+        const atual = await lerConfigMs365();
+        const novo = {
+            ms365_tenant: String(req.body.tenant || '').trim(),
+            ms365_client_id: String(req.body.clientId || '').trim(),
+            ms365_client_secret: String(req.body.secret || '').trim() || (req.body.limpar ? '' : atual.secret),
+            ms365_organizador: String(req.body.organizador || '').trim()
+        };
+        if (req.body.limpar) Object.keys(novo).forEach(k => novo[k] = '');
+        for (const [k, v] of Object.entries(novo)) await new Promise(r => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => r()));
+        CACHE_TOKEN_MS365 = { token: '', expira: 0, chave: '' };
+        const c = await lerConfigMs365();
+        if (ms365Ativo(c) && req.body.testar !== false) {
+            try { await graphMs365(c, 'GET', `/users/${encodeURIComponent(c.organizador)}/calendar`); }
+            catch (e) { return res.status(400).json({ error: 'Salvo, mas o teste falhou: ' + e.message }); }
+            return res.json({ message: 'Microsoft 365 conectado! Os agendamentos vão direto para o Outlook com link do Teams.' });
+        }
+        res.json({ message: req.body.limpar ? 'Integração removida — convites seguem por e-mail (.ics).' : 'Configuração salva.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar a integração.' }); }
+});
+
+// E-mails da empresa para convidar (gestores e acessos da empresa).
+app.get('/api/admin/dpo/sessoes/participantes', requireRole('admin'), async (req, res) => {
+    try {
+        const users = await dbAll(`SELECT name, email, role FROM users WHERE company_id = ? AND email IS NOT NULL AND email <> '' AND role IN ('client_admin', 'autonomous', 'employee') ORDER BY CASE role WHEN 'client_admin' THEN 0 ELSE 1 END, name`, [req.query.company_id]);
+        res.json(users.map(u => ({ nome: u.name, email: u.email, papel: u.role === 'client_admin' ? 'gestor' : 'acesso' })));
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar os participantes.' }); }
+});
+
+app.get('/api/dpo/sessoes', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const params = []; let filtro = '';
+        if (req.user.role === 'client_admin') { filtro = 'WHERE s.company_id = ?'; params.push(req.user.companyId); }
+        else if (req.query.company_id) { filtro = 'WHERE s.company_id = ?'; params.push(req.query.company_id); }
+        const ids = await dbAll(`SELECT s.id FROM dpo_sessoes s ${filtro} ORDER BY s.data DESC, s.hora_inicio DESC LIMIT 300`, params);
+        const lista = [];
+        for (const r of ids) {
+            const s = await montarSessaoDpo(r.id);
+            if (req.user.role !== 'admin') { delete s.graph_event_id; delete s.ultimo_envio; }
+            lista.push(s);
+        }
+        res.json(lista);
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar a agenda.' }); }
+});
+
+app.post('/api/admin/dpo/sessoes', requireRole('admin'), async (req, res) => {
+    const b = req.body || {};
+    const erros = validarSessaoDpo(b);
+    if (erros.length) return res.status(400).json({ error: erros[0] });
+    try {
+        const emp = await dbGet(`SELECT id, name FROM companies WHERE id = ?`, [b.company_id]);
+        if (!emp) return res.status(400).json({ error: 'Empresa inválida.' });
+        const pilares = (Array.isArray(b.pilares) ? b.pilares : []).filter(p => DPO_PILARES_ORDEM.includes(p));
+        const titulo = String(b.titulo || '').trim().slice(0, 200) || `Consultoria DPO — ${emp.name}`;
+        const uid = `dpo-${Date.now()}-${crypto.randomBytes(5).toString('hex')}@impulsionarv4`;
+        const id = await new Promise((ok, ko) => db.run(
+            `INSERT INTO dpo_sessoes (company_id, consultant_id, titulo, pilares, data, hora_inicio, hora_fim, formato, local, teams_link, participantes, observacao, uid, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [emp.id, b.consultant_id || null, titulo, JSON.stringify(pilares), b.data, b.hora_inicio, b.hora_fim, b.formato === 'presencial' ? 'presencial' : 'teams', String(b.local || '').trim().slice(0, 300) || null, String(b.teams_link || '').trim() || null, JSON.stringify(participantesLimposDpo(b.participantes)), String(b.observacao || '').trim().slice(0, 2000) || null, uid, req.user.userId],
+            function (err) { err ? ko(err) : ok(this.lastID); }));
+        if (b.solicitacao_id) {
+            const sol = await dbGet(`SELECT * FROM dpo_sessao_solicitacoes WHERE id = ? AND company_id = ?`, [b.solicitacao_id, emp.id]);
+            if (sol) await new Promise(r => db.run(`UPDATE dpo_sessao_solicitacoes SET status = 'agendada', sessao_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [id, sol.id], () => r()));
+        }
+        const r = await sincronizarSessaoDpo(id, 'novo');
+        res.json({ id, message: r.ok ? `Consultoria agendada! Convite enviado para ${r.convidados} e-mail(s)${r.via === 'microsoft365' ? ' pelo Outlook/Teams' : ''}.` : r.erro, aviso: r.aviso || '', enviado: r.ok });
+    } catch (e) { res.status(400).json({ error: 'Erro ao agendar a consultoria.' }); }
+});
+
+app.put('/api/admin/dpo/sessoes/:id', requireRole('admin'), async (req, res) => {
+    const b = req.body || {};
+    try {
+        const atual = await dbGet(`SELECT * FROM dpo_sessoes WHERE id = ?`, [req.params.id]);
+        if (!atual) return res.status(404).json({ error: 'Agendamento não encontrado.' });
+        const m = { ...atual, ...b, company_id: atual.company_id };
+        const erros = validarSessaoDpo(m);
+        if (erros.length) return res.status(400).json({ error: erros[0] });
+        const pilares = b.pilares !== undefined ? (Array.isArray(b.pilares) ? b.pilares : []).filter(p => DPO_PILARES_ORDEM.includes(p)) : JSON.parse(atual.pilares || '[]');
+        await new Promise((ok, ko) => db.run(
+            `UPDATE dpo_sessoes SET consultant_id = ?, titulo = ?, pilares = ?, data = ?, hora_inicio = ?, hora_fim = ?, formato = ?, local = ?, teams_link = ?, participantes = ?, observacao = ?, status = 'agendada', sequencia = sequencia + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            [m.consultant_id || null, String(m.titulo || '').trim().slice(0, 200) || atual.titulo, JSON.stringify(pilares), m.data, m.hora_inicio, m.hora_fim, m.formato === 'presencial' ? 'presencial' : 'teams', String(m.local || '').trim().slice(0, 300) || null, String(m.teams_link || '').trim() || null,
+             JSON.stringify(b.participantes !== undefined ? participantesLimposDpo(b.participantes) : JSON.parse(atual.participantes || '[]')), String(m.observacao || '').trim().slice(0, 2000) || null, atual.id],
+            (err) => err ? ko(err) : ok()));
+        const r = b.reenviar === false ? { ok: true, convidados: 0 } : await sincronizarSessaoDpo(atual.id, 'update');
+        res.json({ message: r.ok ? `Agendamento atualizado${r.convidados ? ' — convite atualizado para ' + r.convidados + ' e-mail(s)' : ''}.` : r.erro, aviso: r.aviso || '' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o agendamento.' }); }
+});
+
+app.post('/api/admin/dpo/sessoes/:id/reenviar', requireRole('admin'), async (req, res) => {
+    try {
+        const r = await sincronizarSessaoDpo(req.params.id, 'update');
+        if (!r.ok) return res.status(400).json({ error: r.erro });
+        res.json({ message: `Convite reenviado para ${r.convidados} e-mail(s).`, aviso: r.aviso || '' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao reenviar o convite.' }); }
+});
+
+app.post('/api/admin/dpo/sessoes/:id/status', requireRole('admin'), async (req, res) => {
+    const st = ['agendada', 'realizada', 'cancelada'].includes(req.body.status) ? req.body.status : null;
+    if (!st) return res.status(400).json({ error: 'Status inválido.' });
+    try {
+        const atual = await dbGet(`SELECT * FROM dpo_sessoes WHERE id = ?`, [req.params.id]);
+        if (!atual) return res.status(404).json({ error: 'Agendamento não encontrado.' });
+        await new Promise(r => db.run(`UPDATE dpo_sessoes SET status = ?, sequencia = sequencia + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [st, atual.id], () => r()));
+        let msg = 'Status atualizado.';
+        if (st === 'agendada' && atual.status === 'cancelada') {
+            const r = await sincronizarSessaoDpo(atual.id, 'update');
+            msg = r.ok ? 'Consultoria reativada — o convite foi enviado de novo para as agendas.' : 'Reativada, mas ' + r.erro;
+        } else if (st === 'agendada') msg = 'Voltou para agendada.';
+        if (st === 'cancelada' && atual.status !== 'cancelada') {
+            const r = await sincronizarSessaoDpo(atual.id, 'cancel');
+            msg = r.ok ? 'Consultoria cancelada — o cancelamento foi enviado para as agendas.' : 'Cancelada, mas ' + r.erro;
+        }
+        res.json({ message: msg });
+    } catch (e) { res.status(400).json({ error: 'Erro ao alterar o status.' }); }
+});
+
+app.delete('/api/admin/dpo/sessoes/:id', requireRole('admin'), async (req, res) => {
+    try {
+        const atual = await dbGet(`SELECT * FROM dpo_sessoes WHERE id = ?`, [req.params.id]);
+        if (!atual) return res.status(404).json({ error: 'Agendamento não encontrado.' });
+        if (atual.status === 'agendada' && atual.data >= new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10)) {
+            await new Promise(r => db.run(`UPDATE dpo_sessoes SET sequencia = sequencia + 1 WHERE id = ?`, [atual.id], () => r()));
+            await sincronizarSessaoDpo(atual.id, 'cancel').catch(() => {});
+        }
+        await new Promise(r => db.run(`DELETE FROM dpo_sessoes WHERE id = ?`, [atual.id], () => r()));
+        res.json({ message: 'Agendamento excluído.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao excluir.' }); }
+});
+
+// ----- Solicitações de consultoria (empresa pede, Master agenda) -----
+app.post('/api/dpo/solicitacoes', requireRole('client_admin'), async (req, res) => {
+    const b = req.body || {};
+    const assunto = String(b.assunto || '').trim().slice(0, 1500);
+    if (!assunto) return res.status(400).json({ error: 'Conte o que precisa tratar na consultoria.' });
+    if (b.data_sugerida && !/^\d{4}-\d{2}-\d{2}$/.test(b.data_sugerida)) return res.status(400).json({ error: 'Data inválida.' });
+    if (b.hora_sugerida && !HORA_RE.test(b.hora_sugerida)) return res.status(400).json({ error: 'Hora inválida.' });
+    if (b.hora_fim_sugerida && !HORA_RE.test(b.hora_fim_sugerida)) return res.status(400).json({ error: 'Hora final inválida.' });
+    if (b.hora_sugerida && b.hora_fim_sugerida && b.hora_fim_sugerida <= b.hora_sugerida) return res.status(400).json({ error: 'A hora final precisa ser depois do início.' });
+    try {
+        const pend = await dbGet(`SELECT COUNT(*) n FROM dpo_sessao_solicitacoes WHERE company_id = ? AND status = 'pendente'`, [req.user.companyId]);
+        if (pend && pend.n >= 5) return res.status(400).json({ error: 'Você já tem 5 solicitações aguardando o Master. Aguarde o retorno.' });
+        const pilares = (Array.isArray(b.pilares) ? b.pilares : []).filter(p => DPO_PILARES_ORDEM.includes(p));
+        const id = await new Promise((ok, ko) => db.run(
+            `INSERT INTO dpo_sessao_solicitacoes (company_id, user_id, pilares, data_sugerida, hora_sugerida, hora_fim_sugerida, formato, assunto) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [req.user.companyId, req.user.userId, JSON.stringify(pilares), b.data_sugerida || null, b.hora_sugerida || null, b.hora_fim_sugerida || null, b.formato === 'presencial' ? 'presencial' : 'teams', assunto],
+            function (err) { err ? ko(err) : ok(this.lastID); }));
+        const emp = await dbGet(`SELECT name FROM companies WHERE id = ?`, [req.user.companyId]);
+        const admins = await dbAll(`SELECT id FROM users WHERE role = 'admin'`);
+        admins.forEach(a => notificar(a.id, '📅 Solicitação de consultoria DPO', `${emp ? emp.name : 'Empresa'} pediu uma consultoria${b.data_sugerida ? ' para ' + b.data_sugerida.split('-').reverse().join('/') + (b.hora_sugerida ? ' às ' + b.hora_sugerida : '') : ''}.`, 'dpoAgenda'));
+        res.json({ id, message: 'Solicitação enviada! A Impulsionar vai agendar e você recebe o convite no seu e-mail/Outlook.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao enviar a solicitação.' }); }
+});
+
+app.get('/api/dpo/solicitacoes', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const params = []; let filtro = '';
+        if (req.user.role === 'client_admin') { filtro = 'WHERE s.company_id = ?'; params.push(req.user.companyId); }
+        const l = await dbAll(`SELECT s.*, c.name as companyName, u.name as solicitanteNome, u.email as solicitanteEmail
+            FROM dpo_sessao_solicitacoes s LEFT JOIN companies c ON c.id = s.company_id LEFT JOIN users u ON u.id = s.user_id
+            ${filtro} ORDER BY CASE s.status WHEN 'pendente' THEN 0 ELSE 1 END, s.created_at DESC LIMIT 200`, params);
+        res.json(l.map(x => { let p = []; try { p = JSON.parse(x.pilares || '[]'); } catch (e) {} return { ...x, pilares: p, pilaresLabel: p.map(k => (DPO_AMBEV_DATA[k] || {}).label || k) }; }));
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar as solicitações.' }); }
+});
+
+app.post('/api/admin/dpo/solicitacoes/:id/recusar', requireRole('admin'), async (req, res) => {
+    try {
+        const s = await dbGet(`SELECT * FROM dpo_sessao_solicitacoes WHERE id = ?`, [req.params.id]);
+        if (!s) return res.status(404).json({ error: 'Solicitação não encontrada.' });
+        const resposta = String(req.body.resposta || '').trim().slice(0, 1000) || null;
+        await new Promise(r => db.run(`UPDATE dpo_sessao_solicitacoes SET status = 'recusada', resposta = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [resposta, s.id], () => r()));
+        if (s.user_id) notificar(s.user_id, 'Solicitação de consultoria', resposta ? 'A Impulsionar respondeu: ' + resposta : 'Sua solicitação de consultoria não pôde ser atendida nessa data. Fale com a Impulsionar.', 'dpoHome');
+        res.json({ message: 'Solicitação respondida.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao responder.' }); }
+});
+
+app.delete('/api/dpo/solicitacoes/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const s = await dbGet(`SELECT * FROM dpo_sessao_solicitacoes WHERE id = ?`, [req.params.id]);
+        if (!s) return res.status(404).json({ error: 'Solicitação não encontrada.' });
+        if (req.user.role === 'client_admin' && (String(s.company_id) !== String(req.user.companyId) || s.status !== 'pendente')) return res.status(403).json({ error: 'Só dá para cancelar solicitações ainda pendentes.' });
+        await new Promise(r => db.run(`DELETE FROM dpo_sessao_solicitacoes WHERE id = ?`, [s.id], () => r()));
+        res.json({ message: req.user.role === 'client_admin' ? 'Solicitação cancelada.' : 'Solicitação removida.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao remover.' }); }
+});
+
+// Arquivo .ics para "Adicionar à minha agenda" (Outlook, Google, Apple).
+app.get('/api/dpo/sessoes/:id/ics', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const s = await montarSessaoDpo(req.params.id);
+        if (!s) return res.status(404).json({ error: 'Agendamento não encontrado.' });
+        if (req.user.role === 'client_admin' && String(s.company_id) !== String(req.user.companyId)) return res.status(403).json({ error: 'Sem acesso.' });
+        res.set('Content-Type', 'text/calendar; charset=utf-8');
+        res.set('Content-Disposition', `attachment; filename="consultoria-dpo-${s.data}.ics"`);
+        res.send(gerarIcsSessaoDpo(s, s.status === 'cancelada' ? 'CANCEL' : 'PUBLISH'));
+    } catch (e) { res.status(500).json({ error: 'Erro ao gerar o convite.' }); }
+});
+
 // Master visualiza o conteúdo completo de um pilar (perguntas, verificação,
 // explicação de pontos e how to check) sem depender de nenhuma empresa/ciclo —
 // só para conferir o layout das perguntas.
@@ -7517,6 +8036,132 @@ app.delete('/api/dpo/bate-papo/:id', requireRole('admin', 'client_admin'), async
     } catch (e) { res.status(400).json({ error: 'Erro ao excluir a pergunta.' }); }
 });
 
+// ----- Master sobe planilha (anexo) que vira perguntas do "Conhecimento do Time" -----
+const uploadPlanilhaMemDpo = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+function normCab(t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+function textoCelula(v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'object') {
+        if (v.richText) return v.richText.map(r => r.text).join('');
+        if (v.text !== undefined) return String(v.text);
+        if (v.result !== undefined) return String(v.result);
+        if (v instanceof Date) return v.toISOString().slice(0, 10);
+    }
+    return String(v);
+}
+function pilarPorRotuloDpo(t) {
+    const n = normCab(t); if (!n) return null;
+    for (const k of DPO_PILARES_ORDEM) {
+        const lb = normCab((DPO_AMBEV_DATA[k] || {}).label);
+        if (n === k || n === lb || lb.startsWith(n) || n.includes(lb) || lb.split(' ')[0] === n.split(' ')[0]) return k;
+    }
+    return null;
+}
+async function lerPlanilhaConhecimentoDpo(buffer, nomeArquivo, pilarPadrao, numeroPadrao) {
+    const wb = new ExcelJS.Workbook();
+    if (/\.csv$/i.test(nomeArquivo || '')) {
+        const { Readable } = require('stream');
+        await wb.csv.read(Readable.from([buffer.toString('utf8').replace(/^﻿/, '')]), { parserOptions: { delimiter: /;/.test(buffer.toString('utf8').split(/\r?\n/)[0]) ? ';' : ',' } });
+    } else await wb.xlsx.load(buffer);
+    const linhas = [];
+    for (const ws of wb.worksheets) {
+        // Acha a linha de cabeçalho (nas 10 primeiras) com "pergunta".
+        let cab = null, iCab = 0;
+        for (let r = 1; r <= Math.min(10, ws.rowCount); r++) {
+            const vals = (ws.getRow(r).values || []).map(textoCelula).map(normCab);
+            if (vals.some(v => /pergunta/.test(v))) { cab = vals; iCab = r; break; }
+        }
+        if (!cab) continue;
+        const col = (re, excl) => cab.findIndex(v => v && re.test(v) && !(excl && excl.test(v)));
+        const cNum = col(/^(n[ºo°.]|no |num\b|numero|item do pilar)/);
+        const cPilar = col(/^pilar$/);
+        const cPerg = (() => { let c = col(/pergunta ao time|pergunta do time|pergunta feita|^pergunta$|^perguntas$/); if (c < 0) c = col(/pergunta/, /pilar|^n/); return c; })();
+        const cResp = col(/resposta/);
+        const cPergPilar = col(/pergunta do pilar/, /^n/);
+        if (cPerg < 0) continue;
+        for (let r = iCab + 1; r <= ws.rowCount; r++) {
+            const row = ws.getRow(r);
+            const v = c => c > 0 ? textoCelula(row.getCell(c).value).trim() : '';
+            const pergunta = v(cPerg), resposta = v(cResp);
+            if (!pergunta) continue;
+            let pk = (cPilar > 0 && pilarPorRotuloDpo(v(cPilar))) || pilarPadrao;
+            let num = v(cNum).replace(',', '.').replace(/[^\d.]/g, ' ').trim().split(' ')[0] || '';
+            if (!num && cPergPilar > 0) { const m = v(cPergPilar).match(/^\s*(\d+(?:\.\d+)+)/); if (m) num = m[1]; }
+            if (!num) num = numeroPadrao || '';
+            const ok = pk && num && textoDaPerguntaDpo(pk, num);
+            linhas.push({ linha: r, aba: ws.name, pillar_key: pk || null, question_numero: num || null, perguntaPilarTexto: ok ? textoDaPerguntaDpo(pk, num) : '', pergunta: pergunta.slice(0, 2000), resposta: resposta.slice(0, 4000),
+                erro: !pk ? 'Pilar não identificado' : !num ? 'Sem nº da pergunta do pilar' : !ok ? `Pergunta ${num} não existe em ${(DPO_AMBEV_DATA[pk] || {}).label || pk}` : '' });
+            if (linhas.length >= 1000) break;
+        }
+    }
+    return linhas;
+}
+
+app.get('/api/admin/dpo/bate-papo/modelo/:pillarKey', requireRole('admin'), async (req, res) => {
+    try {
+        const pk = req.params.pillarKey;
+        if (!DPO_AMBEV_DATA[pk]) return res.status(400).json({ error: 'Pilar inválido.' });
+        const wb = new ExcelJS.Workbook(); wb.creator = 'Impulsionar V4';
+        const ws = wb.addWorksheet('Conhecimento do Time', { views: [{ state: 'frozen', ySplit: 1 }] });
+        ws.columns = [
+            { header: 'Pilar', key: 'pilar', width: 22 },
+            { header: 'Nº Pergunta do Pilar', key: 'numero', width: 12 },
+            { header: 'Pergunta do Pilar (referência)', key: 'pp', width: 50 },
+            { header: 'Pergunta ao time', key: 'pergunta', width: 55 },
+            { header: 'Resposta', key: 'resposta', width: 65 }
+        ];
+        const cab = ws.getRow(1);
+        cab.font = { bold: true, color: { argb: 'FFFFFFFF' } }; cab.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC4C4C' } };
+        cab.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; cab.height = 30;
+        (DPO_AMBEV_DATA[pk].grupos || []).forEach(g => g.perguntas.forEach(q => {
+            const row = ws.addRow({ pilar: DPO_AMBEV_DATA[pk].label, numero: q.numero, pp: q.questao, pergunta: '', resposta: '' });
+            row.alignment = { vertical: 'top', wrapText: true };
+            row.getCell('pp').font = { color: { argb: 'FF64748B' } };
+        }));
+        const buf = await wb.xlsx.writeBuffer();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="modelo-conhecimento-do-time-${pk}.xlsx"`);
+        res.send(Buffer.from(buf));
+    } catch (e) { res.status(500).json({ error: 'Erro ao gerar o modelo.' }); }
+});
+
+// multipart: file, pillarKey, questionNumero (opcional), companyIds (JSON) , previa=1 só lê.
+app.post('/api/admin/dpo/bate-papo/importar', requireRole('admin'), (req, res) => {
+    uploadPlanilhaMemDpo.single('file')(req, res, async (err) => {
+        if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Arquivo muito grande (máximo 10MB).' : err.message });
+        if (!req.file) return res.status(400).json({ error: 'Envie a planilha (Excel .xlsx ou .csv).' });
+        if (!/\.(xlsx|xlsm|csv)$/i.test(req.file.originalname || '')) return res.status(400).json({ error: 'Envie a planilha em Excel (.xlsx) ou .csv — use o modelo.' });
+        const pilarPadrao = DPO_PILARES_ORDEM.includes(req.body.pillarKey) ? req.body.pillarKey : null;
+        try {
+            const linhas = await lerPlanilhaConhecimentoDpo(req.file.buffer, req.file.originalname, pilarPadrao, String(req.body.questionNumero || '').trim());
+            const validas = linhas.filter(l => !l.erro);
+            if (req.body.previa === '1' || req.body.previa === 'true') return res.json({ linhas, validas: validas.length });
+            let ids = []; try { ids = JSON.parse(req.body.companyIds || '[]').map(Number).filter(n => n > 0); } catch (e) { ids = []; }
+            if (!ids.length) return res.status(400).json({ error: 'Escolha ao menos uma empresa.' });
+            if (!validas.length) return res.status(400).json({ error: 'Nenhuma linha válida na planilha.' });
+            let inseridas = 0, puladas = 0;
+            for (const cid of ids) {
+                for (const l of validas) {
+                    const ja = await dbGet(`SELECT id FROM dpo_chat_questions WHERE company_id = ? AND pillar_key = ? AND question_numero = ? AND pergunta = ?`, [cid, l.pillar_key, l.question_numero, l.pergunta]);
+                    if (ja) {
+                        if (l.resposta) await new Promise(r => db.run(`UPDATE dpo_chat_questions SET resposta = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [l.resposta, ja.id], () => r()));
+                        puladas++; continue;
+                    }
+                    await new Promise((ok, ko) => db.run(`INSERT INTO dpo_chat_questions (company_id, pillar_key, question_numero, pergunta, resposta, created_by, origem) VALUES (?, ?, ?, ?, ?, ?, 'impulsionar')`,
+                        [cid, l.pillar_key, l.question_numero, l.pergunta, l.resposta || null, req.user.userId], (e) => e ? ko(e) : ok()));
+                    inseridas++;
+                }
+                const pilares = [...new Set(validas.map(l => (DPO_AMBEV_DATA[l.pillar_key] || {}).label))].join(', ');
+                notificarPorCompanyAdmins(cid, '📁 Conhecimento do Time atualizado', `A Impulsionar adicionou ${validas.length} pergunta(s) em ${pilares}.`, 'dpoHome');
+            }
+            res.json({ message: `${inseridas} pergunta(s) adicionada(s) em ${ids.length} empresa(s)${puladas ? ` · ${puladas} já existia(m) (resposta atualizada)` : ''}.`, inseridas, puladas, ignoradas: linhas.length - validas.length });
+        } catch (e) {
+            console.error('Importar conhecimento do time:', e.message);
+            res.status(400).json({ error: 'Não consegui ler a planilha. Use o modelo (Baixar modelo) e salve em .xlsx.' });
+        }
+    });
+});
+
 // Excel padrão da pasta "Perguntas Bate-Papo" de um pilar, já ordenado pela
 // pergunta do pilar.
 app.get('/api/dpo/bate-papo/:pillarKey/export', requireRole('admin', 'client_admin'), async (req, res) => {
@@ -7962,11 +8607,401 @@ app.get('/api/dpo/material/:pillarKey/export', requireRole('admin', 'client_admi
     }
 });
 
+// ======================================================================
+// MINISTRAR TREINAMENTO (Master) — módulos, apresentação, rascunho e
+// check de retenção gerado por IA a partir do conteúdo do treinamento.
+// ======================================================================
+const PUBLICOS_MT = ['administrativo', 'lideranca', 'operacional', 'todos'];
+const ROTULOS_PUBLICO_MT = { administrativo: 'Administrativo', lideranca: 'Liderança', operacional: 'Operacional', todos: 'Todos' };
+const STATUS_MT = ['rascunho', 'pronto', 'realizado'];
+
+// Leitor de ZIP mínimo (PPTX/DOCX são ZIP) — sem dependência extra.
+function lerZipMt(buf) {
+    const zlib = require('zlib');
+    const arquivos = {};
+    let eocd = -1;
+    for (let i = buf.length - 22; i >= Math.max(0, buf.length - 70000); i--) { if (buf.readUInt32LE(i) === 0x06054b50) { eocd = i; break; } }
+    if (eocd < 0) return arquivos;
+    const total = buf.readUInt16LE(eocd + 10);
+    let p = buf.readUInt32LE(eocd + 16);
+    for (let n = 0; n < total && p + 46 <= buf.length; n++) {
+        if (buf.readUInt32LE(p) !== 0x02014b50) break;
+        const metodo = buf.readUInt16LE(p + 10), tamComp = buf.readUInt32LE(p + 20);
+        const lenNome = buf.readUInt16LE(p + 28), lenExtra = buf.readUInt16LE(p + 30), lenCom = buf.readUInt16LE(p + 32);
+        const offLocal = buf.readUInt32LE(p + 42);
+        const nome = buf.slice(p + 46, p + 46 + lenNome).toString('utf8');
+        p += 46 + lenNome + lenExtra + lenCom;
+        if (!/\.xml$/i.test(nome)) continue;
+        try {
+            const ini = offLocal + 30 + buf.readUInt16LE(offLocal + 26) + buf.readUInt16LE(offLocal + 28);
+            const dado = buf.slice(ini, ini + tamComp);
+            arquivos[nome] = metodo === 8 ? zlib.inflateRawSync(dado) : dado;
+        } catch (e) { /* ignora entrada corrompida */ }
+    }
+    return arquivos;
+}
+function xmlTextoMt(t) { return String(t || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (m, n) => String.fromCharCode(+n)).replace(/&amp;/g, '&'); }
+function paragrafosMt(xml, tagP, tagT) {
+    return String(xml).split(new RegExp(`</${tagP}>`)).map(par => {
+        const ts = par.match(new RegExp(`<${tagT}(?: [^>]*)?>([\\s\\S]*?)</${tagT}>`, 'g')) || [];
+        return xmlTextoMt(ts.map(x => x.replace(/<[^>]+>/g, '')).join('')).trim();
+    }).filter(Boolean);
+}
+// PPTX → [{titulo, texto}] por slide; DOCX → texto.
+function extrairOfficeMt(buf, nome) {
+    const z = lerZipMt(buf);
+    if (/\.pptx$/i.test(nome)) {
+        const slides = Object.keys(z).filter(k => /^ppt\/slides\/slide\d+\.xml$/.test(k)).sort((a, b) => +a.match(/(\d+)\.xml/)[1] - +b.match(/(\d+)\.xml/)[1]);
+        return { slides: slides.map(k => {
+            const xml = z[k].toString('utf8');
+            const formas = xml.split('</p:sp>');
+            let titulo = '', corpo = [];
+            formas.forEach(f => {
+                const pars = paragrafosMt(f, 'a:p', 'a:t');
+                if (!pars.length) return;
+                if (!titulo && /type="(title|ctrTitle)"/.test(f)) titulo = pars.join(' ');
+                else corpo.push(...pars);
+            });
+            if (!titulo && corpo.length) titulo = corpo.shift();
+            return { titulo: titulo.slice(0, 200), texto: corpo.map(l => '• ' + l).join('\n').slice(0, 3000) };
+        }) };
+    }
+    if (/\.docx$/i.test(nome) && z['word/document.xml']) return { texto: paragrafosMt(z['word/document.xml'].toString('utf8'), 'w:p', 'w:t').join('\n') };
+    return {};
+}
+function caminhoUploadMt(url) { return path.join(PASTA_UPLOADS, path.basename(String(url || ''))); }
+async function lerArquivoUploadMt(url) {
+    const c = caminhoUploadMt(url);
+    if (fs.existsSync(c)) return fs.readFileSync(c);
+    const r = await restaurarUploadDoBanco(path.basename(String(url || '')));
+    return r ? r.dados : null;
+}
+// Tenta converter Office → PDF (LibreOffice). Se o servidor não tiver, segue sem.
+function converterParaPdfMt(caminho) {
+    return new Promise(resolve => {
+        try {
+            const { execFile } = require('child_process');
+            const saida = path.join(require('os').tmpdir(), 'mt-' + Date.now());
+            fs.mkdirSync(saida, { recursive: true });
+            execFile('soffice', ['--headless', '--convert-to', 'pdf', '--outdir', saida, caminho], { timeout: 90000 }, err => {
+                if (err) return resolve(null);
+                const pdf = fs.readdirSync(saida).find(n => /\.pdf$/i.test(n));
+                if (!pdf) return resolve(null);
+                const nome = 'mt-' + Date.now() + '-' + Math.round(Math.random() * 1e6) + '.pdf';
+                const destino = path.join(PASTA_UPLOADS, nome);
+                fs.copyFileSync(path.join(saida, pdf), destino);
+                copiarUploadParaBanco({ filename: nome, path: destino, size: fs.statSync(destino).size, mimetype: 'application/pdf' });
+                resolve('/uploads/' + nome);
+            });
+        } catch (e) { resolve(null); }
+    });
+}
+
+function normalizarModulosMt(lista) {
+    return (Array.isArray(lista) ? lista : []).slice(0, 60).map((m, i) => {
+        const tipo = m && m.tipo === 'arquivo' ? 'arquivo' : 'slides';
+        const limpo = { id: String((m && m.id) || ('m' + Date.now().toString(36) + i)).slice(0, 40), titulo: String((m && m.titulo) || `Módulo ${i + 1}`).trim().slice(0, 200), tipo };
+        if (tipo === 'slides') {
+            limpo.slides = (Array.isArray(m.slides) ? m.slides : []).slice(0, 200).map(sl => ({
+                titulo: String((sl && sl.titulo) || '').slice(0, 300), texto: String((sl && sl.texto) || '').slice(0, 5000),
+                imagem: /^\/uploads\/[\w.\-]+$|^https?:\/\/\S+$/.test(String((sl && sl.imagem) || '')) ? sl.imagem : '',
+                notas: String((sl && sl.notas) || '').slice(0, 3000), layout: ['padrao', 'destaque', 'imagem'].includes(sl && sl.layout) ? sl.layout : 'padrao'
+            }));
+        } else {
+            const a = m.arquivo || {};
+            limpo.arquivo = { url: /^\/uploads\/[\w.\-]+$|^https?:\/\/\S+$/.test(String(a.url || '')) ? a.url : '', nome: String(a.nome || '').slice(0, 200), mime: String(a.mime || '').slice(0, 120),
+                pdfUrl: /^\/uploads\/[\w.\-]+$/.test(String(a.pdfUrl || '')) ? a.pdfUrl : '', slidesExtraidos: Array.isArray(a.slidesExtraidos) ? a.slidesExtraidos.slice(0, 200).map(x => ({ titulo: String(x.titulo || '').slice(0, 300), texto: String(x.texto || '').slice(0, 3000) })) : [] };
+            limpo.texto = String(m.texto || '').slice(0, 60000);
+        }
+        return limpo;
+    });
+}
+function camposTreinamentoMt(b) {
+    const d = {};
+    if (b.titulo !== undefined) d.titulo = String(b.titulo || '').trim().slice(0, 200);
+    if (b.objetivo !== undefined) d.objetivo = String(b.objetivo || '').trim().slice(0, 3000) || null;
+    if (b.publico !== undefined) d.publico = PUBLICOS_MT.includes(b.publico) ? b.publico : 'todos';
+    if (b.data_treinamento !== undefined) d.data_treinamento = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(String(b.data_treinamento || '')) ? b.data_treinamento : null;
+    if (b.duracao_min !== undefined) d.duracao_min = Number(b.duracao_min) > 0 ? Math.min(1440, Math.round(Number(b.duracao_min))) : null;
+    if (b.local !== undefined) d.local = String(b.local || '').trim().slice(0, 200) || null;
+    if (b.instrutor !== undefined) d.instrutor = String(b.instrutor || '').trim().slice(0, 120) || null;
+    if (b.company_id !== undefined) d.company_id = Number(b.company_id) > 0 ? Number(b.company_id) : null;
+    if (b.participantes !== undefined) d.participantes = Number(b.participantes) >= 0 && b.participantes !== '' && b.participantes !== null ? Math.round(Number(b.participantes)) : null;
+    if (b.status !== undefined) d.status = STATUS_MT.includes(b.status) ? b.status : 'rascunho';
+    if (b.modulos !== undefined) d.modulos = JSON.stringify(normalizarModulosMt(b.modulos));
+    return d;
+}
+async function resumoChecksMt(ids) {
+    if (!ids.length) return {};
+    const rows = await dbAll(`SELECT c.id, c.treinamento_id, c.ativo, c.token, c.titulo, c.created_at,
+        (SELECT COUNT(*) FROM treinamentos_mt_respostas r WHERE r.check_id = c.id) as respostas,
+        (SELECT SUM(acertos) FROM treinamentos_mt_respostas r WHERE r.check_id = c.id) as acertos,
+        (SELECT SUM(total_objetivas) FROM treinamentos_mt_respostas r WHERE r.check_id = c.id) as objetivas
+        FROM treinamentos_mt_checks c WHERE c.treinamento_id IN (${ids.map(() => '?').join(',')})`, ids);
+    const m = {}; rows.forEach(r => { m[r.treinamento_id] = { id: r.id, ativo: !!r.ativo, token: r.token, titulo: r.titulo, respostas: r.respostas || 0, media: r.objetivas ? Math.round((r.acertos || 0) * 100 / r.objetivas) : null }; });
+    return m;
+}
+
+app.get('/api/admin/treinamentos-mt', requireRole('admin'), async (req, res) => {
+    try {
+        const l = await dbAll(`SELECT t.*, c.name as companyName FROM treinamentos_mt t LEFT JOIN companies c ON c.id = t.company_id ORDER BY COALESCE(t.updated_at, t.created_at) DESC`);
+        const checks = await resumoChecksMt(l.map(t => t.id));
+        res.json(l.map(t => {
+            let mods = []; try { mods = JSON.parse(t.modulos || '[]'); } catch (e) {}
+            const nSlides = mods.reduce((s, m) => s + (m.tipo === 'slides' ? (m.slides || []).length : 1), 0);
+            const { modulos, ...resto } = t;
+            return { ...resto, qtdModulos: mods.length, qtdSlides: nSlides, modulosResumo: mods.map(m => ({ titulo: m.titulo, tipo: m.tipo })), check: checks[t.id] || null };
+        }));
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar os treinamentos.' }); }
+});
+
+app.get('/api/admin/treinamentos-mt/:id', requireRole('admin'), async (req, res) => {
+    try {
+        const t = await dbGet(`SELECT * FROM treinamentos_mt WHERE id = ?`, [req.params.id]);
+        if (!t) return res.status(404).json({ error: 'Treinamento não encontrado.' });
+        let modulos = []; try { modulos = JSON.parse(t.modulos || '[]'); } catch (e) {}
+        const ch = (await resumoChecksMt([t.id]))[t.id] || null;
+        let check = null;
+        if (ch) {
+            const c = await dbGet(`SELECT * FROM treinamentos_mt_checks WHERE id = ?`, [ch.id]);
+            check = { ...ch, perguntas: JSON.parse(c.perguntas || '[]'), gerado_por_ia: !!c.gerado_por_ia, link: `${baseUrlPublicaDpo(req)}/retencao.html?t=${c.token}` };
+        }
+        res.json({ ...t, modulos, check });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar o treinamento.' }); }
+});
+
+app.post('/api/admin/treinamentos-mt', requireRole('admin'), async (req, res) => {
+    const d = camposTreinamentoMt({ status: 'rascunho', modulos: [], ...req.body });
+    if (!d.titulo) return res.status(400).json({ error: 'Dê um nome ao treinamento.' });
+    try {
+        const cols = Object.keys(d);
+        const id = await new Promise((ok, ko) => db.run(`INSERT INTO treinamentos_mt (${cols.join(', ')}, created_by, updated_at) VALUES (${cols.map(() => '?').join(', ')}, ?, CURRENT_TIMESTAMP)`,
+            [...cols.map(c => d[c]), req.user.userId], function (err) { err ? ko(err) : ok(this.lastID); }));
+        res.json({ id, message: 'Treinamento criado (rascunho).' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao criar o treinamento.' }); }
+});
+
+app.put('/api/admin/treinamentos-mt/:id', requireRole('admin'), async (req, res) => {
+    try {
+        const t = await dbGet(`SELECT id FROM treinamentos_mt WHERE id = ?`, [req.params.id]);
+        if (!t) return res.status(404).json({ error: 'Treinamento não encontrado.' });
+        const d = camposTreinamentoMt(req.body || {});
+        if (d.titulo !== undefined && !d.titulo) return res.status(400).json({ error: 'Dê um nome ao treinamento.' });
+        if (req.body.marcarApresentado) d.apresentado_em = new Date().toISOString();
+        const cols = Object.keys(d);
+        if (!cols.length) return res.json({ message: 'Nada para salvar.' });
+        await new Promise((ok, ko) => db.run(`UPDATE treinamentos_mt SET ${cols.map(c => c + ' = ?').join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [...cols.map(c => d[c]), t.id], e => e ? ko(e) : ok()));
+        res.json({ message: 'Salvo!', salvoEm: new Date().toISOString() });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar o treinamento.' }); }
+});
+
+app.post('/api/admin/treinamentos-mt/:id/duplicar', requireRole('admin'), async (req, res) => {
+    try {
+        const t = await dbGet(`SELECT * FROM treinamentos_mt WHERE id = ?`, [req.params.id]);
+        if (!t) return res.status(404).json({ error: 'Treinamento não encontrado.' });
+        const id = await new Promise((ok, ko) => db.run(`INSERT INTO treinamentos_mt (titulo, objetivo, publico, duracao_min, local, instrutor, company_id, status, modulos, created_by, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'rascunho', ?, ?, CURRENT_TIMESTAMP)`,
+            [t.titulo + ' (cópia)', t.objetivo, t.publico, t.duracao_min, t.local, t.instrutor, t.company_id, t.modulos, req.user.userId], function (err) { err ? ko(err) : ok(this.lastID); }));
+        res.json({ id, message: 'Treinamento duplicado como rascunho.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao duplicar.' }); }
+});
+
+app.delete('/api/admin/treinamentos-mt/:id', requireRole('admin'), async (req, res) => {
+    try {
+        const checks = await dbAll(`SELECT id FROM treinamentos_mt_checks WHERE treinamento_id = ?`, [req.params.id]);
+        for (const c of checks) await new Promise(r => db.run(`DELETE FROM treinamentos_mt_respostas WHERE check_id = ?`, [c.id], () => r()));
+        await new Promise(r => db.run(`DELETE FROM treinamentos_mt_checks WHERE treinamento_id = ?`, [req.params.id], () => r()));
+        await new Promise(r => db.run(`DELETE FROM treinamentos_mt WHERE id = ?`, [req.params.id], () => r()));
+        res.json({ message: 'Treinamento excluído.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao excluir.' }); }
+});
+
+// Upload de arquivo do módulo: guarda, extrai o texto (PPTX/DOCX) e tenta gerar PDF para apresentar.
+app.post('/api/admin/treinamentos-mt/arquivo', requireRole('admin'), (req, res) => {
+    uploadMaterialDpo.single('file')(req, res, async (err) => {
+        if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Arquivo muito grande (máximo 100MB).' : err.message });
+        if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo recebido.' });
+        const nome = req.file.originalname || req.file.filename;
+        const r = { url: '/uploads/' + req.file.filename, nome, mime: req.file.mimetype || '', pdfUrl: '', texto: '', slidesExtraidos: [] };
+        try {
+            if (/\.(pptx|docx)$/i.test(nome)) {
+                const ex = extrairOfficeMt(fs.readFileSync(req.file.path), nome);
+                if (ex.slides) { r.slidesExtraidos = ex.slides; r.texto = ex.slides.map((s, i) => `Slide ${i + 1}: ${s.titulo}\n${s.texto}`).join('\n\n'); }
+                if (ex.texto) r.texto = ex.texto;
+            } else if (/\.(txt|csv)$/i.test(nome)) r.texto = fs.readFileSync(req.file.path, 'utf8').slice(0, 60000);
+            if (/\.(pptx?|docx?|odp|odt)$/i.test(nome)) r.pdfUrl = (await converterParaPdfMt(req.file.path)) || '';
+            if (/\.pdf$/i.test(nome) || /pdf/.test(r.mime)) r.pdfUrl = r.url;
+        } catch (e) { console.error('Treinamento — leitura do arquivo:', e.message); }
+        r.texto = String(r.texto || '').slice(0, 60000);
+        res.json(r);
+    });
+});
+
+// Monta o conteúdo do treinamento para a IA (texto + PDFs como documento).
+async function conteudoParaIaMt(t, modulos) {
+    const blocos = [];
+    let texto = `TREINAMENTO: ${t.titulo}\nPúblico: ${ROTULOS_PUBLICO_MT[t.publico] || 'Todos'}\n${t.objetivo ? 'Objetivo: ' + t.objetivo + '\n' : ''}`;
+    let pdfs = 0, bytesPdf = 0;
+    for (const [i, m] of modulos.entries()) {
+        texto += `\n\n=== MÓDULO ${i + 1}: ${m.titulo} ===\n`;
+        if (m.tipo === 'slides') texto += (m.slides || []).map((s, j) => `Slide ${j + 1}: ${s.titulo}\n${s.texto}${s.notas ? '\n(Notas do instrutor: ' + s.notas + ')' : ''}`).join('\n\n');
+        else if (m.texto) texto += m.texto;
+        else if (m.arquivo && /\.pdf$/i.test(m.arquivo.pdfUrl || m.arquivo.url || '') && pdfs < 3) {
+            const buf = await lerArquivoUploadMt(m.arquivo.pdfUrl || m.arquivo.url);
+            if (buf && buf.length < 20 * 1024 * 1024 && bytesPdf + buf.length < 30 * 1024 * 1024) {
+                blocos.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: buf.toString('base64') } });
+                pdfs++; bytesPdf += buf.length; texto += `(conteúdo no PDF anexo "${m.arquivo.nome}")`;
+            }
+        } else if (m.arquivo && /^image\//.test(m.arquivo.mime || '')) {
+            const buf = await lerArquivoUploadMt(m.arquivo.url);
+            if (buf && buf.length < 4 * 1024 * 1024) { blocos.push({ type: 'image', source: { type: 'base64', media_type: m.arquivo.mime, data: buf.toString('base64') } }); texto += `(imagem anexa "${m.arquivo.nome}")`; }
+        } else texto += `(arquivo "${m.arquivo ? m.arquivo.nome : ''}" sem texto legível)`;
+    }
+    return { blocos, texto: texto.slice(0, 120000) };
+}
+
+app.post('/api/admin/treinamentos-mt/:id/check/gerar', requireRole('admin'), async (req, res) => {
+    try {
+        const t = await dbGet(`SELECT * FROM treinamentos_mt WHERE id = ?`, [req.params.id]);
+        if (!t) return res.status(404).json({ error: 'Treinamento não encontrado.' });
+        const modulos = JSON.parse(t.modulos || '[]');
+        if (!modulos.length) return res.status(400).json({ error: 'Adicione os módulos do treinamento antes de gerar o check.' });
+        const qtd = Math.max(3, Math.min(20, Number(req.body.qtd) || 8));
+        const abertas = Math.max(0, Math.min(5, Number(req.body.abertas) || 0));
+        const { blocos, texto } = await conteudoParaIaMt(t, modulos);
+        if (!ANTHROPIC_API_KEY) {
+            // Sem IA: monta perguntas abertas a partir dos títulos dos slides/módulos.
+            const titulos = [];
+            modulos.forEach(m => { if (m.tipo === 'slides') (m.slides || []).forEach(s => s.titulo && titulos.push(s.titulo)); else titulos.push(m.titulo); });
+            const perguntas = titulos.slice(0, qtd).map(ti => ({ texto: `Explique com suas palavras o que aprendeu sobre: ${ti}`, tipo: 'aberta', opcoes: [], correta: null }));
+            return res.json({ perguntas, aviso: 'A IA não está configurada no servidor (ANTHROPIC_API_KEY). Gerei perguntas abertas pelos títulos — edite à vontade.' });
+        }
+        const sistema = 'Você é especialista em treinamento corporativo e cria checks de retenção (avaliação de aprendizagem) em português do Brasil, com linguagem simples adequada ao público. Baseie-se SOMENTE no conteúdo fornecido. Responda APENAS com JSON válido, sem texto fora do JSON.';
+        const pedido = `${texto}\n\n---\nCrie um check de retenção com ${qtd} perguntas sobre os pontos mais importantes do treinamento acima${abertas ? `, sendo ${abertas} abertas (dissertativas curtas) e o restante de múltipla escolha` : ', todas de múltipla escolha'}.\nMúltipla escolha: 4 alternativas, só 1 correta, alternativas plausíveis e de tamanho parecido, sem "todas as anteriores".\nCubra todos os módulos. Formato exato:\n{"titulo":"Check de retenção — ...","perguntas":[{"texto":"...","tipo":"multipla","opcoes":["...","...","...","..."],"correta":0},{"texto":"...","tipo":"aberta"}]}`;
+        const conteudo = [...blocos, { type: 'text', text: pedido }];
+        let resposta;
+        try {
+            const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: ANTHROPIC_MODEL, max_tokens: 4000, system: sistema, messages: [{ role: 'user', content: conteudo }] }) });
+            const j = await r.json();
+            if (!r.ok) {
+                if (blocos.length) { // modelo sem suporte a PDF/imagem → tenta só com texto
+                    resposta = await perguntarIA(sistema, pedido, 4000);
+                } else throw new Error((j.error && j.error.message) || 'Erro na IA.');
+            } else resposta = (j.content || []).map(b => b.text || '').join('\n');
+        } catch (e) { return res.status(400).json({ error: 'A IA não conseguiu gerar o check: ' + e.message }); }
+        const ini = resposta.indexOf('{'), fim = resposta.lastIndexOf('}');
+        let obj; try { obj = JSON.parse(resposta.slice(ini, fim + 1)); } catch (e) { return res.status(400).json({ error: 'A IA respondeu num formato inesperado. Tente gerar de novo.' }); }
+        const perguntas = normalizarPerguntasCheckDpo(obj.perguntas || []);
+        if (!perguntas.length) return res.status(400).json({ error: 'A IA não conseguiu montar perguntas com esse conteúdo. Adicione mais texto nos slides.' });
+        res.json({ titulo: String(obj.titulo || `Check de retenção — ${t.titulo}`).slice(0, 200), perguntas, gerado_por_ia: true });
+    } catch (e) { res.status(500).json({ error: 'Erro ao gerar o check de retenção.' }); }
+});
+
+app.put('/api/admin/treinamentos-mt/:id/check', requireRole('admin'), async (req, res) => {
+    try {
+        const t = await dbGet(`SELECT * FROM treinamentos_mt WHERE id = ?`, [req.params.id]);
+        if (!t) return res.status(404).json({ error: 'Treinamento não encontrado.' });
+        const perguntas = normalizarPerguntasCheckDpo(req.body.perguntas || []);
+        if (!perguntas.length) return res.status(400).json({ error: 'O check precisa de pelo menos uma pergunta.' });
+        const titulo = String(req.body.titulo || '').trim().slice(0, 200) || `Check de retenção — ${t.titulo}`;
+        const atual = await dbGet(`SELECT * FROM treinamentos_mt_checks WHERE treinamento_id = ?`, [t.id]);
+        if (atual) await new Promise(r => db.run(`UPDATE treinamentos_mt_checks SET titulo = ?, perguntas = ?, ativo = ?, gerado_por_ia = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [titulo, JSON.stringify(perguntas), req.body.ativo === false ? 0 : 1, req.body.gerado_por_ia ? 1 : atual.gerado_por_ia, atual.id], () => r()));
+        else await new Promise(r => db.run(`INSERT INTO treinamentos_mt_checks (treinamento_id, titulo, token, perguntas, gerado_por_ia) VALUES (?, ?, ?, ?, ?)`, [t.id, titulo, 'tr' + crypto.randomBytes(12).toString('hex'), JSON.stringify(perguntas), req.body.gerado_por_ia ? 1 : 0], () => r()));
+        const c = await dbGet(`SELECT * FROM treinamentos_mt_checks WHERE treinamento_id = ?`, [t.id]);
+        res.json({ message: 'Check de retenção salvo!', link: `${baseUrlPublicaDpo(req)}/retencao.html?t=${c.token}`, ativo: !!c.ativo });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar o check.' }); }
+});
+
+app.get('/api/admin/treinamentos-mt/:id/check/respostas', requireRole('admin'), async (req, res) => {
+    try {
+        const c = await dbGet(`SELECT * FROM treinamentos_mt_checks WHERE treinamento_id = ?`, [req.params.id]);
+        if (!c) return res.json({ perguntas: [], respostas: [] });
+        const r = await dbAll(`SELECT * FROM treinamentos_mt_respostas WHERE check_id = ? ORDER BY created_at DESC`, [c.id]);
+        res.json({ perguntas: JSON.parse(c.perguntas || '[]'), respostas: r.map(x => ({ ...x, respostas: JSON.parse(x.respostas || '[]') })) });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar as respostas.' }); }
+});
+
+// ======================================================================
+// DPO — Cadastro de responsáveis (dono da ação) + usuários da empresa
+// ======================================================================
+function empresaDosResponsaveisDpo(req) {
+    if (req.user.role === 'client_admin') return req.user.companyId;
+    return Number(req.query.company_id || (req.body && req.body.company_id)) || null;
+}
+app.get('/api/dpo/responsaveis', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const cid = empresaDosResponsaveisDpo(req);
+        if (!cid) return res.json({ cadastrados: [], usuarios: [], funcionarios: [] });
+        const cadastrados = await dbAll(`SELECT * FROM dpo_responsaveis WHERE company_id = ? ORDER BY ativo DESC, nome COLLATE NOCASE`, [cid]);
+        const usuarios = await dbAll(`SELECT id, name as nome, email, role FROM users WHERE company_id = ? AND role IN ('client_admin', 'autonomous', 'employee') AND name IS NOT NULL ORDER BY name COLLATE NOCASE`, [cid]);
+        const funcionarios = await dbAll(`SELECT id, name as nome, role as cargo, email FROM employees WHERE company_id = ? AND name IS NOT NULL ORDER BY name COLLATE NOCASE`, [cid]).catch(() => []);
+        // Contagem de ações por dono (para o cadastro mostrar quanto cada um tem).
+        const contagem = await dbAll(`SELECT ap.owner, COUNT(*) n, SUM(CASE WHEN ap.status = 'concluida' THEN 0 ELSE 1 END) abertas
+            FROM dpo_action_plans ap JOIN dpo_audit_cycles c ON c.id = ap.cycle_id WHERE c.company_id = ? AND ap.owner IS NOT NULL AND ap.owner <> '' GROUP BY ap.owner`, [cid]).catch(() => []);
+        const mapa = {}; contagem.forEach(x => { mapa[String(x.owner).trim().toLowerCase()] = { total: x.n, abertas: x.abertas }; });
+        const comAcoes = l => l.map(p => ({ ...p, acoes: mapa[String(p.nome || '').trim().toLowerCase()] || { total: 0, abertas: 0 } }));
+        res.json({ cadastrados: comAcoes(cadastrados), usuarios: comAcoes(usuarios), funcionarios: comAcoes(funcionarios) });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar os responsáveis.' }); }
+});
+function camposResponsavelDpo(b) {
+    return { nome: String(b.nome || '').trim().slice(0, 120), cargo: String(b.cargo || '').trim().slice(0, 120) || null, area: String(b.area || '').trim().slice(0, 120) || null,
+        email: String(b.email || '').trim().toLowerCase().slice(0, 160) || null, telefone: String(b.telefone || '').trim().slice(0, 40) || null };
+}
+app.post('/api/dpo/responsaveis', requireRole('admin', 'client_admin'), async (req, res) => {
+    const cid = empresaDosResponsaveisDpo(req);
+    if (!cid) return res.status(400).json({ error: 'Empresa não informada.' });
+    const d = camposResponsavelDpo(req.body || {});
+    if (!d.nome) return res.status(400).json({ error: 'Informe o nome do responsável.' });
+    if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) return res.status(400).json({ error: 'E-mail inválido.' });
+    try {
+        const ja = await dbGet(`SELECT id FROM dpo_responsaveis WHERE company_id = ? AND lower(nome) = lower(?)`, [cid, d.nome]);
+        if (ja) return res.status(400).json({ error: 'Já existe um responsável com esse nome.' });
+        const id = await new Promise((ok, ko) => db.run(`INSERT INTO dpo_responsaveis (company_id, nome, cargo, area, email, telefone, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [cid, d.nome, d.cargo, d.area, d.email, d.telefone, req.user.userId], function (err) { err ? ko(err) : ok(this.lastID); }));
+        res.json({ id, nome: d.nome, message: 'Responsável cadastrado!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao cadastrar o responsável.' }); }
+});
+async function responsavelComAcessoDpo(req, res) {
+    const r = await dbGet(`SELECT * FROM dpo_responsaveis WHERE id = ?`, [req.params.id]);
+    if (!r) { res.status(404).json({ error: 'Responsável não encontrado.' }); return null; }
+    if (req.user.role === 'client_admin' && String(r.company_id) !== String(req.user.companyId)) { res.status(403).json({ error: 'Sem acesso.' }); return null; }
+    return r;
+}
+app.put('/api/dpo/responsaveis/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const r = await responsavelComAcessoDpo(req, res); if (!r) return;
+        const d = camposResponsavelDpo({ ...r, ...req.body });
+        if (!d.nome) return res.status(400).json({ error: 'Informe o nome do responsável.' });
+        if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) return res.status(400).json({ error: 'E-mail inválido.' });
+        const ativo = req.body.ativo === undefined ? r.ativo : (req.body.ativo ? 1 : 0);
+        await new Promise(ok => db.run(`UPDATE dpo_responsaveis SET nome = ?, cargo = ?, area = ?, email = ?, telefone = ?, ativo = ? WHERE id = ?`, [d.nome, d.cargo, d.area, d.email, d.telefone, ativo, r.id], () => ok()));
+        // Renomeou: atualiza as ações que estavam com o nome antigo.
+        let renomeadas = 0;
+        if (d.nome !== r.nome && req.body.atualizarAcoes !== false) {
+            renomeadas = await new Promise(ok => db.run(`UPDATE dpo_action_plans SET owner = ? WHERE owner = ? AND cycle_id IN (SELECT id FROM dpo_audit_cycles WHERE company_id = ?)`, [d.nome, r.nome, r.company_id], function () { ok(this.changes || 0); }));
+        }
+        res.json({ message: 'Responsável atualizado!' + (renomeadas ? ` (${renomeadas} ação(ões) atualizada(s) com o novo nome)` : '') });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o responsável.' }); }
+});
+app.delete('/api/dpo/responsaveis/:id', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const r = await responsavelComAcessoDpo(req, res); if (!r) return;
+        await new Promise(ok => db.run(`DELETE FROM dpo_responsaveis WHERE id = ?`, [r.id], () => ok()));
+        res.json({ message: 'Responsável removido (as ações dele continuam com o nome).' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao remover.' }); }
+});
+
 // ----- Página pública do check de retenção (sem login) -----
 app.get('/api/public/retencao/:token', async (req, res) => {
     try {
         const check = await dbGet(`SELECT * FROM dpo_retention_checks WHERE token = ?`, [String(req.params.token || '')]);
-        if (!check) return res.status(404).json({ error: 'Check de retenção não encontrado.' });
+        if (!check) {
+            const tc = await dbGet(`SELECT c.*, t.titulo as treinamento, t.publico FROM treinamentos_mt_checks c JOIN treinamentos_mt t ON t.id = c.treinamento_id WHERE c.token = ?`, [String(req.params.token || '')]);
+            if (!tc) return res.status(404).json({ error: 'Check de retenção não encontrado.' });
+            if (!tc.ativo) return res.status(410).json({ error: 'Este check de retenção foi encerrado.' });
+            return res.json({ titulo: tc.titulo, empresa: 'Treinamento Impulsionar · ' + (ROTULOS_PUBLICO_MT[tc.publico] || 'Todos'), logo: null, pilar: '', perguntaPilar: tc.treinamento,
+                perguntas: JSON.parse(tc.perguntas || '[]').map(p => ({ texto: p.texto, tipo: p.tipo, opcoes: p.opcoes })) });
+        }
         if (!check.ativo) return res.status(410).json({ error: 'Este check de retenção foi encerrado.' });
         const empresa = await dbGet(`SELECT name, logo_url FROM companies WHERE id = ?`, [check.company_id]);
         const achou = perguntaDoPilarDpo(check.pillar_key, check.question_numero);
@@ -7984,7 +9019,9 @@ app.get('/api/public/retencao/:token', async (req, res) => {
 
 app.post('/api/public/retencao/:token', async (req, res) => {
     try {
-        const check = await dbGet(`SELECT * FROM dpo_retention_checks WHERE token = ?`, [String(req.params.token || '')]);
+        let check = await dbGet(`SELECT * FROM dpo_retention_checks WHERE token = ?`, [String(req.params.token || '')]);
+        let tabelaResp = 'dpo_retention_responses';
+        if (!check) { check = await dbGet(`SELECT * FROM treinamentos_mt_checks WHERE token = ?`, [String(req.params.token || '')]); tabelaResp = 'treinamentos_mt_respostas'; }
         if (!check) return res.status(404).json({ error: 'Check de retenção não encontrado.' });
         if (!check.ativo) return res.status(410).json({ error: 'Este check de retenção foi encerrado.' });
         const nome = String(req.body.nome || '').trim().slice(0, 120);
@@ -8006,7 +9043,7 @@ app.post('/api/public/retencao/:token', async (req, res) => {
         const faltando = perguntas.findIndex((p, i) => p.tipo === 'multipla' ? respostas[i] === null : !respostas[i]);
         if (faltando >= 0) return res.status(400).json({ error: `Responda a pergunta ${faltando + 1}.` });
         await new Promise((resolve, reject) => db.run(
-            `INSERT INTO dpo_retention_responses (check_id, nome, matricula, respostas, acertos, total_objetivas) VALUES (?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO ${tabelaResp} (check_id, nome, matricula, respostas, acertos, total_objetivas) VALUES (?, ?, ?, ?, ?, ?)`,
             [check.id, nome, matricula || null, JSON.stringify(respostas), totalObjetivas ? acertos : null, totalObjetivas || null],
             (err) => err ? reject(err) : resolve()
         ));
@@ -8785,6 +9822,146 @@ app.post('/api/dpo/ferramentas/:id/acesso', requireRole('admin', 'client_admin')
 });
 
 // ======================================================================
+// DPO — MATERIAL DPO (biblioteca do Master + compartilhamento por empresa)
+// ======================================================================
+function validarMaterialImpulsionarDpo(body, parcial) {
+    const erros = []; const dados = {};
+    if (!parcial || body.pillarKey !== undefined) {
+        if (!DPO_PILARES_ORDEM.includes(body.pillarKey)) erros.push('Escolha o pilar.');
+        else dados.pillar_key = body.pillarKey;
+    }
+    if (!parcial || body.questionNumero !== undefined) {
+        const pk = body.pillarKey;
+        const q = String(body.questionNumero || '').trim();
+        if (!q || (pk && !textoDaPerguntaDpo(pk, q))) erros.push('Escolha a pergunta do pilar.');
+        else dados.question_numero = q;
+    }
+    if (!parcial || body.titulo !== undefined) {
+        const t = String(body.titulo || '').trim().slice(0, 200);
+        if (!t) erros.push('Informe o título do material.'); else dados.titulo = t;
+    }
+    if (body.descricao !== undefined) dados.descricao = String(body.descricao || '').trim().slice(0, 2000) || null;
+    if (!parcial || body.url !== undefined) {
+        const u = String(body.url || '').trim();
+        if (!/^https?:\/\/\S+$/i.test(u) && !/^\/uploads\/[\w.\-]+$/.test(u)) erros.push('Envie o arquivo ou informe um link válido.');
+        else { dados.url = u; dados.original_name = body.originalName ? String(body.originalName).slice(0, 200) : null; }
+    }
+    return { erros, dados };
+}
+
+function estruturaPilaresDpo() {
+    return DPO_PILARES_ORDEM.filter(k => DPO_AMBEV_DATA[k]).map(k => ({
+        key: k, label: DPO_AMBEV_DATA[k].label,
+        grupos: (DPO_AMBEV_DATA[k].grupos || []).map(g => ({ numero: g.numero, titulo: g.titulo, perguntas: g.perguntas.map(q => ({ numero: q.numero, questao: q.questao })) }))
+    }));
+}
+
+app.get('/api/admin/material-dpo', requireRole('admin'), async (req, res) => {
+    try {
+        const materiais = await dbAll(`SELECT * FROM dpo_material_impulsionar ORDER BY created_at DESC, id DESC`);
+        const shares = await dbAll(`SELECT s.*, c.name as companyName FROM dpo_material_impulsionar_share s LEFT JOIN companies c ON c.id = s.company_id`);
+        const porMat = {}; shares.forEach(s => (porMat[s.material_id] = porMat[s.material_id] || []).push({ companyId: s.company_id, companyName: s.companyName, sharedAt: s.shared_at, acessos: s.acessos || 0 }));
+        const empresas = await dbAll(`SELECT id, name, enabled_modules FROM companies ORDER BY name COLLATE NOCASE`);
+        res.json({
+            materiais: materiais.map(m => ({ ...m, perguntaTexto: textoDaPerguntaDpo(m.pillar_key, m.question_numero), compartilhado: porMat[m.id] || [] })),
+            empresas: empresas.map(e => {
+                let dpo = true;
+                try { const mods = e.enabled_modules ? JSON.parse(e.enabled_modules) : null; if (Array.isArray(mods)) dpo = mods.includes('dpoAmbev'); } catch (x) { /* sem restrição */ }
+                return { id: e.id, name: e.name, dpo };
+            }),
+            pilares: estruturaPilaresDpo()
+        });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar o Material DPO.' }); }
+});
+
+app.post('/api/admin/material-dpo', requireRole('admin'), async (req, res) => {
+    const { erros, dados } = validarMaterialImpulsionarDpo(req.body, false);
+    if (erros.length) return res.status(400).json({ error: erros[0] });
+    try {
+        const id = await new Promise((resolve, reject) => db.run(
+            `INSERT INTO dpo_material_impulsionar (pillar_key, question_numero, titulo, descricao, url, original_name, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [dados.pillar_key, dados.question_numero, dados.titulo, dados.descricao || null, dados.url, dados.original_name, req.user.userId],
+            function (err) { err ? reject(err) : resolve(this.lastID); }));
+        res.json({ message: 'Material salvo!', id });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar o material.' }); }
+});
+
+app.put('/api/admin/material-dpo/:id', requireRole('admin'), async (req, res) => {
+    try {
+        const atual = await dbGet(`SELECT * FROM dpo_material_impulsionar WHERE id = ?`, [req.params.id]);
+        if (!atual) return res.status(404).json({ error: 'Material não encontrado.' });
+        const corpo = { ...req.body };
+        if (corpo.questionNumero !== undefined && corpo.pillarKey === undefined) corpo.pillarKey = atual.pillar_key;
+        const { erros, dados } = validarMaterialImpulsionarDpo(corpo, true);
+        if (erros.length) return res.status(400).json({ error: erros[0] });
+        const campos = Object.keys(dados);
+        if (!campos.length) return res.json({ message: 'Nada para alterar.' });
+        await new Promise((resolve, reject) => db.run(
+            `UPDATE dpo_material_impulsionar SET ${campos.map(c => c + ' = ?').join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            [...campos.map(c => dados[c]), atual.id], (err) => err ? reject(err) : resolve()));
+        res.json({ message: 'Material atualizado!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao atualizar o material.' }); }
+});
+
+app.delete('/api/admin/material-dpo/:id', requireRole('admin'), async (req, res) => {
+    try {
+        await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_material_impulsionar_share WHERE material_id = ?`, [req.params.id], (err) => err ? reject(err) : resolve()));
+        await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_material_impulsionar WHERE id = ?`, [req.params.id], (err) => err ? reject(err) : resolve()));
+        res.json({ message: 'Material removido!' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao remover o material.' }); }
+});
+
+// Disponibiliza / retira o material para uma ou mais empresas.
+// body: { companyIds: [..], compartilhar: true|false }  (ou { todas: true, compartilhar })
+app.put('/api/admin/material-dpo/:id/compartilhar', requireRole('admin'), async (req, res) => {
+    try {
+        const mat = await dbGet(`SELECT * FROM dpo_material_impulsionar WHERE id = ?`, [req.params.id]);
+        if (!mat) return res.status(404).json({ error: 'Material não encontrado.' });
+        const compartilhar = req.body.compartilhar !== false;
+        let ids = Array.isArray(req.body.companyIds) ? req.body.companyIds.map(Number).filter(n => n > 0) : [];
+        if (req.body.todas) ids = (await dbAll(`SELECT id FROM companies`)).map(c => c.id);
+        if (!ids.length) return res.status(400).json({ error: 'Escolha ao menos uma empresa.' });
+        let novos = 0;
+        for (const cid of ids) {
+            if (compartilhar) {
+                const r = await new Promise((resolve, reject) => db.run(
+                    `INSERT OR IGNORE INTO dpo_material_impulsionar_share (material_id, company_id, shared_by) VALUES (?, ?, ?)`,
+                    [mat.id, cid, req.user.userId], function (err) { err ? reject(err) : resolve(this.changes); }));
+                if (r) {
+                    novos++;
+                    const pilar = DPO_AMBEV_DATA[mat.pillar_key];
+                    notificarPorCompanyAdmins(cid, '📂 Novo Material Impulsionar',
+                        `A Impulsionar disponibilizou "${mat.titulo}" na pergunta ${mat.question_numero} de ${pilar ? pilar.label : mat.pillar_key}.`, 'dpoHome');
+                }
+            } else {
+                await new Promise((resolve, reject) => db.run(`DELETE FROM dpo_material_impulsionar_share WHERE material_id = ? AND company_id = ?`, [mat.id, cid], (err) => err ? reject(err) : resolve()));
+            }
+        }
+        res.json({ message: compartilhar ? (novos ? `Disponibilizado para ${novos} empresa(s)!` : 'Já estava disponível.') : 'Compartilhamento removido.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao alterar o compartilhamento.' }); }
+});
+
+// Materiais disponibilizados para a empresa (só os compartilhados com ela).
+app.get('/api/dpo/material-impulsionar', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const companyId = req.user.role === 'admin' ? Number(req.query.company_id) : req.user.companyId;
+        if (!companyId) return res.json([]);
+        const params = [companyId];
+        let filtro = '';
+        if (req.query.pillar) { filtro = ' AND m.pillar_key = ?'; params.push(String(req.query.pillar)); }
+        const lista = await dbAll(`SELECT m.id, m.pillar_key, m.question_numero, m.titulo, m.descricao, m.url, m.original_name, s.shared_at
+            FROM dpo_material_impulsionar m JOIN dpo_material_impulsionar_share s ON s.material_id = m.id
+            WHERE s.company_id = ?${filtro} ORDER BY s.shared_at DESC, m.id DESC`, params);
+        res.json(lista.map(m => ({ ...m, perguntaTexto: textoDaPerguntaDpo(m.pillar_key, m.question_numero) })));
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar o Material Impulsionar.' }); }
+});
+
+app.post('/api/dpo/material-impulsionar/:id/acesso', requireRole('admin', 'client_admin'), (req, res) => {
+    if (req.user.role === 'admin') return res.json({ ok: true });
+    db.run(`UPDATE dpo_material_impulsionar_share SET acessos = acessos + 1 WHERE material_id = ? AND company_id = ?`, [req.params.id, req.user.companyId], () => res.json({ ok: true }));
+});
+
+// ======================================================================
 // DPO — FERRAMENTAS DIGITAIS por pergunta do checklist
 //   swot         -> Gestão 1.3 (SWOT por área: Armazém, Distribuição, Frota, Gente)
 //   Simulador de Dimensionamento -> Planejamento 1.1, em pastas:
@@ -9136,7 +10313,7 @@ app.post('/api/dpo/ferramentas-digitais/:chave/novo-ano', requireRole('admin', '
                 };
                 else if (chave === 'swot') base = { areas: origem.areas, sonho: origem.sonho, responsaveis: origem.responsaveis, vinculoDNMP: origem.vinculoDNMP, vinculoDNMPTexto: origem.vinculoDNMPTexto };
                 else if (chave === 'orcamento') base = { raci: origem.raci, kpis: origem.kpis, processo: origem.processo };
-                else if (chave === 'sonho') base = { frase: origem.frase, conexao: origem.conexao, exposicao: origem.exposicao, kpis: (origem.kpis || []).map(k => ({ id: k.id, nome: k.nome, pilar: k.pilar, sentido: k.sentido, meta: k.meta, unidade: k.unidade, acumula: k.acumula, real: [] })) };
+                else if (chave === 'sonho') base = { frase: origem.frase, conexao: origem.conexao, exposicao: origem.exposicao, kpis: (origem.kpis || []).map(k => ({ id: k.id, nome: k.nome, pilar: k.pilar, sentido: k.sentido, meta: k.meta, unidade: k.unidade, acumula: k.acumula, nivel: k.nivel, pai: k.pai, cor: k.cor, rotuloMeta: k.rotuloMeta, slot: k.slot, real: [] })) };
                 else if (chave === 'ans') base = { acordo: origem.acordo, volPadrao: origem.volPadrao, tolerancia: origem.tolerancia };
                 else if (chave === 'visibilidade') base = { colaboradores: origem.colaboradores, indicadores: origem.indicadores, incentivo: origem.incentivo };
                 else if (chave === 'riscos') base = { riscos: origem.riscos, respostas: origem.respostas, retomada: origem.retomada, retomadaRevisao: origem.retomadaRevisao, retomadaLocal: origem.retomadaLocal, revisoes: origem.revisoes };
@@ -9646,10 +10823,11 @@ function exportarExclusivaDpo(chave, add, dados) {
         const linhasSonho = [];
         (d.kpis || []).filter(k => k.nome).forEach(k => {
             const meta = numDpo(k.meta);
-            linhasSonho.push({ nome: k.nome, pilar: k.pilar || '', sentido: k.sentido === 'menor' ? '↓ menor melhor' : '↑ maior melhor', unidade: k.unidade || '', tipo: 'Meta', ...Object.fromEntries(M.map((m, i) => { const v = numDpo((k.metaMes || [])[i]); return ['m' + i, v === null || v === '' ? meta : v]; })), ytd: meta });
-            linhasSonho.push({ nome: '', pilar: '', sentido: '', unidade: '', tipo: 'Real', ...Object.fromEntries(M.map((m, i) => ['m' + i, numDpo((k.real || [])[i])])), ytd: ytdSonho(k) });
+            const pai = (d.kpis || []).find(x => x.id === k.pai);
+            linhasSonho.push({ nivel: k.nivel === 'estrategia' ? 'Estratégia' : 'Sonho', ligado: pai ? pai.nome : '', nome: k.nome, pilar: k.pilar || '', sentido: k.sentido === 'menor' ? '↓ menor melhor' : '↑ maior melhor', unidade: k.unidade || '', tipo: 'Meta', ...Object.fromEntries(M.map((m, i) => { const v = numDpo((k.metaMes || [])[i]); return ['m' + i, v === null || v === '' ? meta : v]; })), ytd: meta });
+            linhasSonho.push({ nivel: '', ligado: '', nome: '', pilar: '', sentido: '', unidade: '', tipo: 'Real', ...Object.fromEntries(M.map((m, i) => ['m' + i, numDpo((k.real || [])[i])])), ytd: ytdSonho(k) });
         });
-        add('Meta e Real', [['KPI', 'nome', 30], ['Pilar', 'pilar', 20], ['Sentido', 'sentido', 16], ['Unid.', 'unidade', 7], ['', 'tipo', 7], ...M.map((m, i) => [m, 'm' + i, 9]), ['Ano / YTD', 'ytd', 11]], linhasSonho);
+        add('Meta e Real', [['Nível', 'nivel', 11], ['Ligado a', 'ligado', 22], ['KPI', 'nome', 30], ['Pilar', 'pilar', 20], ['Sentido', 'sentido', 16], ['Unid.', 'unidade', 7], ['', 'tipo', 7], ...M.map((m, i) => [m, 'm' + i, 9]), ['Ano / YTD', 'ytd', 11]], linhasSonho);
         tabela('Propostas dos grupos', d.propostas, [['Grupo', 'grupo', 14], ['Proposta de Sonho', 'texto', 90], ['Escolhida?', 'escolhida', 10]]);
         tabela('Comunicação', d.comunicacoes, [['Data', 'data', 12], ['Canal', 'canal', 20], ['Público', 'publico', 25], ['Descrição', 'descricao', 60]]);
     } else if (chave === 'ans') {
