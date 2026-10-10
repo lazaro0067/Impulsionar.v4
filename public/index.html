@@ -1081,6 +1081,42 @@
   .vc-convite-acoes { display:flex; flex-direction:column; gap:8px; margin-top:14px; } .vc-convite-acoes button, .vc-convite-acoes a { display:block; text-align:left; background:var(--vc-sup2); border:1px solid var(--vc-borda); color:var(--vc-txt); border-radius:10px; padding:11px 14px; font-size:14px; cursor:pointer; text-decoration:none; } .vc-convite-acoes button:hover, .vc-convite-acoes a:hover { background:var(--vc-borda); }
   .vc-atalho { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--vc-borda); font-size:14px; } .vc-atalho kbd { background:var(--vc-sup2); border:1px solid var(--vc-borda); border-radius:6px; padding:3px 8px; font-family:inherit; font-size:12px; min-width:150px; text-align:center; }
   #vc-app #modal-area-vc .modal-fundo { z-index:10020; }
+
+  /* Apresentar: escolha + reunião minimizada */
+  .vc-modal-apres { width:min(560px, 100%); }
+  .vc-apres-grupo { font-size:11.5px; font-weight:700; color:var(--vc-sub); text-transform:uppercase; letter-spacing:.06em; margin:16px 0 8px; }
+  .vc-apres-op { width:100%; display:flex; gap:14px; align-items:flex-start; text-align:left; background:var(--vc-sup2); border:1px solid var(--vc-borda); color:var(--vc-txt); border-radius:12px; padding:13px 14px; margin-bottom:8px; cursor:pointer; transition:.12s; }
+  .vc-apres-op:hover { border-color:var(--vc-azul); background:#232b3d; } .vc-apres-op.destaque { border-color:#3b5bdb; }
+  .vc-apres-op .ico { width:40px; height:40px; border-radius:10px; background:rgba(79,124,255,.15); color:#9ec1ff; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .vc-apres-op b { display:block; font-size:14.5px; margin-bottom:3px; } .vc-apres-op small { color:var(--vc-sub); font-size:12.5px; line-height:1.45; }
+  .vc-treinos { display:flex; flex-direction:column; gap:6px; max-height:52vh; overflow-y:auto; margin-top:8px; }
+  .vc-treino { text-align:left; background:var(--vc-sup2); border:1px solid var(--vc-borda); color:var(--vc-txt); border-radius:10px; padding:11px 14px; cursor:pointer; } .vc-treino:hover { border-color:var(--vc-azul); }
+  .vc-treino b { display:block; font-size:14px; } .vc-treino small { color:var(--vc-sub); font-size:12px; }
+  .vc-passos { display:flex; flex-direction:column; gap:10px; margin:12px 0 4px; font-size:14px; line-height:1.45; } .vc-passos i { display:inline-flex; width:24px; height:24px; border-radius:50%; background:var(--vc-azul); color:#fff; font-style:normal; font-weight:700; font-size:12px; align-items:center; justify-content:center; margin-right:10px; }
+  .vc-tile-apres { background:linear-gradient(160deg,#13213f,#0e1526); display:flex; align-items:center; justify-content:center; }
+  .vc-apres-aviso { display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; padding:20px; color:#cfe0ff; }
+  .vc-apres-aviso > svg { width:46px; height:46px; color:#3ddc84; } .vc-apres-aviso b { font-size:20px; color:#fff; } .vc-apres-aviso span { color:var(--vc-sub); font-size:14px; }
+  .vc-apres-botoes { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; justify-content:center; }
+  .vc-apres-botoes button { display:flex; align-items:center; gap:8px; background:var(--vc-sup2); border:1px solid var(--vc-borda); color:#fff; border-radius:22px; padding:10px 18px; font-weight:700; cursor:pointer; font-size:14px; } .vc-apres-botoes button svg { width:18px; height:18px; }
+  .vc-apres-botoes button.parar { background:var(--vc-verm); border-color:var(--vc-verm); }
+  .vc-so-mini { display:none !important; }
+  .vc-app.vc-mini { inset:auto 18px 18px auto; width:340px; height:auto; border-radius:14px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,.55); border:1px solid #2a3142; z-index:10010; }
+  .vc-app.vc-mini .vc-so-mini { display:flex !important; } .vc-app.vc-mini .vc-so-grande, .vc-app.vc-mini #vc-btn-mini, .vc-app.vc-mini #vc-btn-visao, .vc-app.vc-mini .vc-topo-dir > .vc-tb:not(.vc-so-mini) { display:none !important; }
+  .vc-app.vc-mini .vc-topo { height:40px; padding:0 8px 0 12px; cursor:move; user-select:none; }
+  .vc-app.vc-mini .vc-marca, .vc-app.vc-mini .vc-sep, .vc-app.vc-mini .vc-topo-centro .vc-tempo { display:none; }
+  .vc-app.vc-mini .vc-titulo { font-size:12.5px; display:block !important; } .vc-app.vc-mini .vc-topo-centro { flex:none; }
+  .vc-app.vc-mini .vc-meio { height:190px; flex:none; }
+  .vc-app.vc-mini .vc-painel, .vc-app.vc-mini .vc-banner-apres, .vc-app.vc-mini .vc-notifs, .vc-app.vc-mini .vc-espera, .vc-app.vc-mini .vc-palco { display:none !important; }
+  .vc-app.vc-mini .vc-area { padding:6px; } .vc-app.vc-mini .vc-area.modo-destaque .vc-faixa { display:flex; flex-direction:row; width:100%; overflow-x:auto; }
+  .vc-app.vc-mini .vc-area.modo-destaque .vc-faixa .vc-tile { height:100%; width:auto; }
+  .vc-app.vc-mini .vc-tile-nome { font-size:11px; padding:2px 6px; left:5px; bottom:5px; } .vc-app.vc-mini .vc-tile-fixar { display:none; }
+  .vc-app.vc-mini .vc-barra { height:52px; padding:0 6px; } .vc-app.vc-mini .vc-barra-esq { display:none; }
+  .vc-app.vc-mini .vc-cb { min-width:38px; height:42px; padding:0 4px; } .vc-app.vc-mini .vc-cb span, .vc-app.vc-mini .vc-div, .vc-app.vc-mini .vc-sair span { display:none; }
+  .vc-app.vc-mini #vc-btn-reacao, .vc-app.vc-mini #vc-btn-chat, .vc-app.vc-mini #vc-btn-pessoas, .vc-app.vc-mini #vc-btn-gravar, .vc-app.vc-mini .vc-pop-wrap:has(#vc-pop-mais) { display:none; }
+  .vc-app.vc-mini .vc-sair { padding:9px 12px; } .vc-app.vc-mini .vc-cb svg { width:20px; height:20px; }
+  .vc-app.vc-mini .vc-badge { top:0; right:0; }
+  .vc-app.vc-mini .vc-area:not(.sozinho) #vc-tile-local { display:none; }
+  .vc-app.vc-mini .vc-area:not(.modo-destaque) .vc-grade { overflow:hidden; }
   @media (max-width: 900px) {
     .vc-cb { min-width:48px; } .vc-cb span { display:none; } .vc-cb { height:48px; } .vc-badge { right:2px; }
     .vc-barra { height:64px; padding:0 8px; } .vc-barra-esq { display:none; } .vc-div { display:none; }
@@ -18688,6 +18724,7 @@ let VC_MICRO_LIGADO = true;
 let VC_CAMERA_LIGADA = true;
 let VC_SEM_CAMERA = false;           // true quando o vídeo enviado é só um quadro vazio (sem câmera)
 let VC_COMPARTILHANDO_TELA = false;
+let VC_MODO_APRES = null;
 let VC_MAO = false;
 let VC_SOU_CONVIDADO = false;
 let VC_MENTORIA_ID_ATUAL = null;
@@ -18741,6 +18778,9 @@ const VC_ICO = {
   fixar: '<svg viewBox="0 0 24 24"><path d="M15 3l6 6-3 1-4 4 .5 4.5-1.5 1.5-4-4-5 5M9 9l4-4 1-3"/></svg>',
   fechar: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   enviar: '<svg viewBox="0 0 24 24"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/></svg>',
+  minimizar: '<svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="15" rx="2"/><rect x="11" y="11" width="8" height="6" rx="1"/><path d="M6 8l4 4M10 9v3H7"/></svg>',
+  treino: '<svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="12" rx="2"/><path d="M12 16v4M8 20h8M7 8h6M7 11h10"/></svg>',
+  abaNova: '<svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-8 8"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg>',
   teclado: '<svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>'
 };
 
@@ -18979,7 +19019,9 @@ function vcMontarReuniao() {
         <div class="vc-topo-dir">
           <button class="vc-tb" id="vc-btn-visao" onclick="vcAlternarVisao()" title="Mudar a visualização"></button>
           ${!VC_SOU_CONVIDADO ? `<button class="vc-tb" onclick="abrirConviteVideochamada()" title="Convidar pessoas">${VC_ICO.link}<span>Convidar</span></button>` : ''}
-          <button class="vc-tb so-ico" onclick="alternarTelaCheiaVideochamada()" title="Tela cheia">${VC_ICO.cheia}</button>
+          ${!VC_SOU_CONVIDADO ? `<button class="vc-tb" id="vc-btn-mini" onclick="vcMinimizar()" title="Minimizar a reunião e usar o Impulsionar">${VC_ICO.minimizar}<span>Usar o sistema</span></button>` : ''}
+          <button class="vc-tb so-ico vc-so-grande" onclick="alternarTelaCheiaVideochamada()" title="Tela cheia">${VC_ICO.cheia}</button>
+          <button class="vc-tb so-ico vc-so-mini" onclick="vcRestaurar()" title="Voltar para a reunião em tela cheia">${VC_ICO.cheia}</button>
         </div>
       </header>
       <div class="vc-meio">
@@ -19012,7 +19054,7 @@ function vcMontarReuniao() {
         <div class="vc-barra-centro">
           <button class="vc-cb" id="vc-btn-mic" onclick="alternarMicrofone()"></button>
           <button class="vc-cb" id="vc-btn-cam" onclick="alternarCamera()"></button>
-          <button class="vc-cb" id="vc-btn-tela" onclick="alternarCompartilhamentoTela()">${VC_ICO.tela}<span>Apresentar</span></button>
+          <button class="vc-cb" id="vc-btn-tela" onclick="vcBotaoApresentar()">${VC_ICO.tela}<span>Apresentar</span></button>
           <span class="vc-div"></span>
           <div class="vc-pop-wrap">
             <button class="vc-cb" id="vc-btn-reacao" onclick="vcAbrirPop('vc-pop-reacoes', event)">${VC_ICO.reacao}<span>Reagir</span></button>
@@ -19237,6 +19279,7 @@ function vcLayout() {
   else if (VC_FIXADO && ids.includes(VC_FIXADO)) destaque = VC_FIXADO;
   else if (VC_VISAO === 'orador' && ids.length > 1) destaque = (VC_ATIVO && VC_ATIVO !== 'local' && ids.includes(VC_ATIVO)) ? VC_ATIVO : ids.find(i => i !== 'local');
   area.classList.toggle('modo-destaque', !!destaque);
+  area.classList.toggle('sozinho', VC_INFO.size === 0);
   const tLocalTela = document.getElementById('vc-tile-tela-local');
   if (destaque) {
     vcMover(document.getElementById('vc-tile-' + destaque), palco);
@@ -19358,13 +19401,39 @@ async function vcTrocarFaixa(nova) {
   const v = document.getElementById('vc-video-local'); if (v) { v.srcObject = null; v.srcObject = VC_STREAM_LOCAL; }
   if (tipo === 'audio') vcAnalisar('local', VC_STREAM_LOCAL);
 }
-async function alternarCompartilhamentoTela() {
-  if (VC_COMPARTILHANDO_TELA) { pararCompartilhamentoTela(); return; }
-  if (!navigator.mediaDevices.getDisplayMedia) { vcNotificar('Seu navegador não permite apresentar a tela (no celular isso não é suportado).', 'erro'); return; }
+// "Apresentar" no padrão Teams: escolhe O QUE apresentar.
+function vcBotaoApresentar() {
+  if (VC_COMPARTILHANDO_TELA) return pararCompartilhamentoTela();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { vcNotificar('Seu navegador não permite apresentar a tela (no celular isso não é suportado). Use o Chrome ou o Edge no computador.', 'erro'); return; }
+  const area = document.getElementById('modal-area-vc'); if (!area) return;
+  const logado = !VC_SOU_CONVIDADO;
+  area.innerHTML = `
+    <div class="vc-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''">
+      <div class="vc-modal vc-modal-apres">
+        <div class="vc-modal-cab"><h3>O que você quer apresentar?</h3><button class="vc-x" onclick="document.getElementById('modal-area-vc').innerHTML=''">${VC_ICO.fechar}</button></div>
+        ${logado ? `
+        <div class="vc-apres-grupo">Ferramentas do Impulsionar</div>
+        <button class="vc-apres-op destaque" onclick="vcEscolherTreinamento()"><span class="ico">${VC_ICO.treino}</span><span><b>Um treinamento</b><small>Escolha o treinamento — ele abre no modo apresentação e todos veem os slides. A reunião fica numa janelinha no canto.</small></span></button>
+        <button class="vc-apres-op" onclick="vcApresentarSistema()"><span class="ico">${VC_ICO.minimizar}</span><span><b>O Impulsionar (esta aba)</b><small>Todos veem o sistema enquanto você navega: DPO, planos de ação, painéis, avaliações...</small></span></button>
+        <button class="vc-apres-op" onclick="vcAbrirOutraAba()"><span class="ico">${VC_ICO.abaNova}</span><span><b>O Impulsionar em outra aba</b><small>Abre o sistema numa aba nova (link externo) e você apresenta aquela aba.</small></span></button>` : ''}
+        <div class="vc-apres-grupo">Sua tela</div>
+        <button class="vc-apres-op" onclick="vcCompartilhar('outra')"><span class="ico">${VC_ICO.tela}</span><span><b>Tela inteira, janela ou outra aba</b><small>PowerPoint, Excel, outro site ou qualquer programa aberto no computador.</small></span></button>
+        <div class="vc-modal-dica">Dica: evite escolher "esta aba" no seletor do navegador sem usar as opções do Impulsionar acima — aí a reunião aparece dentro dela mesma (efeito espelho).</div>
+      </div>
+    </div>`;
+}
+function alternarCompartilhamentoTela() { if (VC_COMPARTILHANDO_TELA) return pararCompartilhamentoTela(); vcBotaoApresentar(); }
+
+// modo: 'outra' (qualquer coisa, menos esta aba) | 'aba' (esta aba do Impulsionar)
+async function vcCompartilhar(modo) {
+  const area = document.getElementById('modal-area-vc'); if (area) area.innerHTML = '';
   const outro = vcQuemApresenta();
-  if (outro && outro !== 'tela-local' && !confirm(`${(VC_INFO.get(outro) || {}).nome || 'Outra pessoa'} já está apresentando. Quer apresentar mesmo assim?`)) return;
-  try { VC_STREAM_TELA = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 15, max: 30 } }, audio: false }); }
-  catch (e) { return; } // cancelou o seletor
+  if (outro && outro !== 'tela-local' && !confirm(`${(VC_INFO.get(outro) || {}).nome || 'Outra pessoa'} já está apresentando. Quer apresentar mesmo assim?`)) return false;
+  const opcoes = modo === 'aba'
+    ? { video: { frameRate: { ideal: 15, max: 30 } }, audio: false, preferCurrentTab: true, selfBrowserSurface: 'include', surfaceSwitching: 'exclude' }
+    : { video: { frameRate: { ideal: 15, max: 30 } }, audio: false, selfBrowserSurface: 'exclude', surfaceSwitching: 'include' };
+  try { VC_STREAM_TELA = await navigator.mediaDevices.getDisplayMedia(opcoes); }
+  catch (e) { if (e && e.name !== 'NotAllowedError' && e.name !== 'AbortError') vcNotificar('Não foi possível apresentar: ' + e.message, 'erro'); return false; }
   const faixa = VC_STREAM_TELA.getVideoTracks()[0];
   try { faixa.contentHint = 'detail'; } catch (e) {}
   for (const peer of VC_PEERS.values()) {
@@ -19372,15 +19441,81 @@ async function alternarCompartilhamentoTela() {
     if (sender) await sender.replaceTrack(faixa).catch(() => {});
   }
   VC_COMPARTILHANDO_TELA = true;
+  VC_MODO_APRES = modo;
   faixa.onended = () => pararCompartilhamentoTela();
-  // Bloco da sua apresentação (o que os outros estão vendo).
+  // Para você NÃO aparece a própria tela (evita o efeito espelho): só um aviso.
   const palco = document.getElementById('vc-palco');
   if (palco && !document.getElementById('vc-tile-tela-local')) {
-    const d = document.createElement('div'); d.className = 'vc-tile tela'; d.id = 'vc-tile-tela-local'; d.dataset.id = 'tela-local';
-    d.innerHTML = `<video autoplay playsinline muted></video><div class="vc-tile-nome"><span class="vc-tile-txt">Sua apresentação</span></div>`;
-    palco.appendChild(d); d.querySelector('video').srcObject = VC_STREAM_TELA;
+    const d = document.createElement('div'); d.className = 'vc-tile vc-tile-apres'; d.id = 'vc-tile-tela-local'; d.dataset.id = 'tela-local';
+    const nome = (faixa.label || '').replace(/^(screen|window|web-contents-media-stream):.*$/i, '').trim();
+    d.innerHTML = `<div class="vc-apres-aviso">${VC_ICO.tela}<b>Você está apresentando</b><span>${modo === 'aba' ? 'Todos estão vendo esta aba do Impulsionar.' : 'Todos estão vendo ' + (nome ? '<i>' + escapeHtml(nome) + '</i>' : 'a tela que você escolheu') + '.'}</span>
+      <div class="vc-apres-botoes">${modo === 'aba' && !VC_SOU_CONVIDADO ? `<button onclick="vcMinimizar()">${VC_ICO.minimizar} Ir para o sistema</button>` : ''}<button class="parar" onclick="pararCompartilhamentoTela()">Parar apresentação</button></div></div>`;
+    palco.appendChild(d);
   }
   vcAtualizarBotoes(); vcEnviarEstado(); vcLayout();
+  return true;
+}
+// Apresenta esta aba e minimiza a reunião para a pessoa navegar no sistema.
+async function vcApresentarSistema() {
+  if (await vcCompartilhar('aba')) { vcMinimizar(); vcNotificar('Você está apresentando o Impulsionar. Navegue à vontade — a reunião fica neste cantinho.'); }
+}
+async function vcEscolherTreinamento() {
+  const area = document.getElementById('modal-area-vc'); if (!area) return;
+  area.innerHTML = `<div class="vc-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="vc-modal vc-modal-apres"><div class="vc-modal-cab"><h3>Qual treinamento?</h3><button class="vc-x" onclick="document.getElementById('modal-area-vc').innerHTML=''">${VC_ICO.fechar}</button></div><div class="vc-modal-dica" style="margin-top:0;">Carregando treinamentos…</div></div></div>`;
+  let lista = [];
+  try { lista = await api('/api/admin/treinamentos-mt'); } catch (e) { vcNotificar('Só o acesso Master pode apresentar treinamentos (' + e.message + ').', 'erro'); area.innerHTML = ''; return; }
+  const caixa = area.querySelector('.vc-modal'); if (!caixa) return;
+  const dt = t => t.data_treinamento ? new Date(String(t.data_treinamento).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+  caixa.innerHTML = `<div class="vc-modal-cab"><h3>Qual treinamento?</h3><button class="vc-x" onclick="document.getElementById('modal-area-vc').innerHTML=''">${VC_ICO.fechar}</button></div>
+    ${lista.length > 6 ? `<input placeholder="Buscar treinamento…" oninput="const q=this.value.toLowerCase(); this.parentElement.querySelectorAll('.vc-treino').forEach(b=>b.style.display=b.dataset.t.includes(q)?'':'none')" style="margin:6px 0 10px;">` : ''}
+    <div class="vc-treinos">${lista.length ? lista.map(t => `<button class="vc-treino" data-t="${escapeHtml(String(t.titulo || '').toLowerCase())}" onclick="vcApresentarTreinamento(${Number(t.id)})"><b>${escapeHtml(t.titulo || 'Sem título')}</b><small>${[dt(t), (t.qtdSlides || 0) + ' slides', t.status === 'realizado' ? 'realizado' : ''].filter(Boolean).join(' · ')}</small></button>`).join('') : '<div class="vc-modal-dica">Nenhum treinamento cadastrado ainda. Crie em Ministrar Treinamento › Meus Treinamentos.</div>'}</div>
+    <div class="vc-modal-dica">Ao escolher, o navegador pergunta o que compartilhar: confirme <b>"Esta aba"</b>. O treinamento abre em tela cheia e a reunião fica num cantinho — os participantes não veem a janelinha de vocês.</div>`;
+}
+async function vcApresentarTreinamento(id) {
+  if (!(await vcCompartilhar('aba'))) return;
+  vcMinimizar();
+  if (typeof mtApresentarId === 'function') await mtApresentarId(id);
+  vcNotificar('Treinamento no ar! Passe os slides com as setas, pelo celular ou pelos botões ◀ ▶.');
+}
+function vcAbrirOutraAba() {
+  const area = document.getElementById('modal-area-vc'); if (!area) return;
+  window.open(location.origin + location.pathname, '_blank');
+  area.innerHTML = `<div class="vc-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="vc-modal vc-modal-apres">
+    <div class="vc-modal-cab"><h3>Impulsionar aberto em outra aba</h3><button class="vc-x" onclick="document.getElementById('modal-area-vc').innerHTML=''">${VC_ICO.fechar}</button></div>
+    <div class="vc-passos"><div><i>1</i>Na aba nova, abra o que vai mostrar (o treinamento, um painel, o DPO...).</div><div><i>2</i>Volte aqui e clique em <b>Compartilhar a aba</b>.</div><div><i>3</i>No seletor do navegador, escolha a aba <b>"Guia do Chrome / Edge"</b> do Impulsionar.</div></div>
+    <div class="vc-link-caixa"><input readonly value="${escapeHtml(location.origin + location.pathname)}" onclick="this.select()"><button onclick="navigator.clipboard.writeText(location.origin + location.pathname).then(()=>vcNotificar('Link copiado!'))">Copiar link</button></div>
+    <button class="vc-btn-entrar" style="margin-top:16px;" onclick="vcCompartilhar('outra')">${VC_ICO.tela} Compartilhar a aba</button>
+  </div></div>`;
+}
+
+// ---------- Reunião minimizada (janelinha no canto, como no Teams) ----------
+function vcMinimizar() {
+  const r = document.getElementById('vc-app'); if (!r || VC_SOU_CONVIDADO) return;
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  document.getElementById('modal-area-vc').innerHTML = '';
+  vcPainel(null); vcFecharPops();
+  r.classList.add('vc-mini'); document.body.classList.remove('vc-aberta');
+  if (!r.dataset.arrasto) vcArrastarMini(r);
+  r.style.left = ''; r.style.top = '';
+  vcLayout();
+}
+function vcRestaurar() {
+  const r = document.getElementById('vc-app'); if (!r) return;
+  r.classList.remove('vc-mini'); r.style.left = ''; r.style.top = ''; r.style.right = ''; r.style.bottom = '';
+  document.body.classList.add('vc-aberta');
+  vcLayout();
+}
+function vcArrastarMini(r) {
+  r.dataset.arrasto = '1';
+  const topo = r.querySelector('.vc-topo'); if (!topo) return;
+  topo.addEventListener('pointerdown', ev => {
+    if (!r.classList.contains('vc-mini') || ev.target.closest('button')) return;
+    const b = r.getBoundingClientRect(), dx = ev.clientX - b.left, dy = ev.clientY - b.top;
+    topo.setPointerCapture(ev.pointerId);
+    const mover = e => { r.style.left = Math.max(0, Math.min(innerWidth - b.width, e.clientX - dx)) + 'px'; r.style.top = Math.max(0, Math.min(innerHeight - 60, e.clientY - dy)) + 'px'; r.style.right = 'auto'; r.style.bottom = 'auto'; };
+    const soltar = () => { topo.removeEventListener('pointermove', mover); topo.removeEventListener('pointerup', soltar); };
+    topo.addEventListener('pointermove', mover); topo.addEventListener('pointerup', soltar);
+  });
 }
 async function pararCompartilhamentoTela() {
   if (!VC_COMPARTILHANDO_TELA) return;
@@ -19390,8 +19525,9 @@ async function pararCompartilhamentoTela() {
     const sender = peer.getSenders().find(s => s.track && s.track.kind === 'video') || peer.getSenders().find(s => !s.track);
     if (sender && cam) await sender.replaceTrack(cam).catch(() => {});
   }
-  VC_COMPARTILHANDO_TELA = false;
+  VC_COMPARTILHANDO_TELA = false; VC_MODO_APRES = null;
   const t = document.getElementById('vc-tile-tela-local'); if (t) t.remove();
+  vcNotificar('Apresentação encerrada.');
   vcAtualizarBotoes(); vcEnviarEstado(); vcLayout();
 }
 function vcAlternarMao() { VC_MAO = !VC_MAO; vcAtualizarBotoes(); vcAtualizarTile('local'); vcEnviarEstado(); vcDesenharPessoas(); if (VC_MAO) vcNotificar('Você levantou a mão'); }
@@ -19581,7 +19717,7 @@ function vcAtalhos() {
 }
 function vcTeclas(e) {
   if (!VC_NA_SALA || !e.altKey || e.ctrlKey || e.metaKey) return;
-  const acoes = { a: alternarMicrofone, v: alternarCamera, s: alternarCompartilhamentoTela, y: vcAlternarMao, c: () => vcPainel(VC_PAINEL === 'chat' ? null : 'chat'), p: () => vcPainel(VC_PAINEL === 'pessoas' ? null : 'pessoas'), g: vcAlternarVisao };
+  const acoes = { a: alternarMicrofone, v: alternarCamera, s: vcBotaoApresentar, y: vcAlternarMao, c: () => vcPainel(VC_PAINEL === 'chat' ? null : 'chat'), p: () => vcPainel(VC_PAINEL === 'pessoas' ? null : 'pessoas'), g: vcAlternarVisao };
   const f = acoes[(e.key || '').toLowerCase()];
   if (f) { e.preventDefault(); f(); }
 }
@@ -19696,9 +19832,10 @@ function vcTelaSaidaConvidado(msg) {
 }
 function vcEncerrar(motivo) {
   const eraConvidado = VC_SOU_CONVIDADO;
+  const r = document.getElementById('vc-app'), estavaMini = !!(r && r.classList.contains('vc-mini'));
   vcLimparTudo();
   if (eraConvidado) vcTelaSaidaConvidado(motivo || 'Você saiu da reunião. Pode fechar esta aba.');
-  else { if (motivo) mostrarToast(motivo); if (typeof renderMentorships === 'function') renderMentorships(); }
+  else { if (motivo) mostrarToast(motivo); else if (estavaMini) mostrarToast('Você saiu da reunião.'); if (!estavaMini && typeof renderMentorships === 'function') renderMentorships(); }
 }
 function encerrarVideochamada() { vcEncerrar(); }
 
@@ -19728,6 +19865,12 @@ function encerrarVideochamada() { vcEncerrar(); }
 
 if (ESTADO.token && ESTADO.usuario) {
   iniciarApp();
+  // Link externo "#apresentar-mt=<id>": abre o treinamento direto no modo apresentação.
+  if (location.hash.startsWith('#apresentar-mt=')) {
+    const idMt = Number(location.hash.slice('#apresentar-mt='.length));
+    history.replaceState(null, '', location.pathname + location.search);
+    if (idMt && typeof mtApresentarId === 'function') setTimeout(() => mtApresentarId(idMt), 600);
+  }
 }
 
 // Link público de convite para a videochamada (enviado por "🔗 Convidar"):
