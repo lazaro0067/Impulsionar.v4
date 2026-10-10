@@ -496,17 +496,37 @@
   @media (max-width:640px) { .resp-grid { grid-template-columns:1fr; } }
   /* ===== Ministrar Treinamento ===== */
   .mt-sl-ed.mt-oculto .mt-sl-mini { opacity:.35; filter:grayscale(1); }
+  .mt-arrasta { cursor:grab; font-size:16px; color:#94a3b8; padding:0 4px; user-select:none; line-height:1; }
+  .mt-arrasta:active { cursor:grabbing; }
+  .mt-sl-ed.arrastando { opacity:.4; }
+  .mt-sl-ed.alvo-cima { box-shadow:inset 0 4px 0 #dc4c4c; } .mt-sl-ed.alvo-baixo { box-shadow:inset 0 -4px 0 #dc4c4c; }
+  .mt-sl-ed.novo { animation:mtNovo 1.2s ease; } @keyframes mtNovo { from { background:#fef3c7; } to { background:transparent; } }
+  .mt-ins { text-align:center; font-size:12px; font-weight:700; color:#94a3b8; border:1.5px dashed transparent; border-radius:8px; padding:2px; margin:2px 0; cursor:pointer; opacity:.0; transition:opacity .15s; }
+  .mt-ins:hover, .mt-ins.topo { opacity:1; border-color:#cbd5e1; color:#64748b; }
+  .mt-sl-ed:hover + .mt-ins { opacity:.7; }
+  .mt-mod.alvo { box-shadow:inset 0 3px 0 #dc4c4c; }
   .mt-ic.on { background:#fef3c7 !important; color:#92400e !important; border-color:#fde68a !important; }
   .mt-ext-lista { display:flex; flex-direction:column; gap:6px; max-height:520px; overflow-y:auto; padding-right:4px; }
   .mt-ext { display:flex; gap:10px; align-items:center; border:1px solid var(--cinza-200); border-radius:10px; padding:6px 8px; }
   .mt-ext.mt-oculto .mt-sl-mini { opacity:.35; filter:grayscale(1); }
-  .mt-fim-tit { font-size:3.6em; font-weight:800; margin-bottom:.4em; }
+  .mt-fim-tit { font-size:3.6em; font-weight:800; margin-bottom:.3em; line-height:1.1; }
+  .mt-fim-tit2 { font-size:2.6em; font-weight:800; margin:.15em 0 .8em; line-height:1.1; }
+  .mt-fim-sub { font-size:1.2em; font-weight:800; letter-spacing:.14em; color:color-mix(in srgb, var(--c) 55%, #fff); }
+  .mt-fim-qr-t { font-size:1.15em; font-weight:800; } .mt-fim-qr-s { font-size:.85em; opacity:.75; }
+  .mt-fim-site { font-size:1.6em; margin-top:.8em; font-weight:700; }
+  .mt-fim-feito { margin-top:.8em; color:#4ade80; font-weight:700; font-size:1.3em; }
+  .mt-rede { display:flex; align-items:center; gap:.4em; font-weight:800; font-size:1.15em; }
+  .mt-rede-ico { width:1.6em; height:1.6em; border-radius:.45em; display:inline-flex; align-items:center; justify-content:center; font-size:1em; color:#fff; }
+  .mt-rede-ico.insta { background:#c13584; } .mt-rede-ico.zap { background:#16a34a; border-radius:50%; }
+  .mt-remoto { position:absolute; inset:0; background:rgba(5,8,15,.82); display:flex; align-items:center; justify-content:center; z-index:5; }
+  .mt-remoto-caixa { background:#111827; border:1px solid rgba(255,255,255,.15); border-radius:18px; padding:22px 26px; text-align:center; max-width:420px; color:#fff; }
+  .mt-remoto-caixa a.mt-sb { text-decoration:none; }
   .mt-fim-qrs { display:flex; gap:2.2em; justify-content:center; flex-wrap:wrap; }
   .mt-fim-qr { background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.18); border-radius:1em; padding:1em 1.4em; display:flex; flex-direction:column; align-items:center; gap:.5em; font-size:1.3em; min-width:12em; }
   .mt-fim-qr img { width:9em; height:9em; background:#fff; border-radius:.5em; padding:.3em; }
   .mt-fim-qr.vazio { justify-content:center; opacity:.8; }
   .mt-fim-redes { display:flex; gap:1.6em; justify-content:center; flex-wrap:wrap; font-size:1.7em; margin:.7em 0 .5em; }
-  .mt-fim-ok { margin-top:1em !important; background:#16a34a !important; border-color:#16a34a !important; }
+  .mt-fim-ok { margin-top:1.6em !important; background:#16a34a !important; border-color:#16a34a !important; }
   .mt-ata-tab { width:100%; font-size:12.5px; } .mt-ata-tab td { vertical-align:middle; }
   .mt-ass { height:38px; max-width:160px; background:#fff; border:1px solid var(--cinza-200); border-radius:6px; }
   #mt-show a, .mt-ck a, .mt-arq a, .mt-card a { text-decoration:none !important; display:inline-flex; align-items:center; justify-content:center; }
@@ -598,7 +618,7 @@
   .mt-capa-tit { font-size:4.6em; font-weight:800; line-height:1.08; margin:.25em 0; }
   .mt-capa-obj { font-size:1.8em; opacity:.85; max-width:80%; line-height:1.4; }
   .mt-capa-meta { font-size:1.5em; margin-top:1.6em; opacity:.9; }
-  .mt-capa-marca { position:absolute; right:3em; bottom:2em; font-weight:800; font-size:1.4em; opacity:.6; }
+  .mt-capa-marca { position:absolute; right:3em; top:2.2em; font-weight:800; font-size:1.4em; opacity:.6; }
   .mt-sl-mod { background:#0b1324; color:#fff; display:flex; flex-direction:column; justify-content:center; padding:4em 6em; border-left:1.6em solid var(--c); }
   .mt-mod-num { font-size:1.8em; font-weight:800; letter-spacing:.12em; color:var(--c); }
   .mt-mod-nome { font-size:4.4em; font-weight:800; line-height:1.1; margin-top:.2em; }
@@ -10322,7 +10342,7 @@ function mtDesenharEditor() {
     <div class="mt-ed-mods" id="mt-ed-mods">
       <div class="mt-ed-lista">
         <div style="font-weight:800;font-size:13px;color:#334155;margin-bottom:8px;">🧩 MÓDULOS (${d.modulos.length})</div>
-        ${d.modulos.map((x, i) => `<div class="mt-mod ${i === MT.modSel ? 'on' : ''}" onclick="MT.modSel=${i}; mtDesenharEditor()" style="--c:${p.cor}">
+        ${d.modulos.map((x, i) => `<div class="mt-mod ${i === MT.modSel ? 'on' : ''}" draggable="true" ondragstart="MT.__dragMod=${i}; event.dataTransfer.effectAllowed='move'; event.dataTransfer.setData('text/plain','m')" ondragover="event.preventDefault(); this.classList.add('alvo')" ondragleave="this.classList.remove('alvo')" ondrop="event.preventDefault(); mtSoltarMod(${i})" onclick="MT.modSel=${i}; mtDesenharEditor()" style="--c:${p.cor}" title="Arraste para mudar a ordem">
           <div class="mt-mod-n">${i + 1}</div>
           <div style="flex:1;min-width:0;${x.oculto ? 'opacity:.5;' : ''}"><div class="mt-mod-t">${x.oculto ? '🙈 ' : ''}${escapeHtml(x.titulo || 'Sem título')}</div><div class="mt-mod-s">${x.tipo === 'slides' ? '🖼️ ' + (x.slides || []).length + ' slide(s)' + ((x.slides || []).some(z => z.oculto) ? ' · ' + x.slides.filter(z => z.oculto).length + ' oculto(s)' : '') : (x.arquivo && (x.arquivo.slidesExtraidos || []).length ? '📽️ ' + x.arquivo.slidesExtraidos.length + ' slide(s)' + (x.arquivo.slidesExtraidos.some(z => z.oculto) ? ' · ' + x.arquivo.slidesExtraidos.filter(z => z.oculto).length + ' oculto(s)' : '') : '📎 ' + escapeHtml((x.arquivo && x.arquivo.nome) || 'sem arquivo'))}</div></div>
           <div class="mt-mod-bt"><button title="Subir" onclick="event.stopPropagation(); mtMoverMod(${i}, -1)">▲</button><button title="Descer" onclick="event.stopPropagation(); mtMoverMod(${i}, 1)">▼</button></div>
@@ -10347,10 +10367,11 @@ function mtModuloEditorHtml(m) {
     </div>
     ${m.oculto ? '<div class="mt-dica" style="background:#fef3c7;border-color:#fde68a;">🙈 Este módulo está <strong>oculto</strong> — não aparece na apresentação nem entra no check.</div>' : ''}`;
   if (m.tipo === 'slides') {
-    html += (m.slides || []).map((s, j) => `<div class="mt-sl-ed ${s.oculto ? 'mt-oculto' : ''}">
+    html += `<div class="mt-ins topo" onclick="mtInserirSl(0)">＋ Inserir slide no início</div>`;
+    html += (m.slides || []).map((s, j) => `<div class="mt-sl-ed ${s.oculto ? 'mt-oculto' : ''}" data-j="${j}" ondragover="mtDragSobre(event, this)" ondragleave="this.classList.remove('alvo-cima','alvo-baixo')" ondrop="mtDragSoltar(event, ${j}, this)">
         <div class="mt-sl-mini" onclick="mtApresentarModulo(${i}, ${j})" title="Apresentar a partir daqui">${mtSlideHtml(s, mtPub(MT.doc.publico).cor, true)}</div>
         <div style="flex:1;min-width:240px;">
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;"><strong style="font-size:12.5px;color:#64748b;">Slide ${j + 1}</strong>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;"><span class="mt-arrasta" draggable="true" ondragstart="mtDragIni(event, ${j})" ondragend="document.querySelectorAll('.mt-sl-ed').forEach(e=>e.classList.remove('alvo-cima','alvo-baixo','arrastando'))" title="Arraste para mudar a posição">⠿</span><strong style="font-size:12.5px;color:#64748b;">Slide ${j + 1}</strong>
             <select style="width:auto;margin:0 0 0 auto;padding:4px 8px;font-size:12px;" onchange="mtSl(${j},'layout',this.value,true)">${[['padrao', 'Título + texto'], ['destaque', 'Destaque (frase grande)'], ['imagem', 'Imagem em tela cheia']].map(([k, r]) => `<option value="${k}" ${s.layout === k ? 'selected' : ''}>${r}</option>`).join('')}</select>
             <button class="mt-ic" title="Subir" onclick="mtMoverSl(${j},-1)">▲</button><button class="mt-ic" title="Descer" onclick="mtMoverSl(${j},1)">▼</button><button class="mt-ic" title="Duplicar" onclick="mtDupSl(${j})">⧉</button><button class="mt-ic ${s.oculto ? 'on' : ''}" title="${s.oculto ? 'Mostrar na apresentação' : 'Ocultar da apresentação'}" onclick="mtSl(${j},'oculto',!MT.doc.modulos[MT.modSel].slides[${j}].oculto,true)">${s.oculto ? '🙈 Oculto' : '👁'}</button><button class="mt-ic perigo" title="Excluir" onclick="mtDelSl(${j})">✕</button></div>
           <input placeholder="Título do slide" value="${escapeHtml(s.titulo || '')}" oninput="mtSl(${j},'titulo',this.value)">
@@ -10361,8 +10382,8 @@ function mtModuloEditorHtml(m) {
             <details style="flex:1;min-width:200px;"><summary style="cursor:pointer;font-size:12px;color:#4338ca;font-weight:700;">🗒️ Notas do apresentador${s.notas ? ' ✓' : ''}</summary><textarea rows="2" placeholder="Só você vê durante a apresentação" oninput="mtSl(${j},'notas',this.value)">${escapeHtml(s.notas || '')}</textarea></details>
           </div>
         </div>
-      </div>`).join('');
-    html += `<button class="btn-secundario mt-add-sl" onclick="mtAddSl()">+ Adicionar slide</button>`;
+      </div><div class="mt-ins" onclick="mtInserirSl(${j + 1})">＋ inserir slide aqui</div>`).join('');
+    html += `<button class="btn-secundario mt-add-sl" onclick="mtAddSl()">+ Adicionar slide no final</button>`;
   } else {
     const a = m.arquivo || {};
     html += `<div class="mt-arq">
@@ -10397,6 +10418,37 @@ function mtSl(j, k, v, redesenhar) {
   MT.doc.modulos[MT.modSel].slides[j][k] = v; mtMarcarSujo();
   if (redesenhar) return mtDesenharEditor();
   const mini = document.querySelectorAll('.mt-sl-mini')[j]; if (mini) { mini.innerHTML = mtSlideHtml(MT.doc.modulos[MT.modSel].slides[j], mtPub(MT.doc.publico).cor, true); mtAutoAjustar(mini); }
+}
+function mtInserirSl(pos) {
+  const L = MT.doc.modulos[MT.modSel].slides;
+  L.splice(pos, 0, { titulo: '', texto: '', imagem: '', notas: '', layout: 'padrao' });
+  mtMarcarSujo(); mtDesenharEditor();
+  setTimeout(() => { const c = document.querySelectorAll('.mt-sl-ed')[pos]; if (c) { c.scrollIntoView({ block: 'center' }); const i = c.querySelector('input'); if (i) i.focus(); c.classList.add('novo'); } }, 50);
+}
+function mtDragIni(ev, j) { MT.__dragSl = j; ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', 's' + j); const c = ev.target.closest('.mt-sl-ed'); if (c) { ev.dataTransfer.setDragImage(c, 20, 20); setTimeout(() => c.classList.add('arrastando'), 0); } }
+function mtDragSobre(ev, el) {
+  if (MT.__dragSl === undefined || MT.__dragSl === null) return;
+  ev.preventDefault();
+  const r = el.getBoundingClientRect(), baixo = ev.clientY > r.top + r.height / 2;
+  el.classList.toggle('alvo-baixo', baixo); el.classList.toggle('alvo-cima', !baixo);
+}
+function mtDragSoltar(ev, j, el) {
+  ev.preventDefault();
+  const de = MT.__dragSl; MT.__dragSl = null;
+  if (de === undefined || de === null) return;
+  const baixo = el.classList.contains('alvo-baixo');
+  const L = MT.doc.modulos[MT.modSel].slides;
+  let para = j + (baixo ? 1 : 0);
+  const [item] = L.splice(de, 1);
+  if (de < para) para--;
+  L.splice(para, 0, item);
+  mtMarcarSujo(); mtDesenharEditor();
+}
+function mtSoltarMod(i) {
+  const de = MT.__dragMod; MT.__dragMod = null;
+  if (de === undefined || de === null || de === i) return mtDesenharEditor();
+  const L = MT.doc.modulos; const [item] = L.splice(de, 1); L.splice(i, 0, item);
+  MT.modSel = i; mtMarcarSujo(); mtDesenharEditor();
 }
 function mtAddSl() { MT.doc.modulos[MT.modSel].slides.push({ titulo: '', texto: '', imagem: '', notas: '', layout: 'padrao' }); mtMarcarSujo(); mtDesenharEditor(); setTimeout(() => { const l = document.querySelectorAll('.mt-sl-ed input'); if (l.length) { l[l.length - 1].focus(); l[l.length - 1].scrollIntoView({ block: 'center' }); } }, 50); }
 function mtDelSl(j) { const L = MT.doc.modulos[MT.modSel].slides; if ((L[j].titulo || L[j].texto) && !confirm('Excluir este slide?')) return; L.splice(j, 1); mtMarcarSujo(); mtDesenharEditor(); }
@@ -10481,7 +10533,8 @@ function mtMontarDeck() {
     else if (m.arquivo && !m.arquivo.pdfUrl && !/^image|^video/.test(m.arquivo.mime || '') && (m.arquivo.slidesExtraidos || []).length) m.arquivo.slidesExtraidos.forEach((s, xi) => { if (!s.oculto) deck.push({ tipo: 'extraido', mi, xi }); });
     else deck.push({ tipo: 'arquivo', mi });
   });
-  deck.push({ tipo: 'fim' });
+  deck.push({ tipo: 'fim-check' });
+  deck.push({ tipo: 'fim-redes' });
   return deck;
 }
 function mtApresentarModulo(mi, si, xi) {
@@ -10518,28 +10571,36 @@ function mtConteudoDeck(it) {
       <div class="mt-capa-pub">${mtPub(d.publico).ico} Treinamento · ${mtPub(d.publico).rot}</div>
       <div class="mt-capa-tit">${escapeHtml(d.titulo)}</div>
       ${d.objetivo ? `<div class="mt-capa-obj">${escapeHtml(d.objetivo)}</div>` : ''}
-      <div class="mt-capa-meta">${d.instrutor ? '🎙️ ' + escapeHtml(d.instrutor) + '&nbsp;&nbsp;' : ''}${d.data_treinamento ? '📅 ' + escapeHtml(mtDataTxt(d.data_treinamento)) : ''}</div>
+      ${d.instrutor ? `<div class="mt-capa-meta">🎙️ ${escapeHtml(d.instrutor)}</div>` : ''}
       <div class="mt-capa-marca">Impulsionar V4</div></div>`;
   if (it.tipo === 'modulo') { const m = d.modulos[it.mi]; return `<div class="mt-sl mt-sl-mod" style="--c:${cor}"><div class="mt-mod-num">MÓDULO ${it.mi + 1}</div><div class="mt-mod-nome">${escapeHtml(m.titulo || '')}</div><div class="mt-mod-de">${it.mi + 1} de ${d.modulos.length}</div></div>`; }
   if (it.tipo === 'slide') return mtSlideHtml(d.modulos[it.mi].slides[it.si], cor);
   if (it.tipo === 'extraido') return mtSlideHtml({ ...d.modulos[it.mi].arquivo.slidesExtraidos[it.xi], layout: 'padrao' }, cor);
   if (it.tipo === 'arquivo') return `<div class="mt-sl mt-sl-arq">${mtArquivoHtml(d.modulos[it.mi].arquivo)}</div>`;
   const ck = d.check, dv = d.divulgacao || {}, ata = d.ata;
-  const qr = u => `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=6&data=${encodeURIComponent(u)}`;
-  const zap = String(dv.whatsapp || '').replace(/\D/g, '');
+  const qr = u => `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data=${encodeURIComponent(u)}`;
+  if (it.tipo === 'fim-check') return `<div class="mt-sl mt-sl-fim" style="--c:${cor}">
+    <div class="mt-fim-sub">PARA FINALIZAR</div>
+    <div class="mt-fim-tit2">Aponte a câmera do celular</div>
+    <div class="mt-fim-qrs">
+      ${ck && ck.ativo ? `<div class="mt-fim-qr"><img src="${qr(ck.link || '')}" alt=""><div class="mt-fim-qr-t">🧠 Check de retenção</div><div class="mt-fim-qr-s">Responda o que aprendeu</div></div>`
+        : `<div class="mt-fim-qr vazio"><div style="font-size:3em;">🧠</div><div class="mt-fim-qr-t">Check de retenção</div><button class="mt-sb" onclick="mtFecharShow(); mtAbrirCheck()">Criar check</button></div>`}
+      ${ata && ata.ativa ? `<div class="mt-fim-qr"><img src="${qr(ata.link)}" alt=""><div class="mt-fim-qr-t">✍️ Lista de presença</div><div class="mt-fim-qr-s">Assine a ata do treinamento</div></div>` : ''}
+    </div>
+    ${d.status !== 'realizado' ? `<button class="mt-sb mt-fim-ok" onclick="mtConcluirApresentacao()">🏁 Marcar treinamento como realizado</button>` : '<div class="mt-fim-feito">✅ Treinamento realizado</div>'}
+  </div>`;
+  const icoInsta = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>';
+  const icoZap = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.6-5.2A8.5 8.5 0 1 1 21 11.5z"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.6-2-1-1 1c-1-.4-2.4-1.8-2.8-2.8l1-1-1-2-1.7 1z" fill="currentColor" stroke="none"/></svg>';
+  const temRedes = dv.instagramLink || dv.whatsappLink;
   return `<div class="mt-sl mt-sl-fim" style="--c:${cor}">
     <div class="mt-fim-tit">Obrigado! 🎉</div>
+    ${temRedes ? `<div class="mt-fim-sub" style="margin-bottom:.8em;">SIGA A IMPULSIONAR</div>
     <div class="mt-fim-qrs">
-      ${ata && ata.ativa ? `<div class="mt-fim-qr"><img src="${qr(ata.link)}" alt=""><div>✍️ <strong>Assine a ata</strong></div><button class="mt-sb" onclick="mtCopiar('${escapeHtml(ata.link)}')">📋 Copiar link</button></div>` : ''}
-      ${ck && ck.ativo ? `<div class="mt-fim-qr"><img src="${qr(ck.link || '')}" alt=""><div>🧠 <strong>Check de retenção</strong></div><button class="mt-sb" onclick="mtCopiar('${escapeHtml(ck.link || '')}')">📋 Copiar link</button></div>` : `<div class="mt-fim-qr vazio"><div style="font-size:2.4em;">🧠</div><div>Sem check de retenção</div><button class="mt-sb" onclick="mtFecharShow(); mtAbrirCheck()">Criar check</button></div>`}
+      ${dv.instagramLink ? `<div class="mt-fim-qr"><img src="${qr(dv.instagramLink)}" alt=""><div class="mt-rede"><span class="mt-rede-ico insta">${icoInsta}</span><span>${escapeHtml(dv.instagram || 'Instagram')}</span></div><div class="mt-fim-qr-s">Instagram</div></div>` : ''}
+      ${dv.whatsappLink ? `<div class="mt-fim-qr"><img src="${qr(dv.whatsappLink)}" alt=""><div class="mt-rede"><span class="mt-rede-ico zap">${icoZap}</span><span>${escapeHtml(dv.whatsapp || 'WhatsApp')}</span></div><div class="mt-fim-qr-s">WhatsApp</div></div>` : ''}
     </div>
-    <div class="mt-fim-redes">
-      ${dv.instagram ? `<span>📷 <strong>${escapeHtml(dv.instagram)}</strong></span>` : ''}
-      ${dv.whatsapp ? `<span>💬 <strong>${escapeHtml(dv.whatsapp)}</strong></span>` : ''}
-      ${dv.site ? `<span>🌐 <strong>${escapeHtml(dv.site)}</strong></span>` : ''}
-      ${!dv.instagram && !dv.whatsapp ? `<button class="mt-sb" onclick="mtFecharShow(); mtAbrirConfig()">⚙️ Cadastrar Instagram e WhatsApp da Impulsionar</button>` : ''}
-    </div>
-    ${d.status !== 'realizado' ? `<button class="mt-sb mt-fim-ok" onclick="mtConcluirApresentacao()">🏁 Marcar treinamento como realizado</button>` : '<div style="margin-top:.8em;color:#4ade80;font-weight:700;font-size:1.3em;">✅ Treinamento realizado</div>'}
+    ${dv.site ? `<div class="mt-fim-site">🌐 ${escapeHtml(dv.site)}</div>` : ''}`
+    : `<div class="mt-fim-qr-s" style="font-size:1.6em;margin:1em 0;">Cadastre o Instagram e o WhatsApp da Impulsionar para aparecerem aqui.</div><button class="mt-sb" onclick="mtFecharShow(); mtAbrirConfig()">⚙️ Configurar redes</button>`}
   </div>`;
 }
 function mtDesenharShow() {
@@ -10555,6 +10616,7 @@ function mtDesenharShow() {
         <span class="mt-show-rel" id="mt-relogio">${mtCronometro()}</span>
         ${editavel ? `<button class="mt-sb ${MTS.editando ? 'on' : ''}" onclick="mtAlternarEdicao()" title="Editar este slide">✏️ ${MTS.editando ? 'Concluir edição' : 'Editar'}</button>` : ''}
         ${MT.sujo ? `<button class="mt-sb salvar" onclick="mtSalvarShow()">💾 Salvar</button>` : ''}
+        <button class="mt-sb ${MT_REMOTO.conectados ? 'on' : ''}" onclick="mtAbrirControleCelular()" title="Passar os slides pelo celular">📱 ${MT_REMOTO.conectados ? 'Celular conectado' : 'Controle pelo celular'}</button>
         <button class="mt-sb ${MTS.notas ? 'on' : ''}" onclick="MTS.notas=!MTS.notas; mtDesenharShow()" title="Notas (N)">🗒️ Notas</button>
         <button class="mt-sb" onclick="mtTelaCheia()" title="Tela cheia (F)">⛶</button>
         <button class="mt-sb" onclick="mtFecharShow()" title="Sair (Esc)">✕ Sair</button>
@@ -10574,6 +10636,68 @@ function mtDesenharShow() {
     <div class="mt-show-prog"><div style="width:${Math.round((MTS.i + 1) * 100 / MTS.deck.length)}%;background:${mtPub(d.publico).cor};"></div></div>`;
   mtAjustarEscala();
   if (MTS.editando) mtLigarEdicao();
+  mtEnviarEstadoRemoto();
+}
+
+// ---------- Controle pelo celular ----------
+let MT_REMOTO = { socket: null, codigo: null, link: null, conectados: 0, treinamentoId: null };
+function mtTituloDeck(it) {
+  const d = MT.doc; if (!it) return '';
+  if (it.tipo === 'capa') return 'Capa — ' + d.titulo;
+  if (it.tipo === 'modulo') return 'Módulo ' + (it.mi + 1) + ': ' + d.modulos[it.mi].titulo;
+  if (it.tipo === 'slide') return d.modulos[it.mi].slides[it.si].titulo || 'Slide';
+  if (it.tipo === 'extraido') return d.modulos[it.mi].arquivo.slidesExtraidos[it.xi].titulo || 'Slide';
+  if (it.tipo === 'arquivo') return d.modulos[it.mi].arquivo.nome || 'Arquivo';
+  if (it.tipo === 'fim-check') return 'Check de retenção e lista de presença';
+  return 'Obrigado! (redes da Impulsionar)';
+}
+function mtEnviarEstadoRemoto() {
+  if (!MT_REMOTO.socket || !MTS) return;
+  const it = MTS.deck[MTS.i];
+  MT_REMOTO.socket.emit('mt-estado', { i: MTS.i, total: MTS.deck.length, titulo: mtTituloDeck(it), proximo: mtTituloDeck(MTS.deck[MTS.i + 1]),
+    modulo: it.mi !== undefined ? MT.doc.modulos[it.mi].titulo : '', notas: it.tipo === 'slide' ? (MT.doc.modulos[it.mi].slides[it.si].notas || '') : '', ini: MTS.ini });
+}
+async function mtConectarRemoto() {
+  if (MT_REMOTO.socket && MT_REMOTO.treinamentoId === MT.doc.id) return;
+  if (MT_REMOTO.socket) { MT_REMOTO.socket.disconnect(); MT_REMOTO.socket = null; }
+  const r = await api('/api/admin/treinamentos-mt/' + MT.doc.id + '/controle', { method: 'POST' });
+  MT_REMOTO.codigo = r.codigo; MT_REMOTO.link = r.link; MT_REMOTO.treinamentoId = MT.doc.id; MT_REMOTO.conectados = 0;
+  if (typeof io !== 'function') throw new Error('Conexão em tempo real indisponível.');
+  const sk = io({ transports: ['websocket', 'polling'] });
+  MT_REMOTO.socket = sk;
+  sk.on('connect', () => sk.emit('mt-apresentador', { codigo: MT_REMOTO.codigo, token: ESTADO.token }));
+  sk.on('mt-controles', d => { MT_REMOTO.conectados = d.conectados; });
+  sk.on('mt-controle-conectou', () => {
+    MT_REMOTO.conectados++; mostrarToast('📱 Celular conectado! Já pode passar os slides por ele.');
+    const m = document.getElementById('mt-remoto-modal'); if (m) m.remove();
+    if (MTS) mtDesenharShow();
+  });
+  sk.on('mt-comando', c => {
+    if (!MTS) return;
+    if (c.cmd === 'proximo') mtIr(1); else if (c.cmd === 'anterior') mtIr(-1);
+    else if (c.cmd === 'ir') mtIrPara(Math.max(0, Math.min(MTS.deck.length - 1, c.i)));
+    else mtEnviarEstadoRemoto();
+  });
+}
+async function mtAbrirControleCelular() {
+  try { await mtConectarRemoto(); } catch (e) { return mostrarToast(e.message, true); }
+  const show = document.getElementById('mt-show'); if (!show) return;
+  let m = document.getElementById('mt-remoto-modal'); if (m) m.remove();
+  m = document.createElement('div'); m.id = 'mt-remoto-modal'; m.className = 'mt-remoto';
+  m.onclick = e => { if (e.target === m) m.remove(); };
+  m.innerHTML = `<div class="mt-remoto-caixa">
+    <div style="font-size:20px;font-weight:800;">📱 Passar os slides pelo celular</div>
+    <div style="opacity:.8;font-size:14px;margin:4px 0 14px;">Aponte a câmera do celular para o QR Code (ou abra o link). Funciona em qualquer rede com internet.</div>
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=${encodeURIComponent(MT_REMOTO.link)}" alt="" style="width:220px;height:220px;background:#fff;border-radius:12px;">
+    <div style="font-size:12.5px;word-break:break-all;margin:12px 0;opacity:.9;">${escapeHtml(MT_REMOTO.link)}</div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <button class="mt-sb" onclick="mtCopiar('${escapeHtml(MT_REMOTO.link)}')">📋 Copiar link</button>
+      <a class="mt-sb" target="_blank" href="https://wa.me/?text=${encodeURIComponent(MT_REMOTO.link)}">Enviar no WhatsApp</a>
+      <button class="mt-sb" onclick="document.getElementById('mt-remoto-modal').remove()">Fechar</button>
+    </div>
+    <div style="font-size:12px;opacity:.65;margin-top:12px;">${MT_REMOTO.conectados ? '🟢 ' + MT_REMOTO.conectados + ' celular(es) conectado(s)' : 'Aguardando o celular conectar...'}</div>
+  </div>`;
+  show.appendChild(m);
 }
 function mtAjustarEscala() {
   const box = document.getElementById('mt-slide-atual'); if (!box) return;
@@ -10660,6 +10784,9 @@ async function mtAbrirConfig() {
       <label>Instagram</label><input id="cf-insta" placeholder="@impulsionarv4" value="${escapeHtml(c.instagram || '')}">
       <label>WhatsApp / telefone</label><input id="cf-zap" placeholder="(64) 99999-9999" value="${escapeHtml(c.whatsapp || '')}">
       <label>Site (opcional)</label><input id="cf-site" placeholder="www.impulsionarv4.com.br" value="${escapeHtml(c.site || '')}">
+      <div class="plano-meta" style="font-size:12px;margin-top:8px;">Links dos QR Codes do slide "Siga a Impulsionar" (opcional — se ficar vazio, o sistema monta pelo @ e pelo número):</div>
+      <label>Link do perfil do Instagram</label><input id="cf-insta-link" placeholder="https://instagram.com/impulsionarv4" value="${escapeHtml(c.instagramLink || '')}">
+      <label>Link do WhatsApp</label><input id="cf-zap-link" placeholder="https://wa.me/5561999999999" value="${escapeHtml(c.whatsappLink || '')}">
       <div class="resp-sec">🧠 Inteligência artificial (check de retenção)</div>
       <div class="plano-meta" style="font-size:12px;margin-bottom:4px;">${c.iaAtiva ? `🟢 IA ativa (chave ${escapeHtml(c.iaPreview)}${c.iaOrigem === 'servidor' ? ', do servidor' : ''}) · modelo ${escapeHtml(c.modelo || '')}` : '⚪ Sem chave de IA — o check é montado automaticamente pelos tópicos dos slides.'}</div>
       <label>Chave da API Anthropic (Claude)</label><input id="cf-ia" type="password" placeholder="${c.iaAtiva ? 'deixe vazio para manter' : 'sk-ant-...'}">
@@ -10674,7 +10801,7 @@ async function mtAbrirConfig() {
 async function mtSalvarConfig(remover) {
   const b = document.getElementById('cf-salvar'); if (b) { b.disabled = true; b.textContent = 'Salvando...'; }
   try {
-    const r = await api('/api/admin/treinamentos-mt-config', { method: 'PUT', body: JSON.stringify({ instagram: document.getElementById('cf-insta').value, whatsapp: document.getElementById('cf-zap').value, site: document.getElementById('cf-site').value, chaveIa: remover ? '' : document.getElementById('cf-ia').value, removerChaveIa: !!remover }) });
+    const r = await api('/api/admin/treinamentos-mt-config', { method: 'PUT', body: JSON.stringify({ instagram: document.getElementById('cf-insta').value, whatsapp: document.getElementById('cf-zap').value, site: document.getElementById('cf-site').value, instagramLink: document.getElementById('cf-insta-link').value, whatsappLink: document.getElementById('cf-zap-link').value, chaveIa: remover ? '' : document.getElementById('cf-ia').value, removerChaveIa: !!remover }) });
     mostrarToast(r.message); document.getElementById('modal-area').innerHTML = '';
     if (MT.doc && MT.doc.id && document.getElementById('mt-editor')) { MT.doc.divulgacao = { instagram: document.getElementById('cf-insta') ? '' : '' }; const novo = await api('/api/admin/treinamentos-mt/' + MT.doc.id); MT.doc.divulgacao = novo.divulgacao; }
   } catch (e) { mostrarToast(e.message, true); if (b) { b.disabled = false; b.textContent = 'Salvar'; } }

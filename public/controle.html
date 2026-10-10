@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1324">
+<title>Controle da apresentação — Impulsionar V4</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: #0b1324; color: #fff; font-family: 'Segoe UI', Arial, sans-serif; overscroll-behavior: none; }
+  .app { display: flex; flex-direction: column; height: 100%; padding: 14px 14px calc(14px + env(safe-area-inset-bottom)); gap: 12px; }
+  .topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .tt { font-size: 13px; font-weight: 700; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .st { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; background: #334155; white-space: nowrap; }
+  .st.on { background: #16a34a; }
+  .atual { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 14px; }
+  .rot { font-size: 11px; letter-spacing: .1em; opacity: .6; font-weight: 800; }
+  .nome { font-size: 20px; font-weight: 800; margin-top: 4px; line-height: 1.25; }
+  .cont { font-size: 13px; opacity: .7; margin-top: 4px; }
+  .prox { font-size: 13px; opacity: .75; margin-top: 10px; border-top: 1px dashed rgba(255,255,255,.15); padding-top: 8px; }
+  .notas { flex: 1; overflow-y: auto; background: rgba(255,255,255,.04); border-radius: 14px; padding: 12px 14px; font-size: 15px; line-height: 1.5; min-height: 60px; }
+  .notas ul { padding-left: 18px; margin: 4px 0; }
+  .bts { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; }
+  .bt { border: none; border-radius: 18px; font-size: 22px; font-weight: 800; color: #fff; padding: 26px 0; cursor: pointer; touch-action: manipulation; user-select: none; }
+  .bt:active { transform: scale(.97); filter: brightness(1.15); }
+  .ant { background: #334155; }
+  .prx { background: #dc4c4c; }
+  .bt:disabled { opacity: .35; }
+  .barra { height: 4px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; }
+  .barra div { height: 100%; background: #dc4c4c; transition: width .25s; }
+  .erro { margin: auto; text-align: center; padding: 30px; font-size: 16px; }
+  .relogio { font-variant-numeric: tabular-nums; font-size: 13px; opacity: .8; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="topo"><div class="tt" id="tt">Conectando...</div><span class="st" id="st">conectando</span></div>
+  <div class="barra"><div id="barra" style="width:0%"></div></div>
+  <div class="atual">
+    <div style="display:flex;justify-content:space-between;"><div class="rot" id="rot">SLIDE</div><div class="relogio" id="rel">00:00</div></div>
+    <div class="nome" id="nome">Aguardando a apresentação...</div>
+    <div class="cont" id="cont"></div>
+    <div class="prox" id="prox"></div>
+  </div>
+  <div class="notas" id="notas"><span style="opacity:.55">As notas do apresentador aparecem aqui.</span></div>
+  <div class="bts">
+    <button class="bt ant" id="ant" onclick="cmd('anterior')">◀</button>
+    <button class="bt prx" id="prx" onclick="cmd('proximo')">Próximo ▶</button>
+  </div>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const codigo = new URLSearchParams(location.search).get('c') || '';
+  const $ = id => document.getElementById(id);
+  function esc(t) { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; }
+  function textoHtml(t) {
+    const linhas = String(t || '').split('\n'); let h = '', ul = false;
+    linhas.forEach(l => { const b = l.match(/^\s*[•\-\*–]\s*(.*)$/); if (b) { if (!ul) { h += '<ul>'; ul = true; } h += '<li>' + esc(b[1]) + '</li>'; } else { if (ul) { h += '</ul>'; ul = false; } if (l.trim()) h += '<p style="margin:0 0 6px;">' + esc(l) + '</p>'; } });
+    return h + (ul ? '</ul>' : '');
+  }
+  let estado = null, ini = null;
+  const socket = io({ transports: ['websocket', 'polling'] });
+  function entrar() { socket.emit('mt-controle-entrar', { codigo }); }
+  socket.on('connect', () => { $('st').textContent = 'conectado'; $('st').classList.add('on'); entrar(); });
+  socket.on('disconnect', () => { $('st').textContent = 'reconectando'; $('st').classList.remove('on'); });
+  socket.on('mt-controle-erro', d => { document.getElementById('app').innerHTML = `<div class="erro">⚠️<br><br>${esc(d.error)}</div>`; });
+  socket.on('mt-controle-ok', d => { $('tt').textContent = '🎤 ' + d.titulo; socket.emit('mt-comando', { cmd: 'pedir-estado' }); });
+  socket.on('mt-estado', e => {
+    estado = e; if (e.ini) ini = e.ini;
+    $('rot').textContent = (e.modulo ? e.modulo.toUpperCase() : 'APRESENTAÇÃO');
+    $('nome').textContent = e.titulo || '—';
+    $('cont').textContent = `Tela ${e.i + 1} de ${e.total}`;
+    $('prox').innerHTML = e.proximo ? 'Próximo: <strong>' + esc(e.proximo) + '</strong>' : '<strong>Última tela</strong>';
+    $('notas').innerHTML = e.notas ? textoHtml(e.notas) : '<span style="opacity:.55">Sem notas neste slide.</span>';
+    $('barra').style.width = Math.round((e.i + 1) * 100 / e.total) + '%';
+    $('ant').disabled = e.i <= 0; $('prx').disabled = e.i >= e.total - 1;
+  });
+  function cmd(c) { if (navigator.vibrate) navigator.vibrate(15); socket.emit('mt-comando', { cmd: c }); }
+  setInterval(() => { if (!ini) return; const s = Math.floor((Date.now() - ini) / 1000); $('rel').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }, 1000);
+  // Passar slide deslizando o dedo também.
+  let x0 = null;
+  document.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 70) cmd(dx < 0 ? 'proximo' : 'anterior'); x0 = null; });
+</script>
+</body>
+</html>

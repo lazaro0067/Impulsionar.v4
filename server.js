@@ -8797,7 +8797,7 @@ app.get('/api/admin/treinamentos-mt/:id', requireRole('admin'), async (req, res)
         const tk = await garantirAtaTokenMt(t);
         const nAss = await dbGet(`SELECT COUNT(*) n FROM treinamentos_mt_presencas WHERE treinamento_id = ?`, [t.id]);
         res.json({ ...t, modulos, check, ata: { link: `${baseUrlPublicaDpo(req)}/assinatura.html?t=${tk}`, ativa: t.ata_ativa !== 0, assinaturas: nAss ? nAss.n : 0 },
-            divulgacao: { instagram: cfg.impulsionar_instagram || '', whatsapp: cfg.impulsionar_whatsapp || '', site: cfg.impulsionar_site || '' } });
+            divulgacao: divulgacaoMt(cfg) });
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar o treinamento.' }); }
 });
 
@@ -8900,7 +8900,14 @@ function gerarCheckLocalMt(modulos, qtd, abertas) {
 }
 
 // Configurações do Ministrar Treinamento: redes da Impulsionar (aparecem no fim) e chave da IA.
-const CHAVES_CFG_MT = ['impulsionar_instagram', 'impulsionar_whatsapp', 'impulsionar_site', 'anthropic_api_key', 'anthropic_model'];
+const CHAVES_CFG_MT = ['impulsionar_instagram', 'impulsionar_whatsapp', 'impulsionar_site', 'impulsionar_instagram_link', 'impulsionar_whatsapp_link', 'anthropic_api_key', 'anthropic_model'];
+function divulgacaoMt(cfg) {
+    const insta = cfg.impulsionar_instagram || '', zap = cfg.impulsionar_whatsapp || '';
+    const dig = zap.replace(/\D/g, '');
+    return { instagram: insta, whatsapp: zap, site: cfg.impulsionar_site || '',
+        instagramLink: cfg.impulsionar_instagram_link || (insta ? 'https://instagram.com/' + insta.replace(/^@/, '') : ''),
+        whatsappLink: cfg.impulsionar_whatsapp_link || (dig ? 'https://wa.me/' + (dig.length <= 11 ? '55' + dig : dig) : '') };
+}
 async function lerConfigMt() {
     const rows = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN (${CHAVES_CFG_MT.map(() => '?').join(',')})`, CHAVES_CFG_MT);
     return Object.fromEntries(rows.map(r => [r.key, r.value || '']));
@@ -8908,7 +8915,7 @@ async function lerConfigMt() {
 app.get('/api/admin/treinamentos-mt-config', requireRole('admin'), async (req, res) => {
     try {
         const c = await lerConfigMt();
-        res.json({ instagram: c.impulsionar_instagram || '', whatsapp: c.impulsionar_whatsapp || '', site: c.impulsionar_site || '',
+        res.json({ instagram: c.impulsionar_instagram || '', whatsapp: c.impulsionar_whatsapp || '', site: c.impulsionar_site || '', instagramLink: c.impulsionar_instagram_link || '', whatsappLink: c.impulsionar_whatsapp_link || '',
             iaAtiva: !!ANTHROPIC_API_KEY, iaOrigem: c.anthropic_api_key ? 'sistema' : (process.env.ANTHROPIC_API_KEY ? 'servidor' : ''), iaPreview: ANTHROPIC_API_KEY ? '••••' + ANTHROPIC_API_KEY.slice(-4) : '', modelo: ANTHROPIC_MODEL });
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar as configurações.' }); }
 });
@@ -8919,6 +8926,9 @@ app.put('/api/admin/treinamentos-mt-config', requireRole('admin'), async (req, r
         await salvar('impulsionar_instagram', insta ? '@' + insta : '');
         await salvar('impulsionar_whatsapp', String(req.body.whatsapp || '').trim().slice(0, 30));
         await salvar('impulsionar_site', String(req.body.site || '').trim().slice(0, 120));
+        const linkOk = v => { const t = String(v || '').trim(); return /^https?:\/\/\S+$/i.test(t) ? t.slice(0, 300) : ''; };
+        await salvar('impulsionar_instagram_link', linkOk(req.body.instagramLink));
+        await salvar('impulsionar_whatsapp_link', linkOk(req.body.whatsappLink));
         let aviso = '';
         if (req.body.chaveIa !== undefined && String(req.body.chaveIa).trim()) {
             const chave = String(req.body.chaveIa).trim();
@@ -8931,6 +8941,20 @@ app.put('/api/admin/treinamentos-mt-config', requireRole('admin'), async (req, r
         if (req.body.removerChaveIa) { await salvar('anthropic_api_key', ''); ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || ''; }
         res.json({ message: 'Configurações salvas!' + aviso });
     } catch (e) { res.status(400).json({ error: 'Erro ao salvar as configurações.' }); }
+});
+
+// ----- Controle da apresentação pelo celular (link + Socket.IO) -----
+const CONTROLES_MT = new Map(); // codigo -> { treinamentoId, titulo, criado }
+app.post('/api/admin/treinamentos-mt/:id/controle', requireRole('admin'), async (req, res) => {
+    try {
+        const t = await dbGet(`SELECT id, titulo FROM treinamentos_mt WHERE id = ?`, [req.params.id]);
+        if (!t) return res.status(404).json({ error: 'Treinamento não encontrado.' });
+        const agora = Date.now();
+        for (const [k, v] of CONTROLES_MT) if (agora - v.criado > 12 * 3600 * 1000) CONTROLES_MT.delete(k);
+        let codigo = [...CONTROLES_MT.entries()].find(([k, v]) => v.treinamentoId === t.id && v.userId === req.user.userId)?.[0];
+        if (!codigo) { codigo = crypto.randomBytes(6).toString('hex'); CONTROLES_MT.set(codigo, { treinamentoId: t.id, titulo: consertarAcentoMt(t.titulo), criado: agora, userId: req.user.userId }); }
+        res.json({ codigo, link: `${baseUrlPublicaDpo(req)}/controle.html?c=${codigo}` });
+    } catch (e) { res.status(500).json({ error: 'Erro ao gerar o controle.' }); }
 });
 
 // ----- Ata de presença com assinatura (link público) -----
@@ -12054,6 +12078,32 @@ function entrarNaSalaVideochamada(socket, sala, participante) {
 }
 
 io.on('connection', (socket) => {
+    // Controle remoto da apresentação (Ministrar Treinamento).
+    socket.on('mt-apresentador', ({ codigo, token } = {}) => {
+        try {
+            const payload = jwt.verify(String(token || ''), JWT_SECRET);
+            if (payload.role !== 'admin' || !CONTROLES_MT.has(String(codigo))) return;
+            socket.join('mtc:' + codigo); socket.data.mtc = { codigo: String(codigo), papel: 'apresentador' };
+            const n = (io.sockets.adapter.rooms.get('mtc:' + codigo) || new Set()).size - 1;
+            socket.emit('mt-controles', { conectados: Math.max(0, n) });
+        } catch (e) { /* token inválido */ }
+    });
+    socket.on('mt-controle-entrar', ({ codigo } = {}) => {
+        const c = CONTROLES_MT.get(String(codigo || ''));
+        if (!c) return socket.emit('mt-controle-erro', { error: 'Link de controle inválido ou expirado. Gere um novo na apresentação.' });
+        socket.join('mtc:' + codigo); socket.data.mtc = { codigo: String(codigo), papel: 'controle' };
+        socket.emit('mt-controle-ok', { titulo: c.titulo });
+        socket.to('mtc:' + codigo).emit('mt-controle-conectou', {});
+    });
+    socket.on('mt-comando', ({ cmd, i } = {}) => {
+        const m = socket.data.mtc; if (!m || m.papel !== 'controle') return;
+        if (!['proximo', 'anterior', 'ir', 'pedir-estado'].includes(cmd)) return;
+        socket.to('mtc:' + m.codigo).emit('mt-comando', { cmd, i: Number(i) || 0 });
+    });
+    socket.on('mt-estado', (estado = {}) => {
+        const m = socket.data.mtc; if (!m || m.papel !== 'apresentador') return;
+        socket.to('mtc:' + m.codigo).emit('mt-estado', estado);
+    });
     socket.on('entrar-sala-mentoria', async ({ mentorshipId, token }) => {
         try {
             const payload = jwt.verify(token, JWT_SECRET);
