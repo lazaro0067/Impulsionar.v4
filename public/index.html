@@ -11205,7 +11205,8 @@ function mtAbrirCriarComIa() {
   ma.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
     <div class="modal-caixa" style="max-width:640px;max-height:92vh;overflow-y:auto;">
       <h3 style="margin-top:0;">✨ Criar treinamento com a IA da Impulsionar</h3>
-      <div class="plano-meta" style="margin-bottom:8px;">Conte o que você precisa: a IA monta os módulos, os slides no padrão Impulsionar e o roteiro do apresentador. Depois é só revisar.</div>
+      <div class="plano-meta" style="margin-bottom:8px;">Conte o que você precisa: a IA pesquisa o tema na internet, monta os módulos, os slides no padrão Impulsionar, o roteiro do apresentador e as referências. Depois é só revisar.</div>
+      <div id="ia-status-box"><div class="plano-meta">Verificando a IA...</div></div>
       <label>O que você quer treinar? *</label>
       <input id="ia-tema" placeholder="ex: Feedback para líderes de primeira viagem">
       <label>Quais problemas esse treinamento precisa resolver?</label>
@@ -11221,12 +11222,31 @@ function mtAbrirCriarComIa() {
         <div><label>Duração (min)</label><input id="ia-dur" type="number" min="10" max="480" value="60"></div>
         <div><label>Quantidade de slides (aprox.)</label><input id="ia-qtd" type="number" min="5" max="40" value="15"></div>
       </div>
+      <label style="display:flex;align-items:center;gap:8px;font-weight:600;margin-top:10px;cursor:pointer;"><input type="checkbox" id="ia-web" checked style="width:auto;margin:0;"> 🔎 Pesquisar na internet (modelos, autores, dados e boas práticas)</label>
       <div class="acoes-form" style="margin-top:14px;">
         <button class="btn-primario mt-btn-ia" style="width:auto;" onclick="mtCriarComIa()">✨ Criar treinamento</button>
         <button class="btn-secundario" style="width:auto;" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button>
       </div>
     </div></div>`;
   setTimeout(() => document.getElementById('ia-tema').focus(), 50);
+  mtStatusIa('ia-status-box');
+}
+// Mostra se a IA está conectada e, se não estiver, o campo para colar a chave ali mesmo.
+async function mtStatusIa(alvoId) {
+  const box = document.getElementById(alvoId); if (!box) return;
+  let c = {}; try { c = await api('/api/admin/treinamentos-mt-config'); } catch (e) { box.innerHTML = ''; return; }
+  if (c.iaAtiva) { box.innerHTML = `<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:6px;">🟢 IA conectada${c.modelo ? ' · ' + escapeHtml(c.modelo) : ''}</div>`; return; }
+  box.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:13px;margin-bottom:6px;color:#7f1d1d;">
+    <strong>🔴 A IA está desconectada</strong> — ${c.iaChaveRecusada ? 'a chave cadastrada foi recusada pela Anthropic (inválida ou sem crédito).' : 'nenhuma chave cadastrada.'} Sem ela o sistema só monta a base com pesquisa simples.
+    <div style="margin-top:8px;color:#334155;">Cole aqui a chave da API da Anthropic (crie em <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com › API Keys</a>, começa com <code>sk-ant-</code>):</div>
+    <div style="display:flex;gap:8px;margin-top:6px;"><input id="${alvoId}-chave" type="password" placeholder="sk-ant-..." style="margin:0;flex:1;"><button class="btn-primario btn-sm" style="width:auto;" onclick="mtConectarIa('${alvoId}')">Conectar IA</button></div>
+  </div>`;
+}
+async function mtConectarIa(alvoId) {
+  const i = document.getElementById(alvoId + '-chave'); const chave = (i && i.value || '').trim();
+  if (!chave) return mostrarToast('Cole a chave da IA.', true);
+  try { const r = await api('/api/admin/treinamentos-mt-config/ia', { method: 'POST', body: JSON.stringify({ chave }) }); mostrarToast(r.message); if (MT.doc) MT.doc.iaAtiva = true; mtStatusIa(alvoId); }
+  catch (e) { mostrarToast(e.message, true); }
 }
 function mtIaFotosPrev(inp) {
   const fs = Array.from(inp.files || []), box = document.getElementById('ia-fotos-prev');
@@ -11267,7 +11287,7 @@ function mtShowLayoutFoto() {
 }
 async function mtCriarComIa() {
   const v = id => document.getElementById(id).value.trim();
-  const corpo = { tema: v('ia-tema'), problemas: v('ia-prob'), contexto: v('ia-ctx'), duracao: Number(v('ia-dur')) || 60, qtdSlides: Number(v('ia-qtd')) || 15, publico: window.__mtIaPub };
+  const corpo = { tema: v('ia-tema'), problemas: v('ia-prob'), contexto: v('ia-ctx'), duracao: Number(v('ia-dur')) || 60, qtdSlides: Number(v('ia-qtd')) || 15, publico: window.__mtIaPub, pesquisar: !!(document.getElementById('ia-web') || {}).checked };
   if (!corpo.tema) return mostrarToast('Diga o que você quer treinar.', true);
   const arqs = Array.from((document.getElementById('ia-fotos') || {}).files || []);
   document.getElementById('modal-area').innerHTML = '';
@@ -11276,11 +11296,24 @@ async function mtCriarComIa() {
       corpo.fotos = [];
       for (let k = 0; k < arqs.length; k++) { mtCarregandoIa(`Enviando foto ${k + 1} de ${arqs.length}...`); const up = await mtEnviarArquivo(arqs[k]); corpo.fotos.push(up.url); }
     }
-    mtCarregandoIa('A IA da Impulsionar está montando seu treinamento...');
+    mtCarregandoIa(corpo.pesquisar ? 'A IA da Impulsionar está pesquisando o tema na internet e montando o material... (pode levar 1 a 2 minutos)' : 'A IA da Impulsionar está montando seu treinamento...');
     const r = await api('/api/admin/treinamentos-mt/ia/criar', { method: 'POST', body: JSON.stringify(corpo) });
     mtCarregandoIa(null);
-    mostrarToast(r.message);
-    mtAbrirEditor(r.id);
+    await mtAbrirEditor(r.id);
+    if (r.viaIa) mostrarToast(r.message);
+    else {
+      let ma = document.getElementById('modal-area');
+      if (!ma) { document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>'); ma = document.getElementById('modal-area'); }
+      ma.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="modal-caixa" style="max-width:560px;">
+        <h3 style="margin-top:0;">⚠️ A IA não criou o material completo</h3>
+        <p style="font-size:14px;line-height:1.5;">${escapeHtml(r.message)}</p>
+        ${(r.fontes || []).length ? `<div class="plano-meta" style="margin-bottom:8px;">Fontes usadas: ${r.fontes.map(f => `<a href="${escapeHtml(f.url)}" target="_blank" rel="noopener">${escapeHtml(f.titulo)}</a>`).join(' · ')}</div>` : ''}
+        <div id="ia-status-pos"></div>
+        <div class="plano-meta" style="font-size:12px;">Depois de conectar, crie de novo pelo ✨ Criar com IA.</div>
+        <div class="acoes-form"><button class="btn-secundario" style="width:auto;" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button></div>
+      </div></div>`;
+      mtStatusIa('ia-status-pos');
+    }
   } catch (e) { mtCarregandoIa(null); mostrarToast(e.message, true); }
 }
 

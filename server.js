@@ -9351,6 +9351,97 @@ app.post('/api/admin/treinamentos-mt/ia/estruturar', requireRole('admin'), async
         res.json({ slides: out, viaIa: false, semIa: !!e.semIa, aviso: 'Slides ajustados automaticamente no padrão Impulsionar (tópicos curtos, explicações nas notas).' + (e.semIa ? ' ' + e.message : '') });
     }
 });
+// IA com pesquisa na internet (ferramenta web_search da Anthropic). Devolve o texto
+// final e as fontes consultadas. Se a pesquisa não estiver liberada na conta, tenta sem ela.
+async function iaPesquisarMt(sistema, pedido, maxTokens, comWeb) {
+    if (!iaDisponivelMt()) { const e = new Error('A IA ainda não está conectada. Cadastre uma chave válida da Anthropic.'); e.semIa = true; throw e; }
+    const chamar = async (mensagens, usarWeb) => {
+        const corpo = { model: ANTHROPIC_MODEL, max_tokens: maxTokens || 16000, system: sistema, messages: mensagens };
+        if (usarWeb) corpo.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 8, user_location: { type: 'approximate', country: 'BR', timezone: 'America/Sao_Paulo' } }];
+        const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) {
+            if (r.status === 401 || r.status === 403) { CHAVE_IA_RECUSADA_MT = ANTHROPIC_API_KEY; const e = new Error('A chave da IA cadastrada não é válida. Cadastre uma chave nova.'); e.semIa = true; throw e; }
+            const e = new Error('IA: ' + ((j.error && j.error.message) || ('erro ' + r.status))); e.status = r.status; throw e;
+        }
+        return j;
+    };
+    let usarWeb = !!comWeb, mensagens = [{ role: 'user', content: pedido }], blocos = [], j;
+    for (let volta = 0; volta < 4; volta++) {
+        try { j = await chamar(mensagens, usarWeb); }
+        catch (e) { if (usarWeb && !e.semIa && e.status === 400) { usarWeb = false; blocos = []; mensagens = [{ role: 'user', content: pedido }]; j = await chamar(mensagens, false); } else throw e; }
+        blocos = blocos.concat(j.content || []);
+        if (j.stop_reason !== 'pause_turn') break;
+        mensagens = [{ role: 'user', content: pedido }, { role: 'assistant', content: blocos }];
+    }
+    const fontes = new Map();
+    blocos.forEach(b => {
+        if (b.type === 'web_search_tool_result' && Array.isArray(b.content)) b.content.forEach(x => { if (x.url && !fontes.has(x.url)) fontes.set(x.url, { url: x.url, titulo: x.title || x.url }); });
+        (b.citations || []).forEach(c => { if (c.url && !fontes.has(c.url)) fontes.set(c.url, { url: c.url, titulo: c.title || c.url }); });
+    });
+    const texto = blocos.filter(b => b.type === 'text').map(b => b.text || '').join('');
+    return { texto, fontes: Array.from(fontes.values()), pesquisou: usarWeb && blocos.some(b => b.type === 'server_tool_use') };
+}
+function extrairJsonMt(txt) {
+    // O texto pode ter comentários da pesquisa antes do JSON: testa cada "{" até achar o objeto completo.
+    const fim = txt.lastIndexOf('}');
+    for (let ini = txt.indexOf('{'); ini >= 0 && ini < fim; ini = txt.indexOf('{', ini + 1)) {
+        try { const o = JSON.parse(txt.slice(ini, fim + 1)); if (o && typeof o === 'object' && (o.modulos || o.slides)) return o; } catch (e) { /* tenta o próximo */ }
+    }
+    throw new Error('IA: a resposta veio num formato inesperado. Tente de novo.');
+}
+
+// Sem IA: pesquisa o tema na Wikipédia (gratuita, sem chave) para montar conteúdo real.
+async function pesquisarWikipediaMt(tema, maxSlides) {
+    const ua = { 'User-Agent': 'ImpulsionarV4/1.0 (treinamentos; contato@impulsionarv4.com.br)' };
+    const base = 'https://pt.wikipedia.org/w/api.php?format=json&origin=*&';
+    const termos = [tema, tema.split(/\s+/).filter(p => p.length > 3).slice(0, 3).join(' ')].filter((x, i, a) => x && a.indexOf(x) === i);
+    let titulos = [];
+    for (const t of termos) {
+        try {
+            const r = await fetch(base + 'action=query&list=search&srlimit=3&srsearch=' + encodeURIComponent(t), { headers: ua, signal: AbortSignal.timeout(8000) });
+            const j = await r.json(); titulos = (j.query && j.query.search || []).map(x => x.title);
+            if (titulos.length) break;
+        } catch (e) { /* sem internet */ }
+    }
+    const slides = [], fontes = [];
+    const ignorar = /^(ver também|referências|bibliografia|ligações externas|notas|leitura adicional|fontes|galeria)/i;
+    const frases = txt => String(txt || '').replace(/\s+/g, ' ').split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/).map(f => f.trim()).filter(f => f.length > 25 && f.length < 220 && !/\(\s*\)|\[|\{/.test(f));
+    for (const titulo of titulos.slice(0, 2)) {
+        if (slides.length >= maxSlides) break;
+        try {
+            const r = await fetch(base + 'action=query&prop=extracts&explaintext=1&exsectionformat=wiki&redirects=1&titles=' + encodeURIComponent(titulo), { headers: ua, signal: AbortSignal.timeout(8000) });
+            const j = await r.json(); const pg = Object.values((j.query && j.query.pages) || {})[0];
+            if (!pg || !pg.extract) continue;
+            fontes.push({ titulo: 'Wikipédia — ' + pg.title, url: 'https://pt.wikipedia.org/wiki/' + encodeURIComponent(pg.title.replace(/ /g, '_')) });
+            const partes = ('== ' + pg.title + ' ==\n' + pg.extract).split(/\n==+\s*(.+?)\s*==+\n/);
+            // partes: [antes, titulo1, texto1, titulo2, texto2...]
+            const secoes = [{ t: pg.title, x: partes[0].replace(/^== .+ ==\n/, '') }];
+            for (let k = 1; k < partes.length; k += 2) secoes.push({ t: partes[k], x: partes[k + 1] || '' });
+            for (const sc of secoes) {
+                if (slides.length >= maxSlides) break;
+                if (ignorar.test(sc.t)) continue;
+                const fs = frases(sc.x); if (fs.length < 2) continue;
+                slides.push({ titulo: sc.t === pg.title ? 'O que é ' + pg.title.toLowerCase() : sc.t, topicos: fs.slice(0, 4), notas: 'Fonte: Wikipédia (' + pg.title + '). Traga um exemplo da operação para ilustrar este ponto.' });
+            }
+        } catch (e) { /* segue */ }
+    }
+    return { slides, fontes };
+}
+
+app.post('/api/admin/treinamentos-mt-config/ia', requireRole('admin'), async (req, res) => {
+    try {
+        const chave = String(req.body.chave || '').trim();
+        if (!/^sk-ant-/.test(chave)) return res.status(400).json({ error: 'Essa não parece uma chave da Anthropic (começa com "sk-ant-").' });
+        const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': chave, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: ANTHROPIC_MODEL, max_tokens: 5, messages: [{ role: 'user', content: 'ok' }] }) }).catch(e => ({ ok: false, json: async () => ({ error: { message: e.message } }) }));
+        if (!r.ok) { const j = await r.json().catch(() => ({})); return res.status(400).json({ error: 'A chave não funcionou: ' + ((j.error && j.error.message) || 'erro') }); }
+        await new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES ('anthropic_api_key', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [chave], () => ok()));
+        ANTHROPIC_API_KEY = chave; CHAVE_IA_RECUSADA_MT = '';
+        res.json({ message: 'IA conectada! ✅', iaAtiva: true });
+    } catch (e) { res.status(500).json({ error: 'Erro ao salvar a chave.' }); }
+});
+
 app.post('/api/admin/treinamentos-mt/ia/criar', requireRole('admin'), async (req, res) => {
     const b = req.body || {};
     const tema = String(b.tema || '').trim().slice(0, 500), problemas = String(b.problemas || '').trim().slice(0, 3000);
@@ -9358,36 +9449,71 @@ app.post('/api/admin/treinamentos-mt/ia/criar', requireRole('admin'), async (req
     const contexto = String(b.contexto || '').trim().slice(0, 3000);
     const duracao = Math.max(10, Math.min(480, Number(b.duracao) || 60));
     const qtd = Math.max(5, Math.min(40, Number(b.qtdSlides) || Math.round(duracao / 4)));
+    const comWeb = b.pesquisar !== false;
     if (!tema) return res.status(400).json({ error: 'Diga o que você quer treinar.' });
-    let estrutura, viaIa = true, aviso = '';
+    let estrutura, viaIa = true, aviso = '', fontes = [], pesquisou = false, semIa = false;
     try {
-        estrutura = await iaJsonMt(`Você é o designer instrucional da Impulsionar, consultoria de gestão de processos e desenvolvimento de pessoas (logística, distribuição, revendas Ambev, operação). Crie treinamentos práticos, aplicáveis no dia a dia, com exemplos reais de operação. Responda APENAS com JSON.\n${PADRAO_IMPULSIONAR_MT}`,
-            `Crie um treinamento completo.\nO QUE TREINAR: ${tema}\nPROBLEMAS QUE PRECISA RESOLVER: ${problemas || '(não informado)'}\nPÚBLICO: ${ROTULOS_PUBLICO_MT[publico]}\nCONTEXTO DA EMPRESA/OPERAÇÃO: ${contexto || '(não informado)'}\nDURAÇÃO: ${duracao} minutos (~${qtd} slides no total)\n\nEstrutura: abertura com o problema real → 2 a 4 módulos de conteúdo (conceitos + como fazer na prática + exemplo) → exercício/dinâmica rápida → plano de ação (o que cada um faz amanhã) → fechamento com frase de impacto.\nFormato: {"titulo":"...","objetivo":"1 frase","modulos":[{"titulo":"...","slides":[{"titulo":"...","topicos":["..."],"notas":"roteiro do apresentador","layout":"padrao"}]}]}`, 16000);
+        const sistema = `Você é o designer instrucional sênior da Impulsionar, consultoria de gestão de processos e desenvolvimento de pessoas (logística, distribuição, revendas Ambev, operação). Você cria treinamentos corporativos de nível profissional: embasados em referências reconhecidas (autores, modelos e metodologias consagradas, pesquisas e dados de fontes confiáveis), práticos e aplicáveis no dia a dia da operação.
+${comWeb ? 'ANTES de escrever, PESQUISE NA INTERNET o tema (modelos/metodologias de referência, dados e pesquisas recentes, boas práticas, erros comuns, exemplos reais de empresas). Use o que encontrar para dar profundidade e credibilidade. Cite autores/modelos pelo nome nos slides quando fizer sentido (ex.: "Modelo SBI — Center for Creative Leadership"). Nunca invente números: só use dados que você encontrou, mencionando a fonte nas notas.' : ''}
+No FINAL da resposta, entregue APENAS o JSON pedido (sem texto depois dele).
+${PADRAO_IMPULSIONAR_MT}`;
+        const pedido = `Crie um treinamento completo e profissional.
+O QUE TREINAR: ${tema}
+PROBLEMAS QUE PRECISA RESOLVER: ${problemas || '(não informado)'}
+PÚBLICO: ${ROTULOS_PUBLICO_MT[publico]}
+CONTEXTO DA EMPRESA/OPERAÇÃO: ${contexto || '(não informado)'}
+DURAÇÃO: ${duracao} minutos (~${qtd} slides no total)
+
+Estrutura esperada:
+1. Abertura: o problema real (com um dado ou fato pesquisado que gere impacto) e os objetivos do encontro.
+2. De 2 a 4 módulos de conteúdo: conceito explicado de forma simples → modelo/metodologia de referência (passo a passo) → como fazer na prática na operação → exemplo/caso real → erros comuns.
+3. Exercício ou dinâmica com instruções claras (tempo, grupos, o que entregar).
+4. Plano de ação: o que cada participante faz a partir de amanhã e como medir.
+5. Fechamento com frase de impacto.
+Notas de cada slide = roteiro do apresentador (o que falar, exemplo prático, pergunta para o grupo, e a fonte quando usar um dado).
+Formato: {"titulo":"...","objetivo":"1 frase","modulos":[{"titulo":"...","slides":[{"titulo":"...","topicos":["..."],"notas":"...","layout":"padrao"}]}],"referencias":[{"titulo":"...","url":"..."}]}`;
+        const r = await iaPesquisarMt(sistema, pedido, 16000, comWeb);
+        estrutura = extrairJsonMt(r.texto); pesquisou = r.pesquisou;
+        fontes = r.fontes.slice();
+        (Array.isArray(estrutura.referencias) ? estrutura.referencias : []).forEach(x => { if (x && x.url && /^https?:\/\//.test(x.url) && !fontes.some(f => f.url === x.url)) fontes.push({ url: String(x.url), titulo: String(x.titulo || x.url) }); });
     } catch (e) {
-        if (!e.semIa && !/IA:/.test(e.message)) return res.status(500).json({ error: e.message });
-        // segue com o esqueleto local
-        viaIa = false; aviso = e.message;
+        if (!e.semIa && !/IA:/.test(e.message) && !/formato inesperado/.test(e.message)) return res.status(500).json({ error: e.message });
+        viaIa = false; semIa = !!e.semIa; aviso = e.message;
         const probs = problemas.split(/\n|;|,(?=\s*[A-ZÁÉÍÓÚ])/).map(x => x.trim()).filter(Boolean).slice(0, 5);
+        const wiki = comWeb ? await pesquisarWikipediaMt(tema, Math.max(3, qtd - 7)) : { slides: [], fontes: [] };
+        fontes = wiki.fontes;
+        const conteudo = wiki.slides.length ? wiki.slides : [{ titulo: 'Conceito principal', topicos: ['(escreva o conceito)', '(por que ele importa)', '(o erro mais comum)'], notas: 'Complete com o conteúdo do treinamento.' }];
         estrutura = { titulo: tema.slice(0, 120), objetivo: problemas ? 'Resolver: ' + probs.join('; ') : '', modulos: [
             { titulo: 'Abertura', slides: [{ titulo: 'Por que estamos aqui', topicos: probs.length ? probs : ['O desafio que vamos resolver hoje'], notas: 'Abra com um caso real da operação que mostre o problema.' }, { titulo: 'O que você vai levar daqui', topicos: ['O que é ' + tema, 'Como aplicar no dia a dia', 'Seu plano de ação para amanhã'], notas: '' }] },
-            { titulo: tema.slice(0, 80), slides: [{ titulo: 'Conceito principal', topicos: ['(escreva o conceito)', '(por que ele importa)', '(o erro mais comum)'], notas: 'Complete com o conteúdo do treinamento.' }, { titulo: 'Como fazer na prática', topicos: ['Passo 1', 'Passo 2', 'Passo 3'], notas: '' }, { titulo: 'Exemplo da operação', topicos: ['Situação', 'O que foi feito', 'Resultado'], notas: '' }] },
+            { titulo: tema.slice(0, 80), slides: conteudo.concat([{ titulo: 'Como fazer na prática', topicos: ['Passo 1', 'Passo 2', 'Passo 3'], notas: 'Traduza o conteúdo acima em passos simples para a operação.' }, { titulo: 'Exemplo da operação', topicos: ['Situação', 'O que foi feito', 'Resultado'], notas: '' }]) },
             { titulo: 'Na prática', slides: [{ titulo: 'Dinâmica rápida', topicos: ['Em duplas: identifique um caso real', 'Aplique o passo a passo', 'Compartilhe com o grupo'], notas: '' }, { titulo: 'Seu plano de ação', topicos: ['O que vou fazer amanhã', 'Com quem', 'Como vou medir'], notas: '' }] },
             { titulo: 'Fechamento', slides: [{ titulo: 'Resultado vem da rotina, não do discurso', topicos: ['Comece pequeno, mas comece amanhã'], notas: '', layout: 'destaque' }] }] };
     }
     try {
         const modulos = (estrutura.modulos || []).slice(0, 12).map((m, i) => ({ id: 'm' + Date.now().toString(36) + i, titulo: String(m.titulo || `Módulo ${i + 1}`).slice(0, 200), tipo: 'slides', slides: normalizarSlidesIaMt(m.slides) })).filter(m => m.slides.length);
         if (!modulos.length) return res.status(400).json({ error: 'Não consegui montar o treinamento. Tente detalhar mais o tema.' });
+        // Slide de referências (fontes pesquisadas) antes do fechamento.
+        const refs = fontes.filter(f => f.url).slice(0, 8);
+        if (refs.length) {
+            const slideRef = { titulo: 'Referências', texto: refs.map(f => '• ' + String(f.titulo).slice(0, 110)).join('\n'), notas: 'Fontes consultadas:\n' + refs.map(f => f.titulo + ' — ' + f.url).join('\n'), imagem: '', layout: 'padrao' };
+            const ult = modulos[modulos.length - 1];
+            if (ult && modulos.length > 1) ult.slides.splice(Math.max(0, ult.slides.length - 1), 0, slideRef); else modulos.push({ id: 'mref' + Date.now().toString(36), titulo: 'Referências', tipo: 'slides', slides: [slideRef] });
+        }
         // Fotos enviadas junto: distribui pelos slides de conteúdo (espalhadas do começo ao fim).
         const fotos = (Array.isArray(b.fotos) ? b.fotos : []).map(String).filter(u => /^\/uploads\/[\w.\-]+$/.test(u)).slice(0, 40);
         if (fotos.length) {
-            const alvos = []; modulos.forEach(m => m.slides.forEach(sl => { if (sl.layout === 'padrao') alvos.push(sl); }));
+            const alvos = []; modulos.forEach(m => m.slides.forEach(sl => { if (sl.layout === 'padrao' && sl.titulo !== 'Referências') alvos.push(sl); }));
             fotos.forEach((u, k) => { const sl = alvos[Math.floor(k * alvos.length / fotos.length)]; if (sl && !sl.imagem) sl.imagem = u; });
         }
         const d = camposTreinamentoMt({ titulo: String(estrutura.titulo || tema).slice(0, 200), objetivo: String(estrutura.objetivo || '').slice(0, 3000), publico, duracao_min: duracao, status: 'rascunho', modulos });
         const cols = Object.keys(d);
         const id = await new Promise((ok, ko) => db.run(`INSERT INTO treinamentos_mt (${cols.join(', ')}, created_by, updated_at) VALUES (${cols.map(() => '?').join(', ')}, ?, CURRENT_TIMESTAMP)`,
             [...cols.map(c => d[c]), req.user.userId], function (err) { err ? ko(err) : ok(this.lastID); }));
-        res.json({ id, viaIa, aviso, message: viaIa ? `✨ Treinamento criado pela IA com ${modulos.reduce((s, m) => s + m.slides.length, 0)} slides — revise e ajuste.` : 'Montei a estrutura base do treinamento (sem IA). Complete os slides ou cadastre a chave da IA para gerar o conteúdo completo.' });
+        const n = modulos.reduce((s, m) => s + m.slides.length, 0);
+        const message = viaIa
+            ? `✨ Treinamento criado pela IA com ${n} slides${pesquisou ? `, pesquisado na internet (${fontes.length} fontes no slide Referências)` : ''}. Revise e ajuste.`
+            : (fontes.length ? `Montei a base do treinamento com conteúdo pesquisado na internet (${fontes.map(f => f.titulo).join(', ')}). Para a IA criar o material completo e profissional, conecte a IA com uma chave válida.` : 'Montei só a estrutura base, porque a IA não está conectada. Conecte a IA com uma chave válida para ela pesquisar e montar o material completo.');
+        res.json({ id, viaIa, semIa, aviso, fontes: refs, message });
     } catch (e) { res.status(500).json({ error: 'Erro ao salvar o treinamento.' }); }
 });
 
