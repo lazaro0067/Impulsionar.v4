@@ -614,7 +614,14 @@
   .mt-sl-txt { font-size:1.7em; line-height:1.45; color:#334155; flex:1; }
   .mt-sl-txt p { margin:0 0 .45em; } .mt-sl-txt ul { margin:0; padding-left:1.1em; } .mt-sl-txt li { margin-bottom:.4em; }
   .mt-sl-txt li::marker { color:var(--c); }
-  .mt-sl-fig { flex:1; display:flex; align-items:center; justify-content:center; } .mt-sl-fig img { max-width:100%; max-height:28em; border-radius:.6em; box-shadow:0 .4em 1.2em rgba(0,0,0,.15); }
+  .mt-sl-fig { flex:1; display:flex; align-items:center; justify-content:center; } .mt-sl-fig img { max-width:100%; max-height:20em; border-radius:.6em; box-shadow:0 .4em 1.2em rgba(0,0,0,.15); }
+  .mt-sl-fig.tam { flex:0 0 auto; position:relative; } .mt-sl-fig.tam img { width:100%; max-width:none; max-height:21em; object-fit:contain; }
+  .mt-sl-fig.editavel { position:relative; outline:.12em dashed #2563eb; outline-offset:.3em; flex:0 0 auto; }
+  .mt-sl-fig.editavel img { width:100%; max-width:none; max-height:none; user-select:none; -webkit-user-drag:none; display:block; }
+  .mt-img-alca { position:absolute; width:1.6em; height:1.6em; background:#2563eb; border:.2em solid #fff; border-radius:50%; box-shadow:0 .1em .4em rgba(0,0,0,.35); z-index:3; touch-action:none; }
+  .mt-img-alca.se { right:-.8em; bottom:-.8em; cursor:nwse-resize; } .mt-img-alca.sw { left:-.8em; bottom:-.8em; cursor:nesw-resize; }
+  .mt-img-alca.ne { right:-.8em; top:-.8em; cursor:nesw-resize; } .mt-img-alca.nw { left:-.8em; top:-.8em; cursor:nwse-resize; }
+  .mt-img-tam-rot { position:absolute; left:50%; top:-2.4em; transform:translateX(-50%); background:#0f172a; color:#fff; font-size:.9em; padding:.2em .6em; border-radius:.4em; white-space:nowrap; pointer-events:none; }
   .mt-sl-rod { position:absolute; right:2em; bottom:1.4em; font-size:1em; font-weight:800; color:#94a3b8; letter-spacing:.05em; }
   .mt-sl-dest { background:var(--c); color:#fff; display:flex; flex-direction:column; justify-content:center; padding:4em 6em; }
   .mt-sl-dest-t { font-size:4em; font-weight:800; line-height:1.1; }
@@ -917,6 +924,174 @@
   .man-fotos small { display:block; font-size:11px; color:#475569; } .man-fotos .fd-remover { position:absolute; top:4px; right:4px; background:#fff; }
   .p3a-passo { padding:8px 10px; border:1px solid var(--cinza-200); border-radius:8px; margin-bottom:6px; } .p3a-passo.feito { background:#f0fdf4; border-color:#86efac; }
   @media (max-width:700px) { .capex-barra { grid-template-columns:90px 1fr 80px; } .sonho-frase { font-size:18px; } }
+
+  /* ===== Sala de reunião (padrão Zoom/Teams) ===== */
+  body.vc-aberta { overflow:hidden; }
+  body.vc-aberta .toast { z-index:10050; }
+  .vc-app { --vc-bg:#0e121b; --vc-sup:#171c28; --vc-sup2:#1f2534; --vc-borda:#2a3142; --vc-txt:#e8ecf4; --vc-sub:#98a2b6; --vc-azul:#4f7cff; --vc-verm:#e5484d;
+    position:fixed; inset:0; z-index:10000; background:var(--vc-bg); color:var(--vc-txt); font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif; display:flex; flex-direction:column; }
+  .vc-app [hidden] { display:none !important; }
+  .vc-app svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+  .vc-app button { font-family:inherit; }
+  .vc-marca { font-weight:800; letter-spacing:.08em; font-size:13px; color:#fff; white-space:nowrap; } .vc-marca b { color:#dc4c4c; }
+  .vc-avatar { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:16px; flex-shrink:0; }
+  .vc-avatar.grande { width:96px; height:96px; font-size:34px; } .vc-avatar.mini { width:32px; height:32px; font-size:12px; }
+  .vc-x { background:none; border:none; color:var(--vc-sub); cursor:pointer; padding:6px; border-radius:8px; display:flex; } .vc-x:hover { background:var(--vc-sup2); color:#fff; }
+  .vc-medidor-linha { display:flex; align-items:center; gap:10px; color:var(--vc-sub); margin-top:12px; } .vc-medidor-linha svg { width:18px; height:18px; }
+  .vc-medidor { flex:1; height:6px; background:var(--vc-sup2); border-radius:4px; overflow:hidden; } .vc-medidor i { display:block; height:100%; width:0; background:linear-gradient(90deg,#22c55e,#84cc16); transition:width .08s; }
+  .espelho { transform:scaleX(-1); }
+  /* Sala de espera */
+  .vc-lobby { flex:1; display:flex; flex-direction:column; overflow:auto; }
+  .vc-lobby-topo { display:flex; align-items:center; gap:12px; padding:18px 28px; }
+  .vc-lobby-tag { font-size:13px; color:var(--vc-sub); border-left:1px solid var(--vc-borda); padding-left:12px; }
+  .vc-lobby-corpo { flex:1; display:flex; align-items:center; justify-content:center; gap:48px; padding:20px 28px 40px; flex-wrap:wrap; }
+  .vc-lobby-prev-col { width:min(640px, 100%); }
+  .vc-lobby-prev { position:relative; aspect-ratio:16/9; background:#05070c; border-radius:16px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.45); }
+  .vc-lobby-prev video { width:100%; height:100%; object-fit:cover; display:block; }
+  .vc-semcam { position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; gap:12px; background:#161b27; color:var(--vc-sub); font-size:14px; }
+  .vc-semcam.ativo, .vc-tile.cam-off .vc-semcam { display:flex; }
+  .vc-lobby-nome { position:absolute; left:14px; top:12px; background:rgba(0,0,0,.5); padding:4px 10px; border-radius:6px; font-size:13px; }
+  .vc-lobby-nome:empty { display:none; }
+  .vc-lobby-ctrl { position:absolute; left:0; right:0; bottom:16px; display:flex; justify-content:center; gap:14px; }
+  .vc-rd { width:52px; height:52px; border-radius:50%; border:1px solid rgba(255,255,255,.35); background:rgba(20,24,34,.55); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; backdrop-filter:blur(6px); transition:.15s; }
+  .vc-rd:hover { background:rgba(40,46,62,.8); } .vc-rd.off { background:var(--vc-verm); border-color:var(--vc-verm); } .vc-rd:disabled { opacity:.5; cursor:not-allowed; }
+  .vc-rd svg { width:22px; height:22px; }
+  .vc-lobby-aviso { color:#fbbf24; font-size:13px; margin-top:10px; min-height:18px; line-height:1.4; }
+  .vc-lobby-lado { width:min(380px, 100%); }
+  .vc-lobby-rot { color:var(--vc-sub); font-size:14px; } .vc-lobby-lado h2 { font-size:26px; margin:6px 0 4px; line-height:1.25; color:#fff; }
+  .vc-lobby-sub { color:var(--vc-sub); font-size:14px; margin-bottom:6px; }
+  .vc-lobby-lado label { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--vc-sub); margin:14px 0 6px; text-transform:uppercase; letter-spacing:.04em; } .vc-lobby-lado label svg { width:15px; height:15px; }
+  .vc-lobby-lado input, .vc-lobby-lado select, .vc-modal select, .vc-modal input { width:100%; background:var(--vc-sup); border:1px solid var(--vc-borda); color:var(--vc-txt); border-radius:10px; padding:11px 12px; font-size:14px; margin:0; font-family:inherit; }
+  .vc-lobby-lado input:focus, .vc-lobby-lado select:focus { outline:none; border-color:var(--vc-azul); }
+  .vc-lobby-eu { display:flex; align-items:center; gap:12px; background:var(--vc-sup); border:1px solid var(--vc-borda); border-radius:12px; padding:12px; margin-top:16px; } .vc-lobby-eu small { display:block; color:var(--vc-sub); font-size:12px; }
+  .vc-btn-entrar { width:100%; margin-top:22px; background:var(--vc-azul); color:#fff; border:none; border-radius:24px; padding:14px; font-size:16px; font-weight:700; cursor:pointer; transition:.15s; } .vc-btn-entrar:hover { filter:brightness(1.1); }
+  .vc-btn-texto { width:100%; margin-top:8px; background:none; color:var(--vc-sub); border:none; padding:10px; font-size:14px; cursor:pointer; } .vc-btn-texto:hover { color:#fff; }
+  .vc-lobby-erro { color:#f87171; font-size:13px; min-height:16px; text-align:center; }
+  .vc-lobby-dica { margin-top:14px; font-size:12px; color:var(--vc-sub); line-height:1.6; } .vc-lobby-dica b { color:var(--vc-txt); }
+  /* Reunião */
+  .vc-reuniao { flex:1; display:flex; flex-direction:column; min-height:0; }
+  .vc-topo { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; gap:12px; border-bottom:1px solid #1a2030; flex-shrink:0; }
+  .vc-topo-esq { display:flex; align-items:center; gap:12px; min-width:0; flex:1; } .vc-sep { width:1px; height:20px; background:var(--vc-borda); }
+  .vc-titulo { font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .vc-topo-centro { display:flex; align-items:center; gap:10px; }
+  .vc-tempo { font-variant-numeric:tabular-nums; font-size:13px; color:var(--vc-sub); background:var(--vc-sup); padding:4px 10px; border-radius:6px; }
+  .vc-rec { background:var(--vc-verm); color:#fff; font-size:12px; font-weight:800; padding:4px 10px; border-radius:6px; letter-spacing:.05em; animation:vcPisca 1.6s infinite; }
+  @keyframes vcPisca { 50% { opacity:.6; } }
+  .vc-topo-dir { display:flex; align-items:center; gap:6px; flex:1; justify-content:flex-end; }
+  .vc-tb { display:flex; align-items:center; gap:6px; background:var(--vc-sup); border:1px solid var(--vc-borda); color:var(--vc-txt); padding:7px 12px; border-radius:8px; font-size:13px; cursor:pointer; white-space:nowrap; } .vc-tb:hover { background:var(--vc-sup2); } .vc-tb svg { width:17px; height:17px; } .vc-tb.so-ico { padding:7px 9px; }
+  .vc-meio { flex:1; display:flex; min-height:0; }
+  .vc-area { position:relative; flex:1; min-width:0; padding:12px; display:flex; gap:10px; }
+  .vc-grade { flex:1; display:grid; gap:10px; justify-content:center; align-content:center; min-height:0; min-width:0; overflow:hidden; }
+  .vc-palco, .vc-faixa { display:none; }
+  .vc-area.modo-destaque .vc-grade { display:none; }
+  .vc-area.modo-destaque .vc-palco { display:flex; flex:1; min-width:0; }
+  .vc-area.modo-destaque .vc-palco { align-items:center; justify-content:center; container-type:size; }
+  .vc-area.modo-destaque .vc-palco > .vc-tile { flex:none; width:min(100cqw, 177.78cqh); height:min(100cqh, 56.25cqw); }
+  .vc-area.modo-destaque .vc-palco > .vc-tile.tela { width:100%; height:100%; }
+  .vc-area.modo-destaque .vc-palco > .vc-tile:not(:first-child) { display:none; }
+  .vc-area.modo-destaque .vc-faixa { display:flex; flex-direction:column; gap:8px; width:220px; overflow-y:auto; flex-shrink:0; }
+  .vc-area.modo-destaque .vc-faixa:empty { display:none; }
+  .vc-faixa .vc-tile { aspect-ratio:16/9; flex-shrink:0; }
+  .vc-tile { position:relative; background:#1a1f2c; border-radius:12px; overflow:hidden; min-width:0; min-height:0; outline:2px solid transparent; outline-offset:-2px; transition:outline-color .15s; }
+  .vc-tile video { width:100%; height:100%; object-fit:cover; display:block; background:#000; }
+  .vc-tile.tela video { object-fit:contain; background:#05070c; }
+  .vc-tile.cam-off video { opacity:0; }
+  .vc-tile.falando { outline-color:#3ddc84; box-shadow:0 0 0 1px #3ddc84 inset; }
+  .vc-tile .vc-semcam .vc-avatar { width:min(96px, 28%); height:auto; aspect-ratio:1; font-size:clamp(14px, 2.4vw, 34px); }
+  .vc-faixa .vc-tile .vc-semcam .vc-avatar { width:44px; font-size:15px; }
+  .vc-tile-nome { position:absolute; left:8px; bottom:8px; max-width:calc(100% - 16px); display:flex; align-items:center; gap:5px; background:rgba(10,12,18,.65); padding:4px 9px; border-radius:6px; font-size:12.5px; backdrop-filter:blur(4px); }
+  .vc-tile-txt { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .vc-tile-mic { display:none; color:#ff6b6e; } .vc-tile-mic svg { width:15px; height:15px; } .vc-tile.mudo .vc-tile-mic { display:flex; }
+  .vc-tile-mao { position:absolute; left:8px; top:8px; display:none; background:#f5b301; color:#000; border-radius:8px; padding:3px 8px; font-size:16px; animation:vcAceno 1s ease-in-out 3; }
+  .vc-tile.mao .vc-tile-mao { display:block; } .vc-tile.mao { outline-color:#f5b301; }
+  @keyframes vcAceno { 50% { transform:rotate(-14deg); } }
+  .vc-tile-fixar { position:absolute; right:8px; top:8px; background:rgba(10,12,18,.65); border:none; color:#fff; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; opacity:0; transition:.15s; }
+  .vc-tile-fixar svg { width:16px; height:16px; } .vc-tile:hover .vc-tile-fixar, .vc-tile.fixado .vc-tile-fixar { opacity:1; } .vc-tile.fixado .vc-tile-fixar { background:var(--vc-azul); }
+  .vc-tile-instavel { display:none; position:absolute; inset:0; background:rgba(0,0,0,.55); align-items:center; justify-content:center; font-size:13px; color:#fbbf24; } .vc-tile.instavel .vc-tile-instavel { display:flex; }
+  .vc-banner-apres { position:absolute; top:16px; left:50%; transform:translateX(-50%); z-index:5; display:flex; align-items:center; gap:12px; background:#14532d; border:1px solid #22c55e; color:#dcfce7; padding:7px 8px 7px 14px; border-radius:10px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.4); }
+  .vc-banner-apres span { display:flex; align-items:center; gap:8px; } .vc-banner-apres svg { width:17px; height:17px; }
+  .vc-banner-apres button { background:var(--vc-verm); color:#fff; border:none; border-radius:7px; padding:6px 12px; font-weight:700; cursor:pointer; font-size:12.5px; }
+  .vc-banner-apres:not(:has(button)) { padding-right:14px; }
+  .vc-espera { position:absolute; inset:0; display:none; align-items:flex-end; justify-content:center; padding-bottom:40px; pointer-events:none; }
+  .vc-espera.ativo { display:flex; }
+  .vc-espera-caixa { pointer-events:auto; background:rgba(23,28,40,.92); border:1px solid var(--vc-borda); border-radius:14px; padding:16px 22px; display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; font-size:14px; box-shadow:0 12px 40px rgba(0,0,0,.4); }
+  .vc-espera-caixa span { color:var(--vc-sub); font-size:13px; }
+  .vc-espera-caixa button { margin-top:6px; display:flex; align-items:center; gap:6px; background:var(--vc-azul); border:none; color:#fff; border-radius:20px; padding:8px 16px; font-weight:600; cursor:pointer; font-size:13px; } .vc-espera-caixa button svg { width:16px; height:16px; }
+  .vc-pulso { width:10px; height:10px; border-radius:50%; background:#3ddc84; box-shadow:0 0 0 0 rgba(61,220,132,.6); animation:vcPulso 1.6s infinite; } @keyframes vcPulso { 70% { box-shadow:0 0 0 12px rgba(61,220,132,0); } 100% { box-shadow:0 0 0 0 rgba(61,220,132,0); } }
+  .vc-notifs { position:absolute; left:16px; bottom:16px; display:flex; flex-direction:column; gap:6px; z-index:6; pointer-events:none; max-width:min(380px, 80%); }
+  .vc-notif { background:rgba(23,28,40,.95); border:1px solid var(--vc-borda); padding:9px 14px; border-radius:10px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.35); animation:vcEntra .25s ease; transition:.4s; }
+  .vc-notif.erro { border-color:#7f1d1d; background:#2a1215; color:#fecaca; } .vc-notif.saindo { opacity:0; transform:translateY(6px); }
+  @keyframes vcEntra { from { opacity:0; transform:translateY(8px); } }
+  .vc-voando { position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:7; }
+  .vc-voa { position:absolute; bottom:10px; display:flex; flex-direction:column; align-items:center; animation:vcVoa 3.2s ease-out forwards; }
+  .vc-voa .e { font-size:40px; } .vc-voa .n { font-size:11px; background:rgba(0,0,0,.6); padding:2px 8px; border-radius:10px; }
+  @keyframes vcVoa { 0% { transform:translateY(0) scale(.6); opacity:0; } 12% { opacity:1; transform:translateY(-30px) scale(1.1); } 100% { transform:translateY(-62vh) scale(1); opacity:0; } }
+  /* Painel lateral */
+  .vc-painel { width:340px; flex-shrink:0; background:var(--vc-sup); border-left:1px solid var(--vc-borda); display:flex; flex-direction:column; margin:12px 12px 12px 0; border-radius:12px; border:1px solid var(--vc-borda); min-height:0; }
+  .vc-painel[hidden] { display:none; }
+  .vc-painel-topo { display:flex; align-items:center; justify-content:space-between; padding:8px 8px 0 8px; border-bottom:1px solid var(--vc-borda); }
+  .vc-abas { display:flex; } .vc-abas button { background:none; border:none; color:var(--vc-sub); padding:10px 12px; font-size:14px; font-weight:600; cursor:pointer; border-bottom:2px solid transparent; } .vc-abas button.on { color:#fff; border-bottom-color:var(--vc-azul); }
+  .vc-painel-corpo { flex:1; display:flex; flex-direction:column; min-height:0; overflow-y:auto; }
+  #vc-corpo-chat { overflow:hidden; }
+  .vc-chat-lista { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:12px; }
+  .vc-chat-vazio { color:var(--vc-sub); font-size:13px; text-align:center; margin:auto; line-height:1.5; padding:0 10px; }
+  .vc-msg { display:flex; gap:8px; align-items:flex-start; max-width:92%; } .vc-msg.eu { align-self:flex-end; flex-direction:row-reverse; }
+  .vc-msg-cab { display:flex; gap:8px; align-items:baseline; font-size:12px; margin-bottom:3px; } .vc-msg-cab span { color:var(--vc-sub); font-size:11px; } .vc-msg.eu .vc-msg-cab { justify-content:flex-end; }
+  .vc-msg-baloes { display:flex; flex-direction:column; gap:3px; } .vc-msg.eu .vc-msg-baloes { align-items:flex-end; }
+  .vc-msg-b { background:var(--vc-sup2); padding:8px 12px; border-radius:4px 12px 12px 12px; font-size:13.5px; line-height:1.45; word-break:break-word; white-space:pre-wrap; }
+  .vc-msg.eu .vc-msg-b { background:#2f4fbf; border-radius:12px 4px 12px 12px; } .vc-msg-b a { color:#9ec1ff; }
+  .vc-chat-env { display:flex; gap:8px; padding:12px; border-top:1px solid var(--vc-borda); align-items:flex-end; }
+  .vc-chat-env textarea { flex:1; resize:none; background:var(--vc-bg); border:1px solid var(--vc-borda); color:var(--vc-txt); border-radius:10px; padding:10px 12px; font-family:inherit; font-size:14px; max-height:120px; margin:0; } .vc-chat-env textarea:focus { outline:none; border-color:var(--vc-azul); }
+  .vc-chat-env button { background:var(--vc-azul); border:none; color:#fff; width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; } .vc-chat-env button svg { width:18px; height:18px; }
+  .vc-pessoas-acoes { display:flex; gap:8px; padding:12px 14px 4px; flex-wrap:wrap; } .vc-pessoas-acoes button { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; background:var(--vc-sup2); border:1px solid var(--vc-borda); color:var(--vc-txt); border-radius:8px; padding:8px; font-size:12.5px; cursor:pointer; white-space:nowrap; } .vc-pessoas-acoes svg { width:15px; height:15px; }
+  .vc-pessoas-grupo { padding:12px 14px 6px; font-size:12px; font-weight:700; color:var(--vc-sub); text-transform:uppercase; letter-spacing:.05em; }
+  .vc-pessoa { display:flex; align-items:center; gap:10px; padding:8px 14px; } .vc-pessoa:hover { background:var(--vc-sup2); }
+  .vc-pessoa.falando .vc-avatar { box-shadow:0 0 0 2px #3ddc84; }
+  .vc-pessoa-nome { flex:1; min-width:0; } .vc-pessoa-nome b { display:block; font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .vc-pessoa-nome small { color:var(--vc-sub); font-size:11.5px; }
+  .vc-pessoa-ico { display:flex; align-items:center; gap:6px; color:var(--vc-sub); } .vc-pessoa-ico svg { width:17px; height:17px; } .vc-pessoa-ico .off { color:#ff6b6e; } .vc-pessoa-ico .mao { font-size:15px; }
+  .vc-pessoa-mais { background:none; border:none; color:var(--vc-sub); padding:4px; border-radius:6px; cursor:pointer; display:flex; } .vc-pessoa-mais:hover { background:var(--vc-borda); color:#fff; }
+  /* Barra de controles */
+  .vc-barra { height:76px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; gap:10px; border-top:1px solid #1a2030; background:#0b0f17; flex-shrink:0; }
+  .vc-barra-esq, .vc-barra-dir { flex:1; display:flex; align-items:center; min-width:0; } .vc-barra-dir { justify-content:flex-end; }
+  .vc-status { font-size:12.5px; color:var(--vc-sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .vc-status.alerta { color:#fbbf24; }
+  .vc-barra-centro { display:flex; align-items:center; gap:4px; }
+  .vc-div { width:1px; height:34px; background:var(--vc-borda); margin:0 6px; }
+  .vc-cb { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-width:64px; height:60px; padding:0 8px; background:none; border:none; color:var(--vc-txt); border-radius:10px; cursor:pointer; font-size:11.5px; transition:.12s; }
+  .vc-cb:hover { background:var(--vc-sup2); } .vc-cb svg { width:22px; height:22px; } .vc-cb span { white-space:nowrap; }
+  .vc-cb.off { color:#ff6b6e; } .vc-cb.off svg { color:#ff6b6e; }
+  .vc-cb.ativo { background:var(--vc-sup2); color:#9ec1ff; } .vc-cb.ativo-verde { color:#3ddc84; background:rgba(34,197,94,.12); } .vc-cb.ativo-amarelo { color:#f5b301; background:rgba(245,179,1,.12); }
+  .vc-cb.gravando { color:#ff6b6e; background:rgba(229,72,77,.12); } .vc-cb.gravando b { font-variant-numeric:tabular-nums; font-weight:600; }
+  .vc-cb:disabled { opacity:.45; cursor:not-allowed; }
+  .vc-badge { position:absolute; top:4px; right:12px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--vc-verm); color:#fff; font-size:10.5px; font-style:normal; font-weight:700; display:flex; align-items:center; justify-content:center; } .vc-badge.cinza { background:var(--vc-borda); } .vc-badge[hidden] { display:none; }
+  .vc-sair { display:flex; align-items:center; gap:8px; background:var(--vc-verm); color:#fff; border:none; border-radius:10px; padding:11px 20px; font-weight:700; font-size:14px; cursor:pointer; } .vc-sair:hover { filter:brightness(1.1); } .vc-sair svg { width:22px; height:22px; }
+  .vc-pop-wrap { position:relative; }
+  .vc-pop { position:absolute; bottom:calc(100% + 10px); left:50%; transform:translateX(-50%); background:var(--vc-sup2); border:1px solid var(--vc-borda); border-radius:12px; box-shadow:0 16px 40px rgba(0,0,0,.5); z-index:20; padding:6px; } .vc-pop[hidden] { display:none; }
+  .vc-pop-reacoes { display:flex; gap:2px; } .vc-pop-reacoes button { background:none; border:none; font-size:26px; padding:6px 8px; border-radius:8px; cursor:pointer; transition:transform .1s; } .vc-pop-reacoes button:hover { background:var(--vc-borda); transform:scale(1.15); }
+  .vc-pop-menu { min-width:270px; display:flex; flex-direction:column; } .vc-pop-menu button { display:flex; align-items:center; gap:10px; background:none; border:none; color:var(--vc-txt); text-align:left; padding:10px 12px; border-radius:8px; font-size:13.5px; cursor:pointer; } .vc-pop-menu button:hover { background:var(--vc-borda); } .vc-pop-menu svg { width:18px; height:18px; }
+  .vc-pop-menu.direita { left:auto; right:0; transform:none; bottom:auto; top:calc(100% + 4px); min-width:210px; }
+  .vc-pop-menu button.perigo, .vc-pop-sair button.perigo { color:#ff6b6e; }
+  .vc-pop-sair { left:auto; right:0; transform:none; min-width:220px; display:flex; flex-direction:column; gap:4px; } .vc-pop-sair button { background:var(--vc-sup); border:1px solid var(--vc-borda); color:var(--vc-txt); padding:11px 14px; border-radius:8px; font-weight:600; cursor:pointer; text-align:left; font-size:14px; } .vc-pop-sair button:hover { background:var(--vc-borda); } .vc-pop-sair button.perigo { background:var(--vc-verm); border-color:var(--vc-verm); color:#fff; }
+  /* Modais da sala */
+  .vc-modal-fundo { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:10020; display:flex; align-items:center; justify-content:center; padding:16px; }
+  .vc-modal { background:var(--vc-sup); border:1px solid var(--vc-borda); border-radius:14px; padding:20px; width:min(480px, 100%); color:var(--vc-txt); box-shadow:0 24px 60px rgba(0,0,0,.5); max-height:90vh; overflow:auto; }
+  .vc-modal-cab { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; } .vc-modal-cab h3 { margin:0; font-size:17px; }
+  .vc-modal label { display:block; font-size:12px; font-weight:600; color:var(--vc-sub); margin:14px 0 6px; text-transform:uppercase; letter-spacing:.04em; }
+  .vc-modal-dica { font-size:12.5px; color:var(--vc-sub); margin-top:14px; line-height:1.5; }
+  .vc-link-caixa { display:flex; gap:8px; margin-top:14px; } .vc-link-caixa input { flex:1; } .vc-link-caixa button { background:var(--vc-azul); color:#fff; border:none; border-radius:10px; padding:0 16px; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .vc-convite-acoes { display:flex; flex-direction:column; gap:8px; margin-top:14px; } .vc-convite-acoes button, .vc-convite-acoes a { display:block; text-align:left; background:var(--vc-sup2); border:1px solid var(--vc-borda); color:var(--vc-txt); border-radius:10px; padding:11px 14px; font-size:14px; cursor:pointer; text-decoration:none; } .vc-convite-acoes button:hover, .vc-convite-acoes a:hover { background:var(--vc-borda); }
+  .vc-atalho { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--vc-borda); font-size:14px; } .vc-atalho kbd { background:var(--vc-sup2); border:1px solid var(--vc-borda); border-radius:6px; padding:3px 8px; font-family:inherit; font-size:12px; min-width:150px; text-align:center; }
+  #vc-app #modal-area-vc .modal-fundo { z-index:10020; }
+  @media (max-width: 900px) {
+    .vc-cb { min-width:48px; } .vc-cb span { display:none; } .vc-cb { height:48px; } .vc-badge { right:2px; }
+    .vc-barra { height:64px; padding:0 8px; } .vc-barra-esq { display:none; } .vc-div { display:none; }
+    .vc-sair span { display:none; } .vc-sair { padding:11px 14px; }
+    .vc-tb span { display:none; } .vc-tb { padding:7px 9px; }
+    .vc-painel { position:absolute; inset:52px 0 64px 0; width:auto; margin:0; border-radius:0; z-index:15; }
+    .vc-area.modo-destaque { flex-direction:column; } .vc-area.modo-destaque .vc-faixa { flex-direction:row; width:auto; height:96px; overflow-x:auto; overflow-y:hidden; } .vc-faixa .vc-tile { height:100%; width:auto; }
+    .vc-lobby-corpo { gap:20px; padding:10px 16px 24px; } .vc-lobby-topo { padding:14px 16px; }
+    #vc-btn-gravar, .vc-titulo, .vc-sep { display:none; }
+  }
+  @media (max-width: 520px) { .vc-barra-centro { gap:0; } .vc-cb { min-width:42px; padding:0 4px; } #vc-btn-reacao { display:none; } }
 </style>
 </head>
 <body>
@@ -1201,6 +1376,7 @@ document.getElementById('form-esqueci-senha').addEventListener('submit', async (
 
 function sair(silencioso) {
   pararPolinhaNotificacoes();
+  if (typeof vcLimparTudo === 'function' && document.getElementById('vc-app')) vcLimparTudo();
   if (typeof VC_SOCKET !== 'undefined' && VC_SOCKET) { VC_SOCKET.disconnect(); VC_SOCKET = null; }
   if (typeof VC_PEERS !== 'undefined' && VC_PEERS) { VC_PEERS.forEach(peer => peer.close()); VC_PEERS.clear(); }
   if (typeof VC_STREAM_LOCAL !== 'undefined' && VC_STREAM_LOCAL) { VC_STREAM_LOCAL.getTracks().forEach(t => t.stop()); VC_STREAM_LOCAL = null; }
@@ -10390,6 +10566,7 @@ function mtModuloEditorHtml(m) {
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
             <label class="btn-secundario btn-sm" style="cursor:pointer;margin:0;width:auto;">🖼️ ${s.imagem ? 'Trocar imagem' : 'Imagem'}<input type="file" accept="image/*" style="display:none;" onchange="mtImgSl(${j}, this)"></label>
             ${s.imagem ? `<button class="btn-secundario btn-sm" style="width:auto;" onclick="mtSl(${j},'imagem','',true)">Remover imagem</button>` : ''}
+            ${s.imagem && (s.layout || 'padrao') === 'padrao' ? `<label style="display:flex;align-items:center;gap:6px;margin:0;font-size:12px;font-weight:600;">📐 Tamanho da foto <input type="range" min="6" max="70" step="1" value="${Number(s.imgTam) || 30}" style="width:110px;margin:0;" oninput="mtSl(${j},'imgTam',Number(this.value),false);" onchange="mtSl(${j},'imgTam',Number(this.value),true)"></label>${s.imgTam ? `<button class="btn-secundario btn-sm" style="width:auto;" onclick="mtSl(${j},'imgTam',null,true)">Tamanho automático</button>` : ''}` : ''}
             <details style="flex:1;min-width:200px;"><summary style="cursor:pointer;font-size:12px;color:#4338ca;font-weight:700;">🗒️ Notas do apresentador${s.notas ? ' ✓' : ''}</summary><textarea rows="2" placeholder="Só você vê durante a apresentação" oninput="mtSl(${j},'notas',this.value)">${escapeHtml(s.notas || '')}</textarea></details>
           </div>
         </div>
@@ -10536,7 +10713,7 @@ function mtSlideHtml(s, cor, mini) {
   return `<div class="mt-sl ${mini ? 'mini' : ''}" style="--c:${cor}">
     <div class="mt-sl-barra"></div>
     <div class="mt-sl-tit" data-campo="titulo">${escapeHtml(s.titulo || '') || (mini ? '<span style="opacity:.35">Título</span>' : '')}</div>
-    <div class="mt-sl-corpo ${s.imagem ? 'com-img' : ''}"><div class="mt-sl-txt" data-campo="texto">${mtTextoHtml(s.texto)}</div>${s.imagem ? `<div class="mt-sl-fig"><img src="${escapeHtml(s.imagem)}" alt=""></div>` : ''}</div>
+    <div class="mt-sl-corpo ${s.imagem ? 'com-img' : ''}"><div class="mt-sl-txt" data-campo="texto">${mtTextoHtml(s.texto)}</div>${s.imagem ? `<div class="mt-sl-fig${s.imgTam ? ' tam' : ''}"${s.imgTam ? ` style="width:${Number(s.imgTam)}em"` : ''}><img src="${escapeHtml(s.imagem)}" alt=""></div>` : ''}</div>
     <div class="mt-sl-rod">Impulsionar V4${MT.doc && MT.doc.divulgacao && MT.doc.divulgacao.instagram ? ' · ' + escapeHtml(MT.doc.divulgacao.instagram) : ''}</div>
   </div>`;
 }
@@ -10645,6 +10822,7 @@ function mtDesenharShow() {
       <div style="display:flex;gap:6px;align-items:center;">
         <span class="mt-show-rel" id="mt-relogio">${mtCronometro()}</span>
         ${editavel ? `<button class="mt-sb ${MTS.editando ? 'on' : ''}" onclick="mtAlternarEdicao()" title="Editar este slide">✏️ ${MTS.editando ? 'Concluir edição' : 'Editar'}</button>` : ''}
+        ${editavel && MTS.editando ? (() => { const sl = d.modulos[it.mi].slides[it.si]; return `<label class="mt-sb" style="cursor:pointer;" title="Subir uma foto para este slide">🖼️ ${sl.imagem ? 'Trocar foto' : 'Foto'}<input type="file" accept="image/*" style="display:none;" onchange="mtShowFoto(this)"></label>${sl.imagem ? `<button class="mt-sb" onclick="mtShowLayoutFoto()" title="Alternar entre foto ao lado do texto e foto em tela cheia">${sl.layout === 'imagem' ? '▤ Foto + texto' : '⛶ Foto tela cheia'}</button><button class="mt-sb" onclick="mtShowRemoverFoto()" title="Tirar a foto deste slide">🗑️</button>` : ''}`; })() : ''}
         ${MT.sujo ? `<button class="mt-sb salvar" onclick="mtSalvarShow()">💾 Salvar</button>` : ''}
         <button class="mt-sb ${MT_GRAV.rec ? 'rec' : ''}" onclick="${MT_GRAV.rec ? 'mtPararGravacao()' : 'mtIniciarGravacao()'}" title="Gravar a tela e o áudio do microfone">${MT_GRAV.rec ? '⏹ Parar <span id="mt-rec-tempo">' + mtTempoGrav() + '</span>' : '⏺ Gravar'}</button>
         ${MT_GRAV.celular ? `<span class="mt-show-rel" title="Câmera do celular">${MT_GRAV.celular === 'gravando' ? '📹 celular gravando' : MT_GRAV.celular === 'enviando' ? '📤 celular enviando' : '📷 câmera pronta'}</span>` : ''}
@@ -10802,6 +10980,45 @@ function mtLigarEdicao() {
   let x = document.querySelector('#mt-slide-atual [data-campo="texto"]');
   if (t) { t.contentEditable = 'true'; if (!s.titulo) t.innerHTML = ''; t.focus(); }
   if (x) { x.contentEditable = 'true'; if (!x.innerHTML.trim()) x.innerHTML = '<ul><li></li></ul>'; }
+  mtLigarRedimensionarImg(s);
+}
+// Edição: arrastar os cantos da foto para aumentar/diminuir (guarda a largura em "em",
+// que acompanha a escala do slide — fica igual na apresentação, no celular e na miniatura).
+function mtLigarRedimensionarImg(s) {
+  const fig = document.querySelector('#mt-slide-atual .mt-sl-fig'); if (!fig) return;
+  const img = fig.querySelector('img');
+  const emPx = () => parseFloat(getComputedStyle(fig).fontSize) || 16;
+  const aplicar = em => { fig.style.width = em + 'em'; };
+  const iniciar = () => {
+    if (!s.imgTam) { const w = (img.getBoundingClientRect().width || fig.getBoundingClientRect().width) / emPx(); s.imgTam = Math.round(w * 10) / 10; }
+    fig.classList.add('editavel'); aplicar(s.imgTam);
+    const sl = fig.closest('.mt-sl').getBoundingClientRect(), r = img.getBoundingClientRect(), px = emPx();
+    if (r.bottom > sl.bottom - px * 0.8 && r.height) { s.imgTam = Math.max(4, Math.round((s.imgTam * (sl.bottom - px * 0.8 - r.top) / r.height) * 10) / 10); aplicar(s.imgTam); }
+  };
+  if (img.complete) iniciar(); else img.onload = iniciar;
+  const rot = document.createElement('div'); rot.className = 'mt-img-tam-rot'; rot.style.display = 'none'; fig.appendChild(rot);
+  ['se', 'sw', 'ne', 'nw'].forEach(c => {
+    const h = document.createElement('div'); h.className = 'mt-img-alca ' + c; h.title = 'Arraste para aumentar ou diminuir a foto'; fig.appendChild(h);
+    h.addEventListener('pointerdown', ev => {
+      ev.preventDefault(); ev.stopPropagation(); h.setPointerCapture(ev.pointerId);
+      const x0 = ev.clientX, y0 = ev.clientY, w0 = fig.getBoundingClientRect().width, px = emPx(), sinal = c.includes('w') ? -1 : 1, sinalY = c.includes('n') ? -1 : 1;
+      const corpo = fig.parentElement.getBoundingClientRect().width;
+      // Limite: a foto nunca passa da parte de baixo do slide.
+      const slide = fig.closest('.mt-sl').getBoundingClientRect(), proporcao = (img.naturalWidth || 4) / (img.naturalHeight || 3);
+      const maxW = Math.min(corpo, (slide.bottom - fig.getBoundingClientRect().top - px * 0.8) * proporcao);
+      document.body.style.userSelect = 'none';
+      rot.style.display = '';
+      const mover = e => {
+        const dx = (e.clientX - x0) * sinal, dy = (e.clientY - y0) * sinalY * proporcao;
+        const w = Math.max(4 * px, Math.min(maxW, w0 + (Math.abs(dy) > Math.abs(dx) ? dy : dx)));
+        s.imgTam = Math.round(w / px * 10) / 10; aplicar(s.imgTam);
+        rot.textContent = Math.round(w / corpo * 100) + '% da largura';
+      };
+      const soltar = () => { h.removeEventListener('pointermove', mover); h.removeEventListener('pointerup', soltar); h.removeEventListener('pointercancel', soltar); rot.style.display = 'none'; document.body.style.userSelect = ''; mtMarcarSujo(); };
+      h.addEventListener('pointermove', mover); h.addEventListener('pointerup', soltar); h.addEventListener('pointercancel', soltar);
+    });
+  });
+  fig.addEventListener('dblclick', () => { s.imgTam = null; fig.style.width = ''; fig.classList.remove('editavel'); mtMarcarSujo(); setTimeout(() => iniciar(), 30); });
 }
 async function mtSalvarShow() {
   if (MTS && MTS.editando) mtAlternarEdicao();
@@ -10939,9 +11156,10 @@ async function mtAjustarComIa(automatico) {
   mtCarregandoIa('A IA da Impulsionar está ajustando os slides...');
   try {
     const r = await api('/api/admin/treinamentos-mt/ia/estruturar', { method: 'POST', body: JSON.stringify({ titulo: MT.doc.titulo, publico: MT.doc.publico, slides: m.slides.filter(x => !x.oculto) }) });
-    m.slides = r.slides; mtMarcarSujo(); await mtSalvar(true).catch(() => {}); mtDesenharEditor();
-    mostrarToast(`✨ ${r.slides.length} slide(s) no padrão Impulsionar, com notas do apresentador. Revise à vontade.`);
-  } catch (e) { mostrarToast(automatico ? 'Slides convertidos sem a IA: ' + e.message : e.message, true); }
+    m.slides = r.slides; if (r.semIa) MT.doc.iaAtiva = false;
+    mtMarcarSujo(); await mtSalvar(true).catch(() => {}); mtDesenharEditor();
+    mostrarToast(r.viaIa === false ? `✅ ${r.slides.length} slide(s) no padrão Impulsionar.` + (r.semIa && !automatico ? ' (Para a IA reescrever com mais capricho, cadastre uma chave válida em ⚙️ Configurações.)' : '') : `✨ ${r.slides.length} slide(s) no padrão Impulsionar, com notas do apresentador. Revise à vontade.`);
+  } catch (e) { mostrarToast(automatico ? 'Slides convertidos (ajuste fino da IA indisponível).' : e.message, !automatico); }
   mtCarregandoIa(null);
 }
 function mtAbrirCriarComIa() {
@@ -10960,6 +11178,9 @@ function mtAbrirCriarComIa() {
       <div class="mt-ed-pubs" style="margin-bottom:6px;">${Object.entries(PUBLICOS_MT).map(([k, x]) => `<button type="button" class="mt-pub ${window.__mtIaPub === k ? 'on' : ''}" style="--c:${x.cor}" onclick="window.__mtIaPub='${k}'; document.querySelectorAll('#modal-area .mt-pub').forEach(b=>b.classList.remove('on')); this.classList.add('on')"><span>${x.ico}</span>${x.rot}</button>`).join('')}</div>
       <label>Contexto da empresa / operação (opcional)</label>
       <textarea id="ia-ctx" rows="2" placeholder="ex: revenda Ambev, CD com 120 colaboradores, entrega urbana"></textarea>
+      <label>Fotos para usar nos slides (opcional)</label>
+      <label class="mt-drop" style="padding:12px;margin-bottom:4px;"><input type="file" id="ia-fotos" accept="image/*" multiple style="display:none;" onchange="mtIaFotosPrev(this)"><strong>🖼️ Clique para escolher fotos</strong><span id="ia-fotos-info">Fotos da equipe, da operação, do local... A IA distribui pelos slides — depois é só arrastar o canto para ajustar o tamanho.</span></label>
+      <div id="ia-fotos-prev" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div><label>Duração (min)</label><input id="ia-dur" type="number" min="10" max="480" value="60"></div>
         <div><label>Quantidade de slides (aprox.)</label><input id="ia-qtd" type="number" min="5" max="40" value="15"></div>
@@ -10971,16 +11192,58 @@ function mtAbrirCriarComIa() {
     </div></div>`;
   setTimeout(() => document.getElementById('ia-tema').focus(), 50);
 }
+function mtIaFotosPrev(inp) {
+  const fs = Array.from(inp.files || []), box = document.getElementById('ia-fotos-prev');
+  document.getElementById('ia-fotos-info').textContent = fs.length ? `${fs.length} foto(s) escolhida(s) — clique para trocar` : 'Nenhuma foto escolhida';
+  box.innerHTML = fs.slice(0, 20).map(f => `<img src="${URL.createObjectURL(f)}" style="width:64px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;">`).join('');
+}
+// Foto no slide direto da apresentação (modo Editar).
+function mtGuardarEdicaoShow() {
+  const it = MTS.deck[MTS.i]; if (!it || it.tipo !== 'slide' || !MTS.editando) return;
+  const s = MT.doc.modulos[it.mi].slides[it.si];
+  const t = document.querySelector('#mt-slide-atual [data-campo="titulo"]'), x = document.querySelector('#mt-slide-atual [data-campo="texto"]');
+  if (t) s.titulo = t.innerText.trim();
+  if (x) s.texto = mtHtmlParaTexto(x);
+}
+async function mtShowFoto(inp) {
+  const f = inp.files && inp.files[0]; if (!f) return;
+  const it = MTS.deck[MTS.i]; if (!it || it.tipo !== 'slide') return;
+  mtGuardarEdicaoShow();
+  const s = MT.doc.modulos[it.mi].slides[it.si];
+  mostrarToast('Enviando foto...');
+  try {
+    const r = await mtEnviarArquivo(f);
+    s.imagem = r.url; s.imgTam = null; if (s.layout === 'destaque') s.layout = 'padrao';
+    mtMarcarSujo(); mtDesenharShow(); mostrarToast('🖼️ Foto colocada. Arraste os cantos para aumentar ou diminuir.');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+function mtShowRemoverFoto() {
+  const it = MTS.deck[MTS.i]; if (!it || it.tipo !== 'slide') return;
+  mtGuardarEdicaoShow();
+  const s = MT.doc.modulos[it.mi].slides[it.si]; s.imagem = ''; s.imgTam = null; if (s.layout === 'imagem') s.layout = 'padrao';
+  mtMarcarSujo(); mtDesenharShow();
+}
+function mtShowLayoutFoto() {
+  const it = MTS.deck[MTS.i]; if (!it || it.tipo !== 'slide') return;
+  mtGuardarEdicaoShow();
+  const s = MT.doc.modulos[it.mi].slides[it.si]; s.layout = s.layout === 'imagem' ? 'padrao' : 'imagem';
+  mtMarcarSujo(); mtDesenharShow();
+}
 async function mtCriarComIa() {
   const v = id => document.getElementById(id).value.trim();
   const corpo = { tema: v('ia-tema'), problemas: v('ia-prob'), contexto: v('ia-ctx'), duracao: Number(v('ia-dur')) || 60, qtdSlides: Number(v('ia-qtd')) || 15, publico: window.__mtIaPub };
   if (!corpo.tema) return mostrarToast('Diga o que você quer treinar.', true);
+  const arqs = Array.from((document.getElementById('ia-fotos') || {}).files || []);
   document.getElementById('modal-area').innerHTML = '';
-  mtCarregandoIa('A IA da Impulsionar está montando seu treinamento...');
   try {
+    if (arqs.length) {
+      corpo.fotos = [];
+      for (let k = 0; k < arqs.length; k++) { mtCarregandoIa(`Enviando foto ${k + 1} de ${arqs.length}...`); const up = await mtEnviarArquivo(arqs[k]); corpo.fotos.push(up.url); }
+    }
+    mtCarregandoIa('A IA da Impulsionar está montando seu treinamento...');
     const r = await api('/api/admin/treinamentos-mt/ia/criar', { method: 'POST', body: JSON.stringify(corpo) });
     mtCarregandoIa(null);
-    mostrarToast(r.message, !r.viaIa);
+    mostrarToast(r.message);
     mtAbrirEditor(r.id);
   } catch (e) { mtCarregandoIa(null); mostrarToast(e.message, true); }
 }
@@ -18409,553 +18672,1035 @@ async function gerarInsightsIA() {
 }
 
 /* ==========================================================
-   VIDEOCHAMADA PRÓPRIA (WEBRTC) NAS MENTORIAS
+   SALA DE REUNIÃO (WEBRTC) — padrão das plataformas profissionais
+   (sala de espera com teste de câmera/microfone, galeria e orador,
+   apresentação de tela, chat, participantes, mão levantada, reações,
+   gravação, moderação e atalhos de teclado)
    ========================================================== */
 let VC_SOCKET = null;
-let VC_PEERS = new Map();   // socketId -> RTCPeerConnection (malha: 1 conexão por participante)
-let VC_NOMES = new Map();   // socketId -> nome
-let VC_STREAMS_REMOTOS = new Map(); // socketId -> MediaStream (para alimentar as miniaturas do PiP)
+let VC_PEERS = new Map();            // socketId -> RTCPeerConnection (malha: 1 conexão por participante)
+let VC_NOMES = new Map();            // socketId -> nome
+let VC_STREAMS_REMOTOS = new Map();  // socketId -> MediaStream
+let VC_INFO = new Map();             // socketId -> { nome, convidado, mic, cam, mao, tela, gravando }
 let VC_STREAM_LOCAL = null;
 let VC_STREAM_TELA = null;
 let VC_MICRO_LIGADO = true;
 let VC_CAMERA_LIGADA = true;
+let VC_SEM_CAMERA = false;           // true quando o vídeo enviado é só um quadro vazio (sem câmera)
 let VC_COMPARTILHANDO_TELA = false;
-let VC_MODO_TELA = 'pip'; // 'pip' (câmera flutuante) ou 'split' (metade/metade)
+let VC_MAO = false;
 let VC_SOU_CONVIDADO = false;
 let VC_MENTORIA_ID_ATUAL = null;
 let VC_ROOM_TOKEN_CONVIDADO = null;
-// Janela flutuante DE VERDADE (Picture-in-Picture do próprio navegador/SO) —
-// ao contrário da "janelinha" flutuante em CSS de dentro da página (que some
-// assim que você troca de aba), esta continua visível por cima de qualquer
-// outro programa/aba enquanto você navega para fora do Impulsionar.
+let VC_OPTS = null;
+let VC_TITULO = 'Sala de reunião';
+let VC_SUBTITULO = '';
+let VC_MEU_NOME = '';
+let VC_MEU_ID = null;
+let VC_NA_SALA = false;
+let VC_VISAO = 'galeria';            // 'galeria' | 'orador'
+let VC_FIXADO = null;
+let VC_ATIVO = null;
+let VC_ATIVO_DESDE = 0;
+let VC_PAINEL = null;                // 'chat' | 'pessoas' | null
+let VC_NAO_LIDAS = 0;
+let VC_INICIO = 0;
+let VC_TIMERS = [];
+let VC_AUDIO_CTX = null;
+let VC_ANALISADORES = new Map();     // id -> { analyser, buf, src }
+let VC_AVISO_MUDO_EM = 0;
+let VC_GRAV = null;
+let VC_DISP = { cam: '', mic: '', som: '' };
+let VC_OBS_TAMANHO = null;
 let VC_PIP_SISTEMA_ATIVO = false;
 let VC_PIP_CANVAS = null;
 let VC_PIP_VIDEO_OCULTO = null;
 let VC_PIP_ANIMACAO_ID = null;
+const VC_REACOES = ['👍', '👏', '❤️', '😂', '😮', '🎉'];
 
-// Mensagens de erro do getUserMedia traduzidas — a maioria dos "câmera não
-// conecta" é permissão negada ou nenhum dispositivo encontrado, não um bug.
+// Ícones (traço) — visual limpo, igual às plataformas de reunião.
+const VC_ICO = {
+  mic: '<svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3"/></svg>',
+  micOff: '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M9 9v3a3 3 0 0 0 5.1 2.1M15 9.3V6a3 3 0 0 0-5.7-1.3"/><path d="M19 11a7 7 0 0 1-1.2 3.9M5 11a7 7 0 0 0 10.6 6M12 18v3"/></svg>',
+  cam: '<svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="M15.5 10.5l6-3.5v10l-6-3.5z"/></svg>',
+  camOff: '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M15.5 11V8.5A2.5 2.5 0 0 0 13 6H8.5M5 6.3A2.5 2.5 0 0 0 2.5 8.5v7A2.5 2.5 0 0 0 5 18h8a2.5 2.5 0 0 0 2.2-1.3M15.5 10.5l6-3.5v10l-3-1.7"/></svg>',
+  tela: '<svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4M12 13.5V7.5M9.5 10l2.5-2.5 2.5 2.5"/></svg>',
+  chat: '<svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/></svg>',
+  pessoas: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.7a3.5 3.5 0 0 1 0 6.6M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></svg>',
+  mao: '<svg viewBox="0 0 24 24"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V5.5a1.5 1.5 0 0 1 3 0V14"/><path d="M17 9.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1a7 7 0 0 1-5.6-2.8L3.6 15.8a1.6 1.6 0 0 1 2.5-2l1.9 2.2V13"/></svg>',
+  reacao: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/></svg>',
+  gravar: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>',
+  mais: '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/></svg>',
+  sair: '<svg viewBox="0 0 24 24"><path d="M3.6 14.6c4.6-4.3 12.2-4.3 16.8 0l-1.9 2.6-3.2-1.2v-2.6a10 10 0 0 0-6.6 0V16l-3.2 1.2z"/></svg>',
+  galeria: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>',
+  orador: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="12" rx="1.5"/><rect x="3" y="17.5" width="5" height="3.5" rx="1"/><rect x="9.5" y="17.5" width="5" height="3.5" rx="1"/><rect x="16" y="17.5" width="5" height="3.5" rx="1"/></svg>',
+  link: '<svg viewBox="0 0 24 24"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>',
+  cheia: '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+  config: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  pip: '<svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="15" rx="2"/><rect x="12" y="11" width="7" height="5.5" rx="1" fill="currentColor"/></svg>',
+  fixar: '<svg viewBox="0 0 24 24"><path d="M15 3l6 6-3 1-4 4 .5 4.5-1.5 1.5-4-4-5 5M9 9l4-4 1-3"/></svg>',
+  fechar: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  enviar: '<svg viewBox="0 0 24 24"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/></svg>',
+  teclado: '<svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>'
+};
+
 function traduzirErroMidia(e) {
   const nomes = {
-    NotAllowedError: 'Permissão de câmera/microfone negada. Verifique o cadeado ao lado do endereço do site e permita o acesso, depois recarregue a página.',
+    NotAllowedError: 'Permissão de câmera/microfone negada. Clique no cadeado ao lado do endereço do site, permita o acesso e recarregue a página.',
     NotFoundError: 'Nenhuma câmera ou microfone foi encontrado neste dispositivo.',
-    NotReadableError: 'A câmera/microfone já está em uso por outro programa ou aba. Feche-o e tente novamente.',
-    OverconstrainedError: 'Nenhum dispositivo compatível encontrado.',
+    NotReadableError: 'A câmera/microfone já está em uso por outro programa (Teams, Zoom...) ou outra aba. Feche-o e tente novamente.',
+    OverconstrainedError: 'O dispositivo escolhido não está disponível.',
     SecurityError: 'O navegador bloqueou o acesso à câmera (o site precisa estar em HTTPS).'
   };
-  return nomes[e.name] || ('Não foi possível acessar sua câmera/microfone: ' + e.message);
+  return nomes[e && e.name] || ('Não foi possível acessar sua câmera/microfone' + (e && e.message ? ': ' + e.message : '.'));
+}
+function vcIniciais(nome) { const p = String(nome || '?').trim().split(/\s+/).filter(Boolean); return ((p[0] || '?')[0] + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase(); }
+function vcCor(nome) { const cores = ['#2563eb', '#7c3aed', '#db2777', '#0891b2', '#059669', '#d97706', '#dc4c4c', '#4f46e5', '#0d9488', '#9333ea']; let h = 0; String(nome || '').split('').forEach(c => { h = (h * 31 + c.charCodeAt(0)) >>> 0; }); return cores[h % cores.length]; }
+function vcHora(d) { return (d ? new Date(d) : new Date()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
+function vcEuModerador() { return !VC_SOU_CONVIDADO; }
+function vcAudioCtx() {
+  if (!VC_AUDIO_CTX) { try { VC_AUDIO_CTX = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+  if (VC_AUDIO_CTX.state === 'suspended') VC_AUDIO_CTX.resume().catch(() => {});
+  return VC_AUDIO_CTX;
+}
+// Sons curtos (entrar/sair/mensagem), gerados na hora — nada de arquivo.
+function vcSom(tipo) {
+  const ctx = vcAudioCtx(); if (!ctx) return;
+  const notas = { entrar: [660, 880], sair: [880, 560], msg: [990], mao: [740, 990] }[tipo] || [800];
+  notas.forEach((f, i) => {
+    const o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + i * 0.12;
+    o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.07, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.25);
+  });
 }
 
-// Corpo da tela de videochamada — usado tanto para quem está logado (mentoria)
-// quanto para o convidado externo que entrou pelo link público.
-function htmlCorpoVideochamada(titulo, mostrarConvite) {
-  return `
-    <h1>${escapeHtml(titulo)}</h1>
-    <div class="videochamada-tela" id="vc-tela">
-      <div class="videochamada-grade" id="vc-grade">
-        <div class="videochamada-video-wrap local-tile" id="vc-tile-local">
-          <video id="vc-video-local" autoplay muted playsinline></video>
-          <div class="vc-cam-off-overlay" id="vc-cam-off-local"><div class="avatar">🎥</div>Câmera desligada</div>
-          <div class="rotulo">Você</div>
-          <div class="vc-pip" id="vc-pip-wrap" style="display:none;"></div>
-        </div>
-        <div id="vc-remotos-wrap" style="display:contents;">
-          <div class="videochamada-video-wrap" id="vc-tile-local-cam-split" style="display:none;">
-            <video id="vc-video-local-cam-split" autoplay muted playsinline></video>
-            <div class="rotulo">Você</div>
-          </div>
-        </div>
-      </div>
-      <div class="videochamada-acoes">
-        <button id="vc-btn-mic" class="btn-secundario" onclick="alternarMicrofone()">🎙️ Microfone</button>
-        <button id="vc-btn-cam" class="btn-secundario" onclick="alternarCamera()">🎥 Câmera</button>
-        <button id="vc-btn-tela" class="btn-secundario" onclick="alternarCompartilhamentoTela()">🖥️ Compartilhar tela</button>
-        <button id="vc-btn-split" class="btn-secundario" onclick="alternarModoDivisaoTela()" style="display:none;">🗂️ Dividir tela</button>
-        <button id="vc-btn-pip-sistema" class="btn-secundario" onclick="alternarPipSistema()">📌 Janela flutuante (fora da aba)</button>
-        <button id="vc-btn-chat" class="btn-secundario" onclick="alternarChatVideochamada()">💬 Chat</button>
-        <button class="btn-secundario" onclick="alternarTelaCheiaVideochamada()">⛶ Tela cheia</button>
-        ${mostrarConvite ? `<button class="btn-secundario" onclick="abrirConviteVideochamada()">🔗 Convidar</button>` : ''}
-        <button class="btn-perigo" onclick="encerrarVideochamada()">Encerrar</button>
-      </div>
-      <div class="videochamada-status" id="vc-status">Conectando à câmera e microfone...</div>
-      <div id="vc-chat-area" style="display:none;margin-top:14px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px;">
-        <div id="vc-chat-lista" style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;font-size:13px;margin-bottom:8px;"></div>
-        <div style="display:flex;gap:8px;">
-          <input id="vc-chat-input" placeholder="Escreva uma mensagem..." style="margin-bottom:0;flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();enviarMensagemVideochamada();}">
-          <button class="btn-primario btn-sm" style="width:auto;" onclick="enviarMensagemVideochamada()">Enviar</button>
-        </div>
-      </div>
-      <div id="modal-area-vc"></div>
-    </div>
-  `;
+// ---------- Mídia local ----------
+function vcFaixaVideoVazia() {
+  const c = document.createElement('canvas'); c.width = 640; c.height = 360;
+  const g = c.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, 640, 360);
+  const s = c.captureStream(1); const t = s.getVideoTracks()[0];
+  t.__vazia = true; t.__canvas = c;
+  setInterval(() => { g.fillRect(0, 0, 1, 1); }, 1000); // mantém o quadro "vivo"
+  return t;
+}
+function vcRestricoes(tipo) {
+  if (tipo === 'video') return VC_DISP.cam ? { deviceId: { exact: VC_DISP.cam }, width: { ideal: 1280 }, height: { ideal: 720 } } : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' };
+  return Object.assign({ echoCancellation: true, noiseSuppression: true, autoGainControl: true }, VC_DISP.mic ? { deviceId: { exact: VC_DISP.mic } } : {});
+}
+async function vcObterMidia() {
+  let stream = null, aviso = '';
+  VC_SEM_CAMERA = false;
+  try { stream = await navigator.mediaDevices.getUserMedia({ video: vcRestricoes('video'), audio: vcRestricoes('audio') }); }
+  catch (e) {
+    aviso = traduzirErroMidia(e);
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: vcRestricoes('audio') }); aviso += ' Entrando só com áudio.'; }
+    catch (e2) {
+      try { stream = await navigator.mediaDevices.getUserMedia({ video: vcRestricoes('video') }); aviso = 'Microfone indisponível: ' + traduzirErroMidia(e2); }
+      catch (e3) { stream = new MediaStream(); aviso = traduzirErroMidia(e2) + ' Você pode entrar para ouvir e ver os outros.'; }
+    }
+  }
+  // Sempre enviamos uma faixa de vídeo (mesmo vazia) — assim dá para apresentar
+  // a tela depois, mesmo sem câmera, sem renegociar a conexão.
+  if (!stream.getVideoTracks().length) { stream.addTrack(vcFaixaVideoVazia()); VC_SEM_CAMERA = true; VC_CAMERA_LIGADA = false; }
+  stream.getAudioTracks().forEach(t => t.enabled = VC_MICRO_LIGADO);
+  stream.getVideoTracks().forEach(t => { if (!t.__vazia) t.enabled = VC_CAMERA_LIGADA; });
+  return { stream, aviso };
+}
+async function vcListarDispositivos() {
+  try {
+    const l = await navigator.mediaDevices.enumerateDevices();
+    const atual = k => { const t = VC_STREAM_LOCAL && (k === 'videoinput' ? VC_STREAM_LOCAL.getVideoTracks()[0] : VC_STREAM_LOCAL.getAudioTracks()[0]); return t && t.getSettings ? t.getSettings().deviceId : ''; };
+    const op = (k, sel) => l.filter(d => d.kind === k).map((d, i) => `<option value="${escapeHtml(d.deviceId)}" ${d.deviceId === sel ? 'selected' : ''}>${escapeHtml(d.label || ({ videoinput: 'Câmera ', audioinput: 'Microfone ', audiooutput: 'Alto-falante ' }[k] + (i + 1)))}</option>`).join('');
+    return {
+      cam: op('videoinput', VC_DISP.cam || atual('videoinput')) || '<option value="">Nenhuma câmera</option>',
+      mic: op('audioinput', VC_DISP.mic || atual('audioinput')) || '<option value="">Nenhum microfone</option>',
+      som: 'setSinkId' in HTMLMediaElement.prototype ? (op('audiooutput', VC_DISP.som) || '<option value="">Padrão do sistema</option>') : ''
+    };
+  } catch (e) { return { cam: '', mic: '', som: '' }; }
+}
+
+// ---------- Medidor de áudio (quem está falando) ----------
+function vcAnalisar(id, stream) {
+  vcPararAnalise(id);
+  const ctx = vcAudioCtx(); if (!ctx || !stream || !stream.getAudioTracks().length) return;
+  try {
+    const src = ctx.createMediaStreamSource(new MediaStream(stream.getAudioTracks()));
+    const analyser = ctx.createAnalyser(); analyser.fftSize = 512; analyser.smoothingTimeConstant = 0.5;
+    src.connect(analyser);
+    VC_ANALISADORES.set(id, { analyser, src, buf: new Uint8Array(analyser.fftSize) });
+  } catch (e) { /* navegador sem suporte */ }
+}
+function vcPararAnalise(id) { const a = VC_ANALISADORES.get(id); if (a) { try { a.src.disconnect(); } catch (e) {} VC_ANALISADORES.delete(id); } }
+function vcNivel(id) {
+  const a = VC_ANALISADORES.get(id); if (!a) return 0;
+  a.analyser.getByteTimeDomainData(a.buf);
+  let soma = 0; for (let i = 0; i < a.buf.length; i++) { const v = (a.buf[i] - 128) / 128; soma += v * v; }
+  return Math.sqrt(soma / a.buf.length);
+}
+
+// ---------- Estrutura da tela ----------
+function vcRaiz() {
+  let r = document.getElementById('vc-app');
+  if (!r) { r = document.createElement('div'); r.id = 'vc-app'; r.className = 'vc-app'; document.body.appendChild(r); }
+  document.body.classList.add('vc-aberta');
+  return r;
 }
 
 function renderVideochamada(mentoriaId) {
-  const m = CACHE_LISTA_MENTORIAS.find(x => x.id === mentoriaId);
+  const m = (typeof CACHE_LISTA_MENTORIAS !== 'undefined' ? CACHE_LISTA_MENTORIAS : []).find(x => x.id === mentoriaId);
   VC_SOU_CONVIDADO = false;
   VC_MENTORIA_ID_ATUAL = mentoriaId;
-  const cont = document.getElementById('conteudo');
-  cont.innerHTML = htmlCorpoVideochamada('Videochamada — ' + ((m && (m.execName + ' & ' + m.mentorName)) || 'Mentoria'), true);
-  tornarPipArrastavel();
-  iniciarVideochamada({ mentorshipId: mentoriaId, token: ESTADO.token });
+  VC_TITULO = m ? `Mentoria — ${m.execName || ''}${m.mentorName ? ' & ' + m.mentorName : ''}` : 'Sala de reunião';
+  VC_SUBTITULO = m && m.meeting_date ? new Date(m.meeting_date).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+  VC_MEU_NOME = (ESTADO.usuario && ESTADO.usuario.name) || 'Você';
+  VC_OPTS = { mentorshipId: mentoriaId, token: ESTADO.token };
+  vcAudioCtx();
+  vcAbrirLobby();
 }
+// Mantido por compatibilidade: convidado já com nome.
+function renderVideochamadaConvidado(nome) { VC_SOU_CONVIDADO = true; VC_MEU_NOME = nome; VC_OPTS = { roomToken: VC_ROOM_TOKEN_CONVIDADO, nome }; vcAbrirLobby(); }
 
-// Chamado depois que o convidado externo (sem login) digita o nome dele na
-// tela que abriu a partir do link público (#sala=<token>).
-function renderVideochamadaConvidado(nome) {
-  VC_SOU_CONVIDADO = true;
-  const tela = document.getElementById('tela-sala-convidado');
-  tela.innerHTML = `<div style="width:100%;padding:20px;">${htmlCorpoVideochamada('Sala de Videochamada', false)}</div>`;
-  tornarPipArrastavel();
-  iniciarVideochamada({ roomToken: VC_ROOM_TOKEN_CONVIDADO, nome });
-}
-
-async function iniciarVideochamada(opts) {
-  const statusEl = document.getElementById('vc-status');
-  try {
-    VC_STREAM_LOCAL = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  } catch (e) {
-    // Câmera falhou — tenta continuar só com áudio em vez de travar a reunião inteira.
-    try {
-      VC_STREAM_LOCAL = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
-      statusEl.textContent = traduzirErroMidia(e) + ' Entrando só com áudio.';
-      VC_CAMERA_LIGADA = false;
-      const btnCam = document.getElementById('vc-btn-cam');
-      if (btnCam) { btnCam.textContent = '🚫 Sem câmera'; btnCam.disabled = true; }
-    } catch (e2) {
-      statusEl.textContent = traduzirErroMidia(e2);
-      return;
-    }
+// ---------- Sala de espera (pré-entrada) ----------
+async function vcAbrirLobby() {
+  const r = vcRaiz();
+  r.innerHTML = `
+    <div class="vc-lobby">
+      <div class="vc-lobby-topo"><span class="vc-marca">IMPULSIONAR <b>V4</b></span><span class="vc-lobby-tag">Sala de reunião</span></div>
+      <div class="vc-lobby-corpo">
+        <div class="vc-lobby-prev-col">
+          <div class="vc-lobby-prev" id="vc-lobby-prev">
+            <video id="vc-lobby-video" autoplay muted playsinline class="espelho"></video>
+            <div class="vc-semcam" id="vc-lobby-semcam"><div class="vc-avatar grande" id="vc-lobby-av" style="background:${vcCor(VC_MEU_NOME)}">${escapeHtml(vcIniciais(VC_MEU_NOME || '?'))}</div><span id="vc-lobby-semcam-txt">Sua câmera está desligada</span></div>
+            <div class="vc-lobby-nome" id="vc-lobby-nome-tag">${escapeHtml(VC_MEU_NOME || '')}</div>
+            <div class="vc-lobby-ctrl">
+              <button class="vc-rd" id="vc-lb-mic" onclick="vcLobbyMic()" title="Microfone"></button>
+              <button class="vc-rd" id="vc-lb-cam" onclick="vcLobbyCam()" title="Câmera"></button>
+            </div>
+          </div>
+          <div class="vc-medidor-linha"><span>${VC_ICO.mic}</span><div class="vc-medidor"><i id="vc-lobby-nivel"></i></div></div>
+          <div class="vc-lobby-aviso" id="vc-lobby-aviso"></div>
+        </div>
+        <div class="vc-lobby-lado">
+          <div class="vc-lobby-rot">Pronto para entrar?</div>
+          <h2>${escapeHtml(VC_TITULO)}</h2>
+          ${VC_SUBTITULO ? `<div class="vc-lobby-sub">${escapeHtml(VC_SUBTITULO)}</div>` : ''}
+          ${VC_SOU_CONVIDADO
+            ? `<label>Seu nome</label><input id="vc-lobby-nome" maxlength="60" placeholder="Como você quer aparecer na reunião" value="${escapeHtml(VC_MEU_NOME || '')}" oninput="vcLobbyNome(this.value)" onkeydown="if(event.key==='Enter')vcEntrar()">`
+            : `<div class="vc-lobby-eu"><div class="vc-avatar" style="background:${vcCor(VC_MEU_NOME)}">${escapeHtml(vcIniciais(VC_MEU_NOME))}</div><div><small>Entrando como</small><b>${escapeHtml(VC_MEU_NOME)}</b></div></div>`}
+          <div class="vc-lobby-disp" id="vc-lobby-disp">
+            <label>${VC_ICO.cam} Câmera</label><select id="vc-sel-cam" onchange="vcLobbyTrocar('cam', this.value)"><option>Carregando...</option></select>
+            <label>${VC_ICO.mic} Microfone</label><select id="vc-sel-mic" onchange="vcLobbyTrocar('mic', this.value)"><option>Carregando...</option></select>
+            <div id="vc-sel-som-wrap"></div>
+          </div>
+          <button class="vc-btn-entrar" id="vc-btn-entrar" onclick="vcEntrar()">Entrar agora</button>
+          <button class="vc-btn-texto" onclick="vcCancelarLobby()">Cancelar</button>
+          <div class="vc-lobby-erro" id="vc-lobby-erro"></div>
+          <div class="vc-lobby-dica">Dica: use fone de ouvido para evitar eco. Atalhos na reunião: <b>Alt+A</b> microfone · <b>Alt+V</b> câmera · <b>Alt+Y</b> levantar a mão.</div>
+        </div>
+      </div>
+    </div>`;
+  vcAtualizarBotoesLobby();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    document.getElementById('vc-lobby-aviso').textContent = 'Este navegador não permite câmera/microfone. Use o Chrome, Edge ou Safari atualizados (o site precisa estar em HTTPS).';
+    VC_STREAM_LOCAL = new MediaStream([vcFaixaVideoVazia()]); VC_SEM_CAMERA = true; VC_CAMERA_LIGADA = false;
+  } else {
+    const { stream, aviso } = await vcObterMidia();
+    if (!document.getElementById('vc-lobby-video')) { stream.getTracks().forEach(t => t.stop()); return; } // cancelou enquanto carregava
+    VC_STREAM_LOCAL = stream;
+    document.getElementById('vc-lobby-aviso').textContent = aviso;
   }
-  document.getElementById('vc-video-local').srcObject = VC_STREAM_LOCAL;
+  document.getElementById('vc-lobby-video').srcObject = VC_STREAM_LOCAL;
+  vcAnalisar('local', VC_STREAM_LOCAL);
+  vcAtualizarBotoesLobby();
+  vcPreencherDispositivosLobby();
+  const t = setInterval(() => {
+    const el = document.getElementById('vc-lobby-nivel'); if (!el) { clearInterval(t); return; }
+    el.style.width = Math.min(100, vcNivel('local') * 420 * (VC_MICRO_LIGADO ? 1 : 0)) + '%';
+  }, 80);
+  if (VC_SOU_CONVIDADO) setTimeout(() => { const i = document.getElementById('vc-lobby-nome'); if (i && !i.value) i.focus(); }, 50);
+}
+async function vcPreencherDispositivosLobby() {
+  const d = await vcListarDispositivos();
+  const c = document.getElementById('vc-sel-cam'), m = document.getElementById('vc-sel-mic'), s = document.getElementById('vc-sel-som-wrap');
+  if (c) c.innerHTML = d.cam; if (m) m.innerHTML = d.mic;
+  if (s) s.innerHTML = d.som ? `<label>🔊 Alto-falante</label><select id="vc-sel-som" onchange="VC_DISP.som=this.value">${d.som}</select>` : '';
+}
+function vcLobbyNome(v) {
+  VC_MEU_NOME = v.trim();
+  const av = document.getElementById('vc-lobby-av'); if (av) { av.textContent = vcIniciais(VC_MEU_NOME || '?'); av.style.background = vcCor(VC_MEU_NOME); }
+  const tg = document.getElementById('vc-lobby-nome-tag'); if (tg) tg.textContent = VC_MEU_NOME;
+}
+function vcAtualizarBotoesLobby() {
+  const bm = document.getElementById('vc-lb-mic'), bc = document.getElementById('vc-lb-cam');
+  const temMic = !VC_STREAM_LOCAL || VC_STREAM_LOCAL.getAudioTracks().length;
+  if (bm) { bm.innerHTML = VC_MICRO_LIGADO && temMic ? VC_ICO.mic : VC_ICO.micOff; bm.classList.toggle('off', !VC_MICRO_LIGADO || !temMic); bm.disabled = !temMic; }
+  if (bc) { bc.innerHTML = VC_CAMERA_LIGADA && !VC_SEM_CAMERA ? VC_ICO.cam : VC_ICO.camOff; bc.classList.toggle('off', !VC_CAMERA_LIGADA || VC_SEM_CAMERA); bc.disabled = VC_SEM_CAMERA; }
+  const sc = document.getElementById('vc-lobby-semcam'); if (sc) sc.classList.toggle('ativo', !VC_CAMERA_LIGADA || VC_SEM_CAMERA);
+  const tx = document.getElementById('vc-lobby-semcam-txt'); if (tx) tx.textContent = VC_SEM_CAMERA ? 'Nenhuma câmera disponível' : 'Sua câmera está desligada';
+}
+function vcLobbyMic() { VC_MICRO_LIGADO = !VC_MICRO_LIGADO; if (VC_STREAM_LOCAL) VC_STREAM_LOCAL.getAudioTracks().forEach(t => t.enabled = VC_MICRO_LIGADO); vcAtualizarBotoesLobby(); }
+function vcLobbyCam() { if (VC_SEM_CAMERA) return; VC_CAMERA_LIGADA = !VC_CAMERA_LIGADA; if (VC_STREAM_LOCAL) VC_STREAM_LOCAL.getVideoTracks().forEach(t => t.enabled = VC_CAMERA_LIGADA); vcAtualizarBotoesLobby(); }
+async function vcLobbyTrocar(tipo, id) {
+  VC_DISP[tipo] = id;
+  if (VC_STREAM_LOCAL) VC_STREAM_LOCAL.getTracks().forEach(t => t.stop());
+  const { stream, aviso } = await vcObterMidia();
+  VC_STREAM_LOCAL = stream;
+  const v = document.getElementById('vc-lobby-video'); if (v) v.srcObject = stream;
+  document.getElementById('vc-lobby-aviso').textContent = aviso;
+  vcAnalisar('local', stream); vcAtualizarBotoesLobby();
+}
+function vcCancelarLobby() {
+  vcLimparTudo();
+  if (VC_SOU_CONVIDADO) vcTelaSaidaConvidado('Você não entrou na reunião.');
+}
 
-  statusEl.textContent = 'Conectando à sala...';
+// ---------- Entrar na reunião ----------
+function vcEntrar() {
+  if (VC_SOU_CONVIDADO) {
+    const i = document.getElementById('vc-lobby-nome'); VC_MEU_NOME = ((i && i.value) || '').trim();
+    if (VC_MEU_NOME.length < 2) { document.getElementById('vc-lobby-erro').textContent = 'Informe seu nome para entrar.'; if (i) i.focus(); return; }
+    VC_OPTS = { roomToken: VC_ROOM_TOKEN_CONVIDADO, nome: VC_MEU_NOME };
+    try { localStorage.setItem('vc_nome_convidado', VC_MEU_NOME); } catch (e) {}
+  }
+  if (!VC_STREAM_LOCAL) { document.getElementById('vc-lobby-erro').textContent = 'Aguarde a câmera/microfone carregar...'; return; }
+  const som = document.getElementById('vc-sel-som'); if (som) VC_DISP.som = som.value;
+  vcAudioCtx();
+  vcMontarReuniao();
+  vcConectar();
+}
+
+function vcMontarReuniao() {
+  const r = vcRaiz();
+  r.innerHTML = `
+    <div class="vc-reuniao" id="vc-tela">
+      <header class="vc-topo">
+        <div class="vc-topo-esq"><span class="vc-marca">IMPULSIONAR <b>V4</b></span><span class="vc-sep"></span><span class="vc-titulo" title="${escapeHtml(VC_TITULO)}">${escapeHtml(VC_TITULO)}</span></div>
+        <div class="vc-topo-centro"><span class="vc-rec" id="vc-rec" hidden>● REC</span><span class="vc-tempo" id="vc-tempo">00:00</span></div>
+        <div class="vc-topo-dir">
+          <button class="vc-tb" id="vc-btn-visao" onclick="vcAlternarVisao()" title="Mudar a visualização"></button>
+          ${!VC_SOU_CONVIDADO ? `<button class="vc-tb" onclick="abrirConviteVideochamada()" title="Convidar pessoas">${VC_ICO.link}<span>Convidar</span></button>` : ''}
+          <button class="vc-tb so-ico" onclick="alternarTelaCheiaVideochamada()" title="Tela cheia">${VC_ICO.cheia}</button>
+        </div>
+      </header>
+      <div class="vc-meio">
+        <main class="vc-area" id="vc-area">
+          <div class="vc-banner-apres" id="vc-banner-apres" hidden></div>
+          <div class="vc-palco" id="vc-palco"></div>
+          <div class="vc-grade" id="vc-grade"></div>
+          <div class="vc-faixa" id="vc-faixa"></div>
+          <div class="vc-voando" id="vc-voando"></div>
+          <div class="vc-notifs" id="vc-notifs"></div>
+          <div class="vc-espera" id="vc-espera">
+            <div class="vc-espera-caixa"><div class="vc-pulso"></div><b>Aguardando outras pessoas entrarem…</b>
+            ${!VC_SOU_CONVIDADO ? `<span>Envie o link para quem vai participar.</span><button onclick="abrirConviteVideochamada()">${VC_ICO.link} Copiar link de convite</button>` : '<span>O organizador vai entrar em instantes.</span>'}</div>
+          </div>
+        </main>
+        <aside class="vc-painel" id="vc-painel" hidden>
+          <div class="vc-painel-topo">
+            <div class="vc-abas"><button id="vc-aba-chat" onclick="vcPainel('chat')">Chat</button><button id="vc-aba-pessoas" onclick="vcPainel('pessoas')">Participantes <span id="vc-aba-qtd">1</span></button></div>
+            <button class="vc-x" onclick="vcPainel(null)" title="Fechar">${VC_ICO.fechar}</button>
+          </div>
+          <div class="vc-painel-corpo" id="vc-corpo-chat">
+            <div class="vc-chat-lista" id="vc-chat-lista"><div class="vc-chat-vazio" id="vc-chat-vazio">As mensagens enviadas aqui aparecem para todos da reunião e somem quando ela acabar.</div></div>
+            <div class="vc-chat-env"><textarea id="vc-chat-input" rows="1" placeholder="Escreva uma mensagem…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarMensagemVideochamada();}"></textarea><button onclick="enviarMensagemVideochamada()" title="Enviar">${VC_ICO.enviar}</button></div>
+          </div>
+          <div class="vc-painel-corpo" id="vc-corpo-pessoas"></div>
+        </aside>
+      </div>
+      <footer class="vc-barra">
+        <div class="vc-barra-esq"><span class="vc-status" id="vc-status">Conectando…</span></div>
+        <div class="vc-barra-centro">
+          <button class="vc-cb" id="vc-btn-mic" onclick="alternarMicrofone()"></button>
+          <button class="vc-cb" id="vc-btn-cam" onclick="alternarCamera()"></button>
+          <button class="vc-cb" id="vc-btn-tela" onclick="alternarCompartilhamentoTela()">${VC_ICO.tela}<span>Apresentar</span></button>
+          <span class="vc-div"></span>
+          <div class="vc-pop-wrap">
+            <button class="vc-cb" id="vc-btn-reacao" onclick="vcAbrirPop('vc-pop-reacoes', event)">${VC_ICO.reacao}<span>Reagir</span></button>
+            <div class="vc-pop vc-pop-reacoes" id="vc-pop-reacoes" hidden>${VC_REACOES.map(e => `<button onclick="vcReagir('${e}')">${e}</button>`).join('')}</div>
+          </div>
+          <button class="vc-cb" id="vc-btn-mao" onclick="vcAlternarMao()">${VC_ICO.mao}<span>Levantar a mão</span></button>
+          <span class="vc-div"></span>
+          <button class="vc-cb" id="vc-btn-chat" onclick="vcPainel(VC_PAINEL==='chat'?null:'chat')">${VC_ICO.chat}<span>Chat</span><i class="vc-badge" id="vc-badge-chat" hidden></i></button>
+          <button class="vc-cb" id="vc-btn-pessoas" onclick="vcPainel(VC_PAINEL==='pessoas'?null:'pessoas')">${VC_ICO.pessoas}<span>Pessoas</span><i class="vc-badge cinza" id="vc-badge-pessoas">1</i></button>
+          <button class="vc-cb" id="vc-btn-gravar" onclick="vcGravar()">${VC_ICO.gravar}<span>Gravar</span></button>
+          <div class="vc-pop-wrap">
+            <button class="vc-cb" onclick="vcAbrirPop('vc-pop-mais', event)">${VC_ICO.mais}<span>Mais</span></button>
+            <div class="vc-pop vc-pop-menu" id="vc-pop-mais" hidden>
+              <button onclick="vcFecharPops();vcAbrirConfig()">${VC_ICO.config} Configurações de áudio e vídeo</button>
+              <button id="vc-btn-pip-sistema" onclick="vcFecharPops();alternarPipSistema()">${VC_ICO.pip} Janela flutuante (fora da aba)</button>
+              <button onclick="vcFecharPops();alternarTelaCheiaVideochamada()">${VC_ICO.cheia} Tela cheia</button>
+              ${!VC_SOU_CONVIDADO ? `<button onclick="vcFecharPops();abrirConviteVideochamada()">${VC_ICO.link} Copiar link de convite</button>` : ''}
+              <button onclick="vcFecharPops();vcAtalhos()">${VC_ICO.teclado} Atalhos de teclado</button>
+            </div>
+          </div>
+        </div>
+        <div class="vc-barra-dir">
+          <div class="vc-pop-wrap">
+            <button class="vc-sair" onclick="vcPerguntarSair(event)">${VC_ICO.sair}<span>Sair</span></button>
+            <div class="vc-pop vc-pop-sair" id="vc-pop-sair" hidden>
+              <button onclick="vcEncerrar()">Sair da reunião</button>
+              ${vcEuModerador() ? `<button class="perigo" onclick="vcEncerrarParaTodos()">Encerrar para todos</button>` : ''}
+            </div>
+          </div>
+        </div>
+      </footer>
+      <div id="modal-area-vc"></div>
+    </div>`;
+  vcCriarTile('local', VC_MEU_NOME + ' (Você)', true);
+  const v = document.getElementById('vc-video-local'); v.srcObject = VC_STREAM_LOCAL;
+  VC_NA_SALA = true;
+  vcAtualizarBotoes(); vcAtualizarTile('local'); vcLayout();
+  if ('ResizeObserver' in window) { VC_OBS_TAMANHO = new ResizeObserver(() => vcAjustarGrade()); VC_OBS_TAMANHO.observe(document.getElementById('vc-area')); }
+  document.addEventListener('keydown', vcTeclas);
+  document.addEventListener('click', vcCliqueFora);
+  VC_INICIO = Date.now();
+  VC_TIMERS.push(setInterval(vcRelogio, 1000), setInterval(vcDetectarFala, 200));
+  vcRelogio();
+}
+
+// ---------- Conexão (sinalização) ----------
+function vcConectar() {
+  vcStatus('Conectando à sala…');
   VC_SOCKET = io();
-
+  let jaConectou = false;
   VC_SOCKET.on('connect', () => {
-    if (opts.roomToken) VC_SOCKET.emit('entrar-sala-mentoria-convidado', { roomToken: opts.roomToken, nome: opts.nome });
-    else VC_SOCKET.emit('entrar-sala-mentoria', { mentorshipId: opts.mentorshipId, token: opts.token });
+    if (jaConectou) { vcLimparRemotos(); vcNotificar('Conexão restabelecida.'); }
+    jaConectou = true;
+    const estado = vcMeuEstado();
+    if (VC_OPTS.roomToken) VC_SOCKET.emit('entrar-sala-mentoria-convidado', { roomToken: VC_OPTS.roomToken, nome: VC_OPTS.nome, estado });
+    else VC_SOCKET.emit('entrar-sala-mentoria', { mentorshipId: VC_OPTS.mentorshipId, token: VC_OPTS.token, estado });
   });
+  VC_SOCKET.on('disconnect', () => { if (VC_NA_SALA) vcStatus('Conexão instável — reconectando…', true); });
+  VC_SOCKET.on('sala-entrada-negada', (d) => { vcStatus('Não foi possível entrar: ' + (d.error || 'acesso negado.'), true); vcNotificar('Não foi possível entrar: ' + (d.error || 'acesso negado.'), 'erro'); });
 
-  VC_SOCKET.on('sala-entrada-negada', (d) => {
-    statusEl.textContent = 'Não foi possível entrar: ' + (d.error || 'acesso negado.');
-  });
-
-  // Recém-chegado: recebe quem já está na sala e é ELE quem cria a oferta
-  // para cada um deles — assim funciona com qualquer número de participantes,
-  // não só 2 (cada par de participantes tem sua própria conexão WebRTC).
+  // Recém-chegado: cria a oferta WebRTC para cada um que já estava na sala.
   VC_SOCKET.on('entrou-na-sala', async (d) => {
-    statusEl.textContent = d.outros.length ? `${d.outros.length} participante(s) já na sala. Conectando...` : 'Aguardando outras pessoas entrarem...';
+    VC_MEU_ID = d.eu || VC_SOCKET.id;
+    if (d.inicio) VC_INICIO = d.inicio;
+    vcStatus(d.outros.length ? 'Conectando aos participantes…' : 'Você está na reunião');
     for (const p of d.outros) {
-      VC_NOMES.set(p.socketId, p.name);
-      adicionarTileRemoto(p.socketId, p.name);
-      const peer = criarConexaoPeer(p.socketId);
-      const oferta = await peer.createOffer();
-      await peer.setLocalDescription(oferta);
-      VC_SOCKET.emit('sinal-webrtc', { tipo: 'offer', dados: oferta, paraSocketId: p.socketId });
+      vcRegistrarParticipante(p.socketId, p.name, p.convidado, p.estado);
+      const peer = criarConexaoPeer(p.socketId, true);
+      try { const oferta = await peer.createOffer(); await peer.setLocalDescription(oferta); VC_SOCKET.emit('sinal-webrtc', { tipo: 'offer', dados: oferta, paraSocketId: p.socketId }); } catch (e) { /* tenta de novo na reconexão */ }
     }
+    vcLayout(); vcDesenharPessoas();
+    if (VC_GRAV) vcEnviarEstado();
   });
-
-  VC_SOCKET.on('usuario-entrou', ({ socketId, name }) => {
-    VC_NOMES.set(socketId, name);
-    adicionarTileRemoto(socketId, name);
-    statusEl.textContent = escapeHtml(name) + ' entrou na sala.';
+  VC_SOCKET.on('usuario-entrou', ({ socketId, name, convidado, estado }) => {
+    vcRegistrarParticipante(socketId, name, convidado, estado);
+    vcNotificar(`${name} entrou na reunião`); vcSom('entrar');
+    vcLayout(); vcDesenharPessoas();
   });
-
   VC_SOCKET.on('usuario-saiu', ({ socketId }) => {
-    const peer = VC_PEERS.get(socketId);
-    if (peer) { peer.close(); VC_PEERS.delete(socketId); }
-    VC_NOMES.delete(socketId);
-    VC_STREAMS_REMOTOS.delete(socketId);
-    removerTileRemoto(socketId);
-    atualizarPipParticipantes();
-    statusEl.textContent = 'Um participante saiu da chamada.';
+    const nome = VC_NOMES.get(socketId);
+    vcRemoverParticipante(socketId);
+    if (nome) { vcNotificar(`${nome} saiu da reunião`); vcSom('sair'); }
+    vcLayout(); vcDesenharPessoas();
   });
-
-  VC_SOCKET.on('mensagem-sala-mentoria', ({ texto, nome }) => {
-    adicionarMensagemChatVideochamada(nome, texto, false);
+  VC_SOCKET.on('mensagem-sala-mentoria', ({ texto, nome, hora }) => { adicionarMensagemChatVideochamada(nome, texto, false, hora); });
+  VC_SOCKET.on('camera-estado', ({ socketId, ligada }) => { const p = VC_INFO.get(socketId); if (p) { p.cam = !!ligada; vcAtualizarTile(socketId); vcDesenharPessoas(); } });
+  VC_SOCKET.on('vc-estado', (e) => {
+    const p = VC_INFO.get(e.socketId); if (!p) return;
+    const antes = Object.assign({}, p);
+    Object.assign(p, { mic: !!e.mic, cam: !!e.cam, mao: !!e.mao, tela: !!e.tela, gravando: !!e.gravando });
+    if (p.mao && !antes.mao) { vcNotificar(`✋ ${p.nome} levantou a mão`); vcSom('mao'); }
+    if (p.tela && !antes.tela) vcNotificar(`${p.nome} começou a apresentar`);
+    if (p.gravando && !antes.gravando) vcNotificar(`🔴 ${p.nome} começou a gravar a reunião`);
+    if (!p.gravando && antes.gravando) vcNotificar(`${p.nome} parou a gravação`);
+    vcAtualizarTile(e.socketId); vcAtualizarRec(); vcDesenharPessoas();
+    if (p.tela !== antes.tela) vcLayout();
   });
-
-  VC_SOCKET.on('camera-estado', ({ socketId, ligada }) => {
-    const overlay = document.getElementById('vc-cam-off-' + socketId);
-    if (overlay) overlay.classList.toggle('ativo', !ligada);
+  VC_SOCKET.on('vc-reacao', ({ socketId, emoji }) => { vcReacaoVoando(emoji, VC_NOMES.get(socketId) || ''); });
+  VC_SOCKET.on('vc-moderado', ({ acao, por }) => {
+    if (acao === 'silenciar') { if (VC_MICRO_LIGADO) alternarMicrofone(); vcNotificar(`${por || 'O organizador'} desligou seu microfone`); }
+    else if (acao === 'abaixar-mao') { if (VC_MAO) vcAlternarMao(); }
+    else if (acao === 'remover') vcEncerrar(`Você foi removido da reunião por ${por || 'o organizador'}.`);
+    else if (acao === 'encerrar') vcEncerrar(`A reunião foi encerrada por ${por || 'o organizador'}.`);
   });
-
   VC_SOCKET.on('sinal-webrtc', async ({ tipo, dados, de }) => {
     let peer = VC_PEERS.get(de);
-    if (!peer) { adicionarTileRemoto(de, VC_NOMES.get(de) || 'Participante'); peer = criarConexaoPeer(de); }
-    if (tipo === 'offer') {
-      await peer.setRemoteDescription(new RTCSessionDescription(dados));
-      const resposta = await peer.createAnswer();
-      await peer.setLocalDescription(resposta);
-      VC_SOCKET.emit('sinal-webrtc', { tipo: 'answer', dados: resposta, paraSocketId: de });
-    } else if (tipo === 'answer') {
-      await peer.setRemoteDescription(new RTCSessionDescription(dados));
-    } else if (tipo === 'candidate' && dados) {
-      try { await peer.addIceCandidate(new RTCIceCandidate(dados)); } catch (e) { /* candidato tardio, pode ignorar */ }
-    }
+    if (!peer) { if (!VC_INFO.has(de)) vcRegistrarParticipante(de, VC_NOMES.get(de) || 'Participante', false, null); peer = criarConexaoPeer(de, false); vcLayout(); }
+    try {
+      if (tipo === 'offer') {
+        await peer.setRemoteDescription(new RTCSessionDescription(dados));
+        const resposta = await peer.createAnswer();
+        await peer.setLocalDescription(resposta);
+        VC_SOCKET.emit('sinal-webrtc', { tipo: 'answer', dados: resposta, paraSocketId: de });
+      } else if (tipo === 'answer') {
+        await peer.setRemoteDescription(new RTCSessionDescription(dados));
+      } else if (tipo === 'candidate' && dados) {
+        try { await peer.addIceCandidate(new RTCIceCandidate(dados)); } catch (e) { /* candidato tardio */ }
+      }
+    } catch (e) { console.warn('WebRTC:', e); }
   });
 }
+function vcMeuEstado() { return { mic: VC_MICRO_LIGADO && !!(VC_STREAM_LOCAL && VC_STREAM_LOCAL.getAudioTracks().length), cam: VC_CAMERA_LIGADA && !VC_SEM_CAMERA, mao: VC_MAO, tela: VC_COMPARTILHANDO_TELA, gravando: !!VC_GRAV }; }
+function vcEnviarEstado() {
+  if (!VC_SOCKET) return;
+  const e = vcMeuEstado();
+  VC_SOCKET.emit('vc-estado', e);
+  VC_SOCKET.emit('camera-estado', { ligada: e.cam });
+}
+function vcRegistrarParticipante(id, nome, convidado, estado) {
+  VC_NOMES.set(id, nome || 'Participante');
+  const atual = VC_INFO.get(id) || {};
+  VC_INFO.set(id, Object.assign({ nome: nome || 'Participante', convidado: !!convidado, mic: true, cam: true, mao: false, tela: false, gravando: false }, atual, estado || {}, { nome: nome || atual.nome || 'Participante', convidado: !!convidado }));
+  vcCriarTile(id, nome || 'Participante', false);
+  vcAtualizarTile(id); vcAtualizarRec();
+}
+function vcRemoverParticipante(id) {
+  const peer = VC_PEERS.get(id); if (peer) { try { peer.close(); } catch (e) {} VC_PEERS.delete(id); }
+  VC_NOMES.delete(id); VC_INFO.delete(id); VC_STREAMS_REMOTOS.delete(id); vcPararAnalise(id);
+  if (VC_FIXADO === id) VC_FIXADO = null;
+  if (VC_ATIVO === id) VC_ATIVO = null;
+  const el = document.getElementById('vc-tile-' + id); if (el) el.remove();
+  vcAtualizarRec();
+}
+function vcLimparRemotos() { Array.from(VC_INFO.keys()).forEach(vcRemoverParticipante); vcLayout(); vcDesenharPessoas(); }
 
-function criarConexaoPeer(socketId) {
-  const peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+function criarConexaoPeer(socketId, iniciador) {
+  const peer = new RTCPeerConnection({ iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }, { urls: 'stun:global.stun.twilio.com:3478' }] });
   VC_PEERS.set(socketId, peer);
-  const faixaVideoAtual = VC_COMPARTILHANDO_TELA && VC_STREAM_TELA ? VC_STREAM_TELA.getVideoTracks()[0] : null;
+  const faixaTela = VC_COMPARTILHANDO_TELA && VC_STREAM_TELA ? VC_STREAM_TELA.getVideoTracks()[0] : null;
   VC_STREAM_LOCAL.getTracks().forEach(track => {
-    // Se eu já estiver compartilhando tela quando alguém novo entra, ele já
-    // deve receber a tela, não a câmera.
-    if (track.kind === 'video' && faixaVideoAtual) peer.addTrack(faixaVideoAtual, VC_STREAM_TELA);
+    if (track.kind === 'video' && faixaTela) peer.addTrack(faixaTela, VC_STREAM_LOCAL);
     else peer.addTrack(track, VC_STREAM_LOCAL);
   });
-
-  peer.onicecandidate = (ev) => {
-    if (ev.candidate) VC_SOCKET.emit('sinal-webrtc', { tipo: 'candidate', dados: ev.candidate, paraSocketId: socketId });
-  };
-
+  if (iniciador && !VC_STREAM_LOCAL.getAudioTracks().length) { try { peer.addTransceiver('audio', { direction: 'recvonly' }); } catch (e) {} }
+  peer.onicecandidate = (ev) => { if (ev.candidate && VC_SOCKET) VC_SOCKET.emit('sinal-webrtc', { tipo: 'candidate', dados: ev.candidate, paraSocketId: socketId }); };
   peer.ontrack = (ev) => {
-    VC_STREAMS_REMOTOS.set(socketId, ev.streams[0]);
+    const stream = ev.streams[0] || new MediaStream([ev.track]);
+    VC_STREAMS_REMOTOS.set(socketId, stream);
     const video = document.getElementById('vc-video-' + socketId);
-    if (video) video.srcObject = ev.streams[0];
-    atualizarPipParticipantes();
-    const statusEl = document.getElementById('vc-status');
-    if (statusEl) statusEl.textContent = 'Chamada conectada.';
-  };
-
-  peer.onconnectionstatechange = () => {
-    if (peer.connectionState === 'failed' || peer.connectionState === 'disconnected') {
-      const statusEl = document.getElementById('vc-status');
-      if (statusEl) statusEl.textContent = 'Conexão perdida com um participante.';
+    if (video && video.srcObject !== stream) { video.srcObject = stream; vcAplicarSaidaSom(video); video.play().catch(() => {}); }
+    if (ev.track.kind === 'audio') {
+      vcAnalisar(socketId, stream);
+      if (VC_GRAV && !VC_GRAV.audioAba) { try { const src = VC_GRAV.ctx.createMediaStreamSource(new MediaStream([ev.track])); src.connect(VC_GRAV.dest); VC_GRAV.fontes.push(src); } catch (e) {} }
     }
+    vcStatus('Você está na reunião');
+  };
+  peer.onconnectionstatechange = () => {
+    const st = peer.connectionState, t = document.getElementById('vc-tile-' + socketId);
+    if (t) t.classList.toggle('instavel', st === 'disconnected' || st === 'failed');
+    if (st === 'failed') { vcStatus(`Conexão perdida com ${VC_NOMES.get(socketId) || 'um participante'}.`, true); try { peer.restartIce && peer.restartIce(); } catch (e) {} }
   };
   return peer;
 }
 
-function adicionarTileRemoto(socketId, nome) {
-  if (document.getElementById('vc-tile-' + socketId)) return;
-  const wrap = document.getElementById('vc-remotos-wrap');
-  if (!wrap) return;
+// ---------- Blocos de vídeo ----------
+function vcCriarTile(id, nome, local) {
+  if (document.getElementById('vc-tile-' + id)) return;
+  const grade = document.getElementById('vc-grade'); if (!grade) return;
   const div = document.createElement('div');
-  div.className = 'videochamada-video-wrap';
-  div.id = 'vc-tile-' + socketId;
-  div.innerHTML = `<video id="vc-video-${socketId}" autoplay playsinline></video><div class="vc-cam-off-overlay" id="vc-cam-off-${socketId}"><div class="avatar">🎥</div>${escapeHtml(nome)} — câmera desligada</div><div class="rotulo">${escapeHtml(nome)}</div>`;
-  wrap.appendChild(div);
-  atualizarPipParticipantes();
+  div.className = 'vc-tile' + (local ? ' local' : '');
+  div.id = 'vc-tile-' + id; div.dataset.id = id;
+  div.innerHTML = `
+    <video id="vc-video-${id}" autoplay playsinline ${local ? 'muted' : ''}></video>
+    <div class="vc-semcam"><div class="vc-avatar" style="background:${vcCor(nome)}">${escapeHtml(vcIniciais(nome.replace(' (Você)', '')))}</div></div>
+    <div class="vc-tile-mao">✋</div>
+    <div class="vc-tile-nome"><span class="vc-tile-mic">${VC_ICO.micOff}</span><span class="vc-tile-txt">${escapeHtml(nome)}</span></div>
+    <button class="vc-tile-fixar" onclick="vcFixar('${id}')" title="Fixar / desafixar">${VC_ICO.fixar}</button>
+    <div class="vc-tile-instavel">Reconectando…</div>`;
+  div.addEventListener('dblclick', () => vcFixar(id));
+  grade.appendChild(div);
+  if (!local && VC_STREAMS_REMOTOS.get(id)) { const v = div.querySelector('video'); v.srcObject = VC_STREAMS_REMOTOS.get(id); vcAplicarSaidaSom(v); }
+}
+function vcAtualizarTile(id) {
+  const t = document.getElementById('vc-tile-' + id); if (!t) return;
+  const e = id === 'local' ? vcMeuEstado() : (VC_INFO.get(id) || {});
+  t.classList.toggle('cam-off', !e.cam && !(id !== 'local' && e.tela));
+  t.classList.toggle('mudo', !e.mic);
+  t.classList.toggle('mao', !!e.mao);
+  t.classList.toggle('tela', id !== 'local' && !!e.tela);
+  t.classList.toggle('fixado', VC_FIXADO === id);
+  if (id === 'local') t.querySelector('video').classList.toggle('espelho', !VC_SEM_CAMERA);
+}
+function vcFixar(id) {
+  VC_FIXADO = VC_FIXADO === id ? null : id;
+  document.querySelectorAll('.vc-tile').forEach(t => t.classList.toggle('fixado', t.dataset.id === VC_FIXADO));
+  vcNotificar(VC_FIXADO ? `${(VC_INFO.get(id) || {}).nome || 'Você'} fixado em destaque` : 'Destaque liberado');
+  vcLayout();
+}
+function vcQuemApresenta() {
+  if (VC_COMPARTILHANDO_TELA) return 'tela-local';
+  for (const [id, p] of VC_INFO) if (p.tela) return id;
+  return null;
+}
+function vcMover(el, alvo) { if (el && alvo && el.parentElement !== alvo) { alvo.appendChild(el); const v = el.querySelector('video'); if (v) v.play().catch(() => {}); } }
+function vcLayout() {
+  const area = document.getElementById('vc-area'); if (!area) return;
+  const palco = document.getElementById('vc-palco'), grade = document.getElementById('vc-grade'), faixa = document.getElementById('vc-faixa');
+  const ids = ['local', ...VC_INFO.keys()];
+  const apres = vcQuemApresenta();
+  let destaque = null;
+  if (apres) destaque = apres;
+  else if (VC_FIXADO && ids.includes(VC_FIXADO)) destaque = VC_FIXADO;
+  else if (VC_VISAO === 'orador' && ids.length > 1) destaque = (VC_ATIVO && VC_ATIVO !== 'local' && ids.includes(VC_ATIVO)) ? VC_ATIVO : ids.find(i => i !== 'local');
+  area.classList.toggle('modo-destaque', !!destaque);
+  const tLocalTela = document.getElementById('vc-tile-tela-local');
+  if (destaque) {
+    vcMover(document.getElementById('vc-tile-' + destaque), palco);
+    ids.filter(i => i !== destaque).forEach(i => vcMover(document.getElementById('vc-tile-' + i), faixa));
+  } else {
+    if (tLocalTela) tLocalTela.remove();
+    ids.forEach(i => vcMover(document.getElementById('vc-tile-' + i), grade));
+  }
+  // Sozinho na sala: mostra o cartão "aguardando" por cima da sua câmera.
+  const esp = document.getElementById('vc-espera'); if (esp) esp.classList.toggle('ativo', VC_INFO.size === 0 && !apres);
+  const b = document.getElementById('vc-banner-apres');
+  if (b) {
+    if (apres === 'tela-local') { b.hidden = false; b.innerHTML = `<span>${VC_ICO.tela} Você está apresentando para todos</span><button onclick="pararCompartilhamentoTela()">Parar apresentação</button>`; }
+    else if (apres) { b.hidden = false; b.innerHTML = `<span>${VC_ICO.tela} ${escapeHtml((VC_INFO.get(apres) || {}).nome || '')} está apresentando</span>`; }
+    else b.hidden = true;
+  }
+  const bv = document.getElementById('vc-btn-visao');
+  if (bv) bv.innerHTML = VC_VISAO === 'galeria' ? `${VC_ICO.orador}<span>Visão do orador</span>` : `${VC_ICO.galeria}<span>Galeria</span>`;
+  const n = ids.length;
+  const qtd = document.getElementById('vc-aba-qtd'); if (qtd) qtd.textContent = n;
+  const bp = document.getElementById('vc-badge-pessoas'); if (bp) bp.textContent = n;
+  vcAjustarGrade();
+}
+// Calcula colunas/linhas para os vídeos (16:9) ocuparem o máximo do espaço.
+function vcAjustarGrade() {
+  const g = document.getElementById('vc-grade'); if (!g) return;
+  const n = g.children.length; if (!n) return;
+  const W = g.clientWidth, H = g.clientHeight, gap = 10; if (!W || !H) return;
+  let melhor = { area: 0, cols: 1, w: W, h: H };
+  for (let cols = 1; cols <= n; cols++) {
+    const rows = Math.ceil(n / cols);
+    let w = (W - gap * (cols - 1)) / cols, h = w * 9 / 16;
+    if (h * rows + gap * (rows - 1) > H) { h = (H - gap * (rows - 1)) / rows; w = h * 16 / 9; }
+    if (w * h > melhor.area) melhor = { area: w * h, cols, w, h };
+  }
+  g.style.gridTemplateColumns = `repeat(${melhor.cols}, ${Math.floor(melhor.w)}px)`;
+  g.style.gridAutoRows = Math.floor(melhor.h) + 'px';
+}
+function vcAlternarVisao() { VC_VISAO = VC_VISAO === 'galeria' ? 'orador' : 'galeria'; if (VC_VISAO === 'galeria') VC_FIXADO = null; document.querySelectorAll('.vc-tile').forEach(t => t.classList.remove('fixado')); vcLayout(); }
+
+// Quem está falando: borda destacada no bloco e, na visão do orador, vai para o centro.
+function vcDetectarFala() {
+  let maior = null, nivelMaior = 0.035;
+  VC_ANALISADORES.forEach((a, id) => {
+    const nv = vcNivel(id);
+    const falando = id === 'local' ? (VC_MICRO_LIGADO && nv > 0.03) : (nv > 0.03 && (VC_INFO.get(id) || {}).mic !== false);
+    const t = document.getElementById('vc-tile-' + id); if (t) t.classList.toggle('falando', falando);
+    if (falando && id !== 'local' && nv > nivelMaior) { maior = id; nivelMaior = nv; }
+  });
+  if (maior && maior !== VC_ATIVO && Date.now() - VC_ATIVO_DESDE > 1500) {
+    VC_ATIVO = maior; VC_ATIVO_DESDE = Date.now();
+    if (VC_VISAO === 'orador' && !VC_FIXADO && !vcQuemApresenta()) vcLayout();
+  }
+  vcAtualizarPessoasFala();
+}
+function vcRelogio() {
+  const el = document.getElementById('vc-tempo'); if (!el) return;
+  const s = Math.max(0, Math.floor((Date.now() - VC_INICIO) / 1000));
+  const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
+  el.textContent = (h ? h + ':' + String(m).padStart(2, '0') : String(m).padStart(2, '0')) + ':' + String(ss).padStart(2, '0');
+  if (VC_GRAV) { const g = document.getElementById('vc-grav-tempo'); if (g) { const d = Math.floor((Date.now() - VC_GRAV.inicio) / 1000); g.textContent = String(Math.floor(d / 60)).padStart(2, '0') + ':' + String(d % 60).padStart(2, '0'); } }
+}
+function vcStatus(txt, alerta) { const el = document.getElementById('vc-status'); if (el) { el.textContent = txt; el.classList.toggle('alerta', !!alerta); } }
+function vcNotificar(txt, tipo) {
+  const box = document.getElementById('vc-notifs'); if (!box) return;
+  const n = document.createElement('div'); n.className = 'vc-notif' + (tipo === 'erro' ? ' erro' : ''); n.textContent = txt;
+  box.appendChild(n);
+  while (box.children.length > 4) box.firstChild.remove();
+  setTimeout(() => { n.classList.add('saindo'); setTimeout(() => n.remove(), 400); }, 4000);
 }
 
-function removerTileRemoto(socketId) {
-  const el = document.getElementById('vc-tile-' + socketId);
-  if (el) el.remove();
-  atualizarPipParticipantes();
+// ---------- Controles ----------
+function vcAtualizarBotoes() {
+  const temMic = VC_STREAM_LOCAL && VC_STREAM_LOCAL.getAudioTracks().length;
+  const bm = document.getElementById('vc-btn-mic');
+  if (bm) { bm.innerHTML = (VC_MICRO_LIGADO && temMic ? VC_ICO.mic : VC_ICO.micOff) + `<span>${VC_MICRO_LIGADO && temMic ? 'Silenciar' : 'Ativar som'}</span>`; bm.classList.toggle('off', !VC_MICRO_LIGADO || !temMic); bm.title = 'Microfone (Alt+A)'; bm.disabled = !temMic; }
+  const bc = document.getElementById('vc-btn-cam');
+  if (bc) { bc.innerHTML = (VC_CAMERA_LIGADA && !VC_SEM_CAMERA ? VC_ICO.cam : VC_ICO.camOff) + `<span>${VC_CAMERA_LIGADA && !VC_SEM_CAMERA ? 'Parar vídeo' : 'Iniciar vídeo'}</span>`; bc.classList.toggle('off', !VC_CAMERA_LIGADA || VC_SEM_CAMERA); bc.title = 'Câmera (Alt+V)'; }
+  const bt = document.getElementById('vc-btn-tela');
+  if (bt) { bt.classList.toggle('ativo-verde', VC_COMPARTILHANDO_TELA); bt.querySelector('span').textContent = VC_COMPARTILHANDO_TELA ? 'Parar apresentação' : 'Apresentar'; bt.title = 'Apresentar a tela (Alt+S)'; }
+  const bh = document.getElementById('vc-btn-mao');
+  if (bh) { bh.classList.toggle('ativo-amarelo', VC_MAO); bh.querySelector('span').textContent = VC_MAO ? 'Abaixar a mão' : 'Levantar a mão'; bh.title = 'Levantar a mão (Alt+Y)'; }
+  const bg = document.getElementById('vc-btn-gravar');
+  if (bg) { bg.classList.toggle('gravando', !!VC_GRAV); bg.querySelector('span').innerHTML = VC_GRAV ? 'Parar <b id="vc-grav-tempo">00:00</b>' : 'Gravar'; }
 }
-
 function alternarMicrofone() {
-  if (!VC_STREAM_LOCAL) return;
+  if (!VC_STREAM_LOCAL || !VC_STREAM_LOCAL.getAudioTracks().length) { vcNotificar('Nenhum microfone disponível. Confira em Mais › Configurações de áudio e vídeo.', 'erro'); return; }
   VC_MICRO_LIGADO = !VC_MICRO_LIGADO;
   VC_STREAM_LOCAL.getAudioTracks().forEach(t => t.enabled = VC_MICRO_LIGADO);
-  document.getElementById('vc-btn-mic').textContent = VC_MICRO_LIGADO ? '🎙️ Microfone' : '🔇 Mudo';
+  vcAtualizarBotoes(); vcAtualizarTile('local'); vcEnviarEstado(); vcDesenharPessoas();
 }
-
-function alternarCamera() {
+async function alternarCamera() {
   if (!VC_STREAM_LOCAL) return;
-  VC_CAMERA_LIGADA = !VC_CAMERA_LIGADA;
-  VC_STREAM_LOCAL.getVideoTracks().forEach(t => t.enabled = VC_CAMERA_LIGADA);
-  document.getElementById('vc-btn-cam').textContent = VC_CAMERA_LIGADA ? '🎥 Câmera' : '🚫 Câmera desligada';
-  const overlay = document.getElementById('vc-cam-off-local');
-  if (overlay) overlay.classList.toggle('ativo', !VC_CAMERA_LIGADA);
-  // Avisa os outros participantes pra eles trocarem o quadro preto/congelado
-  // pelo mesmo aviso amigável, em vez de ficar parecendo que a chamada travou.
-  if (VC_SOCKET) VC_SOCKET.emit('camera-estado', { ligada: VC_CAMERA_LIGADA });
+  if (VC_SEM_CAMERA) {
+    // Tenta ligar uma câmera agora (ex.: plugou a webcam depois de entrar).
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ video: vcRestricoes('video') });
+      await vcTrocarFaixa(s.getVideoTracks()[0]); VC_SEM_CAMERA = false; VC_CAMERA_LIGADA = true;
+    } catch (e) { vcNotificar(traduzirErroMidia(e), 'erro'); return; }
+  } else {
+    VC_CAMERA_LIGADA = !VC_CAMERA_LIGADA;
+    VC_STREAM_LOCAL.getVideoTracks().forEach(t => t.enabled = VC_CAMERA_LIGADA);
+  }
+  vcAtualizarBotoes(); vcAtualizarTile('local'); vcEnviarEstado(); vcDesenharPessoas();
 }
-
-// Compartilhar tela (como no Teams/Meet): troca a faixa de vídeo enviada para
-// TODOS os participantes pela captura de tela, sem precisar recriar nenhuma
-// conexão — usa RTCRtpSender.replaceTrack em cada peer. Ao parar (botão ou o
-// navegador encerrando o compartilhamento), volta para a câmera sozinho.
+// Troca a faixa (câmera ou microfone) sem derrubar a chamada.
+async function vcTrocarFaixa(nova) {
+  const tipo = nova.kind;
+  const velha = tipo === 'video' ? VC_STREAM_LOCAL.getVideoTracks()[0] : VC_STREAM_LOCAL.getAudioTracks()[0];
+  if (velha) { VC_STREAM_LOCAL.removeTrack(velha); velha.stop(); }
+  VC_STREAM_LOCAL.addTrack(nova);
+  nova.enabled = tipo === 'video' ? VC_CAMERA_LIGADA : VC_MICRO_LIGADO;
+  if (!(tipo === 'video' && VC_COMPARTILHANDO_TELA)) {
+    for (const peer of VC_PEERS.values()) {
+      const sender = peer.getSenders().find(s => s.track && s.track.kind === tipo) || (velha && peer.getSenders().find(s => s.track === velha));
+      if (sender) await sender.replaceTrack(nova).catch(() => {});
+    }
+  }
+  const v = document.getElementById('vc-video-local'); if (v) { v.srcObject = null; v.srcObject = VC_STREAM_LOCAL; }
+  if (tipo === 'audio') vcAnalisar('local', VC_STREAM_LOCAL);
+}
 async function alternarCompartilhamentoTela() {
-  const btn = document.getElementById('vc-btn-tela');
   if (VC_COMPARTILHANDO_TELA) { pararCompartilhamentoTela(); return; }
-  if (!navigator.mediaDevices.getDisplayMedia) { mostrarToast('Seu navegador não suporta compartilhamento de tela.', true); return; }
-  try {
-    VC_STREAM_TELA = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-  } catch (e) { return; } // usuário cancelou o seletor de tela/janela
-
-  const faixaTela = VC_STREAM_TELA.getVideoTracks()[0];
+  if (!navigator.mediaDevices.getDisplayMedia) { vcNotificar('Seu navegador não permite apresentar a tela (no celular isso não é suportado).', 'erro'); return; }
+  const outro = vcQuemApresenta();
+  if (outro && outro !== 'tela-local' && !confirm(`${(VC_INFO.get(outro) || {}).nome || 'Outra pessoa'} já está apresentando. Quer apresentar mesmo assim?`)) return;
+  try { VC_STREAM_TELA = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 15, max: 30 } }, audio: false }); }
+  catch (e) { return; } // cancelou o seletor
+  const faixa = VC_STREAM_TELA.getVideoTracks()[0];
+  try { faixa.contentHint = 'detail'; } catch (e) {}
   for (const peer of VC_PEERS.values()) {
     const sender = peer.getSenders().find(s => s.track && s.track.kind === 'video');
-    if (sender) await sender.replaceTrack(faixaTela);
+    if (sender) await sender.replaceTrack(faixa).catch(() => {});
   }
-  document.getElementById('vc-video-local').srcObject = VC_STREAM_TELA;
   VC_COMPARTILHANDO_TELA = true;
-  if (btn) { btn.textContent = '🛑 Parar compartilhamento'; btn.classList.add('btn-perigo'); }
-  const btnSplit = document.getElementById('vc-btn-split');
-  if (btnSplit) btnSplit.style.display = '';
-  // O navegador tem seu próprio botão "Parar compartilhamento" na barra do SO — precisa escutar esse evento também.
-  faixaTela.onended = () => pararCompartilhamentoTela();
-  aplicarModoTelaCompartilhamento();
+  faixa.onended = () => pararCompartilhamentoTela();
+  // Bloco da sua apresentação (o que os outros estão vendo).
+  const palco = document.getElementById('vc-palco');
+  if (palco && !document.getElementById('vc-tile-tela-local')) {
+    const d = document.createElement('div'); d.className = 'vc-tile tela'; d.id = 'vc-tile-tela-local'; d.dataset.id = 'tela-local';
+    d.innerHTML = `<video autoplay playsinline muted></video><div class="vc-tile-nome"><span class="vc-tile-txt">Sua apresentação</span></div>`;
+    palco.appendChild(d); d.querySelector('video').srcObject = VC_STREAM_TELA;
+  }
+  vcAtualizarBotoes(); vcEnviarEstado(); vcLayout();
 }
-
 async function pararCompartilhamentoTela() {
   if (!VC_COMPARTILHANDO_TELA) return;
   if (VC_STREAM_TELA) { VC_STREAM_TELA.getTracks().forEach(t => t.stop()); VC_STREAM_TELA = null; }
-  const faixaCamera = VC_STREAM_LOCAL && VC_STREAM_LOCAL.getVideoTracks()[0];
+  const cam = VC_STREAM_LOCAL && VC_STREAM_LOCAL.getVideoTracks()[0];
   for (const peer of VC_PEERS.values()) {
-    const sender = peer.getSenders().find(s => s.track && s.track.kind === 'video');
-    if (sender && faixaCamera) await sender.replaceTrack(faixaCamera);
+    const sender = peer.getSenders().find(s => s.track && s.track.kind === 'video') || peer.getSenders().find(s => !s.track);
+    if (sender && cam) await sender.replaceTrack(cam).catch(() => {});
   }
-  const videoLocal = document.getElementById('vc-video-local');
-  if (videoLocal) videoLocal.srcObject = VC_STREAM_LOCAL;
   VC_COMPARTILHANDO_TELA = false;
-  const btn = document.getElementById('vc-btn-tela');
-  if (btn) { btn.textContent = '🖥️ Compartilhar tela'; btn.classList.remove('btn-perigo'); }
-  const btnSplit = document.getElementById('vc-btn-split');
-  if (btnSplit) btnSplit.style.display = 'none';
-  aplicarModoTelaCompartilhamento();
+  const t = document.getElementById('vc-tile-tela-local'); if (t) t.remove();
+  vcAtualizarBotoes(); vcEnviarEstado(); vcLayout();
+}
+function vcAlternarMao() { VC_MAO = !VC_MAO; vcAtualizarBotoes(); vcAtualizarTile('local'); vcEnviarEstado(); vcDesenharPessoas(); if (VC_MAO) vcNotificar('Você levantou a mão'); }
+function vcReagir(emoji) {
+  vcFecharPops();
+  if (!VC_REACOES.includes(emoji)) return;
+  if (VC_SOCKET) VC_SOCKET.emit('vc-reacao', { emoji });
+  vcReacaoVoando(emoji, 'Você');
+}
+function vcReacaoVoando(emoji, nome) {
+  const box = document.getElementById('vc-voando'); if (!box) return;
+  const r = document.createElement('div'); r.className = 'vc-voa';
+  r.style.left = (8 + Math.random() * 20) + '%';
+  r.innerHTML = `<span class="e">${escapeHtml(emoji)}</span><span class="n">${escapeHtml(nome)}</span>`;
+  box.appendChild(r); setTimeout(() => r.remove(), 3200);
+}
+function vcAbrirPop(id, ev) {
+  if (ev) ev.stopPropagation();
+  const el = document.getElementById(id); const abrir = el.hidden;
+  vcFecharPops(); el.hidden = !abrir;
+}
+function vcFecharPops() { document.querySelectorAll('#vc-app .vc-pop').forEach(p => p.hidden = true); }
+function vcCliqueFora(e) { if (!e.target.closest('.vc-pop-wrap')) vcFecharPops(); }
+function vcPerguntarSair(ev) {
+  if (!vcEuModerador() && VC_INFO.size === 0) return vcEncerrar();
+  vcAbrirPop('vc-pop-sair', ev);
 }
 
-// Dois jeitos de ver a tela compartilhada, como no Teams: "pip" deixa uma
-// janelinha da sua câmera flutuando (arrastável) por cima da tela grande, e
-// "split" divide a tela ao meio — metade o que está sendo compartilhado,
-// metade a câmera de quem está falando.
-function alternarModoDivisaoTela() {
-  if (!VC_COMPARTILHANDO_TELA) return;
-  VC_MODO_TELA = VC_MODO_TELA === 'split' ? 'pip' : 'split';
-  aplicarModoTelaCompartilhamento();
+// ---------- Painel lateral: chat e participantes ----------
+function vcPainel(qual) {
+  VC_PAINEL = qual;
+  const p = document.getElementById('vc-painel'); if (!p) return;
+  p.hidden = !qual;
+  document.getElementById('vc-corpo-chat').style.display = qual === 'chat' ? '' : 'none';
+  document.getElementById('vc-corpo-pessoas').style.display = qual === 'pessoas' ? '' : 'none';
+  document.getElementById('vc-aba-chat').classList.toggle('on', qual === 'chat');
+  document.getElementById('vc-aba-pessoas').classList.toggle('on', qual === 'pessoas');
+  document.getElementById('vc-btn-chat').classList.toggle('ativo', qual === 'chat');
+  document.getElementById('vc-btn-pessoas').classList.toggle('ativo', qual === 'pessoas');
+  if (qual === 'chat') { VC_NAO_LIDAS = 0; vcBadgeChat(); setTimeout(() => { const i = document.getElementById('vc-chat-input'); if (i) i.focus(); }, 30); }
+  if (qual === 'pessoas') vcDesenharPessoas();
+  const g = document.getElementById('vc-grade'); if (g) g.style.gridTemplateColumns = '';
+  requestAnimationFrame(() => vcAjustarGrade());
 }
-
-// Enquanto estiver dividindo a tela ao meio, mostra sua câmera como mais uma
-// miniatura ao lado dos outros participantes (senão só apareceria a tela
-// compartilhada e as outras pessoas, sem você).
-function atualizarTileLocalNaFaixaSplit() {
-  const tile = document.getElementById('vc-tile-local-cam-split');
-  if (!tile) return;
-  if (VC_COMPARTILHANDO_TELA && VC_MODO_TELA === 'split') {
-    tile.style.display = '';
-    document.getElementById('vc-video-local-cam-split').srcObject = VC_STREAM_LOCAL;
-  } else {
-    tile.style.display = 'none';
+function alternarChatVideochamada() { vcPainel(VC_PAINEL === 'chat' ? null : 'chat'); }
+function vcBadgeChat() { const b = document.getElementById('vc-badge-chat'); if (b) { b.hidden = !VC_NAO_LIDAS; b.textContent = VC_NAO_LIDAS > 9 ? '9+' : VC_NAO_LIDAS; } }
+function adicionarMensagemChatVideochamada(nome, texto, souEu, hora) {
+  const lista = document.getElementById('vc-chat-lista'); if (!lista) return;
+  const vazio = document.getElementById('vc-chat-vazio'); if (vazio) vazio.remove();
+  const ult = lista.lastElementChild;
+  const mesmo = ult && ult.dataset.nome === nome && ult.dataset.eu === String(!!souEu) && Date.now() - Number(ult.dataset.t || 0) < 120000;
+  const txt = escapeHtml(texto).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  if (mesmo) { ult.querySelector('.vc-msg-baloes').insertAdjacentHTML('beforeend', `<div class="vc-msg-b">${txt}</div>`); ult.dataset.t = Date.now(); }
+  else {
+    const d = document.createElement('div'); d.className = 'vc-msg' + (souEu ? ' eu' : '');
+    d.dataset.nome = nome; d.dataset.eu = String(!!souEu); d.dataset.t = Date.now();
+    d.innerHTML = `${souEu ? '' : `<div class="vc-avatar mini" style="background:${vcCor(nome)}">${escapeHtml(vcIniciais(nome))}</div>`}<div><div class="vc-msg-cab"><b>${souEu ? 'Você' : escapeHtml(nome)}</b><span>${vcHora(hora)}</span></div><div class="vc-msg-baloes"><div class="vc-msg-b">${txt}</div></div></div>`;
+    lista.appendChild(d);
   }
-}
-
-// Redesenha as miniaturas do modo "câmera flutuante" (você + cada outro
-// participante), usada quando você compartilha a tela e quer ver todo mundo
-// numa janelinha, em vez do que está sendo compartilhado.
-function atualizarPipParticipantes() {
-  const pip = document.getElementById('vc-pip-wrap');
-  if (!pip || !VC_COMPARTILHANDO_TELA || VC_MODO_TELA !== 'pip') return;
-  // Só as OUTRAS pessoas aparecem aqui — a sua própria câmera já ocupa a tela
-  // toda (compartilhamento), então repeti-la nessa janelinha era um "espelho"
-  // (seu próprio rosto) que só atrapalhava; a janelinha existe pra ver quem
-  // está do outro lado, não pra se ver de novo.
-  const participantes = [];
-  VC_NOMES.forEach((nome, id) => participantes.push({ id, nome, stream: VC_STREAMS_REMOTOS.get(id) || null }));
-  pip.innerHTML = participantes.length ? participantes.map(p => `
-    <div class="vc-pip-item">
-      <video id="vc-pip-video-${p.id}" autoplay playsinline></video>
-      <div class="rotulo">${escapeHtml(p.nome)}</div>
-    </div>
-  `).join('') : `<div class="vc-pip-item" style="display:flex;align-items:center;justify-content:center;font-size:11px;padding:6px;text-align:center;">Aguardando outras pessoas...</div>`;
-  participantes.forEach(p => {
-    const v = document.getElementById('vc-pip-video-' + p.id);
-    if (v && p.stream) v.srcObject = p.stream;
-  });
-}
-
-// Abre uma janela flutuante DE VERDADE (Picture-in-Picture nativo do
-// navegador) mostrando as OUTRAS pessoas da chamada — diferente da janelinha
-// em CSS de cima, esta sobrevive quando você sai da aba/site do Impulsionar,
-// porque quem está desenhando os quadros é o próprio navegador/SO, não a
-// página. Como o PiP nativo só aceita UM <video>, "compomos" (desenhamos) o
-// vídeo de cada participante remoto lado a lado dentro de um <canvas>
-// escondido, e é o streaming desse canvas que vira a janela flutuante.
-async function alternarPipSistema() {
-  if (VC_PIP_SISTEMA_ATIVO) {
-    if (document.pictureInPictureElement) { try { await document.exitPictureInPicture(); } catch (e) { /* já fechada */ } }
-    return;
-  }
-  if (!document.pictureInPictureEnabled) { mostrarToast('Seu navegador não suporta janela flutuante (Picture-in-Picture).', true); return; }
-
-  if (!VC_PIP_CANVAS) { VC_PIP_CANVAS = document.createElement('canvas'); VC_PIP_CANVAS.width = 640; VC_PIP_CANVAS.height = 360; }
-  if (!VC_PIP_VIDEO_OCULTO) {
-    VC_PIP_VIDEO_OCULTO = document.createElement('video');
-    VC_PIP_VIDEO_OCULTO.muted = true;
-    VC_PIP_VIDEO_OCULTO.playsInline = true;
-    VC_PIP_VIDEO_OCULTO.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;';
-    document.body.appendChild(VC_PIP_VIDEO_OCULTO);
-    VC_PIP_VIDEO_OCULTO.addEventListener('leavepictureinpicture', pararPipSistema);
-  }
-
-  const ctx = VC_PIP_CANVAS.getContext('2d');
-  const desenhar = () => {
-    ctx.fillStyle = '#0b1329';
-    ctx.fillRect(0, 0, VC_PIP_CANVAS.width, VC_PIP_CANVAS.height);
-    const videosRemotos = Array.from(VC_NOMES.keys()).map(id => document.getElementById('vc-video-' + id)).filter(v => v && v.readyState >= 2);
-    if (!videosRemotos.length) {
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '18px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('Aguardando outras pessoas entrarem...', VC_PIP_CANVAS.width / 2, VC_PIP_CANVAS.height / 2);
-    } else {
-      const colunas = Math.ceil(Math.sqrt(videosRemotos.length));
-      const linhas = Math.ceil(videosRemotos.length / colunas);
-      const largura = VC_PIP_CANVAS.width / colunas, altura = VC_PIP_CANVAS.height / linhas;
-      videosRemotos.forEach((v, i) => {
-        const x = (i % colunas) * largura, y = Math.floor(i / colunas) * altura;
-        try { ctx.drawImage(v, x, y, largura, altura); } catch (e) { /* frame ainda não pronto */ }
-      });
-    }
-    VC_PIP_ANIMACAO_ID = requestAnimationFrame(desenhar);
-  };
-  desenhar();
-
-  try {
-    VC_PIP_VIDEO_OCULTO.srcObject = VC_PIP_CANVAS.captureStream(25);
-    await VC_PIP_VIDEO_OCULTO.play();
-    await VC_PIP_VIDEO_OCULTO.requestPictureInPicture();
-    VC_PIP_SISTEMA_ATIVO = true;
-    const btn = document.getElementById('vc-btn-pip-sistema');
-    if (btn) btn.textContent = '📌 Fechar janela flutuante';
-  } catch (e) {
-    mostrarToast('Não foi possível abrir a janela flutuante: ' + e.message, true);
-    pararPipSistema();
-  }
-}
-
-function pararPipSistema() {
-  VC_PIP_SISTEMA_ATIVO = false;
-  if (VC_PIP_ANIMACAO_ID) { cancelAnimationFrame(VC_PIP_ANIMACAO_ID); VC_PIP_ANIMACAO_ID = null; }
-  const btn = document.getElementById('vc-btn-pip-sistema');
-  if (btn) btn.textContent = '📌 Janela flutuante (fora da aba)';
-}
-
-function aplicarModoTelaCompartilhamento() {
-  const grade = document.getElementById('vc-grade');
-  const pip = document.getElementById('vc-pip-wrap');
-  const btnSplit = document.getElementById('vc-btn-split');
-  if (!grade) return;
-  if (!VC_COMPARTILHANDO_TELA) {
-    grade.classList.remove('modo-split', 'modo-pip');
-    if (pip) pip.style.display = 'none';
-    atualizarTileLocalNaFaixaSplit();
-    return;
-  }
-  if (VC_MODO_TELA === 'split') {
-    grade.classList.remove('modo-pip');
-    grade.classList.add('modo-split');
-    if (pip) pip.style.display = 'none';
-    atualizarTileLocalNaFaixaSplit();
-    if (btnSplit) btnSplit.textContent = '🗂️ Ver câmera flutuante (PiP)';
-  } else {
-    grade.classList.remove('modo-split');
-    grade.classList.add('modo-pip');
-    atualizarTileLocalNaFaixaSplit();
-    if (pip) { pip.style.display = 'flex'; }
-    atualizarPipParticipantes();
-    if (btnSplit) btnSplit.textContent = '🗂️ Dividir tela (metade a metade)';
-  }
-}
-
-// Deixa a câmera flutuante arrastável dentro do quadro da tela compartilhada
-// (mouse e toque), como o "picture in picture" do Teams/Meet.
-function tornarPipArrastavel() {
-  const pip = document.getElementById('vc-pip-wrap');
-  const dentro = document.getElementById('vc-tile-local');
-  if (!pip || !dentro || pip.dataset.arrastavelPronto) return;
-  pip.dataset.arrastavelPronto = '1';
-  let arrastando = false, offX = 0, offY = 0;
-  const iniciar = (x, y) => { arrastando = true; const r = pip.getBoundingClientRect(); offX = x - r.left; offY = y - r.top; };
-  const mover = (x, y) => {
-    if (!arrastando) return;
-    const limite = dentro.getBoundingClientRect();
-    let left = Math.max(0, Math.min(x - limite.left - offX, limite.width - pip.offsetWidth));
-    let top = Math.max(0, Math.min(y - limite.top - offY, limite.height - pip.offsetHeight));
-    pip.style.left = left + 'px'; pip.style.top = top + 'px'; pip.style.right = 'auto'; pip.style.bottom = 'auto';
-  };
-  const parar = () => arrastando = false;
-  pip.addEventListener('mousedown', (e) => iniciar(e.clientX, e.clientY));
-  window.addEventListener('mousemove', (e) => mover(e.clientX, e.clientY));
-  window.addEventListener('mouseup', parar);
-  pip.addEventListener('touchstart', (e) => { const t = e.touches[0]; iniciar(t.clientX, t.clientY); }, { passive: true });
-  window.addEventListener('touchmove', (e) => { const t = e.touches[0]; mover(t.clientX, t.clientY); }, { passive: true });
-  window.addEventListener('touchend', parar);
-}
-
-function alternarChatVideochamada() {
-  const area = document.getElementById('vc-chat-area');
-  if (!area) return;
-  area.style.display = area.style.display === 'none' ? 'block' : 'none';
-}
-
-function adicionarMensagemChatVideochamada(nome, texto, souEu) {
-  const lista = document.getElementById('vc-chat-lista');
-  if (!lista) return;
-  const linha = document.createElement('div');
-  linha.style.cssText = 'background:rgba(255,255,255,.08);border-radius:8px;padding:6px 10px;' + (souEu ? 'align-self:flex-end;' : '');
-  linha.innerHTML = `<strong>${escapeHtml(nome)}:</strong> ${escapeHtml(texto)}`;
-  lista.appendChild(linha);
   lista.scrollTop = lista.scrollHeight;
-  // Se o chat estiver fechado, abre sozinho quando chega mensagem nova de outra pessoa.
-  const area = document.getElementById('vc-chat-area');
-  if (!souEu && area && area.style.display === 'none') area.style.display = 'block';
+  if (!souEu) {
+    if (VC_PAINEL !== 'chat') { VC_NAO_LIDAS++; vcBadgeChat(); vcNotificar(`💬 ${nome}: ${texto.slice(0, 80)}`); }
+    vcSom('msg');
+  }
 }
-
 function enviarMensagemVideochamada() {
   const input = document.getElementById('vc-chat-input');
   const texto = input.value.trim();
   if (!texto || !VC_SOCKET) return;
   VC_SOCKET.emit('mensagem-sala-mentoria', { texto });
-  adicionarMensagemChatVideochamada((VC_SOU_CONVIDADO ? 'Você' : (ESTADO.usuario?.name || 'Você')), texto, true);
+  adicionarMensagemChatVideochamada(VC_MEU_NOME, texto, true);
   input.value = '';
 }
+function vcDesenharPessoas() {
+  const c = document.getElementById('vc-corpo-pessoas'); if (!c || VC_PAINEL !== 'pessoas') return;
+  const eu = vcMeuEstado();
+  const lista = [{ id: 'local', nome: VC_MEU_NOME, eu: true, convidado: VC_SOU_CONVIDADO, ...eu }, ...Array.from(VC_INFO.entries()).map(([id, p]) => ({ id, ...p }))];
+  lista.sort((a, b) => (b.mao - a.mao) || (b.eu - a.eu) || a.nome.localeCompare(b.nome));
+  const mod = vcEuModerador();
+  const maos = lista.filter(p => p.mao).length;
+  c.innerHTML = `
+    ${mod ? `<div class="vc-pessoas-acoes">${!VC_SOU_CONVIDADO ? `<button onclick="abrirConviteVideochamada()">${VC_ICO.link} Convidar</button>` : ''}${VC_INFO.size ? `<button onclick="vcModerar('silenciar-todos')">${VC_ICO.micOff} Silenciar todos</button>` : ''}</div>` : ''}
+    ${maos ? `<div class="vc-pessoas-grupo">✋ Mãos levantadas (${maos})</div>` : ''}
+    <div class="vc-pessoas-grupo">Na reunião (${lista.length})</div>
+    ${lista.map(p => `
+      <div class="vc-pessoa" data-id="${p.id}">
+        <div class="vc-avatar mini" style="background:${vcCor(p.nome)}">${escapeHtml(vcIniciais(p.nome))}</div>
+        <div class="vc-pessoa-nome"><b>${escapeHtml(p.nome)}${p.eu ? ' (Você)' : ''}</b><small>${p.convidado ? 'Convidado' : 'Organizador'}${p.tela ? ' · apresentando' : ''}</small></div>
+        <div class="vc-pessoa-ico">${p.mao ? '<span class="mao">✋</span>' : ''}<span class="${p.cam ? '' : 'off'}">${p.cam ? VC_ICO.cam : VC_ICO.camOff}</span><span class="vc-pessoa-mic ${p.mic ? '' : 'off'}">${p.mic ? VC_ICO.mic : VC_ICO.micOff}</span></div>
+        ${mod && !p.eu ? `<div class="vc-pop-wrap"><button class="vc-pessoa-mais" onclick="vcAbrirPop('vc-pop-p-${p.id}', event)">${VC_ICO.mais}</button>
+          <div class="vc-pop vc-pop-menu direita" id="vc-pop-p-${p.id}" hidden>
+            ${p.mic ? `<button onclick="vcModerar('silenciar','${p.id}')">${VC_ICO.micOff} Silenciar</button>` : ''}
+            ${p.mao ? `<button onclick="vcModerar('abaixar-mao','${p.id}')">${VC_ICO.mao} Abaixar a mão</button>` : ''}
+            <button onclick="vcFecharPops();vcFixar('${p.id}')">${VC_ICO.fixar} ${VC_FIXADO === p.id ? 'Desafixar' : 'Fixar para mim'}</button>
+            <button class="perigo" onclick="vcModerar('remover','${p.id}')">${VC_ICO.fechar} Remover da reunião</button>
+          </div></div>` : ''}
+      </div>`).join('')}`;
+}
+function vcAtualizarPessoasFala() {
+  document.querySelectorAll('#vc-corpo-pessoas .vc-pessoa').forEach(el => { const t = document.getElementById('vc-tile-' + el.dataset.id); el.classList.toggle('falando', !!(t && t.classList.contains('falando'))); });
+}
+function vcModerar(acao, alvo) {
+  vcFecharPops();
+  if (!VC_SOCKET) return;
+  if (acao === 'remover' && !confirm(`Remover ${(VC_INFO.get(alvo) || {}).nome || 'este participante'} da reunião?`)) return;
+  VC_SOCKET.emit('vc-moderar', { acao, alvo });
+  vcNotificar({ silenciar: 'Microfone do participante desligado', 'silenciar-todos': 'Todos foram silenciados', remover: 'Participante removido', 'abaixar-mao': 'Mão abaixada' }[acao] || 'Pronto');
+}
 
+// ---------- Gravação (fica no seu computador) ----------
+async function vcGravar() {
+  if (VC_GRAV) { if (VC_GRAV.rec.state !== 'inactive') VC_GRAV.rec.stop(); return; }
+  if (!navigator.mediaDevices.getDisplayMedia || typeof MediaRecorder === 'undefined') { vcNotificar('Seu navegador não permite gravar a reunião. Use o Chrome ou o Edge no computador.', 'erro'); return; }
+  vcNotificar('Escolha "Esta aba" e marque "Compartilhar áudio da aba" para gravar o som de todos.');
+  let tela;
+  try { tela = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 24 }, audio: true, preferCurrentTab: true, selfBrowserSurface: 'include', systemAudio: 'include' }); }
+  catch (e) { return; }
+  const ctx = vcAudioCtx(); const dest = ctx.createMediaStreamDestination(); const fontes = [];
+  const ligar = tracks => { if (!tracks.length) return; try { const s = ctx.createMediaStreamSource(new MediaStream(tracks)); s.connect(dest); fontes.push(s); } catch (e) {} };
+  const audioAba = tela.getAudioTracks().length > 0;
+  ligar(tela.getAudioTracks());
+  if (VC_STREAM_LOCAL) ligar(VC_STREAM_LOCAL.getAudioTracks()); // sua voz (a aba não captura o próprio microfone)
+  if (!audioAba) VC_STREAMS_REMOTOS.forEach(s => ligar(s.getAudioTracks()));
+  const final = new MediaStream([...tela.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+  const tipo = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+  let rec; try { rec = new MediaRecorder(final, tipo ? { mimeType: tipo, videoBitsPerSecond: 2500000 } : undefined); } catch (e) { tela.getTracks().forEach(t => t.stop()); vcNotificar('Não foi possível iniciar a gravação: ' + e.message, 'erro'); return; }
+  const partes = [];
+  rec.ondataavailable = e => { if (e.data && e.data.size) partes.push(e.data); };
+  rec.onstop = () => {
+    const blob = new Blob(partes, { type: rec.mimeType || 'video/webm' });
+    const d = new Date(), p = n => String(n).padStart(2, '0');
+    const nome = `Reuniao-Impulsionar-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}h${p(d.getMinutes())}.${/mp4/.test(rec.mimeType) ? 'mp4' : 'webm'}`;
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    tela.getTracks().forEach(t => t.stop()); fontes.forEach(f => { try { f.disconnect(); } catch (e) {} });
+    VC_GRAV = null; vcAtualizarBotoes(); vcAtualizarRec(); vcEnviarEstado();
+    vcNotificar(`Gravação salva no seu computador (${nome}).`);
+  };
+  tela.getVideoTracks()[0].onended = () => { if (rec.state !== 'inactive') rec.stop(); };
+  rec.start(1000);
+  VC_GRAV = { rec, tela, fontes, ctx, dest, audioAba, inicio: Date.now() };
+  vcAtualizarBotoes(); vcAtualizarRec(); vcEnviarEstado();
+  vcNotificar('🔴 Gravando — todos foram avisados.');
+}
+function vcAtualizarRec() {
+  const el = document.getElementById('vc-rec'); if (!el) return;
+  let quem = VC_GRAV ? 'Você' : null;
+  if (!quem) for (const p of VC_INFO.values()) if (p.gravando) { quem = p.nome; break; }
+  el.hidden = !quem; el.title = quem ? `${quem} está gravando esta reunião` : '';
+}
+
+// ---------- Configurações de áudio e vídeo ----------
+async function vcAbrirConfig() {
+  const d = await vcListarDispositivos();
+  const area = document.getElementById('modal-area-vc'); if (!area) return;
+  area.innerHTML = `
+    <div class="vc-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''">
+      <div class="vc-modal">
+        <div class="vc-modal-cab"><h3>Configurações de áudio e vídeo</h3><button class="vc-x" onclick="document.getElementById('modal-area-vc').innerHTML=''">${VC_ICO.fechar}</button></div>
+        <label>Câmera</label><select onchange="vcTrocarDispositivo('cam', this.value)">${d.cam}</select>
+        <label>Microfone</label><select onchange="vcTrocarDispositivo('mic', this.value)">${d.mic}</select>
+        <div class="vc-medidor-linha"><span>${VC_ICO.mic}</span><div class="vc-medidor"><i id="vc-cfg-nivel"></i></div></div>
+        ${d.som ? `<label>Alto-falante</label><select onchange="VC_DISP.som=this.value; document.querySelectorAll('#vc-app video').forEach(vcAplicarSaidaSom)">${d.som}</select>` : ''}
+        <div class="vc-modal-dica">Se ninguém te ouve, confira se o microfone certo está selecionado e se a barra acima se mexe quando você fala.</div>
+      </div>
+    </div>`;
+  const t = setInterval(() => { const el = document.getElementById('vc-cfg-nivel'); if (!el) { clearInterval(t); return; } el.style.width = Math.min(100, vcNivel('local') * 420 * (VC_MICRO_LIGADO ? 1 : 0)) + '%'; }, 80);
+}
+async function vcTrocarDispositivo(tipo, id) {
+  VC_DISP[tipo] = id;
+  try {
+    const s = await navigator.mediaDevices.getUserMedia(tipo === 'cam' ? { video: vcRestricoes('video') } : { audio: vcRestricoes('audio') });
+    const nova = tipo === 'cam' ? s.getVideoTracks()[0] : s.getAudioTracks()[0];
+    await vcTrocarFaixa(nova);
+    if (tipo === 'cam') VC_SEM_CAMERA = false;
+    vcAtualizarBotoes(); vcAtualizarTile('local'); vcEnviarEstado();
+    vcNotificar(tipo === 'cam' ? 'Câmera trocada' : 'Microfone trocado');
+  } catch (e) { vcNotificar(traduzirErroMidia(e), 'erro'); }
+}
+function vcAplicarSaidaSom(v) { if (v && VC_DISP.som && v.setSinkId && !v.muted) v.setSinkId(VC_DISP.som).catch(() => {}); }
+function vcAtalhos() {
+  const area = document.getElementById('modal-area-vc'); if (!area) return;
+  const l = [['Alt + A', 'Ligar/desligar microfone'], ['Alt + V', 'Ligar/desligar câmera'], ['Alt + S', 'Apresentar a tela'], ['Alt + Y', 'Levantar/abaixar a mão'], ['Alt + C', 'Abrir o chat'], ['Alt + P', 'Ver participantes'], ['Alt + G', 'Galeria / visão do orador'], ['Clique duplo no vídeo', 'Fixar a pessoa em destaque']];
+  area.innerHTML = `<div class="vc-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="vc-modal">
+    <div class="vc-modal-cab"><h3>Atalhos de teclado</h3><button class="vc-x" onclick="document.getElementById('modal-area-vc').innerHTML=''">${VC_ICO.fechar}</button></div>
+    ${l.map(([k, d]) => `<div class="vc-atalho"><kbd>${k}</kbd><span>${d}</span></div>`).join('')}</div></div>`;
+}
+function vcTeclas(e) {
+  if (!VC_NA_SALA || !e.altKey || e.ctrlKey || e.metaKey) return;
+  const acoes = { a: alternarMicrofone, v: alternarCamera, s: alternarCompartilhamentoTela, y: vcAlternarMao, c: () => vcPainel(VC_PAINEL === 'chat' ? null : 'chat'), p: () => vcPainel(VC_PAINEL === 'pessoas' ? null : 'pessoas'), g: vcAlternarVisao };
+  const f = acoes[(e.key || '').toLowerCase()];
+  if (f) { e.preventDefault(); f(); }
+}
 function alternarTelaCheiaVideochamada() {
-  const tela = document.getElementById('vc-tela');
-  if (!tela) return;
+  const tela = document.getElementById('vc-app'); if (!tela) return;
   if (!document.fullscreenElement) tela.requestFullscreen().catch(() => {});
   else document.exitFullscreen().catch(() => {});
 }
 
-// Gera (ou reaproveita) o link público da sala e mostra pronto para copiar —
-// dá para mandar para qualquer pessoa, sem login, até 1000 na mesma sala.
+// Janela flutuante DE VERDADE (Picture-in-Picture do navegador): continua
+// visível por cima de outros programas/abas. Como o PiP aceita um só vídeo,
+// desenhamos os participantes lado a lado num <canvas> e transmitimos ele.
+async function alternarPipSistema() {
+  if (VC_PIP_SISTEMA_ATIVO) { if (document.pictureInPictureElement) { try { await document.exitPictureInPicture(); } catch (e) {} } return; }
+  if (!document.pictureInPictureEnabled) { vcNotificar('Seu navegador não suporta janela flutuante.', 'erro'); return; }
+  if (!VC_PIP_CANVAS) { VC_PIP_CANVAS = document.createElement('canvas'); VC_PIP_CANVAS.width = 640; VC_PIP_CANVAS.height = 360; }
+  if (!VC_PIP_VIDEO_OCULTO) {
+    VC_PIP_VIDEO_OCULTO = document.createElement('video'); VC_PIP_VIDEO_OCULTO.muted = true; VC_PIP_VIDEO_OCULTO.playsInline = true;
+    VC_PIP_VIDEO_OCULTO.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;';
+    document.body.appendChild(VC_PIP_VIDEO_OCULTO);
+    VC_PIP_VIDEO_OCULTO.addEventListener('leavepictureinpicture', pararPipSistema);
+  }
+  const ctx = VC_PIP_CANVAS.getContext('2d');
+  const desenhar = () => {
+    ctx.fillStyle = '#11151f'; ctx.fillRect(0, 0, VC_PIP_CANVAS.width, VC_PIP_CANVAS.height);
+    const ids = Array.from(VC_INFO.keys());
+    const apres = vcQuemApresenta();
+    const lista = (apres && apres !== 'tela-local' ? [apres] : ids).map(id => ({ id, v: document.getElementById('vc-video-' + id), p: VC_INFO.get(id) || {} }));
+    if (!lista.length) { ctx.fillStyle = '#cbd5e1'; ctx.font = '18px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Aguardando outras pessoas…', 320, 180); }
+    else {
+      const cols = Math.ceil(Math.sqrt(lista.length)), rows = Math.ceil(lista.length / cols), w = 640 / cols, h = 360 / rows;
+      lista.forEach((x, i) => {
+        const px = (i % cols) * w, py = Math.floor(i / cols) * h;
+        if (x.v && x.v.readyState >= 2 && (x.p.cam || x.p.tela)) { try { ctx.drawImage(x.v, px, py, w, h); } catch (e) {} }
+        else { ctx.fillStyle = vcCor(x.p.nome); ctx.beginPath(); ctx.arc(px + w / 2, py + h / 2, Math.min(w, h) / 5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.round(Math.min(w, h) / 7)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(vcIniciais(x.p.nome), px + w / 2, py + h / 2); }
+        ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(px + 6, py + h - 26, Math.min(w - 12, 12 + (x.p.nome || '').length * 8), 20);
+        ctx.fillStyle = '#fff'; ctx.font = '13px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(x.p.nome || '', px + 12, py + h - 16);
+      });
+    }
+    VC_PIP_ANIMACAO_ID = requestAnimationFrame(desenhar);
+  };
+  desenhar();
+  try {
+    VC_PIP_VIDEO_OCULTO.srcObject = VC_PIP_CANVAS.captureStream(25);
+    await VC_PIP_VIDEO_OCULTO.play();
+    await VC_PIP_VIDEO_OCULTO.requestPictureInPicture();
+    VC_PIP_SISTEMA_ATIVO = true;
+    const b = document.getElementById('vc-btn-pip-sistema'); if (b) b.innerHTML = `${VC_ICO.pip} Fechar janela flutuante`;
+  } catch (e) { vcNotificar('Não foi possível abrir a janela flutuante: ' + e.message, 'erro'); pararPipSistema(); }
+}
+function pararPipSistema() {
+  VC_PIP_SISTEMA_ATIVO = false;
+  if (VC_PIP_ANIMACAO_ID) { cancelAnimationFrame(VC_PIP_ANIMACAO_ID); VC_PIP_ANIMACAO_ID = null; }
+  const b = document.getElementById('vc-btn-pip-sistema'); if (b) b.innerHTML = `${VC_ICO.pip} Janela flutuante (fora da aba)`;
+}
+
+// Link público da sala — qualquer pessoa entra só com o nome, sem login.
 async function abrirConviteVideochamada() {
+  vcFecharPops();
   if (!VC_MENTORIA_ID_ATUAL) return;
   try {
     const r = await api('/api/mentorships/' + VC_MENTORIA_ID_ATUAL + '/room-link', { method: 'POST' });
-    const area = document.getElementById('modal-area-vc');
+    const area = document.getElementById('modal-area-vc'); if (!area) return;
+    const texto = `Você foi convidado para a reunião "${VC_TITULO}" na Impulsionar V4.\nEntre pelo link (não precisa de login): ${r.link}`;
     area.innerHTML = `
-      <div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area-vc').innerHTML=''">
-        <div class="modal-caixa" style="max-width:480px;">
-          <h3 style="margin-top:0;">🔗 Convidar para a videochamada</h3>
-          <p style="font-size:13px;color:#64748b;">Envie este link para quem você quiser — não precisa de login, só o nome. Até 1000 pessoas podem entrar na mesma sala (para uma audiência bem grande, o ideal é os convidados extras entrarem com a câmera desligada, só ouvindo, para a chamada rodar bem).</p>
-          <input readonly value="${r.link}" style="width:100%;" onclick="this.select();">
-          <div class="acoes-form">
-            <button class="btn-primario btn-sm" onclick="navigator.clipboard.writeText('${r.link}');mostrarToast('Link copiado!');">📋 Copiar Link</button>
-            <button class="btn-secundario btn-sm" onclick="document.getElementById('modal-area-vc').innerHTML=''">Fechar</button>
+      <div class="vc-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''">
+        <div class="vc-modal">
+          <div class="vc-modal-cab"><h3>Convidar pessoas</h3><button class="vc-x" onclick="document.getElementById('modal-area-vc').innerHTML=''">${VC_ICO.fechar}</button></div>
+          <div class="vc-modal-dica" style="margin-top:0;">Quem receber o link entra só com o nome, sem login. Com muitas pessoas, peça para os convidados extras entrarem com a câmera desligada — a reunião fica mais leve.</div>
+          <div class="vc-link-caixa"><input readonly value="${escapeHtml(r.link)}" onclick="this.select()"><button onclick="navigator.clipboard.writeText(${escapeHtml(JSON.stringify(r.link))}).then(()=>vcNotificar('Link copiado!'))">Copiar link</button></div>
+          <div class="vc-convite-acoes">
+            <button onclick="navigator.clipboard.writeText(${escapeHtml(JSON.stringify(texto))}).then(()=>vcNotificar('Convite copiado!'))">📋 Copiar convite completo</button>
+            <a href="https://wa.me/?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener">💬 Enviar pelo WhatsApp</a>
+            <a href="mailto:?subject=${encodeURIComponent('Convite: ' + VC_TITULO)}&body=${encodeURIComponent(texto)}">✉️ Enviar por e-mail</a>
           </div>
         </div>
       </div>`;
-  } catch (e) { mostrarToast(e.message, true); }
+  } catch (e) { vcNotificar(e.message, 'erro'); }
 }
 
-function encerrarVideochamada() {
-  if (VC_SOCKET) { VC_SOCKET.emit('sair-sala-mentoria'); VC_SOCKET.disconnect(); VC_SOCKET = null; }
-  VC_PEERS.forEach(peer => peer.close());
-  VC_PEERS.clear();
-  VC_NOMES.clear();
-  VC_STREAMS_REMOTOS.clear();
+// ---------- Sair / encerrar ----------
+function vcEncerrarParaTodos() {
+  vcFecharPops();
+  if (!confirm('Encerrar a reunião para todos os participantes?')) return;
+  if (VC_SOCKET) VC_SOCKET.emit('vc-moderar', { acao: 'encerrar' });
+  setTimeout(() => vcEncerrar(), 150);
+}
+function vcLimparTudo() {
+  if (VC_GRAV && VC_GRAV.rec.state !== 'inactive') { try { VC_GRAV.rec.stop(); } catch (e) {} }
+  if (VC_SOCKET) { try { VC_SOCKET.emit('sair-sala-mentoria'); VC_SOCKET.disconnect(); } catch (e) {} VC_SOCKET = null; }
+  VC_PEERS.forEach(p => { try { p.close(); } catch (e) {} });
+  VC_PEERS.clear(); VC_NOMES.clear(); VC_STREAMS_REMOTOS.clear(); VC_INFO.clear();
+  Array.from(VC_ANALISADORES.keys()).forEach(vcPararAnalise);
   if (VC_STREAM_LOCAL) { VC_STREAM_LOCAL.getTracks().forEach(t => t.stop()); VC_STREAM_LOCAL = null; }
   if (VC_STREAM_TELA) { VC_STREAM_TELA.getTracks().forEach(t => t.stop()); VC_STREAM_TELA = null; }
-  VC_COMPARTILHANDO_TELA = false;
-  if (document.pictureInPictureElement) { document.exitPictureInPicture().catch(() => {}); }
+  VC_COMPARTILHANDO_TELA = false; VC_MAO = false; VC_NA_SALA = false; VC_FIXADO = null; VC_ATIVO = null; VC_PAINEL = null; VC_NAO_LIDAS = 0;
+  VC_TIMERS.forEach(clearInterval); VC_TIMERS = [];
+  if (VC_OBS_TAMANHO) { VC_OBS_TAMANHO.disconnect(); VC_OBS_TAMANHO = null; }
+  document.removeEventListener('keydown', vcTeclas);
+  document.removeEventListener('click', vcCliqueFora);
+  if (document.pictureInPictureElement) document.exitPictureInPicture().catch(() => {});
   pararPipSistema();
   if (VC_PIP_VIDEO_OCULTO) { VC_PIP_VIDEO_OCULTO.remove(); VC_PIP_VIDEO_OCULTO = null; }
   VC_PIP_CANVAS = null;
-  if (VC_SOU_CONVIDADO) {
-    VC_SOU_CONVIDADO = false;
-    document.getElementById('tela-sala-convidado').innerHTML = '<div class="card-login"><p style="text-align:center;">Você saiu da videochamada. Pode fechar esta aba.</p></div>';
-  } else {
-    renderMentorships();
-  }
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  const r = document.getElementById('vc-app'); if (r) r.remove();
+  document.body.classList.remove('vc-aberta');
 }
+function vcTelaSaidaConvidado(msg) {
+  const tela = document.getElementById('tela-sala-convidado'); if (!tela) return;
+  tela.innerHTML = `<div class="card-login" style="text-align:center;"><div class="logo-fallback-login">IMPULSIONAR V4</div><p style="font-size:15px;color:#334155;">${escapeHtml(msg)}</p><button class="btn-primario" onclick="location.reload()">Entrar novamente</button></div>`;
+}
+function vcEncerrar(motivo) {
+  const eraConvidado = VC_SOU_CONVIDADO;
+  vcLimparTudo();
+  if (eraConvidado) vcTelaSaidaConvidado(motivo || 'Você saiu da reunião. Pode fechar esta aba.');
+  else { if (motivo) mostrarToast(motivo); if (typeof renderMentorships === 'function') renderMentorships(); }
+}
+function encerrarVideochamada() { vcEncerrar(); }
 
 /* ==========================================================
    BOOT
@@ -18995,29 +19740,21 @@ if (ESTADO.token && ESTADO.usuario) {
   document.getElementById('app').classList.remove('ativo');
   const tela = document.getElementById('tela-sala-convidado');
   tela.classList.remove('oculto');
-  tela.innerHTML = '<div class="card-login"><p style="text-align:center;">Carregando informações da sala...</p></div>';
+  tela.innerHTML = '<div class="card-login"><p style="text-align:center;">Carregando informações da reunião...</p></div>';
   fetch('/api/public/sala/' + token).then(r => r.json()).then(info => {
     if (info.error) throw new Error(info.error);
-    tela.innerHTML = `
-      <div class="card-login">
-        <div class="logo-fallback-login">IMPULSIONAR V4</div>
-        <p style="text-align:center;font-size:14px;color:#475569;margin-top:-10px;">Você foi convidado para uma videochamada${info.mentorName ? ' com ' + escapeHtml(info.mentorName) : ''}.</p>
-        <label>Seu nome</label>
-        <input type="text" id="sala-convidado-nome" placeholder="Como você quer aparecer na chamada" onkeydown="if(event.key==='Enter'){entrarSalaComoConvidado();}">
-        <button class="btn-primario" onclick="entrarSalaComoConvidado()">Entrar na Videochamada</button>
-        <div id="sala-convidado-erro" style="text-align:center;font-size:13px;color:#dc2626;margin-top:8px;min-height:18px;"></div>
-      </div>
-    `;
+    VC_SOU_CONVIDADO = true;
+    VC_TITULO = info.titulo || (info.mentorName ? 'Reunião com ' + info.mentorName : 'Sala de reunião');
+    VC_SUBTITULO = info.meeting_date ? new Date(info.meeting_date).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+    try { VC_MEU_NOME = (localStorage.getItem('vc_nome_convidado') || '').slice(0, 60); } catch (e) { VC_MEU_NOME = ''; }
+    tela.innerHTML = '';
+    vcAbrirLobby();
   }).catch(() => {
     tela.innerHTML = '<div class="card-login"><p style="text-align:center;color:#dc2626;">Link inválido ou expirado.</p></div>';
   });
 })();
 
-function entrarSalaComoConvidado() {
-  const nome = document.getElementById('sala-convidado-nome').value.trim();
-  if (!nome) { document.getElementById('sala-convidado-erro').textContent = 'Informe seu nome para entrar.'; return; }
-  renderVideochamadaConvidado(nome);
-}
+function entrarSalaComoConvidado() { vcEntrar(); }
 
 // Link de divulgação (Instagram/WhatsApp/bio) direto pro cadastro de
 // currículo: chega como "#cadastro-curriculo" e já abre o formulário de

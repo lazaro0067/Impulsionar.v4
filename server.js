@@ -9047,7 +9047,7 @@ function normalizarModulosMt(lista) {
             limpo.slides = (Array.isArray(m.slides) ? m.slides : []).slice(0, 200).map(sl => ({
                 titulo: String((sl && sl.titulo) || '').slice(0, 300), texto: String((sl && sl.texto) || '').slice(0, 5000),
                 imagem: /^\/uploads\/[\w.\-]+$|^https?:\/\/\S+$/.test(String((sl && sl.imagem) || '')) ? sl.imagem : '',
-                notas: String((sl && sl.notas) || '').slice(0, 3000), layout: ['padrao', 'destaque', 'imagem'].includes(sl && sl.layout) ? sl.layout : 'padrao', oculto: !!(sl && sl.oculto)
+                notas: String((sl && sl.notas) || '').slice(0, 3000), layout: ['padrao', 'destaque', 'imagem'].includes(sl && sl.layout) ? sl.layout : 'padrao', oculto: !!(sl && sl.oculto), imgTam: (sl && Number(sl.imgTam) >= 4) ? Math.min(90, Math.round(Number(sl.imgTam) * 10) / 10) : null
             }));
         } else {
             const a = m.arquivo || {};
@@ -9115,7 +9115,7 @@ app.get('/api/admin/treinamentos-mt/:id', requireRole('admin'), async (req, res)
         const tk = await garantirAtaTokenMt(t);
         const nAss = await dbGet(`SELECT COUNT(*) n FROM treinamentos_mt_presencas WHERE treinamento_id = ?`, [t.id]);
         const nGrav = await dbGet(`SELECT COUNT(*) n FROM treinamentos_mt_gravacoes WHERE treinamento_id = ?`, [t.id]);
-        res.json({ ...t, modulos, check, iaAtiva: !!ANTHROPIC_API_KEY, gravacoes: nGrav ? nGrav.n : 0, ata: { link: `${baseUrlPublicaDpo(req)}/assinatura.html?t=${tk}`, ativa: t.ata_ativa !== 0, assinaturas: nAss ? nAss.n : 0 },
+        res.json({ ...t, modulos, check, iaAtiva: iaDisponivelMt(), gravacoes: nGrav ? nGrav.n : 0, ata: { link: `${baseUrlPublicaDpo(req)}/assinatura.html?t=${tk}`, ativa: t.ata_ativa !== 0, assinaturas: nAss ? nAss.n : 0 },
             divulgacao: divulgacaoMt(cfg) });
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar o treinamento.' }); }
 });
@@ -9242,7 +9242,7 @@ app.get('/api/admin/treinamentos-mt-config', requireRole('admin'), async (req, r
     try {
         const c = await lerConfigMt();
         res.json({ instagram: c.impulsionar_instagram || '', whatsapp: c.impulsionar_whatsapp || '', site: c.impulsionar_site || '', instagramLink: c.impulsionar_instagram_link || '', whatsappLink: c.impulsionar_whatsapp_link || '',
-            iaAtiva: !!ANTHROPIC_API_KEY, iaOrigem: c.anthropic_api_key ? 'sistema' : (process.env.ANTHROPIC_API_KEY ? 'servidor' : ''), iaPreview: ANTHROPIC_API_KEY ? '••••' + ANTHROPIC_API_KEY.slice(-4) : '', modelo: ANTHROPIC_MODEL });
+            iaAtiva: iaDisponivelMt(), iaChaveRecusada: !!ANTHROPIC_API_KEY && !iaDisponivelMt(), iaOrigem: c.anthropic_api_key ? 'sistema' : (process.env.ANTHROPIC_API_KEY ? 'servidor' : ''), iaPreview: ANTHROPIC_API_KEY ? '••••' + ANTHROPIC_API_KEY.slice(-4) : '', modelo: ANTHROPIC_MODEL });
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar as configurações.' }); }
 });
 app.put('/api/admin/treinamentos-mt-config', requireRole('admin'), async (req, res) => {
@@ -9262,7 +9262,7 @@ app.put('/api/admin/treinamentos-mt-config', requireRole('admin'), async (req, r
             const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': chave, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
                 body: JSON.stringify({ model: ANTHROPIC_MODEL, max_tokens: 5, messages: [{ role: 'user', content: 'ok' }] }) }).catch(e => ({ ok: false, json: async () => ({ error: { message: e.message } }) }));
             if (!r.ok) { const j = await r.json().catch(() => ({})); return res.status(400).json({ error: 'A chave da IA não funcionou: ' + ((j.error && j.error.message) || 'erro') + '. As redes foram salvas.' }); }
-            await salvar('anthropic_api_key', chave); ANTHROPIC_API_KEY = chave; aviso = ' IA conectada! ✅';
+            await salvar('anthropic_api_key', chave); ANTHROPIC_API_KEY = chave; CHAVE_IA_RECUSADA_MT = ''; aviso = ' IA conectada! ✅';
         }
         if (req.body.removerChaveIa) { await salvar('anthropic_api_key', ''); ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || ''; }
         res.json({ message: 'Configurações salvas!' + aviso });
@@ -9285,12 +9285,39 @@ app.post('/api/admin/treinamentos-mt/reler', requireRole('admin'), async (req, r
 });
 
 // ----- IA da Impulsionar: padronizar slides e criar treinamento do zero -----
+// Quando a chave da IA é recusada (401), guardamos qual chave falhou para não
+// ficar chamando a IA automaticamente e mostrando erro a cada arquivo enviado.
+let CHAVE_IA_RECUSADA_MT = '';
+function iaDisponivelMt() { return !!ANTHROPIC_API_KEY && CHAVE_IA_RECUSADA_MT !== ANTHROPIC_API_KEY; }
+// Padronização sem IA: "Assunto — explicação" vira tópico curto e a explicação vai para as notas.
+function padronizarLocalMt(slides) {
+    const out = [];
+    slides.forEach(x => {
+        const linhas = String(x.texto || '').split('\n').map(l => l.replace(/^\s*[•\-\*–]\s*/, '').trim()).filter(Boolean);
+        const topicos = [], notas = [];
+        linhas.forEach(l => {
+            const m = l.match(/^(.{2,80}?)\s+[—–-]\s+(.{3,})$/);
+            if (m && l.length > 110) { topicos.push(m[1].trim()); notas.push(m[1].trim() + ': ' + m[2].trim()); }
+            else if (m) topicos.push(m[1].trim() + ' — ' + m[2].trim());
+            else if (l.length > 140) { const c = l.split(/(?<=[.!?;])\s+/); topicos.push(c[0].slice(0, 140)); if (c.length > 1) notas.push(l); }
+            else topicos.push(l);
+        });
+        const nt = [String(x.notas || '').trim(), ...notas].filter(Boolean).join('\n');
+        const titulo = String(x.titulo || '').trim().slice(0, 200);
+        if (topicos.length <= 6) out.push({ titulo, texto: topicos.map(t => '• ' + t).join('\n'), notas: nt, imagem: x.imagem || '', layout: x.layout === 'destaque' ? 'destaque' : (topicos.length ? 'padrao' : 'destaque') });
+        else for (let i = 0; i < topicos.length; i += 5) out.push({ titulo: titulo + (i ? ' (cont.)' : ''), texto: topicos.slice(i, i + 5).map(t => '• ' + t).join('\n'), notas: i ? '' : nt, imagem: i ? '' : (x.imagem || ''), layout: 'padrao' });
+    });
+    return out.filter(x => x.titulo || x.texto);
+}
 async function iaJsonMt(sistema, pedido, maxTokens) {
-    if (!ANTHROPIC_API_KEY) { const e = new Error('A IA ainda não está configurada. Cadastre a chave em ⚙️ Configurações (Ministrar Treinamento).'); e.semIa = true; throw e; }
+    if (!iaDisponivelMt()) { const e = new Error('A IA ainda não está configurada. Cadastre a chave em ⚙️ Configurações (Ministrar Treinamento).'); e.semIa = true; throw e; }
     const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: ANTHROPIC_MODEL, max_tokens: maxTokens || 8000, system: sistema, messages: [{ role: 'user', content: pedido }] }) });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error('IA: ' + ((j.error && j.error.message) || ('erro ' + r.status)) + (r.status === 401 ? ' — confira a chave em ⚙️ Configurações.' : ''));
+    if (!r.ok) {
+        if (r.status === 401 || r.status === 403) { CHAVE_IA_RECUSADA_MT = ANTHROPIC_API_KEY; const e = new Error('A chave da IA cadastrada não é válida. Cadastre uma chave nova em ⚙️ Configurações.'); e.semIa = true; throw e; }
+        throw new Error('IA: ' + ((j.error && j.error.message) || ('erro ' + r.status)));
+    }
     const txt = (j.content || []).map(b => b.text || '').join('\n');
     const ini = txt.indexOf('{'), fim = txt.lastIndexOf('}');
     try { return JSON.parse(txt.slice(ini, fim + 1)); } catch (e) { throw new Error('A IA respondeu num formato inesperado. Tente de novo.'); }
@@ -9316,8 +9343,13 @@ app.post('/api/admin/treinamentos-mt/ia/estruturar', requireRole('admin'), async
             `Treinamento: ${req.body.titulo || ''}\nPúblico: ${ROTULOS_PUBLICO_MT[req.body.publico] || 'Todos'}\n\nMATERIAL ORIGINAL:\n${material}\n\n---\nReescreva no padrão Impulsionar. Mantenha a ordem e as ideias; divida slides sobrecarregados; remova repetições de rodapé/autor. Formato: {"slides":[{"titulo":"...","topicos":["..."],"notas":"...","layout":"padrao"}]}`, 12000);
         const out = normalizarSlidesIaMt(obj.slides);
         if (!out.length) return res.status(400).json({ error: 'A IA não conseguiu montar os slides. Tente de novo.' });
-        res.json({ slides: out });
-    } catch (e) { res.status(e.semIa ? 400 : 500).json({ error: e.message, semIa: !!e.semIa }); }
+        res.json({ slides: out, viaIa: true });
+    } catch (e) {
+        // Sem IA (ou chave recusada): padroniza localmente para não travar o trabalho.
+        const out = padronizarLocalMt((Array.isArray(req.body.slides) ? req.body.slides : []).slice(0, 80));
+        if (!out.length) return res.status(400).json({ error: e.message, semIa: !!e.semIa });
+        res.json({ slides: out, viaIa: false, semIa: !!e.semIa, aviso: 'Slides ajustados automaticamente no padrão Impulsionar (tópicos curtos, explicações nas notas).' + (e.semIa ? ' ' + e.message : '') });
+    }
 });
 app.post('/api/admin/treinamentos-mt/ia/criar', requireRole('admin'), async (req, res) => {
     const b = req.body || {};
@@ -9333,6 +9365,7 @@ app.post('/api/admin/treinamentos-mt/ia/criar', requireRole('admin'), async (req
             `Crie um treinamento completo.\nO QUE TREINAR: ${tema}\nPROBLEMAS QUE PRECISA RESOLVER: ${problemas || '(não informado)'}\nPÚBLICO: ${ROTULOS_PUBLICO_MT[publico]}\nCONTEXTO DA EMPRESA/OPERAÇÃO: ${contexto || '(não informado)'}\nDURAÇÃO: ${duracao} minutos (~${qtd} slides no total)\n\nEstrutura: abertura com o problema real → 2 a 4 módulos de conteúdo (conceitos + como fazer na prática + exemplo) → exercício/dinâmica rápida → plano de ação (o que cada um faz amanhã) → fechamento com frase de impacto.\nFormato: {"titulo":"...","objetivo":"1 frase","modulos":[{"titulo":"...","slides":[{"titulo":"...","topicos":["..."],"notas":"roteiro do apresentador","layout":"padrao"}]}]}`, 16000);
     } catch (e) {
         if (!e.semIa && !/IA:/.test(e.message)) return res.status(500).json({ error: e.message });
+        // segue com o esqueleto local
         viaIa = false; aviso = e.message;
         const probs = problemas.split(/\n|;|,(?=\s*[A-ZÁÉÍÓÚ])/).map(x => x.trim()).filter(Boolean).slice(0, 5);
         estrutura = { titulo: tema.slice(0, 120), objetivo: problemas ? 'Resolver: ' + probs.join('; ') : '', modulos: [
@@ -9344,6 +9377,12 @@ app.post('/api/admin/treinamentos-mt/ia/criar', requireRole('admin'), async (req
     try {
         const modulos = (estrutura.modulos || []).slice(0, 12).map((m, i) => ({ id: 'm' + Date.now().toString(36) + i, titulo: String(m.titulo || `Módulo ${i + 1}`).slice(0, 200), tipo: 'slides', slides: normalizarSlidesIaMt(m.slides) })).filter(m => m.slides.length);
         if (!modulos.length) return res.status(400).json({ error: 'Não consegui montar o treinamento. Tente detalhar mais o tema.' });
+        // Fotos enviadas junto: distribui pelos slides de conteúdo (espalhadas do começo ao fim).
+        const fotos = (Array.isArray(b.fotos) ? b.fotos : []).map(String).filter(u => /^\/uploads\/[\w.\-]+$/.test(u)).slice(0, 40);
+        if (fotos.length) {
+            const alvos = []; modulos.forEach(m => m.slides.forEach(sl => { if (sl.layout === 'padrao') alvos.push(sl); }));
+            fotos.forEach((u, k) => { const sl = alvos[Math.floor(k * alvos.length / fotos.length)]; if (sl && !sl.imagem) sl.imagem = u; });
+        }
         const d = camposTreinamentoMt({ titulo: String(estrutura.titulo || tema).slice(0, 200), objetivo: String(estrutura.objetivo || '').slice(0, 3000), publico, duracao_min: duracao, status: 'rascunho', modulos });
         const cols = Object.keys(d);
         const id = await new Promise((ok, ko) => db.run(`INSERT INTO treinamentos_mt (${cols.join(', ')}, created_by, updated_at) VALUES (${cols.map(() => '?').join(', ')}, ?, CURRENT_TIMESTAMP)`,
@@ -9510,7 +9549,7 @@ app.post('/api/admin/treinamentos-mt/:id/check/gerar', requireRole('admin'), asy
             const perguntas = gerarCheckLocalMt(modulos, qtd, abertas);
             return perguntas.length ? { titulo: `Check de retenção — ${t.titulo}`, perguntas, gerado_por_ia: false } : null;
         };
-        if (!ANTHROPIC_API_KEY) {
+        if (!iaDisponivelMt()) {
             const l = local();
             if (!l) return res.status(400).json({ error: 'Não achei texto suficiente nos módulos para montar o check. Adicione texto nos slides.' });
             return res.json({ ...l, aviso: 'Check montado automaticamente pelo conteúdo dos slides (sem IA). Para a IA criar perguntas mais elaboradas, cadastre a chave em ⚙️ Configurações.' });
@@ -9524,6 +9563,7 @@ app.post('/api/admin/treinamentos-mt/:id/check/gerar', requireRole('admin'), asy
                 body: JSON.stringify({ model: ANTHROPIC_MODEL, max_tokens: 4000, system: sistema, messages: [{ role: 'user', content: conteudo }] }) });
             const j = await r.json();
             if (!r.ok) {
+                if (r.status === 401 || r.status === 403) { CHAVE_IA_RECUSADA_MT = ANTHROPIC_API_KEY; throw new Error('chave da IA inválida'); }
                 if (blocos.length) { // modelo sem suporte a PDF/imagem → tenta só com texto
                     resposta = await perguntarIA(sistema, pedido, 4000);
                 } else throw new Error((j.error && j.error.message) || 'Erro na IA.');
@@ -12528,15 +12568,28 @@ function entrarNaSalaVideochamada(socket, sala, participante) {
         socket.emit('sala-entrada-negada', { error: 'Esta sala já atingiu o limite de participantes.' });
         return;
     }
-    const outros = Array.from(participantes.entries()).map(([id, p]) => ({ socketId: id, name: p.name }));
+    const outros = Array.from(participantes.entries()).map(([id, p]) => ({ socketId: id, name: p.name, convidado: !!p.convidado, estado: p.estado || null }));
+    participante.estado = estadoSalaVc(participante.estado);
     participantes.set(socket.id, participante);
+    if (!INICIO_SALAS_VIDEOCHAMADA.has(sala)) INICIO_SALAS_VIDEOCHAMADA.set(sala, Date.now());
     socket.join(sala);
     socket.data.sala = sala;
     // O recém-chegado recebe a lista de quem já está na sala e é ele quem
     // cria a oferta WebRTC para CADA um deles (evita duas ofertas cruzadas
     // no mesmo par e permite qualquer número de participantes, não só 2).
-    socket.emit('entrou-na-sala', { outros });
-    socket.to(sala).emit('usuario-entrou', { socketId: socket.id, name: participante.name });
+    socket.emit('entrou-na-sala', { outros, eu: socket.id, inicio: INICIO_SALAS_VIDEOCHAMADA.get(sala) });
+    socket.to(sala).emit('usuario-entrou', { socketId: socket.id, name: participante.name, convidado: !!participante.convidado, estado: participante.estado });
+}
+// Quando a sala esvazia, o cronômetro da reunião recomeça na próxima vez.
+const INICIO_SALAS_VIDEOCHAMADA = new Map();
+function estadoSalaVc(e) { e = e || {}; return { mic: e.mic !== false, cam: e.cam !== false, mao: !!e.mao, tela: !!e.tela, gravando: !!e.gravando }; }
+function sairDaSalaVideochamada(socket) {
+    const sala = socket.data.sala;
+    if (!sala || !SALAS_VIDEOCHAMADA.has(sala)) return;
+    const ps = SALAS_VIDEOCHAMADA.get(sala);
+    if (ps.delete(socket.id)) socket.to(sala).emit('usuario-saiu', { socketId: socket.id });
+    socket.leave(sala); socket.data.sala = null;
+    if (!ps.size) { SALAS_VIDEOCHAMADA.delete(sala); INICIO_SALAS_VIDEOCHAMADA.delete(sala); }
 }
 
 io.on('connection', (socket) => {
@@ -12574,7 +12627,7 @@ io.on('connection', (socket) => {
         const m = socket.data.mtc; if (!m || m.papel !== 'apresentador') return;
         socket.to('mtc:' + m.codigo).emit('mt-estado', estado);
     });
-    socket.on('entrar-sala-mentoria', async ({ mentorshipId, token }) => {
+    socket.on('entrar-sala-mentoria', async ({ mentorshipId, token, estado }) => {
         try {
             const payload = jwt.verify(token, JWT_SECRET);
             const mentoria = await dbGet(`SELECT * FROM mentorships WHERE id = ?`, [mentorshipId]);
@@ -12588,7 +12641,8 @@ io.on('connection', (socket) => {
             if (!permitido) return socket.emit('sala-entrada-negada', { error: 'Você não faz parte desta mentoria.' });
 
             const usuario = await dbGet(`SELECT name FROM users WHERE id = ?`, [payload.userId]);
-            entrarNaSalaVideochamada(socket, `mentoria-${mentorshipId}`, { userId: payload.userId, name: usuario ? usuario.name : 'Participante', role: payload.role, convidado: false });
+            if (socket.data.sala) sairDaSalaVideochamada(socket);
+            entrarNaSalaVideochamada(socket, `mentoria-${mentorshipId}`, { userId: payload.userId, name: usuario ? usuario.name : 'Participante', role: payload.role, convidado: false, estado });
         } catch (e) {
             socket.emit('sala-entrada-negada', { error: 'Token inválido ou expirado.' });
         }
@@ -12596,12 +12650,13 @@ io.on('connection', (socket) => {
 
     // Convidado externo entrando pelo link público (sem login) — só precisa do
     // código da sala (room_token, aleatório e não sequencial) e do nome dele.
-    socket.on('entrar-sala-mentoria-convidado', async ({ roomToken, nome }) => {
+    socket.on('entrar-sala-mentoria-convidado', async ({ roomToken, nome, estado }) => {
         try {
             if (!roomToken || !nome) return socket.emit('sala-entrada-negada', { error: 'Informe seu nome.' });
             const mentoria = await dbGet(`SELECT * FROM mentorships WHERE room_token = ?`, [roomToken]);
             if (!mentoria) return socket.emit('sala-entrada-negada', { error: 'Link inválido ou expirado.' });
-            entrarNaSalaVideochamada(socket, `mentoria-${mentoria.id}`, { userId: null, name: String(nome).slice(0, 60), role: 'convidado', convidado: true });
+            if (socket.data.sala) sairDaSalaVideochamada(socket);
+            entrarNaSalaVideochamada(socket, `mentoria-${mentoria.id}`, { userId: null, name: String(nome).trim().slice(0, 60) || 'Convidado', role: 'convidado', convidado: true, estado });
         } catch (e) {
             socket.emit('sala-entrada-negada', { error: 'Não foi possível entrar na sala.' });
         }
@@ -12613,6 +12668,8 @@ io.on('connection', (socket) => {
     socket.on('sinal-webrtc', ({ tipo, dados, paraSocketId }) => {
         const sala = socket.data.sala;
         if (!sala || !paraSocketId) return;
+        const ps = SALAS_VIDEOCHAMADA.get(sala);
+        if (!ps || !ps.has(paraSocketId)) return; // só entre pessoas da mesma sala
         io.to(paraSocketId).emit('sinal-webrtc', { tipo, dados, de: socket.id });
     });
 
@@ -12623,7 +12680,7 @@ io.on('connection', (socket) => {
         if (!sala || !texto) return;
         const participantes = SALAS_VIDEOCHAMADA.get(sala);
         const eu = participantes && participantes.get(socket.id);
-        socket.to(sala).emit('mensagem-sala-mentoria', { texto: String(texto).slice(0, 1000), nome: eu ? eu.name : 'Participante', de: socket.id });
+        socket.to(sala).emit('mensagem-sala-mentoria', { texto: String(texto).slice(0, 2000), nome: eu ? eu.name : 'Participante', de: socket.id, hora: Date.now() });
     });
 
     // Avisa os outros participantes se a câmera de alguém foi ligada/desligada,
@@ -12632,25 +12689,45 @@ io.on('connection', (socket) => {
     socket.on('camera-estado', ({ ligada }) => {
         const sala = socket.data.sala;
         if (!sala) return;
+        const ps = SALAS_VIDEOCHAMADA.get(sala), eu = ps && ps.get(socket.id);
+        if (eu) eu.estado = Object.assign(estadoSalaVc(eu.estado), { cam: !!ligada });
         socket.to(sala).emit('camera-estado', { socketId: socket.id, ligada: !!ligada });
     });
 
-    socket.on('sair-sala-mentoria', () => {
-        const sala = socket.data.sala;
-        if (sala && SALAS_VIDEOCHAMADA.has(sala)) {
-            SALAS_VIDEOCHAMADA.get(sala).delete(socket.id);
-            socket.to(sala).emit('usuario-saiu', { socketId: socket.id });
-            socket.leave(sala);
+    // Estado completo (microfone, câmera, mão levantada, apresentando, gravando).
+    socket.on('vc-estado', (e = {}) => {
+        const sala = socket.data.sala; if (!sala) return;
+        const ps = SALAS_VIDEOCHAMADA.get(sala), eu = ps && ps.get(socket.id); if (!eu) return;
+        eu.estado = estadoSalaVc(e);
+        socket.to(sala).emit('vc-estado', Object.assign({ socketId: socket.id }, eu.estado));
+    });
+    socket.on('vc-reacao', ({ emoji } = {}) => {
+        const sala = socket.data.sala; if (!sala) return;
+        if (!['👍', '👏', '❤️', '😂', '😮', '🎉'].includes(emoji)) return;
+        socket.to(sala).emit('vc-reacao', { socketId: socket.id, emoji });
+    });
+    // Moderação: só quem entrou logado (organizador) pode silenciar, remover ou encerrar.
+    socket.on('vc-moderar', ({ acao, alvo } = {}) => {
+        const sala = socket.data.sala; if (!sala) return;
+        const ps = SALAS_VIDEOCHAMADA.get(sala), eu = ps && ps.get(socket.id);
+        if (!eu || eu.convidado) return;
+        if (acao === 'silenciar-todos') return socket.to(sala).emit('vc-moderado', { acao: 'silenciar', por: eu.name });
+        if (acao === 'encerrar') {
+            socket.to(sala).emit('vc-moderado', { acao: 'encerrar', por: eu.name });
+            Array.from(ps.keys()).forEach(id => { const s2 = io.sockets.sockets.get(id); if (s2 && id !== socket.id) sairDaSalaVideochamada(s2); });
+            return;
+        }
+        if (!alvo || alvo === socket.id || !ps.has(alvo)) return;
+        if (acao === 'silenciar' || acao === 'abaixar-mao') return io.to(alvo).emit('vc-moderado', { acao, por: eu.name });
+        if (acao === 'remover') {
+            io.to(alvo).emit('vc-moderado', { acao: 'remover', por: eu.name });
+            const s2 = io.sockets.sockets.get(alvo); if (s2) sairDaSalaVideochamada(s2);
         }
     });
 
-    socket.on('disconnect', () => {
-        const sala = socket.data.sala;
-        if (sala && SALAS_VIDEOCHAMADA.has(sala)) {
-            SALAS_VIDEOCHAMADA.get(sala).delete(socket.id);
-            socket.to(sala).emit('usuario-saiu', { socketId: socket.id });
-        }
-    });
+    socket.on('sair-sala-mentoria', () => sairDaSalaVideochamada(socket));
+
+    socket.on('disconnect', () => sairDaSalaVideochamada(socket));
 });
 
 // Handler de erro global: garante que qualquer exceção não tratada em uma
