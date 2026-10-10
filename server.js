@@ -8703,6 +8703,313 @@ function consertarAcentoMt(t) {
     if (!/[ÃÂ][\u0080-\u00ff]/.test(s0)) return s0;
     try { const d = Buffer.from(s0, 'latin1').toString('utf8'); return d.includes('\uFFFD') ? s0 : d; } catch (e) { return s0; }
 }
+// Leitor de texto de PDF em JavaScript puro (sem dependências): objetos, object
+// streams, páginas, fontes com ToUnicode, Form XObjects e posição/tamanho do texto.
+function lerPdfTextoMt(buf) {
+    const zlib = require('zlib');
+    const latin = buf.toString('latin1');
+    const objs = new Map(); // num -> {pos} | {val}
+    // 1) objetos "n g obj" no arquivo
+    const reObj = /(\d+)\s+(\d+)\s+obj\b/g;
+    let m;
+    while ((m = reObj.exec(latin))) objs.set(+m[1], { pos: m.index + m[0].length });
+    // ---- parser genérico ----
+    const WS = c => c === 32 || c === 10 || c === 13 || c === 9 || c === 12 || c === 0;
+    const DELIM = c => c === 40 || c === 41 || c === 60 || c === 62 || c === 91 || c === 93 || c === 123 || c === 125 || c === 47 || c === 37;
+    function Parser(b, pos) { this.b = b; this.p = pos || 0; }
+    Parser.prototype.ws = function () {
+        const b = this.b;
+        for (;;) {
+            while (this.p < b.length && WS(b[this.p])) this.p++;
+            if (b[this.p] === 37) { while (this.p < b.length && b[this.p] !== 10 && b[this.p] !== 13) this.p++; continue; }
+            break;
+        }
+    };
+    Parser.prototype.token = function () {
+        this.ws();
+        const b = this.b; if (this.p >= b.length) return null;
+        const c = b[this.p];
+        if (c === 47) { // name
+            let s = this.p + 1, e = s; while (e < b.length && !WS(b[e]) && !DELIM(b[e])) e++;
+            this.p = e; return { t: 'name', v: b.slice(s, e).toString('latin1').replace(/#([0-9a-fA-F]{2})/g, (x, h) => String.fromCharCode(parseInt(h, 16))) };
+        }
+        if (c === 40) { // literal string
+            let p = this.p + 1, nivel = 1; const out = [];
+            while (p < b.length && nivel > 0) {
+                const ch = b[p];
+                if (ch === 92) {
+                    const n = b[p + 1];
+                    const mapa = { 110: 10, 114: 13, 116: 9, 98: 8, 102: 12, 40: 40, 41: 41, 92: 92 };
+                    if (mapa[n] !== undefined) { out.push(mapa[n]); p += 2; }
+                    else if (n >= 48 && n <= 55) { let k = 0, v = 0; while (k < 3 && b[p + 1 + k] >= 48 && b[p + 1 + k] <= 55) { v = v * 8 + b[p + 1 + k] - 48; k++; } out.push(v & 255); p += 1 + k; }
+                    else if (n === 13) { p += b[p + 2] === 10 ? 3 : 2; }
+                    else if (n === 10) { p += 2; }
+                    else { p += 1; }
+                    continue;
+                }
+                if (ch === 40) nivel++;
+                if (ch === 41) { nivel--; if (nivel === 0) { p++; break; } }
+                out.push(ch); p++;
+            }
+            this.p = p; return { t: 'str', v: Buffer.from(out) };
+        }
+        if (c === 60 && b[this.p + 1] === 60) { this.p += 2; return { t: '<<' }; }
+        if (c === 62 && b[this.p + 1] === 62) { this.p += 2; return { t: '>>' }; }
+        if (c === 60) { // hex string
+            let e = this.p + 1; while (e < b.length && b[e] !== 62) e++;
+            let h = b.slice(this.p + 1, e).toString('latin1').replace(/[^0-9a-fA-F]/g, ''); if (h.length % 2) h += '0';
+            this.p = e + 1; return { t: 'str', v: Buffer.from(h, 'hex') };
+        }
+        if (c === 91) { this.p++; return { t: '[' }; }
+        if (c === 93) { this.p++; return { t: ']' }; }
+        if (c === 123 || c === 125) { this.p++; return { t: 'kw', v: String.fromCharCode(c) }; }
+        let e = this.p; while (e < b.length && !WS(b[e]) && !DELIM(b[e])) e++;
+        if (e === this.p) { this.p++; return { t: 'kw', v: String.fromCharCode(c) }; }
+        const s = b.slice(this.p, e).toString('latin1'); this.p = e;
+        if (/^[+-]?(\d+\.?\d*|\.\d+)$/.test(s)) return { t: 'num', v: parseFloat(s) };
+        return { t: 'kw', v: s };
+    };
+    // valor completo (com refs "n g R")
+    Parser.prototype.valor = function (tk) {
+        tk = tk || this.token(); if (!tk) return null;
+        if (tk.t === '<<') {
+            const d = {};
+            for (;;) {
+                const k = this.token(); if (!k || k.t === '>>') break;
+                if (k.t !== 'name') continue;
+                d[k.v] = this.valor();
+            }
+            return { dict: d };
+        }
+        if (tk.t === '[') { const a = []; for (;;) { const t = this.token(); if (!t || t.t === ']') break; a.push(this.valor(t)); } return a; }
+        if (tk.t === 'num') {
+            const salvo = this.p; const t2 = this.token();
+            if (t2 && t2.t === 'num') { const t3 = this.token(); if (t3 && t3.t === 'kw' && t3.v === 'R') return { ref: tk.v }; }
+            this.p = salvo; return tk.v;
+        }
+        if (tk.t === 'name') return { name: tk.v };
+        if (tk.t === 'str') return { str: tk.v };
+        if (tk.t === 'kw') { if (tk.v === 'true') return true; if (tk.v === 'false') return false; if (tk.v === 'null') return null; return { kw: tk.v }; }
+        return null;
+    };
+    const cache = new Map();
+    function lerObj(num) {
+        if (cache.has(num)) return cache.get(num);
+        const o = objs.get(num); if (!o) return null;
+        if (o.val !== undefined) { cache.set(num, o.val); return o.val; }
+        const P = new Parser(buf, o.pos);
+        const v = P.valor();
+        let res = v;
+        if (v && v.dict) {
+            const salvo = P.p; P.ws();
+            if (buf.slice(P.p, P.p + 6).toString('latin1') === 'stream') {
+                let s = P.p + 6; if (buf[s] === 13) s++; if (buf[s] === 10) s++;
+                let len = v.dict.Length; if (len && len.ref !== undefined) len = lerObj(len.ref);
+                let dados;
+                if (typeof len === 'number' && buf.slice(s + len, s + len + 20).toString('latin1').includes('endstream')) dados = buf.slice(s, s + len);
+                else { const e = buf.indexOf('endstream', s, 'latin1'); dados = buf.slice(s, e); }
+                res = { dict: v.dict, stream: dados };
+            } else P.p = salvo;
+        }
+        cache.set(num, res); return res;
+    }
+    const R = v => (v && v.ref !== undefined) ? lerObj(v.ref) : v;
+    function dadosStream(s) {
+        if (!s || !s.stream) return Buffer.alloc(0);
+        let f = R(s.dict.Filter); if (f && f.name) f = [f]; f = (f || []).map(x => R(x)).map(x => x && x.name);
+        let d = s.stream;
+        for (const nome of f) {
+            if (nome === 'FlateDecode') { try { d = zlib.inflateSync(d); } catch (e) { try { d = zlib.inflateRawSync(d.slice(2)); } catch (e2) { return Buffer.alloc(0); } } }
+            else return Buffer.alloc(0); // imagens e outros filtros não interessam
+        }
+        return d;
+    }
+    // 2) object streams
+    for (const [num] of [...objs]) {
+        const o = lerObj(num);
+        if (o && o.dict && R(o.dict.Type) && R(o.dict.Type).name === 'ObjStm') {
+            const d = dadosStream(o); const n = R(o.dict.N), first = R(o.dict.First);
+            const P = new Parser(d, 0); const pares = [];
+            for (let i = 0; i < n; i++) { const a = P.token(), b = P.token(); if (!a || !b) break; pares.push([a.v, b.v]); }
+            pares.forEach(([on, off]) => { if (!objs.has(on) || objs.get(on).val === undefined) { const P2 = new Parser(d, first + off); objs.set(on, { val: P2.valor() }); cache.delete(on); } });
+        }
+    }
+    // 3) páginas na ordem
+    let raiz = null;
+    const mTr = latin.lastIndexOf('/Root');
+    if (mTr >= 0) { const P = new Parser(buf, mTr + 5); raiz = R(P.valor()); }
+    if (!raiz) { for (const [num] of objs) { const o = lerObj(num); if (o && o.dict && R(o.dict.Type) && R(o.dict.Type).name === 'Catalog') { raiz = o; break; } } }
+    const paginas = [];
+    function percorrer(no, herdado) {
+        no = R(no); if (!no || !no.dict) return;
+        const res = no.dict.Resources ? R(no.dict.Resources) : herdado;
+        const tipo = R(no.dict.Type);
+        if (no.dict.Kids) (R(no.dict.Kids) || []).forEach(k => percorrer(k, res));
+        else if (!tipo || tipo.name === 'Page') paginas.push({ no, res });
+    }
+    if (raiz && raiz.dict) percorrer(raiz.dict.Pages, null);
+    // ---- fontes ----
+    const cacheFonte = new Map();
+    function cmapUnicode(fonte) {
+        const tu = R(fonte.dict.ToUnicode); const mapa = new Map(); let bytes = 1;
+        if (tu && tu.stream) {
+            const t = dadosStream(tu).toString('latin1');
+            const hex2s = h => { let s = ''; for (let i = 0; i + 3 < h.length + 1; i += 4) s += String.fromCharCode(parseInt(h.substr(i, 4), 16)); return s; };
+            const cs = t.match(/begincodespacerange([\s\S]*?)endcodespacerange/); if (cs) { const mm = cs[1].match(/<([0-9a-fA-F]+)>/); if (mm) bytes = mm[1].length / 2; }
+            (t.match(/beginbfchar([\s\S]*?)endbfchar/g) || []).forEach(bl => { const re = /<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]*)>/g; let x; while ((x = re.exec(bl))) { bytes = x[1].length / 2; mapa.set(parseInt(x[1], 16), hex2s(x[2])); } });
+            (t.match(/beginbfrange([\s\S]*?)endbfrange/g) || []).forEach(bl => {
+                const re = /<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>\s*(<([0-9a-fA-F]*)>|\[([^\]]*)\])/g; let x;
+                while ((x = re.exec(bl))) {
+                    bytes = x[1].length / 2; const a = parseInt(x[1], 16), z = parseInt(x[2], 16);
+                    if (x[4] !== undefined) { const base = x[4]; for (let c = a; c <= z && c - a < 65536; c++) { const ult = parseInt(base.slice(-4), 16) + (c - a); mapa.set(c, hex2s(base.slice(0, -4)) + String.fromCharCode(ult)); } }
+                    else { const lista = (x[5].match(/<([0-9a-fA-F]*)>/g) || []).map(h => hex2s(h.slice(1, -1))); lista.forEach((s, i) => mapa.set(a + i, s)); }
+                }
+            });
+        }
+        return { mapa, bytes };
+    }
+    function infoFonte(ref) {
+        const chave = ref && ref.ref !== undefined ? ref.ref : null;
+        if (chave !== null && cacheFonte.has(chave)) return cacheFonte.get(chave);
+        const f = R(ref); let info = { bytes: 1, mapa: new Map() };
+        if (f && f.dict) {
+            const sub = R(f.dict.Subtype); const ehType0 = sub && sub.name === 'Type0';
+            const cm = cmapUnicode(f);
+            info = { mapa: cm.mapa, bytes: ehType0 ? 2 : (cm.mapa.size ? cm.bytes : 1) };
+        }
+        if (chave !== null) cacheFonte.set(chave, info);
+        return info;
+    }
+    function decodificar(bytesStr, fonte) {
+        let s = '';
+        if (fonte.bytes === 2) { for (let i = 0; i + 1 < bytesStr.length; i += 2) { const c = bytesStr[i] * 256 + bytesStr[i + 1]; s += fonte.mapa.has(c) ? fonte.mapa.get(c) : ''; } }
+        else for (let i = 0; i < bytesStr.length; i++) { const c = bytesStr[i]; s += fonte.mapa.has(c) ? fonte.mapa.get(c) : String.fromCharCode(c === 0x92 ? 0x2019 : c === 0x96 ? 0x2013 : c === 0x97 ? 0x2014 : c === 0x95 ? 0x2022 : c); }
+        return s;
+    }
+    // ---- conteúdo ----
+    const mult = (a, b) => [a[0] * b[0] + a[1] * b[2], a[0] * b[1] + a[1] * b[3], a[2] * b[0] + a[3] * b[2], a[2] * b[1] + a[3] * b[3], a[4] * b[0] + a[5] * b[2] + b[4], a[4] * b[1] + a[5] * b[3] + b[5]];
+    function executar(dados, res, ctm0, itens, prof) {
+        if (prof > 6) return;
+        res = R(res) || {};
+        const fontes = res.dict ? R(res.dict.Font) : null, xobjs = res.dict ? R(res.dict.XObject) : null;
+        const P = new Parser(dados, 0); const pilha = [];
+        let ctm = ctm0.slice(), gs = [], tm = [1, 0, 0, 1, 0, 0], tlm = [1, 0, 0, 1, 0, 0], fonte = { bytes: 1, mapa: new Map() }, tam = 12, lead = 0;
+        const emitir = (s) => {
+            const m = mult(tm, ctm); const escala = Math.hypot(m[2], m[3]) || Math.hypot(m[0], m[1]);
+            if (s && s.trim()) itens.push({ s, x: m[4], y: m[5], t: Math.abs(tam * escala) });
+            else if (s) itens.push({ s: ' ', x: m[4], y: m[5], t: Math.abs(tam * escala), espaco: true });
+        };
+        for (;;) {
+            const tk = P.token(); if (!tk) break;
+            if (tk.t !== 'kw') { if (tk.t === '[') { pilha.push(P.valor(tk)); } else if (tk.t === '<<') { const v = P.valor(tk); pilha.push(v); } else pilha.push(tk.t === 'num' ? tk.v : tk.t === 'name' ? { name: tk.v } : tk.t === 'str' ? { str: tk.v } : tk); continue; }
+            const op = tk.v; const a = pilha;
+            const n = i => typeof a[a.length - i] === 'number' ? a[a.length - i] : 0;
+            switch (op) {
+                case 'q': gs.push(ctm.slice()); break;
+                case 'Q': ctm = gs.pop() || ctm0.slice(); break;
+                case 'cm': ctm = mult([n(6), n(5), n(4), n(3), n(2), n(1)], ctm); break;
+                case 'BT': tm = [1, 0, 0, 1, 0, 0]; tlm = tm.slice(); break;
+                case 'Tf': { const nome = a[a.length - 2]; tam = n(1); fonte = fontes && fontes.dict && nome && nome.name ? infoFonte(fontes.dict[nome.name]) : fonte; break; }
+                case 'TL': lead = n(1); break;
+                case 'Tm': tm = [n(6), n(5), n(4), n(3), n(2), n(1)]; tlm = tm.slice(); break;
+                case 'Td': tlm = mult([1, 0, 0, 1, n(2), n(1)], tlm); tm = tlm.slice(); break;
+                case 'TD': lead = -n(1); tlm = mult([1, 0, 0, 1, n(2), n(1)], tlm); tm = tlm.slice(); break;
+                case 'T*': tlm = mult([1, 0, 0, 1, 0, -lead], tlm); tm = tlm.slice(); break;
+                case 'Tj': { const s = a[a.length - 1]; if (s && s.str) emitir(decodificar(s.str, fonte)); break; }
+                case "'": case '"': { tlm = mult([1, 0, 0, 1, 0, -lead], tlm); tm = tlm.slice(); const s = a[a.length - 1]; if (s && s.str) emitir(decodificar(s.str, fonte)); break; }
+                case 'TJ': {
+                    const arr = a[a.length - 1]; if (!Array.isArray(arr)) break;
+                    let s = ''; arr.forEach(el => { if (el && el.str) s += decodificar(el.str, fonte); else if (typeof el === 'number' && el < -180) s += ' '; });
+                    emitir(s); break;
+                }
+                case 'Do': {
+                    const nome = a[a.length - 1]; const xo = xobjs && xobjs.dict && nome && nome.name ? R(xobjs.dict[nome.name]) : null;
+                    if (xo && xo.dict && R(xo.dict.Subtype) && R(xo.dict.Subtype).name === 'Form') {
+                        const mm = R(xo.dict.Matrix); const mat = Array.isArray(mm) ? mm.map(x => R(x)) : [1, 0, 0, 1, 0, 0];
+                        executar(dadosStream(xo), xo.dict.Resources || res, mult(mat, ctm), itens, prof + 1);
+                    }
+                    break;
+                }
+                case 'BI': { const e = dados.indexOf('EI', P.p, 'latin1'); P.p = e > 0 ? e + 2 : dados.length; break; }
+            }
+            pilha.length = 0;
+        }
+    }
+    return paginas.map(({ no, res }) => {
+        let cont = R(no.dict.Contents); const lista = Array.isArray(cont) ? cont.map(c => R(c)) : [cont];
+        const dados = Buffer.concat(lista.filter(Boolean).map(dadosStream).map(d => Buffer.concat([d, Buffer.from('\n')])));
+        const mb = R(no.dict.MediaBox); const altura = Array.isArray(mb) ? (R(mb[3]) || 792) : 792;
+        const itens = []; executar(dados, res, [1, 0, 0, 1, 0, 0], itens, 0);
+        return { altura, itens };
+    });
+}
+
+
+// Página (letras soltas com posição/tamanho) → { titulo, texto } no padrão de slide.
+function paginaParaSlideMt(pag) {
+    const itens = pag.itens.map(it => ({ ...it, yt: pag.altura - it.y }));
+    // 1) letras → linhas
+    const linhas = [];
+    let cur = null;
+    for (const it of itens) {
+        const t = it.t || 10;
+        // continua a linha se está na mesma altura/tamanho e logo à direita da letra anterior
+        const passo = cur ? it.x - cur.xUlt : 0;
+        const continua = cur && Math.abs(it.yt - cur.yt) < t * 0.35 && Math.abs(t - cur.t) < t * 0.2 && passo > -t * 0.3 && passo < t * Math.max(1.3, 0.62 * cur.lenUlt + 0.7);
+        if (continua) { cur.s += it.s; cur.xUlt = it.x; cur.lenUlt = it.s.length; }
+        else { if (cur) linhas.push(cur); cur = { s: it.s, x: it.x, yt: it.yt, t, xUlt: it.x, lenUlt: it.s.length }; }
+    }
+    if (cur) linhas.push(cur);
+    const lim = linhas.map(l => ({ ...l, s: l.s.replace(/\s+/g, ' ').trim() })).filter(l => l.s);
+    if (!lim.length) return { titulo: '', texto: '' };
+    // 2) linhas → blocos (mesmo tamanho, mesma coluna, logo abaixo)
+    const blocos = [];
+    for (const l of lim) {
+        const b = blocos.find(bl => !bl.fechado && Math.abs(bl.t - l.t) < l.t * 0.15 && Math.abs(bl.x - l.x) < l.t * 1.2 && l.yt - bl.yUlt > 0 && l.yt - bl.yUlt < l.t * 1.9);
+        if (b && b === blocos[blocos.length - 1]) { b.s += (/-$/.test(b.s) ? '' : ' ') + l.s; b.yUlt = l.yt; }
+        else if (b) { b.s += ' ' + l.s; b.yUlt = l.yt; }
+        else blocos.push({ s: l.s, x: l.x, yt: l.yt, yUlt: l.yt, t: l.t });
+    }
+    // 3) título = maior fonte (no alto da página)
+    const maxT = Math.max(...blocos.map(b => b.t));
+    const ordem = blocos.slice();
+    const tituloBlocos = ordem.filter(b => b.t >= maxT * 0.9).sort((a, b) => a.yt - b.yt);
+    const titulo = tituloBlocos.length ? tituloBlocos[0] : null;
+    const resto = ordem.filter(b => b !== titulo);
+    // tamanho "de corpo" = o mais comum
+    const freq = {}; resto.forEach(b => { const k = Math.round(b.t); freq[k] = (freq[k] || 0) + b.s.length; });
+    const corpo = +Object.keys(freq).sort((a, b) => freq[b] - freq[a])[0] || 10;
+    // 4) tópicos: subtítulo de cartão + descrição viram "Subtítulo — descrição"
+    const topicos = [];
+    for (let i = 0; i < resto.length; i++) {
+        const b = resto[i];
+        if (/^\d{1,2}$/.test(b.s) && resto[i + 1]) { resto[i + 1].s = b.s + '. ' + resto[i + 1].s; continue; }
+        const prox = resto[i + 1];
+        const ehSub = b.t > corpo * 1.1 && b.s.length < 90;
+        if (ehSub && prox && prox.t < b.t * 0.95 && prox.yt > b.yt && Math.abs(prox.x - b.x) < b.t * 3) { topicos.push(b.s.replace(/[.:]$/, '') + ' — ' + prox.s); i++; }
+        else topicos.push(b.s);
+    }
+    // junta pedaços de frase quebrados no meio (contorno de imagem/coluna)
+    const juntos = [];
+    topicos.forEach(t => { const ant = juntos[juntos.length - 1]; if (ant && /^[a-záéíóúâêôãõç]/.test(t) && /[a-záéíóúâêôãõç]$/i.test(ant) && t.split(' ').length <= 3) juntos[juntos.length - 1] = ant + t; else juntos.push(t); });
+    const fmt = t => t.replace(/^(\d{1,2})(?=[A-ZÁÉÍÓÚÂÊÔÃÕ])/, '$1. ');
+    return { titulo: fmt(titulo ? titulo.s : ''), texto: juntos.filter(t => t.length > 1).map(t => '• ' + fmt(t)).join('\n') };
+}
+
+
+// Texto corrido (Word/TXT) → slides: linhas curtas sem ponto final viram título.
+function textoParaSlidesMt(texto) {
+    const pars = String(texto || '').split(/\n+/).map(l => l.trim()).filter(Boolean);
+    const slides = []; let cur = null;
+    const ehTitulo = l => l.length <= 80 && !/[.;:,]$/.test(l) && l.split(' ').length <= 12;
+    for (const l of pars) {
+        if (ehTitulo(l) && (!cur || cur.topicos.length)) { cur = { titulo: l, topicos: [] }; slides.push(cur); continue; }
+        if (!cur) { cur = { titulo: l.slice(0, 80), topicos: [] }; slides.push(cur); continue; }
+        if (cur.topicos.length >= 6) { cur = { titulo: cur.titulo + ' (cont.)', topicos: [] }; slides.push(cur); }
+        cur.topicos.push(l.replace(/^\s*[•\-\*–]\s*/, ''));
+    }
+    return slides.slice(0, 120).map(x => ({ titulo: x.titulo, texto: x.topicos.map(t => '• ' + t).join('\n') }));
+}
 function caminhoUploadMt(url) { return path.join(PASTA_UPLOADS, path.basename(String(url || ''))); }
 async function lerArquivoUploadMt(url) {
     const c = caminhoUploadMt(url);
@@ -8736,6 +9043,7 @@ function normalizarModulosMt(lista) {
         const tipo = m && m.tipo === 'arquivo' ? 'arquivo' : 'slides';
         const limpo = { id: String((m && m.id) || ('m' + Date.now().toString(36) + i)).slice(0, 40), titulo: consertarAcentoMt(String((m && m.titulo) || `Módulo ${i + 1}`).trim().slice(0, 200)), tipo, oculto: !!(m && m.oculto) };
         if (tipo === 'slides') {
+            if (m.origem && /^\/uploads\/[\w.\-]+$/.test(String(m.origem.url || ''))) limpo.origem = { url: m.origem.url, nome: consertarAcentoMt(String(m.origem.nome || '').slice(0, 200)) };
             limpo.slides = (Array.isArray(m.slides) ? m.slides : []).slice(0, 200).map(sl => ({
                 titulo: String((sl && sl.titulo) || '').slice(0, 300), texto: String((sl && sl.texto) || '').slice(0, 5000),
                 imagem: /^\/uploads\/[\w.\-]+$|^https?:\/\/\S+$/.test(String((sl && sl.imagem) || '')) ? sl.imagem : '',
@@ -8807,7 +9115,7 @@ app.get('/api/admin/treinamentos-mt/:id', requireRole('admin'), async (req, res)
         const tk = await garantirAtaTokenMt(t);
         const nAss = await dbGet(`SELECT COUNT(*) n FROM treinamentos_mt_presencas WHERE treinamento_id = ?`, [t.id]);
         const nGrav = await dbGet(`SELECT COUNT(*) n FROM treinamentos_mt_gravacoes WHERE treinamento_id = ?`, [t.id]);
-        res.json({ ...t, modulos, check, gravacoes: nGrav ? nGrav.n : 0, ata: { link: `${baseUrlPublicaDpo(req)}/assinatura.html?t=${tk}`, ativa: t.ata_ativa !== 0, assinaturas: nAss ? nAss.n : 0 },
+        res.json({ ...t, modulos, check, iaAtiva: !!ANTHROPIC_API_KEY, gravacoes: nGrav ? nGrav.n : 0, ata: { link: `${baseUrlPublicaDpo(req)}/assinatura.html?t=${tk}`, ativa: t.ata_ativa !== 0, assinaturas: nAss ? nAss.n : 0 },
             divulgacao: divulgacaoMt(cfg) });
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar o treinamento.' }); }
 });
@@ -8870,8 +9178,14 @@ app.post('/api/admin/treinamentos-mt/arquivo', requireRole('admin'), (req, res) 
             if (/\.(pptx|docx)$/i.test(nome)) {
                 const ex = extrairOfficeMt(fs.readFileSync(req.file.path), nome);
                 if (ex.slides) { r.slidesExtraidos = ex.slides; r.texto = ex.slides.map((s, i) => `Slide ${i + 1}: ${s.titulo}\n${s.texto}`).join('\n\n'); }
-                if (ex.texto) r.texto = ex.texto;
-            } else if (/\.(txt|csv)$/i.test(nome)) r.texto = fs.readFileSync(req.file.path, 'utf8').slice(0, 60000);
+                if (ex.texto) { r.texto = ex.texto; r.slidesExtraidos = textoParaSlidesMt(ex.texto); }
+            } else if (/\.pdf$/i.test(nome) || /pdf/.test(r.mime)) {
+                try {
+                    const pags = lerPdfTextoMt(fs.readFileSync(req.file.path));
+                    r.slidesExtraidos = pags.map(paginaParaSlideMt).filter(x => x.titulo || x.texto);
+                    r.texto = r.slidesExtraidos.map((s, i) => `Slide ${i + 1}: ${s.titulo}\n${s.texto}`).join('\n\n');
+                } catch (e) { console.error('PDF sem texto legível:', e.message); }
+            } else if (/\.(txt|csv)$/i.test(nome)) { r.texto = fs.readFileSync(req.file.path, 'utf8').slice(0, 60000); r.slidesExtraidos = textoParaSlidesMt(r.texto); }
             if (/\.(pptx?|docx?|odp|odt)$/i.test(nome)) r.pdfUrl = (await converterParaPdfMt(req.file.path)) || '';
             if (/\.pdf$/i.test(nome) || /pdf/.test(r.mime)) r.pdfUrl = r.url;
         } catch (e) { console.error('Treinamento — leitura do arquivo:', e.message); }
@@ -8953,6 +9267,89 @@ app.put('/api/admin/treinamentos-mt-config', requireRole('admin'), async (req, r
         if (req.body.removerChaveIa) { await salvar('anthropic_api_key', ''); ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || ''; }
         res.json({ message: 'Configurações salvas!' + aviso });
     } catch (e) { res.status(400).json({ error: 'Erro ao salvar as configurações.' }); }
+});
+
+// Reler um arquivo já enviado (PDF/PowerPoint/Word) e devolver os slides.
+app.post('/api/admin/treinamentos-mt/reler', requireRole('admin'), async (req, res) => {
+    try {
+        const url = String(req.body.url || ''); const nome = String(req.body.nome || url);
+        if (!/^\/uploads\/[\w.\-]+$/.test(url)) return res.status(400).json({ error: 'Arquivo inválido.' });
+        const buf = await lerArquivoUploadMt(url);
+        if (!buf) return res.status(404).json({ error: 'O arquivo não está mais no servidor. Suba de novo.' });
+        let slides = [];
+        if (/\.pdf$/i.test(nome) || /\.pdf$/i.test(url)) slides = lerPdfTextoMt(buf).map(paginaParaSlideMt).filter(x => x.titulo || x.texto);
+        else if (/\.(pptx|docx)$/i.test(nome)) { const ex = extrairOfficeMt(buf, nome); slides = ex.slides || textoParaSlidesMt(ex.texto || ''); }
+        if (!slides.length) return res.status(400).json({ error: 'Não encontrei texto nesse arquivo (pode ser só imagem/escaneado).' });
+        res.json({ slides });
+    } catch (e) { res.status(500).json({ error: 'Não consegui ler o arquivo.' }); }
+});
+
+// ----- IA da Impulsionar: padronizar slides e criar treinamento do zero -----
+async function iaJsonMt(sistema, pedido, maxTokens) {
+    if (!ANTHROPIC_API_KEY) { const e = new Error('A IA ainda não está configurada. Cadastre a chave em ⚙️ Configurações (Ministrar Treinamento).'); e.semIa = true; throw e; }
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: ANTHROPIC_MODEL, max_tokens: maxTokens || 8000, system: sistema, messages: [{ role: 'user', content: pedido }] }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error('IA: ' + ((j.error && j.error.message) || ('erro ' + r.status)) + (r.status === 401 ? ' — confira a chave em ⚙️ Configurações.' : ''));
+    const txt = (j.content || []).map(b => b.text || '').join('\n');
+    const ini = txt.indexOf('{'), fim = txt.lastIndexOf('}');
+    try { return JSON.parse(txt.slice(ini, fim + 1)); } catch (e) { throw new Error('A IA respondeu num formato inesperado. Tente de novo.'); }
+}
+const PADRAO_IMPULSIONAR_MT = `PADRÃO IMPULSIONAR DE SLIDES:
+- Cada slide: um título curto e forte (máx. 8 palavras) e de 3 a 5 tópicos objetivos (máx. 18 palavras cada), linguagem simples e direta, do jeito que se fala no chão da operação.
+- Nada de parágrafo longo no slide: o que for explicação vai para "notas" (roteiro do apresentador: o que falar, um exemplo prático, uma pergunta para o grupo).
+- Use "layout":"destaque" só para frases de impacto/fechamento de ideia (título = a frase, texto = 1 linha de apoio). O resto "padrao".
+- Português do Brasil. Não invente dados numéricos que não estejam no material.`;
+function normalizarSlidesIaMt(lista) {
+    return (Array.isArray(lista) ? lista : []).slice(0, 80).map(x => {
+        const topicos = Array.isArray(x.topicos) ? x.topicos : String(x.texto || '').split('\n');
+        return { titulo: String(x.titulo || '').trim().slice(0, 200), texto: topicos.map(t => String(t || '').replace(/^\s*[•\-\*–]\s*/, '').trim()).filter(Boolean).slice(0, 8).map(t => '• ' + t).join('\n'),
+            notas: String(x.notas || '').trim().slice(0, 3000), imagem: '', layout: x.layout === 'destaque' ? 'destaque' : 'padrao' };
+    }).filter(x => x.titulo || x.texto);
+}
+app.post('/api/admin/treinamentos-mt/ia/estruturar', requireRole('admin'), async (req, res) => {
+    try {
+        const slides = (Array.isArray(req.body.slides) ? req.body.slides : []).slice(0, 80);
+        if (!slides.length) return res.status(400).json({ error: 'Nada para ajustar.' });
+        const material = slides.map((x, i) => `Slide ${i + 1}: ${x.titulo || ''}\n${x.texto || ''}${x.notas ? '\n(notas: ' + x.notas + ')' : ''}`).join('\n\n').slice(0, 90000);
+        const obj = await iaJsonMt(`Você é o designer instrucional da Impulsionar, consultoria de gestão e desenvolvimento de pessoas. Reestruture materiais de treinamento no padrão Impulsionar, mantendo fielmente o conteúdo original. Responda APENAS com JSON.\n${PADRAO_IMPULSIONAR_MT}`,
+            `Treinamento: ${req.body.titulo || ''}\nPúblico: ${ROTULOS_PUBLICO_MT[req.body.publico] || 'Todos'}\n\nMATERIAL ORIGINAL:\n${material}\n\n---\nReescreva no padrão Impulsionar. Mantenha a ordem e as ideias; divida slides sobrecarregados; remova repetições de rodapé/autor. Formato: {"slides":[{"titulo":"...","topicos":["..."],"notas":"...","layout":"padrao"}]}`, 12000);
+        const out = normalizarSlidesIaMt(obj.slides);
+        if (!out.length) return res.status(400).json({ error: 'A IA não conseguiu montar os slides. Tente de novo.' });
+        res.json({ slides: out });
+    } catch (e) { res.status(e.semIa ? 400 : 500).json({ error: e.message, semIa: !!e.semIa }); }
+});
+app.post('/api/admin/treinamentos-mt/ia/criar', requireRole('admin'), async (req, res) => {
+    const b = req.body || {};
+    const tema = String(b.tema || '').trim().slice(0, 500), problemas = String(b.problemas || '').trim().slice(0, 3000);
+    const publico = PUBLICOS_MT.includes(b.publico) ? b.publico : 'todos';
+    const contexto = String(b.contexto || '').trim().slice(0, 3000);
+    const duracao = Math.max(10, Math.min(480, Number(b.duracao) || 60));
+    const qtd = Math.max(5, Math.min(40, Number(b.qtdSlides) || Math.round(duracao / 4)));
+    if (!tema) return res.status(400).json({ error: 'Diga o que você quer treinar.' });
+    let estrutura, viaIa = true, aviso = '';
+    try {
+        estrutura = await iaJsonMt(`Você é o designer instrucional da Impulsionar, consultoria de gestão de processos e desenvolvimento de pessoas (logística, distribuição, revendas Ambev, operação). Crie treinamentos práticos, aplicáveis no dia a dia, com exemplos reais de operação. Responda APENAS com JSON.\n${PADRAO_IMPULSIONAR_MT}`,
+            `Crie um treinamento completo.\nO QUE TREINAR: ${tema}\nPROBLEMAS QUE PRECISA RESOLVER: ${problemas || '(não informado)'}\nPÚBLICO: ${ROTULOS_PUBLICO_MT[publico]}\nCONTEXTO DA EMPRESA/OPERAÇÃO: ${contexto || '(não informado)'}\nDURAÇÃO: ${duracao} minutos (~${qtd} slides no total)\n\nEstrutura: abertura com o problema real → 2 a 4 módulos de conteúdo (conceitos + como fazer na prática + exemplo) → exercício/dinâmica rápida → plano de ação (o que cada um faz amanhã) → fechamento com frase de impacto.\nFormato: {"titulo":"...","objetivo":"1 frase","modulos":[{"titulo":"...","slides":[{"titulo":"...","topicos":["..."],"notas":"roteiro do apresentador","layout":"padrao"}]}]}`, 16000);
+    } catch (e) {
+        if (!e.semIa && !/IA:/.test(e.message)) return res.status(500).json({ error: e.message });
+        viaIa = false; aviso = e.message;
+        const probs = problemas.split(/\n|;|,(?=\s*[A-ZÁÉÍÓÚ])/).map(x => x.trim()).filter(Boolean).slice(0, 5);
+        estrutura = { titulo: tema.slice(0, 120), objetivo: problemas ? 'Resolver: ' + probs.join('; ') : '', modulos: [
+            { titulo: 'Abertura', slides: [{ titulo: 'Por que estamos aqui', topicos: probs.length ? probs : ['O desafio que vamos resolver hoje'], notas: 'Abra com um caso real da operação que mostre o problema.' }, { titulo: 'O que você vai levar daqui', topicos: ['O que é ' + tema, 'Como aplicar no dia a dia', 'Seu plano de ação para amanhã'], notas: '' }] },
+            { titulo: tema.slice(0, 80), slides: [{ titulo: 'Conceito principal', topicos: ['(escreva o conceito)', '(por que ele importa)', '(o erro mais comum)'], notas: 'Complete com o conteúdo do treinamento.' }, { titulo: 'Como fazer na prática', topicos: ['Passo 1', 'Passo 2', 'Passo 3'], notas: '' }, { titulo: 'Exemplo da operação', topicos: ['Situação', 'O que foi feito', 'Resultado'], notas: '' }] },
+            { titulo: 'Na prática', slides: [{ titulo: 'Dinâmica rápida', topicos: ['Em duplas: identifique um caso real', 'Aplique o passo a passo', 'Compartilhe com o grupo'], notas: '' }, { titulo: 'Seu plano de ação', topicos: ['O que vou fazer amanhã', 'Com quem', 'Como vou medir'], notas: '' }] },
+            { titulo: 'Fechamento', slides: [{ titulo: 'Resultado vem da rotina, não do discurso', topicos: ['Comece pequeno, mas comece amanhã'], notas: '', layout: 'destaque' }] }] };
+    }
+    try {
+        const modulos = (estrutura.modulos || []).slice(0, 12).map((m, i) => ({ id: 'm' + Date.now().toString(36) + i, titulo: String(m.titulo || `Módulo ${i + 1}`).slice(0, 200), tipo: 'slides', slides: normalizarSlidesIaMt(m.slides) })).filter(m => m.slides.length);
+        if (!modulos.length) return res.status(400).json({ error: 'Não consegui montar o treinamento. Tente detalhar mais o tema.' });
+        const d = camposTreinamentoMt({ titulo: String(estrutura.titulo || tema).slice(0, 200), objetivo: String(estrutura.objetivo || '').slice(0, 3000), publico, duracao_min: duracao, status: 'rascunho', modulos });
+        const cols = Object.keys(d);
+        const id = await new Promise((ok, ko) => db.run(`INSERT INTO treinamentos_mt (${cols.join(', ')}, created_by, updated_at) VALUES (${cols.map(() => '?').join(', ')}, ?, CURRENT_TIMESTAMP)`,
+            [...cols.map(c => d[c]), req.user.userId], function (err) { err ? ko(err) : ok(this.lastID); }));
+        res.json({ id, viaIa, aviso, message: viaIa ? `✨ Treinamento criado pela IA com ${modulos.reduce((s, m) => s + m.slides.length, 0)} slides — revise e ajuste.` : 'Montei a estrutura base do treinamento (sem IA). Complete os slides ou cadastre a chave da IA para gerar o conteúdo completo.' });
+    } catch (e) { res.status(500).json({ error: 'Erro ao salvar o treinamento.' }); }
 });
 
 // ----- Controle da apresentação pelo celular (link + Socket.IO) -----

@@ -495,6 +495,10 @@
   .resp-chip { font-size:11px; font-weight:700; background:#fef3c7; color:#92400e; border-radius:999px; padding:2px 8px; } .resp-chip.vazio { background:#f1f5f9; color:#94a3b8; }
   @media (max-width:640px) { .resp-grid { grid-template-columns:1fr; } }
   /* ===== Ministrar Treinamento ===== */
+  .mt-btn-ia { background:linear-gradient(135deg,#7c3aed,#db2777) !important; border-color:transparent !important; color:#fff !important; }
+  .mt-ia-carregando { position:fixed; inset:0; background:rgba(11,19,36,.6); z-index:10080; display:flex; align-items:center; justify-content:center; }
+  .mt-ia-car-caixa { background:#fff; border-radius:16px; padding:26px 30px; text-align:center; color:#0f172a; box-shadow:0 20px 50px rgba(0,0,0,.3); }
+  .mt-ia-spin { font-size:38px; animation:mtGira 1.4s linear infinite; display:inline-block; } @keyframes mtGira { to { transform:rotate(360deg); } }
   .mt-sl-ed.mt-oculto .mt-sl-mini { opacity:.35; filter:grayscale(1); }
   .mt-arrasta { cursor:grab; font-size:16px; color:#94a3b8; padding:0 4px; user-select:none; line-height:1; }
   .mt-arrasta:active { cursor:grabbing; }
@@ -10209,7 +10213,7 @@ function mtDesenharLista() {
     <div class="mt-topo">
       <div><h1 style="margin:0;">🎤 Ministrar Treinamento</h1>
         <div style="color:#64748b;font-size:13.5px;">Monte seus treinamentos em módulos, apresente direto no sistema e meça a retenção com check gerado por IA.</div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-secundario" style="width:auto;" onclick="mtAbrirConfig()">⚙️ Configurações</button><button class="btn-primario" style="width:auto;" onclick="mtNovo()">+ Criar treinamento</button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-secundario" style="width:auto;" onclick="mtAbrirConfig()">⚙️ Configurações</button><button class="btn-primario mt-btn-ia" style="width:auto;" onclick="mtAbrirCriarComIa()">✨ Criar com IA</button><button class="btn-primario" style="width:auto;" onclick="mtNovo()">+ Criar treinamento</button></div>
     </div>
     <div class="mt-kpis">
       ${kpi('📚', L.length, 'Treinamentos', '#0f172a')}
@@ -10232,7 +10236,7 @@ function mtDesenharLista() {
       ${Object.entries(PUBLICOS_MT).map(([k, p]) => `<button class="mt-chip ${MT.fPublico === k ? 'on' : ''}" style="${MT.fPublico === k ? `background:${p.cor};border-color:${p.cor};` : ''}" onclick="MT.fPublico = MT.fPublico === '${k}' ? '' : '${k}'; mtDesenharLista()">${p.ico} ${p.rot}</button>`).join('')}
       <input class="mt-busca" placeholder="🔎 Buscar treinamento..." value="${escapeHtml(MT.busca)}" oninput="MT.busca=this.value; clearTimeout(window.__tMt); window.__tMt=setTimeout(()=>{ mtDesenharLista(); const el=document.querySelector('.mt-busca'); if(el){el.focus(); el.setSelectionRange(el.value.length, el.value.length);} }, 250)">
     </div>
-    ${!L.length ? `<div class="mt-vazio"><div style="font-size:46px;">🎤</div><h3>Nenhum treinamento ainda</h3><p>Crie o primeiro: dê um nome, escolha o público, monte os módulos (slides no sistema ou arquivos) e apresente daqui mesmo.</p><button class="btn-primario" style="width:auto;" onclick="mtNovo()">+ Criar treinamento</button></div>`
+    ${!L.length ? `<div class="mt-vazio"><div style="font-size:46px;">🎤</div><h3>Nenhum treinamento ainda</h3><p>Crie o primeiro: dê um nome, escolha o público, monte os módulos (slides no sistema ou arquivos) e apresente daqui mesmo — ou peça para a IA montar.</p><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;"><button class="btn-primario mt-btn-ia" style="width:auto;" onclick="mtAbrirCriarComIa()">✨ Criar com IA</button><button class="btn-primario" style="width:auto;" onclick="mtNovo()">+ Criar treinamento</button></div></div>`
       : !filtrados.length ? '<div class="msg-vazio">Nenhum treinamento neste filtro.</div>'
       : `<div class="mt-grade">${filtrados.map(mtCardHtml).join('')}</div>`}
     <div id="modal-area"></div>`;
@@ -10367,10 +10371,12 @@ function mtModuloEditorHtml(m) {
   let html = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
       <input class="mt-mod-tit-in" value="${escapeHtml(m.titulo || '')}" placeholder="Título do módulo" oninput="MT.doc.modulos[${i}].titulo=this.value; mtMarcarSujo(); const t=document.querySelectorAll('.mt-mod-t')[${i}]; if(t) t.textContent=this.value">
       <button class="btn-secundario btn-sm" style="width:auto;" onclick="mtApresentarModulo(${i})">▶ Apresentar este módulo</button>
+      ${m.tipo === 'slides' && (m.slides || []).length ? `<button class="btn-secundario btn-sm mt-btn-ia" style="width:auto;" onclick="mtAjustarComIa()">✨ Ajustar com IA</button>` : ''}
       <button class="btn-secundario btn-sm" style="width:auto;" onclick="MT.doc.modulos[${i}].oculto=!MT.doc.modulos[${i}].oculto; mtMarcarSujo(); mtDesenharEditor()">${m.oculto ? '👁 Mostrar módulo' : '🙈 Ocultar módulo'}</button>
       <button class="btn-perigo btn-sm" style="width:auto;" onclick="mtRemoverMod(${i})">🗑 Módulo</button>
     </div>
-    ${m.oculto ? '<div class="mt-dica" style="background:#fef3c7;border-color:#fde68a;">🙈 Este módulo está <strong>oculto</strong> — não aparece na apresentação nem entra no check.</div>' : ''}`;
+    ${m.oculto ? '<div class="mt-dica" style="background:#fef3c7;border-color:#fde68a;">🙈 Este módulo está <strong>oculto</strong> — não aparece na apresentação nem entra no check.</div>' : ''}
+    ${m.origem ? `<div class="plano-meta" style="font-size:12px;margin:-4px 0 8px;">📎 Convertido de <a href="${escapeHtml(m.origem.url)}" target="_blank" rel="noopener">${escapeHtml(m.origem.nome || 'arquivo original')}</a> para o padrão Impulsionar.</div>` : ''}`;
   if (m.tipo === 'slides') {
     html += `<div class="mt-ins topo" onclick="mtInserirSl(0)">＋ Inserir slide no início</div>`;
     html += (m.slides || []).map((s, j) => `<div class="mt-sl-ed ${s.oculto ? 'mt-oculto' : ''}" data-j="${j}" ondragover="mtDragSobre(event, this)" ondragleave="this.classList.remove('alvo-cima','alvo-baixo')" ondrop="mtDragSoltar(event, ${j}, this)">
@@ -10399,6 +10405,7 @@ function mtModuloEditorHtml(m) {
           <label class="btn-secundario btn-sm" style="cursor:pointer;margin:0;width:auto;">Trocar arquivo<input type="file" style="display:none;" onchange="mtUploadArq(this)"></label>
         </div>
         ${(a.slidesExtraidos || []).length ? `<div class="mt-dica">✨ Li <strong>${a.slidesExtraidos.length} slide(s)</strong> deste arquivo. <button class="btn-primario btn-sm" style="width:auto;" onclick="mtConverterEmSlides()">Transformar em slides editáveis</button></div>` : ''}
+        ${!(a.slidesExtraidos || []).length && /\.(pdf|pptx|docx)$/i.test(a.nome || '') ? `<div class="mt-dica">📄 Converter este arquivo para slides editáveis no padrão Impulsionar <button class="btn-primario btn-sm" style="width:auto;" onclick="mtReler()">Ler e converter</button></div>` : ''}
         ${!a.pdfUrl && (a.slidesExtraidos || []).length ? `<div class="mt-ext-lista">${a.slidesExtraidos.map((x, j) => `<div class="mt-ext ${x.oculto ? 'mt-oculto' : ''}">
             <div class="mt-sl-mini" style="width:150px;flex:0 0 150px;font-size:2.5px;" onclick="mtApresentarModulo(${i}, undefined, ${j})">${mtSlideHtml({ ...x, layout: 'padrao' }, mtPub(MT.doc.publico).cor, true)}</div>
             <div style="flex:1;min-width:0;"><div style="font-size:11.5px;color:#64748b;">Slide ${j + 1}${x.oculto ? ' · <strong style="color:#b45309;">oculto</strong>' : ''}</div><div style="font-weight:700;font-size:13px;">${escapeHtml(x.titulo || 'Sem título')}</div></div>
@@ -10479,10 +10486,28 @@ async function mtUploadArq(inp) {
     const m = MT.doc.modulos[MT.modSel];
     m.arquivo = { url: r.url, nome: r.nome, mime: r.mime, pdfUrl: r.pdfUrl || '', slidesExtraidos: r.slidesExtraidos || [] };
     m.texto = r.texto || '';
-    if (/^Módulo \d+$/.test(m.titulo || '')) m.titulo = String(r.nome || '').replace(/\.[^.]+$/, '').slice(0, 120) || m.titulo;
+    if (/^Módulo \d+$/.test(m.titulo || '')) m.titulo = String(r.nome || '').replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').slice(0, 120) || m.titulo;
+    // PDF / PowerPoint / Word: já vira slides editáveis no padrão Impulsionar.
+    if ((r.slidesExtraidos || []).length && !/^image\/|^video\//.test(r.mime || '')) {
+      MT.doc.modulos[MT.modSel] = { id: m.id, titulo: m.titulo, tipo: 'slides', origem: { url: r.url, nome: r.nome }, slides: r.slidesExtraidos.map(x => ({ titulo: x.titulo, texto: x.texto, imagem: '', notas: '', layout: 'padrao' })) };
+      mtMarcarSujo(); await mtSalvar(true).catch(() => {}); mtDesenharEditor();
+      if (MT.doc.iaAtiva) { mostrarToast(`📄 Li ${r.slidesExtraidos.length} página(s). Agora a IA vai ajustar no padrão Impulsionar...`); await mtAjustarComIa(true); }
+      else mostrarToast(`✅ ${r.slidesExtraidos.length} slide(s) lidos e convertidos para o padrão Impulsionar. (Com a IA ligada em ⚙️ Configurações, ela ainda resume e cria as notas.)`);
+      return;
+    }
     mtMarcarSujo(); await mtSalvar(true).catch(() => {}); mtDesenharEditor();
     mostrarToast('Arquivo pronto!');
   } catch (e) { mostrarToast(e.message, true); mtDesenharEditor(); }
+}
+async function mtReler() {
+  const m = MT.doc.modulos[MT.modSel], a = m.arquivo || {};
+  mtCarregandoIa('Lendo o arquivo...');
+  try {
+    const r = await api('/api/admin/treinamentos-mt/reler', { method: 'POST', body: JSON.stringify({ url: a.url, nome: a.nome }) });
+    MT.doc.modulos[MT.modSel] = { id: m.id, titulo: m.titulo, tipo: 'slides', origem: { url: a.url, nome: a.nome }, slides: r.slides.map(x => ({ titulo: x.titulo, texto: x.texto, imagem: '', notas: '', layout: 'padrao' })) };
+    mtMarcarSujo(); await mtSalvar(true).catch(() => {}); mtCarregandoIa(null); mtDesenharEditor();
+    if (MT.doc.iaAtiva) await mtAjustarComIa(true); else mostrarToast(`✅ ${r.slides.length} slide(s) convertidos para o padrão Impulsionar.`);
+  } catch (e) { mtCarregandoIa(null); mostrarToast(e.message, true); }
 }
 function mtConverterEmSlides() {
   const m = MT.doc.modulos[MT.modSel];
@@ -10900,6 +10925,65 @@ async function mtAbrirGravacoes() {
     </div></div>`;
 }
 async function mtExcluirGravacao(id) { if (!confirm('Excluir esta gravação?')) return; try { await api('/api/admin/treinamentos-mt/gravacoes/' + id, { method: 'DELETE' }); MT.doc.gravacoes = Math.max(0, (MT.doc.gravacoes || 1) - 1); mtAbrirGravacoes(); } catch (e) { mostrarToast(e.message, true); } }
+
+// ---------- IA da Impulsionar ----------
+function mtCarregandoIa(msg) {
+  let el = document.getElementById('mt-ia-carregando');
+  if (!msg) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'mt-ia-carregando'; el.className = 'mt-ia-carregando'; document.body.appendChild(el); }
+  el.innerHTML = `<div class="mt-ia-car-caixa"><div class="mt-ia-spin">✨</div><div style="font-weight:800;font-size:16px;">${escapeHtml(msg)}</div><div style="font-size:12.5px;opacity:.75;margin-top:4px;">Isso pode levar até 1 minuto.</div></div>`;
+}
+async function mtAjustarComIa(automatico) {
+  const m = MT.doc.modulos[MT.modSel]; if (!m || m.tipo !== 'slides') return;
+  if (!automatico && !confirm('A IA vai reescrever os slides deste módulo no padrão Impulsionar (títulos curtos, tópicos objetivos e notas do apresentador). Continuar?')) return;
+  mtCarregandoIa('A IA da Impulsionar está ajustando os slides...');
+  try {
+    const r = await api('/api/admin/treinamentos-mt/ia/estruturar', { method: 'POST', body: JSON.stringify({ titulo: MT.doc.titulo, publico: MT.doc.publico, slides: m.slides.filter(x => !x.oculto) }) });
+    m.slides = r.slides; mtMarcarSujo(); await mtSalvar(true).catch(() => {}); mtDesenharEditor();
+    mostrarToast(`✨ ${r.slides.length} slide(s) no padrão Impulsionar, com notas do apresentador. Revise à vontade.`);
+  } catch (e) { mostrarToast(automatico ? 'Slides convertidos sem a IA: ' + e.message : e.message, true); }
+  mtCarregandoIa(null);
+}
+function mtAbrirCriarComIa() {
+  let ma = document.getElementById('modal-area');
+  if (!ma) { document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>'); ma = document.getElementById('modal-area'); }
+  window.__mtIaPub = window.__mtIaPub || 'lideranca';
+  ma.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) document.getElementById('modal-area').innerHTML=''">
+    <div class="modal-caixa" style="max-width:640px;max-height:92vh;overflow-y:auto;">
+      <h3 style="margin-top:0;">✨ Criar treinamento com a IA da Impulsionar</h3>
+      <div class="plano-meta" style="margin-bottom:8px;">Conte o que você precisa: a IA monta os módulos, os slides no padrão Impulsionar e o roteiro do apresentador. Depois é só revisar.</div>
+      <label>O que você quer treinar? *</label>
+      <input id="ia-tema" placeholder="ex: Feedback para líderes de primeira viagem">
+      <label>Quais problemas esse treinamento precisa resolver?</label>
+      <textarea id="ia-prob" rows="3" placeholder="ex: líderes não dão feedback, só cobram; turnover alto nos novos; reuniões sem plano de ação"></textarea>
+      <label>Qual público?</label>
+      <div class="mt-ed-pubs" style="margin-bottom:6px;">${Object.entries(PUBLICOS_MT).map(([k, x]) => `<button type="button" class="mt-pub ${window.__mtIaPub === k ? 'on' : ''}" style="--c:${x.cor}" onclick="window.__mtIaPub='${k}'; document.querySelectorAll('#modal-area .mt-pub').forEach(b=>b.classList.remove('on')); this.classList.add('on')"><span>${x.ico}</span>${x.rot}</button>`).join('')}</div>
+      <label>Contexto da empresa / operação (opcional)</label>
+      <textarea id="ia-ctx" rows="2" placeholder="ex: revenda Ambev, CD com 120 colaboradores, entrega urbana"></textarea>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><label>Duração (min)</label><input id="ia-dur" type="number" min="10" max="480" value="60"></div>
+        <div><label>Quantidade de slides (aprox.)</label><input id="ia-qtd" type="number" min="5" max="40" value="15"></div>
+      </div>
+      <div class="acoes-form" style="margin-top:14px;">
+        <button class="btn-primario mt-btn-ia" style="width:auto;" onclick="mtCriarComIa()">✨ Criar treinamento</button>
+        <button class="btn-secundario" style="width:auto;" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button>
+      </div>
+    </div></div>`;
+  setTimeout(() => document.getElementById('ia-tema').focus(), 50);
+}
+async function mtCriarComIa() {
+  const v = id => document.getElementById(id).value.trim();
+  const corpo = { tema: v('ia-tema'), problemas: v('ia-prob'), contexto: v('ia-ctx'), duracao: Number(v('ia-dur')) || 60, qtdSlides: Number(v('ia-qtd')) || 15, publico: window.__mtIaPub };
+  if (!corpo.tema) return mostrarToast('Diga o que você quer treinar.', true);
+  document.getElementById('modal-area').innerHTML = '';
+  mtCarregandoIa('A IA da Impulsionar está montando seu treinamento...');
+  try {
+    const r = await api('/api/admin/treinamentos-mt/ia/criar', { method: 'POST', body: JSON.stringify(corpo) });
+    mtCarregandoIa(null);
+    mostrarToast(r.message, !r.viaIa);
+    mtAbrirEditor(r.id);
+  } catch (e) { mtCarregandoIa(null); mostrarToast(e.message, true); }
+}
 
 // ---------- Configurações (redes da Impulsionar + IA) ----------
 async function mtAbrirConfig() {
