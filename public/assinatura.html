@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Ata de Presença — Impulsionar V4</title>
+<style>
+  :root { --azul: #0b1329; --vermelho: #dc4c4c; --cinza-700: #334155; --cinza-500: #64748b; --borda: #e2e8f0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; color: var(--cinza-700); background: #f4f6fb; }
+  .topo { background: linear-gradient(160deg, #0b1329, #16213f); color: #fff; padding: 30px 16px 56px; text-align: center; }
+  .topo .rot { font-size: 12px; letter-spacing: .12em; font-weight: 800; color: #fca5a5; }
+  .topo h1 { font-size: 22px; margin: 8px 0; line-height: 1.3; }
+  .topo p { margin: 0; font-size: 14px; opacity: .85; }
+  .conteudo { max-width: 620px; margin: -32px auto 0; padding: 0 16px 40px; }
+  .cartao { background: #fff; border-radius: 16px; box-shadow: 0 10px 28px rgba(11,19,41,.12); padding: 22px 20px; margin-bottom: 16px; }
+  label { display: block; font-size: 13px; font-weight: 700; margin: 12px 0 4px; }
+  input[type=text] { width: 100%; border: 1.5px solid var(--borda); border-radius: 10px; padding: 11px 12px; font-size: 15px; font-family: inherit; }
+  input[type=text]:focus { outline: none; border-color: var(--vermelho); }
+  .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .quadro { position: relative; border: 2px dashed #cbd5e1; border-radius: 12px; background: #fff; touch-action: none; }
+  .quadro canvas { display: block; width: 100%; height: 190px; cursor: crosshair; }
+  .quadro .linha { position: absolute; left: 20px; right: 20px; bottom: 40px; border-bottom: 1.5px solid #cbd5e1; pointer-events: none; }
+  .quadro .dica { position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; font-size: 12px; color: #94a3b8; pointer-events: none; }
+  .limpar { background: none; border: none; color: var(--vermelho); font-weight: 700; font-size: 13px; cursor: pointer; padding: 6px 0; }
+  .enviar { width: 100%; background: var(--vermelho); color: #fff; border: none; border-radius: 30px; padding: 15px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  .enviar:disabled { opacity: .6; cursor: wait; }
+  .erro { color: #b91c1c; background: #fef2f2; border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-top: 12px; display: none; }
+  .ok { text-align: center; padding: 26px 10px; }
+  .ok .ico { font-size: 52px; }
+  .btn2 { display: inline-block; background: var(--azul); color: #fff; text-decoration: none; border-radius: 30px; padding: 13px 22px; font-weight: 700; margin-top: 14px; }
+  .redes { text-align: center; font-size: 13px; color: var(--cinza-500); margin-top: 10px; }
+  .redes a { color: var(--azul); font-weight: 700; text-decoration: none; margin: 0 6px; }
+  .rodape { text-align: center; font-size: 12px; color: #94a3b8; margin-top: 18px; }
+  @media (max-width: 480px) { .duas { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <div class="topo">
+    <div class="rot">ATA DE PRESENÇA</div>
+    <h1 id="titulo">Carregando...</h1>
+    <p id="sub"></p>
+  </div>
+  <div class="conteudo" id="conteudo"></div>
+  <div class="redes" id="redes"></div>
+  <div class="rodape">Powered by Impulsionar V4</div>
+<script>
+  const token = new URLSearchParams(location.search).get('t') || '';
+  const conteudo = document.getElementById('conteudo');
+  let dados = null, temTraco = false;
+  function esc(t) { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; }
+  function dataTxt(d) { if (!d) return ''; const [dia, hora] = String(d).split('T'); return new Date(dia + 'T12:00:00').toLocaleDateString('pt-BR') + (hora ? ' às ' + hora : ''); }
+  function redesHtml(d) {
+    const l = [];
+    if (d.instagram) l.push(`<a href="https://instagram.com/${encodeURIComponent(d.instagram.replace('@', ''))}" target="_blank">📷 ${esc(d.instagram)}</a>`);
+    if (d.whatsapp) l.push(`<a href="https://wa.me/${d.whatsapp.replace(/\D/g, '').replace(/^(?!55)/, '55')}" target="_blank">💬 ${esc(d.whatsapp)}</a>`);
+    return l.length ? 'Siga a Impulsionar: ' + l.join('') : '';
+  }
+  async function carregar() {
+    try {
+      const r = await fetch('/api/public/ata/' + encodeURIComponent(token));
+      const d = await r.json();
+      if (!r.ok) { document.getElementById('titulo').textContent = 'Ata de presença'; conteudo.innerHTML = `<div class="cartao ok"><div class="ico">⚠️</div><h2>${esc(d.error || 'Link inválido.')}</h2></div>`; return; }
+      dados = d;
+      document.title = d.titulo + ' — Ata de Presença';
+      document.getElementById('titulo').textContent = d.titulo;
+      document.getElementById('sub').textContent = [d.empresa, dataTxt(d.data), d.instrutor ? 'Instrutor: ' + d.instrutor : '', d.local].filter(Boolean).join(' · ');
+      document.getElementById('redes').innerHTML = redesHtml(d);
+      conteudo.innerHTML = `
+        <div class="cartao">
+          <label for="nome">Nome completo *</label>
+          <input type="text" id="nome" autocomplete="name">
+          <div class="duas">
+            <div><label for="matricula">Matrícula</label><input type="text" id="matricula"></div>
+            <div><label for="cargo">Cargo / função</label><input type="text" id="cargo"></div>
+          </div>
+          <label for="empresa">Empresa / unidade</label>
+          <input type="text" id="empresa" value="${esc(d.empresa || '')}">
+          <label>Assinatura *</label>
+          <div class="quadro"><canvas id="cv"></canvas><div class="linha"></div><div class="dica" id="dica">Assine aqui com o dedo ou o mouse</div></div>
+          <button class="limpar" type="button" onclick="limpar()">↺ Limpar assinatura</button>
+          <div class="erro" id="erro"></div>
+          <button class="enviar" id="enviar" onclick="enviar()">✍️ Assinar presença</button>
+        </div>`;
+      prepararCanvas();
+    } catch (e) { conteudo.innerHTML = '<div class="cartao ok"><div class="ico">⚠️</div><h2>Não foi possível carregar.</h2></div>'; }
+  }
+  let ctx, desenhando = false, ult = null;
+  function prepararCanvas() {
+    const cv = document.getElementById('cv');
+    const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    cv.width = r.width * dpr; cv.height = r.height * dpr;
+    ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+    ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0b1329';
+    const pos = e => { const b = cv.getBoundingClientRect(); return { x: e.clientX - b.left, y: e.clientY - b.top }; };
+    cv.addEventListener('pointerdown', e => { desenhando = true; ult = pos(e); cv.setPointerCapture(e.pointerId); document.getElementById('dica').style.display = 'none'; });
+    cv.addEventListener('pointermove', e => { if (!desenhando) return; const p = pos(e); ctx.beginPath(); ctx.moveTo(ult.x, ult.y); ctx.lineTo(p.x, p.y); ctx.stroke(); ult = p; temTraco = true; });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => cv.addEventListener(ev, () => { desenhando = false; }));
+  }
+  function limpar() { const cv = document.getElementById('cv'); ctx.clearRect(0, 0, cv.width, cv.height); temTraco = false; document.getElementById('dica').style.display = ''; }
+  async function enviar() {
+    const erro = document.getElementById('erro'), b = document.getElementById('enviar');
+    erro.style.display = 'none';
+    const nome = document.getElementById('nome').value.trim();
+    if (nome.length < 3) { erro.textContent = 'Informe seu nome completo.'; erro.style.display = 'block'; return; }
+    if (!temTraco) { erro.textContent = 'Faça sua assinatura no quadro.'; erro.style.display = 'block'; return; }
+    b.disabled = true; b.textContent = 'Enviando...';
+    try {
+      const r = await fetch('/api/public/ata/' + encodeURIComponent(token), { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, matricula: document.getElementById('matricula').value.trim(), cargo: document.getElementById('cargo').value.trim(), empresa: document.getElementById('empresa').value.trim(), assinatura: document.getElementById('cv').toDataURL('image/png') }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Erro ao enviar.');
+      conteudo.innerHTML = `<div class="cartao ok"><div class="ico">✅</div><h2>Presença assinada!</h2><p>Obrigado, ${esc(nome.split(' ')[0])}.</p>
+        ${dados.checkLink ? `<p style="margin-top:16px;">Agora responda o check de retenção do treinamento:</p><a class="btn2" href="${esc(dados.checkLink)}">🧠 Responder check de retenção</a>` : ''}</div>`;
+    } catch (e) { erro.textContent = e.message; erro.style.display = 'block'; b.disabled = false; b.textContent = '✍️ Assinar presença'; }
+  }
+  carregar();
+</script>
+</body>
+</html>

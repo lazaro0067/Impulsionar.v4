@@ -394,8 +394,8 @@ async function avisarGestoresPorWhatsApp(texto) {
 // Gere uma chave em https://console.anthropic.com e coloque em
 // ANTHROPIC_API_KEY no .env. Sem ela, os recursos de IA respondem com um erro
 // amigável em vez de derrubar o servidor.
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
-const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-20241022';
+let ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
+let ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
 if (!ANTHROPIC_API_KEY) {
     console.warn('⚠️  ANTHROPIC_API_KEY não definido no .env — o Assistente de IA fica desativado até configurar.');
 }
@@ -569,6 +569,11 @@ function inicializarBase() {
             key TEXT PRIMARY KEY,
             value TEXT
         )`);
+        // Chave/modelo da IA salvos pelo Master (Ministrar Treinamento > Configurações) têm prioridade sobre o .env.
+        db.all(`SELECT key, value FROM integration_settings WHERE key IN ('anthropic_api_key', 'anthropic_model')`, [], (err, rows) => {
+            if (err || !rows) return;
+            rows.forEach(r => { if (r.key === 'anthropic_api_key' && r.value) ANTHROPIC_API_KEY = r.value; if (r.key === 'anthropic_model' && r.value) ANTHROPIC_MODEL = r.value; });
+        });
         db.all(`SELECT key, value FROM integration_settings WHERE key IN ('email_api_provedor', 'email_api_chave', 'email_api_remetente')`, [], (err, rows) => {
             if (err || !rows || !rows.length) return;
             const m = Object.fromEntries(rows.map(r => [r.key, r.value]));
@@ -1646,6 +1651,19 @@ function inicializarBase() {
             gerado_por_ia INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME
+        )`);
+        db.run(`ALTER TABLE treinamentos_mt ADD COLUMN ata_token TEXT`, () => {});
+        db.run(`ALTER TABLE treinamentos_mt ADD COLUMN ata_ativa INTEGER DEFAULT 1`, () => {});
+        db.run(`CREATE TABLE IF NOT EXISTS treinamentos_mt_presencas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            treinamento_id INTEGER NOT NULL,
+            nome TEXT NOT NULL,
+            matricula TEXT,
+            cargo TEXT,
+            empresa TEXT,
+            assinatura TEXT,
+            ip TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
         db.run(`CREATE TABLE IF NOT EXISTS treinamentos_mt_respostas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -8669,6 +8687,12 @@ function extrairOfficeMt(buf, nome) {
     if (/\.docx$/i.test(nome) && z['word/document.xml']) return { texto: paragrafosMt(z['word/document.xml'].toString('utf8'), 'w:p', 'w:t').join('\n') };
     return {};
 }
+// Nome de arquivo com acento chega do navegador em latin1 ("GestÃ£o") — conserta.
+function consertarAcentoMt(t) {
+    const s0 = String(t || '');
+    if (!/[ÃÂ][\u0080-\u00ff]/.test(s0)) return s0;
+    try { const d = Buffer.from(s0, 'latin1').toString('utf8'); return d.includes('\uFFFD') ? s0 : d; } catch (e) { return s0; }
+}
 function caminhoUploadMt(url) { return path.join(PASTA_UPLOADS, path.basename(String(url || ''))); }
 async function lerArquivoUploadMt(url) {
     const c = caminhoUploadMt(url);
@@ -8700,17 +8724,17 @@ function converterParaPdfMt(caminho) {
 function normalizarModulosMt(lista) {
     return (Array.isArray(lista) ? lista : []).slice(0, 60).map((m, i) => {
         const tipo = m && m.tipo === 'arquivo' ? 'arquivo' : 'slides';
-        const limpo = { id: String((m && m.id) || ('m' + Date.now().toString(36) + i)).slice(0, 40), titulo: String((m && m.titulo) || `Módulo ${i + 1}`).trim().slice(0, 200), tipo };
+        const limpo = { id: String((m && m.id) || ('m' + Date.now().toString(36) + i)).slice(0, 40), titulo: consertarAcentoMt(String((m && m.titulo) || `Módulo ${i + 1}`).trim().slice(0, 200)), tipo, oculto: !!(m && m.oculto) };
         if (tipo === 'slides') {
             limpo.slides = (Array.isArray(m.slides) ? m.slides : []).slice(0, 200).map(sl => ({
                 titulo: String((sl && sl.titulo) || '').slice(0, 300), texto: String((sl && sl.texto) || '').slice(0, 5000),
                 imagem: /^\/uploads\/[\w.\-]+$|^https?:\/\/\S+$/.test(String((sl && sl.imagem) || '')) ? sl.imagem : '',
-                notas: String((sl && sl.notas) || '').slice(0, 3000), layout: ['padrao', 'destaque', 'imagem'].includes(sl && sl.layout) ? sl.layout : 'padrao'
+                notas: String((sl && sl.notas) || '').slice(0, 3000), layout: ['padrao', 'destaque', 'imagem'].includes(sl && sl.layout) ? sl.layout : 'padrao', oculto: !!(sl && sl.oculto)
             }));
         } else {
             const a = m.arquivo || {};
-            limpo.arquivo = { url: /^\/uploads\/[\w.\-]+$|^https?:\/\/\S+$/.test(String(a.url || '')) ? a.url : '', nome: String(a.nome || '').slice(0, 200), mime: String(a.mime || '').slice(0, 120),
-                pdfUrl: /^\/uploads\/[\w.\-]+$/.test(String(a.pdfUrl || '')) ? a.pdfUrl : '', slidesExtraidos: Array.isArray(a.slidesExtraidos) ? a.slidesExtraidos.slice(0, 200).map(x => ({ titulo: String(x.titulo || '').slice(0, 300), texto: String(x.texto || '').slice(0, 3000) })) : [] };
+            limpo.arquivo = { url: /^\/uploads\/[\w.\-]+$|^https?:\/\/\S+$/.test(String(a.url || '')) ? a.url : '', nome: consertarAcentoMt(String(a.nome || '').slice(0, 200)), mime: String(a.mime || '').slice(0, 120),
+                pdfUrl: /^\/uploads\/[\w.\-]+$/.test(String(a.pdfUrl || '')) ? a.pdfUrl : '', slidesExtraidos: Array.isArray(a.slidesExtraidos) ? a.slidesExtraidos.slice(0, 200).map(x => ({ titulo: String(x.titulo || '').slice(0, 300), texto: String(x.texto || '').slice(0, 3000), oculto: !!x.oculto })) : [] };
             limpo.texto = String(m.texto || '').slice(0, 60000);
         }
         return limpo;
@@ -8718,7 +8742,7 @@ function normalizarModulosMt(lista) {
 }
 function camposTreinamentoMt(b) {
     const d = {};
-    if (b.titulo !== undefined) d.titulo = String(b.titulo || '').trim().slice(0, 200);
+    if (b.titulo !== undefined) d.titulo = consertarAcentoMt(String(b.titulo || '').trim().slice(0, 200));
     if (b.objetivo !== undefined) d.objetivo = String(b.objetivo || '').trim().slice(0, 3000) || null;
     if (b.publico !== undefined) d.publico = PUBLICOS_MT.includes(b.publico) ? b.publico : 'todos';
     if (b.data_treinamento !== undefined) d.data_treinamento = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(String(b.data_treinamento || '')) ? b.data_treinamento : null;
@@ -8746,11 +8770,12 @@ app.get('/api/admin/treinamentos-mt', requireRole('admin'), async (req, res) => 
     try {
         const l = await dbAll(`SELECT t.*, c.name as companyName FROM treinamentos_mt t LEFT JOIN companies c ON c.id = t.company_id ORDER BY COALESCE(t.updated_at, t.created_at) DESC`);
         const checks = await resumoChecksMt(l.map(t => t.id));
+        const assin = {}; (await dbAll(`SELECT treinamento_id, COUNT(*) n FROM treinamentos_mt_presencas GROUP BY treinamento_id`)).forEach(r => { assin[r.treinamento_id] = r.n; });
         res.json(l.map(t => {
             let mods = []; try { mods = JSON.parse(t.modulos || '[]'); } catch (e) {}
             const nSlides = mods.reduce((s, m) => s + (m.tipo === 'slides' ? (m.slides || []).length : 1), 0);
             const { modulos, ...resto } = t;
-            return { ...resto, qtdModulos: mods.length, qtdSlides: nSlides, modulosResumo: mods.map(m => ({ titulo: m.titulo, tipo: m.tipo })), check: checks[t.id] || null };
+            return { ...resto, titulo: consertarAcentoMt(resto.titulo), qtdModulos: mods.length, qtdSlides: nSlides, modulosResumo: mods.map(m => ({ titulo: m.titulo, tipo: m.tipo })), check: checks[t.id] || null, assinaturas: assin[t.id] || 0 };
         }));
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar os treinamentos.' }); }
 });
@@ -8760,13 +8785,19 @@ app.get('/api/admin/treinamentos-mt/:id', requireRole('admin'), async (req, res)
         const t = await dbGet(`SELECT * FROM treinamentos_mt WHERE id = ?`, [req.params.id]);
         if (!t) return res.status(404).json({ error: 'Treinamento não encontrado.' });
         let modulos = []; try { modulos = JSON.parse(t.modulos || '[]'); } catch (e) {}
+        modulos.forEach(m => { m.titulo = consertarAcentoMt(m.titulo); if (m.arquivo) m.arquivo.nome = consertarAcentoMt(m.arquivo.nome); });
+        t.titulo = consertarAcentoMt(t.titulo);
         const ch = (await resumoChecksMt([t.id]))[t.id] || null;
         let check = null;
         if (ch) {
             const c = await dbGet(`SELECT * FROM treinamentos_mt_checks WHERE id = ?`, [ch.id]);
             check = { ...ch, perguntas: JSON.parse(c.perguntas || '[]'), gerado_por_ia: !!c.gerado_por_ia, link: `${baseUrlPublicaDpo(req)}/retencao.html?t=${c.token}` };
         }
-        res.json({ ...t, modulos, check });
+        const cfg = await lerConfigMt();
+        const tk = await garantirAtaTokenMt(t);
+        const nAss = await dbGet(`SELECT COUNT(*) n FROM treinamentos_mt_presencas WHERE treinamento_id = ?`, [t.id]);
+        res.json({ ...t, modulos, check, ata: { link: `${baseUrlPublicaDpo(req)}/assinatura.html?t=${tk}`, ativa: t.ata_ativa !== 0, assinaturas: nAss ? nAss.n : 0 },
+            divulgacao: { instagram: cfg.impulsionar_instagram || '', whatsapp: cfg.impulsionar_whatsapp || '', site: cfg.impulsionar_site || '' } });
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar o treinamento.' }); }
 });
 
@@ -8810,6 +8841,7 @@ app.delete('/api/admin/treinamentos-mt/:id', requireRole('admin'), async (req, r
         const checks = await dbAll(`SELECT id FROM treinamentos_mt_checks WHERE treinamento_id = ?`, [req.params.id]);
         for (const c of checks) await new Promise(r => db.run(`DELETE FROM treinamentos_mt_respostas WHERE check_id = ?`, [c.id], () => r()));
         await new Promise(r => db.run(`DELETE FROM treinamentos_mt_checks WHERE treinamento_id = ?`, [req.params.id], () => r()));
+        await new Promise(r => db.run(`DELETE FROM treinamentos_mt_presencas WHERE treinamento_id = ?`, [req.params.id], () => r()));
         await new Promise(r => db.run(`DELETE FROM treinamentos_mt WHERE id = ?`, [req.params.id], () => r()));
         res.json({ message: 'Treinamento excluído.' });
     } catch (e) { res.status(400).json({ error: 'Erro ao excluir.' }); }
@@ -8820,7 +8852,7 @@ app.post('/api/admin/treinamentos-mt/arquivo', requireRole('admin'), (req, res) 
     uploadMaterialDpo.single('file')(req, res, async (err) => {
         if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Arquivo muito grande (máximo 100MB).' : err.message });
         if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo recebido.' });
-        const nome = req.file.originalname || req.file.filename;
+        const nome = consertarAcentoMt(req.file.originalname || req.file.filename);
         const r = { url: '/uploads/' + req.file.filename, nome, mime: req.file.mimetype || '', pdfUrl: '', texto: '', slidesExtraidos: [] };
         try {
             if (/\.(pptx|docx)$/i.test(nome)) {
@@ -8836,14 +8868,134 @@ app.post('/api/admin/treinamentos-mt/arquivo', requireRole('admin'), (req, res) 
     });
 });
 
+// Check automático SEM IA: usa os tópicos dos slides. Pergunta: "Sobre <título>, qual
+// afirmação faz parte do treinamento?" — certa = um tópico do slide; erradas = tópicos
+// de outros slides, transformados em afirmações que NÃO são daquele assunto.
+function gerarCheckLocalMt(modulos, qtd, abertas) {
+    const slides = [];
+    modulos.filter(m => !m.oculto).forEach(m => {
+        const lista = m.tipo === 'slides' ? (m.slides || []) : ((m.arquivo && m.arquivo.slidesExtraidos) || []);
+        lista.filter(s => !s.oculto).forEach(s => {
+            const topicos = String(s.texto || '').split('\n').map(l => l.replace(/^\s*[•\-\*–]\s*/, '').trim()).filter(l => l.length >= 12 && l.length <= 220);
+            if (s.titulo && topicos.length) slides.push({ titulo: String(s.titulo).trim(), topicos });
+        });
+    });
+    if (!slides.length) return [];
+    const embaralhar = a => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+    const todos = slides.flatMap((s, i) => s.topicos.map(t => ({ t, i })));
+    const perguntas = [];
+    const ordem = embaralhar(slides.map((s, i) => i));
+    const nObj = Math.max(0, qtd - abertas);
+    for (const i of ordem) {
+        if (perguntas.length >= nObj) break;
+        const s = slides[i];
+        const certa = s.topicos[Math.floor(Math.random() * s.topicos.length)];
+        const erradas = embaralhar(todos.filter(x => x.i !== i && x.t !== certa)).slice(0, 3).map(x => x.t);
+        if (erradas.length < 2) continue;
+        const opcoes = embaralhar([certa, ...erradas]);
+        perguntas.push({ texto: `Sobre "${s.titulo}", qual destas afirmações foi apresentada no treinamento?`, tipo: 'multipla', opcoes, correta: opcoes.indexOf(certa) });
+    }
+    embaralhar(slides).slice(0, Math.max(abertas, perguntas.length ? 0 : Math.min(qtd, 5))).forEach(s => perguntas.push({ texto: `Com suas palavras: o que você vai aplicar no dia a dia sobre "${s.titulo}"?`, tipo: 'aberta', opcoes: [], correta: null }));
+    return perguntas.slice(0, qtd);
+}
+
+// Configurações do Ministrar Treinamento: redes da Impulsionar (aparecem no fim) e chave da IA.
+const CHAVES_CFG_MT = ['impulsionar_instagram', 'impulsionar_whatsapp', 'impulsionar_site', 'anthropic_api_key', 'anthropic_model'];
+async function lerConfigMt() {
+    const rows = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN (${CHAVES_CFG_MT.map(() => '?').join(',')})`, CHAVES_CFG_MT);
+    return Object.fromEntries(rows.map(r => [r.key, r.value || '']));
+}
+app.get('/api/admin/treinamentos-mt-config', requireRole('admin'), async (req, res) => {
+    try {
+        const c = await lerConfigMt();
+        res.json({ instagram: c.impulsionar_instagram || '', whatsapp: c.impulsionar_whatsapp || '', site: c.impulsionar_site || '',
+            iaAtiva: !!ANTHROPIC_API_KEY, iaOrigem: c.anthropic_api_key ? 'sistema' : (process.env.ANTHROPIC_API_KEY ? 'servidor' : ''), iaPreview: ANTHROPIC_API_KEY ? '••••' + ANTHROPIC_API_KEY.slice(-4) : '', modelo: ANTHROPIC_MODEL });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar as configurações.' }); }
+});
+app.put('/api/admin/treinamentos-mt-config', requireRole('admin'), async (req, res) => {
+    try {
+        const salvar = (k, v) => new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => ok()));
+        const insta = String(req.body.instagram || '').trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/\/$/, '').replace(/^@?/, '').slice(0, 60);
+        await salvar('impulsionar_instagram', insta ? '@' + insta : '');
+        await salvar('impulsionar_whatsapp', String(req.body.whatsapp || '').trim().slice(0, 30));
+        await salvar('impulsionar_site', String(req.body.site || '').trim().slice(0, 120));
+        let aviso = '';
+        if (req.body.chaveIa !== undefined && String(req.body.chaveIa).trim()) {
+            const chave = String(req.body.chaveIa).trim();
+            // Testa a chave antes de guardar.
+            const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': chave, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: ANTHROPIC_MODEL, max_tokens: 5, messages: [{ role: 'user', content: 'ok' }] }) }).catch(e => ({ ok: false, json: async () => ({ error: { message: e.message } }) }));
+            if (!r.ok) { const j = await r.json().catch(() => ({})); return res.status(400).json({ error: 'A chave da IA não funcionou: ' + ((j.error && j.error.message) || 'erro') + '. As redes foram salvas.' }); }
+            await salvar('anthropic_api_key', chave); ANTHROPIC_API_KEY = chave; aviso = ' IA conectada! ✅';
+        }
+        if (req.body.removerChaveIa) { await salvar('anthropic_api_key', ''); ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || ''; }
+        res.json({ message: 'Configurações salvas!' + aviso });
+    } catch (e) { res.status(400).json({ error: 'Erro ao salvar as configurações.' }); }
+});
+
+// ----- Ata de presença com assinatura (link público) -----
+async function garantirAtaTokenMt(t) {
+    if (t.ata_token) return t.ata_token;
+    const tk = 'at' + crypto.randomBytes(12).toString('hex');
+    await new Promise(ok => db.run(`UPDATE treinamentos_mt SET ata_token = ? WHERE id = ?`, [tk, t.id], () => ok()));
+    return tk;
+}
+app.get('/api/admin/treinamentos-mt/:id/ata', requireRole('admin'), async (req, res) => {
+    try {
+        const t = await dbGet(`SELECT * FROM treinamentos_mt WHERE id = ?`, [req.params.id]);
+        if (!t) return res.status(404).json({ error: 'Treinamento não encontrado.' });
+        const tk = await garantirAtaTokenMt(t);
+        const lista = await dbAll(`SELECT id, nome, matricula, cargo, empresa, assinatura, created_at FROM treinamentos_mt_presencas WHERE treinamento_id = ? ORDER BY created_at ASC, id ASC`, [t.id]);
+        res.json({ link: `${baseUrlPublicaDpo(req)}/assinatura.html?t=${tk}`, ativa: t.ata_ativa !== 0, presencas: lista });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar a ata.' }); }
+});
+app.put('/api/admin/treinamentos-mt/:id/ata', requireRole('admin'), async (req, res) => {
+    await new Promise(ok => db.run(`UPDATE treinamentos_mt SET ata_ativa = ? WHERE id = ?`, [req.body.ativa ? 1 : 0, req.params.id], () => ok()));
+    res.json({ message: req.body.ativa ? 'Ata aberta para assinaturas.' : 'Ata encerrada.' });
+});
+app.delete('/api/admin/treinamentos-mt/presencas/:pid', requireRole('admin'), async (req, res) => {
+    await new Promise(ok => db.run(`DELETE FROM treinamentos_mt_presencas WHERE id = ?`, [req.params.pid], () => ok()));
+    res.json({ message: 'Assinatura removida.' });
+});
+app.get('/api/public/ata/:token', async (req, res) => {
+    try {
+        const t = await dbGet(`SELECT t.*, c.name as companyName FROM treinamentos_mt t LEFT JOIN companies c ON c.id = t.company_id WHERE t.ata_token = ?`, [String(req.params.token || '')]);
+        if (!t) return res.status(404).json({ error: 'Ata não encontrada.' });
+        if (t.ata_ativa === 0) return res.status(410).json({ error: 'Esta ata já foi encerrada.' });
+        const ck = await dbGet(`SELECT token, ativo FROM treinamentos_mt_checks WHERE treinamento_id = ?`, [t.id]);
+        const cfg = await lerConfigMt();
+        res.json({ titulo: consertarAcentoMt(t.titulo), publico: ROTULOS_PUBLICO_MT[t.publico] || 'Todos', data: t.data_treinamento, instrutor: t.instrutor, local: t.local, empresa: t.companyName || '',
+            checkLink: ck && ck.ativo ? `/retencao.html?t=${ck.token}` : null, instagram: cfg.impulsionar_instagram || '', whatsapp: cfg.impulsionar_whatsapp || '' });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar a ata.' }); }
+});
+app.post('/api/public/ata/:token', async (req, res) => {
+    try {
+        const t = await dbGet(`SELECT * FROM treinamentos_mt WHERE ata_token = ?`, [String(req.params.token || '')]);
+        if (!t) return res.status(404).json({ error: 'Ata não encontrada.' });
+        if (t.ata_ativa === 0) return res.status(410).json({ error: 'Esta ata já foi encerrada.' });
+        const nome = String(req.body.nome || '').trim().slice(0, 120);
+        const assinatura = String(req.body.assinatura || '');
+        if (nome.length < 3) return res.status(400).json({ error: 'Informe seu nome completo.' });
+        if (!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(assinatura) || assinatura.length < 800) return res.status(400).json({ error: 'Faça sua assinatura no quadro.' });
+        if (assinatura.length > 400000) return res.status(400).json({ error: 'Assinatura muito grande, limpe e assine de novo.' });
+        const ja = await dbGet(`SELECT id FROM treinamentos_mt_presencas WHERE treinamento_id = ? AND lower(nome) = lower(?)`, [t.id, nome]);
+        if (ja) return res.status(400).json({ error: 'Esse nome já assinou a ata deste treinamento.' });
+        await new Promise((ok, ko) => db.run(`INSERT INTO treinamentos_mt_presencas (treinamento_id, nome, matricula, cargo, empresa, assinatura, ip) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [t.id, nome, String(req.body.matricula || '').trim().slice(0, 40) || null, String(req.body.cargo || '').trim().slice(0, 80) || null, String(req.body.empresa || '').trim().slice(0, 120) || null, assinatura, String(((req.headers || {})['x-forwarded-for']) || req.ip || '').split(',')[0].slice(0, 60)], e => e ? ko(e) : ok()));
+        res.json({ message: 'Presença assinada! Obrigado.' });
+    } catch (e) { res.status(400).json({ error: 'Erro ao registrar a assinatura.' }); }
+});
+
 // Monta o conteúdo do treinamento para a IA (texto + PDFs como documento).
 async function conteudoParaIaMt(t, modulos) {
     const blocos = [];
     let texto = `TREINAMENTO: ${t.titulo}\nPúblico: ${ROTULOS_PUBLICO_MT[t.publico] || 'Todos'}\n${t.objetivo ? 'Objetivo: ' + t.objetivo + '\n' : ''}`;
     let pdfs = 0, bytesPdf = 0;
     for (const [i, m] of modulos.entries()) {
+        if (m.oculto) continue;
         texto += `\n\n=== MÓDULO ${i + 1}: ${m.titulo} ===\n`;
-        if (m.tipo === 'slides') texto += (m.slides || []).map((s, j) => `Slide ${j + 1}: ${s.titulo}\n${s.texto}${s.notas ? '\n(Notas do instrutor: ' + s.notas + ')' : ''}`).join('\n\n');
+        if (m.tipo === 'arquivo' && m.arquivo && (m.arquivo.slidesExtraidos || []).length) { texto += m.arquivo.slidesExtraidos.filter(x => !x.oculto).map((x, j) => `Slide ${j + 1}: ${x.titulo}\n${x.texto}`).join('\n\n'); continue; }
+        if (m.tipo === 'slides') texto += (m.slides || []).filter(x => !x.oculto).map((s, j) => `Slide ${j + 1}: ${s.titulo}\n${s.texto}${s.notas ? '\n(Notas do instrutor: ' + s.notas + ')' : ''}`).join('\n\n');
         else if (m.texto) texto += m.texto;
         else if (m.arquivo && /\.pdf$/i.test(m.arquivo.pdfUrl || m.arquivo.url || '') && pdfs < 3) {
             const buf = await lerArquivoUploadMt(m.arquivo.pdfUrl || m.arquivo.url);
@@ -8868,12 +9020,14 @@ app.post('/api/admin/treinamentos-mt/:id/check/gerar', requireRole('admin'), asy
         const qtd = Math.max(3, Math.min(20, Number(req.body.qtd) || 8));
         const abertas = Math.max(0, Math.min(5, Number(req.body.abertas) || 0));
         const { blocos, texto } = await conteudoParaIaMt(t, modulos);
+        const local = () => {
+            const perguntas = gerarCheckLocalMt(modulos, qtd, abertas);
+            return perguntas.length ? { titulo: `Check de retenção — ${t.titulo}`, perguntas, gerado_por_ia: false } : null;
+        };
         if (!ANTHROPIC_API_KEY) {
-            // Sem IA: monta perguntas abertas a partir dos títulos dos slides/módulos.
-            const titulos = [];
-            modulos.forEach(m => { if (m.tipo === 'slides') (m.slides || []).forEach(s => s.titulo && titulos.push(s.titulo)); else titulos.push(m.titulo); });
-            const perguntas = titulos.slice(0, qtd).map(ti => ({ texto: `Explique com suas palavras o que aprendeu sobre: ${ti}`, tipo: 'aberta', opcoes: [], correta: null }));
-            return res.json({ perguntas, aviso: 'A IA não está configurada no servidor (ANTHROPIC_API_KEY). Gerei perguntas abertas pelos títulos — edite à vontade.' });
+            const l = local();
+            if (!l) return res.status(400).json({ error: 'Não achei texto suficiente nos módulos para montar o check. Adicione texto nos slides.' });
+            return res.json({ ...l, aviso: 'Check montado automaticamente pelo conteúdo dos slides (sem IA). Para a IA criar perguntas mais elaboradas, cadastre a chave em ⚙️ Configurações.' });
         }
         const sistema = 'Você é especialista em treinamento corporativo e cria checks de retenção (avaliação de aprendizagem) em português do Brasil, com linguagem simples adequada ao público. Baseie-se SOMENTE no conteúdo fornecido. Responda APENAS com JSON válido, sem texto fora do JSON.';
         const pedido = `${texto}\n\n---\nCrie um check de retenção com ${qtd} perguntas sobre os pontos mais importantes do treinamento acima${abertas ? `, sendo ${abertas} abertas (dissertativas curtas) e o restante de múltipla escolha` : ', todas de múltipla escolha'}.\nMúltipla escolha: 4 alternativas, só 1 correta, alternativas plausíveis e de tamanho parecido, sem "todas as anteriores".\nCubra todos os módulos. Formato exato:\n{"titulo":"Check de retenção — ...","perguntas":[{"texto":"...","tipo":"multipla","opcoes":["...","...","...","..."],"correta":0},{"texto":"...","tipo":"aberta"}]}`;
@@ -8888,9 +9042,13 @@ app.post('/api/admin/treinamentos-mt/:id/check/gerar', requireRole('admin'), asy
                     resposta = await perguntarIA(sistema, pedido, 4000);
                 } else throw new Error((j.error && j.error.message) || 'Erro na IA.');
             } else resposta = (j.content || []).map(b => b.text || '').join('\n');
-        } catch (e) { return res.status(400).json({ error: 'A IA não conseguiu gerar o check: ' + e.message }); }
+        } catch (e) {
+            const l = local();
+            if (l) return res.json({ ...l, aviso: `A IA não respondeu (${e.message}). Montei o check automaticamente pelo conteúdo dos slides — revise e salve. Confira a chave da IA em ⚙️ Configurações.` });
+            return res.status(400).json({ error: 'A IA não conseguiu gerar o check: ' + e.message });
+        }
         const ini = resposta.indexOf('{'), fim = resposta.lastIndexOf('}');
-        let obj; try { obj = JSON.parse(resposta.slice(ini, fim + 1)); } catch (e) { return res.status(400).json({ error: 'A IA respondeu num formato inesperado. Tente gerar de novo.' }); }
+        let obj; try { obj = JSON.parse(resposta.slice(ini, fim + 1)); } catch (e) { const l = local(); if (l) return res.json({ ...l, aviso: 'A IA respondeu num formato inesperado; montei o check pelo conteúdo dos slides.' }); return res.status(400).json({ error: 'A IA respondeu num formato inesperado. Tente gerar de novo.' }); }
         const perguntas = normalizarPerguntasCheckDpo(obj.perguntas || []);
         if (!perguntas.length) return res.status(400).json({ error: 'A IA não conseguiu montar perguntas com esse conteúdo. Adicione mais texto nos slides.' });
         res.json({ titulo: String(obj.titulo || `Check de retenção — ${t.titulo}`).slice(0, 200), perguntas, gerado_por_ia: true });
