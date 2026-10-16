@@ -20358,7 +20358,8 @@ function evDesenhar(tForcado, exportando) {
     });
     d.textos.slice().sort((a, b) => (a.camada || 0) - (b.camada || 0)).forEach(x => evDesenharTexto(ctx, x, t));
     // logo da marca
-    if (ex.logo && ex.logo.url && ex.logo.ativo !== false) {
+    // logo só aparece durante o vídeo se o usuário ligar; por padrão fica apenas na tela final
+    if (ex.logo && ex.logo.url && ex.logo.noVideo === true) {
       const img = evImagemCache(ex.logo.url);
       if (img) {
         const lw = W * (ex.logo.tam || 0.16), lh = lw * img.naturalHeight / img.naturalWidth, m = 40 * k, pos = ex.logo.pos || 'sd';
@@ -20369,13 +20370,13 @@ function evDesenhar(tForcado, exportando) {
         ctx.drawImage(img, x, y, lw, lh); ctx.restore();
       }
     }
-    if (ex.marca) { ctx.save(); ctx.globalAlpha = 0.75; ctx.fillStyle = '#fff'; ctx.font = `700 ${30 * k}px Montserrat, Arial`; ctx.textAlign = 'right'; ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 8 * k; ctx.fillText(ex.marca, W - 40 * k, H * (ES.p.formato === '9:16' ? 0.86 : 0.95)); ctx.restore(); }
+    if (ex.marca && ex.marcaNoVideo === true) { ctx.save(); ctx.globalAlpha = 0.75; ctx.fillStyle = '#fff'; ctx.font = `700 ${30 * k}px Montserrat, Arial`; ctx.textAlign = 'right'; ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 8 * k; ctx.fillText(ex.marca, W - 40 * k, H * (ES.p.formato === '9:16' ? 0.86 : 0.95)); ctx.restore(); }
   }
   if (ex.barra) { const tot = evTotal(); ctx.save(); ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(0, 0, W, 10 * k); ctx.fillStyle = ex.corBarra || '#dc4c4c'; ctx.fillRect(0, 0, W * Math.min(1, t / tot), 10 * k); ctx.restore(); }
   if (!exportando) {
     if (ES.zonaSegura && ES.p.formato === '9:16') {
       ctx.save(); ctx.fillStyle = 'rgba(220,76,76,.18)'; ctx.fillRect(0, 0, W, 250 * k); ctx.fillRect(0, H - 440 * k, W, 440 * k); ctx.fillRect(W - 140 * k, H - 1100 * k, 140 * k, 660 * k);
-      ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = `600 ${26 * k}px Poppins, Arial`; ctx.textAlign = 'center'; ctx.fillText('Área coberta pelo Instagram (evite texto aqui)', W / 2, 140 * k); ctx.fillText('Legenda, nome e botões do Instagram', W / 2, H - 220 * k); ctx.restore();
+      ctx.restore();
     }
     const s = ES.sel;
     if (s && s.tipo === 'texto' && ES.caixas[s.id]) { const b = ES.caixas[s.id]; ctx.save(); ctx.strokeStyle = '#4f7cff'; ctx.lineWidth = 4 * k; ctx.setLineDash([14 * k, 10 * k]); ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.restore(); }
@@ -20522,7 +20523,7 @@ async function evAbrirEditor(id) {
   d.extras = d.extras || {}; d.ajustes = d.ajustes || { brilho: 100, contraste: 100, saturacao: 100 }; d.filtro = d.filtro || 'nenhum'; d.transicao = d.transicao || 'corte';
   p.dados = d;
   const f = EV_FORMATOS[p.formato] || EV_FORMATOS['9:16'];
-  ES = { p, W: f.w, H: f.h, t: 0, tocando: false, sel: null, pxs: 60, hist: [], fut: [], sujo: false, painel: 'midia', zonaSegura: true, els: {}, aud: {}, caixas: {} };
+  ES = { p, W: f.w, H: f.h, t: 0, tocando: false, sel: null, pxs: 60, hist: [], fut: [], sujo: false, painel: 'midia', zonaSegura: false, els: {}, aud: {}, caixas: {} };
   evCarregarFontes();
   let el = document.getElementById('ev-editor');
   if (!el) { el = document.createElement('div'); el.id = 'ev-editor'; document.body.appendChild(el); }
@@ -21402,12 +21403,13 @@ function evPainelElementos() {
   el.innerHTML = `<h4>🏷️ Marca no vídeo</h4>
     <button class="ev-btn ia grande" onclick="evCarregarKit().then(k => evAplicarKit(k))">🏷️ Aplicar kit da marca</button>
     <div class="ev-logo-box">${lg.url ? `<img src="${escapeHtml(lg.url)}">` : '<span>Sem logo</span>'}<label class="ev-btn"><input type="file" accept="image/*" hidden onchange="evSubirLogo(this.files)">${lg.url ? 'Trocar logo' : '⬆️ Subir logo'}</label></div>
-    ${lg.url ? `<label class="ev-chk2"><input type="checkbox" ${lg.ativo !== false ? 'checked' : ''} onchange="evSetEx('logo.ativo', this.checked)"> Mostrar logo durante o vídeo</label>
+    ${lg.url ? `<label class="ev-chk2"><input type="checkbox" ${lg.noVideo === true ? 'checked' : ''} onchange="evSetEx('logo.noVideo', this.checked); evPainel('elementos')"> Mostrar logo também durante o vídeo <small style="opacity:.7">(padrão: só na tela final)</small></label>
     ${evCampo('Posição', `<div class="ev-chips">${[['se', '↖ Topo esq.'], ['sd', '↗ Topo dir.'], ['ie', '↙ Baixo esq.'], ['id', '↘ Baixo dir.']].map(([k, r]) => `<button class="${(lg.pos || 'sd') === k ? 'on' : ''}" onclick="evSetEx('logo.pos','${k}'); evPainel('elementos')">${r}</button>`).join('')}</div>`)}
     ${evCampo('Tamanho', `<input type="range" min="0.06" max="0.4" step="0.01" value="${lg.tam || 0.16}" oninput="evSetEx('logo.tam', Number(this.value), true)" onchange="evMudou(false)">`)}
     ${evCampo('Transparência', `<input type="range" min="0.2" max="1" step="0.05" value="${lg.opac !== undefined ? lg.opac : 0.9}" oninput="evSetEx('logo.opac', Number(this.value), true)" onchange="evMudou(false)">`)}
     <label class="ev-chk2"><input type="checkbox" ${lg.fundo !== false ? 'checked' : ''} onchange="evSetEx('logo.fundo', this.checked)"> Fundo branco atrás da logo</label>` : ''}
     <label>@ do Instagram <input value="${escapeHtml(ex.marca || '')}" placeholder="@impulsionarv4" onchange="ES.p.dados.extras.marca=this.value; evMudou(false); evDesenhar()"></label>
+    <label class="ev-chk2"><input type="checkbox" ${ex.marcaNoVideo === true ? 'checked' : ''} onchange="ES.p.dados.extras.marcaNoVideo=this.checked; evMudou(false); evDesenhar()"> Mostrar @ pequeno durante o vídeo <small style="opacity:.7">(padrão: só na tela final)</small></label>
     <label class="ev-chk2"><input type="checkbox" ${ex.barra ? 'checked' : ''} onchange="ES.p.dados.extras.barra=this.checked; evMudou(false); evDesenhar()"> Barra de progresso no topo</label>
     <label>Cor da barra <input type="color" value="${ex.corBarra || '#dc4c4c'}" onchange="ES.p.dados.extras.corBarra=this.value; evMudou(false); evDesenhar()"></label>
     <h4>🎬 Encerramento com a marca</h4>
@@ -21865,7 +21867,7 @@ async function evAbrirEdicaoCompleta() {
       ${op('ec-musica', '🎵 Música de fundo automática', 'Se o vídeo não tiver música, a IA escolhe o estilo e cria uma trilha sem direitos autorais que abaixa quando você fala.', true, !d.audios.length)}
       ${op('ec-voz', '🎙️ Voz limpa', 'Reduz ruído, iguala o volume e realça a voz (no vídeo exportado).', true, true)}
       ${op('ec-cor', '🎨 Cor e filtro automático', 'Corrige luz e cor.', true, true)}
-      ${op('ec-marca', '🏷️ Marca, barra de progresso e encerramento', 'Logo, @ e tela final.', true, true)}
+      ${op('ec-marca', '🏷️ Marca no encerramento', 'Logo e @ apenas na tela final — o vídeo fica limpo.', true, true)}
       ${op('ec-broll', '🧩 Outras mídias como cobertura (B-roll)', 'Coloca seus outros vídeos/fotos por cima em momentos-chave.', d.midias.filter(m => m.tipo !== 'audio').length > 1, false)}
     </div>
     <div class="ev-sub" style="margin:4px 0 6px;"><b>Cortes — só se você quiser:</b></div>
@@ -21953,7 +21955,7 @@ async function evEdicaoViral() {
     d.sobreposicoes = (d.sobreposicoes || []).filter(o => !o.auto);
     if (op.broll) { const outras = d.midias.filter(x => x.id !== m.id && (x.tipo === 'video' || x.tipo === 'imagem')); let k = 0; for (let tt = 6; tt < tot - 4 && k < outras.length * 2; tt += 8, k++) d.sobreposicoes.push({ id: evUid(), midia: outras[k % outras.length].id, ini: tt, dur: 2, corte: 0, vel: 1, vol: 0, layout: 'cheio', ajuste: 'cobrir', zoom: 1.08, auto: true }); }
     d.extras = d.extras || {}; if (op.voz) d.extras.vozLimpa = true;
-    if (op.marca) { evAplicarKit(await evCarregarKit(), true); d.extras.barra = true; }
+    if (op.marca) { evAplicarKit(await evCarregarKit(), true); }
     if (op.cor) { if (EV_FILTROS[plano.filtro]) d.filtro = plano.filtro; ES.ultimoEstado = JSON.stringify(d); evIrPara(Math.min(1, tot / 2)); await new Promise(r => setTimeout(r, 500)); const auto = evFiltroAutomatico(true); if (auto) d.ajustes = Object.assign({ brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 }, auto.opcoes[0].ajustes); }
     ES.hist.push(antes); ES.ultimoEstado = JSON.stringify(d); evMudou(true, true); evIrPara(0); evDesenharProps(); evCarregando(null);
     if (op.musica && !d.audios.length && plano.musica !== 'nenhuma') await evAdicionarTrilha(EV_TRILHAS[plano.musica] ? plano.musica : 'corporativo', true);

@@ -13053,6 +13053,7 @@ app.put('/api/admin/estudio/transcricao', requireRole('admin'), async (req, res)
     if (req.body.remover) { await salvar('transcricao_chave', ''); return res.json({ message: 'Transcrição desconectada.' }); }
     const chave = String(req.body.chave || '').trim();
     if (/^sk-ant-/.test(chave)) return res.status(400).json({ error: 'Essa é a chave da Anthropic (Claude). Para as legendas da fala é preciso uma chave da OpenAI (começa com sk-) ou da Groq (começa com gsk_).' });
+    if (/^key_/.test(chave)) return res.status(400).json({ error: 'Esse é só o identificador da chave (key_...), não a chave secreta. Na OpenAI, clique em "Create new secret key" e copie a chave que começa com sk-proj- (ela aparece uma única vez).' });
     if (chave.length < 20) return res.status(400).json({ error: 'Cole a chave da OpenAI (sk-...) ou da Groq (gsk_...).' });
     const provedor = /^gsk_/.test(chave) ? 'groq' : 'openai';
     try {
