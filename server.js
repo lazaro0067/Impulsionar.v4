@@ -395,6 +395,14 @@ async function avisarGestoresPorWhatsApp(texto) {
 // ANTHROPIC_API_KEY no .env. Sem ela, os recursos de IA respondem com um erro
 // amigável em vez de derrubar o servidor.
 let ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
+// Chaves pessoais (sk-ant-usr-...) não pertencem a um workspace: precisam do ID do workspace em cada chamada.
+let ANTHROPIC_WORKSPACE_ID = process.env.ANTHROPIC_WORKSPACE_ID || '';
+function cabecalhosIA(chave, workspace) {
+    const h = { 'x-api-key': chave || ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' };
+    const ws = workspace !== undefined ? workspace : ANTHROPIC_WORKSPACE_ID;
+    if (ws) h['anthropic-workspace-id'] = ws;
+    return h;
+}
 let ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
 if (!ANTHROPIC_API_KEY) {
     console.warn('⚠️  ANTHROPIC_API_KEY não definido no .env — o Assistente de IA fica desativado até configurar.');
@@ -406,11 +414,7 @@ async function perguntarIA(promptSistema, promptUsuario, maxTokens = 600) {
     if (!ANTHROPIC_API_KEY) throw new Error('Assistente de IA ainda não foi configurado no servidor (defina ANTHROPIC_API_KEY no .env).');
     const resposta = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: {
-            'x-api-key': ANTHROPIC_API_KEY,
-            'anthropic-version': '2023-06-01',
-            'Content-Type': 'application/json'
-        },
+        headers: cabecalhosIA(),
         body: JSON.stringify({
             model: ANTHROPIC_MODEL,
             max_tokens: maxTokens,
@@ -570,9 +574,9 @@ function inicializarBase() {
             value TEXT
         )`);
         // Chave/modelo da IA salvos pelo Master (Ministrar Treinamento > Configurações) têm prioridade sobre o .env.
-        db.all(`SELECT key, value FROM integration_settings WHERE key IN ('anthropic_api_key', 'anthropic_model')`, [], (err, rows) => {
+        db.all(`SELECT key, value FROM integration_settings WHERE key IN ('anthropic_api_key', 'anthropic_model', 'anthropic_workspace_id')`, [], (err, rows) => {
             if (err || !rows) return;
-            rows.forEach(r => { if (r.key === 'anthropic_api_key' && r.value) ANTHROPIC_API_KEY = r.value; if (r.key === 'anthropic_model' && r.value) ANTHROPIC_MODEL = r.value; });
+            rows.forEach(r => { if (r.key === 'anthropic_api_key' && r.value) ANTHROPIC_API_KEY = r.value; if (r.key === 'anthropic_model' && r.value) ANTHROPIC_MODEL = r.value; if (r.key === 'anthropic_workspace_id' && r.value) ANTHROPIC_WORKSPACE_ID = r.value; });
         });
         db.all(`SELECT key, value FROM integration_settings WHERE key IN ('email_api_provedor', 'email_api_chave', 'email_api_remetente')`, [], (err, rows) => {
             if (err || !rows || !rows.length) return;
@@ -9279,8 +9283,9 @@ app.put('/api/admin/treinamentos-mt-config', requireRole('admin'), async (req, r
         let aviso = '';
         if (req.body.chaveIa !== undefined && String(req.body.chaveIa).trim()) {
             const chave = String(req.body.chaveIa).trim();
+            const wsTeste = String(req.body.workspaceIa || '').trim() || ANTHROPIC_WORKSPACE_ID;
             // Testa a chave antes de guardar.
-            const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': chave, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+            const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: cabecalhosIA(chave, wsTeste),
                 body: JSON.stringify({ model: ANTHROPIC_MODEL, max_tokens: 5, messages: [{ role: 'user', content: 'ok' }] }) }).catch(e => ({ ok: false, json: async () => ({ error: { message: e.message } }) }));
             if (!r.ok) { const j = await r.json().catch(() => ({})); return res.status(400).json({ error: 'A chave da IA não funcionou: ' + ((j.error && j.error.message) || 'erro') + '. As redes foram salvas.' }); }
             await salvar('anthropic_api_key', chave); ANTHROPIC_API_KEY = chave; CHAVE_IA_RECUSADA_MT = ''; aviso = ' IA conectada! ✅';
@@ -9332,7 +9337,7 @@ function padronizarLocalMt(slides) {
 }
 async function iaJsonMt(sistema, pedido, maxTokens) {
     if (!iaDisponivelMt()) { const e = new Error('A IA ainda não está configurada. Cadastre a chave em ⚙️ Configurações (Ministrar Treinamento).'); e.semIa = true; throw e; }
-    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: cabecalhosIA(),
         body: JSON.stringify({ model: ANTHROPIC_MODEL, max_tokens: maxTokens || 8000, system: sistema, messages: [{ role: 'user', content: pedido }] }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) {
@@ -9379,7 +9384,7 @@ async function iaPesquisarMt(sistema, pedido, maxTokens, comWeb) {
     const chamar = async (mensagens, usarWeb) => {
         const corpo = { model: ANTHROPIC_MODEL, max_tokens: maxTokens || 16000, system: sistema, messages: mensagens };
         if (usarWeb) corpo.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 8, user_location: { type: 'approximate', country: 'BR', timezone: 'America/Sao_Paulo' } }];
-        const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+        const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: cabecalhosIA(), body: JSON.stringify(corpo) });
         const j = await r.json().catch(() => ({}));
         if (!r.ok) {
             if (r.status === 401 || r.status === 403) { CHAVE_IA_RECUSADA_MT = ANTHROPIC_API_KEY; const e = new Error('A chave da IA cadastrada não é válida. Cadastre uma chave nova.'); e.semIa = true; throw e; }
@@ -9453,12 +9458,18 @@ async function pesquisarWikipediaMt(tema, maxSlides) {
 app.post('/api/admin/treinamentos-mt-config/ia', requireRole('admin'), async (req, res) => {
     try {
         const chave = String(req.body.chave || '').trim();
+        const wsTeste = String(req.body.workspace || '').trim();
         if (!/^sk-ant-/.test(chave)) return res.status(400).json({ error: 'Essa não parece uma chave da Anthropic (começa com "sk-ant-").' });
-        const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': chave, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+        const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: cabecalhosIA(chave, wsTeste),
             body: JSON.stringify({ model: ANTHROPIC_MODEL, max_tokens: 5, messages: [{ role: 'user', content: 'ok' }] }) }).catch(e => ({ ok: false, json: async () => ({ error: { message: e.message } }) }));
-        if (!r.ok) { const j = await r.json().catch(() => ({})); return res.status(400).json({ error: 'A chave não funcionou: ' + ((j.error && j.error.message) || 'erro') }); }
-        await new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES ('anthropic_api_key', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [chave], () => ok()));
-        ANTHROPIC_API_KEY = chave; CHAVE_IA_RECUSADA_MT = '';
+        if (!r.ok) {
+            const j = await r.json().catch(() => ({})); const msg = (j.error && j.error.message) || 'erro';
+            if (/workspace/i.test(msg)) return res.status(400).json({ precisaWorkspace: true, error: wsTeste ? 'O ID do workspace não foi aceito: confira se copiou certo (console.anthropic.com › Settings › Workspaces).' : 'Essa chave é pessoal (sk-ant-usr-…) e precisa do ID do workspace. Cole o ID no campo que apareceu e clique em Conectar IA de novo.' });
+            return res.status(400).json({ error: 'A chave não funcionou: ' + msg });
+        }
+        const salvarCfg = (k, v) => new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => ok()));
+        await salvarCfg('anthropic_api_key', chave); await salvarCfg('anthropic_workspace_id', wsTeste);
+        ANTHROPIC_API_KEY = chave; ANTHROPIC_WORKSPACE_ID = wsTeste; CHAVE_IA_RECUSADA_MT = '';
         res.json({ message: 'IA conectada! ✅', iaAtiva: true });
     } catch (e) { res.status(500).json({ error: 'Erro ao salvar a chave.' }); }
 });
@@ -9706,7 +9717,7 @@ app.post('/api/admin/treinamentos-mt/:id/check/gerar', requireRole('admin'), asy
         const conteudo = [...blocos, { type: 'text', text: pedido }];
         let resposta;
         try {
-            const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+            const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: cabecalhosIA(),
                 body: JSON.stringify({ model: ANTHROPIC_MODEL, max_tokens: 4000, system: sistema, messages: [{ role: 'user', content: conteudo }] }) });
             const j = await r.json();
             if (!r.ok) {
