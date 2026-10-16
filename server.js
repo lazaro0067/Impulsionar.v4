@@ -12928,10 +12928,26 @@ app.post('/api/admin/estudio/avatares', requireRole('admin'), (req, res) => {
 app.delete('/api/admin/estudio/avatares/:id', requireRole('admin'), (req, res) => db.run(`DELETE FROM estudio_avatares WHERE id = ?`, [req.params.id], () => res.json({ ok: true })));
 // ----- D-ID: transforma a foto num vídeo da pessoa falando o roteiro -----
 async function chaveDidEst() { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'did_api_key'`).catch(() => null); return (r && r.value) || process.env.DID_API_KEY || ''; }
-function authDidEst(chave) { return 'Basic ' + (chave.includes(':') && !/^[A-Za-z0-9+/=]+$/.test(chave) ? Buffer.from(chave).toString('base64') : chave); }
+// A chave do D-ID vem como "usuario:senha". Algumas contas aceitam a chave como está,
+// outras exigem em base64 — testamos os dois jeitos e guardamos o que funcionou.
+let MODO_AUTH_DID = '';
+function authDidEst(chave, modo) {
+    const m = modo || MODO_AUTH_DID || 'cru';
+    return 'Basic ' + (m === 'b64' ? Buffer.from(chave).toString('base64') : chave);
+}
+async function testarDidEst(chave) {
+    let ultimo = null;
+    for (const modo of ['cru', 'b64']) {
+        const r = await fetch('https://api.d-id.com/credits', { headers: { Authorization: authDidEst(chave, modo) } });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok) { MODO_AUTH_DID = modo; return { ok: true, j, modo }; }
+        ultimo = { ok: false, j, status: r.status };
+    }
+    return ultimo;
+}
 app.get('/api/admin/estudio/provedor-video', requireRole('admin'), async (req, res) => {
     const chave = await chaveDidEst(); if (!chave) return res.json({ configurado: false });
-    try { const r = await fetch('https://api.d-id.com/credits', { headers: { Authorization: authDidEst(chave) } }); const j = await r.json().catch(() => ({})); res.json({ configurado: r.ok, creditos: j.remaining, erro: r.ok ? '' : ((j && (j.description || j.message)) || 'chave recusada') }); }
+    try { const t = await testarDidEst(chave); res.json({ configurado: t.ok, creditos: t.j && t.j.remaining, erro: t.ok ? '' : ((t.j && (t.j.description || t.j.message)) || 'chave recusada') }); }
     catch (e) { res.json({ configurado: true }); }
 });
 app.put('/api/admin/estudio/provedor-video', requireRole('admin'), async (req, res) => {
@@ -12939,10 +12955,11 @@ app.put('/api/admin/estudio/provedor-video', requireRole('admin'), async (req, r
     const salvar = v => new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES ('did_api_key', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [v], () => ok()));
     if (req.body.remover) { await salvar(''); return res.json({ message: 'D-ID desconectado.' }); }
     if (chave.length < 10) return res.status(400).json({ error: 'Cole a API Key do D-ID.' });
+    if (/^sk-ant-/.test(chave)) return res.status(400).json({ error: 'Essa é a chave da Anthropic (Claude), não do D-ID. Ela vai no campo "IA desconectada" em Estúdio de Vídeo › Agente Viral. A do D-ID você pega em studio.d-id.com › API Keys.' });
     try {
-        const r = await fetch('https://api.d-id.com/credits', { headers: { Authorization: authDidEst(chave) } });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok) return res.status(400).json({ error: 'A chave do D-ID não funcionou: ' + ((j && (j.description || j.message || j.kind)) || r.status) });
+        const t = await testarDidEst(chave);
+        if (!t.ok) return res.status(400).json({ error: 'O D-ID recusou a chave (' + ((t.j && (t.j.description || t.j.message || t.j.kind)) || t.status) + '). Confira se copiou a API Key inteira em studio.d-id.com › API Keys (formato usuario:senha) e se a conta está ativa.' });
+        const j = t.j || {};
         await salvar(chave); res.json({ message: `D-ID conectado! ✅${j.remaining !== undefined ? ' (' + j.remaining + ' créditos)' : ''}` });
     } catch (e) { res.status(400).json({ error: 'Não consegui falar com o D-ID: ' + e.message }); }
 });
@@ -12950,6 +12967,7 @@ const JOBS_AVATAR_EST = new Map(); // id -> { status, url, duracao, erro }
 app.post('/api/admin/estudio/avatar-video', requireRole('admin'), async (req, res) => {
     const b = req.body || {};
     const chave = await chaveDidEst(); if (!chave) return res.status(400).json({ error: 'Conecte o D-ID para gerar a pessoa falando.' });
+    if (!MODO_AUTH_DID) { try { await testarDidEst(chave); } catch (e) {} }
     const av = await dbGet(`SELECT * FROM estudio_avatares WHERE id = ?`, [b.avatarId]).catch(() => null);
     if (!av) return res.status(404).json({ error: 'Avatar não encontrado.' });
     const texto = String(b.texto || '').trim().slice(0, 4500); if (texto.length < 5) return res.status(400).json({ error: 'Roteiro vazio.' });

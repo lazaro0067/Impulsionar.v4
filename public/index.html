@@ -21426,6 +21426,8 @@ async function evNovoAvatar(files) {
 }
 async function evExcluirAvatar(id) { if (!confirm('Excluir este avatar?')) return; try { await api('/api/admin/estudio/avatares/' + id, { method: 'DELETE' }); if (EVIA.avatar === id) EVIA.avatar = null; evAbrirCriarVideoIa(); } catch (e) { mostrarToast(e.message, true); } }
 async function evConectarDid() {
+  const v = (document.getElementById('evia-did') || {}).value || '';
+  if (/^sk-ant-/.test(v.trim())) return mostrarToast('Essa é a chave da Anthropic (Claude), não do D-ID. Cole ela em Estúdio de Vídeo › Agente Viral, no aviso "IA desconectada".', true);
   try { const r = await api('/api/admin/estudio/provedor-video', { method: 'PUT', body: JSON.stringify({ chave: document.getElementById('evia-did').value }) }); mostrarToast(r.message); evAbrirCriarVideoIa(); } catch (e) { mostrarToast(e.message, true); }
 }
 function evCarregandoGlobal(msg) { if (ES) return evCarregando(msg); let o = document.getElementById('ev-carregando'); if (!msg) { if (o) o.remove(); return; } if (!o) { o = document.createElement('div'); o.id = 'ev-carregando'; o.className = 'ev-carregando'; document.body.appendChild(o); } o.innerHTML = `<div><div class="ev-spin"></div><b>${escapeHtml(msg)}</b></div>`; }
