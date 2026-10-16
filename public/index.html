@@ -1133,7 +1133,7 @@
   body.ev-aberto { overflow:hidden; }
   body.ev-aberto .toast { z-index:10050; }
   #ev-editor { --e-bg:#0d1017; --e-sup:#161b26; --e-sup2:#1e2533; --e-bd:#2a3244; --e-tx:#e6eaf2; --e-sub:#8f9ab0; --e-az:#4f7cff; --e-vm:#dc4c4c;
-    position:fixed; inset:0; z-index:9990; background:var(--e-bg); color:var(--e-tx); display:grid; grid-template-rows:52px 1fr 230px; font-family:'Segoe UI',system-ui,Arial,sans-serif; }
+    position:fixed; inset:0; z-index:9990; background:var(--e-bg); color:var(--e-tx); display:grid; grid-template-rows:52px minmax(0,1fr) 230px; grid-template-columns:minmax(0,1fr); overflow:hidden; font-family:'Segoe UI',system-ui,Arial,sans-serif; }
   #ev-editor button { font-family:inherit; }
   #ev-editor input, #ev-editor select, #ev-editor textarea { background:var(--e-bg); color:var(--e-tx); border:1px solid var(--e-bd); border-radius:8px; padding:7px 9px; font-size:13px; margin:0; width:100%; font-family:inherit; box-sizing:border-box; }
   #ev-editor input[type=checkbox], #ev-editor input[type=radio] { width:auto; }
@@ -1146,7 +1146,7 @@
   #ev-editor .ev-sel { width:auto; }
   .ev-salvo { font-size:12px; color:var(--e-sub); } .ev-salvo.pend { color:#fbbf24; }
   .ev-score { border:none; border-radius:20px; padding:6px 14px; font-weight:700; cursor:pointer; color:#fff; font-size:13px; } .ev-score.bom { background:#15803d; } .ev-score.medio { background:#b45309; } .ev-score.baixo { background:#b91c1c; }
-  .ev-corpo { display:grid; grid-template-columns:330px 1fr 300px; min-height:0; }
+  .ev-corpo { display:grid; grid-template-columns:330px minmax(0,1fr) 300px; min-height:0; min-width:0; overflow:hidden; }
   .ev-esq { display:flex; min-height:0; border-right:1px solid var(--e-bd); background:var(--e-sup); }
   .ev-abas { display:flex; flex-direction:column; width:66px; border-right:1px solid var(--e-bd); padding-top:6px; flex-shrink:0; }
   .ev-abas button { background:none; border:none; color:var(--e-sub); padding:9px 2px; font-size:10.5px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; border-left:3px solid transparent; }
@@ -1181,8 +1181,8 @@
   .ev-painel label:not(.ev-up):not(.ev-campo):not(.ev-slider):not(.ev-chk2) { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12.5px; margin:7px 0; } .ev-painel label input:not([type=checkbox]):not([type=color]) { width:60%; }
   .ev-chk2 { display:flex !important; align-items:center; gap:7px; font-size:12.5px; margin:7px 0; cursor:pointer; justify-content:flex-start !important; }
   .ev-centro { display:flex; flex-direction:column; min-width:0; min-height:0; background:#07090d; }
-  .ev-palco { flex:1; display:flex; align-items:center; justify-content:center; padding:14px; min-height:0; position:relative; }
-  .ev-palco canvas { max-width:100%; max-height:100%; border-radius:6px; box-shadow:0 10px 40px rgba(0,0,0,.6); cursor:pointer; background:#000; }
+  .ev-palco { flex:1; display:flex; align-items:center; justify-content:center; padding:14px; min-height:0; min-width:0; position:relative; overflow:hidden; }
+  .ev-palco canvas { flex:none; border-radius:6px; box-shadow:0 10px 40px rgba(0,0,0,.6); cursor:pointer; background:#000; }
   .ev-dica { position:absolute; top:16px; left:50%; transform:translateX(-50%); background:rgba(22,27,38,.95); border:1px solid var(--e-bd); padding:9px 14px; border-radius:10px; font-size:13px; max-width:80%; text-align:center; }
   .ev-play { display:flex; align-items:center; justify-content:center; gap:10px; padding:8px; border-top:1px solid var(--e-bd); background:var(--e-sup); }
   .ev-play button { background:none; border:none; color:var(--e-tx); font-size:17px; cursor:pointer; } .ev-play-btn { width:40px; height:40px; border-radius:50% !important; background:#fff !important; color:#000 !important; font-size:16px !important; }
@@ -1192,7 +1192,8 @@
   .ev-campo { display:block; margin:9px 0; font-size:12.5px; } .ev-campo > span { display:block; color:var(--e-sub); margin-bottom:4px; } .ev-campo > span b { float:right; color:var(--e-tx); font-weight:500; }
   .ev-dupla { display:flex; gap:6px; } .ev-cores { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; } .ev-cores .ev-campo { margin:4px 0; }
   .ev-mini { background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:6px; font-size:11px; padding:3px 6px; cursor:pointer; margin-left:4px; }
-  .ev-linha { display:flex; flex-direction:column; border-top:1px solid var(--e-bd); background:var(--e-sup); min-height:0; }
+  .ev-linha { display:flex; flex-direction:column; border-top:1px solid var(--e-bd); background:var(--e-sup); min-height:0; min-width:0; }
+  .ev-topo { min-width:0; overflow:hidden; }
   .ev-linha-barra { display:flex; align-items:center; gap:6px; padding:6px 10px; border-bottom:1px solid var(--e-bd); }
   .ev-linha-barra button { background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:6px; padding:5px 10px; font-size:12px; cursor:pointer; } .ev-linha-barra input[type=range] { width:140px !important; }
   .ev-linha-scroll { flex:1; overflow:auto; position:relative; }
@@ -1278,7 +1279,7 @@
   .ev-modal input, .ev-modal select, .ev-modal textarea { background:#0d1017; color:#e6eaf2; border:1px solid #2a3244; border-radius:8px; padding:8px 10px; font-size:13px; width:100%; box-sizing:border-box; margin:0; font-family:inherit; }
   .ev-criar .ev-dupla > * { flex:1; }
   @media (max-width: 700px) { .ev-modos { grid-template-columns:1fr; } }
-  @media (max-width: 1100px) { .ev-corpo { grid-template-columns:280px 1fr; } .ev-dir { display:none; } }
+  @media (max-width: 1100px) { .ev-corpo { grid-template-columns:280px minmax(0,1fr); } .ev-dir { display:none; } }
   @media (max-width: 760px) { #ev-editor { grid-template-rows:52px 1fr 200px; } .ev-corpo { grid-template-columns:1fr; grid-template-rows:1fr 200px; } .ev-esq { order:2; } .ev-titulo, .ev-salvo, .ev-sel { display:none; } .ev-pub { grid-template-columns:1fr; } }
 </style>
 </head>
@@ -20542,6 +20543,9 @@ async function evAbrirEditor(id) {
     <div class="ev-export-ov" id="ev-export-ov" hidden><div class="ev-export-caixa"><div class="ev-export-tit">🎬 Exportando seu vídeo</div><div class="ev-export-sub">Mantenha esta aba aberta e na frente — o vídeo é renderizado em tempo real, em alta qualidade (${f.w}×${f.h}).</div><div class="ev-export-pista"><i id="ev-export-barra"></i></div><div id="ev-export-txt" class="ev-export-sub"></div><button onclick="evCancelarExport()">Cancelar</button></div></div>
     <div id="ev-modal"></div>`;
   ES.canvas = document.getElementById('ev-canvas'); ES.ctx = ES.canvas.getContext('2d');
+  // a prévia sempre cabe no espaço disponível, centralizada e no formato do projeto
+  if ('ResizeObserver' in window) { ES.obsPalco = new ResizeObserver(() => evAjustarPalco()); ES.obsPalco.observe(document.getElementById('ev-palco')); }
+  window.addEventListener('resize', evAjustarPalco); setTimeout(evAjustarPalco, 0);
   evLigarCanvas();
   document.addEventListener('keydown', evTeclas);
   evPainel('midia'); evDesenharProps(); evDesenharLinha(); evDesenhar(); evAtualizarCabeca(); evAtualizarScore();
@@ -20554,6 +20558,7 @@ async function evFechar() {
   evPausar();
   if (ES.sujo) await evSalvar(true).catch(() => {});
   clearInterval(ES.autosave);
+  if (ES.obsPalco) ES.obsPalco.disconnect(); window.removeEventListener('resize', evAjustarPalco);
   document.removeEventListener('keydown', evTeclas);
   Object.values(ES.els || {}).forEach(el => { try { el.pause && el.pause(); el.removeAttribute && el.removeAttribute('src'); } catch (e) {} });
   Object.values(ES.aud || {}).forEach(el => { try { el.pause(); el.removeAttribute('src'); } catch (e) {} });
@@ -20562,6 +20567,13 @@ async function evFechar() {
   const el = document.getElementById('ev-editor'); if (el) el.remove();
   document.body.classList.remove('ev-aberto');
   if (typeof renderEstudioVideo === 'function' && document.getElementById('ev-pagina')) renderEstudioVideo();
+}
+function evAjustarPalco() {
+  if (!ES || !ES.canvas) return;
+  const pal = document.getElementById('ev-palco'); if (!pal) return;
+  const w = Math.max(50, pal.clientWidth - 28), h = Math.max(50, pal.clientHeight - 28);
+  const esc = Math.min(w / ES.W, h / ES.H);
+  ES.canvas.style.width = Math.floor(ES.W * esc) + 'px'; ES.canvas.style.height = Math.floor(ES.H * esc) + 'px';
 }
 function evDica(txt) { const n = document.createElement('div'); n.className = 'ev-dica'; n.textContent = txt; document.getElementById('ev-palco').appendChild(n); setTimeout(() => n.remove(), 6000); }
 
@@ -20585,7 +20597,7 @@ async function evSalvar(silencioso) {
 }
 function evMudarFormato(f) {
   ES.p.formato = f; const F = EV_FORMATOS[f]; ES.W = F.w; ES.H = F.h; ES.canvas.width = F.w; ES.canvas.height = F.h;
-  ES.ctx = ES.canvas.getContext('2d'); evMudou();
+  ES.ctx = ES.canvas.getContext('2d'); evAjustarPalco(); evMudou();
 }
 
 // ---------- Interação no canvas: selecionar e arrastar textos ----------
