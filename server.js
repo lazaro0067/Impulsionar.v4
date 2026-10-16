@@ -12910,6 +12910,11 @@ app.post('/api/admin/estudio/ia/:acao', requireRole('admin'), async (req, res) =
             const modo = String(b.modo || 'motion');
             pedido = `${base}\nMODO: ${modo === 'avatar' ? 'uma pessoa (avatar) fala para a câmera o tempo todo — a "fala" de cada cena é exatamente o que ela vai dizer, natural e direta' : modo === 'meus' ? 'vídeo montado com filmagens da própria empresa — a "fala" vira legenda na tela' : 'vídeo animado sem pessoa (motion design): a "fala" aparece como legenda dinâmica e o "texto_tela" como título grande'}.\nCORES DA MARCA: ${(Array.isArray(b.cores) ? b.cores : []).join(', ') || '#0b1329, #dc4c4c'}\nCrie o roteiro completo de ~${duracao}s dividido em 5 a 10 cenas curtas. Cena 1 = gancho fortíssimo (até 2,5 s). Ritmo rápido, uma ideia por cena, final com CTA.\nPara cada cena: duracao (s), fala (frases curtas, linguagem falada), texto_tela (até 6 palavras, impacto), emoji (1, combinando com a cena), cor1 e cor2 (hex, para fundo animado, variando dentro da paleta da marca).\nJSON: {"titulo":"","cenas":[{"duracao":2.5,"fala":"","texto_tela":"","emoji":"","cor1":"#","cor2":"#"}],"cta":"texto curto da chamada final","legenda":"legenda do post com gancho na 1ª linha","hashtags":["#..."],"filtro":"vibrante","paleta":["#","#","#"]}`;
         }
+        else if (acao === 'cortes') {
+            max = 4000;
+            const segs = (Array.isArray(b.segmentos) ? b.segmentos : []).slice(0, 150).map(x => `[${x.id}] (${Number(x.dur || 0).toFixed(1)}s) ${String(x.texto || '(sem fala identificada)').slice(0, 300)}`).join('\n');
+            pedido = `${base}\nTRECHOS DE FALA DO VÍDEO (em ordem, já sem os silêncios):\n${segs}\n\nComo editor sênior de Reels, escolha os trechos que ficam (na ordem original): tire repetições, frases cortadas/erradas, gaguejadas, "é...", "tipo", começos fracos e tudo que não agrega. Comece pelo trecho mais forte possível. Mantenha o sentido. ${b.duracaoMax ? 'Duração máxima: ' + Number(b.duracaoMax) + 's.' : ''}\nCrie também: gancho (texto na tela dos 2 primeiros segundos, até 8 palavras), titulos (até 4 textos curtos para aparecer em momentos-chave, ligados ao id do trecho), cta (texto final curto), legenda do post (gancho na 1ª linha), 3 a 5 hashtags e o filtro ideal (nenhum, vibrante, cinema, quente, frio, suave, contraste).\nJSON: {"manter":[1,2,5],"gancho":"","titulos":[{"trecho":2,"texto":""}],"cta":"","legenda":"","hashtags":["#..."],"filtro":"vibrante","explicacao":"o que você cortou e por quê"}`;
+        }
         else if (acao === 'conversar') { const r = await iaEstudio(`${String(b.mensagem || '').slice(0, 4000)}`, { web, json: false, max: 4000 }); return res.json({ resposta: r.texto, fontes: r.fontes }); }
         else return res.status(400).json({ error: 'Ação de IA desconhecida.' });
         const out = await iaEstudio(pedido, { web, max });
@@ -13012,6 +13017,56 @@ app.post('/api/admin/estudio/avatar-video', requireRole('admin'), async (req, re
 app.get('/api/admin/estudio/avatar-video/:id', requireRole('admin'), (req, res) => {
     const j = JOBS_AVATAR_EST.get(String(req.params.id)); if (!j) return res.status(404).json({ error: 'Geração não encontrada.' });
     res.json(j);
+});
+
+// ----- Transcrição da fala (legendas automáticas): OpenAI Whisper ou Groq -----
+const uploadAudioEst = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
+async function cfgTranscricaoEst() {
+    const l = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN ('transcricao_chave','transcricao_provedor')`).catch(() => []);
+    const c = {}; l.forEach(r => { c[r.key] = r.value; });
+    const chave = c.transcricao_chave || process.env.OPENAI_API_KEY || '';
+    const provedor = c.transcricao_provedor || (/^gsk_/.test(chave) ? 'groq' : 'openai');
+    return { chave, provedor };
+}
+function urlTranscricaoEst(prov) { return prov === 'groq' ? 'https://api.groq.com/openai/v1/audio/transcriptions' : 'https://api.openai.com/v1/audio/transcriptions'; }
+async function transcreverEst(buf, nome, cfg) {
+    const fd = new FormData();
+    fd.append('file', new Blob([buf], { type: 'audio/wav' }), nome || 'audio.wav');
+    fd.append('model', cfg.provedor === 'groq' ? 'whisper-large-v3-turbo' : 'whisper-1');
+    fd.append('language', 'pt'); fd.append('response_format', 'verbose_json');
+    fd.append('timestamp_granularities[]', 'word'); fd.append('timestamp_granularities[]', 'segment');
+    const r = await fetch(urlTranscricaoEst(cfg.provedor), { method: 'POST', headers: { Authorization: 'Bearer ' + cfg.chave }, body: fd });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((j.error && j.error.message) || ('erro ' + r.status));
+    let palavras = (j.words || []).map(w => ({ w: String(w.word || '').trim(), ini: Number(w.start) || 0, fim: Number(w.end) || 0 })).filter(w => w.w);
+    if (!palavras.length && Array.isArray(j.segments)) j.segments.forEach(sg => { const ws = String(sg.text || '').trim().split(/\s+/).filter(Boolean); const d = (Number(sg.end) - Number(sg.start)) / Math.max(1, ws.length); ws.forEach((w, i) => palavras.push({ w, ini: Number(sg.start) + i * d, fim: Number(sg.start) + (i + 1) * d })); });
+    return { texto: j.text || palavras.map(p => p.w).join(' '), palavras };
+}
+app.get('/api/admin/estudio/transcricao', requireRole('admin'), async (req, res) => { const c = await cfgTranscricaoEst(); res.json({ configurado: !!c.chave, provedor: c.provedor, preview: c.chave ? '••••' + c.chave.slice(-4) : '' }); });
+app.put('/api/admin/estudio/transcricao', requireRole('admin'), async (req, res) => {
+    const salvar = (k, v) => new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => ok()));
+    if (req.body.remover) { await salvar('transcricao_chave', ''); return res.json({ message: 'Transcrição desconectada.' }); }
+    const chave = String(req.body.chave || '').trim();
+    if (/^sk-ant-/.test(chave)) return res.status(400).json({ error: 'Essa é a chave da Anthropic (Claude). Para as legendas da fala é preciso uma chave da OpenAI (começa com sk-) ou da Groq (começa com gsk_).' });
+    if (chave.length < 20) return res.status(400).json({ error: 'Cole a chave da OpenAI (sk-...) ou da Groq (gsk_...).' });
+    const provedor = /^gsk_/.test(chave) ? 'groq' : 'openai';
+    try {
+        // teste com 1 segundo de silêncio
+        const n = 16000, b = Buffer.alloc(44 + n * 2); b.write('RIFF', 0); b.writeUInt32LE(36 + n * 2, 4); b.write('WAVE', 8); b.write('fmt ', 12); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(16000, 24); b.writeUInt32LE(32000, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write('data', 36); b.writeUInt32LE(n * 2, 40);
+        await transcreverEst(b, 'teste.wav', { chave, provedor });
+        await salvar('transcricao_chave', chave); await salvar('transcricao_provedor', provedor);
+        res.json({ message: `Legendas automáticas conectadas (${provedor === 'groq' ? 'Groq' : 'OpenAI'})! ✅` });
+    } catch (e) { res.status(400).json({ error: 'A chave não funcionou: ' + e.message }); }
+});
+app.post('/api/admin/estudio/transcrever', requireRole('admin'), (req, res) => {
+    uploadAudioEst.single('file')(req, res, async (err) => {
+        if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Áudio muito longo para transcrever de uma vez (máx. ~13 min).' : err.message });
+        if (!req.file) return res.status(400).json({ error: 'Nenhum áudio recebido.' });
+        const cfg = await cfgTranscricaoEst();
+        if (!cfg.chave) return res.status(400).json({ error: 'Conecte as legendas automáticas (chave da OpenAI ou Groq) para transcrever a fala.', semTranscricao: true });
+        try { res.json(await transcreverEst(req.file.buffer, req.file.originalname, cfg)); }
+        catch (e) { res.status(400).json({ error: 'Transcrição: ' + e.message }); }
+    });
 });
 
 // ----- Instagram (Graph API) -----

@@ -1279,6 +1279,9 @@
   .ev-modal input, .ev-modal select, .ev-modal textarea { background:#0d1017; color:#e6eaf2; border:1px solid #2a3244; border-radius:8px; padding:8px 10px; font-size:13px; width:100%; box-sizing:border-box; margin:0; font-family:inherit; }
   .ev-criar .ev-dupla > * { flex:1; }
   @media (max-width: 700px) { .ev-modos { grid-template-columns:1fr; } }
+
+  .ev-checks { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0; } .ev-check2 { display:flex; gap:10px; align-items:flex-start; background:var(--e-sup2,#1e2533); border:1px solid var(--e-bd,#2a3244); border-radius:10px; padding:10px; cursor:pointer; font-size:12.5px; } .ev-check2 input { margin-top:3px; width:auto !important; } .ev-check2 b { display:block; font-size:13px; color:#fff; } .ev-check2 { color:#e6eaf2; margin:0; } .ev-check2 small { color:var(--e-sub,#8f9ab0); line-height:1.4; } .ev-check2.desl { opacity:.55; cursor:not-allowed; }
+  @media (max-width: 700px) { .ev-checks { grid-template-columns:1fr; } }
   @media (max-width: 1100px) { .ev-corpo { grid-template-columns:280px minmax(0,1fr); } .ev-dir { display:none; } }
   @media (max-width: 760px) { #ev-editor { grid-template-rows:52px 1fr 200px; } .ev-corpo { grid-template-columns:1fr; grid-template-rows:1fr 200px; } .ev-esq { order:2; } .ev-titulo, .ev-salvo, .ev-sel { display:none; } .ev-pub { grid-template-columns:1fr; } }
 </style>
@@ -20116,7 +20119,11 @@ function evCapturarSom(el, k) {
   ES.volAlvo = ES.volAlvo || {};
   const ligar = tr => {
     if (!tr || tr.kind !== 'audio' || tr.__ligado) return; tr.__ligado = true;
-    try { const src = ES.actx.createMediaStreamSource(new MediaStream([tr])); const g = ES.actx.createGain(); g.gain.value = ES.volAlvo[k] !== undefined ? ES.volAlvo[k] : 1; src.connect(g); g.connect(ES.mestre); ES.ganhos[k] = g; } catch (e) {}
+    try {
+      const src = ES.actx.createMediaStreamSource(new MediaStream([tr])); const g = ES.actx.createGain(); g.gain.value = ES.volAlvo[k] !== undefined ? ES.volAlvo[k] : 1;
+      if (/^[co]:/.test(k) && (ES.p.dados.extras || {}).vozLimpa) evCadeiaVoz(ES.actx, src, g); else src.connect(g);
+      g.connect(ES.mestre); ES.ganhos[k] = g;
+    } catch (e) {}
   };
   try {
     const s = el.captureStream ? el.captureStream() : el.mozCaptureStream ? el.mozCaptureStream() : null;
@@ -20777,6 +20784,9 @@ function evPainel(qual) {
       <button class="ev-btn" id="ev-btn-narrar" onclick="evNarrar()">🎙️ Gravar narração</button>
       <div class="ev-midias lista">${auds.map(m => `<div class="ev-aud"><span>🎵 ${escapeHtml(m.nome)} <small>${evFmtT(m.duracao)}</small></span><button onclick="evAdicionarAudio('${m.id}')" title="Adicionar">＋</button><button class="x" onclick="evRemoverMidia('${m.id}')">×</button></div>`).join('') || '<div class="ev-vazio">Nenhum áudio ainda.</div>'}</div>
       <div class="ev-dica-fixa">🔥 Áudios em alta aumentam o alcance. Use aqui uma trilha sua ou sem direitos autorais; para músicas em alta do Instagram, poste o vídeo sem música e escolha o áudio no próprio app (as músicas comerciais não podem ser embutidas no arquivo).</div>
+      <h4>🎙️ Voz limpa</h4>
+      <label class="ev-chk2"><input type="checkbox" ${(ES.p.dados.extras || {}).vozLimpa ? 'checked' : ''} onchange="ES.p.dados.extras.vozLimpa=this.checked; evMudou(false)"> Reduzir ruído grave/agudo, igualar volume e realçar a voz</label>
+      <div class="ev-sub">Aplicado no vídeo exportado (a prévia toca o som original).</div>
       <h4>Volume do som original</h4>
       <div class="ev-sub">Ajuste por clipe (selecione o clipe na linha do tempo) ou para todos:</div>
       <div class="ev-linha-btn"><button class="ev-btn" onclick="evVolumeTodos(1)">🔊 100%</button><button class="ev-btn" onclick="evVolumeTodos(0.3)">🔉 30%</button><button class="ev-btn" onclick="evVolumeTodos(0)">🔇 Mudo</button></div>`;
@@ -20995,8 +21005,9 @@ function evPainelIa() {
     <label class="ev-campo"><span>Sobre o que é o vídeo?</span><textarea id="ev-ia-tema" rows="3" placeholder="Ex.: como dar feedback sem desmotivar o time da operação">${escapeHtml(ES.iaTema || ES.p.titulo || '')}</textarea></label>
     <label class="ev-campo"><span>Objetivo</span><select id="ev-ia-obj">${['Alcance (viralizar)', 'Autoridade', 'Gerar clientes (leads)', 'Engajamento (comentários)', 'Divulgar treinamento/evento'].map(o => `<option>${o}</option>`).join('')}</select></label>
     <label class="ev-chk2"><input type="checkbox" id="ev-ia-web" checked> 🔎 Pesquisar tendências na internet</label>
-    <button class="ev-btn ia grande" onclick="evIaEditar()">✨ Editar com IA</button>
-    <div class="ev-sub">Monta a edição completa com suas mídias: ordem, cortes no ritmo certo, gancho, textos, CTA, filtro, transições e música.</div>
+    <button class="ev-btn ia grande" onclick="evAbrirEdicaoCompleta()">✨ Editar com IA (edição completa)</button>
+    <div class="ev-sub">Corta pausas e silêncios, gera as legendas da fala, limpa a voz, escolhe os melhores trechos, coloca gancho, títulos, CTA, cor, marca e cobertura — vídeo pronto para viralizar.</div>
+    <button class="ev-btn" style="width:100%;" onclick="evIaEditar()">⚡ Montagem rápida por ritmo (clipes e fotos)</button>
     <div class="ev-grade-ia">
       <button onclick="evIaGanchos()">🎯 Ganchos</button>
       <button onclick="evIaRoteiro()">📝 Roteiro</button>
@@ -21502,6 +21513,161 @@ async function evCriarVideoIa() {
     await evAbrirEditor(r.id);
     setTimeout(() => { evDica(`✅ Vídeo criado pela IA (${cenas.length} cenas). Dê o play ▶, ajuste e exporte.`); }, 600);
   } catch (e) { evCarregandoGlobal(null); mostrarToast(e.message, true); }
+}
+
+
+// ---------- Edição completa com IA: cortes de silêncio, legendas da fala, voz limpa e montagem viral ----------
+async function evDecodificarAudio(url) {
+  const buf = await fetch(url).then(r => { if (!r.ok) throw new Error('não consegui baixar a mídia'); return r.arrayBuffer(); });
+  const ac = new (window.AudioContext || window.webkitAudioContext)();
+  let dec; try { dec = await ac.decodeAudioData(buf); } finally { ac.close().catch(() => {}); }
+  // 16 kHz mono (padrão para análise e transcrição)
+  const off = new OfflineAudioContext(1, Math.max(1, Math.ceil(dec.duration * 16000)), 16000);
+  const src = off.createBufferSource(); src.buffer = dec; src.connect(off.destination); src.start();
+  const r = await off.startRendering();
+  return { amostras: r.getChannelData(0), taxa: 16000, duracao: dec.duration };
+}
+function evDetectarFala(a) {
+  const jan = Math.round(a.taxa * 0.02), n = Math.floor(a.amostras.length / jan), rms = new Float32Array(n);
+  for (let i = 0; i < n; i++) { let s = 0; for (let k = i * jan; k < (i + 1) * jan; k++) s += a.amostras[k] * a.amostras[k]; rms[i] = Math.sqrt(s / jan); }
+  const ord = Array.from(rms).sort((x, y) => x - y), piso = ord[Math.floor(n * 0.15)] || 0, pico = ord[Math.floor(n * 0.95)] || 0;
+  const lim = Math.max(0.008, piso * 2.5, pico * 0.08);
+  const segs = []; let ini = -1;
+  for (let i = 0; i < n; i++) { const fala = rms[i] > lim; if (fala && ini < 0) ini = i; if (!fala && ini >= 0) { segs.push([ini * 0.02, i * 0.02]); ini = -1; } }
+  if (ini >= 0) segs.push([ini * 0.02, n * 0.02]);
+  // junta pausas curtas (respiração) e descarta estalos
+  const juntos = [];
+  segs.forEach(sg => { const u = juntos[juntos.length - 1]; if (u && sg[0] - u[1] < 0.45) u[1] = sg[1]; else juntos.push(sg.slice()); });
+  const PAD = 0.12;
+  return juntos.filter(sg => sg[1] - sg[0] >= 0.3).map(sg => [Math.max(0, sg[0] - PAD), Math.min(a.duracao, sg[1] + PAD)]);
+}
+function evWav(a) {
+  const n = a.amostras.length, b = new ArrayBuffer(44 + n * 2), v = new DataView(b);
+  const ws = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+  ws(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); ws(8, 'WAVE'); ws(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, a.taxa, true); v.setUint32(28, a.taxa * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); ws(36, 'data'); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) { const x = Math.max(-1, Math.min(1, a.amostras[i])); v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7fff, true); }
+  return new Blob([b], { type: 'audio/wav' });
+}
+async function evAbrirEdicaoCompleta() {
+  const d = ES.p.dados, videos = d.midias.filter(m => m.tipo === 'video');
+  if (!d.midias.some(m => m.tipo !== 'audio')) return mostrarToast('Suba seus vídeos e fotos em 🎞️ Mídia primeiro.', true);
+  let tr = {}, ia = false; try { tr = await api('/api/admin/estudio/transcricao'); } catch (e) {} try { ia = !!(await api('/api/admin/treinamentos-mt-config')).iaAtiva; } catch (e) {}
+  const principal = videos.slice().sort((a, b) => (b.duracao || 0) - (a.duracao || 0))[0];
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal grande">
+    <div class="ev-modal-cab"><h3>✨ Edição completa com IA</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <div class="ev-sub" style="margin-top:0;">A IA trata o seu vídeo como um editor profissional e entrega ele pronto para postar. Você revisa e exporta.</div>
+    ${videos.length ? `<label class="ev-campo"><span>Vídeo principal (quem fala)</span><select id="ec-principal">${videos.map(v => `<option value="${v.id}" ${v.id === principal.id ? 'selected' : ''}>${escapeHtml(v.nome)} · ${evFmtT(v.duracao)}</option>`).join('')}</select></label>` : '<div class="ev-aviso">Não há vídeo com fala — vou fazer uma montagem com ritmo de Reels com as fotos.</div>'}
+    <div class="ev-checks">
+      ${[['ec-silencio', '✂️ Cortar silêncios, pausas e respirações longas', 'Deixa a fala corrida, no ritmo dos Reels (jump cut).', true, true],
+        ['ec-legendas', '💬 Legendas automáticas da fala', tr.configurado ? `Transcrição conectada (${tr.provedor === 'groq' ? 'Groq' : 'OpenAI'}).` : 'Precisa conectar a transcrição (abaixo).', !!tr.configurado, true],
+        ['ec-trechos', '🧠 IA escolhe os melhores trechos', ia ? 'Tira repetições, frases erradas, "é…", "tipo" e começos fracos.' : 'Precisa da IA (Claude) conectada em Agente Viral.', ia, ia && !!tr.configurado],
+        ['ec-voz', '🎙️ Voz limpa', 'Reduz ronco/zumbido grave, chiado agudo, iguala o volume e realça a voz (aplicado no vídeo exportado).', true, true],
+        ['ec-zoom', '🔍 Zoom dinâmico nos cortes', 'Alterna aproximação a cada corte para dar movimento.', true, true],
+        ['ec-texto', '🎯 Gancho, títulos e chamada final', 'Texto forte nos 2 primeiros segundos e CTA no fim.', true, true],
+        ['ec-cor', '🎨 Correção de cor e filtro automático', 'Analisa a imagem e corrige luz e cor.', true, true],
+        ['ec-marca', '🏷️ Marca, barra de progresso e encerramento', 'Logo, @ e tela final.', true, true],
+        ['ec-broll', '🧩 Outras mídias como cobertura (B-roll)', 'Usa os outros vídeos/fotos por cima da fala em momentos-chave.', true, d.midias.filter(m => m.tipo !== 'audio').length > 1]
+      ].map(([id, t, s, ok, marcado]) => `<label class="ev-check2 ${ok ? '' : 'desl'}"><input type="checkbox" id="${id}" ${marcado && ok ? 'checked' : ''} ${ok ? '' : 'disabled'}><div><b>${t}</b><small>${s}</small></div></label>`).join('')}
+    </div>
+    ${!tr.configurado ? `<div class="ev-aviso"><b>Para as legendas da fala</b> o sistema precisa transcrever o áudio. O Claude não transcreve áudio; use uma chave da <b>OpenAI</b> (platform.openai.com › API keys, começa com <code>sk-</code>) ou da <b>Groq</b> (console.groq.com › API Keys, começa com <code>gsk_</code> — mais barata).<div class="ev-dupla" style="margin-top:6px;"><input id="ec-chave-tr" type="password" placeholder="sk-... ou gsk_..."><button class="ev-btn" onclick="evConectarTranscricao()">Conectar</button></div></div>` : ''}
+    <label class="ev-campo"><span>Duração máxima (opcional, segundos)</span><input id="ec-max" type="number" min="5" max="180" placeholder="Ex.: 45 — deixe vazio para manter todo o conteúdo"></label>
+    <button class="ev-btn ia grande" onclick="evEdicaoCompleta()">✨ Editar agora</button>
+    <div class="ev-sub">Pode desfazer tudo com Ctrl+Z.</div>
+  </div></div>`;
+}
+async function evConectarTranscricao() {
+  try { const r = await api('/api/admin/estudio/transcricao', { method: 'PUT', body: JSON.stringify({ chave: document.getElementById('ec-chave-tr').value }) }); mostrarToast(r.message); evAbrirEdicaoCompleta(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function evEdicaoCompleta() {
+  const v = id => { const e = document.getElementById(id); return !!(e && e.checked && !e.disabled); };
+  const op = { silencio: v('ec-silencio'), legendas: v('ec-legendas'), trechos: v('ec-trechos'), voz: v('ec-voz'), zoom: v('ec-zoom'), texto: v('ec-texto'), cor: v('ec-cor'), marca: v('ec-marca'), broll: v('ec-broll') };
+  const max = Number((document.getElementById('ec-max') || {}).value) || 0;
+  const pid = (document.getElementById('ec-principal') || {}).value;
+  document.getElementById('ev-modal').innerHTML = '';
+  const d = ES.p.dados, m = pid ? evMidia(pid) : null;
+  if (!m) { // só fotos: montagem por ritmo
+    return evIaEditar();
+  }
+  const antes = JSON.stringify(d);
+  try {
+    evCarregando('🎧 Analisando o áudio do vídeo...');
+    const a = await evDecodificarAudio(m.url);
+    let segs = op.silencio ? evDetectarFala(a) : [[0, a.duracao]];
+    if (!segs.length) segs = [[0, a.duracao]];
+    // transcrição com tempo de cada palavra
+    let palavras = [];
+    if (op.legendas) {
+      evCarregando('📝 Transcrevendo a fala para as legendas...');
+      const fd = new FormData(); fd.append('file', evWav(a), 'fala.wav');
+      const r = await fetch('/api/admin/estudio/transcrever', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd }).then(x => x.json().then(j => ({ ok: x.ok, j })));
+      if (r.ok) palavras = r.j.palavras || []; else mostrarToast(r.j.error || 'Não consegui transcrever — sigo sem legendas da fala.', true);
+    }
+    const textoSeg = sg => palavras.filter(p => p.ini >= sg[0] - 0.05 && p.fim <= sg[1] + 0.05).map(p => p.w).join(' ');
+    let lista = segs.map((sg, i) => ({ id: i + 1, ini: sg[0], fim: sg[1], dur: sg[1] - sg[0], texto: textoSeg(sg) }));
+    let plano = {};
+    if (op.trechos || op.texto) {
+      evCarregando('🧠 O Agente está escolhendo os melhores trechos...');
+      try { plano = await api('/api/admin/estudio/ia/cortes', { method: 'POST', body: JSON.stringify(Object.assign(evIaBase(), { segmentos: lista.map(x => ({ id: x.id, dur: x.dur, texto: x.texto })), duracaoMax: max || undefined })) }); }
+      catch (e) { plano = {}; if (!/conectada/.test(e.message)) mostrarToast('IA: ' + e.message, true); }
+    }
+    if (op.trechos && Array.isArray(plano.manter) && plano.manter.length) { const ok = new Set(plano.manter.map(Number)); const f = lista.filter(x => ok.has(x.id)); if (f.length) lista = f; }
+    if (max) { let s = 0; lista = lista.filter(x => (s += x.dur) <= max + 0.5 || s - x.dur < 1); }
+    // monta a linha do tempo
+    evCarregando('🎬 Montando a edição...');
+    const W = m.w || 1080, H = m.h || 1920, horizontal = W > H && ES.p.formato === '9:16';
+    d.clips = []; let t = 0; const mapa = [];
+    lista.forEach((x, i) => {
+      d.clips.push({ id: evUid(), midia: m.id, ini: x.ini, fim: x.fim, vel: 1, vol: 1, zoom: op.zoom ? (i % 2 ? 1.14 : 1.0) : 1, ajuste: horizontal ? 'conter' : 'cobrir', transicao: 'corte' });
+      mapa.push({ a: x.ini, b: x.fim, T: t, id: x.id }); t += x.dur;
+    });
+    const paraTimeline = s => { const z = mapa.find(q => s >= q.a - 0.02 && s <= q.b + 0.02); return z ? z.T + Math.max(0, s - z.a) : null; };
+    d.textos = d.textos.filter(x => x.estilo === 'emoji');
+    // legendas palavra a palavra, no tempo exato da fala
+    if (palavras.length) {
+      let bloco = [];
+      const fechar = () => { if (!bloco.length) return; const ini = paraTimeline(bloco[0].ini), fim = paraTimeline(bloco[bloco.length - 1].fim); if (ini !== null && fim !== null && fim > ini) { const ws = bloco.map(p => p.w.replace(/^[,.]+/, '')); const maior = ws.reduce((mm, w, k) => w.replace(/[^\wÀ-ú]/g, '').length > ws[mm].replace(/[^\wÀ-ú]/g, '').length ? k : mm, 0); if (ws[maior].replace(/[^\wÀ-ú]/g, '').length >= 5) ws[maior] = ws[maior].toUpperCase(); d.textos.push({ id: evUid(), texto: ws.join(' '), ini, dur: Math.max(0.35, fim - ini + 0.05), estilo: 'legenda', x: 0.5, y: EV_ESTILOS.legenda.y }); } bloco = []; };
+      palavras.forEach(p => { if (paraTimeline(p.ini) === null) { fechar(); return; } const u = bloco[bloco.length - 1]; if (bloco.length >= 4 || (u && (paraTimeline(p.ini) - paraTimeline(u.fim) > 0.4 || /[.!?]$/.test(u.w)))) fechar(); bloco.push(p); });
+      fechar();
+    }
+    if (op.texto) {
+      const tema = ES.iaTema || ES.p.titulo;
+      d.textos.push({ id: evUid(), texto: plano.gancho || EV_GANCHOS_LOCAIS(tema)[0], ini: 0, dur: Math.min(2.6, t), estilo: 'gancho', x: 0.5, y: EV_ESTILOS.gancho.y });
+      (plano.titulos || []).forEach(ti => { const z = mapa.find(q => q.id === Number(ti.trecho)); if (z && z.T > 2.5) d.textos.push({ id: evUid(), texto: String(ti.texto || ''), ini: z.T, dur: Math.min(2.5, z.b - z.a), estilo: 'apoio', x: 0.5, y: 0.22 }); });
+      d.textos.push({ id: evUid(), texto: plano.cta || 'Salve e compartilhe com seu time 📌', ini: Math.max(0, t - 2.6), dur: 2.6, estilo: 'cta', x: 0.5, y: palavras.length ? 0.5 : EV_ESTILOS.cta.y });
+    }
+    // cobertura (B-roll) com as outras mídias
+    d.sobreposicoes = (d.sobreposicoes || []).filter(o => !o.auto);
+    if (op.broll) {
+      const outras = d.midias.filter(x => x.id !== m.id && (x.tipo === 'video' || x.tipo === 'imagem'));
+      let k = 0; for (let tt = 5; tt < t - 4 && k < outras.length * 2; tt += 7, k++) { const o = outras[k % outras.length]; d.sobreposicoes.push({ id: evUid(), midia: o.id, ini: tt, dur: 2, corte: 0, vel: 1, vol: 0, layout: 'cheio', ajuste: 'cobrir', zoom: 1.08, auto: true }); }
+    }
+    d.extras = d.extras || {};
+    if (op.voz) d.extras.vozLimpa = true;
+    if (op.marca) { const kit = await evCarregarKit(); evAplicarKit(kit, true); d.extras.barra = true; }
+    if (plano.legenda && !ES.p.legenda) ES.p.legenda = plano.legenda;
+    if (Array.isArray(plano.hashtags) && plano.hashtags.length && !ES.p.hashtags) ES.p.hashtags = plano.hashtags.join(' ');
+    if (op.cor) {
+      if (EV_FILTROS[plano.filtro]) d.filtro = plano.filtro;
+      ES.ultimoEstado = JSON.stringify(d); evIrPara(0.5); await new Promise(r => setTimeout(r, 500));
+      const auto = evFiltroAutomatico(true); if (auto) d.ajustes = Object.assign({ brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 }, auto.opcoes[0].ajustes);
+    }
+    ES.hist.push(antes); ES.ultimoEstado = JSON.stringify(d); evMudou(true, true); evIrPara(0); evDesenharProps(); evCarregando(null);
+    const cortado = a.duracao - t;
+    if (ES.painel === 'ia') evPainelIa();
+    evIaSaida(`<div class="ev-ia-card"><b>✅ Vídeo editado</b><p>De ${evFmtT(a.duracao).slice(0, 5)} para ${evFmtT(t).slice(0, 5)}${cortado > 0.5 ? ` (${Math.round(cortado)} s de pausas, repetições e trechos fracos removidos)` : ''} · ${lista.length} cortes${palavras.length ? ' · legendas da fala' : ''}${op.voz ? ' · voz limpa' : ''}.</p>${plano.explicacao ? `<p>${escapeHtml(plano.explicacao)}</p>` : ''}${op.legendas && !palavras.length ? '<p>⚠️ Sem legendas da fala: a transcrição não respondeu.</p>' : ''}<p>Dê o play ▶, ajuste o que quiser e exporte.</p>${evFeedbackHtml('edição completa')}</div>`);
+    mostrarToast('✅ Edição completa pronta! Dê o play para conferir.');
+  } catch (e) { evCarregando(null); mostrarToast('Não consegui editar: ' + e.message, true); }
+}
+// Cadeia de "voz limpa" (aplicada na mixagem do vídeo exportado)
+function evCadeiaVoz(ac, entrada, saida) {
+  const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 85; hp.Q.value = 0.7;      // ronco, vento, zumbido grave
+  const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 11500;                     // chiado agudo
+  const lama = ac.createBiquadFilter(); lama.type = 'peaking'; lama.frequency.value = 300; lama.gain.value = -3; lama.Q.value = 1;
+  const pres = ac.createBiquadFilter(); pres.type = 'peaking'; pres.frequency.value = 3200; pres.gain.value = 3.5; pres.Q.value = 0.9; // clareza da voz
+  const comp = ac.createDynamicsCompressor(); comp.threshold.value = -24; comp.knee.value = 20; comp.ratio.value = 4; comp.attack.value = 0.005; comp.release.value = 0.2;
+  const ganho = ac.createGain(); ganho.gain.value = 1.35;
+  entrada.connect(hp); hp.connect(lp); lp.connect(lama); lama.connect(pres); pres.connect(comp); comp.connect(ganho); ganho.connect(saida);
 }
 
 // ---------- Página do Estúdio (Master) ----------
