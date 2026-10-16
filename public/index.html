@@ -1128,6 +1128,137 @@
     #vc-btn-gravar, .vc-titulo, .vc-sep { display:none; }
   }
   @media (max-width: 520px) { .vc-barra-centro { gap:0; } .vc-cb { min-width:42px; padding:0 4px; } #vc-btn-reacao { display:none; } }
+
+  /* ===== Estúdio de Vídeo ===== */
+  body.ev-aberto { overflow:hidden; }
+  body.ev-aberto .toast { z-index:10050; }
+  #ev-editor { --e-bg:#0d1017; --e-sup:#161b26; --e-sup2:#1e2533; --e-bd:#2a3244; --e-tx:#e6eaf2; --e-sub:#8f9ab0; --e-az:#4f7cff; --e-vm:#dc4c4c;
+    position:fixed; inset:0; z-index:9990; background:var(--e-bg); color:var(--e-tx); display:grid; grid-template-rows:52px 1fr 230px; font-family:'Segoe UI',system-ui,Arial,sans-serif; }
+  #ev-editor button { font-family:inherit; }
+  #ev-editor input, #ev-editor select, #ev-editor textarea { background:var(--e-bg); color:var(--e-tx); border:1px solid var(--e-bd); border-radius:8px; padding:7px 9px; font-size:13px; margin:0; width:100%; font-family:inherit; box-sizing:border-box; }
+  #ev-editor input[type=checkbox], #ev-editor input[type=radio] { width:auto; }
+  #ev-editor input[type=range] { padding:0; border:none; background:transparent; accent-color:var(--e-az); }
+  #ev-editor input[type=color] { width:40px; height:30px; padding:2px; }
+  .ev-topo { display:flex; align-items:center; gap:8px; padding:0 12px; background:var(--e-sup); border-bottom:1px solid var(--e-bd); }
+  .ev-tb { background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:8px; padding:7px 12px; cursor:pointer; font-size:13px; white-space:nowrap; }
+  .ev-tb:hover { border-color:var(--e-az); } .ev-tb.primario { background:var(--e-vm); border-color:var(--e-vm); font-weight:700; }
+  #ev-editor .ev-titulo { width:260px; font-weight:700; font-size:14px; background:transparent; border-color:transparent; } #ev-editor .ev-titulo:hover, #ev-editor .ev-titulo:focus { border-color:var(--e-bd); }
+  #ev-editor .ev-sel { width:auto; }
+  .ev-salvo { font-size:12px; color:var(--e-sub); } .ev-salvo.pend { color:#fbbf24; }
+  .ev-score { border:none; border-radius:20px; padding:6px 14px; font-weight:700; cursor:pointer; color:#fff; font-size:13px; } .ev-score.bom { background:#15803d; } .ev-score.medio { background:#b45309; } .ev-score.baixo { background:#b91c1c; }
+  .ev-corpo { display:grid; grid-template-columns:330px 1fr 300px; min-height:0; }
+  .ev-esq { display:flex; min-height:0; border-right:1px solid var(--e-bd); background:var(--e-sup); }
+  .ev-abas { display:flex; flex-direction:column; width:66px; border-right:1px solid var(--e-bd); padding-top:6px; flex-shrink:0; }
+  .ev-abas button { background:none; border:none; color:var(--e-sub); padding:9px 2px; font-size:10.5px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; border-left:3px solid transparent; }
+  .ev-abas button span { font-size:19px; } .ev-abas button.on { color:#fff; border-left-color:var(--e-vm); background:var(--e-sup2); }
+  .ev-painel { flex:1; overflow-y:auto; padding:12px; min-width:0; }
+  .ev-painel h4, .ev-dir h4 { margin:14px 0 8px; font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--e-sub); } .ev-painel h4:first-child, .ev-dir h4:first-child { margin-top:2px; }
+  .ev-dir h4 small { text-transform:none; letter-spacing:0; color:var(--e-tx); font-weight:400; }
+  .ev-sub { font-size:12px; color:var(--e-sub); line-height:1.5; margin:6px 0; }
+  .ev-up { display:flex; flex-direction:column; align-items:center; gap:3px; border:2px dashed var(--e-bd); border-radius:12px; padding:16px 10px; cursor:pointer; text-align:center; } .ev-up:hover { border-color:var(--e-az); } .ev-up small { color:var(--e-sub); font-size:11.5px; }
+  .ev-prog { font-size:12px; margin:8px 0; } .ev-prog div { height:5px; background:var(--e-bd); border-radius:3px; overflow:hidden; margin-top:4px; } .ev-prog i { display:block; height:100%; width:0; background:var(--e-az); }
+  .ev-midias { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0; } .ev-midias.lista { grid-template-columns:1fr; }
+  .ev-midia { position:relative; aspect-ratio:1; background:#000; border-radius:8px; overflow:hidden; }
+  .ev-midia img { width:100%; height:100%; object-fit:cover; } .ev-midia-ico { display:flex; align-items:center; justify-content:center; height:100%; font-size:28px; }
+  .ev-midia span { position:absolute; left:4px; bottom:4px; background:rgba(0,0,0,.7); font-size:10.5px; padding:1px 6px; border-radius:4px; }
+  .ev-midia button { position:absolute; right:4px; bottom:4px; width:26px; height:26px; border-radius:50%; border:none; background:var(--e-az); color:#fff; font-size:16px; cursor:pointer; }
+  .ev-midia button.x { top:4px; bottom:auto; background:rgba(0,0,0,.6); width:22px; height:22px; font-size:14px; }
+  .ev-aud { display:flex; align-items:center; gap:6px; background:var(--e-sup2); border-radius:8px; padding:7px 8px; font-size:12.5px; } .ev-aud span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .ev-aud small { color:var(--e-sub); }
+  .ev-aud button { background:var(--e-az); border:none; color:#fff; border-radius:6px; width:26px; height:26px; cursor:pointer; } .ev-aud button.x { background:var(--e-bd); }
+  .ev-btn { display:inline-flex; align-items:center; justify-content:center; gap:5px; background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:8px; padding:8px 11px; font-size:12.5px; cursor:pointer; text-decoration:none; margin:3px 0; }
+  .ev-btn:hover { border-color:var(--e-az); } .ev-btn.ia { background:linear-gradient(135deg,#4f46e5,#7c3aed); border:none; color:#fff; font-weight:600; } .ev-btn.perigo { color:#fca5a5; } .ev-btn.primario { background:var(--e-vm); border-color:var(--e-vm); color:#fff; font-weight:700; }
+  .ev-btn.grande { width:100%; padding:12px; font-size:14px; margin:8px 0 2px; } .ev-btn.ig { background:linear-gradient(45deg,#f58529,#dd2a7b,#8134af); border:none; color:#fff; font-weight:700; } .ev-btn.gravando { background:var(--e-vm); color:#fff; }
+  .ev-linha-btn { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0; } .ev-linha-btn .ev-btn { flex:1; }
+  .ev-dica-fixa { background:rgba(79,124,255,.1); border:1px solid rgba(79,124,255,.3); border-radius:10px; padding:9px 11px; font-size:12px; line-height:1.5; margin-top:12px; }
+  .ev-vazio { color:var(--e-sub); font-size:12.5px; text-align:center; padding:14px; grid-column:1/-1; }
+  .ev-estilos { display:grid; grid-template-columns:1fr 1fr; gap:6px; } .ev-estilo { background:#05070c; border:1px solid var(--e-bd); border-radius:8px; padding:12px 6px; cursor:pointer; font-size:13px; } .ev-estilo:hover { border-color:var(--e-az); }
+  .ev-estilo.e-apoio span, .ev-estilo.e-legenda span { -webkit-text-stroke:1px #000; }
+  .ev-filtros { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; } .ev-filtros button { background:none; border:2px solid transparent; color:var(--e-tx); border-radius:8px; padding:3px; cursor:pointer; font-size:11.5px; } .ev-filtros button.on { border-color:var(--e-vm); }
+  .ev-filtros i { display:block; aspect-ratio:1; border-radius:6px; margin-bottom:3px; background:linear-gradient(135deg,#f59e0b,#ef4444 40%,#3b82f6 70%,#10b981); }
+  .ev-slider { display:block; font-size:12.5px; margin:8px 0; } .ev-slider b { float:right; color:var(--e-sub); font-weight:500; }
+  .ev-chips { display:flex; flex-wrap:wrap; gap:5px; } .ev-chips.col { flex-direction:column; } .ev-chips button { background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:16px; padding:5px 10px; font-size:12px; cursor:pointer; } .ev-chips button.on { background:var(--e-az); border-color:var(--e-az); } .ev-chips.col button { border-radius:8px; text-align:left; padding:9px 11px; }
+  .ev-emojis { display:grid; grid-template-columns:repeat(6,1fr); gap:4px; } .ev-emojis button { background:var(--e-sup2); border:none; border-radius:6px; font-size:22px; padding:5px 0; cursor:pointer; }
+  .ev-painel label:not(.ev-up):not(.ev-campo):not(.ev-slider):not(.ev-chk2) { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12.5px; margin:7px 0; } .ev-painel label input:not([type=checkbox]):not([type=color]) { width:60%; }
+  .ev-chk2 { display:flex !important; align-items:center; gap:7px; font-size:12.5px; margin:7px 0; cursor:pointer; justify-content:flex-start !important; }
+  .ev-centro { display:flex; flex-direction:column; min-width:0; min-height:0; background:#07090d; }
+  .ev-palco { flex:1; display:flex; align-items:center; justify-content:center; padding:14px; min-height:0; position:relative; }
+  .ev-palco canvas { max-width:100%; max-height:100%; border-radius:6px; box-shadow:0 10px 40px rgba(0,0,0,.6); cursor:pointer; background:#000; }
+  .ev-dica { position:absolute; top:16px; left:50%; transform:translateX(-50%); background:rgba(22,27,38,.95); border:1px solid var(--e-bd); padding:9px 14px; border-radius:10px; font-size:13px; max-width:80%; text-align:center; }
+  .ev-play { display:flex; align-items:center; justify-content:center; gap:10px; padding:8px; border-top:1px solid var(--e-bd); background:var(--e-sup); }
+  .ev-play button { background:none; border:none; color:var(--e-tx); font-size:17px; cursor:pointer; } .ev-play-btn { width:40px; height:40px; border-radius:50% !important; background:#fff !important; color:#000 !important; font-size:16px !important; }
+  .ev-tempo { font-variant-numeric:tabular-nums; font-size:13px; color:var(--e-sub); } .ev-tempo b { color:#fff; }
+  .ev-chk { font-size:12px; color:var(--e-sub); display:flex; align-items:center; gap:5px; margin-left:16px; cursor:pointer; }
+  .ev-dir { border-left:1px solid var(--e-bd); background:var(--e-sup); overflow-y:auto; padding:12px; }
+  .ev-campo { display:block; margin:9px 0; font-size:12.5px; } .ev-campo > span { display:block; color:var(--e-sub); margin-bottom:4px; } .ev-campo > span b { float:right; color:var(--e-tx); font-weight:500; }
+  .ev-dupla { display:flex; gap:6px; } .ev-cores { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; } .ev-cores .ev-campo { margin:4px 0; }
+  .ev-mini { background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:6px; font-size:11px; padding:3px 6px; cursor:pointer; margin-left:4px; }
+  .ev-linha { display:flex; flex-direction:column; border-top:1px solid var(--e-bd); background:var(--e-sup); min-height:0; }
+  .ev-linha-barra { display:flex; align-items:center; gap:6px; padding:6px 10px; border-bottom:1px solid var(--e-bd); }
+  .ev-linha-barra button { background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:6px; padding:5px 10px; font-size:12px; cursor:pointer; } .ev-linha-barra input[type=range] { width:140px !important; }
+  .ev-linha-scroll { flex:1; overflow:auto; position:relative; }
+  .ev-linha-int { position:relative; min-width:100%; padding-bottom:8px; }
+  .ev-regua { position:relative; height:24px; margin-left:90px; border-bottom:1px solid var(--e-bd); cursor:pointer; } .ev-regua span { position:absolute; top:4px; font-size:10.5px; color:var(--e-sub); border-left:1px solid var(--e-bd); padding-left:3px; height:20px; }
+  .ev-pista { display:flex; height:56px; border-bottom:1px solid #1a2030; } .ev-pista.curta { height:34px; }
+  .ev-rot { width:90px; flex-shrink:0; font-size:11.5px; color:var(--e-sub); display:flex; align-items:center; padding-left:8px; position:sticky; left:0; background:var(--e-sup); z-index:3; }
+  .ev-trilho { position:relative; }
+  .ev-bl { position:absolute; top:4px; bottom:4px; border-radius:6px; overflow:hidden; cursor:grab; display:flex; align-items:center; gap:5px; font-size:11.5px; padding:0 8px; border:2px solid transparent; box-sizing:border-box; user-select:none; touch-action:none; white-space:nowrap; }
+  .ev-bl span { overflow:hidden; text-overflow:ellipsis; position:relative; z-index:1; text-shadow:0 1px 2px #000; pointer-events:none; }
+  .ev-bl.clip { background:#1f3a7a; padding-left:0; } .ev-bl.clip.img { background:#4a2a7a; } .ev-bl.clip img { height:100%; width:auto; max-width:60%; object-fit:cover; opacity:.75; pointer-events:none; }
+  .ev-bl.texto { background:#7a5a12; } .ev-bl.texto.e-gancho { background:#9b2c2c; } .ev-bl.texto.e-cta { background:#8a7a00; } .ev-bl.texto.e-legenda { background:#2f6b4f; } .ev-bl.texto.e-emoji { background:#5b4a8a; }
+  .ev-bl.audio { background:#0f6b6b; }
+  .ev-bl.sel { border-color:#fff; box-shadow:0 0 0 2px var(--e-az); }
+  .ev-al { position:absolute; top:0; bottom:0; width:8px; cursor:ew-resize; z-index:2; } .ev-al.esq { left:0; } .ev-al.dir { right:0; } .ev-bl.sel .ev-al { background:rgba(255,255,255,.35); }
+  .ev-trans { position:absolute; left:-2px; top:50%; transform:translateY(-50%); background:#fff; color:#000; font-size:10px; border-radius:4px; padding:0 2px; z-index:2; }
+  .ev-vazio-pista { position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:12px; color:var(--e-sub); white-space:nowrap; }
+  .ev-cabeca { position:absolute; top:0; bottom:0; width:2px; background:#ff3b3b; z-index:4; pointer-events:none; } .ev-cabeca i { position:absolute; top:0; left:-6px; border:7px solid transparent; border-top:10px solid #ff3b3b; }
+  .ev-export-ov, .ev-carregando { position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:10020; display:flex; align-items:center; justify-content:center; } .ev-export-ov[hidden] { display:none; }
+  .ev-export-caixa { background:var(--e-sup); border:1px solid var(--e-bd); border-radius:14px; padding:24px; width:min(460px,92vw); text-align:center; }
+  .ev-export-tit { font-size:18px; font-weight:700; } .ev-export-sub { font-size:13px; color:var(--e-sub); margin:8px 0; }
+  .ev-export-pista { height:8px; background:var(--e-bd); border-radius:4px; overflow:hidden; margin:14px 0 6px; } .ev-export-pista i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--e-vm),#f59e0b); transition:width .2s; }
+  .ev-export-caixa button { background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:8px; padding:8px 16px; cursor:pointer; margin-top:6px; }
+  .ev-carregando > div { background:var(--e-sup, #161b26); color:#fff; border-radius:14px; padding:22px 28px; display:flex; flex-direction:column; align-items:center; gap:12px; max-width:360px; text-align:center; font-size:14px; }
+  .ev-spin { width:34px; height:34px; border:4px solid rgba(255,255,255,.2); border-top-color:#a78bfa; border-radius:50%; animation:evGira .8s linear infinite; } @keyframes evGira { to { transform:rotate(360deg); } }
+  .ev-grade-ia { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:12px; } .ev-grade-ia button { background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:8px; padding:9px 6px; font-size:12px; cursor:pointer; } .ev-grade-ia button:hover { border-color:#7c3aed; }
+  .ev-ia-card { background:var(--e-sup2); border:1px solid var(--e-bd); border-radius:10px; padding:11px; margin-top:12px; font-size:12.5px; line-height:1.5; } .ev-ia-card p { margin:6px 0; } .ev-ia-card ul, .ev-ia-card ol { padding-left:18px; margin:6px 0; }
+  .ev-opcao { display:block; width:100%; text-align:left; background:var(--e-bg); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:8px; padding:8px 10px; margin-top:6px; font-size:12.5px; cursor:pointer; } .ev-opcao small { color:var(--e-sub); margin-left:4px; } button.ev-opcao:hover { border-color:var(--e-az); }
+  .ev-cena { border-left:3px solid #7c3aed; padding:4px 8px; margin:8px 0; } .ev-cena small { color:var(--e-sub); }
+  .ev-pre { white-space:pre-wrap; font-family:inherit; background:var(--e-bg); padding:8px; border-radius:6px; margin:6px 0; }
+  .ev-feedback { margin-top:8px; font-size:12px; color:var(--e-sub); } .ev-feedback button { background:var(--e-bg); border:1px solid var(--e-bd); border-radius:6px; margin-left:4px; cursor:pointer; padding:2px 7px; }
+  .ev-modal-fundo { position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:10010; display:flex; align-items:center; justify-content:center; padding:16px; }
+  .ev-modal { background:var(--e-sup, #161b26); color:var(--e-tx, #e6eaf2); border:1px solid var(--e-bd, #2a3244); border-radius:14px; padding:18px; width:min(560px,100%); max-height:90vh; overflow-y:auto; } .ev-modal.grande { width:min(900px,100%); }
+  .ev-modal-cab { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; } .ev-modal-cab h3 { margin:0; font-size:17px; } .ev-modal-cab button { background:none; border:none; color:var(--e-sub); font-size:18px; cursor:pointer; }
+  .ev-medidor-v { height:10px; background:var(--e-bd); border-radius:5px; overflow:hidden; margin-bottom:12px; } .ev-medidor-v i { display:block; height:100%; }
+  .ev-check { display:flex; gap:10px; padding:7px 0; border-bottom:1px solid var(--e-bd); font-size:13px; } .ev-check small { display:block; color:var(--e-sub); font-size:12px; }
+  .ev-pub { display:grid; grid-template-columns:260px 1fr; gap:16px; } .ev-pub-prev video { width:100%; max-height:62vh; border-radius:10px; background:#000; }
+  .ev-ig-ok { background:rgba(34,197,94,.1); border:1px solid rgba(34,197,94,.35); border-radius:8px; padding:8px 10px; font-size:13px; margin:8px 0; } .ev-ig-ok.claro { color:#14532d; }
+  .ev-agendar { display:flex; gap:6px; margin-top:6px; } .ev-agendar input { flex:1; }
+  /* página */
+  .ev-pag-topo { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .ev-pag-abas { display:flex; gap:4px; border-bottom:2px solid var(--cinza-200, #e2e8f0); margin-bottom:16px; flex-wrap:wrap; } .ev-pag-abas button { background:none; border:none; padding:10px 14px; font-weight:600; color:#64748b; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; } .ev-pag-abas button.on { color:#0b1329; border-bottom-color:#dc4c4c; }
+  .ev-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:16px; } .ev-kpi { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px; } .ev-kpi b { display:block; font-size:26px; } .ev-kpi span { font-size:12.5px; color:#64748b; }
+  .ev-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px; }
+  .ev-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; cursor:pointer; transition:.15s; } .ev-card:hover { box-shadow:0 8px 24px rgba(15,23,42,.12); transform:translateY(-2px); }
+  .ev-card-capa { position:relative; background:#0b1329; aspect-ratio:9/12; display:flex; align-items:center; justify-content:center; font-size:40px; } .ev-card-capa img { width:100%; height:100%; object-fit:cover; }
+  .ev-card-capa i { position:absolute; left:8px; top:8px; color:#fff; font-size:11px; font-style:normal; font-weight:700; padding:2px 8px; border-radius:10px; } .ev-card-capa em { position:absolute; right:8px; top:8px; background:rgba(0,0,0,.6); color:#fff; font-size:11.5px; font-style:normal; padding:2px 7px; border-radius:10px; }
+  .ev-card-info { padding:10px 12px; position:relative; } .ev-card-info b { display:block; font-size:14px; margin-bottom:3px; padding-right:50px; } .ev-card-info small { display:block; color:#64748b; font-size:12px; } .ev-card-info a { font-size:12px; color:#dd2a7b; }
+  .ev-card-acoes { position:absolute; right:8px; top:8px; display:flex; gap:2px; } .ev-card-acoes button { background:none; border:none; cursor:pointer; font-size:14px; opacity:.6; } .ev-card-acoes button:hover { opacity:1; }
+  .ev-vazio-grande { text-align:center; padding:50px 20px; background:#fff; border:2px dashed #e2e8f0; border-radius:16px; } .ev-vazio-grande p { color:#64748b; max-width:460px; margin:8px auto 16px; }
+  .ev-formatos { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; } .ev-formato { display:flex; flex-direction:column; align-items:center; gap:6px; border:2px solid #e2e8f0; border-radius:10px; padding:10px 4px; cursor:pointer; text-align:center; font-size:11.5px; } .ev-formato:has(input:checked) { border-color:#dc4c4c; background:#fef2f2; } .ev-formato input { display:none; }
+  .ev-formato span { background:#0b1329; border-radius:4px; } .f9-16 { width:27px; height:48px; } .f4-5 { width:38px; height:48px; } .f1-1 { width:44px; height:44px; } .f16-9 { width:56px; height:32px; }
+  .ev-card-capa.f9-16, .ev-card-capa.f4-5, .ev-card-capa.f1-1, .ev-card-capa.f16-9 { width:auto; height:auto; }
+  .ev-bloco { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px; margin-bottom:14px; } .ev-bloco h3 { margin:0 0 6px; font-size:16px; } .ev-bloco h3 small { color:#64748b; font-weight:400; }
+  .ev-bloco textarea, .ev-bloco input { margin-bottom:6px; }
+  .ev-ag-topo { display:flex; gap:14px; flex-wrap:wrap; } .ev-nivel { height:10px; background:#e2e8f0; border-radius:5px; overflow:hidden; margin:8px 0; } .ev-nivel i { display:block; height:100%; background:linear-gradient(90deg,#7c3aed,#dc4c4c); }
+  .ev-ag-grade { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:14px; } .ev-ag-grade .ev-bloco { margin-bottom:0; }
+  .ev-ag-lista { margin-top:10px; max-height:300px; overflow-y:auto; } .ev-ag-item { display:flex; gap:8px; border-top:1px solid #f1f5f9; padding:8px 0; font-size:13px; } .ev-ag-item > div:first-child { flex:1; min-width:0; } .ev-ag-item p { margin:3px 0 0; color:#334155; white-space:pre-wrap; } .ev-ag-item small { display:block; color:#7c3aed; font-size:11.5px; } .ev-ag-item.inativo { opacity:.45; }
+  .ev-ag-acoes button { background:none; border:none; cursor:pointer; font-size:14px; }
+  .ev-metricas { display:grid; grid-template-columns:repeat(5,1fr); gap:4px; } .ev-metricas input { font-size:11.5px; padding:6px; }
+  .ev-chat { max-height:380px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin:10px 0; } .ev-msg { padding:10px 12px; border-radius:10px; font-size:13.5px; line-height:1.5; max-width:85%; } .ev-msg.eu { align-self:flex-end; background:#0b1329; color:#fff; } .ev-msg.agente { background:#f1f5f9; } .ev-msg.erro { color:#b91c1c; }
+  .ev-msg .ev-feedback button { background:#fff; border-color:#e2e8f0; } .ev-fontes { font-size:11.5px; margin-top:6px; color:#64748b; }
+  .ev-ag-linha { display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid #f1f5f9; flex-wrap:wrap; font-size:13px; } .ev-ag-linha b { cursor:pointer; } .ev-ag-linha small { color:#64748b; flex:1; } .ev-ag-st { color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; }
+  .ev-passos-ig { font-size:13.5px; line-height:1.7; color:#334155; padding-left:20px; }
+  @media (max-width: 1100px) { .ev-corpo { grid-template-columns:280px 1fr; } .ev-dir { display:none; } }
+  @media (max-width: 760px) { #ev-editor { grid-template-rows:52px 1fr 200px; } .ev-corpo { grid-template-columns:1fr; grid-template-rows:1fr 200px; } .ev-esq { order:2; } .ev-titulo, .ev-salvo, .ev-sel { display:none; } .ev-pub { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -1235,10 +1366,14 @@ async function api(caminho, opcoes = {}) {
   const headers = Object.assign({ 'Content-Type': 'application/json' }, opcoes.headers || {});
   if (ESTADO.token) headers['Authorization'] = 'Bearer ' + ESTADO.token;
   const resp = await fetch(caminho, Object.assign({}, opcoes, { headers }));
+  // O servidor renova a sessão sozinho enquanto a pessoa usa o sistema.
+  const novoToken = resp.headers.get('X-Novo-Token');
+  if (novoToken && ESTADO.token) { ESTADO.token = novoToken; try { armazenamentoSessaoAtual().setItem('impulsionar_token', novoToken); } catch (e) {} }
   if (resp.status === 401 || resp.status === 403) {
     const dados = await resp.json().catch(() => ({}));
-    if (resp.status === 401 && !opcoes._semLogout) {
+    if ((resp.status === 401 || dados.sessaoExpirada || /token inválido ou expirado/i.test(dados.error || '')) && !opcoes._semLogout && ESTADO.token) {
       sair(true);
+      mostrarToast(dados.error || 'Sua sessão expirou. Faça login novamente.', true);
       throw new Error(dados.error || 'Sessão expirada.');
     }
     throw new Error(dados.error || 'Acesso negado.');
@@ -1465,6 +1600,9 @@ const MENU_POR_PERFIL = {
     ]},
     { group: 'Ministrar Treinamento', items: [
         ['ministrarTreinamento', 'Meus Treinamentos']
+    ]},
+    { group: 'Estúdio de Vídeo', items: [
+        ['estudioVideo', 'Projetos de Vídeo'], ['estudioAgente', 'Agente Viral'], ['estudioAgenda', 'Agenda & Instagram']
     ]},
     { group: 'Teste DISC', items: [
         ['discTesteMaster', 'Testar & Enviar Teste DISC']
@@ -1802,7 +1940,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento,
+    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento, estudioVideo: () => renderEstudioVideo('projetos'), estudioAgente: () => renderEstudioVideo('agente'), estudioAgenda: () => renderEstudioVideo('agenda'),
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster, acessosCandidatos: renderAcessosCandidatos, creditosVagas: renderCreditosVagas
   };
   NAV.profundidade++;
@@ -19871,6 +20009,1156 @@ function vcEncerrar(motivo) {
   else { if (motivo) mostrarToast(motivo); else if (estavaMini) mostrarToast('Você saiu da reunião.'); if (!estavaMini && typeof renderMentorships === 'function') renderMentorships(); }
 }
 function encerrarVideochamada() { vcEncerrar(); }
+
+/* ==========================================================
+   ESTÚDIO DE VÍDEO (Master) — editor profissional para Instagram
+   ========================================================== */
+const EV_FORMATOS = { '9:16': { w: 1080, h: 1920, rot: 'Reels / Stories (9:16)' }, '4:5': { w: 1080, h: 1350, rot: 'Feed retrato (4:5)' }, '1:1': { w: 1080, h: 1080, rot: 'Feed quadrado (1:1)' }, '16:9': { w: 1920, h: 1080, rot: 'Horizontal (16:9)' } };
+const EV_FILTROS = { nenhum: ['Original', ''], vibrante: ['Vibrante', 'saturate(1.35) contrast(1.08)'], cinema: ['Cinema', 'contrast(1.15) saturate(0.85) sepia(0.12)'], quente: ['Quente', 'sepia(0.22) saturate(1.2) hue-rotate(-8deg)'], frio: ['Frio', 'saturate(1.1) hue-rotate(12deg) brightness(1.03)'], pb: ['P&B', 'grayscale(1) contrast(1.15)'], suave: ['Suave', 'brightness(1.06) saturate(0.9) contrast(0.92)'], contraste: ['Contraste', 'contrast(1.3) saturate(1.1)'], noite: ['Noite', 'brightness(0.85) contrast(1.2) saturate(0.8) hue-rotate(8deg)'] };
+const EV_ESTILOS = {
+  gancho: { rot: 'Gancho', fonte: 'Montserrat', peso: 900, tam: 82, cor: '#ffffff', fundo: '#dc4c4c', contorno: 0, sombra: true, y: 0.24, anim: 'pop', maiusc: true },
+  titulo: { rot: 'Título', fonte: 'Bebas Neue', peso: 400, tam: 140, cor: '#ffffff', fundo: '', contorno: 0, sombra: true, y: 0.36, anim: 'fade', maiusc: true },
+  apoio: { rot: 'Texto de apoio', fonte: 'Montserrat', peso: 800, tam: 62, cor: '#ffffff', fundo: '', contorno: 9, sombra: false, y: 0.5, anim: 'subir', maiusc: false },
+  legenda: { rot: 'Legenda dinâmica', fonte: 'Montserrat', peso: 900, tam: 68, cor: '#ffffff', fundo: '', contorno: 11, sombra: false, y: 0.66, anim: 'pop', maiusc: true, destaque: '#ffd600' },
+  cta: { rot: 'Chamada (CTA)', fonte: 'Montserrat', peso: 900, tam: 70, cor: '#0b1329', fundo: '#ffd600', contorno: 0, sombra: true, y: 0.74, anim: 'pop', maiusc: false },
+  caixa: { rot: 'Caixa escura', fonte: 'Poppins', peso: 600, tam: 54, cor: '#ffffff', fundo: 'rgba(0,0,0,0.6)', contorno: 0, sombra: false, y: 0.82, anim: 'fade', maiusc: false },
+  emoji: { rot: 'Emoji', fonte: 'Poppins', peso: 400, tam: 170, cor: '#ffffff', fundo: '', contorno: 0, sombra: false, y: 0.4, anim: 'pop', maiusc: false }
+};
+const EV_TRANS = { corte: 'Corte seco', fade: 'Esmaecer', zoom: 'Zoom', deslizar: 'Deslizar', flash: 'Flash' };
+const EV_ANIMS = { nenhuma: 'Nenhuma', pop: 'Pop', fade: 'Surgir', subir: 'Subir', digitar: 'Digitando', zoom: 'Zoom' };
+const EV_FONTES = ['Montserrat', 'Bebas Neue', 'Poppins', 'Anton', 'Playfair Display', 'Permanent Marker', 'Arial', 'Georgia'];
+let ES = null;  // estado do editor
+let EVL = { lista: [], aba: 'projetos', agente: [], ig: null }; // estado da página
+
+function evUid() { return Math.random().toString(36).slice(2, 9); }
+function evClipDur(c) { return Math.max(0.1, ((c.fim || 0) - (c.ini || 0)) / (c.vel || 1)); }
+function evInicios() { let s = 0; return ES.p.dados.clips.map(c => { const i = s; s += evClipDur(c); return i; }); }
+function evTotal() {
+  const d = ES.p.dados;
+  const clips = d.clips.reduce((s, c) => s + evClipDur(c), 0);
+  const tx = d.textos.reduce((m, x) => Math.max(m, x.ini + x.dur), 0);
+  return Math.max(clips, d.clips.length ? 0 : tx, 1);
+}
+function evMidia(id) { return ES.p.dados.midias.find(m => m.id === id); }
+function evFmtT(t) { t = Math.max(0, t || 0); const m = Math.floor(t / 60), s = t - m * 60; return String(m).padStart(2, '0') + ':' + s.toFixed(1).padStart(4, '0'); }
+function evCarregarFontes() {
+  if (document.getElementById('ev-fontes')) return;
+  const l = document.createElement('link'); l.id = 'ev-fontes'; l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Montserrat:wght@600;800;900&family=Permanent+Marker&family=Playfair+Display:wght@700;900&family=Poppins:wght@400;600;800&display=swap';
+  document.head.appendChild(l);
+  l.onload = () => { EV_FONTES.forEach(f => { try { document.fonts.load(`900 40px "${f}"`); document.fonts.load(`400 40px "${f}"`); } catch (e) {} }); setTimeout(() => ES && evDesenhar(), 800); };
+}
+
+// ---------- Elementos de mídia (um <video> por clipe para as transições) ----------
+function evElemento(c) {
+  ES.els = ES.els || {};
+  const m = evMidia(c.midia); if (!m) return null;
+  let el = ES.els[c.id];
+  if (el && el.__url === m.url) return el;
+  if (m.tipo === 'imagem') { el = new Image(); el.src = m.url; el.onload = () => evDesenhar(); }
+  else { el = document.createElement('video'); el.src = m.url; el.preload = 'auto'; el.playsInline = true; el.crossOrigin = 'anonymous'; el.addEventListener('seeked', () => { if (!ES.tocando) evDesenhar(); }); el.addEventListener('loadeddata', () => { if (!ES.tocando) evDesenhar(); }); evLigarAudio(el, 'c:' + c.id); }
+  el.__url = m.url; ES.els[c.id] = el; return el;
+}
+function evElementoAudio(a) {
+  ES.aud = ES.aud || {};
+  const m = evMidia(a.midia); if (!m) return null;
+  let el = ES.aud[a.id];
+  if (el && el.__url === m.url) return el;
+  el = new Audio(); el.src = m.url; el.preload = 'auto'; el.crossOrigin = 'anonymous'; el.__url = m.url; ES.aud[a.id] = el; evLigarAudio(el, 'a:' + a.id);
+  return el;
+}
+// Todo áudio passa por um AudioContext: assim controlamos volume/fade e gravamos na exportação.
+function evAudioCtx() {
+  if (!ES.actx) {
+    try {
+      ES.actx = new (window.AudioContext || window.webkitAudioContext)();
+      ES.mestre = ES.actx.createGain(); ES.mestre.connect(ES.actx.destination);
+      ES.destGrav = ES.actx.createMediaStreamDestination(); ES.mestre.connect(ES.destGrav);
+      ES.ganhos = {};
+      Object.entries(ES.pendentesAudio || {}).forEach(([k, el]) => evLigarAudio(el, k));
+    } catch (e) { ES.actx = null; }
+  }
+  if (ES.actx && ES.actx.state === 'suspended') ES.actx.resume().catch(() => {});
+  return ES.actx;
+}
+function evLigarAudio(el, chave) {
+  if (!ES.actx) { ES.pendentesAudio = ES.pendentesAudio || {}; ES.pendentesAudio[chave] = el; return; }
+  if (el.__ligado) return;
+  try { const src = ES.actx.createMediaElementSource(el); const g = ES.actx.createGain(); src.connect(g); g.connect(ES.mestre); ES.ganhos[chave] = g; el.__ligado = true; } catch (e) {}
+}
+function evGanho(chave, v) { const g = ES.ganhos && ES.ganhos[chave]; if (g) g.gain.value = Math.max(0, v); }
+
+// ---------- Desenho de um quadro ----------
+function evFiltroCss(c) {
+  const d = ES.p.dados, aj = d.ajustes || {};
+  const base = EV_FILTROS[(c && c.filtro) || d.filtro || 'nenhum'] || EV_FILTROS.nenhum;
+  const extra = [aj.brilho && aj.brilho !== 100 ? `brightness(${aj.brilho / 100})` : '', aj.contraste && aj.contraste !== 100 ? `contrast(${aj.contraste / 100})` : '', aj.saturacao && aj.saturacao !== 100 ? `saturate(${aj.saturacao / 100})` : ''].filter(Boolean).join(' ');
+  return (base[1] + ' ' + extra).trim() || 'none';
+}
+function evDesenharMidia(ctx, c, el, prog, alpha, dx, escalaExtra) {
+  const W = ES.W, H = ES.H;
+  const mw = el.videoWidth || el.naturalWidth || el.width, mh = el.videoHeight || el.naturalHeight || el.height;
+  if (!mw || !mh) return;
+  const m = evMidia(c.midia) || {};
+  const zoom = m.tipo === 'imagem' ? 1 + ((c.zoom || 1.08) - 1) * prog : (c.zoom || 1); // Ken Burns em imagens
+  const z = zoom * (escalaExtra || 1);
+  ctx.save(); ctx.globalAlpha = alpha; ctx.filter = evFiltroCss(c);
+  const cobrir = Math.max(W / mw, H / mh), conter = Math.min(W / mw, H / mh);
+  if (c.ajuste === 'conter') {
+    // fundo desfocado (padrão profissional para vídeos horizontais em 9:16)
+    ctx.filter = evFiltroCss(c) + ' blur(40px) brightness(0.7)';
+    const s0 = cobrir * 1.1; ctx.drawImage(el, (W - mw * s0) / 2 + dx, (H - mh * s0) / 2, mw * s0, mh * s0);
+    ctx.filter = evFiltroCss(c);
+    const s1 = conter * z; ctx.drawImage(el, (W - mw * s1) / 2 + dx + (c.px || 0) * W, (H - mh * s1) / 2 + (c.py || 0) * H, mw * s1, mh * s1);
+  } else {
+    const s = cobrir * z; ctx.drawImage(el, (W - mw * s) / 2 + dx + (c.px || 0) * W, (H - mh * s) / 2 + (c.py || 0) * H, mw * s, mh * s);
+  }
+  ctx.restore();
+}
+function evQuebrar(ctx, texto, larg) {
+  const linhas = [];
+  String(texto || '').split('\n').forEach(par => {
+    let atual = '';
+    par.split(/\s+/).filter(Boolean).forEach(p => { const tente = atual ? atual + ' ' + p : p; if (ctx.measureText(tente).width > larg && atual) { linhas.push(atual); atual = p; } else atual = tente; });
+    linhas.push(atual);
+  });
+  return linhas;
+}
+function evRetArred(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function evDesenharTexto(ctx, x, t) {
+  const W = ES.W, H = ES.H, k = W / 1080;
+  const local = t - x.ini; if (local < 0 || local > x.dur) return;
+  const est = Object.assign({}, EV_ESTILOS[x.estilo] || EV_ESTILOS.apoio, x);
+  let txt = String(x.texto || ''); if (est.maiusc) txt = txt.toUpperCase();
+  const anim = est.anim || 'fade', ent = Math.min(1, local / 0.28), sai = Math.min(1, (x.dur - local) / 0.18);
+  let alpha = Math.min(1, sai), escala = 1, dy = 0;
+  if (anim === 'fade') alpha *= ent;
+  if (anim === 'pop') { const p = Math.min(1, local / 0.25); escala = p < 0.7 ? 0.6 + 0.48 * (p / 0.7) : 1.08 - 0.08 * ((p - 0.7) / 0.3); alpha *= Math.min(1, local / 0.08); }
+  if (anim === 'subir') { dy = (1 - easeOut(ent)) * 60 * k; alpha *= ent; }
+  if (anim === 'zoom') { escala = 1.3 - 0.3 * easeOut(ent); alpha *= ent; }
+  if (anim === 'digitar') { const n = Math.ceil(txt.length * Math.min(1, local / Math.max(0.3, Math.min(x.dur * 0.6, txt.length * 0.045)))); txt = txt.slice(0, n); }
+  if (!txt) return;
+  const tam = (est.tam || 60) * k;
+  ctx.save();
+  ctx.font = `${est.peso || 800} ${tam}px "${est.fonte || 'Montserrat'}", Arial, sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const linhas = evQuebrar(ctx, txt, W * (est.largura || 0.84));
+  const lh = tam * 1.18, cx = (est.x !== undefined ? est.x : 0.5) * W, cy = (est.y !== undefined ? est.y : 0.5) * H + dy;
+  const altTot = linhas.length * lh;
+  ctx.globalAlpha = Math.max(0, alpha);
+  ctx.translate(cx, cy); ctx.scale(escala, escala);
+  let maxL = 0; linhas.forEach(l => { maxL = Math.max(maxL, ctx.measureText(l).width); });
+  ES.caixas[x.id] = { x: cx - maxL / 2 - 30 * k, y: cy - altTot / 2 - 20 * k, w: maxL + 60 * k, h: altTot + 40 * k };
+  linhas.forEach((l, i) => {
+    const y = -altTot / 2 + lh * i + lh / 2, wl = ctx.measureText(l).width;
+    if (est.fundo) { ctx.fillStyle = est.fundo; evRetArred(ctx, -wl / 2 - 26 * k, y - lh / 2 + 4 * k, wl + 52 * k, lh - 2 * k, 18 * k); ctx.fill(); }
+    if (est.sombra) { ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 18 * k; ctx.shadowOffsetY = 4 * k; }
+    if (est.contorno) { ctx.lineJoin = 'round'; ctx.lineWidth = est.contorno * k; ctx.strokeStyle = est.corContorno || '#000'; ctx.strokeText(l, 0, y); }
+    if (est.destaque) {
+      // palavras em MAIÚSCULAS no texto original ganham a cor de destaque (estilo legenda de Reels)
+      const orig = String(x.texto || '').split(/\s+/);
+      const palavras = l.split(' '); let px = -wl / 2;
+      palavras.forEach((p, j) => {
+        const w = ctx.measureText(p + (j < palavras.length - 1 ? ' ' : '')).width;
+        const ehDest = orig.some(o => o.length > 2 && o === o.toUpperCase() && /[A-ZÁÉÍÓÚÂÊÔÃÕÇ]/.test(o) && o.toUpperCase().replace(/[^\wÀ-ú]/g, '') === p.replace(/[^\wÀ-ú]/g, ''));
+        ctx.fillStyle = ehDest ? est.destaque : est.cor; ctx.textAlign = 'left'; ctx.fillText(p, px, y); px += w;
+      });
+      ctx.textAlign = 'center';
+    } else { ctx.fillStyle = est.cor || '#fff'; ctx.fillText(l, 0, y); }
+    ctx.shadowColor = 'transparent';
+  });
+  ctx.restore();
+}
+function easeOut(p) { return 1 - Math.pow(1 - p, 3); }
+function evDesenhar(tForcado, exportando) {
+  if (!ES || !ES.ctx) return;
+  const ctx = ES.ctx, W = ES.W, H = ES.H, d = ES.p.dados, t = tForcado !== undefined ? tForcado : ES.t;
+  exportando = exportando || !!ES.exportando; // guias de edição nunca entram no vídeo final
+  ES.caixas = {};
+  ctx.save(); ctx.fillStyle = (d.extras && d.extras.corFundo) || '#000'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  const ini = evInicios();
+  let idx = -1; for (let i = 0; i < d.clips.length; i++) if (t >= ini[i] && t < ini[i] + evClipDur(d.clips[i])) { idx = i; break; }
+  if (idx < 0 && d.clips.length && t >= ini[ini.length - 1]) idx = d.clips.length - 1;
+  if (idx >= 0) {
+    const c = d.clips[idx], el = evElemento(c), local = t - ini[idx], prog = local / evClipDur(c);
+    const tr = c.transicao || d.transicao || 'corte', TD = 0.4;
+    if (idx > 0 && tr !== 'corte' && local < TD) {
+      const pc = d.clips[idx - 1], pel = evElemento(pc), p = local / TD;
+      if (pel) evDesenharMidia(ctx, pc, pel, 1, 1, tr === 'deslizar' ? -p * W : 0, tr === 'zoom' ? 1 + p * 0.15 : 1);
+      if (el) evDesenharMidia(ctx, c, el, prog, tr === 'fade' || tr === 'zoom' ? p : 1, tr === 'deslizar' ? (1 - easeOut(p)) * W : 0, tr === 'zoom' ? 1.15 - 0.15 * p : 1);
+      if (tr === 'flash') { ctx.save(); ctx.globalAlpha = 1 - p; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+    } else if (el) evDesenharMidia(ctx, c, el, prog, 1, 0, 1);
+  } else if (!d.clips.length && !exportando) {
+    ctx.save(); ctx.fillStyle = '#1b2233'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center'; ctx.font = `600 ${42 * W / 1080}px Poppins, Arial`; ctx.fillText('Adicione vídeos ou fotos', W / 2, H / 2 - 30); ctx.font = `400 ${30 * W / 1080}px Poppins, Arial`; ctx.fillText('em Mídia, à esquerda', W / 2, H / 2 + 30); ctx.restore();
+  }
+  d.textos.slice().sort((a, b) => (a.camada || 0) - (b.camada || 0)).forEach(x => evDesenharTexto(ctx, x, t));
+  const ex = d.extras || {}, k = W / 1080;
+  if (ex.marca) { ctx.save(); ctx.globalAlpha = 0.7; ctx.fillStyle = '#fff'; ctx.font = `700 ${30 * k}px Montserrat, Arial`; ctx.textAlign = 'right'; ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 8 * k; ctx.fillText(ex.marca, W - 40 * k, H * (ES.p.formato === '9:16' ? 0.86 : 0.95)); ctx.restore(); }
+  if (ex.barra) { const tot = evTotal(); ctx.save(); ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(0, 0, W, 10 * k); ctx.fillStyle = ex.corBarra || '#dc4c4c'; ctx.fillRect(0, 0, W * Math.min(1, t / tot), 10 * k); ctx.restore(); }
+  if (!exportando) {
+    if (ES.zonaSegura && ES.p.formato === '9:16') {
+      ctx.save(); ctx.fillStyle = 'rgba(220,76,76,.18)'; ctx.fillRect(0, 0, W, 250 * k); ctx.fillRect(0, H - 440 * k, W, 440 * k); ctx.fillRect(W - 140 * k, H - 1100 * k, 140 * k, 660 * k);
+      ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = `600 ${26 * k}px Poppins, Arial`; ctx.textAlign = 'center'; ctx.fillText('Área coberta pelo Instagram (evite texto aqui)', W / 2, 140 * k); ctx.fillText('Legenda, nome e botões do Instagram', W / 2, H - 220 * k); ctx.restore();
+    }
+    const s = ES.sel;
+    if (s && s.tipo === 'texto' && ES.caixas[s.id]) { const b = ES.caixas[s.id]; ctx.save(); ctx.strokeStyle = '#4f7cff'; ctx.lineWidth = 4 * k; ctx.setLineDash([14 * k, 10 * k]); ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.restore(); }
+  }
+}
+
+// ---------- Reprodução ----------
+function evSincronizar(t, tocando) {
+  const d = ES.p.dados, ini = evInicios();
+  d.clips.forEach((c, i) => {
+    const m = evMidia(c.midia); if (!m || m.tipo !== 'video') return;
+    const el = evElemento(c); if (!el) return;
+    const dur = evClipDur(c), ativo = t >= ini[i] - 0.05 && t < ini[i] + dur;
+    const quer = (c.ini || 0) + Math.max(0, Math.min(dur, t - ini[i])) * (c.vel || 1);
+    evGanho('c:' + c.id, c.mudo || ES.narrando ? 0 : (c.vol !== undefined ? c.vol : 1));
+    if (ativo && tocando) {
+      el.playbackRate = c.vel || 1;
+      if (el.paused) { el.currentTime = quer; el.play().catch(() => {}); }
+      else if (Math.abs(el.currentTime - quer) > 0.3) el.currentTime = quer;
+    } else {
+      if (!el.paused) el.pause();
+      if (ativo || (t >= ini[i] + dur && t < ini[i] + dur + 0.45)) { const alvo = ativo ? quer : (c.fim || 0) - 0.05; if (Math.abs(el.currentTime - alvo) > 0.06) el.currentTime = alvo; }
+    }
+  });
+  d.audios.forEach(a => {
+    const el = evElementoAudio(a); if (!el) return;
+    const ativo = t >= a.ini && t < a.ini + a.dur, quer = (a.corte || 0) + (t - a.ini);
+    let v = a.vol !== undefined ? a.vol : 0.5;
+    if (a.fadeIn && t - a.ini < a.fadeIn) v *= Math.max(0, (t - a.ini) / a.fadeIn);
+    if (a.fadeOut && a.ini + a.dur - t < a.fadeOut) v *= Math.max(0, (a.ini + a.dur - t) / a.fadeOut);
+    evGanho('a:' + a.id, v);
+    if (ativo && tocando) { if (el.paused) { el.currentTime = quer; el.play().catch(() => {}); } else if (Math.abs(el.currentTime - quer) > 0.3) el.currentTime = quer; }
+    else if (!el.paused) el.pause();
+  });
+}
+function evTocar() {
+  if (!ES) return;
+  if (ES.tocando) return evPausar();
+  evAudioCtx();
+  if (ES.t >= evTotal() - 0.05) ES.t = 0;
+  ES.tocando = true; ES.t0 = performance.now() - ES.t * 1000;
+  evAtualizarBotaoPlay();
+  const loop = () => {
+    if (!ES || !ES.tocando) return;
+    const t = (performance.now() - ES.t0) / 1000, tot = evTotal();
+    if (t >= tot) { ES.t = tot; evPausar(); if (ES.exportando) evFimExportacao(); else { ES.t = 0; evDesenhar(); evAtualizarCabeca(); } return; }
+    ES.t = t; evSincronizar(t, true); evDesenhar(undefined, !!ES.exportando); evAtualizarCabeca();
+    if (ES.exportando) evProgressoExport(t / tot);
+    ES.raf = requestAnimationFrame(loop);
+  };
+  evSincronizar(ES.t, true); loop();
+}
+function evPausar() {
+  if (!ES) return;
+  ES.tocando = false; cancelAnimationFrame(ES.raf);
+  Object.values(ES.els || {}).forEach(el => { if (el.pause) el.pause(); });
+  Object.values(ES.aud || {}).forEach(el => el.pause());
+  evAtualizarBotaoPlay();
+}
+function evIrPara(t) {
+  if (!ES) return;
+  ES.t = Math.max(0, Math.min(evTotal(), t));
+  if (ES.tocando) ES.t0 = performance.now() - ES.t * 1000;
+  evSincronizar(ES.t, ES.tocando); evDesenhar(); evAtualizarCabeca();
+}
+
+// ---------- Exportação (renderiza em tempo real e grava) ----------
+function evMimeExport() {
+  const tipos = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+  return tipos.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+}
+async function evExportar() {
+  if (!ES || ES.exportando) return;
+  if (!ES.p.dados.clips.length && !ES.p.dados.textos.length) return mostrarToast('Adicione mídia ou textos antes de exportar.', true);
+  if (!window.MediaRecorder || !ES.canvas.captureStream) return mostrarToast('Seu navegador não exporta vídeo. Use o Chrome ou o Edge no computador.', true);
+  evPausar(); evAudioCtx(); await evSalvar(true).catch(() => {});
+  const mime = evMimeExport();
+  const fluxo = ES.canvas.captureStream(30);
+  if (ES.destGrav) ES.destGrav.stream.getAudioTracks().forEach(tr => fluxo.addTrack(tr));
+  let rec; try { rec = new MediaRecorder(fluxo, mime ? { mimeType: mime, videoBitsPerSecond: 12000000, audioBitsPerSecond: 192000 } : undefined); } catch (e) { return mostrarToast('Não foi possível iniciar a exportação: ' + e.message, true); }
+  const partes = []; rec.ondataavailable = e => { if (e.data && e.data.size) partes.push(e.data); };
+  ES.exportando = { rec, partes, mime: rec.mimeType || mime, cancelado: false };
+  rec.onstop = () => evConcluirExport();
+  document.getElementById('ev-export-ov').hidden = false;
+  evProgressoExport(0);
+  // pré-carrega o primeiro quadro de cada clipe para não começar preto
+  ES.t = 0; evSincronizar(0, false); evDesenhar(0, true);
+  await new Promise(r => setTimeout(r, 600));
+  rec.start(500);
+  evTocar();
+}
+function evProgressoExport(p) {
+  const b = document.getElementById('ev-export-barra'), tx = document.getElementById('ev-export-txt');
+  if (b) b.style.width = Math.round(p * 100) + '%';
+  if (tx) tx.textContent = `Renderizando ${Math.round(p * 100)}% · ${evFmtT(p * evTotal())} de ${evFmtT(evTotal())}`;
+}
+function evFimExportacao() { if (ES.exportando && ES.exportando.rec.state !== 'inactive') setTimeout(() => ES.exportando.rec.stop(), 300); }
+function evCancelarExport() { if (!ES || !ES.exportando) return; ES.exportando.cancelado = true; evPausar(); try { ES.exportando.rec.stop(); } catch (e) {} }
+async function evConcluirExport() {
+  const ex = ES.exportando; ES.exportando = null;
+  const tx = document.getElementById('ev-export-txt');
+  if (ex.cancelado) { document.getElementById('ev-export-ov').hidden = true; return mostrarToast('Exportação cancelada.'); }
+  const ext = /mp4/.test(ex.mime) ? 'mp4' : 'webm';
+  const blob = new Blob(ex.partes, { type: ex.mime || 'video/webm' });
+  const nome = (ES.p.titulo || 'video').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').slice(0, 50) + '.' + ext;
+  ES.ultimoExport = { url: URL.createObjectURL(blob), nome, blob };
+  if (tx) tx.textContent = 'Enviando o vídeo para o servidor...';
+  try {
+    const fd = new FormData(); fd.append('file', blob, nome);
+    const r = await new Promise((ok, ko) => {
+      const x = new XMLHttpRequest(); x.open('POST', `/api/admin/estudio/projetos/${ES.p.id}/exportado`); x.setRequestHeader('Authorization', 'Bearer ' + ESTADO.token);
+      x.upload.onprogress = e => { if (e.lengthComputable && tx) tx.textContent = `Enviando o vídeo... ${Math.round(e.loaded * 100 / e.total)}%`; const b = document.getElementById('ev-export-barra'); if (b && e.lengthComputable) b.style.width = Math.round(e.loaded * 100 / e.total) + '%'; };
+      x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch (e) {} x.status < 300 ? ok(j) : ko(new Error(j.error || 'Falha no envio.')); };
+      x.onerror = () => ko(new Error('Falha de conexão no envio.')); x.send(fd);
+    });
+    ES.p.video_url = r.url; ES.p.video_mime = r.mime; if (ES.p.status === 'rascunho') ES.p.status = 'pronto';
+    if (r.aviso) mostrarToast(r.aviso, true);
+  } catch (e) { mostrarToast('O vídeo foi gerado, mas não subiu para o servidor: ' + e.message + ' — você ainda pode baixar.', true); }
+  document.getElementById('ev-export-ov').hidden = true;
+  evAbrirPublicar(true);
+}
+
+// ---------- Abrir / fechar o editor ----------
+async function evAbrirEditor(id) {
+  let p;
+  try { p = await api('/api/admin/estudio/projetos/' + id); } catch (e) { return mostrarToast(e.message, true); }
+  const d = p.dados || {};
+  ['midias', 'clips', 'textos', 'audios'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
+  d.extras = d.extras || {}; d.ajustes = d.ajustes || { brilho: 100, contraste: 100, saturacao: 100 }; d.filtro = d.filtro || 'nenhum'; d.transicao = d.transicao || 'corte';
+  p.dados = d;
+  const f = EV_FORMATOS[p.formato] || EV_FORMATOS['9:16'];
+  ES = { p, W: f.w, H: f.h, t: 0, tocando: false, sel: null, pxs: 60, hist: [], fut: [], sujo: false, painel: 'midia', zonaSegura: true, els: {}, aud: {}, caixas: {} };
+  evCarregarFontes();
+  let el = document.getElementById('ev-editor');
+  if (!el) { el = document.createElement('div'); el.id = 'ev-editor'; document.body.appendChild(el); }
+  document.body.classList.add('ev-aberto');
+  el.innerHTML = `
+    <header class="ev-topo">
+      <button class="ev-tb" onclick="evFechar()" title="Voltar">←</button>
+      <input class="ev-titulo" id="ev-titulo" value="${escapeHtml(p.titulo)}" onchange="ES.p.titulo=this.value; evMudou(false)">
+      <select class="ev-sel" onchange="evMudarFormato(this.value)">${Object.entries(EV_FORMATOS).map(([k, v]) => `<option value="${k}" ${p.formato === k ? 'selected' : ''}>${v.rot}</option>`).join('')}</select>
+      <button class="ev-tb" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)">↶</button><button class="ev-tb" onclick="evRefazer()" title="Refazer (Ctrl+Y)">↷</button>
+      <span class="ev-salvo" id="ev-salvo">Salvo</span>
+      <div style="flex:1"></div>
+      <button class="ev-score" id="ev-score" onclick="evAbrirAnalise()" title="Potencial de viralização"></button>
+      <button class="ev-tb" onclick="evAbrirPublicar()">📤 Publicar</button>
+      <button class="ev-tb primario" onclick="evExportar()">⬇️ Exportar vídeo</button>
+    </header>
+    <div class="ev-corpo">
+      <aside class="ev-esq">
+        <nav class="ev-abas">${[['midia', '🎞️', 'Mídia'], ['texto', '🔤', 'Texto'], ['audio', '🎵', 'Áudio'], ['filtros', '🎨', 'Filtros'], ['elementos', '✨', 'Elementos'], ['ia', '🤖', 'Agente IA']].map(([k, i, r]) => `<button data-p="${k}" onclick="evPainel('${k}')"><span>${i}</span>${r}</button>`).join('')}</nav>
+        <div class="ev-painel" id="ev-painel"></div>
+      </aside>
+      <main class="ev-centro">
+        <div class="ev-palco" id="ev-palco"><canvas id="ev-canvas" width="${f.w}" height="${f.h}"></canvas></div>
+        <div class="ev-play">
+          <button onclick="evIrPara(0)" title="Início">⏮</button>
+          <button class="ev-play-btn" id="ev-play" onclick="evTocar()" title="Reproduzir (espaço)">▶</button>
+          <span class="ev-tempo"><b id="ev-t">00:00.0</b> / <span id="ev-tt">00:00.0</span></span>
+          <label class="ev-chk"><input type="checkbox" ${ES.zonaSegura ? 'checked' : ''} onchange="ES.zonaSegura=this.checked; evDesenhar()"> Área segura</label>
+        </div>
+      </main>
+      <aside class="ev-dir" id="ev-props"></aside>
+    </div>
+    <section class="ev-linha">
+      <div class="ev-linha-barra">
+        <button onclick="evDividir()" title="Dividir no cursor (S)">✂️ Dividir</button>
+        <button onclick="evDuplicarSel()" title="Duplicar (Ctrl+D)">⧉ Duplicar</button>
+        <button onclick="evExcluirSel()" title="Excluir (Delete)">🗑️ Excluir</button>
+        <div style="flex:1"></div>
+        <span style="font-size:12px;opacity:.7;">Zoom</span><input type="range" min="15" max="200" value="${ES.pxs}" oninput="ES.pxs=Number(this.value); evDesenharLinha()">
+      </div>
+      <div class="ev-linha-scroll" id="ev-linha-scroll"><div class="ev-linha-int" id="ev-linha-int"></div></div>
+    </section>
+    <div class="ev-export-ov" id="ev-export-ov" hidden><div class="ev-export-caixa"><div class="ev-export-tit">🎬 Exportando seu vídeo</div><div class="ev-export-sub">Mantenha esta aba aberta e na frente — o vídeo é renderizado em tempo real, em alta qualidade (${f.w}×${f.h}).</div><div class="ev-export-pista"><i id="ev-export-barra"></i></div><div id="ev-export-txt" class="ev-export-sub"></div><button onclick="evCancelarExport()">Cancelar</button></div></div>
+    <div id="ev-modal"></div>`;
+  ES.canvas = document.getElementById('ev-canvas'); ES.ctx = ES.canvas.getContext('2d');
+  evLigarCanvas();
+  document.addEventListener('keydown', evTeclas);
+  evPainel('midia'); evDesenharProps(); evDesenharLinha(); evDesenhar(); evAtualizarCabeca(); evAtualizarScore();
+  ES.autosave = setInterval(() => { if (ES && ES.sujo && !ES.exportando) evSalvar(true).catch(() => {}); }, 5000);
+  if (!d.clips.length && !d.textos.length) setTimeout(() => evDica('Comece subindo seus vídeos e fotos em 🎞️ Mídia — ou peça ao 🤖 Agente IA para montar a edição.'), 400);
+}
+async function evFechar() {
+  if (!ES) return;
+  if (ES.exportando) return mostrarToast('Aguarde a exportação terminar (ou cancele).', true);
+  evPausar();
+  if (ES.sujo) await evSalvar(true).catch(() => {});
+  clearInterval(ES.autosave);
+  document.removeEventListener('keydown', evTeclas);
+  Object.values(ES.els || {}).forEach(el => { try { el.pause && el.pause(); el.removeAttribute && el.removeAttribute('src'); } catch (e) {} });
+  Object.values(ES.aud || {}).forEach(el => { try { el.pause(); el.removeAttribute('src'); } catch (e) {} });
+  if (ES.actx) ES.actx.close().catch(() => {});
+  ES = null;
+  const el = document.getElementById('ev-editor'); if (el) el.remove();
+  document.body.classList.remove('ev-aberto');
+  if (typeof renderEstudioVideo === 'function' && document.getElementById('ev-pagina')) renderEstudioVideo();
+}
+function evDica(txt) { const n = document.createElement('div'); n.className = 'ev-dica'; n.textContent = txt; document.getElementById('ev-palco').appendChild(n); setTimeout(() => n.remove(), 6000); }
+
+// ---------- Histórico / salvamento ----------
+function evMudou(redesenhar = true, semHistorico) {
+  if (!ES) return;
+  if (!semHistorico) { ES.hist.push(ES.ultimoEstado || JSON.stringify(ES.p.dados)); if (ES.hist.length > 80) ES.hist.shift(); ES.fut = []; }
+  ES.ultimoEstado = JSON.stringify(ES.p.dados);
+  ES.sujo = true; const s = document.getElementById('ev-salvo'); if (s) { s.textContent = '● Alterações não salvas'; s.classList.add('pend'); }
+  if (redesenhar) { evDesenharLinha(); evDesenhar(); evAtualizarCabeca(); }
+  evAtualizarScore();
+}
+function evDesfazer() { if (!ES || !ES.hist.length) return; ES.fut.push(JSON.stringify(ES.p.dados)); ES.p.dados = JSON.parse(ES.hist.pop()); ES.ultimoEstado = JSON.stringify(ES.p.dados); ES.sel = null; evMudou(true, true); evDesenharProps(); }
+function evRefazer() { if (!ES || !ES.fut.length) return; ES.hist.push(JSON.stringify(ES.p.dados)); ES.p.dados = JSON.parse(ES.fut.pop()); ES.ultimoEstado = JSON.stringify(ES.p.dados); ES.sel = null; evMudou(true, true); evDesenharProps(); }
+async function evSalvar(silencioso) {
+  if (!ES) return;
+  const s = document.getElementById('ev-salvo');
+  await api('/api/admin/estudio/projetos/' + ES.p.id, { method: 'PUT', body: JSON.stringify({ titulo: ES.p.titulo, formato: ES.p.formato, tipo: ES.p.tipo, dados: ES.p.dados, legenda: ES.p.legenda || '', hashtags: ES.p.hashtags || '', viral_score: ES.score || 0 }) });
+  ES.sujo = false; if (s) { s.textContent = '✓ Salvo ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); s.classList.remove('pend'); }
+  if (!silencioso) mostrarToast('Projeto salvo!');
+}
+function evMudarFormato(f) {
+  ES.p.formato = f; const F = EV_FORMATOS[f]; ES.W = F.w; ES.H = F.h; ES.canvas.width = F.w; ES.canvas.height = F.h;
+  ES.ctx = ES.canvas.getContext('2d'); evMudou();
+}
+
+// ---------- Interação no canvas: selecionar e arrastar textos ----------
+function evLigarCanvas() {
+  const cv = ES.canvas; let arr = null;
+  const pos = e => { const b = cv.getBoundingClientRect(); return { x: (e.clientX - b.left) * ES.W / b.width, y: (e.clientY - b.top) * ES.H / b.height }; };
+  cv.addEventListener('pointerdown', e => {
+    const p = pos(e);
+    const alvo = Object.entries(ES.caixas).reverse().find(([, b]) => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h);
+    if (alvo) {
+      const x = ES.p.dados.textos.find(t => t.id === alvo[0]); if (!x) return;
+      evSelecionar('texto', x.id);
+      const est = Object.assign({}, EV_ESTILOS[x.estilo] || {}, x);
+      arr = { x, dx: p.x - (est.x !== undefined ? est.x : 0.5) * ES.W, dy: p.y - (est.y !== undefined ? est.y : 0.5) * ES.H, mexeu: false };
+      cv.setPointerCapture(e.pointerId);
+    } else if (!ES.tocando) evTocar(); else evPausar();
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!arr) return; const p = pos(e);
+    arr.x.x = Math.max(0.05, Math.min(0.95, (p.x - arr.dx) / ES.W)); arr.x.y = Math.max(0.04, Math.min(0.96, (p.y - arr.dy) / ES.H));
+    if (Math.abs(arr.x.x - 0.5) < 0.015) arr.x.x = 0.5; // ímã no centro
+    arr.mexeu = true; evDesenhar();
+  });
+  cv.addEventListener('pointerup', () => { if (arr && arr.mexeu) { evMudou(false); evDesenharProps(); } arr = null; });
+}
+function evTeclas(e) {
+  if (!ES || ES.exportando) return;
+  const digitando = /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '') || (document.activeElement || {}).isContentEditable;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !digitando) { e.preventDefault(); e.shiftKey ? evRefazer() : evDesfazer(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y' && !digitando) { e.preventDefault(); evRefazer(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); evSalvar(); return; }
+  if (digitando) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') { e.preventDefault(); evDuplicarSel(); return; }
+  if (e.key === ' ') { e.preventDefault(); evTocar(); }
+  else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); evExcluirSel(); }
+  else if (e.key.toLowerCase() === 's') evDividir();
+  else if (e.key === 'ArrowRight') evIrPara(ES.t + (e.shiftKey ? 1 : 1 / 30));
+  else if (e.key === 'ArrowLeft') evIrPara(ES.t - (e.shiftKey ? 1 : 1 / 30));
+  else if (e.key === 'Escape') { if (document.getElementById('ev-modal').innerHTML) document.getElementById('ev-modal').innerHTML = ''; else evSelecionar(null); }
+}
+
+// ---------- Linha do tempo ----------
+function evAtualizarCabeca() {
+  if (!ES) return;
+  const t = document.getElementById('ev-t'), tt = document.getElementById('ev-tt'), c = document.getElementById('ev-cabeca');
+  if (t) t.textContent = evFmtT(ES.t); if (tt) tt.textContent = evFmtT(evTotal());
+  if (c) c.style.left = (ES.t * ES.pxs + 90) + 'px';
+  if (ES.tocando) { const sc = document.getElementById('ev-linha-scroll'); if (sc) { const x = ES.t * ES.pxs + 90; if (x > sc.scrollLeft + sc.clientWidth - 60) sc.scrollLeft = x - 120; } }
+}
+function evAtualizarBotaoPlay() { const b = document.getElementById('ev-play'); if (b) b.textContent = ES && ES.tocando ? '⏸' : '▶'; }
+function evFaixas(itens) { // distribui itens sobrepostos em linhas
+  const faixas = []; itens.slice().sort((a, b) => a.ini - b.ini).forEach(x => { let f = faixas.find(fx => fx.fim <= x.ini + 0.001); if (!f) { f = { fim: 0, itens: [] }; faixas.push(f); } f.itens.push(x); f.fim = x.ini + x.dur; });
+  return faixas;
+}
+function evDesenharLinha() {
+  if (!ES) return;
+  const d = ES.p.dados, px = ES.pxs, tot = evTotal(), larg = Math.max(tot + 10, 30) * px, ini = evInicios(), s = ES.sel || {};
+  const regua = []; const passo = px < 30 ? 5 : px < 70 ? 2 : 1;
+  for (let x = 0; x <= tot + 10; x += passo) regua.push(`<span style="left:${x * px}px">${x % 60 === 0 && x ? Math.floor(x / 60) + 'min' : x + 's'}</span>`);
+  const fxT = evFaixas(d.textos), fxA = evFaixas(d.audios);
+  const bloco = (tipo, x, cls, conteudo, left, width) => `<div class="ev-bl ${cls} ${s.tipo === tipo && s.id === x.id ? 'sel' : ''}" style="left:${left}px;width:${Math.max(18, width)}px" data-tipo="${tipo}" data-id="${x.id}" onpointerdown="evPegarBloco(event,'${tipo}','${x.id}')">${conteudo}<i class="ev-al esq" data-lado="esq"></i><i class="ev-al dir" data-lado="dir"></i></div>`;
+  document.getElementById('ev-linha-int').innerHTML = `
+    <div class="ev-regua" style="width:${larg}px" onpointerdown="evClicarRegua(event)">${regua.join('')}</div>
+    <div class="ev-pista"><div class="ev-rot">🎞️ Vídeo</div><div class="ev-trilho" style="width:${larg}px">
+      ${d.clips.map((c, i) => { const m = evMidia(c.midia) || {}; return bloco('clip', c, 'clip' + (m.tipo === 'imagem' ? ' img' : ''), `${m.thumb ? `<img src="${m.thumb}">` : ''}<span>${escapeHtml(m.nome || 'clipe')}${c.vel && c.vel !== 1 ? ' · ' + c.vel + 'x' : ''}</span>${i > 0 && (c.transicao || d.transicao) !== 'corte' ? '<b class="ev-trans" title="Transição">⟷</b>' : ''}`, ini[i] * px, evClipDur(c) * px); }).join('') || '<div class="ev-vazio-pista">Arraste ou adicione vídeos e fotos aqui</div>'}
+    </div></div>
+    ${(fxT.length ? fxT : [{ itens: [] }]).map((f, k) => `<div class="ev-pista curta"><div class="ev-rot">${k ? '' : '🔤 Texto'}</div><div class="ev-trilho" style="width:${larg}px">${f.itens.map(x => bloco('texto', x, 'texto e-' + (x.estilo || 'apoio'), `<span>${escapeHtml(x.texto || '…')}</span>`, x.ini * px, x.dur * px)).join('')}</div></div>`).join('')}
+    ${(fxA.length ? fxA : [{ itens: [] }]).map((f, k) => `<div class="ev-pista curta"><div class="ev-rot">${k ? '' : '🎵 Áudio'}</div><div class="ev-trilho" style="width:${larg}px">${f.itens.map(a => bloco('audio', a, 'audio', `<span>🎵 ${escapeHtml((evMidia(a.midia) || {}).nome || 'áudio')}</span>`, a.ini * px, a.dur * px)).join('')}</div></div>`).join('')}
+    <div class="ev-cabeca" id="ev-cabeca"><i></i></div>`;
+  evAtualizarCabeca();
+}
+function evClicarRegua(e) {
+  const r = e.currentTarget.getBoundingClientRect();
+  const mover = ev => evIrPara((ev.clientX - r.left) / ES.pxs);
+  mover(e);
+  const sol = () => { window.removeEventListener('pointermove', mover); window.removeEventListener('pointerup', sol); };
+  window.addEventListener('pointermove', mover); window.addEventListener('pointerup', sol);
+}
+// Arrastar blocos: mover (texto/áudio), reordenar (clipes) e aparar pelas bordas.
+function evPegarBloco(e, tipo, id) {
+  e.stopPropagation();
+  const d = ES.p.dados, lado = e.target.dataset ? e.target.dataset.lado : null;
+  const lista = tipo === 'clip' ? d.clips : tipo === 'texto' ? d.textos : d.audios;
+  const x = lista.find(i => i.id === id); if (!x) return;
+  evSelecionar(tipo, id, true);
+  const x0 = e.clientX, orig = JSON.parse(JSON.stringify(x)), px = ES.pxs, antes = JSON.stringify(d); let mexeu = false;
+  const m = tipo === 'clip' ? evMidia(x.midia) : tipo === 'audio' ? evMidia(x.midia) : null;
+  const durMidia = m && m.tipo !== 'imagem' ? (m.duracao || 9999) : 9999;
+  const mover = ev => {
+    const dt = (ev.clientX - x0) / px; if (Math.abs(ev.clientX - x0) > 3) mexeu = true; if (!mexeu) return;
+    if (tipo === 'clip') {
+      const vel = x.vel || 1;
+      if (lado === 'esq') x.ini = Math.max(0, Math.min(orig.fim - 0.2, orig.ini + dt * vel));
+      else if (lado === 'dir') x.fim = Math.max(orig.ini + 0.2, Math.min(durMidia, orig.fim + dt * vel));
+      else { // reordenar
+        const ini = evInicios(), centro = ini[lista.indexOf(x)] + evClipDur(x) / 2 + dt;
+        let alvo = lista.findIndex((c, i) => centro < ini[i] + evClipDur(c) / 2); if (alvo < 0) alvo = lista.length - 1;
+        const at = lista.indexOf(x); if (alvo !== at) { lista.splice(at, 1); lista.splice(alvo, 0, x); }
+      }
+    } else {
+      if (lado === 'esq') { const novo = Math.max(0, Math.min(orig.ini + orig.dur - 0.2, orig.ini + dt)); x.dur = orig.dur - (novo - orig.ini); if (tipo === 'audio') x.corte = Math.max(0, (orig.corte || 0) + (novo - orig.ini)); x.ini = novo; }
+      else if (lado === 'dir') x.dur = Math.max(0.2, Math.min(tipo === 'audio' ? durMidia - (x.corte || 0) : 600, orig.dur + dt));
+      else { x.ini = Math.max(0, orig.ini + dt); const pc = [0, ES.t, ...evInicios()].find(v => Math.abs(v - x.ini) < 6 / px * 1.5); if (pc !== undefined) x.ini = pc; }
+    }
+    evDesenharLinha(); evDesenhar();
+  };
+  const sol = () => { window.removeEventListener('pointermove', mover); window.removeEventListener('pointerup', sol); if (mexeu) { ES.ultimoEstado = antes; evMudou(); evDesenharProps(); } else { if (tipo === 'clip') evIrPara(evInicios()[lista.indexOf(x)] + 0.01); else evIrPara(x.ini + 0.01); } };
+  window.addEventListener('pointermove', mover); window.addEventListener('pointerup', sol);
+}
+function evSelecionar(tipo, id, semLinha) {
+  ES.sel = tipo ? { tipo, id } : null;
+  if (!semLinha) evDesenharLinha(); else document.querySelectorAll('.ev-bl').forEach(b => b.classList.toggle('sel', b.dataset.tipo === tipo && b.dataset.id === id));
+  evDesenharProps(); evDesenhar();
+}
+function evItemSel() { const s = ES.sel; if (!s) return null; const d = ES.p.dados; return (s.tipo === 'clip' ? d.clips : s.tipo === 'texto' ? d.textos : d.audios).find(x => x.id === s.id) || null; }
+function evDividir() {
+  const d = ES.p.dados, t = ES.t;
+  if (ES.sel && ES.sel.tipo !== 'clip') {
+    const x = evItemSel(); if (!x || t <= x.ini + 0.1 || t >= x.ini + x.dur - 0.1) return mostrarToast('Coloque o cursor no meio do item para dividir.', true);
+    const novo = Object.assign(JSON.parse(JSON.stringify(x)), { id: evUid(), ini: t, dur: x.ini + x.dur - t }); if (ES.sel.tipo === 'audio') novo.corte = (x.corte || 0) + (t - x.ini);
+    x.dur = t - x.ini; (ES.sel.tipo === 'texto' ? d.textos : d.audios).push(novo); evMudou(); return;
+  }
+  const ini = evInicios(); const i = d.clips.findIndex((c, k) => t > ini[k] + 0.1 && t < ini[k] + evClipDur(c) - 0.1);
+  if (i < 0) return mostrarToast('Coloque o cursor no meio de um clipe para dividir.', true);
+  const c = d.clips[i], corte = c.ini + (t - ini[i]) * (c.vel || 1);
+  const novo = Object.assign(JSON.parse(JSON.stringify(c)), { id: evUid(), ini: corte, transicao: 'corte' }); c.fim = corte;
+  d.clips.splice(i + 1, 0, novo); ES.sel = { tipo: 'clip', id: novo.id }; evMudou(); evDesenharProps();
+}
+function evExcluirSel() {
+  const s = ES.sel; if (!s) return; const d = ES.p.dados;
+  const k = s.tipo === 'clip' ? 'clips' : s.tipo === 'texto' ? 'textos' : 'audios';
+  d[k] = d[k].filter(x => x.id !== s.id); ES.sel = null; evMudou(); evDesenharProps();
+}
+function evDuplicarSel() {
+  const x = evItemSel(); if (!x) return; const d = ES.p.dados, s = ES.sel;
+  const novo = Object.assign(JSON.parse(JSON.stringify(x)), { id: evUid() });
+  if (s.tipo === 'clip') d.clips.splice(d.clips.indexOf(x) + 1, 0, novo); else { novo.ini = x.ini + x.dur; (s.tipo === 'texto' ? d.textos : d.audios).push(novo); }
+  ES.sel = { tipo: s.tipo, id: novo.id }; evMudou(); evDesenharProps();
+}
+
+// ---------- Painéis da esquerda ----------
+function evPainel(qual) {
+  ES.painel = qual;
+  document.querySelectorAll('.ev-abas button').forEach(b => b.classList.toggle('on', b.dataset.p === qual));
+  const el = document.getElementById('ev-painel'), d = ES.p.dados;
+  if (qual === 'midia') {
+    el.innerHTML = `<h4>Mídia do projeto</h4>
+      <label class="ev-up"><input type="file" multiple accept="video/*,image/*,audio/*" hidden onchange="evSubir(this.files)"><b>⬆️ Subir vídeos, fotos ou áudios</b><small>Do computador ou do celular. Até 1GB por arquivo.</small></label>
+      <div id="ev-up-prog"></div>
+      <div class="ev-midias">${d.midias.filter(m => m.tipo !== 'audio').map(m => `<div class="ev-midia" title="${escapeHtml(m.nome)}">${m.thumb ? `<img src="${m.thumb}">` : `<div class="ev-midia-ico">${m.tipo === 'video' ? '🎬' : '🖼️'}</div>`}<span>${m.tipo === 'video' ? evFmtT(m.duracao) : 'foto'}</span><button onclick="evAdicionarClipe('${m.id}')" title="Adicionar na linha do tempo">＋</button><button class="x" onclick="evRemoverMidia('${m.id}')" title="Remover do projeto">×</button></div>`).join('') || '<div class="ev-vazio">Nenhuma mídia ainda.</div>'}</div>
+      ${d.midias.some(m => m.tipo !== 'audio') ? `<button class="ev-btn" onclick="evAdicionarTodas()">＋ Colocar todas na linha do tempo</button>` : ''}
+      <div class="ev-dica-fixa">💡 Dica de edição viral: cortes curtos (1,5 a 3 s), o melhor momento primeiro e nada de introdução.</div>`;
+  } else if (qual === 'texto') {
+    el.innerHTML = `<h4>Adicionar texto</h4><div class="ev-estilos">${Object.entries(EV_ESTILOS).filter(([k]) => k !== 'emoji').map(([k, e]) => `<button class="ev-estilo e-${k}" onclick="evAdicionarTexto('${k}')"><span style="font-family:'${e.fonte}';font-weight:${e.peso};color:${e.cor};${e.fundo ? 'background:' + e.fundo + ';padding:2px 8px;border-radius:6px;' : ''}${e.contorno ? '-webkit-text-stroke:1px #000;' : ''}">${e.maiusc ? e.rot.toUpperCase() : e.rot}</span></button>`).join('')}</div>
+      <h4>Legendas automáticas</h4>
+      <div class="ev-sub">Cole o que é falado no vídeo (ou o roteiro). As legendas são cortadas em blocos curtos e distribuídas no tempo — estilo Reels, com palavra-chave em destaque.</div>
+      <textarea id="ev-leg-txt" rows="5" placeholder="Ex.: Se você é líder e só cobra resultado, presta atenção…"></textarea>
+      <div class="ev-linha-btn"><button class="ev-btn" onclick="evGerarLegendas(false)">⚡ Gerar legendas</button><button class="ev-btn ia" onclick="evGerarLegendas(true)">🤖 Com IA</button></div>
+      <div class="ev-sub">Para ter a fala exata, use a legenda automática do próprio Instagram ao postar, ou cole a transcrição aqui.</div>`;
+  } else if (qual === 'audio') {
+    const auds = d.midias.filter(m => m.tipo === 'audio');
+    el.innerHTML = `<h4>Música e narração</h4>
+      <label class="ev-up"><input type="file" multiple accept="audio/*" hidden onchange="evSubir(this.files)"><b>🎵 Subir música / áudio</b><small>MP3, WAV, M4A…</small></label>
+      <button class="ev-btn" id="ev-btn-narrar" onclick="evNarrar()">🎙️ Gravar narração</button>
+      <div class="ev-midias lista">${auds.map(m => `<div class="ev-aud"><span>🎵 ${escapeHtml(m.nome)} <small>${evFmtT(m.duracao)}</small></span><button onclick="evAdicionarAudio('${m.id}')" title="Adicionar">＋</button><button class="x" onclick="evRemoverMidia('${m.id}')">×</button></div>`).join('') || '<div class="ev-vazio">Nenhum áudio ainda.</div>'}</div>
+      <div class="ev-dica-fixa">🔥 Áudios em alta aumentam o alcance. Use aqui uma trilha sua ou sem direitos autorais; para músicas em alta do Instagram, poste o vídeo sem música e escolha o áudio no próprio app (as músicas comerciais não podem ser embutidas no arquivo).</div>
+      <h4>Volume do som original</h4>
+      <div class="ev-sub">Ajuste por clipe (selecione o clipe na linha do tempo) ou para todos:</div>
+      <div class="ev-linha-btn"><button class="ev-btn" onclick="evVolumeTodos(1)">🔊 100%</button><button class="ev-btn" onclick="evVolumeTodos(0.3)">🔉 30%</button><button class="ev-btn" onclick="evVolumeTodos(0)">🔇 Mudo</button></div>`;
+  } else if (qual === 'filtros') {
+    const aj = d.ajustes;
+    el.innerHTML = `<h4>Filtro do vídeo</h4><div class="ev-filtros">${Object.entries(EV_FILTROS).map(([k, f]) => `<button class="${d.filtro === k ? 'on' : ''}" onclick="ES.p.dados.filtro='${k}'; evMudou(); evPainel('filtros')"><i style="filter:${f[1] || 'none'}"></i>${f[0]}</button>`).join('')}</div>
+      <h4>Ajustes</h4>${[['brilho', 'Brilho'], ['contraste', 'Contraste'], ['saturacao', 'Saturação']].map(([k, r]) => `<label class="ev-slider">${r} <b id="ev-aj-${k}">${aj[k] || 100}%</b><input type="range" min="50" max="150" value="${aj[k] || 100}" oninput="ES.p.dados.ajustes.${k}=Number(this.value); document.getElementById('ev-aj-${k}').textContent=this.value+'%'; evDesenhar()" onchange="evMudou(false)"></label>`).join('')}
+      <h4>Transição padrão entre clipes</h4><div class="ev-chips">${Object.entries(EV_TRANS).map(([k, r]) => `<button class="${d.transicao === k ? 'on' : ''}" onclick="ES.p.dados.transicao='${k}'; ES.p.dados.clips.forEach(c=>delete c.transicao); evMudou(); evPainel('filtros')">${r}</button>`).join('')}</div>`;
+  } else if (qual === 'elementos') {
+    const ex = d.extras;
+    const emojis = ['🔥', '🚀', '✅', '❌', '⚠️', '💡', '👇', '👉', '📈', '📉', '💰', '🎯', '⭐', '❤️', '😱', '🤯', '👏', '💪', '🧠', '⏰', '📌', '🏆', '🍺', '🚚'];
+    el.innerHTML = `<h4>Emojis e figurinhas</h4><div class="ev-emojis">${emojis.map(e => `<button onclick="evAdicionarTexto('emoji','${e}')">${e}</button>`).join('')}</div>
+      <h4>Elementos da marca</h4>
+      <label class="ev-chk2"><input type="checkbox" ${ex.barra ? 'checked' : ''} onchange="ES.p.dados.extras.barra=this.checked; evMudou(false); evDesenhar()"> Barra de progresso no topo (aumenta retenção)</label>
+      <label>Cor da barra <input type="color" value="${ex.corBarra || '#dc4c4c'}" onchange="ES.p.dados.extras.corBarra=this.value; evMudou(false); evDesenhar()"></label>
+      <label>Marca d'água / @ <input value="${escapeHtml(ex.marca || '')}" placeholder="@impulsionarv4" onchange="ES.p.dados.extras.marca=this.value; evMudou(false); evDesenhar()"></label>
+      <label>Cor de fundo <input type="color" value="${ex.corFundo || '#000000'}" onchange="ES.p.dados.extras.corFundo=this.value; evMudou(false); evDesenhar()"></label>
+      <h4>Modelos prontos</h4><div class="ev-chips col">${EV_MODELOS.map((m, i) => `<button onclick="evAplicarModelo(${i})">${m.ico} ${m.nome}</button>`).join('')}</div>`;
+  } else if (qual === 'ia') evPainelIa();
+}
+
+// ---------- Mídia ----------
+function evInfoMidia(file, url) {
+  return new Promise(ok => {
+    const tipo = /^image\//.test(file.type) || /\.(png|jpe?g|gif|webp)$/i.test(file.name) ? 'imagem' : /^audio\//.test(file.type) || /\.(mp3|wav|m4a|aac|ogg)$/i.test(file.name) ? 'audio' : 'video';
+    const base = { id: evUid(), url, nome: file.name.replace(/\.[^.]+$/, '').slice(0, 60), tipo, duracao: 0 };
+    const local = URL.createObjectURL(file);
+    const miniatura = (el, w, h) => { try { const c = document.createElement('canvas'); const s = 160 / Math.max(w, h); c.width = Math.round(w * s); c.height = Math.round(h * s); c.getContext('2d').drawImage(el, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.7); } catch (e) { return ''; } };
+    if (tipo === 'imagem') { const i = new Image(); i.onload = () => { base.w = i.naturalWidth; base.h = i.naturalHeight; base.thumb = miniatura(i, i.naturalWidth, i.naturalHeight); URL.revokeObjectURL(local); ok(base); }; i.onerror = () => ok(base); i.src = local; return; }
+    const el = document.createElement(tipo === 'audio' ? 'audio' : 'video'); el.preload = 'auto'; el.muted = true;
+    el.onloadedmetadata = () => { base.duracao = isFinite(el.duration) ? el.duration : 0; base.w = el.videoWidth; base.h = el.videoHeight; if (tipo === 'audio') { URL.revokeObjectURL(local); ok(base); } else el.currentTime = Math.min(1, base.duracao / 3); };
+    el.onseeked = () => { base.thumb = miniatura(el, el.videoWidth, el.videoHeight); URL.revokeObjectURL(local); ok(base); };
+    el.onerror = () => ok(base); el.src = local;
+  });
+}
+async function evSubir(files) {
+  files = Array.from(files || []); if (!files.length) return;
+  const prog = document.getElementById('ev-up-prog');
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    if (prog) prog.innerHTML = `<div class="ev-prog"><span>Enviando ${escapeHtml(f.name)} (${i + 1}/${files.length})</span><div><i id="ev-up-barra"></i></div></div>`;
+    try {
+      const r = await new Promise((ok, ko) => {
+        const x = new XMLHttpRequest(); x.open('POST', '/api/admin/estudio/upload'); x.setRequestHeader('Authorization', 'Bearer ' + ESTADO.token);
+        x.upload.onprogress = e => { const b = document.getElementById('ev-up-barra'); if (b && e.lengthComputable) b.style.width = Math.round(e.loaded * 100 / e.total) + '%'; };
+        x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch (e) {} x.status < 300 ? ok(j) : ko(new Error(j.error || 'Falha no envio.')); };
+        x.onerror = () => ko(new Error('Falha de conexão.')); const fd = new FormData(); fd.append('file', f); x.send(fd);
+      });
+      const m = await evInfoMidia(f, r.url);
+      ES.p.dados.midias.push(m);
+      if (m.tipo === 'audio') evAdicionarAudio(m.id, true); else evAdicionarClipe(m.id, true);
+    } catch (e) { mostrarToast(f.name + ': ' + e.message, true); }
+  }
+  if (prog) prog.innerHTML = '';
+  evMudou(); evPainel(ES.painel);
+}
+function evAdicionarClipe(mid, semRedesenhar) {
+  const m = evMidia(mid); if (!m) return;
+  const c = { id: evUid(), midia: mid, ini: 0, fim: m.tipo === 'imagem' ? 3 : Math.min(m.duracao || 5, 60), vel: 1, vol: 1, zoom: m.tipo === 'imagem' ? 1.12 : 1, ajuste: m.w && m.h && m.w > m.h && ES.p.formato === '9:16' ? 'conter' : 'cobrir' };
+  ES.p.dados.clips.push(c);
+  if (!semRedesenhar) { evMudou(); evPainel(ES.painel); }
+}
+function evAdicionarTodas() { ES.p.dados.midias.filter(m => m.tipo !== 'audio' && !ES.p.dados.clips.some(c => c.midia === m.id)).forEach(m => evAdicionarClipe(m.id, true)); evMudou(); }
+function evRemoverMidia(mid) {
+  if (!confirm('Remover esta mídia do projeto (e da linha do tempo)?')) return;
+  const d = ES.p.dados; d.midias = d.midias.filter(m => m.id !== mid); d.clips = d.clips.filter(c => c.midia !== mid); d.audios = d.audios.filter(a => a.midia !== mid);
+  ES.sel = null; evMudou(); evPainel(ES.painel); evDesenharProps();
+}
+function evAdicionarAudio(mid, semRedesenhar) {
+  const m = evMidia(mid); if (!m) return; const tot = evTotal();
+  const ehNarr = /narra/i.test(m.nome);
+  ES.p.dados.audios.push({ id: evUid(), midia: mid, ini: ehNarr ? ES.t : 0, corte: 0, dur: Math.min(m.duracao || tot, ehNarr ? (m.duracao || 10) : Math.max(tot, 5)), vol: ehNarr ? 1 : 0.35, fadeIn: ehNarr ? 0 : 0.5, fadeOut: ehNarr ? 0 : 1.2 });
+  if (!semRedesenhar) { evMudou(); evPainel(ES.painel); }
+}
+function evVolumeTodos(v) { ES.p.dados.clips.forEach(c => { c.vol = v; c.mudo = v === 0; }); evMudou(false); mostrarToast(v ? `Som original em ${Math.round(v * 100)}%` : 'Som original desligado'); }
+let EV_NARR = null;
+async function evNarrar() {
+  const b = document.getElementById('ev-btn-narrar');
+  if (EV_NARR) { EV_NARR.rec.stop(); return; }
+  let s; try { s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); } catch (e) { return mostrarToast('Não consegui acessar o microfone.', true); }
+  const tipo = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+  const rec = new MediaRecorder(s, tipo ? { mimeType: tipo } : undefined), partes = [];
+  rec.ondataavailable = e => e.data.size && partes.push(e.data);
+  rec.onstop = async () => {
+    s.getTracks().forEach(t => t.stop()); EV_NARR = null; ES.narrando = false; evPausar();
+    const blob = new Blob(partes, { type: rec.mimeType || 'audio/webm' });
+    const f = new File([blob], 'Narração ' + new Date().toLocaleTimeString('pt-BR').slice(0, 5).replace(':', 'h') + (/mp4/.test(rec.mimeType) ? '.m4a' : '.webm'), { type: blob.type });
+    const ini = EV_NARR_INI || 0; ES.t = ini; await evSubir([f]);
+  };
+  EV_NARR = { rec }; EV_NARR_INI = ES.t; ES.narrando = true;
+  if (b) { b.textContent = '⏹ Parar narração'; b.classList.add('gravando'); }
+  // toca o vídeo sem som enquanto você narra por cima
+  rec.start(); if (!ES.tocando) evTocar();
+  mostrarToast('🎙️ Gravando — narre enquanto o vídeo toca. Clique de novo para parar.');
+}
+let EV_NARR_INI = 0;
+
+// ---------- Textos e legendas ----------
+function evAdicionarTexto(estilo, conteudo, ini, dur) {
+  const e = EV_ESTILOS[estilo] || EV_ESTILOS.apoio;
+  const x = { id: evUid(), texto: conteudo || ({ gancho: 'Ninguém te conta isso', titulo: 'Seu título', apoio: 'Texto de apoio', legenda: 'Legenda com DESTAQUE', cta: 'Comente "QUERO" 👇', caixa: 'Texto na caixa', emoji: '🔥' }[estilo] || 'Texto'),
+    ini: ini !== undefined ? ini : Math.min(ES.t, Math.max(0, evTotal() - 1)), dur: dur || (estilo === 'emoji' ? 1.5 : 2.5), estilo, x: 0.5, y: e.y };
+  if (estilo === 'cta' && ini === undefined && evTotal() > 3) x.ini = Math.max(0, evTotal() - 3);
+  if (estilo === 'gancho' && ini === undefined) { x.ini = 0; x.dur = 2.5; }
+  ES.p.dados.textos.push(x); ES.sel = { tipo: 'texto', id: x.id };
+  evMudou(); evDesenharProps();
+  setTimeout(() => { const i = document.getElementById('ev-prop-texto'); if (i && !conteudo) { i.focus(); i.select(); } }, 50);
+  return x;
+}
+function evQuebrarLegendas(texto, tot, ini) {
+  const palavras = String(texto || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean); if (!palavras.length) return [];
+  const blocos = []; let atual = [];
+  palavras.forEach(p => { atual.push(p); if (atual.length >= 4 || /[.!?,;:]$/.test(p) && atual.length >= 2) { blocos.push(atual.join(' ')); atual = []; } });
+  if (atual.length) blocos.push(atual.join(' '));
+  const pesos = blocos.map(b => b.split(' ').length + 0.6), soma = pesos.reduce((s, v) => s + v, 0), dispo = Math.max(1, tot - ini);
+  let t = ini;
+  return blocos.map((b, i) => {
+    const dur = Math.max(0.5, dispo * pesos[i] / soma);
+    // destaca a palavra mais "forte" do bloco (a mais longa)
+    const ws = b.split(' '); const maior = ws.reduce((m, w, k) => w.replace(/[^\wÀ-ú]/g, '').length > ws[m].replace(/[^\wÀ-ú]/g, '').length ? k : m, 0);
+    if (ws[maior].replace(/[^\wÀ-ú]/g, '').length >= 5) ws[maior] = ws[maior].toUpperCase();
+    const o = { texto: ws.join(' '), inicio: t, duracao: dur }; t += dur; return o;
+  });
+}
+async function evGerarLegendas(comIa) {
+  const txt = (document.getElementById('ev-leg-txt') || {}).value || '';
+  if (txt.trim().length < 5) return mostrarToast('Cole o texto falado no vídeo.', true);
+  const tot = evTotal(), ini = 0;
+  let lista;
+  if (comIa) {
+    evCarregando('O Agente está criando legendas dinâmicas...');
+    try { lista = (await api('/api/admin/estudio/ia/legendas-tempo', { method: 'POST', body: JSON.stringify({ roteiro: txt, duracao: tot }) })).legendas; }
+    catch (e) { evCarregando(null); if (/conectada/.test(e.message)) mostrarToast('IA desconectada — gerei as legendas automaticamente.'); else mostrarToast(e.message, true); lista = null; }
+    evCarregando(null);
+  }
+  if (!lista || !lista.length) lista = evQuebrarLegendas(txt, tot, ini);
+  const d = ES.p.dados; d.textos = d.textos.filter(x => x.estilo !== 'legenda');
+  lista.forEach(l => d.textos.push({ id: evUid(), texto: String(l.texto || ''), ini: Math.max(0, Number(l.inicio) || 0), dur: Math.max(0.4, Number(l.duracao) || 1), estilo: 'legenda', x: 0.5, y: EV_ESTILOS.legenda.y }));
+  evMudou(); mostrarToast(`✅ ${lista.length} legendas criadas. Ajuste o tempo arrastando na linha do tempo.`);
+}
+
+// ---------- Painel de propriedades (direita) ----------
+function evCampo(rot, html) { return `<label class="ev-campo"><span>${rot}</span>${html}</label>`; }
+function evSet(k, v, redesenharLinha) { const x = evItemSel(); if (!x) return; if (v === null) delete x[k]; else x[k] = v; evDesenhar(); if (redesenharLinha) evDesenharLinha(); }
+function evDesenharProps() {
+  const el = document.getElementById('ev-props'); if (!el || !ES) return;
+  const x = evItemSel(), s = ES.sel;
+  if (!x) {
+    el.innerHTML = `<h4>Projeto</h4>
+      ${evCampo('Tipo de post', `<select onchange="ES.p.tipo=this.value; evMudou(false)">${[['reels', 'Reels'], ['stories', 'Stories'], ['feed', 'Feed (vídeo)']].map(([k, r]) => `<option value="${k}" ${ES.p.tipo === k ? 'selected' : ''}>${r}</option>`).join('')}</select>`)}
+      ${evCampo('Legenda do post', `<textarea rows="6" placeholder="Primeira linha = gancho…" onchange="ES.p.legenda=this.value; evMudou(false)">${escapeHtml(ES.p.legenda || '')}</textarea>`)}
+      ${evCampo('Hashtags (3 a 5)', `<input value="${escapeHtml(ES.p.hashtags || '')}" placeholder="#lideranca #gestao" onchange="ES.p.hashtags=this.value; evMudou(false)">`)}
+      <div class="ev-linha-btn"><button class="ev-btn ia" onclick="evIaLegenda()">🤖 Legenda + hashtags</button></div>
+      <div class="ev-sub" style="margin-top:14px;">Selecione um clipe, texto ou áudio na linha do tempo para editar.<br><br><b>Atalhos:</b> espaço = play · S = dividir · Delete = excluir · Ctrl+Z = desfazer · Ctrl+D = duplicar · setas = quadro a quadro.</div>`;
+    return;
+  }
+  if (s.tipo === 'clip') {
+    const m = evMidia(x.midia) || {}, max = m.tipo === 'imagem' ? 30 : (m.duracao || 60);
+    el.innerHTML = `<h4>${m.tipo === 'imagem' ? '🖼️ Foto' : '🎬 Clipe'} <small>${escapeHtml(m.nome || '')}</small></h4>
+      ${m.tipo === 'imagem' ? evCampo('Duração (s)', `<input type="number" step="0.1" min="0.3" max="30" value="${(x.fim - x.ini).toFixed(1)}" onchange="evSet('fim', ES.p.dados.clips.find(c=>c.id==='${x.id}').ini + Math.max(0.3, Number(this.value)), true); evMudou(false)">`)
+        : evCampo('Corte: início / fim (s)', `<div class="ev-dupla"><input type="number" step="0.1" min="0" max="${max}" value="${x.ini.toFixed(1)}" onchange="evSet('ini', Math.max(0, Math.min(Number(this.value), ${x.fim} - 0.2)), true); evMudou(false)"><input type="number" step="0.1" min="0" max="${max}" value="${x.fim.toFixed(1)}" onchange="evSet('fim', Math.max(${x.ini} + 0.2, Math.min(Number(this.value), ${max})), true); evMudou(false)"></div>`)}
+      ${m.tipo !== 'imagem' ? evCampo('Velocidade', `<div class="ev-chips">${[0.5, 0.75, 1, 1.25, 1.5, 2, 3].map(v => `<button class="${(x.vel || 1) === v ? 'on' : ''}" onclick="evSet('vel', ${v}, true); evMudou(false); evDesenharProps()">${v}x</button>`).join('')}</div>`) : ''}
+      ${m.tipo !== 'imagem' ? evCampo(`Volume <b>${Math.round((x.mudo ? 0 : x.vol !== undefined ? x.vol : 1) * 100)}%</b>`, `<input type="range" min="0" max="2" step="0.05" value="${x.mudo ? 0 : x.vol !== undefined ? x.vol : 1}" oninput="evSet('vol', Number(this.value)); evSet('mudo', Number(this.value)===0); this.parentElement.querySelector('b').textContent=Math.round(this.value*100)+'%'" onchange="evMudou(false)">`) : ''}
+      ${evCampo(m.tipo === 'imagem' ? 'Zoom (movimento Ken Burns)' : 'Zoom (aproximar)', `<input type="range" min="1" max="1.6" step="0.01" value="${x.zoom || 1}" oninput="evSet('zoom', Number(this.value))" onchange="evMudou(false)">`)}
+      ${evCampo('Enquadramento', `<div class="ev-chips">${[['cobrir', 'Preencher'], ['conter', 'Inteiro + fundo desfocado']].map(([k, r]) => `<button class="${(x.ajuste || 'cobrir') === k ? 'on' : ''}" onclick="evSet('ajuste','${k}'); evMudou(false); evDesenharProps()">${r}</button>`).join('')}</div>`)}
+      ${evCampo('Posição horizontal / vertical', `<div class="ev-dupla"><input type="range" min="-0.5" max="0.5" step="0.01" value="${x.px || 0}" oninput="evSet('px', Number(this.value))" onchange="evMudou(false)"><input type="range" min="-0.5" max="0.5" step="0.01" value="${x.py || 0}" oninput="evSet('py', Number(this.value))" onchange="evMudou(false)"></div>`)}
+      ${evCampo('Filtro deste clipe', `<select onchange="evSet('filtro', this.value || null); evMudou(false)"><option value="">Igual ao vídeo</option>${Object.entries(EV_FILTROS).map(([k, f]) => `<option value="${k}" ${x.filtro === k ? 'selected' : ''}>${f[0]}</option>`).join('')}</select>`)}
+      ${evCampo('Transição de entrada', `<select onchange="evSet('transicao', this.value || null, true); evMudou(false)"><option value="">Padrão do vídeo</option>${Object.entries(EV_TRANS).map(([k, r]) => `<option value="${k}" ${x.transicao === k ? 'selected' : ''}>${r}</option>`).join('')}</select>`)}
+      <div class="ev-linha-btn"><button class="ev-btn" onclick="evDividir()">✂️ Dividir</button><button class="ev-btn" onclick="evDuplicarSel()">⧉ Duplicar</button><button class="ev-btn perigo" onclick="evExcluirSel()">🗑️</button></div>`;
+  } else if (s.tipo === 'texto') {
+    const e = Object.assign({}, EV_ESTILOS[x.estilo] || EV_ESTILOS.apoio, x);
+    el.innerHTML = `<h4>🔤 Texto</h4>
+      ${evCampo('Texto', `<textarea id="ev-prop-texto" rows="3" oninput="evSet('texto', this.value)" onchange="evMudou()">${escapeHtml(x.texto)}</textarea>`)}
+      ${evCampo('Estilo', `<select onchange="const t=evItemSel(); ['fonte','peso','tam','cor','fundo','contorno','sombra','anim','maiusc','destaque','y'].forEach(k=>delete t[k]); t.estilo=this.value; t.y=EV_ESTILOS[this.value].y; evMudou(); evDesenharProps()">${Object.entries(EV_ESTILOS).map(([k, v]) => `<option value="${k}" ${x.estilo === k ? 'selected' : ''}>${v.rot}</option>`).join('')}</select>`)}
+      ${evCampo('Fonte', `<select onchange="evSet('fonte', this.value); evMudou(false)">${EV_FONTES.map(f => `<option ${e.fonte === f ? 'selected' : ''} style="font-family:'${f}'">${f}</option>`).join('')}</select>`)}
+      ${evCampo(`Tamanho <b>${Math.round(e.tam)}</b>`, `<input type="range" min="24" max="220" value="${e.tam}" oninput="evSet('tam', Number(this.value)); this.parentElement.querySelector('b').textContent=this.value" onchange="evMudou(false)">`)}
+      <div class="ev-cores">
+        ${evCampo('Cor', `<input type="color" value="${/^#/.test(e.cor) ? e.cor : '#ffffff'}" oninput="evSet('cor', this.value)" onchange="evMudou(false)">`)}
+        ${evCampo('Fundo', `<input type="color" value="${/^#[0-9a-f]{6}$/i.test(e.fundo || '') ? e.fundo : '#000000'}" oninput="evSet('fundo', this.value)" onchange="evMudou(false)"><button class="ev-mini" onclick="evSet('fundo',''); evMudou(false)">sem</button>`)}
+        ${evCampo('Contorno', `<input type="range" min="0" max="20" value="${e.contorno || 0}" oninput="evSet('contorno', Number(this.value))" onchange="evMudou(false)">`)}
+      </div>
+      <label class="ev-chk2"><input type="checkbox" ${e.maiusc ? 'checked' : ''} onchange="evSet('maiusc', this.checked); evMudou(false)"> MAIÚSCULAS</label>
+      <label class="ev-chk2"><input type="checkbox" ${e.sombra ? 'checked' : ''} onchange="evSet('sombra', this.checked); evMudou(false)"> Sombra</label>
+      ${evCampo('Animação de entrada', `<div class="ev-chips">${Object.entries(EV_ANIMS).map(([k, r]) => `<button class="${(e.anim || 'fade') === k ? 'on' : ''}" onclick="evSet('anim','${k}'); evMudou(false); evDesenharProps(); evIrPara(evItemSel().ini)">${r}</button>`).join('')}</div>`)}
+      ${evCampo('Aparece em / dura (s)', `<div class="ev-dupla"><input type="number" step="0.1" min="0" value="${x.ini.toFixed(1)}" onchange="evSet('ini', Math.max(0, Number(this.value)), true); evMudou(false)"><input type="number" step="0.1" min="0.2" value="${x.dur.toFixed(1)}" onchange="evSet('dur', Math.max(0.2, Number(this.value)), true); evMudou(false)"></div>`)}
+      ${evCampo('Posição', `<div class="ev-chips">${[['Topo', 0.2], ['Meio', 0.5], ['Baixo', 0.72]].map(([r, v]) => `<button onclick="evSet('y', ${v}); evSet('x', 0.5); evMudou(false)">${r}</button>`).join('')}</div>`)}
+      <div class="ev-sub">Arraste o texto direto no vídeo para posicionar.</div>
+      <div class="ev-linha-btn"><button class="ev-btn" onclick="evDuplicarSel()">⧉ Duplicar</button><button class="ev-btn perigo" onclick="evExcluirSel()">🗑️ Excluir</button></div>`;
+  } else if (s.tipo === 'audio') {
+    const m = evMidia(x.midia) || {};
+    el.innerHTML = `<h4>🎵 Áudio <small>${escapeHtml(m.nome || '')}</small></h4>
+      ${evCampo(`Volume <b>${Math.round((x.vol || 0) * 100)}%</b>`, `<input type="range" min="0" max="1.5" step="0.05" value="${x.vol || 0}" oninput="evSet('vol', Number(this.value)); this.parentElement.querySelector('b').textContent=Math.round(this.value*100)+'%'" onchange="evMudou(false)">`)}
+      ${evCampo('Começa em / dura (s)', `<div class="ev-dupla"><input type="number" step="0.1" min="0" value="${x.ini.toFixed(1)}" onchange="evSet('ini', Math.max(0, Number(this.value)), true); evMudou(false)"><input type="number" step="0.1" min="0.2" value="${x.dur.toFixed(1)}" onchange="evSet('dur', Math.max(0.2, Number(this.value)), true); evMudou(false)"></div>`)}
+      ${evCampo('Começar a música a partir de (s)', `<input type="number" step="0.5" min="0" value="${(x.corte || 0).toFixed(1)}" onchange="evSet('corte', Math.max(0, Number(this.value))); evMudou(false)">`)}
+      ${evCampo('Fade in / fade out (s)', `<div class="ev-dupla"><input type="number" step="0.1" min="0" value="${x.fadeIn || 0}" onchange="evSet('fadeIn', Number(this.value)); evMudou(false)"><input type="number" step="0.1" min="0" value="${x.fadeOut || 0}" onchange="evSet('fadeOut', Number(this.value)); evMudou(false)"></div>`)}
+      <button class="ev-btn" onclick="const a=evItemSel(); a.ini=0; a.dur=Math.min((evMidia(a.midia)||{}).duracao||evTotal(), evTotal()); evMudou(); evDesenharProps()">↔ Ajustar ao tamanho do vídeo</button>
+      <div class="ev-linha-btn"><button class="ev-btn" onclick="evDividir()">✂️ Dividir</button><button class="ev-btn perigo" onclick="evExcluirSel()">🗑️ Excluir</button></div>`;
+  }
+}
+
+// ---------- Modelos ----------
+const EV_MODELOS = [
+  { nome: 'Dica rápida em 3 passos', ico: '⚡', textos: [['gancho', '3 passos para {tema}', 0, 2.5], ['apoio', '1️⃣ Primeiro passo', 2.5, 3], ['apoio', '2️⃣ Segundo passo', 5.5, 3], ['apoio', '3️⃣ Terceiro passo', 8.5, 3], ['cta', 'Salve para aplicar amanhã 📌', 11.5, 3]] },
+  { nome: 'Mito x Verdade', ico: '🧐', textos: [['gancho', 'Mito ou verdade?', 0, 2], ['caixa', '❌ MITO: escreva o mito', 2, 3.5], ['caixa', '✅ VERDADE: escreva a verdade', 5.5, 4], ['cta', 'Comente "VERDADE" se concorda 👇', 9.5, 3]] },
+  { nome: 'Erro comum', ico: '🚫', textos: [['gancho', 'Pare de fazer isso agora', 0, 2.5], ['apoio', 'O erro: …', 2.5, 3], ['apoio', 'Por que atrapalha: …', 5.5, 3], ['apoio', 'Faça assim: …', 8.5, 3.5], ['cta', 'Envie para quem precisa ver 📲', 12, 3]] },
+  { nome: 'Antes x Depois', ico: '🔁', textos: [['gancho', 'Antes x Depois', 0, 2], ['titulo', 'ANTES', 2, 3], ['titulo', 'DEPOIS', 5, 3], ['apoio', 'O que mudou: …', 8, 3], ['cta', 'Quer o passo a passo? Comente "EU"', 11, 3]] },
+  { nome: 'Bastidores da consultoria', ico: '🎬', textos: [['gancho', 'Bastidores de um dia de consultoria', 0, 2.5], ['legenda', 'Começamos pelo CHÃO da operação', 2.5, 2.5], ['legenda', 'Medimos o que IMPORTA', 5, 2.5], ['legenda', 'E treinamos o TIME', 7.5, 2.5], ['cta', 'Siga para ver o resultado ✅', 10, 3]] }
+];
+function evAplicarModelo(i) {
+  const m = EV_MODELOS[i]; const tema = prompt('Qual o tema? (ex.: dar feedback, reduzir avarias, organizar o estoque)', '') || '';
+  m.textos.forEach(([est, txt, ini, dur]) => ES.p.dados.textos.push({ id: evUid(), estilo: est, texto: txt.replace('{tema}', tema || 'seu time'), ini, dur, x: 0.5, y: EV_ESTILOS[est].y }));
+  ES.p.dados.extras.barra = true;
+  evMudou(); mostrarToast(`Modelo "${m.nome}" aplicado — troque os textos e coloque seus vídeos.`);
+}
+
+// ---------- Agente IA dentro do editor ----------
+function evCarregando(msg) {
+  let o = document.getElementById('ev-carregando');
+  if (!msg) { if (o) o.remove(); return; }
+  if (!o) { o = document.createElement('div'); o.id = 'ev-carregando'; o.className = 'ev-carregando'; (document.getElementById('ev-editor') || document.body).appendChild(o); }
+  o.innerHTML = `<div><div class="ev-spin"></div><b>${escapeHtml(msg)}</b></div>`;
+}
+function evPainelIa() {
+  const el = document.getElementById('ev-painel');
+  el.innerHTML = `<h4>🤖 Agente Viral</h4>
+    <div id="ev-ia-status"></div>
+    <label class="ev-campo"><span>Sobre o que é o vídeo?</span><textarea id="ev-ia-tema" rows="3" placeholder="Ex.: como dar feedback sem desmotivar o time da operação">${escapeHtml(ES.iaTema || ES.p.titulo || '')}</textarea></label>
+    <label class="ev-campo"><span>Objetivo</span><select id="ev-ia-obj">${['Alcance (viralizar)', 'Autoridade', 'Gerar clientes (leads)', 'Engajamento (comentários)', 'Divulgar treinamento/evento'].map(o => `<option>${o}</option>`).join('')}</select></label>
+    <label class="ev-chk2"><input type="checkbox" id="ev-ia-web" checked> 🔎 Pesquisar tendências na internet</label>
+    <button class="ev-btn ia grande" onclick="evIaEditar()">✨ Editar com IA</button>
+    <div class="ev-sub">Monta a edição completa com suas mídias: ordem, cortes no ritmo certo, gancho, textos, CTA, filtro, transições e música.</div>
+    <div class="ev-grade-ia">
+      <button onclick="evIaGanchos()">🎯 Ganchos</button>
+      <button onclick="evIaRoteiro()">📝 Roteiro</button>
+      <button onclick="evIaLegenda()">💬 Legenda + #</button>
+      <button onclick="evAbrirAnalise()">📊 Análise viral</button>
+      <button onclick="evIaIdeias()">💡 Ideias de posts</button>
+      <button onclick="evIaCapa()">🖼️ Texto da capa</button>
+    </div>
+    <div id="ev-ia-saida"></div>`;
+  if (typeof mtStatusIa === 'function') mtStatusIa('ev-ia-status');
+}
+function evIaBase() {
+  ES.iaTema = (document.getElementById('ev-ia-tema') || {}).value || ES.iaTema || ES.p.titulo;
+  return { tema: ES.iaTema, objetivo: (document.getElementById('ev-ia-obj') || {}).value || '', pesquisar: !!(document.getElementById('ev-ia-web') || {}).checked, duracao: Math.round(evTotal()), formato: (EV_FORMATOS[ES.p.formato] || {}).rot };
+}
+async function evIa(acao, extra, msg) {
+  evCarregando(msg || 'O Agente Viral está trabalhando...');
+  try { const r = await api('/api/admin/estudio/ia/' + acao, { method: 'POST', body: JSON.stringify(Object.assign(evIaBase(), extra || {})) }); evCarregando(null); return r; }
+  catch (e) { evCarregando(null); throw e; }
+}
+function evIaSaida(html) { const s = document.getElementById('ev-ia-saida'); if (s) { s.innerHTML = html; s.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } }
+function evFeedbackHtml(contexto) { return `<div class="ev-feedback">Ficou bom? <button onclick="evFeedback(true, ${escapeHtml(JSON.stringify(contexto))})">👍</button><button onclick="evFeedback(false, ${escapeHtml(JSON.stringify(contexto))})">👎</button></div>`; }
+async function evFeedback(bom, contexto) {
+  let obs = '';
+  if (!bom) { obs = prompt('O que o agente deve fazer diferente da próxima vez? (isso treina o agente)', ''); if (obs === null) return; }
+  const conteudo = bom ? `Aprovado pelo usuário (${contexto}): manter esse padrão.` : `Em "${contexto}": ${obs || 'o usuário não gostou do resultado'}`;
+  try { const r = await api('/api/admin/estudio/agente', { method: 'POST', body: JSON.stringify({ tipo: 'feedback', titulo: contexto, conteudo }) }); mostrarToast(r.message); } catch (e) { mostrarToast(e.message, true); }
+}
+// Edição automática (sem IA): ritmo de Reels com as mídias do projeto.
+function evPlanoLocal(alvo) {
+  const ms = ES.p.dados.midias.filter(m => m.tipo !== 'audio'); if (!ms.length) return null;
+  const clips = []; let tot = 0, k = 0;
+  while (tot < alvo && k < 60) {
+    const m = ms[k % ms.length], rodada = Math.floor(k / ms.length);
+    const dur = m.tipo === 'imagem' ? 2.2 : Math.min(2.6, Math.max(1.2, (m.duracao || 3) / 3));
+    let ini = 0; if (m.tipo === 'video' && m.duracao) { ini = Math.min(Math.max(0, m.duracao - dur), (m.duracao / 3) * (rodada % 3) + 0.3); if (rodada > 0 && m.duracao < dur * 2) { k++; if (k > ms.length * 3) break; continue; } }
+    clips.push({ midia: m.id, inicio: ini, fim: ini + dur, velocidade: 1, zoom: m.tipo === 'imagem' ? 1.15 : (k % 3 === 2 ? 1.12 : 1) });
+    tot += dur; k++; if (k >= ms.length * 3) break;
+  }
+  const tema = ES.iaTema || ES.p.titulo || 'isso';
+  return { clips, textos: [{ texto: (EV_GANCHOS_LOCAIS(tema))[0], inicio: 0, duracao: 2.4, estilo: 'gancho' }, { texto: 'Salve para não esquecer 📌', inicio: Math.max(2.5, tot - 2.6), duracao: 2.6, estilo: 'cta' }], filtro: 'vibrante', transicao: 'corte', musica_volume: 0.3, local: true };
+}
+function EV_GANCHOS_LOCAIS(t) { return [`O erro que trava ${t}`, `Ninguém te conta isso sobre ${t}`, `3 passos para ${t}`]; }
+async function evIaEditar() {
+  const d = ES.p.dados;
+  if (!d.midias.some(m => m.tipo !== 'audio')) return mostrarToast('Suba seus vídeos e fotos em 🎞️ Mídia primeiro.', true);
+  const alvo = Number(prompt('Duração desejada do vídeo (segundos)? Reels que viralizam costumam ter 7 a 30 s.', String(Math.round(Math.min(30, Math.max(10, evTotal()))))) || 0);
+  if (!alvo) return;
+  let plano;
+  try {
+    const midias = d.midias.filter(m => m.tipo !== 'audio').map(m => ({ tipo: m.tipo, nome: m.nome, duracao: m.tipo === 'imagem' ? 0 : m.duracao }));
+    plano = await evIa('plano-edicao', { midias, duracao: alvo, estilo: 'dinâmico, profissional, cortes rápidos, legendas fortes' }, '✨ O Agente está montando a edição para viralizar...');
+    const ref = d.midias.filter(m => m.tipo !== 'audio');
+    (plano.clips || []).forEach(c => { const m = ref[Number(c.midia)]; c.midia = m ? m.id : null; });
+  } catch (e) {
+    if (!/conectada|IA:/.test(e.message)) return mostrarToast(e.message, true);
+    plano = evPlanoLocal(alvo); mostrarToast('IA desconectada — fiz uma edição automática com ritmo de Reels. Conecte a IA para a edição completa.');
+  }
+  if (!plano || !(plano.clips || []).filter(c => c.midia).length) return mostrarToast('Não consegui montar a edição com essas mídias.', true);
+  const tot0 = d.clips.length;
+  if (tot0 && !confirm('Substituir a edição atual pela edição do Agente? (dá para desfazer com Ctrl+Z)')) return;
+  ES.hist.push(JSON.stringify(d));
+  d.clips = plano.clips.filter(c => c.midia && evMidia(c.midia)).map(c => { const m = evMidia(c.midia); const ini = Math.max(0, Number(c.inicio) || 0); let fim = Math.max(ini + 0.3, Number(c.fim) || ini + 2); if (m.tipo === 'video' && m.duracao) fim = Math.min(fim, m.duracao); return { id: evUid(), midia: m.id, ini: m.tipo === 'imagem' ? 0 : ini, fim: m.tipo === 'imagem' ? Math.max(0.5, fim - ini) : fim, vel: [0.5, 0.75, 1, 1.25, 1.5, 2].includes(Number(c.velocidade)) ? Number(c.velocidade) : 1, vol: 1, zoom: Math.max(1, Math.min(1.5, Number(c.zoom) || 1)), ajuste: m.w > m.h && ES.p.formato === '9:16' ? 'conter' : 'cobrir' }; });
+  d.textos = d.textos.filter(x => x.estilo === 'emoji');
+  (plano.textos || []).forEach(x => { const est = EV_ESTILOS[String(x.estilo || '').split('|')[0]] ? String(x.estilo).split('|')[0] : 'apoio'; d.textos.push({ id: evUid(), texto: String(x.texto || ''), ini: Math.max(0, Number(x.inicio) || 0), dur: Math.max(0.5, Number(x.duracao) || 2), estilo: est, x: 0.5, y: EV_ESTILOS[est].y }); });
+  if (EV_FILTROS[plano.filtro]) d.filtro = plano.filtro;
+  if (EV_TRANS[plano.transicao]) { d.transicao = plano.transicao; d.clips.forEach(c => delete c.transicao); }
+  d.audios.forEach(a => { a.vol = Math.max(0.1, Math.min(1, Number(plano.musica_volume) || a.vol)); a.ini = 0; a.dur = Math.min((evMidia(a.midia) || {}).duracao || 999, evTotal()); });
+  d.extras.barra = true;
+  if (plano.legenda && !ES.p.legenda) ES.p.legenda = plano.legenda;
+  if (Array.isArray(plano.hashtags) && plano.hashtags.length && !ES.p.hashtags) ES.p.hashtags = plano.hashtags.join(' ');
+  ES.ultimoEstado = JSON.stringify(d); evMudou(true, true); evIrPara(0); evDesenharProps();
+  evIaSaida(`<div class="ev-ia-card"><b>✅ Edição montada${plano.local ? ' (automática)' : ' pelo Agente'}</b><p>${escapeHtml(plano.explicacao || 'Gancho nos primeiros segundos, cortes rápidos, CTA no final e barra de progresso para segurar a atenção.')}</p><p>Dê o play ▶ e ajuste o que quiser.</p>${plano.local ? '' : evFeedbackHtml('edição com IA')}</div>`);
+}
+async function evIaGanchos() {
+  try {
+    const r = await evIa('ganchos', {}, '🎯 Criando ganchos que prendem nos 2 primeiros segundos...');
+    evIaSaida(`<div class="ev-ia-card"><b>🎯 Ganchos ${r.semIa ? '(modelos — conecte a IA para ganchos sob medida)' : ''}</b>${(r.ganchos || []).map(g => `<button class="ev-opcao" onclick="evAdicionarTexto('gancho', ${escapeHtml(JSON.stringify(g.texto))}, 0, 2.5)">${escapeHtml(g.texto)} <small>${escapeHtml(g.tipo || '')}</small></button>`).join('')}<div class="ev-sub">Clique para colocar no início do vídeo.</div>${r.semIa ? '' : evFeedbackHtml('ganchos')}</div>`);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function evIaRoteiro() {
+  try {
+    const r = await evIa('roteiro', {}, '📝 Escrevendo o roteiro cena a cena...');
+    ES.ultimoRoteiro = r;
+    evIaSaida(`<div class="ev-ia-card"><b>📝 ${escapeHtml(r.titulo || 'Roteiro')}</b>${(r.cenas || []).map((c, i) => `<div class="ev-cena"><small>${Number(c.inicio || 0).toFixed(0)}s · ${Number(c.duracao || 0).toFixed(1)}s</small><div><b>Fala:</b> ${escapeHtml(c.fala || '')}</div>${c.texto_tela ? `<div><b>Na tela:</b> ${escapeHtml(c.texto_tela)}</div>` : ''}<div><b>Filmar:</b> ${escapeHtml(c.visual || '')}</div></div>`).join('')}
+      ${r.cta ? `<div class="ev-cena"><b>CTA:</b> ${escapeHtml(r.cta)}</div>` : ''}
+      <div class="ev-linha-btn"><button class="ev-btn" onclick="evRoteiroParaTextos()">🔤 Colocar textos na tela</button><button class="ev-btn" onclick="evRoteiroParaLegendas()">💬 Fala → legendas</button></div>
+      <button class="ev-btn" onclick="ES.p.legenda=ES.ultimoRoteiro.legenda||ES.p.legenda; ES.p.hashtags=(ES.ultimoRoteiro.hashtags||[]).join(' ')||ES.p.hashtags; evMudou(false); evDesenharProps(); mostrarToast('Legenda do post preenchida!')">📄 Usar legenda e hashtags</button>
+      ${evFeedbackHtml('roteiro')}</div>`);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+function evRoteiroParaTextos() {
+  const r = ES.ultimoRoteiro; if (!r) return;
+  (r.cenas || []).forEach((c, i) => { if (c.texto_tela) ES.p.dados.textos.push({ id: evUid(), texto: c.texto_tela, ini: Number(c.inicio) || 0, dur: Math.max(1, Number(c.duracao) || 2), estilo: i === 0 ? 'gancho' : 'apoio', x: 0.5, y: EV_ESTILOS[i === 0 ? 'gancho' : 'apoio'].y }); });
+  if (r.cta) { const tot = (r.cenas || []).reduce((m, c) => Math.max(m, (Number(c.inicio) || 0) + (Number(c.duracao) || 0)), 0) || evTotal(); ES.p.dados.textos.push({ id: evUid(), texto: r.cta, ini: Math.max(0, tot - 3), dur: 3, estilo: 'cta', x: 0.5, y: EV_ESTILOS.cta.y }); }
+  evMudou(); mostrarToast('Textos do roteiro colocados na linha do tempo.');
+}
+function evRoteiroParaLegendas() {
+  const r = ES.ultimoRoteiro; if (!r) return;
+  const d = ES.p.dados; d.textos = d.textos.filter(x => x.estilo !== 'legenda');
+  (r.cenas || []).forEach(c => evQuebrarLegendas(c.fala || '', (Number(c.inicio) || 0) + (Number(c.duracao) || 2), Number(c.inicio) || 0).forEach(l => d.textos.push({ id: evUid(), texto: l.texto, ini: l.inicio, dur: l.duracao, estilo: 'legenda', x: 0.5, y: EV_ESTILOS.legenda.y })));
+  evMudou(); mostrarToast('Legendas criadas a partir da fala do roteiro.');
+}
+async function evIaLegenda() {
+  try {
+    const r = await evIa('legenda', { roteiro: ES.p.dados.textos.slice().sort((a, b) => a.ini - b.ini).map(x => x.texto).join(' ') }, '💬 Escrevendo a legenda do post e escolhendo as hashtags...');
+    ES.p.legenda = r.legenda || ES.p.legenda; ES.p.hashtags = (r.hashtags || []).join(' ') || ES.p.hashtags; evMudou(false); evDesenharProps();
+    if (ES.painel === 'ia') evIaSaida(`<div class="ev-ia-card"><b>💬 Legenda pronta ${r.semIa ? '(modelo)' : ''}</b><pre class="ev-pre">${escapeHtml(r.legenda || '')}</pre><div><b>${escapeHtml((r.hashtags || []).join(' '))}</b></div>${(r.variacoes_gancho || []).length ? `<div class="ev-sub">Testes A/B para a 1ª linha:</div>${r.variacoes_gancho.map(v => `<div class="ev-opcao">${escapeHtml(v)}</div>`).join('')}` : ''}${r.semIa ? '' : evFeedbackHtml('legenda')}</div>`);
+    mostrarToast('Legenda e hashtags preenchidas no projeto (painel da direita).');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function evIaIdeias() {
+  try {
+    const r = await evIa('ideias', { qtd: 8 }, '💡 Pesquisando o que está em alta e gerando ideias...');
+    evIaSaida(`<div class="ev-ia-card"><b>💡 Ideias de conteúdo</b>${(r.ideias || []).map(i => `<div class="ev-cena"><b>${escapeHtml(i.titulo)}</b><div>🎯 ${escapeHtml(i.gancho || '')}</div><small>${escapeHtml(i.formato || '')} · ${escapeHtml(i.por_que_viraliza || '')}</small></div>`).join('')}${evFeedbackHtml('ideias')}</div>`);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function evIaCapa() {
+  try {
+    const r = await evIa('capa', {}, '🖼️ Criando textos para a capa...');
+    evIaSaida(`<div class="ev-ia-card"><b>🖼️ Textos para a capa</b>${(r.textos || []).map(t => `<button class="ev-opcao" onclick="evAdicionarTexto('titulo', ${escapeHtml(JSON.stringify(t))}, 0, 1)">${escapeHtml(t)}</button>`).join('')}<div class="ev-sub">${escapeHtml(r.orientacao || '')}</div><div class="ev-sub">Dica: ao postar no Instagram, escolha como capa o primeiro quadro (onde este texto aparece).</div></div>`);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+
+// ---------- Pontuação de viralização (regras do algoritmo, sem IA) ----------
+function evCalcularScore() {
+  const d = ES.p.dados, tot = evTotal(), itens = [];
+  const add = (ok, peso, txt, dica) => itens.push({ ok, peso, txt, dica });
+  add(ES.p.formato === '9:16', 10, 'Formato vertical 9:16', 'Reels e Stories rendem mais em tela cheia vertical.');
+  add(tot >= 7 && tot <= 30 ? true : tot <= 90 ? 'meio' : false, 15, `Duração (${Math.round(tot)} s)`, 'De 7 a 30 s tem mais chance de ser assistido até o fim (e repetido).');
+  add(d.textos.some(x => x.ini <= 0.5 && x.estilo !== 'legenda') || d.textos.some(x => x.ini <= 0.3), 15, 'Gancho na tela nos primeiros segundos', 'Coloque um texto forte (estilo Gancho) logo no início — use 🎯 Ganchos no Agente IA.');
+  const cob = d.textos.filter(x => x.estilo === 'legenda' || x.estilo === 'apoio').reduce((s, x) => s + x.dur, 0) / tot;
+  add(cob >= 0.6 ? true : cob >= 0.3 ? 'meio' : false, 15, 'Legendas/textos durante o vídeo', 'A maioria assiste sem som: use Legendas automáticas.');
+  const media = d.clips.length ? d.clips.reduce((s, c) => s + evClipDur(c), 0) / d.clips.length : 99;
+  add(media <= 3.5 ? true : media <= 6 ? 'meio' : false, 10, `Ritmo de cortes (média ${media < 99 ? media.toFixed(1) + ' s' : '—'})`, 'Cortes de 1,5 a 3 s seguram a atenção. Use ✂️ Dividir ou Editar com IA.');
+  add(d.textos.some(x => x.estilo === 'cta' || x.ini + x.dur >= tot - 4 && /coment|salv|compart|sig|link|envie/i.test(x.texto)), 10, 'Chamada para ação no final', 'Peça para comentar uma palavra, salvar ou compartilhar.');
+  const fora = ES.p.formato === '9:16' && d.textos.some(x => { const y = x.y !== undefined ? x.y : (EV_ESTILOS[x.estilo] || {}).y; return y < 0.12 || y > 0.79; });
+  add(!fora, 5, 'Textos dentro da área segura', 'Mova textos para longe do topo e da parte de baixo (ligue "Área segura").');
+  add(d.audios.length > 0 || d.clips.some(c => (evMidia(c.midia) || {}).tipo === 'video' && !c.mudo), 5, 'Tem áudio (música ou fala)', 'Vídeos com som/música em alta alcançam mais.');
+  const leg = String(ES.p.legenda || '');
+  add(leg.length > 30 && leg.split('\n')[0].length <= 125, 5, 'Legenda do post com gancho na 1ª linha', 'Use 💬 Legenda + # no Agente IA.');
+  const nh = (String(ES.p.hashtags || '') + ' ' + leg).match(/#[\wÀ-ú]+/g) || [];
+  add(nh.length >= 3 && nh.length <= 5 ? true : nh.length ? 'meio' : false, 5, `Hashtags (${nh.length})`, 'Use de 3 a 5 hashtags bem escolhidas.');
+  add(!!(d.extras.barra || d.extras.marca), 5, 'Marca/@ ou barra de progresso', 'A barra de progresso aumenta a retenção; o @ protege seu conteúdo.');
+  const nota = Math.round(itens.reduce((s, i) => s + (i.ok === true ? i.peso : i.ok === 'meio' ? i.peso / 2 : 0), 0));
+  return { nota, itens };
+}
+function evAtualizarScore() {
+  if (!ES) return; const s = evCalcularScore(); ES.score = s.nota;
+  const b = document.getElementById('ev-score'); if (!b) return;
+  b.innerHTML = `🔥 <b>${s.nota}</b>/100`; b.className = 'ev-score ' + (s.nota >= 75 ? 'bom' : s.nota >= 50 ? 'medio' : 'baixo');
+}
+function evAbrirAnalise() {
+  const s = evCalcularScore();
+  const m = document.getElementById('ev-modal');
+  m.innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal">
+    <div class="ev-modal-cab"><h3>🔥 Potencial de viralização: ${s.nota}/100</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <div class="ev-medidor-v"><i style="width:${s.nota}%;background:${s.nota >= 75 ? '#22c55e' : s.nota >= 50 ? '#f59e0b' : '#ef4444'}"></i></div>
+    ${s.itens.map(i => `<div class="ev-check ${i.ok === true ? 'ok' : i.ok === 'meio' ? 'meio' : 'nao'}"><span>${i.ok === true ? '✅' : i.ok === 'meio' ? '🟡' : '❌'}</span><div><b>${escapeHtml(i.txt)}</b>${i.ok === true ? '' : `<small>${escapeHtml(i.dica)}</small>`}</div></div>`).join('')}
+    <button class="ev-btn ia grande" onclick="evAnaliseIa()">🤖 Análise completa do Agente (com melhor horário para postar)</button>
+    <div id="ev-analise-ia"></div></div></div>`;
+}
+async function evAnaliseIa() {
+  const d = ES.p.dados;
+  const resumo = { duracao: Math.round(evTotal()), formato: ES.p.formato, clips: d.clips.length, media_corte: d.clips.length ? +(d.clips.reduce((s, c) => s + evClipDur(c), 0) / d.clips.length).toFixed(1) : 0, textos: d.textos.slice().sort((a, b) => a.ini - b.ini).map(x => `[${x.ini.toFixed(1)}s ${x.estilo}] ${x.texto}`).slice(0, 60), filtro: d.filtro, musica: d.audios.length > 0, nota_regras: ES.score };
+  try {
+    const r = await evIa('analisar', { resumo, legenda: (ES.p.legenda || '') + '\n' + (ES.p.hashtags || '') }, '📊 O Agente está analisando seu vídeo...');
+    document.getElementById('ev-analise-ia').innerHTML = `<div class="ev-ia-card"><b>Nota do Agente: ${Number(r.nota) || 0}/100</b><p>${escapeHtml(r.resumo || '')}</p>
+      ${(r.pontos_fortes || []).length ? `<div><b>Pontos fortes</b><ul>${r.pontos_fortes.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>` : ''}
+      ${(r.melhorias || []).length ? `<div><b>Melhorias (em ordem de impacto)</b><ol>${r.melhorias.map(p => `<li><b>${escapeHtml(p.o_que || '')}</b> — ${escapeHtml(p.como || '')}<br><small>${escapeHtml(p.por_que || '')}</small></li>`).join('')}</ol></div>` : ''}
+      ${r.melhor_horario ? `<div>⏰ <b>Melhor horário:</b> ${escapeHtml(r.melhor_horario)}</div>` : ''}${evFeedbackHtml('análise')}</div>`;
+  } catch (e) { document.getElementById('ev-analise-ia').innerHTML = `<div class="ev-sub" style="color:#fca5a5;">${escapeHtml(e.message)}</div>`; }
+}
+
+// ---------- Publicar ----------
+async function evAbrirPublicar(acabouDeExportar) {
+  if (ES.sujo) await evSalvar(true).catch(() => {});
+  let ig = { configurado: false }; try { ig = await api('/api/admin/estudio/instagram'); } catch (e) {}
+  const p = ES.p, ex = ES.ultimoExport, temVideo = !!p.video_url, mp4 = /mp4|quicktime/.test(p.video_mime || '') || /\.mp4$/i.test(p.video_url || '');
+  const legendaFinal = [p.legenda || '', p.hashtags || ''].filter(Boolean).join('\n\n');
+  const amanha = new Date(Date.now() + 864e5); amanha.setHours(18, 0, 0, 0);
+  const iso = new Date(amanha - amanha.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal grande">
+    <div class="ev-modal-cab"><h3>${acabouDeExportar ? '🎉 Vídeo pronto!' : '📤 Publicar'}</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <div class="ev-pub">
+      <div class="ev-pub-prev">${ex ? `<video src="${ex.url}" controls playsinline></video>` : temVideo ? `<video src="${escapeHtml(p.video_url)}" controls playsinline></video>` : '<div class="ev-vazio">Exporte o vídeo para publicar.<br><br><button class="ev-btn primario" onclick="document.getElementById(\'ev-modal\').innerHTML=\'\'; evExportar()">⬇️ Exportar agora</button></div>'}</div>
+      <div class="ev-pub-dados">
+        <label class="ev-campo"><span>Legenda + hashtags</span><textarea id="ev-pub-leg" rows="9">${escapeHtml(legendaFinal)}</textarea></label>
+        <div class="ev-linha-btn"><button class="ev-btn" onclick="navigator.clipboard.writeText(document.getElementById('ev-pub-leg').value).then(()=>mostrarToast('Legenda copiada!'))">📋 Copiar legenda</button>
+          ${ex ? `<a class="ev-btn" href="${ex.url}" download="${escapeHtml(ex.nome)}">⬇️ Baixar vídeo</a>` : temVideo ? `<a class="ev-btn" href="${escapeHtml(p.video_url)}" download>⬇️ Baixar vídeo</a>` : ''}</div>
+        ${ig.configurado ? `
+          <div class="ev-ig-ok">📸 Conectado ao Instagram <b>@${escapeHtml(ig.username || '')}</b></div>
+          ${temVideo && mp4 ? `<button class="ev-btn ig grande" onclick="evPublicarAgora()">🚀 Publicar agora no Instagram</button>
+          <div class="ev-agendar"><input type="datetime-local" id="ev-pub-quando" value="${iso}"><button class="ev-btn" onclick="evAgendar()">🗓️ Agendar</button></div>
+          <div class="ev-sub">Horários com mais alcance costumam ser 12h–13h e 18h–21h nos dias úteis — confira os horários do seu público nas estatísticas do Instagram.</div>`
+          : `<div class="ev-sub" style="color:#fbbf24;">${temVideo ? 'O vídeo foi exportado em WebM — o Instagram exige MP4. Exporte pelo Chrome ou Edge atualizado.' : 'Exporte o vídeo para publicar direto daqui.'}</div>`}`
+          : `<div class="ev-sub">Para postar direto daqui, conecte o Instagram em <b>Estúdio de Vídeo › Instagram</b>. Enquanto isso: baixe o vídeo, copie a legenda e poste pelo app (dá para escolher uma música em alta na hora de postar).</div>`}
+        ${p.status === 'agendado' ? `<div class="ev-ig-ok">🗓️ Agendado para ${new Date(p.agendado_para).toLocaleString('pt-BR')} <button class="ev-mini" onclick="evCancelarAgendamento()">cancelar</button></div>` : ''}
+        ${p.status === 'erro' && p.erro_publicacao ? `<div class="ev-sub" style="color:#fca5a5;">Última tentativa: ${escapeHtml(p.erro_publicacao)}</div>` : ''}
+      </div>
+    </div></div></div>`;
+}
+function evLegendaDoModal() { const v = (document.getElementById('ev-pub-leg') || {}).value || ''; const tags = (v.match(/(#[\wÀ-ú]+\s*)+$/) || [''])[0]; ES.p.legenda = v.slice(0, v.length - tags.length).trim(); ES.p.hashtags = tags.trim(); }
+async function evPublicarAgora() {
+  evLegendaDoModal(); await evSalvar(true).catch(() => {});
+  if (!confirm('Publicar este vídeo agora no Instagram?')) return;
+  try { const r = await api(`/api/admin/estudio/projetos/${ES.p.id}/publicar`, { method: 'POST', body: '{}' }); ES.p.status = 'publicando'; mostrarToast(r.message); document.getElementById('ev-modal').innerHTML = ''; }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function evAgendar() {
+  evLegendaDoModal(); await evSalvar(true).catch(() => {});
+  const v = document.getElementById('ev-pub-quando').value; if (!v) return;
+  try { const r = await api(`/api/admin/estudio/projetos/${ES.p.id}/publicar`, { method: 'POST', body: JSON.stringify({ agendarPara: new Date(v).toISOString() }) }); ES.p.status = 'agendado'; ES.p.agendado_para = new Date(v).toISOString(); mostrarToast(r.message); evAbrirPublicar(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function evCancelarAgendamento(id) {
+  try { const r = await api(`/api/admin/estudio/projetos/${id || ES.p.id}/publicar`, { method: 'POST', body: JSON.stringify({ cancelarAgendamento: true }) }); mostrarToast(r.message); if (ES && !id) { ES.p.status = 'pronto'; evAbrirPublicar(); } else renderEstudioVideo(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+
+// ---------- Página do Estúdio (Master) ----------
+async function renderEstudioVideo(aba) {
+  if (aba) EVL.aba = aba;
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = `<div id="ev-pagina"><div class="ev-pag-topo"><div><h1 style="margin:0;">🎬 Estúdio de Vídeo</h1><div class="plano-meta">Edite Reels, Stories e vídeos do feed no padrão das grandes contas, com o Agente Viral da Impulsionar.</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-primario" style="width:auto;" onclick="evNovoProjeto()">＋ Novo vídeo</button></div></div>
+    <div class="ev-pag-abas">${[['projetos', '🎞️ Projetos'], ['agente', '🤖 Agente Viral (treinar)'], ['agenda', '🗓️ Agenda & publicações'], ['instagram', '📸 Instagram']].map(([k, r]) => `<button class="${EVL.aba === k ? 'on' : ''}" onclick="renderEstudioVideo('${k}')">${r}</button>`).join('')}</div>
+    <div id="ev-pag-corpo"><p>Carregando...</p></div></div>`;
+  const corpo = document.getElementById('ev-pag-corpo');
+  try {
+    if (EVL.aba === 'projetos' || EVL.aba === 'agenda') EVL.lista = await api('/api/admin/estudio/projetos');
+    if (EVL.aba === 'projetos') evDesenharProjetos(corpo);
+    else if (EVL.aba === 'agenda') evDesenharAgenda(corpo);
+    else if (EVL.aba === 'agente') await evDesenharAgente(corpo);
+    else if (EVL.aba === 'instagram') await evDesenharInstagram(corpo);
+  } catch (e) { corpo.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+const EV_STATUS = { rascunho: ['Rascunho', '#64748b'], pronto: ['Pronto', '#2563eb'], agendado: ['Agendado', '#7c3aed'], publicando: ['Publicando…', '#d97706'], publicado: ['Publicado', '#16a34a'], erro: ['Erro ao publicar', '#dc2626'] };
+function evDesenharProjetos(corpo) {
+  const l = EVL.lista;
+  const kpi = (n, r, c) => `<div class="ev-kpi"><b style="color:${c}">${n}</b><span>${r}</span></div>`;
+  corpo.innerHTML = `<div class="ev-kpis">${kpi(l.length, 'projetos', '#0b1329')}${kpi(l.filter(p => p.status === 'publicado').length, 'publicados', '#16a34a')}${kpi(l.filter(p => p.status === 'agendado').length, 'agendados', '#7c3aed')}${kpi(l.length ? Math.round(l.reduce((s, p) => s + (p.viral_score || 0), 0) / l.length) : 0, 'nota viral média', '#dc4c4c')}</div>
+    ${l.length ? `<div class="ev-cards">${l.map(p => { const st = EV_STATUS[p.status] || EV_STATUS.rascunho; return `<div class="ev-card" onclick="evAbrirEditor(${p.id})">
+      <div class="ev-card-capa f${(p.formato || '9:16').replace(':', '-')}">${p.thumb ? `<img src="${escapeHtml(p.thumb)}">` : '<span>🎬</span>'}<i style="background:${st[1]}">${st[0]}</i>${p.viral_score ? `<em>🔥 ${p.viral_score}</em>` : ''}</div>
+      <div class="ev-card-info"><b>${escapeHtml(p.titulo)}</b><small>${escapeHtml(p.formato)} · ${p.qtdClips} clipes · ${evFmtT(p.duracao || 0).slice(0, 5)}</small>
+      ${p.status === 'agendado' && p.agendado_para ? `<small>🗓️ ${new Date(p.agendado_para).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</small>` : ''}
+      ${p.ig_permalink ? `<a href="${escapeHtml(p.ig_permalink)}" target="_blank" onclick="event.stopPropagation()">Ver no Instagram ↗</a>` : ''}
+      <div class="ev-card-acoes" onclick="event.stopPropagation()"><button onclick="evDuplicarProjeto(${p.id})" title="Duplicar">⧉</button><button onclick="evExcluirProjeto(${p.id})" title="Excluir">🗑️</button></div></div></div>`; }).join('')}</div>`
+      : `<div class="ev-vazio-grande"><div style="font-size:52px;">🎬</div><h3>Seu primeiro vídeo viral começa aqui</h3><p>Suba seus vídeos e fotos, e o Agente Viral monta a edição com gancho, cortes no ritmo certo, legendas, CTA, legenda do post e hashtags.</p><button class="btn-primario" style="width:auto;" onclick="evNovoProjeto()">＋ Criar primeiro vídeo</button></div>`}`;
+}
+async function evNovoProjeto() {
+  let ma = document.getElementById('modal-area');
+  if (!ma) { document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>'); ma = document.getElementById('modal-area'); }
+  ma.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="modal-caixa" style="max-width:560px;">
+    <h3 style="margin-top:0;">🎬 Novo vídeo</h3>
+    <label>Nome do vídeo</label><input id="ev-novo-nome" placeholder="Ex.: 3 erros do líder novo">
+    <label>Formato</label><div class="ev-formatos">${Object.entries(EV_FORMATOS).map(([k, v], i) => `<label class="ev-formato"><input type="radio" name="ev-fmt" value="${k}" ${i === 0 ? 'checked' : ''}><span class="f${k.replace(':', '-')}"></span><b>${v.rot}</b></label>`).join('')}</div>
+    <div class="acoes-form" style="margin-top:14px;"><button class="btn-primario" style="width:auto;" onclick="evCriarProjeto()">Criar e abrir o editor</button><button class="btn-secundario" style="width:auto;" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button></div>
+  </div></div>`;
+  setTimeout(() => document.getElementById('ev-novo-nome').focus(), 50);
+}
+async function evCriarProjeto() {
+  const titulo = document.getElementById('ev-novo-nome').value.trim() || 'Novo vídeo';
+  const formato = (document.querySelector('input[name=ev-fmt]:checked') || {}).value || '9:16';
+  try { const r = await api('/api/admin/estudio/projetos', { method: 'POST', body: JSON.stringify({ titulo, formato, tipo: formato === '9:16' ? 'reels' : 'feed', dados: { midias: [], clips: [], textos: [], audios: [], filtro: 'nenhum', transicao: 'corte', extras: { marca: '@impulsionarv4', barra: false }, ajustes: { brilho: 100, contraste: 100, saturacao: 100 } } }) }); document.getElementById('modal-area').innerHTML = ''; evAbrirEditor(r.id); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function evDuplicarProjeto(id) { try { await api(`/api/admin/estudio/projetos/${id}/duplicar`, { method: 'POST', body: '{}' }); mostrarToast('Projeto duplicado!'); renderEstudioVideo(); } catch (e) { mostrarToast(e.message, true); } }
+async function evExcluirProjeto(id) { if (!confirm('Excluir este projeto de vídeo?')) return; try { await api('/api/admin/estudio/projetos/' + id, { method: 'DELETE' }); renderEstudioVideo(); } catch (e) { mostrarToast(e.message, true); } }
+function evDesenharAgenda(corpo) {
+  const ag = EVL.lista.filter(p => p.status === 'agendado').sort((a, b) => String(a.agendado_para).localeCompare(String(b.agendado_para)));
+  const pub = EVL.lista.filter(p => ['publicado', 'publicando', 'erro'].includes(p.status)).sort((a, b) => String(b.publicado_em || b.updated_at).localeCompare(String(a.publicado_em || a.updated_at)));
+  const linha = p => { const st = EV_STATUS[p.status] || EV_STATUS.rascunho; return `<div class="ev-ag-linha"><span class="ev-ag-st" style="background:${st[1]}">${st[0]}</span><b onclick="evAbrirEditor(${p.id})">${escapeHtml(p.titulo)}</b><small>${p.status === 'agendado' ? '🗓️ ' + new Date(p.agendado_para).toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short' }) : p.publicado_em ? '✅ ' + new Date(String(p.publicado_em).replace(' ', 'T') + 'Z').toLocaleString('pt-BR') : ''}${p.erro_publicacao ? ' · ' + escapeHtml(p.erro_publicacao) : ''}</small>${p.ig_permalink ? `<a href="${escapeHtml(p.ig_permalink)}" target="_blank">Ver post ↗</a>` : ''}${p.status === 'agendado' ? `<button class="btn-secundario btn-sm" style="width:auto;" onclick="evCancelarAgendamento(${p.id})">Cancelar</button>` : ''}</div>`; };
+  corpo.innerHTML = `<div class="ev-bloco"><h3>🗓️ Agendados</h3>${ag.map(linha).join('') || '<div class="plano-meta">Nenhum post agendado. Agende pelo botão 📤 Publicar dentro do editor.</div>'}</div>
+    <div class="ev-bloco"><h3>📸 Publicados</h3>${pub.map(linha).join('') || '<div class="plano-meta">Nada publicado ainda.</div>'}</div>`;
+}
+async function evDesenharInstagram(corpo) {
+  const c = await api('/api/admin/estudio/instagram');
+  corpo.innerHTML = `<div class="ev-bloco" style="max-width:760px;">
+    <h3>📸 Conectar o Instagram para postar direto da plataforma</h3>
+    ${c.configurado ? `<div class="ev-ig-ok claro">✅ Conectado a <b>@${escapeHtml(c.username || c.userId)}</b> · token ${escapeHtml(c.tokenPreview)} <button class="btn-secundario btn-sm" style="width:auto;margin-left:8px;" onclick="evDesconectarIg()">Desconectar</button></div>` : ''}
+    <ol class="ev-passos-ig">
+      <li>A conta do Instagram precisa ser <b>Profissional</b> (Criador de conteúdo ou Empresa).</li>
+      <li>Em <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener">developers.facebook.com</a>, crie um app do tipo <b>Empresa</b> e adicione o produto <b>Instagram</b> (API com login do Instagram).</li>
+      <li>Gere o <b>token de acesso</b> da sua conta com a permissão <code>instagram_business_content_publish</code> (ou <code>instagram_content_publish</code>) e copie também o <b>ID da conta do Instagram</b> (só números).</li>
+      <li>Cole abaixo e clique em Conectar — o sistema testa na hora. Tokens de longa duração valem 60 dias; renove aqui quando vencer.</li>
+    </ol>
+    <label>ID da conta do Instagram</label><input id="ev-ig-id" placeholder="17841400000000000" value="${escapeHtml(c.userId || '')}">
+    <label>Token de acesso</label><input id="ev-ig-token" type="password" placeholder="IGAA... ou EAA...">
+    <div class="acoes-form"><button class="btn-primario" style="width:auto;" onclick="evConectarIg()">Conectar Instagram</button></div>
+    <div class="plano-meta" style="margin-top:10px;">O vídeo precisa estar em MP4 (o editor exporta em MP4 no Chrome/Edge) e o site em HTTPS — o Instagram busca o arquivo direto do servidor do Impulsionar.</div>
+  </div>`;
+}
+async function evConectarIg() {
+  try { const r = await api('/api/admin/estudio/instagram', { method: 'PUT', body: JSON.stringify({ userId: document.getElementById('ev-ig-id').value, token: document.getElementById('ev-ig-token').value }) }); mostrarToast(r.message); renderEstudioVideo('instagram'); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function evDesconectarIg() { if (!confirm('Desconectar o Instagram?')) return; try { await api('/api/admin/estudio/instagram', { method: 'PUT', body: JSON.stringify({ remover: true }) }); renderEstudioVideo('instagram'); } catch (e) { mostrarToast(e.message, true); } }
+
+// ---------- Treinar o Agente Viral ----------
+const EV_TIPOS_AG = { regra: ['📏 Regras', 'O que o agente deve SEMPRE fazer (estilo, linguagem, estrutura).', 'Ex.: Sempre falar com o líder de operação, linguagem do chão de fábrica, sem termos em inglês.'], proibido: ['🚫 Nunca fazer', 'Palavras, promessas e assuntos proibidos.', 'Ex.: Nunca prometer resultado em X dias; nunca citar concorrentes.'], exemplo: ['🏆 Posts que deram certo', 'Cole o gancho/roteiro/legenda de posts que performaram bem, com os números.', 'Cole aqui o roteiro ou a legenda do post…'], referencia: ['⭐ Referências', 'Perfis, criadores e estilos que você admira.', 'Ex.: @perfil — ganchos com pergunta e cortes a cada 2 s'] };
+async function evDesenharAgente(corpo) {
+  const l = EVL.agente = await api('/api/admin/estudio/agente');
+  const perfil = l.find(x => x.tipo === 'perfil'), por = t => l.filter(x => x.tipo === t);
+  const pontos = (perfil ? 30 : 0) + Math.min(20, por('regra').length * 5) + Math.min(25, por('exemplo').length * 8) + Math.min(10, por('proibido').length * 5) + Math.min(10, por('feedback').length * 2) + Math.min(5, por('referencia').length * 3);
+  const item = x => `<div class="ev-ag-item ${x.ativo ? '' : 'inativo'}"><div><b>${escapeHtml(x.titulo || '')}</b>${x.metricas ? `<small>${escapeHtml(Object.entries(JSON.parse(x.metricas || '{}')).filter(([, v]) => v).map(([k, v]) => k + ': ' + v).join(' · '))}</small>` : ''}<p>${escapeHtml(String(x.conteudo || '').slice(0, 400))}</p></div><div class="ev-ag-acoes"><button title="${x.ativo ? 'Desativar' : 'Ativar'}" onclick="evAgAtivo(${x.id}, ${x.ativo ? 0 : 1})">${x.ativo ? '⏸' : '▶'}</button><button title="Excluir" onclick="evAgExcluir(${x.id})">🗑️</button></div></div>`;
+  corpo.innerHTML = `
+    <div class="ev-ag-topo"><div class="ev-bloco" style="flex:1;min-width:280px;"><h3>🤖 Nível de treinamento do Agente: ${pontos}%</h3><div class="ev-nivel"><i style="width:${pontos}%"></i></div>
+      <div class="plano-meta">Quanto mais você ensina (perfil, regras, exemplos de sucesso e correções 👍/👎 dentro do editor), mais o agente acerta o seu jeito de comunicar.</div><div id="ev-ag-ia" style="margin-top:10px;"></div></div></div>
+    <div class="ev-bloco"><h3>🧬 Perfil da marca</h3><div class="plano-meta">Quem é você, para quem fala, tom de voz, objetivos e a chamada padrão. É a base de tudo que o agente cria.</div>
+      <textarea id="ev-ag-perfil" rows="7" placeholder="Nicho: consultoria de gestão e desenvolvimento de pessoas para revendas Ambev e operações logísticas.&#10;Público: supervisores, gerentes e donos de revenda.&#10;Tom: direto, prático, com exemplos do dia a dia da operação, sem jargão.&#10;Objetivo: autoridade + gerar contatos para consultoria.&#10;CTA padrão: comente 'QUERO' ou chame no WhatsApp.&#10;Instagram: @impulsionarv4">${escapeHtml(perfil ? perfil.conteudo : '')}</textarea>
+      <div class="acoes-form"><button class="btn-primario btn-sm" style="width:auto;" onclick="evAgSalvarPerfil()">💾 Salvar perfil</button></div></div>
+    <div class="ev-ag-grade">${Object.entries(EV_TIPOS_AG).map(([t, [rot, desc, ph]]) => `<div class="ev-bloco"><h3>${rot} <small>(${por(t).length})</small></h3><div class="plano-meta">${desc}</div>
+      ${t === 'exemplo' ? `<input id="ev-ag-tit-${t}" placeholder="Nome do post (ex.: Reels 3 erros do líder)"><div class="ev-metricas">${['views', 'curtidas', 'comentarios', 'compartilhamentos', 'salvamentos'].map(k => `<input id="ev-ag-m-${k}" type="number" min="0" placeholder="${k}">`).join('')}</div>` : `<input id="ev-ag-tit-${t}" placeholder="Título (opcional)">`}
+      <textarea id="ev-ag-txt-${t}" rows="3" placeholder="${escapeHtml(ph)}"></textarea>
+      <button class="btn-secundario btn-sm" style="width:auto;" onclick="evAgAdicionar('${t}')">＋ Ensinar</button>
+      <div class="ev-ag-lista">${por(t).map(item).join('')}</div></div>`).join('')}
+      <div class="ev-bloco"><h3>🧠 Correções aprendidas <small>(${por('feedback').length})</small></h3><div class="plano-meta">Vêm dos 👍/👎 que você dá nas respostas do agente dentro do editor.</div><div class="ev-ag-lista">${por('feedback').map(item).join('') || '<div class="plano-meta">Nenhuma ainda.</div>'}</div></div>
+    </div>
+    <div class="ev-bloco"><h3>💬 Converse com o Agente</h3><div class="plano-meta">Peça ideias, calendário da semana, roteiros, análise de um post… Ele responde com tudo que você ensinou.</div>
+      <div class="ev-chat" id="ev-chat"></div>
+      <div style="display:flex;gap:8px;"><input id="ev-chat-in" placeholder="Ex.: monte o calendário de Reels da próxima semana" onkeydown="if(event.key==='Enter') evAgConversar()" style="margin:0;"><label style="display:flex;align-items:center;gap:4px;white-space:nowrap;margin:0;font-size:12px;"><input type="checkbox" id="ev-chat-web" style="width:auto;margin:0;"> 🔎 internet</label><button class="btn-primario" style="width:auto;" onclick="evAgConversar()">Enviar</button></div></div>`;
+  if (typeof mtStatusIa === 'function') mtStatusIa('ev-ag-ia');
+}
+async function evAgSalvarPerfil() { try { const r = await api('/api/admin/estudio/agente', { method: 'POST', body: JSON.stringify({ tipo: 'perfil', titulo: 'Perfil', conteudo: document.getElementById('ev-ag-perfil').value }) }); mostrarToast(r.message); renderEstudioVideo('agente'); } catch (e) { mostrarToast(e.message, true); } }
+async function evAgAdicionar(t) {
+  const conteudo = document.getElementById('ev-ag-txt-' + t).value, titulo = document.getElementById('ev-ag-tit-' + t).value;
+  const metricas = t === 'exemplo' ? Object.fromEntries(['views', 'curtidas', 'comentarios', 'compartilhamentos', 'salvamentos'].map(k => [k, Number((document.getElementById('ev-ag-m-' + k) || {}).value) || 0])) : null;
+  try { const r = await api('/api/admin/estudio/agente', { method: 'POST', body: JSON.stringify({ tipo: t, titulo, conteudo, metricas }) }); mostrarToast(r.message); renderEstudioVideo('agente'); } catch (e) { mostrarToast(e.message, true); }
+}
+async function evAgAtivo(id, ativo) { try { await api('/api/admin/estudio/agente/' + id, { method: 'PUT', body: JSON.stringify({ ativo }) }); renderEstudioVideo('agente'); } catch (e) { mostrarToast(e.message, true); } }
+async function evAgExcluir(id) { if (!confirm('Excluir este item do treinamento?')) return; try { await api('/api/admin/estudio/agente/' + id, { method: 'DELETE' }); renderEstudioVideo('agente'); } catch (e) { mostrarToast(e.message, true); } }
+async function evAgConversar() {
+  const i = document.getElementById('ev-chat-in'), msg = i.value.trim(); if (!msg) return;
+  const chat = document.getElementById('ev-chat'); i.value = '';
+  chat.insertAdjacentHTML('beforeend', `<div class="ev-msg eu">${escapeHtml(msg)}</div><div class="ev-msg agente" id="ev-chat-esp">⏳ Pensando...</div>`); chat.scrollTop = chat.scrollHeight;
+  try {
+    const r = await api('/api/admin/estudio/ia/conversar', { method: 'POST', body: JSON.stringify({ mensagem: msg, pesquisar: document.getElementById('ev-chat-web').checked }) });
+    document.getElementById('ev-chat-esp').outerHTML = `<div class="ev-msg agente">${escapeHtml(r.resposta || '').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>')}${(r.fontes || []).length ? `<div class="ev-fontes">Fontes: ${r.fontes.slice(0, 6).map(f => `<a href="${escapeHtml(f.url)}" target="_blank" rel="noopener">${escapeHtml(f.titulo)}</a>`).join(' · ')}</div>` : ''}${evFeedbackHtml('conversa: ' + msg.slice(0, 60))}</div>`;
+  } catch (e) { document.getElementById('ev-chat-esp').outerHTML = `<div class="ev-msg agente erro">${escapeHtml(e.message)}</div>`; }
+  chat.scrollTop = chat.scrollHeight;
+}
 
 /* ==========================================================
    BOOT

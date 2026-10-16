@@ -1884,8 +1884,29 @@ function authenticateToken(req, res, next) {
     const token = authHeader && authHeader.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Token de acesso não fornecido.' });
 
-    jwt.verify(token, JWT_SECRET, (err, payload) => {
-        if (err) return res.status(403).json({ error: 'Token inválido ou expirado. Faça login novamente.' });
+    jwt.verify(token, JWT_SECRET, async (err, payload) => {
+        if (err) {
+            // Sessão "deslizante": se o token só venceu por tempo (aba aberta a noite
+            // toda, por exemplo) e foi emitido há menos de 7 dias, renova sozinho em
+            // vez de deixar a tela vazia com "token expirado".
+            if (err.name !== 'TokenExpiredError') return res.status(401).json({ error: 'Sessão inválida. Faça login novamente.', sessaoExpirada: true });
+            let velho; try { velho = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true }); } catch (e) { velho = null; }
+            if (!velho || !velho.iat || Date.now() / 1000 - velho.iat > 7 * 24 * 3600) return res.status(401).json({ error: 'Sua sessão expirou. Faça login novamente.', sessaoExpirada: true });
+            try {
+                const u = await dbGet(`SELECT id, aprovacao_pendente FROM users WHERE id = ?`, [velho.userId]);
+                if (!u || Number(u.aprovacao_pendente) === 1) return res.status(401).json({ error: 'Sua sessão expirou. Faça login novamente.', sessaoExpirada: true });
+            } catch (e) { return res.status(401).json({ error: 'Sua sessão expirou. Faça login novamente.', sessaoExpirada: true }); }
+            payload = velho; payload.__renovar = true;
+        }
+        // Renova o token a cada ~30 min de uso (mantém o mesmo conteúdo e a validade de 12h).
+        if (payload.__renovar || (payload.iat && Date.now() / 1000 - payload.iat > 30 * 60)) {
+            const { iat, exp, __renovar, ...dados } = payload;
+            const vida = exp && iat && exp - iat <= 2 * 3600 ? '2h' : '12h'; // "Acessar como Gestor" continua curto
+            const novo = jwt.sign(dados, JWT_SECRET, { expiresIn: vida });
+            res.setHeader('X-Novo-Token', novo);
+            res.setHeader('Access-Control-Expose-Headers', 'X-Novo-Token');
+            payload = dados;
+        }
         req.user = payload; // { userId, role, companyId, employeeId }
         next();
     });
@@ -2279,7 +2300,7 @@ app.post('/api/login', (req, res) => {
         const token = jwt.sign(
             { userId: user.id, role: user.role, companyId: user.company_id, employeeId: user.employee_id || null, mentorId: user.mentor_id || null },
             JWT_SECRET,
-            { expiresIn: '8h' }
+            { expiresIn: '12h' }
         );
 
         // Permissão por módulo: para um acesso de empresa (client_admin), o que
@@ -12665,6 +12686,299 @@ app.get('/api/ranking', async (req, res) => {
 // genérico de /public pra funcionar mesmo quando os dois caminhos são diferentes.
 app.use('/uploads', express.static(PASTA_UPLOADS));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ============================================================
+// ESTÚDIO DE VÍDEO (Master): projetos de Reels/Stories/Feed, agente viral
+// treinável, IA de edição/roteiro/legenda/hashtags e publicação no Instagram.
+// ============================================================
+db.run(`CREATE TABLE IF NOT EXISTS estudio_projetos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, formato TEXT DEFAULT '9:16', tipo TEXT DEFAULT 'reels',
+    dados TEXT, legenda TEXT, hashtags TEXT, capa_url TEXT, status TEXT DEFAULT 'rascunho', video_url TEXT, video_mime TEXT,
+    agendado_para TEXT, publicado_em TEXT, ig_media_id TEXT, ig_permalink TEXT, erro_publicacao TEXT, viral_score INTEGER,
+    created_by INTEGER, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+db.run(`CREATE TABLE IF NOT EXISTS estudio_agente (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, tipo TEXT NOT NULL, titulo TEXT, conteudo TEXT, metricas TEXT, ativo INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+
+const TIPOS_AGENTE_EST = ['perfil', 'regra', 'exemplo', 'proibido', 'feedback', 'referencia'];
+const FORMATOS_EST = ['9:16', '4:5', '1:1', '16:9'];
+const uploadEstudio = multer({ storage: armazenamentoUpload, limits: { fileSize: 1024 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => (/^(video|image|audio)\//.test(file.mimetype) || /\.(mp4|mov|webm|m4a|mp3|wav|aac|ogg|png|jpe?g|gif|webp)$/i.test(file.originalname)) ? cb(null, true) : cb(new Error('Envie vídeo, imagem ou áudio.')) });
+
+function linhaProjetoEst(p) {
+    if (!p) return p;
+    let dados = {}; try { dados = JSON.parse(p.dados || '{}'); } catch (e) {}
+    return { ...p, dados };
+}
+async function contextoAgenteEst() {
+    const l = await dbAll(`SELECT tipo, titulo, conteudo, metricas FROM estudio_agente WHERE ativo = 1 ORDER BY id DESC`).catch(() => []);
+    const por = t => l.filter(x => x.tipo === t);
+    const perfil = por('perfil')[0];
+    const partes = [];
+    if (perfil) partes.push('PERFIL DA MARCA:\n' + perfil.conteudo);
+    if (por('regra').length) partes.push('REGRAS QUE VOCÊ SEMPRE SEGUE:\n' + por('regra').slice(0, 40).map(x => '- ' + (x.titulo ? x.titulo + ': ' : '') + x.conteudo).join('\n'));
+    if (por('proibido').length) partes.push('NUNCA FAÇA / NUNCA USE:\n' + por('proibido').slice(0, 30).map(x => '- ' + x.conteudo).join('\n'));
+    if (por('exemplo').length) partes.push('POSTS QUE DERAM CERTO (aprenda o padrão):\n' + por('exemplo').slice(0, 12).map(x => { let m = ''; try { const o = JSON.parse(x.metricas || '{}'); m = Object.entries(o).filter(([, v]) => v).map(([k, v]) => k + ': ' + v).join(', '); } catch (e) {} return `- ${x.titulo || 'Post'}${m ? ' (' + m + ')' : ''}:\n${String(x.conteudo || '').slice(0, 900)}`; }).join('\n'));
+    if (por('referencia').length) partes.push('REFERÊNCIAS E PERFIS QUE ADMIRAMOS:\n' + por('referencia').slice(0, 15).map(x => '- ' + (x.titulo || '') + ' ' + x.conteudo).join('\n'));
+    if (por('feedback').length) partes.push('CORREÇÕES QUE O USUÁRIO JÁ TE DEU (não repita os erros):\n' + por('feedback').slice(0, 25).map(x => '- ' + x.conteudo).join('\n'));
+    return partes.join('\n\n');
+}
+const SISTEMA_AGENTE_EST = `Você é o Agente Viral da Impulsionar V4: estrategista de conteúdo e editor de vídeo sênior para Instagram (Reels, Stories e Feed), especialista em retenção, algoritmo e copywriting em português do Brasil. A Impulsionar é uma consultoria de gestão de processos e desenvolvimento de pessoas (liderança, RH, logística, operação, revendas Ambev).
+Princípios de viralização que você domina e aplica:
+- Gancho nos primeiros 1–3 segundos (texto na tela + fala): curiosidade, dor, contradição, número, promessa clara. O público decide em 1,5 s.
+- Retenção: cortes a cada 1,5–3 s, movimento, legendas na tela (a maioria assiste sem som), sem introdução, ritmo crescente, loop no final quando fizer sentido.
+- Valor rápido: 1 ideia por vídeo, linguagem simples, exemplos reais da operação.
+- CTA específico no fim (comentar uma palavra, salvar, compartilhar com alguém, seguir para a parte 2). Compartilhamentos e salvamentos pesam mais que curtidas.
+- Formato 9:16 1080x1920, texto dentro da área segura (longe do topo e da parte de baixo onde fica a interface do Instagram), vídeos de 7–30 s para alcance e até 90 s para conteúdo denso.
+- Legenda: primeira linha = gancho (aparece antes do "mais"), parágrafos curtos, palavras‑chave do assunto (o Instagram funciona como buscador), CTA, 3 a 5 hashtags bem escolhidas (nicho + assunto), sem lista enorme de hashtags.
+- Áudio em alta ajuda o alcance; sugira o TIPO de áudio/estilo, sem inventar nomes de músicas específicas.
+- Nunca invente números, depoimentos ou resultados. Nada de promessas enganosas ou clickbait que não se cumpre.`;
+async function iaEstudio(pedido, { web = false, json = true, max = 6000 } = {}) {
+    const ctx = await contextoAgenteEst();
+    const sistema = SISTEMA_AGENTE_EST + (ctx ? '\n\n' + ctx : '') + (json ? '\nResponda APENAS com JSON válido no final da resposta.' : '');
+    const r = await iaPesquisarMt(sistema, pedido, max, web);
+    if (!json) return { texto: r.texto, fontes: r.fontes };
+    const fim = r.texto.lastIndexOf('}');
+    for (let ini = r.texto.indexOf('{'); ini >= 0 && ini < fim; ini = r.texto.indexOf('{', ini + 1)) { try { return { ...JSON.parse(r.texto.slice(ini, fim + 1)), __fontes: r.fontes }; } catch (e) {} }
+    throw new Error('IA: resposta num formato inesperado. Tente de novo.');
+}
+// Banco de hashtags/ganchos para funcionar mesmo sem IA.
+const HASHTAGS_EST = {
+    lideranca: ['#lideranca', '#gestaodepessoas', '#lider', '#desenvolvimentopessoal', '#lideranca360', '#gestao', '#carreira'],
+    rh: ['#recursoshumanos', '#rh', '#gestaodepessoas', '#culturaorganizacional', '#endomarketing', '#engajamento'],
+    logistica: ['#logistica', '#distribuicao', '#operacoes', '#supplychain', '#gestaodeprocessos', '#cadeiadesuprimentos'],
+    vendas: ['#vendas', '#vendedor', '#metas', '#resultado', '#comercial', '#negocios'],
+    gestao: ['#gestao', '#gestaodeprocessos', '#produtividade', '#melhoriacontinua', '#indicadores', '#empreendedorismo'],
+    geral: ['#impulsionarv4', '#consultoria', '#desenvolvimento', '#resultados']
+};
+function hashtagsLocaisEst(texto) {
+    const t = String(texto || '').toLowerCase(); const sel = [];
+    if (/l[ií]der|chefe|equipe|time|feedback/.test(t)) sel.push(...HASHTAGS_EST.lideranca.slice(0, 3));
+    if (/rh|recrut|talento|cultura|engaj|turnover/.test(t)) sel.push(...HASHTAGS_EST.rh.slice(0, 2));
+    if (/log[ií]st|entrega|rota|armaz|estoque|caminh|cd\b|distribui/.test(t)) sel.push(...HASHTAGS_EST.logistica.slice(0, 3));
+    if (/vend|cliente|meta|comercial/.test(t)) sel.push(...HASHTAGS_EST.vendas.slice(0, 2));
+    if (/process|indicador|kpi|produtiv|gest/.test(t)) sel.push(...HASHTAGS_EST.gestao.slice(0, 2));
+    sel.push('#impulsionarv4');
+    return [...new Set(sel)].slice(0, 5);
+}
+function ganchosLocaisEst(tema) {
+    const x = String(tema || 'isso').trim();
+    return [`Ninguém te conta isso sobre ${x}`, `O erro nº 1 em ${x} (e como corrigir)`, `Pare de fazer isso se você quer ${x}`, `3 passos para ${x} ainda esta semana`, `Se o seu time faz isso, você tem um problema de ${x}`, `Faça isso amanhã e veja a diferença em ${x}`];
+}
+
+app.get('/api/admin/estudio/projetos', requireRole('admin'), async (req, res) => {
+    try { res.json((await dbAll(`SELECT id, titulo, formato, tipo, status, capa_url, video_url, agendado_para, publicado_em, ig_permalink, erro_publicacao, viral_score, legenda, updated_at, created_at, dados FROM estudio_projetos ORDER BY updated_at DESC`)).map(p => { const o = linhaProjetoEst(p); const d = o.dados || {}; o.duracao = (d.clips || []).reduce((s, c) => s + Math.max(0, ((c.fim || 0) - (c.ini || 0)) / (c.vel || 1)), 0); o.qtdClips = (d.clips || []).length; o.thumb = (d.midias || []).find(m => m.tipo === 'imagem') ? (d.midias || []).find(m => m.tipo === 'imagem').url : ''; delete o.dados; return o; })); }
+    catch (e) { res.status(500).json({ error: 'Erro ao carregar os projetos.' }); }
+});
+app.get('/api/admin/estudio/projetos/:id', requireRole('admin'), async (req, res) => {
+    const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
+    if (!p) return res.status(404).json({ error: 'Projeto não encontrado.' });
+    res.json({ ...linhaProjetoEst(p), iaAtiva: iaDisponivelMt(), igConfigurado: !!(await lerIgEst()).token });
+});
+app.post('/api/admin/estudio/projetos', requireRole('admin'), async (req, res) => {
+    const b = req.body || {};
+    const titulo = String(b.titulo || 'Novo vídeo').trim().slice(0, 150) || 'Novo vídeo';
+    const formato = FORMATOS_EST.includes(b.formato) ? b.formato : '9:16';
+    const dados = b.dados && typeof b.dados === 'object' ? b.dados : { midias: [], clips: [], textos: [], audios: [], filtro: 'nenhum', transicao: 'corte', extras: {} };
+    db.run(`INSERT INTO estudio_projetos (titulo, formato, tipo, dados, legenda, hashtags, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [titulo, formato, String(b.tipo || 'reels').slice(0, 20), JSON.stringify(dados), String(b.legenda || ''), String(b.hashtags || ''), req.user.userId],
+        function (err) { if (err) return res.status(500).json({ error: 'Erro ao criar o projeto.' }); res.json({ id: this.lastID }); });
+});
+app.put('/api/admin/estudio/projetos/:id', requireRole('admin'), async (req, res) => {
+    const b = req.body || {}; const sets = [], vals = [];
+    if (b.titulo !== undefined) { sets.push('titulo = ?'); vals.push(String(b.titulo).trim().slice(0, 150) || 'Sem título'); }
+    if (b.formato !== undefined && FORMATOS_EST.includes(b.formato)) { sets.push('formato = ?'); vals.push(b.formato); }
+    if (b.tipo !== undefined) { sets.push('tipo = ?'); vals.push(String(b.tipo).slice(0, 20)); }
+    if (b.dados !== undefined) { const j = JSON.stringify(b.dados || {}); if (j.length > 5 * 1024 * 1024) return res.status(400).json({ error: 'Projeto grande demais.' }); sets.push('dados = ?'); vals.push(j); }
+    ['legenda', 'hashtags', 'capa_url'].forEach(k => { if (b[k] !== undefined) { sets.push(k + ' = ?'); vals.push(String(b[k] || '').slice(0, 5000)); } });
+    if (b.viral_score !== undefined) { sets.push('viral_score = ?'); vals.push(Math.max(0, Math.min(100, Number(b.viral_score) || 0))); }
+    if (b.status !== undefined && ['rascunho', 'pronto'].includes(b.status)) { sets.push('status = ?'); vals.push(b.status); }
+    if (!sets.length) return res.json({ ok: true });
+    sets.push('updated_at = CURRENT_TIMESTAMP');
+    db.run(`UPDATE estudio_projetos SET ${sets.join(', ')} WHERE id = ?`, [...vals, req.params.id], function (err) { if (err) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ ok: true, salvoEm: new Date().toISOString() }); });
+});
+app.post('/api/admin/estudio/projetos/:id/duplicar', requireRole('admin'), async (req, res) => {
+    const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
+    if (!p) return res.status(404).json({ error: 'Projeto não encontrado.' });
+    db.run(`INSERT INTO estudio_projetos (titulo, formato, tipo, dados, legenda, hashtags, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, [p.titulo + ' (cópia)', p.formato, p.tipo, p.dados, p.legenda, p.hashtags, req.user.userId],
+        function (err) { if (err) return res.status(500).json({ error: 'Erro ao duplicar.' }); res.json({ id: this.lastID }); });
+});
+app.delete('/api/admin/estudio/projetos/:id', requireRole('admin'), (req, res) => {
+    db.run(`DELETE FROM estudio_projetos WHERE id = ?`, [req.params.id], () => res.json({ ok: true }));
+});
+app.post('/api/admin/estudio/upload', requireRole('admin'), (req, res) => {
+    uploadEstudio.single('file')(req, res, (err) => {
+        if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Arquivo muito grande (máximo 1GB).' : err.message });
+        if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo recebido.' });
+        copiarUploadParaBanco(req.file);
+        const nome = typeof consertarAcentoMt === 'function' ? consertarAcentoMt(req.file.originalname) : req.file.originalname;
+        res.json({ url: '/uploads/' + req.file.filename, nome, mime: req.file.mimetype, tamanho: req.file.size });
+    });
+});
+// Vídeo final renderizado no navegador. Se vier em WebM e o servidor tiver ffmpeg, converte para MP4 (o Instagram exige MP4).
+app.post('/api/admin/estudio/projetos/:id/exportado', requireRole('admin'), (req, res) => {
+    uploadEstudio.single('file')(req, res, async (err) => {
+        if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Vídeo muito grande (máximo 1GB).' : err.message });
+        if (!req.file) return res.status(400).json({ error: 'Nenhum vídeo recebido.' });
+        let url = '/uploads/' + req.file.filename, mime = req.file.mimetype, aviso = '';
+        if (!/mp4|quicktime/.test(mime)) {
+            const destino = req.file.path.replace(/\.[^.]+$/, '') + '.mp4';
+            const ok = await new Promise(fim => {
+                try {
+                    require('child_process').execFile('ffmpeg', ['-y', '-i', req.file.path, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', destino], { timeout: 10 * 60 * 1000 }, e => fim(!e));
+                } catch (e) { fim(false); }
+            });
+            if (ok) { url = '/uploads/' + path.basename(destino); mime = 'video/mp4'; }
+            else aviso = 'O vídeo ficou em WebM. Para publicar direto no Instagram use o Chrome/Edge atualizado (que exporta em MP4) ou baixe e poste pelo celular.';
+        }
+        db.run(`UPDATE estudio_projetos SET video_url = ?, video_mime = ?, status = CASE WHEN status IN ('rascunho','erro') THEN 'pronto' ELSE status END, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [url, mime, req.params.id], () => {});
+        res.json({ url, mime, aviso });
+    });
+});
+
+// ----- Agente treinável -----
+app.get('/api/admin/estudio/agente', requireRole('admin'), async (req, res) => {
+    try { res.json(await dbAll(`SELECT * FROM estudio_agente ORDER BY tipo, id DESC`)); } catch (e) { res.status(500).json({ error: 'Erro ao carregar o agente.' }); }
+});
+app.post('/api/admin/estudio/agente', requireRole('admin'), async (req, res) => {
+    const b = req.body || {};
+    if (!TIPOS_AGENTE_EST.includes(b.tipo)) return res.status(400).json({ error: 'Tipo inválido.' });
+    const conteudo = String(b.conteudo || '').trim().slice(0, 8000);
+    if (!conteudo) return res.status(400).json({ error: 'Escreva o conteúdo.' });
+    const metricas = b.metricas && typeof b.metricas === 'object' ? JSON.stringify(b.metricas) : null;
+    if (b.tipo === 'perfil') {
+        const ex = await dbGet(`SELECT id FROM estudio_agente WHERE tipo = 'perfil'`).catch(() => null);
+        if (ex) return db.run(`UPDATE estudio_agente SET conteudo = ?, titulo = ? WHERE id = ?`, [conteudo, String(b.titulo || 'Perfil'), ex.id], () => res.json({ id: ex.id, message: 'Perfil do agente atualizado!' }));
+    }
+    db.run(`INSERT INTO estudio_agente (tipo, titulo, conteudo, metricas) VALUES (?, ?, ?, ?)`, [b.tipo, String(b.titulo || '').slice(0, 200), conteudo, metricas],
+        function (err) { if (err) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ id: this.lastID, message: b.tipo === 'feedback' ? 'Anotado! O agente vai levar isso em conta daqui pra frente.' : 'Salvo no treinamento do agente!' }); });
+});
+app.put('/api/admin/estudio/agente/:id', requireRole('admin'), (req, res) => {
+    const b = req.body || {};
+    db.run(`UPDATE estudio_agente SET titulo = COALESCE(?, titulo), conteudo = COALESCE(?, conteudo), metricas = COALESCE(?, metricas), ativo = COALESCE(?, ativo) WHERE id = ?`,
+        [b.titulo !== undefined ? String(b.titulo).slice(0, 200) : null, b.conteudo !== undefined ? String(b.conteudo).slice(0, 8000) : null, b.metricas ? JSON.stringify(b.metricas) : null, b.ativo !== undefined ? (b.ativo ? 1 : 0) : null, req.params.id], () => res.json({ ok: true }));
+});
+app.delete('/api/admin/estudio/agente/:id', requireRole('admin'), (req, res) => db.run(`DELETE FROM estudio_agente WHERE id = ?`, [req.params.id], () => res.json({ ok: true })));
+
+// ----- IA do estúdio -----
+app.post('/api/admin/estudio/ia/:acao', requireRole('admin'), async (req, res) => {
+    const b = req.body || {}, acao = req.params.acao;
+    const tema = String(b.tema || '').slice(0, 1500), objetivo = String(b.objetivo || '').slice(0, 500), publico = String(b.publico || '').slice(0, 300);
+    const duracao = Math.max(5, Math.min(180, Number(b.duracao) || 30));
+    const base = `TEMA/ASSUNTO: ${tema || '(ver contexto)'}\nOBJETIVO: ${objetivo || 'alcance e autoridade'}\nPÚBLICO: ${publico || 'líderes, gestores e profissionais de operação'}\nFORMATO: ${b.formato || 'Reels 9:16'} · ${duracao}s`;
+    try {
+        if (!iaDisponivelMt()) {
+            // Sem IA: respostas úteis geradas por regras, para nada ficar parado.
+            if (acao === 'hashtags') return res.json({ hashtags: hashtagsLocaisEst(tema + ' ' + (b.legenda || '')), semIa: true });
+            if (acao === 'ganchos') return res.json({ ganchos: ganchosLocaisEst(tema).map(t => ({ texto: t, tipo: 'modelo' })), semIa: true });
+            if (acao === 'legenda') { const g = ganchosLocaisEst(tema)[0]; return res.json({ legenda: `${g} 👇\n\n${tema ? tema.charAt(0).toUpperCase() + tema.slice(1) + '.' : ''}\n\nSalve este post para aplicar com o seu time e comente "QUERO" que eu te mando o passo a passo.`, hashtags: hashtagsLocaisEst(tema), semIa: true }); }
+            const e = new Error('A IA não está conectada. Conecte a chave em Estúdio › Agente Viral para usar este recurso.'); e.semIa = true; throw e;
+        }
+        let pedido, web = !!b.pesquisar, max = 6000;
+        if (acao === 'ideias') { pedido = `${base}\nGere ${Math.min(15, Number(b.qtd) || 8)} ideias de Reels com alto potencial de viralizar para esta marca${web ? ' (pesquise tendências e assuntos em alta no nicho agora)' : ''}. Para cada: titulo, gancho (texto dos 2 primeiros segundos), formato (talking head, lista, antes/depois, bastidores, tutorial, mito x verdade...), por_que_viraliza, cta.\nJSON: {"ideias":[{"titulo":"","gancho":"","formato":"","por_que_viraliza":"","cta":""}]}`; }
+        else if (acao === 'ganchos') { pedido = `${base}\nCrie 8 ganchos fortes (máx. 12 palavras cada, para texto na tela nos 2 primeiros segundos), variando os gatilhos (curiosidade, dor, número, contradição, promessa, pergunta).\nJSON: {"ganchos":[{"texto":"","tipo":"curiosidade"}]}`; }
+        else if (acao === 'roteiro') { max = 8000; pedido = `${base}\nEscreva o roteiro completo do vídeo, cena a cena, com tempo de cada cena somando ~${duracao}s. Cena 1 = gancho. Para cada cena: inicio (s), duracao (s), fala (o que dizer, frases curtas), texto_tela (curto, até 7 palavras), visual (o que filmar/mostrar e o enquadramento), corte (tipo de transição). No final: cta, legenda (com gancho na 1ª linha, parágrafos curtos, CTA) e hashtags (3 a 5).\nJSON: {"titulo":"","cenas":[{"inicio":0,"duracao":3,"fala":"","texto_tela":"","visual":"","corte":""}],"cta":"","legenda":"","hashtags":["#..."]}`; }
+        else if (acao === 'legenda') { pedido = `${base}\n${b.roteiro ? 'ROTEIRO/FALA DO VÍDEO:\n' + String(b.roteiro).slice(0, 4000) + '\n' : ''}Escreva a legenda do post: 1ª linha = gancho irresistível (antes do "mais"), corpo com valor em parágrafos curtos e palavras-chave do assunto (SEO do Instagram), CTA claro (comentar palavra / salvar / compartilhar), emojis com moderação. Depois 3 a 5 hashtags bem escolhidas e 3 variações curtas da primeira linha para teste A/B.\nJSON: {"legenda":"","hashtags":["#..."],"variacoes_gancho":["",""],"palavras_chave":[""]}`; }
+        else if (acao === 'hashtags') { pedido = `${base}\nLEGENDA: ${String(b.legenda || '').slice(0, 2000)}\nSugira 5 hashtags ideais (mistura de assunto + nicho + marca), explique a estratégia em 1 frase e sugira 5 palavras-chave para a legenda (SEO).\nJSON: {"hashtags":["#..."],"estrategia":"","palavras_chave":[""]}`; }
+        else if (acao === 'legendas-tempo') { pedido = `TEXTO FALADO NO VÍDEO (transcrição/roteiro):\n${String(b.roteiro || tema).slice(0, 5000)}\nDuração total: ${duracao}s.\nQuebre em legendas dinâmicas no estilo Reels (2 a 5 palavras por bloco, destaque 1 palavra-chave por bloco em MAIÚSCULAS quando fizer sentido), distribuindo o tempo de forma natural ao longo de ${duracao}s.\nJSON: {"legendas":[{"texto":"","inicio":0,"duracao":1.2}]}`; }
+        else if (acao === 'plano-edicao') {
+            max = 7000;
+            const midias = (Array.isArray(b.midias) ? b.midias : []).slice(0, 40).map((m, i) => `${i}: ${m.tipo} "${String(m.nome || '').slice(0, 60)}" duração ${Number(m.duracao || 0).toFixed(1)}s`).join('\n');
+            pedido = `${base}\nESTILO DESEJADO: ${String(b.estilo || 'dinâmico, profissional, cortes rápidos').slice(0, 300)}\n${b.roteiro ? 'ROTEIRO/FALA: ' + String(b.roteiro).slice(0, 3000) + '\n' : ''}MÍDIAS DISPONÍVEIS (índice: tipo nome duração):\n${midias || '(nenhuma)'}\n\nMonte o plano de edição para viralizar: escolha e ordene trechos das mídias (inicio/fim dentro da duração de cada mídia; imagens podem durar 1.5–4s), ritmo de cortes 1.5–3s, gancho na tela nos 2 primeiros segundos, textos de apoio curtos, CTA no fim, filtro (um de: nenhum, vibrante, cinema, quente, frio, pb, suave, contraste) e transição padrão (corte, fade, zoom, deslizar). Use zoom (1.0–1.3) para dar movimento em imagens. Duração total ~${duracao}s.\nJSON: {"clips":[{"midia":0,"inicio":0,"fim":2.5,"velocidade":1,"zoom":1.1}],"textos":[{"texto":"","inicio":0,"duracao":2.5,"estilo":"gancho|apoio|legenda|cta"}],"filtro":"vibrante","transicao":"corte","musica_volume":0.35,"legenda":"","hashtags":["#..."],"explicacao":"por que essa edição prende a atenção"}`;
+        }
+        else if (acao === 'analisar') { pedido = `${base}\nDADOS DO VÍDEO: ${JSON.stringify(b.resumo || {}).slice(0, 5000)}\nLEGENDA: ${String(b.legenda || '').slice(0, 2000)}\nAvalie o potencial de viralização (0 a 100) como um editor sênior de Reels. Seja específico e prático: o que está bom, o que mudar (em ordem de impacto) e a melhor hora para postar para esse público no Brasil.\nJSON: {"nota":0,"pontos_fortes":[""],"melhorias":[{"o_que":"","por_que":"","como":""}],"melhor_horario":"","resumo":""}`; }
+        else if (acao === 'capa') { pedido = `${base}\nSugira 5 textos para a capa do Reels (máx. 6 palavras, impacto, legível no grid) e a orientação visual da capa.\nJSON: {"textos":[""],"orientacao":""}`; }
+        else if (acao === 'conversar') { const r = await iaEstudio(`${String(b.mensagem || '').slice(0, 4000)}`, { web, json: false, max: 4000 }); return res.json({ resposta: r.texto, fontes: r.fontes }); }
+        else return res.status(400).json({ error: 'Ação de IA desconhecida.' });
+        const out = await iaEstudio(pedido, { web, max });
+        res.json(out);
+    } catch (e) { res.status(e.semIa ? 400 : 500).json({ error: e.message, semIa: !!e.semIa }); }
+});
+
+// ----- Instagram (Graph API) -----
+async function lerIgEst() {
+    const l = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN ('ig_user_id','ig_access_token','ig_username')`).catch(() => []);
+    const c = {}; l.forEach(r => { c[r.key] = r.value; });
+    return { userId: c.ig_user_id || '', token: c.ig_access_token || '', username: c.ig_username || '' };
+}
+function hostIgEst(token) { return /^IG/.test(token || '') ? 'https://graph.instagram.com/v21.0' : 'https://graph.facebook.com/v21.0'; }
+async function igEst(metodo, caminho, params, token) {
+    const u = new URL(hostIgEst(token) + caminho);
+    const corpo = new URLSearchParams({ ...(params || {}), access_token: token });
+    const r = await fetch(metodo === 'GET' ? u + '?' + corpo : u, metodo === 'GET' ? {} : { method: 'POST', body: corpo });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.error) throw new Error((j.error && j.error.message) || ('Instagram: erro ' + r.status));
+    return j;
+}
+app.get('/api/admin/estudio/instagram', requireRole('admin'), async (req, res) => {
+    const c = await lerIgEst();
+    res.json({ configurado: !!(c.userId && c.token), userId: c.userId, username: c.username, tokenPreview: c.token ? '••••' + c.token.slice(-6) : '' });
+});
+app.put('/api/admin/estudio/instagram', requireRole('admin'), async (req, res) => {
+    const salvar = (k, v) => new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => ok()));
+    if (req.body.remover) { await salvar('ig_user_id', ''); await salvar('ig_access_token', ''); await salvar('ig_username', ''); return res.json({ message: 'Instagram desconectado.' }); }
+    const userId = String(req.body.userId || '').trim(), token = String(req.body.token || '').trim();
+    if (!/^\d{5,}$/.test(userId) || token.length < 20) return res.status(400).json({ error: 'Informe o ID da conta do Instagram (só números) e o token de acesso.' });
+    try {
+        const info = await igEst('GET', '/' + userId, { fields: 'username' }, token);
+        await salvar('ig_user_id', userId); await salvar('ig_access_token', token); await salvar('ig_username', info.username || '');
+        res.json({ message: `Instagram @${info.username || userId} conectado! ✅`, username: info.username || '' });
+    } catch (e) { res.status(400).json({ error: 'Não consegui conectar: ' + e.message }); }
+});
+async function publicarProjetoEst(id, base) {
+    const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [id]);
+    if (!p) throw new Error('Projeto não encontrado.');
+    if (!p.video_url) throw new Error('Exporte o vídeo antes de publicar.');
+    if (!/mp4|quicktime/.test(p.video_mime || '') && !/\.mp4$/i.test(p.video_url)) throw new Error('O Instagram só aceita MP4. Exporte de novo pelo Chrome/Edge atualizado.');
+    const ig = await lerIgEst(); if (!ig.userId || !ig.token) throw new Error('Conecte o Instagram em Estúdio › Instagram.');
+    const videoUrl = /^https?:/.test(p.video_url) ? p.video_url : String(base || '').replace(/\/$/, '') + p.video_url;
+    if (!/^https:\/\//.test(videoUrl) || /localhost|127\.0\.0\.1/.test(videoUrl)) throw new Error('O vídeo precisa estar num endereço público (https) para o Instagram buscar.');
+    const caption = [p.legenda || '', p.hashtags || ''].filter(Boolean).join('\n\n').slice(0, 2200);
+    db.run(`UPDATE estudio_projetos SET status = 'publicando', erro_publicacao = NULL WHERE id = ?`, [id]);
+    const tipo = p.tipo === 'stories' ? 'STORIES' : 'REELS';
+    const cont = await igEst('POST', `/${ig.userId}/media`, { media_type: tipo, video_url: videoUrl, caption: tipo === 'STORIES' ? '' : caption, share_to_feed: 'true' }, ig.token);
+    for (let i = 0; i < 60; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        const st = await igEst('GET', '/' + cont.id, { fields: 'status_code,status' }, ig.token);
+        if (st.status_code === 'FINISHED') break;
+        if (st.status_code === 'ERROR' || st.status_code === 'EXPIRED') throw new Error('O Instagram recusou o vídeo: ' + (st.status || st.status_code));
+        if (i === 59) throw new Error('O Instagram demorou demais para processar o vídeo. Tente de novo.');
+    }
+    const pub = await igEst('POST', `/${ig.userId}/media_publish`, { creation_id: cont.id }, ig.token);
+    let link = ''; try { link = (await igEst('GET', '/' + pub.id, { fields: 'permalink' }, ig.token)).permalink || ''; } catch (e) {}
+    db.run(`UPDATE estudio_projetos SET status = 'publicado', publicado_em = CURRENT_TIMESTAMP, ig_media_id = ?, ig_permalink = ?, erro_publicacao = NULL, agendado_para = NULL WHERE id = ?`, [pub.id, link, id]);
+    return { id: pub.id, permalink: link };
+}
+app.post('/api/admin/estudio/projetos/:id/publicar', requireRole('admin'), async (req, res) => {
+    const base = baseUrlPublicaDpo(req);
+    if (req.body && req.body.agendarPara) {
+        const quando = new Date(req.body.agendarPara);
+        if (isNaN(quando) || quando < Date.now() - 60000) return res.status(400).json({ error: 'Escolha uma data/hora futura.' });
+        db.run(`UPDATE estudio_projetos SET status = 'agendado', agendado_para = ?, erro_publicacao = NULL WHERE id = ?`, [quando.toISOString(), req.params.id]);
+        ULTIMA_BASE_ESTUDIO = base;
+        return res.json({ message: `Publicação agendada para ${quando.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}. ✅` });
+    }
+    if (req.body && req.body.cancelarAgendamento) { db.run(`UPDATE estudio_projetos SET status = 'pronto', agendado_para = NULL WHERE id = ?`, [req.params.id]); return res.json({ message: 'Agendamento cancelado.' }); }
+    // Checagens rápidas antes de enviar em segundo plano.
+    const pr = await dbGet(`SELECT video_url, video_mime FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
+    if (!pr) return res.status(404).json({ error: 'Projeto não encontrado.' });
+    if (!pr.video_url) return res.status(400).json({ error: 'Exporte o vídeo antes de publicar.' });
+    if (!(await lerIgEst()).token) return res.status(400).json({ error: 'Conecte o Instagram em Estúdio de Vídeo › Instagram.' });
+    // Publica em segundo plano (o Instagram leva alguns minutos para processar o vídeo).
+    publicarProjetoEst(req.params.id, base).catch(e => db.run(`UPDATE estudio_projetos SET status = 'erro', erro_publicacao = ? WHERE id = ?`, [e.message, req.params.id]));
+    res.json({ message: 'Enviando para o Instagram... isso leva de 1 a 5 minutos. Acompanhe o status no projeto.' });
+});
+let ULTIMA_BASE_ESTUDIO = '';
+setInterval(async () => {
+    try {
+        const devidos = await dbAll(`SELECT id FROM estudio_projetos WHERE status = 'agendado' AND agendado_para <= ?`, [new Date().toISOString()]);
+        for (const p of devidos) {
+            const base = (typeof appBaseUrlAtiva !== 'undefined' && urlPublicaValida(appBaseUrlAtiva) ? appBaseUrlAtiva : '') || ULTIMA_BASE_ESTUDIO || (typeof ULTIMA_BASE_DPO !== 'undefined' ? ULTIMA_BASE_DPO : '');
+            await publicarProjetoEst(p.id, base).catch(e => db.run(`UPDATE estudio_projetos SET status = 'erro', erro_publicacao = ? WHERE id = ?`, ['Agendamento: ' + e.message, p.id]));
+        }
+    } catch (e) { /* tenta no próximo minuto */ }
+}, 60 * 1000);
+
 
 // ============================================================
 // VIDEOCHAMADA PRÓPRIA (WEBRTC) PARA AS MENTORIAS
