@@ -6,187 +6,325 @@
 <meta name="theme-color" content="#000000">
 <title>Gravar com teleprompter — Impulsionar V4</title>
 <style>
-  :root { --cor: #dc4c4c; }
+  :root { --cor: #dc4c4c; --tam: 30px; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; background: #000; color: #fff; font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif; overflow: hidden; }
   #camera { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
   #camera.espelho { transform: scaleX(-1); }
+  body.horizontal #camera { object-fit: contain; }
+
   /* teleprompter: perto da lente (topo), para o olhar parecer na câmera */
-  .prompter { position: fixed; left: 0; right: 0; top: 0; height: 44%; background: linear-gradient(rgba(0,0,0,.75), rgba(0,0,0,.58) 82%, rgba(0,0,0,0)); z-index: 2; }
-  .prompter .janela { position: absolute; left: 16px; right: 16px; top: calc(env(safe-area-inset-top) + 62px); bottom: 8px; overflow: hidden; -webkit-mask-image: linear-gradient(transparent, #000 12%, #000 85%, transparent); mask-image: linear-gradient(transparent, #000 12%, #000 85%, transparent); }
-  .prompter .texto { padding-top: 10px; }
+  .prompter { position: fixed; left: 0; right: 0; top: 0; height: 46%; background: linear-gradient(rgba(0,0,0,.8), rgba(0,0,0,.62) 82%, rgba(0,0,0,0)); z-index: 2; touch-action: none; }
+  body.pc .prompter { left: 50%; transform: translateX(-50%); width: min(980px, 100%); height: 52%; border-radius: 0 0 20px 20px; }
   .prompter.oculto { display: none; }
-  .prompter .texto { font-size: var(--tam, 30px); line-height: 1.38; font-weight: 700; text-align: center; white-space: pre-wrap; will-change: transform; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
-  .prompter .texto.espelhoTxt { transform: scaleX(-1); }
+  .prompter .janela { position: absolute; left: 18px; right: 18px; top: calc(env(safe-area-inset-top) + 60px); bottom: 10px; overflow: hidden; -webkit-mask-image: linear-gradient(transparent, #000 10%, #000 86%, transparent); mask-image: linear-gradient(transparent, #000 10%, #000 86%, transparent); }
+  .prompter .texto { position: absolute; left: 0; right: 0; top: 0; font-size: var(--tam); line-height: 1.42; font-weight: 700; text-align: center; white-space: pre-wrap; will-change: transform; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+  .prompter .texto .guia { display: inline-block; font-size: .5em; letter-spacing: .08em; color: var(--cor); background: rgba(255,255,255,.1); border-radius: 8px; padding: 2px 10px; font-weight: 800; }
+  .prompter .texto .pausa { font-size: .6em; color: #94a3b8; font-weight: 600; font-style: italic; }
+  .prompter .texto .fim { font-size: .6em; color: #94a3b8; }
+  /* linha de leitura: leia sempre o que está na altura das setas */
+  .linha-leitura { position: absolute; left: 4px; right: 4px; top: 30%; height: calc(var(--tam) * 1.42); transform: translateY(-50%); border-top: 1px solid rgba(255,255,255,.12); border-bottom: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05); pointer-events: none; }
+  .linha-leitura::before { content: '▶'; position: absolute; left: -2px; top: 50%; transform: translateY(-50%); color: var(--cor); font-size: 18px; }
+  .linha-leitura::after { content: '◀'; position: absolute; right: -2px; top: 50%; transform: translateY(-50%); color: var(--cor); font-size: 18px; }
 
   .topo { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 8px; padding: calc(env(safe-area-inset-top) + 10px) 12px 8px; z-index: 5; }
   .topo .tit { flex: 1; font-size: 13px; font-weight: 700; opacity: .9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .rec-tempo { background: var(--cor); padding: 4px 10px; border-radius: 12px; font-size: 13px; font-weight: 800; display: none; font-variant-numeric: tabular-nums; }
-  .rec-tempo.on { display: inline-block; animation: pisca 1.2s infinite; } @keyframes pisca { 50% { opacity: .6; } }
+  .rec-tempo.on { display: inline-block; animation: pisca 1.2s infinite; } .rec-tempo.pausado { animation: none; background: #b45309; } @keyframes pisca { 50% { opacity: .6; } }
   .ic { width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(0,0,0,.5); color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(6px); flex-shrink: 0; }
   .ic.on { background: var(--cor); }
-  .base { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 14px calc(env(safe-area-inset-bottom) + 18px); z-index: 5; background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.7)); }
-  .ajustes { display: flex; justify-content: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
-  .ajuste { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,.55); border-radius: 22px; padding: 4px 6px; font-size: 12px; }
-  .ajuste button { width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(255,255,255,.15); color: #fff; font-size: 17px; cursor: pointer; }
-  .ajuste span { min-width: 58px; text-align: center; }
-  .acoes { display: flex; align-items: center; justify-content: space-around; }
+  .base { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 14px calc(env(safe-area-inset-bottom) + 16px); z-index: 5; background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.75)); }
+  .ajustes { display: flex; justify-content: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .ajuste { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,.6); border-radius: 22px; padding: 4px 6px; font-size: 12px; }
+  .ajuste button { width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(255,255,255,.15); color: #fff; font-size: 17px; cursor: pointer; }
+  .ajuste span { min-width: 74px; text-align: center; }
+  .acoes { display: flex; align-items: center; justify-content: space-around; max-width: 560px; margin: 0 auto; }
+  .centro { display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .gravar { width: 78px; height: 78px; border-radius: 50%; border: 5px solid #fff; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
   .gravar i { width: 58px; height: 58px; border-radius: 50%; background: var(--cor); transition: .2s; }
   .gravar.on i { width: 30px; height: 30px; border-radius: 8px; }
-  .lado { width: 64px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; opacity: .9; }
-  .contagem { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; font-size: 140px; font-weight: 900; z-index: 8; text-shadow: 0 6px 30px rgba(0,0,0,.6); }
+  .rot-gravar { font-size: 13px; font-weight: 800; text-shadow: 0 1px 4px #000; }
+  .lado { width: 70px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; opacity: .95; text-align: center; }
+  .contagem { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; font-size: 150px; font-weight: 900; z-index: 8; text-shadow: 0 6px 30px rgba(0,0,0,.6); background: rgba(0,0,0,.25); }
+  .contagem small { font-size: 18px; font-weight: 600; }
   .contagem.on { display: flex; }
+  .atalhos { position: fixed; right: 14px; bottom: 150px; z-index: 4; font-size: 11.5px; color: #cbd5e1; background: rgba(0,0,0,.55); border-radius: 10px; padding: 8px 10px; line-height: 1.7; display: none; }
+  body.pc .atalhos { display: block; }
+  .atalhos b { background: rgba(255,255,255,.15); border-radius: 4px; padding: 0 5px; font-weight: 700; }
+  .aviso-girar { position: fixed; inset: 0; z-index: 15; background: rgba(11,19,41,.96); display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px; gap: 10px; }
+  .aviso-girar.on { display: flex; }
+  .aviso-girar .ico { font-size: 60px; animation: girar 2s infinite; } @keyframes girar { 50% { transform: rotate(90deg); } }
+
   .tela { position: fixed; inset: 0; background: #0b1329; z-index: 10; display: none; flex-direction: column; padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px); overflow-y: auto; }
   .tela.on { display: flex; }
+  .tela .caixa { width: 100%; max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; flex: 1; }
   .tela h2 { margin: 6px 0 10px; font-size: 20px; }
-  .tela textarea { flex: 1; min-height: 50vh; width: 100%; border-radius: 12px; border: 1px solid #2a3244; background: #0d1017; color: #fff; padding: 12px; font-size: 16px; line-height: 1.5; font-family: inherit; }
+  .tela textarea { flex: 1; min-height: 40vh; width: 100%; border-radius: 12px; border: 1px solid #2a3244; background: #0d1017; color: #fff; padding: 12px; font-size: 16px; line-height: 1.5; font-family: inherit; }
+  .tela input, .tela select { width: 100%; border-radius: 10px; border: 1px solid #2a3244; background: #0d1017; color: #fff; padding: 11px; font-size: 15px; font-family: inherit; }
+  .linha-ia { display: flex; gap: 8px; margin-bottom: 10px; } .linha-ia input { flex: 1; } .linha-ia select { width: 110px; }
   .bt { width: 100%; border: none; border-radius: 26px; padding: 15px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; background: var(--cor); color: #fff; }
-  .bt.sec { background: #1e2533; } .bt:disabled { opacity: .6; }
-  .revisao video { width: 100%; max-height: 58vh; border-radius: 12px; background: #000; }
+  .bt.sec { background: #1e2533; } .bt.ia { background: linear-gradient(135deg,#4f46e5,#7c3aed); } .bt:disabled { opacity: .6; }
+  .inicio .resumo { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 14px; }
+  .inicio .resumo div { flex: 1; min-width: 120px; background: #121a30; border: 1px solid #22304f; border-radius: 12px; padding: 12px; text-align: center; }
+  .inicio .resumo b { display: block; font-size: 22px; } .inicio .resumo span { font-size: 12px; color: #94a3b8; }
+  .inicio .previa { background: #0d1017; border: 1px solid #2a3244; border-radius: 12px; padding: 12px; max-height: 28vh; overflow: auto; white-space: pre-wrap; font-size: 14px; line-height: 1.5; color: #cbd5e1; }
+  .grande { font-size: 19px !important; padding: 18px !important; }
+  .revisao video { width: 100%; max-height: 52vh; border-radius: 12px; background: #000; }
   .barra { height: 8px; background: #1e2533; border-radius: 4px; overflow: hidden; margin-top: 12px; display: none; } .barra i { display: block; height: 100%; width: 0; background: var(--cor); }
   .msg { text-align: center; font-size: 14px; color: #cbd5e1; margin-top: 10px; min-height: 18px; line-height: 1.5; }
   .erro { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px; z-index: 20; background: #0b1329; }
   .dica { font-size: 12.5px; color: #94a3b8; margin: 0 0 8px; line-height: 1.5; }
+  .chk { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 10px 0 0; color: #cbd5e1; } .chk input { width: auto; }
 </style>
 </head>
 <body>
   <video id="camera" autoplay muted playsinline class="espelho"></video>
-  <div class="prompter" id="prompter"><div class="janela"><div class="texto" id="texto"></div></div></div>
+  <div class="prompter" id="prompter"><div class="janela" id="janela"><div class="texto" id="texto"></div><div class="linha-leitura"></div></div></div>
   <div class="topo">
     <span class="tit" id="titulo">Impulsionar V4</span>
     <span class="rec-tempo" id="tempo">● 00:00</span>
     <button class="ic" onclick="abrirEditor()" title="Editar roteiro">✏️</button>
-    <button class="ic" id="b-prompter" onclick="alternarPrompter()" title="Mostrar/ocultar texto">📝</button>
-    <button class="ic" onclick="virarCamera()" title="Trocar câmera">🔄</button>
+    <button class="ic on" id="b-prompter" onclick="alternarPrompter()" title="Mostrar/ocultar texto">📝</button>
+    <button class="ic" onclick="virarCamera()" title="Trocar câmera" id="b-virar">🔄</button>
   </div>
-  <div class="contagem" id="contagem">3</div>
+  <div class="contagem" id="contagem"><span id="contagem-n">3</span><small>o texto começa a passar sozinho</small></div>
+  <div class="atalhos"><b>Enter</b> começar / parar · <b>Espaço</b> pausar texto<br><b>↑ ↓</b> velocidade · <b>+ −</b> tamanho · <b>P</b> pausar gravação</div>
   <div class="base">
     <div class="ajustes">
-      <div class="ajuste"><button onclick="velocidade(-10)">−</button><span id="v-vel">🐢 Vel. 40</span><button onclick="velocidade(10)">+</button></div>
+      <div class="ajuste"><button onclick="velocidade(-10)" title="Mais devagar">−</button><span id="v-vel">🚶 140 ppm</span><button onclick="velocidade(10)" title="Mais rápido">+</button></div>
       <div class="ajuste"><button onclick="tamanho(-3)">A−</button><span id="v-tam">Texto 30</span><button onclick="tamanho(3)">A+</button></div>
     </div>
     <div class="acoes">
-      <div class="lado"><button class="ic" id="b-rolar" onclick="alternarRolagem()">▶</button>Rolar texto</div>
-      <button class="gravar" id="b-gravar" onclick="alternarGravacao()"><i></i></button>
+      <div class="lado"><button class="ic" id="b-rolar" onclick="alternarRolagem()">▶</button><span id="r-rolar">Passar texto</span></div>
+      <div class="lado" id="lado-pausa" style="display:none;"><button class="ic" id="b-pausa" onclick="pausarGravacao()">⏸</button><span id="r-pausa">Pausar</span></div>
+      <div class="centro"><button class="gravar" id="b-gravar" onclick="alternarGravacao()"><i></i></button><span class="rot-gravar" id="r-gravar">▶ Começar</span></div>
       <div class="lado"><button class="ic" onclick="voltarTexto()">⏮</button>Voltar texto</div>
     </div>
   </div>
 
-  <div class="tela" id="tela-editor">
+  <div class="aviso-girar" id="aviso-girar"><div class="ico">📱</div><h2>Vire o celular na horizontal</h2><p class="dica">Esta aula é gravada no formato horizontal (16:9), como na Academy.</p><button class="bt sec" style="max-width:280px;" onclick="$('aviso-girar').classList.remove('on'); girarIgnorado = true;">Gravar assim mesmo</button></div>
+
+  <!-- tela inicial: roteiro pronto → Começar -->
+  <div class="tela inicio" id="tela-inicio"><div class="caixa">
+    <h2 id="ini-tit">🎬 Pronto para gravar</h2>
+    <p class="dica">Ao clicar em <b>Começar a gravar</b>, conta 3‑2‑1 e o texto passa sozinho na tela, no ritmo que você escolher (− / +). Leia sempre a linha marcada com ▶ ◀, olhando perto da câmera.</p>
+    <div class="resumo"><div><b id="ini-pal">0</b><span>palavras</span></div><div><b id="ini-tempo">—</b><span>tempo estimado</span></div><div><b id="ini-vel">140</b><span>palavras por minuto</span></div></div>
+    <div class="previa" id="ini-previa"></div>
+    <button class="bt grande" onclick="fecharInicio(); alternarGravacao()">⏺ Começar a gravar</button>
+    <button class="bt sec" onclick="fecharInicio()">👀 Só ensaiar / ajustar a câmera</button>
+    <button class="bt sec" onclick="fecharInicio(); abrirEditor()">✏️ Editar ou criar o roteiro</button>
+  </div></div>
+
+  <div class="tela" id="tela-editor"><div class="caixa">
     <h2>✏️ Roteiro</h2>
-    <p class="dica">Escreva ou ajuste o que você vai falar. Deixe uma linha em branco entre as partes — fica mais fácil de ler enquanto grava.</p>
+    <p class="dica">Escreva ou ajuste o que você vai falar. Deixe uma linha em branco entre as partes. Linhas entre [COLCHETES] aparecem só como guia (não são para ler) e "(pausa)" marca onde respirar.</p>
+    <div id="bloco-ia">
+      <div class="linha-ia"><input id="ia-tema" placeholder="Tema para a IA criar o roteiro"><select id="ia-min"></select></div>
+      <button class="bt ia" id="b-ia" style="margin-top:0;margin-bottom:10px;" onclick="criarComIa()">🤖 Criar roteiro com IA</button>
+    </div>
     <textarea id="editor-txt"></textarea>
+    <label class="chk"><input type="checkbox" id="chk-espelho" onchange="espelharTexto(this.checked)"> Espelhar texto (para teleprompter com vidro)</label>
     <button class="bt" onclick="salvarRoteiro()">Usar este roteiro</button>
     <button class="bt sec" onclick="fecharEditor()">Cancelar</button>
-  </div>
-  <div class="tela revisao" id="tela-revisao">
-    <h2>🎬 Ficou bom?</h2>
+  </div></div>
+  <div class="tela revisao" id="tela-revisao"><div class="caixa">
+    <h2 id="rev-tit">🎬 Ficou bom?</h2>
     <video id="revisao" controls playsinline></video>
     <div class="barra" id="barra"><i id="barra-i"></i></div>
     <div class="msg" id="msg"></div>
     <button class="bt" id="b-enviar" onclick="enviar()">📤 Enviar para o projeto</button>
-    <button class="bt sec" onclick="gravarDeNovo()">🔁 Gravar de novo</button>
-    <a class="bt sec" id="b-baixar" style="display:block;text-align:center;text-decoration:none;color:#fff;" download="gravacao.mp4">⬇️ Salvar no celular</a>
-  </div>
+    <button class="bt sec" id="b-proxima" style="display:none;" onclick="proximaParte()">➡️ Gravar a próxima parte (continua o texto de onde parou)</button>
+    <button class="bt sec" onclick="gravarDeNovo()">🔁 Gravar esta parte de novo</button>
+    <a class="bt sec" id="b-baixar" style="display:block;text-align:center;text-decoration:none;color:#fff;" download="gravacao.mp4">⬇️ Salvar no aparelho</a>
+  </div></div>
 
 <script>
 const codigo = new URLSearchParams(location.search).get('c') || '';
-let stream = null, frente = true, rec = null, partes = [], inicioRec = 0, timerRec = null, blobFinal = null;
-let rolando = false, pos = 0, vel = 40, tam = 30, ultimo = 0, raf = null, wake = null, roteiro = '';
+const ehPc = !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+let stream = null, frente = true, rec = null, partes = [], inicioRec = 0, pausadoEm = 0, tempoPausado = 0, timerRec = null, blobFinal = null;
+let rolando = false, pos = 0, ppm = 140, tam = 30, ultimo = 0, raf = null, wake = null, roteiro = '', formato = '9:16', tipo = 'reels';
+let posInicioParte = 0, parte = 1, enviado = false, girarIgnorado = false, temIa = false, espelhado = false;
 const $ = id => document.getElementById(id);
+if (ehPc) document.body.classList.add('pc');
 
 async function carregar() {
   try {
     const r = await fetch('/api/public/gravador/' + encodeURIComponent(codigo)); const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'Link inválido.');
-    $('titulo').textContent = d.titulo || 'Impulsionar V4';
+    $('titulo').textContent = (d.tipo === 'aula' ? '🎓 ' : '') + (d.titulo || 'Impulsionar V4');
     if (d.cor) document.documentElement.style.setProperty('--cor', d.cor);
-    roteiro = d.roteiro || ''; mostrarTexto();
-    if (!roteiro.trim()) abrirEditor();
+    formato = d.formato || '9:16'; tipo = d.tipo || 'reels'; temIa = !!d.ia;
+    if (formato === '16:9') document.body.classList.add('horizontal');
+    $('ia-tema').value = d.titulo || '';
+    $('ia-min').innerHTML = (tipo === 'aula' ? [2, 3, 5, 8, 10, 15, 20] : [0.25, 0.5, 0.75, 1, 1.5]).map(m => `<option value="${m}" ${m === (tipo === 'aula' ? 5 : 0.5) ? 'selected' : ''}>${m < 1 ? Math.round(m * 60) + ' s' : m + ' min'}</option>`).join('');
+    if (!temIa) $('bloco-ia').style.display = 'none';
+    roteiro = d.roteiro || '';
   } catch (e) { erro(e.message); return; }
-  try { tam = Number(localStorage.getItem('tp_tam')) || 30; vel = Number(localStorage.getItem('tp_vel')) || 40; } catch (e) {}
-  aplicarAjustes(); await ligarCamera();
+  try { tam = Number(localStorage.getItem('tp_tam')) || (ehPc ? 40 : 30); ppm = Number(localStorage.getItem('tp_ppm')) || (tipo === 'aula' ? 135 : 150); } catch (e) { tam = ehPc ? 40 : 30; ppm = tipo === 'aula' ? 135 : 150; }
+  aplicarAjustes(); mostrarTexto();
+  await ligarCamera();
+  if (!roteiro.trim()) abrirEditor(); else abrirInicio();
+  checarOrientacao();
 }
 function erro(t) { document.body.insertAdjacentHTML('beforeend', `<div class="erro"><div style="font-size:48px;">⚠️</div><h2>${t.replace(/</g, '&lt;')}</h2></div>`); }
-function mostrarTexto() { $('texto').textContent = roteiro.trim() ? roteiro + '\n\n\n\n🎬 Fim do roteiro' : 'Toque em ✏️ para escrever o roteiro.'; pos = 0; aplicarPos(); }
+function esc(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function palavrasFaladas() { return (roteiro.replace(/^\s*\[[^\]]*\]\s*$/gm, '').replace(/\(pausa\)/gi, '').match(/\S+/g) || []).length; }
+function mostrarTexto() {
+  if (!roteiro.trim()) { $('texto').innerHTML = 'Toque em ✏️ para escrever o roteiro.'; pos = 0; aplicarPos(); return; }
+  const html = roteiro.split('\n').map(l => {
+    if (/^\s*\[[^\]]*\]\s*$/.test(l)) return `<span class="guia">${esc(l.trim().slice(1, -1))}</span>`;
+    return esc(l).replace(/\(pausa\)/gi, '<span class="pausa">(pausa)</span>');
+  }).join('\n');
+  $('texto').innerHTML = html + '\n\n\n<span class="fim">🎬 Fim do roteiro</span>\n\n\n';
+  pos = 0; aplicarPos();
+}
+function abrirInicio() {
+  const n = palavrasFaladas(), seg = Math.round(n / ppm * 60);
+  $('ini-pal').textContent = n; $('ini-vel').textContent = ppm;
+  $('ini-tempo').textContent = seg >= 60 ? Math.floor(seg / 60) + 'min ' + String(seg % 60).padStart(2, '0') + 's' : seg + 's';
+  $('ini-tit').textContent = tipo === 'aula' ? '🎓 Pronto para gravar a aula' : '🎬 Pronto para gravar';
+  $('ini-previa').textContent = roteiro.slice(0, 1500) + (roteiro.length > 1500 ? '…' : '');
+  $('tela-inicio').classList.add('on');
+}
+function fecharInicio() { $('tela-inicio').classList.remove('on'); }
 async function ligarCamera() {
   if (stream) stream.getTracks().forEach(t => t.stop());
+  const horiz = formato === '16:9';
+  // no celular a câmera segue a orientação do aparelho; no computador a webcam já é horizontal
+  const video = ehPc ? { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } } : { facingMode: frente ? 'user' : 'environment', width: { ideal: horiz ? 1920 : 1080 }, height: { ideal: horiz ? 1080 : 1920 }, frameRate: { ideal: 30 } };
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: frente ? 'user' : 'environment', width: { ideal: 1080 }, height: { ideal: 1920 }, frameRate: { ideal: 30 } }, audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    stream = await navigator.mediaDevices.getUserMedia({ video, audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
     $('camera').srcObject = stream; $('camera').classList.toggle('espelho', frente);
   } catch (e) { erro('Não consegui abrir a câmera/microfone. Permita o acesso nas configurações do navegador e recarregue a página.'); }
 }
 function virarCamera() { if (rec) return; frente = !frente; ligarCamera(); }
+function checarOrientacao() { const vertical = window.innerHeight > window.innerWidth; $('aviso-girar').classList.toggle('on', !ehPc && formato === '16:9' && vertical && !girarIgnorado && !rec); aplicarPos(); }
+window.addEventListener('resize', checarOrientacao);
 function aplicarAjustes() {
   document.documentElement.style.setProperty('--tam', tam + 'px');
-  $('v-tam').textContent = 'Texto ' + tam; $('v-vel').textContent = (vel < 35 ? '🐢' : vel > 70 ? '🐇' : '🚶') + ' Vel. ' + vel;
-  try { localStorage.setItem('tp_tam', tam); localStorage.setItem('tp_vel', vel); } catch (e) {}
+  $('v-tam').textContent = 'Texto ' + tam; $('v-vel').textContent = (ppm < 120 ? '🐢 ' : ppm > 170 ? '🐇 ' : '🚶 ') + ppm + ' ppm';
+  try { localStorage.setItem('tp_tam', tam); localStorage.setItem('tp_ppm', ppm); } catch (e) {}
+  aplicarPos();
 }
-function velocidade(d) { vel = Math.max(10, Math.min(160, vel + d)); aplicarAjustes(); }
-function tamanho(d) { tam = Math.max(18, Math.min(64, tam + d)); aplicarAjustes(); }
-function aplicarPos() { $('texto').style.transform = `translateY(${-pos}px)`; }
+function velocidade(d) { ppm = Math.max(60, Math.min(260, ppm + d)); aplicarAjustes(); }
+function tamanho(d) { tam = Math.max(18, Math.min(80, tam + d)); aplicarAjustes(); }
+// a linha que está sendo lida fica sempre na altura das setas (30% da janela)
+function aplicarPos() { const j = $('janela'); if (!j) return; $('texto').style.transform = `translateY(${-pos + j.clientHeight * 0.3 - tam * 0.71}px)` + (espelhado ? ' scaleX(-1)' : ''); }
+// velocidade em palavras por minuto: altura do texto ÷ nº de palavras × ppm
+function pxPorSegundo() { const n = Math.max(1, palavrasFaladas()); const altura = Math.max(1, $('texto').scrollHeight - tam * 1.42 * 6); return altura / n * ppm / 60; }
 function passo(t) {
   if (!rolando) return;
-  const dt = ultimo ? (t - ultimo) / 1000 : 0; ultimo = t;
-  pos += vel * dt * (tam / 30);
-  const max = $('texto').scrollHeight - 40; if (pos >= max) { pos = max; alternarRolagem(false); }
+  const dt = ultimo ? Math.min(0.1, (t - ultimo) / 1000) : 0; ultimo = t;
+  pos += pxPorSegundo() * dt;
+  const max = $('texto').scrollHeight - tam * 1.42 * 3; if (pos >= max) { pos = max; aplicarPos(); alternarRolagem(false); return; }
   aplicarPos(); raf = requestAnimationFrame(passo);
 }
 function alternarRolagem(forcar) {
   rolando = forcar !== undefined ? forcar : !rolando; ultimo = 0;
-  $('b-rolar').textContent = rolando ? '⏸' : '▶'; $('b-rolar').classList.toggle('on', rolando);
-  if (rolando) raf = requestAnimationFrame(passo); else cancelAnimationFrame(raf);
+  $('b-rolar').textContent = rolando ? '⏸' : '▶'; $('b-rolar').classList.toggle('on', rolando); $('r-rolar').textContent = rolando ? 'Pausar texto' : 'Passar texto';
+  cancelAnimationFrame(raf); if (rolando) raf = requestAnimationFrame(passo);
 }
-function voltarTexto() { pos = 0; aplicarPos(); }
+function voltarTexto() { pos = rec ? posInicioParte : 0; aplicarPos(); }
 function alternarPrompter() { $('prompter').classList.toggle('oculto'); $('b-prompter').classList.toggle('on', !$('prompter').classList.contains('oculto')); }
-// arrastar o texto com o dedo para ajustar a posição
+function espelharTexto(v) { espelhado = v; aplicarPos(); }
+// arrastar o texto com o dedo/mouse (ou rodinha) para ajustar a posição
 (function () { let y0 = null, p0 = 0; const el = $('prompter');
-  el.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; p0 = pos; }, { passive: true });
-  el.addEventListener('touchmove', e => { if (y0 === null) return; pos = Math.max(0, p0 - (e.touches[0].clientY - y0)); aplicarPos(); }, { passive: true });
-  el.addEventListener('touchend', () => { y0 = null; });
+  el.addEventListener('pointerdown', e => { y0 = e.clientY; p0 = pos; });
+  el.addEventListener('pointermove', e => { if (y0 === null) return; pos = Math.max(0, p0 - (e.clientY - y0)); aplicarPos(); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => el.addEventListener(ev, () => { y0 = null; }));
+  el.addEventListener('wheel', e => { pos = Math.max(0, pos + e.deltaY * 0.5); aplicarPos(); }, { passive: true });
 })();
 function abrirEditor() { $('editor-txt').value = roteiro; $('tela-editor').classList.add('on'); }
 function fecharEditor() { $('tela-editor').classList.remove('on'); }
 function salvarRoteiro() {
   roteiro = $('editor-txt').value; mostrarTexto(); fecharEditor();
   fetch('/api/public/gravador/' + encodeURIComponent(codigo) + '/roteiro', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roteiro }) }).catch(() => {});
+  if (roteiro.trim()) abrirInicio();
+}
+async function criarComIa() {
+  const tema = $('ia-tema').value.trim(); if (!tema) return alert('Escreva o tema.');
+  const b = $('b-ia'); b.disabled = true; b.textContent = '🤖 Criando o roteiro... (até 1 minuto)';
+  try {
+    const r = await fetch('/api/public/gravador/' + encodeURIComponent(codigo) + '/ia-roteiro', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tema, minutos: Number($('ia-min').value) }) });
+    const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Falha ao criar o roteiro.');
+    $('editor-txt').value = d.texto || '';
+  } catch (e) { alert(e.message); }
+  finally { b.disabled = false; b.textContent = '🤖 Criar roteiro com IA'; }
 }
 function tipoGravacao() { return ['video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'].find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || ''; }
+function atualizarBotoes() {
+  const on = !!rec; $('b-gravar').classList.toggle('on', on); $('r-gravar').textContent = on ? '⏹ Parar' : (parte > 1 ? '▶ Começar parte ' + parte : '▶ Começar');
+  $('lado-pausa').style.display = on && rec.pause ? 'flex' : 'none'; $('b-virar').style.visibility = on ? 'hidden' : '';
+}
+let contando = false;
 async function alternarGravacao() {
-  if (rec) { rec.stop(); return; }
+  if (contando) return;
+  if (rec) { if (rec.state === 'paused') rec.resume(); rec.stop(); return; }
   if (!stream) return ligarCamera();
-  if (!window.MediaRecorder) return alert('Este navegador não grava vídeo. Use o Chrome (Android) ou o Safari atualizado (iPhone).');
-  // contagem 3-2-1 e começa a rolar o texto junto
-  for (const n of [3, 2, 1]) { $('contagem').textContent = n; $('contagem').classList.add('on'); await new Promise(r => setTimeout(r, 800)); }
-  $('contagem').classList.remove('on');
-  const tipo = tipoGravacao(); partes = [];
-  rec = new MediaRecorder(stream, tipo ? { mimeType: tipo, videoBitsPerSecond: 8000000 } : undefined);
+  if (!window.MediaRecorder) return alert('Este navegador não grava vídeo. Use o Chrome (Android/computador) ou o Safari atualizado (iPhone).');
+  fecharInicio(); $('aviso-girar').classList.remove('on');
+  alternarRolagem(false); posInicioParte = pos; aplicarPos();
+  // contagem 3-2-1 e o texto começa a passar sozinho
+  contando = true;
+  for (const n of [3, 2, 1]) { $('contagem-n').textContent = n; $('contagem').classList.add('on'); await new Promise(r => setTimeout(r, 850)); }
+  $('contagem').classList.remove('on'); contando = false;
+  const tipoMime = tipoGravacao(); partes = []; tempoPausado = 0;
+  const bits = tipo === 'aula' ? 5000000 : 8000000; // aula é mais longa: arquivo menor, mesma nitidez
+  rec = new MediaRecorder(stream, tipoMime ? { mimeType: tipoMime, videoBitsPerSecond: bits } : undefined);
   rec.ondataavailable = e => { if (e.data.size) partes.push(e.data); };
   rec.onstop = () => {
-    clearInterval(timerRec); $('tempo').classList.remove('on'); $('b-gravar').classList.remove('on'); alternarRolagem(false);
-    blobFinal = new Blob(partes, { type: rec.mimeType || 'video/mp4' }); blobFinal.duracao = (Date.now() - inicioRec) / 1000; rec = null;
-    const url = URL.createObjectURL(blobFinal); $('revisao').src = url; $('b-baixar').href = url; $('b-baixar').download = 'gravacao.' + (/mp4/.test(blobFinal.type) ? 'mp4' : 'webm');
-    $('msg').textContent = ''; $('barra').style.display = 'none'; $('b-enviar').disabled = false; $('tela-revisao').classList.add('on');
+    clearInterval(timerRec); $('tempo').classList.remove('on', 'pausado'); alternarRolagem(false);
+    blobFinal = new Blob(partes, { type: rec.mimeType || 'video/mp4' }); blobFinal.duracao = (Date.now() - inicioRec - tempoPausado) / 1000; rec = null; atualizarBotoes();
+    const url = URL.createObjectURL(blobFinal); $('revisao').src = url; $('b-baixar').href = url; $('b-baixar').download = (tipo === 'aula' ? 'aula-parte-' + parte : 'gravacao') + '.' + (/mp4/.test(blobFinal.type) ? 'mp4' : 'webm');
+    $('rev-tit').textContent = tipo === 'aula' ? `🎬 Parte ${parte} — ficou boa?` : '🎬 Ficou bom?';
+    $('msg').textContent = ''; $('barra').style.display = 'none'; $('b-enviar').disabled = false; $('b-enviar').style.display = ''; $('b-proxima').style.display = 'none'; enviado = false;
+    $('tela-revisao').classList.add('on');
     if (wake) { wake.release().catch(() => {}); wake = null; }
   };
-  rec.start(1000); inicioRec = Date.now();
+  rec.start(1000); inicioRec = Date.now(); atualizarBotoes();
   try { wake = await navigator.wakeLock.request('screen'); } catch (e) {}
-  $('b-gravar').classList.add('on'); $('tempo').classList.add('on');
-  timerRec = setInterval(() => { const s = Math.floor((Date.now() - inicioRec) / 1000); $('tempo').textContent = '● ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }, 300);
-  pos = 0; aplicarPos(); alternarRolagem(true);
+  $('tempo').classList.add('on'); $('tempo').textContent = '● 00:00';
+  timerRec = setInterval(() => { if (!rec || rec.state === 'paused') return; const s = Math.floor((Date.now() - inicioRec - tempoPausado) / 1000); $('tempo').textContent = '● ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }, 300);
+  alternarRolagem(true);
 }
-function gravarDeNovo() { $('tela-revisao').classList.remove('on'); $('revisao').pause(); }
+function pausarGravacao() {
+  if (!rec || !rec.pause) return;
+  if (rec.state === 'recording') { rec.pause(); pausadoEm = Date.now(); alternarRolagem(false); $('b-pausa').textContent = '⏺'; $('r-pausa').textContent = 'Continuar'; $('tempo').classList.add('pausado'); $('tempo').textContent = '⏸ Pausado'; }
+  else if (rec.state === 'paused') { tempoPausado += Date.now() - pausadoEm; rec.resume(); alternarRolagem(true); $('b-pausa').textContent = '⏸'; $('r-pausa').textContent = 'Pausar'; $('tempo').classList.remove('pausado'); }
+}
+function gravarDeNovo() { $('tela-revisao').classList.remove('on'); $('revisao').pause(); pos = posInicioParte; aplicarPos(); }
+function proximaParte() { $('tela-revisao').classList.remove('on'); $('revisao').pause(); parte++; atualizarBotoes(); }
 function enviar() {
-  if (!blobFinal) return;
-  const fd = new FormData(); fd.append('file', blobFinal, 'gravacao.' + (/mp4/.test(blobFinal.type) ? 'mp4' : 'webm')); fd.append('duracao', String(blobFinal.duracao || 0));
+  if (!blobFinal || enviado) return;
+  const fd = new FormData(); fd.append('duracao', String(blobFinal.duracao || 0)); fd.append('tipo', tipo); fd.append('parte', String(parte));
+  fd.append('file', blobFinal, 'gravacao.' + (/mp4/.test(blobFinal.type) ? 'mp4' : 'webm'));
   const x = new XMLHttpRequest(); x.open('POST', '/api/public/gravador/' + encodeURIComponent(codigo) + '/video');
   $('barra').style.display = 'block'; $('b-enviar').disabled = true; $('msg').textContent = 'Enviando...';
   x.upload.onprogress = e => { if (e.lengthComputable) { $('barra-i').style.width = Math.round(e.loaded * 100 / e.total) + '%'; $('msg').textContent = 'Enviando... ' + Math.round(e.loaded * 100 / e.total) + '%'; } };
-  x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch (e) {} if (x.status < 300) { $('msg').innerHTML = '✅ ' + (j.message || 'Enviado!') + '<br>Pode gravar outra versão ou voltar ao computador.'; } else { $('msg').textContent = '⚠️ ' + (j.error || 'Falha no envio.'); $('b-enviar').disabled = false; } };
-  x.onerror = () => { $('msg').textContent = '⚠️ Falha de conexão. Tente de novo (ou salve no celular).'; $('b-enviar').disabled = false; };
+  x.onload = () => {
+    let j = {}; try { j = JSON.parse(x.responseText); } catch (e) {}
+    if (x.status < 300) {
+      enviado = true; $('b-enviar').style.display = 'none';
+      const resta = pos < $('texto').scrollHeight - tam * 1.42 * 5;
+      $('msg').innerHTML = '✅ ' + (j.message || 'Enviado!') + (resta ? '<br>Ainda tem texto pela frente — grave a próxima parte quando quiser.' : '<br>Roteiro concluído! Volte ao Estúdio para editar.');
+      $('b-proxima').style.display = resta ? '' : 'none';
+    } else { $('msg').textContent = '⚠️ ' + (j.error || 'Falha no envio.'); $('b-enviar').disabled = false; }
+  };
+  x.onerror = () => { $('msg').textContent = '⚠️ Falha de conexão. Tente de novo (ou salve no aparelho).'; $('b-enviar').disabled = false; };
   x.send(fd);
 }
+// atalhos no computador
+document.addEventListener('keydown', e => {
+  if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || document.querySelector('.tela.on')) return;
+  if (e.key === 'Enter') { e.preventDefault(); alternarGravacao(); }
+  else if (e.key === ' ') { e.preventDefault(); alternarRolagem(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); velocidade(10); }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); velocidade(-10); }
+  else if (e.key === '+' || e.key === '=') tamanho(3);
+  else if (e.key === '-') tamanho(-3);
+  else if (e.key.toLowerCase() === 'p') pausarGravacao();
+});
+window.addEventListener('beforeunload', e => { if (rec || (blobFinal && !enviado)) { e.preventDefault(); e.returnValue = ''; } });
 carregar();
 </script>
 </body>

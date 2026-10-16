@@ -12697,6 +12697,18 @@ app.get('/api/ranking', async (req, res) => {
 // genérico de /public pra funcionar mesmo quando os dois caminhos são diferentes.
 app.use('/uploads', express.static(PASTA_UPLOADS));
 app.use(express.static(path.join(__dirname, 'public')));
+// Acesso só ao Estúdio de Vídeo (celular): mesmo sistema, abre direto nas abas de criar/editar vídeo.
+// Pode ser instalado na tela inicial do celular (PWA) e sincroniza com o computador pelo servidor.
+app.get(['/estudio', '/estudio/'], (req, res) => {
+    fs.readFile(path.join(__dirname, 'public', 'index.html'), 'utf8', (err, html) => {
+        if (err) return res.status(500).send('Erro ao abrir o Estúdio.');
+        const cab = '<link rel="manifest" href="/estudio.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Estúdio"><link rel="apple-touch-icon" href="/assets/logo-impulsionar.jpg"><script>window.MODO_ESTUDIO = true;</script>';
+        res.set('Cache-Control', 'no-cache').type('html').send(html.replace('</head>', cab + '</head>'));
+    });
+});
+app.get('/estudio.webmanifest', (req, res) => {
+    res.type('application/manifest+json').send(JSON.stringify({ name: 'Impulsionar Estúdio de Vídeo', short_name: 'Estúdio', start_url: '/estudio', scope: '/', display: 'standalone', orientation: 'any', background_color: '#0d1017', theme_color: '#0b1329', icons: [{ src: '/assets/logo-impulsionar.jpg', sizes: '512x512', type: 'image/jpeg', purpose: 'any' }] }));
+});
 
 // ============================================================
 // ESTÚDIO DE VÍDEO (Master): projetos de Reels/Stories/Feed, agente viral
@@ -12806,7 +12818,17 @@ app.put('/api/admin/estudio/projetos/:id', requireRole('admin'), async (req, res
     if (b.status !== undefined && ['rascunho', 'pronto'].includes(b.status)) { sets.push('status = ?'); vals.push(b.status); }
     if (!sets.length) return res.json({ ok: true });
     sets.push('updated_at = CURRENT_TIMESTAMP');
-    db.run(`UPDATE estudio_projetos SET ${sets.join(', ')} WHERE id = ?`, [...vals, req.params.id], function (err) { if (err) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ ok: true, salvoEm: new Date().toISOString() }); });
+    db.run(`UPDATE estudio_projetos SET ${sets.join(', ')} WHERE id = ?`, [...vals, req.params.id], async function (err) {
+        if (err) return res.status(500).json({ error: 'Erro ao salvar.' });
+        const v = await dbGet(`SELECT updated_at FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
+        res.json({ ok: true, salvoEm: new Date().toISOString(), updated_at: v && v.updated_at });
+    });
+});
+// Versão do projeto: o editor aberto no computador e no celular compara para sincronizar.
+app.get('/api/admin/estudio/projetos/:id/versao', requireRole('admin'), async (req, res) => {
+    const v = await dbGet(`SELECT updated_at FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
+    if (!v) return res.status(404).json({ error: 'Projeto não encontrado.' });
+    res.json({ updated_at: v.updated_at });
 });
 app.post('/api/admin/estudio/projetos/:id/duplicar', requireRole('admin'), async (req, res) => {
     const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
@@ -12876,6 +12898,7 @@ app.post('/api/admin/estudio/ia/:acao', requireRole('admin'), async (req, res) =
     const b = req.body || {}, acao = req.params.acao;
     const tema = String(b.tema || '').slice(0, 1500), objetivo = String(b.objetivo || '').slice(0, 500), publico = String(b.publico || '').slice(0, 300);
     const duracao = Math.max(5, Math.min(180, Number(b.duracao) || 30));
+    if (acao === 'roteiro-aula') { try { return res.json(await roteiroAulaEst(b)); } catch (e) { return res.status(500).json({ error: e.message }); } }
     const base = `TEMA/ASSUNTO: ${tema || '(ver contexto)'}\nOBJETIVO: ${objetivo || 'alcance e autoridade'}\nPÚBLICO: ${publico || 'líderes, gestores e profissionais de operação'}\nFORMATO: ${b.formato || 'Reels 9:16'} · ${duracao}s`;
     try {
         if (!iaDisponivelMt()) {
@@ -12925,6 +12948,92 @@ app.post('/api/admin/estudio/ia/:acao', requireRole('admin'), async (req, res) =
         const out = await iaEstudio(pedido, { web, max });
         res.json(out);
     } catch (e) { res.status(e.semIa ? 400 : 500).json({ error: e.message, semIa: !!e.semIa }); }
+});
+
+// ----- Roteiro de AULA (teleprompter): texto corrido para ler gravando -----
+function textoAulaEst(r) {
+    const partes = [];
+    (r.blocos || []).forEach(bl => { if (bl.titulo) partes.push('[' + String(bl.titulo).toUpperCase() + ']'); if (bl.fala) partes.push(String(bl.fala).trim()); });
+    return partes.join('\n\n');
+}
+function roteiroAulaLocalEst(tema, minutos, objetivo, publico) {
+    const t = tema || 'o tema da aula';
+    const blocos = [
+        { titulo: 'Abertura', fala: `Olá! Seja bem-vindo a mais uma aula da Impulsionar.\n\nHoje nós vamos falar sobre ${t}.\n\nAté o final desta aula, você vai saber ${objetivo || 'aplicar esse conteúdo no seu dia a dia de trabalho'}.` },
+        { titulo: 'Por que isso importa', fala: `Antes de entrar no conteúdo, pense comigo: como ${t} aparece hoje na sua rotina?\n\n(pausa)\n\n[Conte aqui um exemplo real ou um problema comum que ${publico || 'a equipe'} enfrenta.]` },
+        { titulo: 'Conceito principal', fala: `Vamos ao primeiro ponto.\n\n[Explique o conceito central em frases curtas, como se estivesse conversando.]` },
+        { titulo: 'Passo a passo', fala: `Agora, na prática, funciona assim.\n\nPrimeiro: [passo 1].\n\nSegundo: [passo 2].\n\nTerceiro: [passo 3].` },
+        { titulo: 'Exemplo prático', fala: `Deixa eu te mostrar um exemplo.\n\n[Descreva uma situação real, com antes e depois.]` },
+        { titulo: 'Erros comuns', fala: `Cuidado com os erros mais comuns.\n\n[Erro 1 e como evitar.]\n\n[Erro 2 e como evitar.]` },
+        { titulo: 'Resumo', fala: `Recapitulando o que vimos hoje:\n\n[ponto 1], [ponto 2] e [ponto 3].` },
+        { titulo: 'Encerramento', fala: `Agora é com você: escolha uma coisa desta aula e aplique ainda esta semana.\n\nNos vemos na próxima aula. Até lá!` }
+    ];
+    return { titulo: tema ? tema.charAt(0).toUpperCase() + tema.slice(1) : 'Nova aula', descricao: `Nesta aula você vai aprender sobre ${t}.`, blocos, semIa: true, minutos };
+}
+async function roteiroAulaEst(b) {
+    const tema = String(b.tema || '').slice(0, 1500), objetivo = String(b.objetivo || '').slice(0, 600), publico = String(b.publico || '').slice(0, 300);
+    const minutos = Math.max(1, Math.min(60, Number(b.minutos) || 5)), nivel = String(b.nivel || 'intermediário').slice(0, 40);
+    if (!iaDisponivelMt()) { const r = roteiroAulaLocalEst(tema, minutos, objetivo, publico); r.texto = textoAulaEst(r); return r; }
+    const palavras = Math.round(minutos * 135);
+    const pedido = `ATENÇÃO: isto NÃO é um Reels. É uma VIDEOAULA gravada com teleprompter para a Academy da Impulsionar (plataforma de treinamento corporativo).
+TEMA DA AULA: ${tema || '(definir)'}
+OBJETIVO DE APRENDIZAGEM: ${objetivo || 'o aluno sair sabendo aplicar o conteúdo no trabalho'}
+PÚBLICO: ${publico || 'líderes, gestores e equipes de operação'} · NÍVEL: ${nivel}
+DURAÇÃO: ${minutos} minuto(s) ≈ ${palavras} palavras faladas (ritmo de ~135 palavras por minuto).
+${b.pesquisar ? 'Pesquise na internet conteúdo atualizado e confiável sobre o tema (conceitos, dados, exemplos) e use no roteiro.\n' : ''}${b.extra ? 'ORIENTAÇÕES DO PROFESSOR: ' + String(b.extra).slice(0, 2000) + '\n' : ''}
+Escreva o roteiro COMPLETO para ser LIDO EM VOZ ALTA no teleprompter, como um instrutor experiente e didático falando com o aluno:
+- linguagem falada, frases curtas (máx. ~18 palavras), tom próximo ("você"), sem jargão sem explicar;
+- estrutura: Abertura (gancho + o que o aluno vai aprender) → Contexto/por que importa → Conteúdo em 2 a 5 blocos (conceito, passo a passo, exemplo prático do dia a dia de empresas brasileiras) → Erros comuns → Resumo → Desafio prático/Encerramento;
+- separe ideias com linha em branco; use "(pausa)" onde for bom respirar; NÃO use marcação markdown, emojis ou listas com símbolos;
+- o total de palavras faladas deve ficar perto de ${palavras}.
+Também gere: titulo (curto e claro), descricao (2 a 3 frases para a página da aula), modulo (nome sugerido de trilha/módulo), pontos_chave (3 a 5) e exercicio (uma atividade prática curta).
+JSON: {"titulo":"","descricao":"","modulo":"","blocos":[{"titulo":"Abertura","fala":""}],"pontos_chave":[""],"exercicio":"","referencias":[{"titulo":"","url":""}]}`;
+    const out = await iaEstudio(pedido, { web: !!b.pesquisar, max: Math.min(16000, 3000 + palavras * 3) });
+    if (!Array.isArray(out.blocos) || !out.blocos.length) throw new Error('A IA não devolveu o roteiro. Tente de novo.');
+    out.texto = textoAulaEst(out); out.minutos = minutos;
+    return out;
+}
+app.post('/api/public/gravador/:codigo/ia-roteiro', async (req, res) => {
+    const g = await gravadorValidoEst(req.params.codigo);
+    if (!g) return res.status(404).json({ error: 'Link de gravação inválido ou vencido.' });
+    const b = req.body || {};
+    try {
+        const p = await dbGet(`SELECT tipo FROM estudio_projetos WHERE id = ?`, [g.projeto_id]).catch(() => null);
+        if (p && p.tipo === 'aula') return res.json(await roteiroAulaEst({ tema: b.tema || g.titulo, minutos: b.minutos }));
+        if (!iaDisponivelMt()) return res.status(400).json({ error: 'A IA não está conectada. Escreva o roteiro ou conecte a IA no Estúdio.' });
+        const seg = Math.max(10, Math.min(180, Number(b.minutos || 0.5) * 60));
+        const out = await iaEstudio(`TEMA: ${String(b.tema || g.titulo).slice(0, 1000)}\nEscreva o texto falado de um Reels de ~${seg}s para ler no teleprompter: gancho forte na 1ª frase, frases curtas, uma ideia por parágrafo (linha em branco entre eles), CTA no final. Sem emojis nem markdown.\nJSON: {"titulo":"","texto":""}`, { max: 3000 });
+        res.json(out);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// ----- Salvar o vídeo exportado como videoaula na Academy -----
+app.post('/api/admin/estudio/projetos/:id/academy', requireRole('admin'), async (req, res) => {
+    const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
+    if (!p) return res.status(404).json({ error: 'Projeto não encontrado.' });
+    if (!p.video_url) return res.status(400).json({ error: 'Exporte o vídeo antes de salvar na Academy.' });
+    const b = req.body || {};
+    const title = String(b.title || p.titulo || '').trim().slice(0, 200);
+    if (!title) return res.status(400).json({ error: 'Dê um título para a aula.' });
+    const dados = (() => { try { return JSON.parse(p.dados || '{}'); } catch (e) { return {}; } })();
+    const capa = String(b.thumbnail_url || '').match(/^\/uploads\/[\w.\-]+$/) ? b.thumbnail_url : ((dados.midias || []).find(m => m.tipo === 'imagem') || {}).url || '';
+    try {
+        let videoId = dados.academyVideoId ? (await dbGet(`SELECT id FROM video_lessons WHERE id = ?`, [dados.academyVideoId]).catch(() => null) || {}).id : null;
+        if (videoId) {
+            await new Promise((ok, ko) => db.run(`UPDATE video_lessons SET title = ?, module_name = ?, video_url = ?, duration = ?, description = ?, thumbnail_url = COALESCE(NULLIF(?, ''), thumbnail_url) WHERE id = ?`,
+                [title, String(b.module_name || '').slice(0, 150), p.video_url, String(b.duration || '').slice(0, 30), String(b.description || '').slice(0, 5000), capa, videoId], e => e ? ko(e) : ok()));
+        } else {
+            videoId = await new Promise((ok, ko) => db.run(`INSERT INTO video_lessons (title, module_name, video_url, duration, description, thumbnail_url, posted_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+                [title, String(b.module_name || '').slice(0, 150), p.video_url, String(b.duration || '').slice(0, 30), String(b.description || '').slice(0, 5000), capa, 'Consultoria Impulsionar'], function (e) { e ? ko(e) : ok(this.lastID); }));
+            dados.academyVideoId = videoId;
+            db.run(`UPDATE estudio_projetos SET dados = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [JSON.stringify(dados), p.id]);
+        }
+        const trilha = Number(b.track_id) || 0;
+        if (trilha) {
+            const ord = await dbGet(`SELECT COALESCE(MAX(order_index), -1) + 1 AS n FROM track_lessons WHERE track_id = ?`, [trilha]).catch(() => ({ n: 0 }));
+            db.run(`INSERT OR IGNORE INTO track_lessons (track_id, video_id, order_index) VALUES (?, ?, ?)`, [trilha, videoId, (ord && ord.n) || 0]);
+        }
+        res.json({ ok: true, id: videoId, message: 'Aula salva na Academy! 🎓' });
+    } catch (e) { res.status(500).json({ error: 'Erro ao salvar na Academy: ' + e.message }); }
 });
 
 // ----- Kit da marca (logo, @, cores e chamada padrão) -----
@@ -13102,7 +13211,8 @@ app.get('/api/public/gravador/:codigo', async (req, res) => {
     if (!g) return res.status(404).json({ error: 'Link de gravação inválido ou vencido. Gere um novo no Estúdio de Vídeo.' });
     const kit = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_marca'`).catch(() => null);
     let marca = {}; try { marca = JSON.parse((kit && kit.value) || '{}'); } catch (e) {}
-    res.json({ titulo: g.titulo, roteiro: g.roteiro || '', cor: marca.cor2 || '#dc4c4c' });
+    const pj = await dbGet(`SELECT formato, tipo FROM estudio_projetos WHERE id = ?`, [g.projeto_id]).catch(() => null) || {};
+    res.json({ titulo: g.titulo, roteiro: g.roteiro || '', cor: marca.cor2 || '#dc4c4c', formato: pj.formato || '9:16', tipo: pj.tipo || 'reels', ia: iaDisponivelMt() });
 });
 app.put('/api/public/gravador/:codigo/roteiro', async (req, res) => {
     const g = await gravadorValidoEst(req.params.codigo); if (!g) return res.status(404).json({ error: 'Link inválido.' });
@@ -13115,7 +13225,7 @@ app.post('/api/public/gravador/:codigo/video', async (req, res) => {
         if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Vídeo muito grande (máximo 1GB).' : err.message });
         if (!req.file || !/^video\//.test(req.file.mimetype || 'video/')) return res.status(400).json({ error: 'Nenhum vídeo recebido.' });
         copiarUploadParaBanco(req.file);
-        const nome = 'Gravação celular ' + new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+        const nome = (/aula/.test(String(req.body.tipo || '')) ? 'Gravação da aula ' : 'Gravação ') + (req.body.parte ? 'parte ' + Number(req.body.parte) + ' · ' : '') + new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
         db.run(`INSERT INTO estudio_gravacoes (projeto_id, url, nome, duracao, mime) VALUES (?, ?, ?, ?, ?)`, [g.projeto_id, '/uploads/' + req.file.filename, nome, Number(req.body.duracao) || 0, req.file.mimetype],
             function (e2) { if (e2) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ ok: true, message: 'Vídeo enviado para o projeto! ✅ Ele aparece no Estúdio de Vídeo em instantes.' }); });
     });

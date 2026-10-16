@@ -1140,9 +1140,9 @@
   #ev-editor input[type=range] { padding:0; border:none; background:transparent; accent-color:var(--e-az); }
   #ev-editor input[type=color] { width:40px; height:30px; padding:2px; }
   .ev-topo { display:flex; align-items:center; gap:8px; padding:0 12px; background:var(--e-sup); border-bottom:1px solid var(--e-bd); }
-  .ev-tb { background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:8px; padding:7px 12px; cursor:pointer; font-size:13px; white-space:nowrap; }
+  .ev-tb { flex-shrink:0; background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:8px; padding:7px 12px; cursor:pointer; font-size:13px; white-space:nowrap; }
   .ev-tb:hover { border-color:var(--e-az); } .ev-tb.primario { background:var(--e-vm); border-color:var(--e-vm); font-weight:700; }
-  #ev-editor .ev-titulo { width:260px; font-weight:700; font-size:14px; background:transparent; border-color:transparent; } #ev-editor .ev-titulo:hover, #ev-editor .ev-titulo:focus { border-color:var(--e-bd); }
+  #ev-editor .ev-titulo { flex:0 1 260px; min-width:90px; width:260px; font-weight:700; font-size:14px; background:transparent; border-color:transparent; } #ev-editor .ev-titulo:hover, #ev-editor .ev-titulo:focus { border-color:var(--e-bd); }
   #ev-editor .ev-sel { width:auto; }
   .ev-salvo { font-size:12px; color:var(--e-sub); } .ev-salvo.pend { color:#fbbf24; }
   .ev-score { border:none; border-radius:20px; padding:6px 14px; font-weight:700; cursor:pointer; color:#fff; font-size:13px; } .ev-score.bom { background:#15803d; } .ev-score.medio { background:#b45309; } .ev-score.baixo { background:#b91c1c; }
@@ -1295,8 +1295,48 @@
   .ev-pop-barra { position:fixed; z-index:10015; background:var(--e-sup); border:1px solid var(--e-bd); border-radius:12px; padding:12px 14px; width:340px; box-shadow:0 16px 40px rgba(0,0,0,.55); font-size:13px; } .ev-pop-barra > b { display:block; margin-bottom:8px; padding-right:24px; } .ev-pop-barra input[type=range] { width:100%; margin:6px 0; }
   .ev-pop-x { position:absolute; top:8px; right:8px; background:none; border:none; color:var(--e-sub); cursor:pointer; font-size:14px; }
   .ev-trilhas { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:6px 0; } .ev-trilhas button { display:flex; flex-direction:column; align-items:center; gap:2px; background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:10px; padding:9px 4px; cursor:pointer; font-size:11.5px; } .ev-trilhas button span { font-size:20px; } .ev-trilhas button:hover { border-color:#a78bfa; }
-  @media (max-width: 1100px) { .ev-corpo { grid-template-columns:280px minmax(0,1fr); } .ev-dir { display:none; } }
-  @media (max-width: 760px) { #ev-editor { grid-template-rows:52px 1fr 200px; } .ev-corpo { grid-template-columns:1fr; grid-template-rows:1fr 200px; } .ev-esq { order:2; } .ev-titulo, .ev-salvo, .ev-sel { display:none; } .ev-pub { grid-template-columns:1fr; } }
+  .ev-so-pequeno, .ev-sheet-x { display:none !important; }
+  @media (max-width: 1100px) { .ev-corpo { grid-template-columns:280px minmax(0,1fr); } .ev-dir { display:none; }
+    .ev-abas button.ev-so-pequeno { display:flex !important; }
+    #ev-editor.sheet-props .ev-dir { display:block; position:fixed; right:0; top:52px; bottom:0; width:min(360px,100%); z-index:40; box-shadow:-10px 0 40px rgba(0,0,0,.6); padding-top:44px; }
+    #ev-editor.sheet-props .ev-sheet-x.props { display:flex !important; } }
+  @media (max-width: 760px) {
+    #ev-editor { grid-template-rows:48px minmax(0,1fr) 196px; }
+    .ev-topo { gap:4px; padding:0 6px; } .ev-tb { padding:7px 9px; } .ev-tbr, .ev-titulo, .ev-salvo, .ev-sel, .ev-topo .ev-desf { display:none; }
+    .ev-score { padding:6px 9px; }
+    .ev-corpo { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) auto; }
+    .ev-esq { order:2; flex-direction:column; border-right:none; border-top:1px solid var(--e-bd); }
+    .ev-abas { flex-direction:row; width:100%; overflow-x:auto; padding:0; border-right:none; scrollbar-width:none; }
+    .ev-abas button { flex:1 0 auto; padding:6px 10px; border-left:none; border-top:3px solid transparent; font-size:10px; } .ev-abas button.on { border-top-color:var(--e-vm); } .ev-abas button span { font-size:17px; }
+    .ev-painel { display:none; position:fixed; left:0; right:0; bottom:0; height:64vh; z-index:40; background:var(--e-sup); border-radius:16px 16px 0 0; box-shadow:0 -10px 40px rgba(0,0,0,.6); padding:44px 14px 20px; }
+    #ev-editor.sheet-painel .ev-painel { display:block; } #ev-editor.sheet-painel .ev-sheet-x.painel { display:flex !important; }
+    #ev-editor.sheet-props .ev-dir { top:auto; left:0; width:100%; height:64vh; border-radius:16px 16px 0 0; }
+    .ev-sheet-x.painel { top:auto; bottom:calc(64vh - 40px); }
+    .ev-palco { padding:6px; } .ev-play { gap:6px; padding:4px 6px; } .ev-chk { margin-left:4px; }
+    .ev-linha-barra { overflow-x:auto; flex-wrap:nowrap; scrollbar-width:thin; } .ev-linha-barra button { white-space:nowrap; flex-shrink:0; } .ev-linha-barra input[type=range] { width:90px !important; flex-shrink:0; }
+    .ev-pub { grid-template-columns:1fr; } .ev-modal { width:100% !important; max-height:92vh; }
+  }
+  .ev-sheet-x { position:fixed; z-index:45; right:10px; top:60px; width:34px; height:34px; border-radius:50%; border:1px solid var(--e-bd); background:var(--e-sup2); color:var(--e-tx); align-items:center; justify-content:center; font-size:15px; cursor:pointer; }
+  /* tela cheia para avaliar o vídeo editado */
+  .ev-palco.tela-cheia { position:fixed; inset:0; z-index:9999; background:#000; padding:0; }
+  .ev-palco:fullscreen { background:#000; padding:0; }
+  .ev-palco.tela-cheia canvas, .ev-palco:fullscreen canvas { border-radius:0; box-shadow:none; }
+  .ev-fs-ctrl { display:none; position:absolute; left:0; right:0; bottom:0; padding:18px 16px calc(env(safe-area-inset-bottom) + 14px); background:linear-gradient(transparent, rgba(0,0,0,.8)); align-items:center; gap:12px; color:#fff; transition:opacity .3s; z-index:2; }
+  .ev-palco.tela-cheia .ev-fs-ctrl, .ev-palco:fullscreen .ev-fs-ctrl { display:flex; }
+  .ev-palco.fs-quieto .ev-fs-ctrl { opacity:0; }
+  .ev-fs-ctrl button { background:rgba(255,255,255,.15); border:none; color:#fff; width:44px; height:44px; border-radius:50%; font-size:18px; cursor:pointer; flex-shrink:0; }
+  .ev-fs-ctrl .ev-fs-barra { flex:1; height:6px; background:rgba(255,255,255,.25); border-radius:3px; cursor:pointer; position:relative; } .ev-fs-ctrl .ev-fs-barra i { position:absolute; left:0; top:0; bottom:0; background:var(--e-vm); border-radius:3px; }
+  .ev-fs-ctrl span { font-variant-numeric:tabular-nums; font-size:13px; white-space:nowrap; }
+  /* Acesso só ao Estúdio (celular) */
+  body.modo-estudio #app .sidebar, body.modo-estudio #btn-voltar-global, body.modo-estudio #notif-wrapper { display:none !important; }
+  body.modo-estudio #app .conteudo { margin-left:0 !important; width:100% !important; padding:12px !important; }
+  .estudio-barra { display:none; }
+  body.modo-estudio .estudio-barra { display:flex; align-items:center; gap:10px; padding:10px 12px; background:#0b1329; color:#fff; position:sticky; top:0; z-index:50; margin:-12px -12px 12px; }
+  .estudio-barra img { height:30px; border-radius:6px; background:#fff; padding:2px; } .estudio-barra b { flex:1; font-size:15px; } .estudio-barra button, .estudio-barra a { background:rgba(255,255,255,.12); color:#fff; border:none; border-radius:8px; padding:7px 10px; font-size:12.5px; cursor:pointer; text-decoration:none; white-space:nowrap; }
+  .estudio-sync { font-size:11px; opacity:.75; }
+  body.modo-estudio .ev-pag-topo { flex-wrap:wrap; gap:10px; } body.modo-estudio .ev-pag-topo h1 { font-size:22px; }
+  @media (max-width: 700px) { body.modo-estudio .ev-cards { grid-template-columns:1fr 1fr !important; } body.modo-estudio .ev-card-capa { max-height:200px; } }
+  body.modo-estudio .ev-pag-abas { overflow-x:auto; flex-wrap:nowrap; } body.modo-estudio .ev-pag-abas button { white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -1799,7 +1839,9 @@ function iniciarApp() {
     }
   });
   const primeiraChave = achatarMenu(itensMenu)[0][0];
-  irPara(primeiraChave);
+  // Acesso pelo celular só ao Estúdio de Vídeo (endereço /estudio)
+  if (window.MODO_ESTUDIO && u.role === 'admin') { document.body.classList.add('modo-estudio'); irPara('estudioVideo'); }
+  else { if (window.MODO_ESTUDIO) mostrarToast('O Estúdio de Vídeo é exclusivo do perfil Master. Abrindo o sistema normal.', true); document.body.classList.remove('modo-estudio'); irPara(primeiraChave); }
   iniciarPollinhaNotificacoes();
   tratarVagaPendenteAposLogin();
 }
@@ -20322,7 +20364,7 @@ function evDesenharEncerramento(ctx, tl) {
 function evDesenhar(tForcado, exportando) {
   if (!ES || !ES.ctx) return;
   const ctx = ES.ctx, W = ES.W, H = ES.H, d = ES.p.dados, t = tForcado !== undefined ? tForcado : ES.t;
-  exportando = exportando || !!ES.exportando; // guias de edição nunca entram no vídeo final
+  exportando = exportando || !!ES.exportando || !!ES.telaCheia; // guias de edição nunca entram no vídeo final (nem na tela cheia)
   ES.caixas = {};
   const ex = d.extras || {}, k = W / 1080, base = evTotalBase();
   ctx.save(); ctx.fillStyle = ex.corFundo || '#000'; ctx.fillRect(0, 0, W, H); ctx.restore();
@@ -20533,25 +20575,29 @@ async function evAbrirEditor(id) {
       <button class="ev-tb" onclick="evFechar()" title="Voltar">←</button>
       <input class="ev-titulo" id="ev-titulo" value="${escapeHtml(p.titulo)}" onchange="ES.p.titulo=this.value; evMudou(false)">
       <select class="ev-sel" onchange="evMudarFormato(this.value)">${Object.entries(EV_FORMATOS).map(([k, v]) => `<option value="${k}" ${p.formato === k ? 'selected' : ''}>${v.rot}</option>`).join('')}</select>
-      <button class="ev-tb" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)">↶</button><button class="ev-tb" onclick="evRefazer()" title="Refazer (Ctrl+Y)">↷</button>
+      <button class="ev-tb ev-desf" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)">↶</button><button class="ev-tb ev-desf" onclick="evRefazer()" title="Refazer (Ctrl+Y)">↷</button>
       <span class="ev-salvo" id="ev-salvo">Salvo</span>
       <div style="flex:1"></div>
       <button class="ev-score" id="ev-score" onclick="evAbrirAnalise()" title="Potencial de viralização"></button>
-      <button class="ev-tb" onclick="evAbrirPublicar()">📤 Publicar</button>
-      <button class="ev-tb primario" onclick="evExportar()">⬇️ Exportar vídeo</button>
+      <button class="ev-tb" onclick="evTelaCheia()" title="Ver em tela cheia (F)">⛶<span class="ev-tbr"> Tela cheia</span></button>
+      <button class="ev-tb" onclick="evAbrirPublicar()">${p.tipo === 'aula' ? '🎓' : '📤'}<span class="ev-tbr"> ${p.tipo === 'aula' ? 'Salvar aula' : 'Publicar'}</span></button>
+      <button class="ev-tb primario" onclick="evExportar()">⬇️<span class="ev-tbr"> Exportar vídeo</span></button>
     </header>
     <div class="ev-corpo">
       <aside class="ev-esq">
-        <nav class="ev-abas">${[['midia', '🎞️', 'Mídia'], ['texto', '🔤', 'Texto'], ['audio', '🎵', 'Áudio'], ['filtros', '🎨', 'Filtros'], ['elementos', '✨', 'Elementos'], ['ia', '🤖', 'Agente IA']].map(([k, i, r]) => `<button data-p="${k}" onclick="evPainel('${k}')"><span>${i}</span>${r}</button>`).join('')}</nav>
+        <nav class="ev-abas">${[['midia', '🎞️', 'Mídia'], ['texto', '🔤', 'Texto'], ['audio', '🎵', 'Áudio'], ['filtros', '🎨', 'Filtros'], ['elementos', '✨', 'Elementos'], ['ia', '🤖', 'Agente IA']].map(([k, i, r]) => `<button data-p="${k}" onclick="evPainel('${k}'); evSheet('painel')"><span>${i}</span>${r}</button>`).join('')}<button class="ev-so-pequeno" data-p="props" onclick="evSheet('props')"><span>⚙️</span>Ajustes</button></nav>
         <div class="ev-painel" id="ev-painel"></div>
+        <button class="ev-sheet-x painel" onclick="evSheet(null)" title="Fechar">✕</button><button class="ev-sheet-x props" onclick="evSheet(null)" title="Fechar">✕</button>
       </aside>
       <main class="ev-centro">
-        <div class="ev-palco" id="ev-palco"><canvas id="ev-canvas" width="${f.w}" height="${f.h}"></canvas></div>
+        <div class="ev-palco" id="ev-palco"><canvas id="ev-canvas" width="${f.w}" height="${f.h}"></canvas>
+          <div class="ev-fs-ctrl" id="ev-fs-ctrl"><button onclick="event.stopPropagation(); evTocar()" id="ev-fs-play">▶</button><span id="ev-fs-t">00:00</span><div class="ev-fs-barra" id="ev-fs-barra" onclick="event.stopPropagation(); const b=this.getBoundingClientRect(); evIrPara((event.clientX-b.left)/b.width*evTotal())"><i id="ev-fs-prog"></i></div><span id="ev-fs-tt"></span><button onclick="event.stopPropagation(); evIrPara(0); if(!ES.tocando) evTocar()" title="Assistir do início">⟲</button><button onclick="event.stopPropagation(); evSairTelaCheia()" title="Sair da tela cheia (Esc)">✕</button></div></div>
         <div class="ev-play">
           <button onclick="evIrPara(0)" title="Início">⏮</button>
           <button class="ev-play-btn" id="ev-play" onclick="evTocar()" title="Reproduzir (espaço)">▶</button>
           <span class="ev-tempo"><b id="ev-t">00:00.0</b> / <span id="ev-tt">00:00.0</span></span>
           <label class="ev-chk"><input type="checkbox" ${ES.zonaSegura ? 'checked' : ''} onchange="ES.zonaSegura=this.checked; evDesenhar()"> Área segura</label>
+          <button onclick="evTelaCheia()" title="Ver em tela cheia (F)" style="font-size:15px;">⛶</button>
         </div>
       </main>
       <aside class="ev-dir" id="ev-props"></aside>
@@ -20588,6 +20634,7 @@ async function evAbrirEditor(id) {
   evPainel('midia'); evDesenharProps(); evDesenharLinha(); evDesenhar(); evAtualizarCabeca(); evAtualizarScore();
   evTpVigiar(true);
   ES.autosave = setInterval(() => { if (ES && ES.sujo && !ES.exportando) evSalvar(true).catch(() => {}); }, 5000);
+  ES.sync = setInterval(evSincronizarAparelhos, 8000);
   if (!d.clips.length && !d.textos.length) setTimeout(() => evDica('Comece subindo seus vídeos e fotos em 🎞️ Mídia — ou peça ao 🤖 Agente IA para montar a edição.'), 400);
 }
 async function evFechar() {
@@ -20595,7 +20642,7 @@ async function evFechar() {
   if (ES.exportando) return mostrarToast('Aguarde a exportação terminar (ou cancele).', true);
   evPausar();
   if (ES.sujo) await evSalvar(true).catch(() => {});
-  clearInterval(ES.autosave); clearInterval(ES.tpTimer);
+  clearInterval(ES.autosave); clearInterval(ES.tpTimer); clearInterval(ES.sync); evSairTelaCheia();
   if (ES.obsPalco) ES.obsPalco.disconnect(); window.removeEventListener('resize', evAjustarPalco);
   document.removeEventListener('keydown', evTeclas);
   Object.values(ES.els || {}).forEach(el => { try { el.pause && el.pause(); el.removeAttribute && el.removeAttribute('src'); } catch (e) {} });
@@ -20619,6 +20666,7 @@ function evDica(txt) { const n = document.createElement('div'); n.className = 'e
 function evMudou(redesenhar = true, semHistorico) {
   if (!ES) return;
   if (!semHistorico) { ES.hist.push(ES.ultimoEstado || JSON.stringify(ES.p.dados)); if (ES.hist.length > 80) ES.hist.shift(); ES.fut = []; }
+  evAplicarEstiloLegendas();
   ES.ultimoEstado = JSON.stringify(ES.p.dados);
   ES.sujo = true; const s = document.getElementById('ev-salvo'); if (s) { s.textContent = '● Alterações não salvas'; s.classList.add('pend'); }
   if (redesenhar) { evDesenharLinha(); evDesenhar(); evAtualizarCabeca(); }
@@ -20629,7 +20677,10 @@ function evRefazer() { if (!ES || !ES.fut.length) return; ES.hist.push(JSON.stri
 async function evSalvar(silencioso) {
   if (!ES) return;
   const s = document.getElementById('ev-salvo');
-  await api('/api/admin/estudio/projetos/' + ES.p.id, { method: 'PUT', body: JSON.stringify({ titulo: ES.p.titulo, formato: ES.p.formato, tipo: ES.p.tipo, dados: ES.p.dados, legenda: ES.p.legenda || '', hashtags: ES.p.hashtags || '', viral_score: ES.score || 0 }) });
+  const enviado = ES.ultimoEstado || JSON.stringify(ES.p.dados);
+  const r = await api('/api/admin/estudio/projetos/' + ES.p.id, { method: 'PUT', body: JSON.stringify({ titulo: ES.p.titulo, formato: ES.p.formato, tipo: ES.p.tipo, dados: ES.p.dados, legenda: ES.p.legenda || '', hashtags: ES.p.hashtags || '', viral_score: ES.score || 0 }) });
+  if (!ES) return; if (r && r.updated_at) ES.p.updated_at = r.updated_at;
+  if ((ES.ultimoEstado || JSON.stringify(ES.p.dados)) !== enviado) return; // mexeram enquanto salvava: o autosave salva de novo
   ES.sujo = false; if (s) { s.textContent = '✓ Salvo ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); s.classList.remove('pend'); }
   if (!silencioso) mostrarToast('Projeto salvo!');
 }
@@ -20663,6 +20714,7 @@ function evLigarCanvas() {
     if (arr.ovl) { arr.ovl.x = Math.max(0, Math.min(0.95, (p.x - arr.dx) / ES.W)); arr.ovl.y = Math.max(0, Math.min(0.95, (p.y - arr.dy) / ES.H)); arr.mexeu = true; evDesenhar(); return; }
     arr.x.x = Math.max(0.05, Math.min(0.95, (p.x - arr.dx) / ES.W)); arr.x.y = Math.max(0.04, Math.min(0.96, (p.y - arr.dy) / ES.H));
     if (Math.abs(arr.x.x - 0.5) < 0.015) arr.x.x = 0.5; // ímã no centro
+    evLegendasJuntas(arr.x, 'x', arr.x.x); evLegendasJuntas(arr.x, 'y', arr.x.y); // todas as legendas acompanham
     arr.mexeu = true; evDesenhar();
   });
   cv.addEventListener('pointerup', () => { if (arr && arr.mexeu) { evMudou(false); evDesenharProps(); } arr = null; });
@@ -20675,6 +20727,8 @@ function evTeclas(e) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); evSalvar(); return; }
   if (digitando) return;
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') { e.preventDefault(); evDuplicarSel(); return; }
+  if (ES.telaCheia && e.key === 'Escape') { evSairTelaCheia(); return; }
+  if (e.key.toLowerCase() === 'f' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); ES.telaCheia ? evSairTelaCheia() : evTelaCheia(); return; }
   if (e.key === ' ') { e.preventDefault(); evTocar(); }
   else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); evExcluirSel(); }
   else if (e.key.toLowerCase() === 's') evDividir();
@@ -20688,10 +20742,58 @@ function evAtualizarCabeca() {
   if (!ES) return;
   const t = document.getElementById('ev-t'), tt = document.getElementById('ev-tt'), c = document.getElementById('ev-cabeca');
   if (t) t.textContent = evFmtT(ES.t); if (tt) tt.textContent = evFmtT(evTotal());
+  if (ES.telaCheia) { const a = document.getElementById('ev-fs-t'), b = document.getElementById('ev-fs-tt'), pr = document.getElementById('ev-fs-prog'); if (a) a.textContent = evFmtT(ES.t).slice(0, 5); if (b) b.textContent = evFmtT(evTotal()).slice(0, 5); if (pr) pr.style.width = Math.min(100, ES.t / Math.max(0.01, evTotal()) * 100) + '%'; }
   if (c) c.style.left = (ES.t * ES.pxs + 90) + 'px';
   if (ES.tocando) { const sc = document.getElementById('ev-linha-scroll'); if (sc) { const x = ES.t * ES.pxs + 90; if (x > sc.scrollLeft + sc.clientWidth - 60) sc.scrollLeft = x - 120; } }
 }
-function evAtualizarBotaoPlay() { const b = document.getElementById('ev-play'); if (b) b.textContent = ES && ES.tocando ? '⏸' : '▶'; }
+function evAtualizarBotaoPlay() { const b = document.getElementById('ev-play'), f = document.getElementById('ev-fs-play'); if (b) b.textContent = ES && ES.tocando ? '⏸' : '▶'; if (f) f.textContent = ES && ES.tocando ? '⏸' : '▶'; }
+// ---------- Sincronização computador ⇄ celular: o mesmo projeto aberto em dois aparelhos ----------
+async function evSincronizarAparelhos() {
+  if (!ES || ES.exportando || ES.tocando || ES.sincronizando || document.hidden) return;
+  let v; try { v = await api(`/api/admin/estudio/projetos/${ES.p.id}/versao`); } catch (e) { return; }
+  if (!ES || !v || !v.updated_at || v.updated_at === ES.p.updated_at) return;
+  if (ES.sujo) { if (!ES.avisouConflito) { ES.avisouConflito = true; mostrarToast('⚠️ Este projeto foi alterado em outro aparelho. Suas alterações daqui vão prevalecer ao salvar.', true); } return; }
+  ES.sincronizando = true;
+  try {
+    const p = await api('/api/admin/estudio/projetos/' + ES.p.id); if (!ES || ES.sujo) return;
+    const d = p.dados || {}; ['midias', 'clips', 'textos', 'audios', 'sobreposicoes'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; }); d.extras = d.extras || {};
+    Object.assign(ES.p, { titulo: p.titulo, legenda: p.legenda, hashtags: p.hashtags, status: p.status, video_url: p.video_url, video_mime: p.video_mime, updated_at: p.updated_at, dados: d });
+    if (p.formato !== ES.p.formato) evMudarFormato(p.formato);
+    ES.ultimoEstado = JSON.stringify(d); ES.sujo = false; ES.avisouConflito = false;
+    const tt = document.getElementById('ev-titulo'); if (tt && document.activeElement !== tt) tt.value = p.titulo;
+    evSincronizar(ES.t, false); evDesenharLinha(); evDesenhar(); evAtualizarCabeca(); evDesenharProps(); if (ES.painel !== 'ia') evPainel(ES.painel);
+    const s = document.getElementById('ev-salvo'); if (s) { s.textContent = '🔄 Sincronizado ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); s.classList.remove('pend'); }
+  } catch (e) {} finally { if (ES) ES.sincronizando = false; }
+}
+// ---------- Tela cheia (avaliar o vídeo editado como o público vai ver) ----------
+function evTelaCheia() {
+  if (!ES) return; const pal = document.getElementById('ev-palco'); if (!pal || ES.telaCheia) return;
+  evSelecionar && ES.sel && evSelecionar(null);
+  ES.telaCheia = true; pal.classList.add('tela-cheia');
+  const fim = () => { evAjustarPalco(); evAtualizarCabeca(); evAtualizarBotaoPlay(); evDesenhar(); };
+  try { if (pal.requestFullscreen) pal.requestFullscreen({ navigationUI: 'hide' }).then(fim).catch(fim); else if (pal.webkitRequestFullscreen) { pal.webkitRequestFullscreen(); fim(); } else fim(); } catch (e) { fim(); }
+  try { if (screen.orientation && screen.orientation.lock && ES.W > ES.H) screen.orientation.lock('landscape').catch(() => {}); } catch (e) {}
+  // controles somem sozinhos enquanto o vídeo toca
+  const mexeu = () => { pal.classList.remove('fs-quieto'); clearTimeout(ES.fsTimer); ES.fsTimer = setTimeout(() => { if (ES && ES.tocando) pal.classList.add('fs-quieto'); }, 2500); };
+  ES.fsMexeu = mexeu; pal.addEventListener('pointermove', mexeu); pal.addEventListener('pointerdown', mexeu); mexeu();
+  if (!ES.tocando) { if (ES.t >= evTotal() - 0.05) evIrPara(0); evTocar(); }
+}
+function evSairTelaCheia() {
+  if (!ES || !ES.telaCheia) return; const pal = document.getElementById('ev-palco');
+  ES.telaCheia = false; if (pal) { pal.classList.remove('tela-cheia', 'fs-quieto'); if (ES.fsMexeu) { pal.removeEventListener('pointermove', ES.fsMexeu); pal.removeEventListener('pointerdown', ES.fsMexeu); } }
+  try { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else if (document.webkitFullscreenElement) document.webkitExitFullscreen(); } catch (e) {}
+  try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+  setTimeout(() => { evAjustarPalco(); evDesenhar(); }, 60);
+}
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && typeof ES !== 'undefined' && ES && ES.telaCheia) evSairTelaCheia(); });
+// ---------- Painéis em gaveta no celular / tela pequena ----------
+function evSheet(qual) {
+  const ed = document.getElementById('ev-editor'); if (!ed) return;
+  const pequeno = window.matchMedia('(max-width: 760px)').matches, medio = window.matchMedia('(max-width: 1100px)').matches;
+  ed.classList.remove('sheet-painel', 'sheet-props');
+  if (qual === 'painel' && pequeno) ed.classList.add('sheet-painel');
+  if (qual === 'props' && medio) { ed.classList.add('sheet-props'); evDesenharProps(); }
+}
 function evFaixas(itens) { // distribui itens sobrepostos em linhas
   const faixas = []; itens.slice().sort((a, b) => a.ini - b.ini).forEach(x => { let f = faixas.find(fx => fx.fim <= x.ini + 0.001); if (!f) { f = { fim: 0, itens: [] }; faixas.push(f); } f.itens.push(x); f.fim = x.ini + x.dur; });
   return faixas;
@@ -20788,7 +20890,7 @@ function evPainel(qual) {
   if (qual === 'midia') {
     el.innerHTML = `<h4>Mídia do projeto</h4>
       <label class="ev-up"><input type="file" multiple accept="video/*,image/*,audio/*" hidden onchange="evSubir(this.files)"><b>⬆️ Subir vídeos, fotos ou áudios</b><small>Do computador ou do celular. Até 1GB por arquivo.</small></label>
-      <button class="ev-btn ia" style="width:100%;margin-top:8px;" onclick="evAbrirTeleprompter()">🎥 Gravar com teleprompter (celular)</button>
+      <button class="ev-btn ia" style="width:100%;margin-top:8px;" onclick="evAbrirTeleprompter()">🎥 Gravar com teleprompter (celular ou computador)</button>
       <div id="ev-up-prog"></div>
       <div class="ev-midias">${d.midias.filter(m => m.tipo !== 'audio').map(m => `<div class="ev-midia" title="${escapeHtml(m.nome)}">${m.tipo === 'fundo' ? `<div class="ev-midia-ico" style="background:linear-gradient(135deg,${(m.cores || [])[0] || '#0b1329'},${(m.cores || [])[1] || '#dc4c4c'})">✨</div>` : m.thumb ? `<img src="${m.thumb}">` : `<div class="ev-midia-ico">${m.tipo === 'video' ? '🎬' : '🖼️'}</div>`}<span>${m.tipo === 'video' ? evFmtT(m.duracao) : m.tipo === 'fundo' ? 'cena animada' : 'foto'}</span><button onclick="evAdicionarClipe('${m.id}')" title="Adicionar na linha do tempo">＋</button><button class="sb" onclick="evEscolherSobreposicao('${m.id}')" title="Usar como 2º vídeo: tela dividida, janelinha ou cobertura">⧉</button><button class="x" onclick="evRemoverMidia('${m.id}')" title="Remover do projeto">×</button></div>`).join('') || '<div class="ev-vazio">Nenhuma mídia ainda.</div>'}</div>
       ${d.midias.some(m => m.tipo !== 'audio') ? `<button class="ev-btn" onclick="evAdicionarTodas()">＋ Colocar todas na linha do tempo</button>` : ''}
@@ -20946,13 +21048,26 @@ async function evGerarLegendas(comIa) {
 
 // ---------- Painel de propriedades (direita) ----------
 function evCampo(rot, html) { return `<label class="ev-campo"><span>${rot}</span>${html}</label>`; }
-function evSet(k, v, redesenharLinha) { const x = evItemSel(); if (!x) return; if (v === null) delete x[k]; else x[k] = v; evDesenhar(); if (redesenharLinha) evDesenharLinha(); }
+function evSet(k, v, redesenharLinha) { const x = evItemSel(); if (!x) return; if (v === null) delete x[k]; else x[k] = v; if (ES.sel && ES.sel.tipo === 'texto') evLegendasJuntas(x, k, v); evDesenhar(); if (redesenharLinha) evDesenharLinha(); }
+// ---------- Legendas em massa: ajusta uma e todas acompanham (posição, tamanho, fonte, cor...) ----------
+const EV_CHAVES_LEGENDA = ['x', 'y', 'fonte', 'peso', 'tam', 'cor', 'fundo', 'contorno', 'sombra', 'anim', 'maiusc', 'destaque'];
+function evLegendasJuntasAtivo() { return ES && ES.p.dados.extras.legendasJuntas !== false; }
+function evLegendasJuntas(x, k, v) {
+  if (!x || x.estilo !== 'legenda' || !evLegendasJuntasAtivo() || !EV_CHAVES_LEGENDA.includes(k)) return;
+  const ex = ES.p.dados.extras, mod = ex.estiloLegenda = ex.estiloLegenda || {};
+  if (v === null || v === undefined) delete mod[k]; else mod[k] = v;
+  evAplicarEstiloLegendas();
+}
+function evAplicarEstiloLegendas() {
+  if (!ES || !evLegendasJuntasAtivo()) return; const mod = ES.p.dados.extras.estiloLegenda; if (!mod) return;
+  ES.p.dados.textos.forEach(t => { if (t.estilo === 'legenda') Object.keys(mod).forEach(k => { t[k] = mod[k]; }); });
+}
 function evDesenharProps() {
   const el = document.getElementById('ev-props'); if (!el || !ES) return;
   const x = evItemSel(), s = ES.sel;
   if (!x) {
     el.innerHTML = `<h4>Projeto</h4>
-      ${evCampo('Tipo de post', `<select onchange="ES.p.tipo=this.value; evMudou(false)">${[['reels', 'Reels'], ['stories', 'Stories'], ['feed', 'Feed (vídeo)']].map(([k, r]) => `<option value="${k}" ${ES.p.tipo === k ? 'selected' : ''}>${r}</option>`).join('')}</select>`)}
+      ${evCampo('Tipo de post', `<select onchange="ES.p.tipo=this.value; evMudou(false)">${[['reels', 'Reels'], ['stories', 'Stories'], ['feed', 'Feed (vídeo)'], ['aula', '🎓 Aula (Academy)']].map(([k, r]) => `<option value="${k}" ${ES.p.tipo === k ? 'selected' : ''}>${r}</option>`).join('')}</select>`)}
       ${evCampo('Legenda do post', `<textarea rows="6" placeholder="Primeira linha = gancho…" onchange="ES.p.legenda=this.value; evMudou(false)">${escapeHtml(ES.p.legenda || '')}</textarea>`)}
       ${evCampo('Hashtags (3 a 5)', `<input value="${escapeHtml(ES.p.hashtags || '')}" placeholder="#lideranca #gestao" onchange="ES.p.hashtags=this.value; evMudou(false)">`)}
       <div class="ev-linha-btn"><button class="ev-btn ia" onclick="evIaLegenda()">🤖 Legenda + hashtags</button></div>
@@ -20974,7 +21089,9 @@ function evDesenharProps() {
       <div class="ev-linha-btn"><button class="ev-btn" onclick="evDividir()">✂️ Dividir</button><button class="ev-btn" onclick="evDuplicarSel()">⧉ Duplicar</button><button class="ev-btn perigo" onclick="evExcluirSel()">🗑️</button></div>`;
   } else if (s.tipo === 'texto') {
     const e = Object.assign({}, EV_ESTILOS[x.estilo] || EV_ESTILOS.apoio, x);
-    el.innerHTML = `<h4>🔤 Texto</h4>
+    const qtdLeg = x.estilo === 'legenda' ? ES.p.dados.textos.filter(t => t.estilo === 'legenda').length : 0;
+    el.innerHTML = `<h4>🔤 ${x.estilo === 'legenda' ? 'Legenda' : 'Texto'}</h4>
+      ${x.estilo === 'legenda' ? `<div class="ev-dica-fixa" style="margin:0 0 8px;"><label class="ev-chk2" style="margin:0;color:var(--e-tx);"><input type="checkbox" ${evLegendasJuntasAtivo() ? 'checked' : ''} onchange="ES.p.dados.extras.legendasJuntas=this.checked; if(this.checked){ const t=evItemSel(); ES.p.dados.extras.estiloLegenda=Object.fromEntries(EV_CHAVES_LEGENDA.filter(k=>t[k]!==undefined).map(k=>[k,t[k]])); evAplicarEstiloLegendas(); } evMudou(); evDesenharProps()"> <b>🔗 Ajustar todas as ${qtdLeg} legendas juntas</b></label><div class="ev-sub" style="margin:4px 0 0;">${evLegendasJuntasAtivo() ? 'Arraste ou mude posição, tamanho, fonte ou cor desta legenda e todas acompanham automaticamente (inclusive as que forem criadas depois).' : 'Desligado: cada legenda é ajustada sozinha.'}</div></div>` : ''}
       ${evCampo('Texto', `<textarea id="ev-prop-texto" rows="3" oninput="evSet('texto', this.value)" onchange="evMudou()">${escapeHtml(x.texto)}</textarea>`)}
       ${evCampo('Estilo', `<select onchange="const t=evItemSel(); ['fonte','peso','tam','cor','fundo','contorno','sombra','anim','maiusc','destaque','y'].forEach(k=>delete t[k]); t.estilo=this.value; t.y=EV_ESTILOS[this.value].y; evMudou(); evDesenharProps()">${Object.entries(EV_ESTILOS).map(([k, v]) => `<option value="${k}" ${x.estilo === k ? 'selected' : ''}>${v.rot}</option>`).join('')}</select>`)}
       ${evCampo('Fonte', `<select onchange="evSet('fonte', this.value); evMudou(false)">${EV_FONTES.map(f => `<option ${e.fonte === f ? 'selected' : ''} style="font-family:'${f}'">${f}</option>`).join('')}</select>`)}
@@ -20988,7 +21105,8 @@ function evDesenharProps() {
       <label class="ev-chk2"><input type="checkbox" ${e.sombra ? 'checked' : ''} onchange="evSet('sombra', this.checked); evMudou(false)"> Sombra</label>
       ${evCampo('Animação de entrada', `<div class="ev-chips">${Object.entries(EV_ANIMS).map(([k, r]) => `<button class="${(e.anim || 'fade') === k ? 'on' : ''}" onclick="evSet('anim','${k}'); evMudou(false); evDesenharProps(); evIrPara(evItemSel().ini)">${r}</button>`).join('')}</div>`)}
       ${evCampo('Aparece em / dura (s)', `<div class="ev-dupla"><input type="number" step="0.1" min="0" value="${x.ini.toFixed(1)}" onchange="evSet('ini', Math.max(0, Number(this.value)), true); evMudou(false)"><input type="number" step="0.1" min="0.2" value="${x.dur.toFixed(1)}" onchange="evSet('dur', Math.max(0.2, Number(this.value)), true); evMudou(false)"></div>`)}
-      ${evCampo('Posição', `<div class="ev-chips">${[['Topo', 0.2], ['Meio', 0.5], ['Baixo', 0.72]].map(([r, v]) => `<button onclick="evSet('y', ${v}); evSet('x', 0.5); evMudou(false)">${r}</button>`).join('')}</div>`)}
+      ${evCampo('Posição', `<div class="ev-chips">${[['Topo', 0.2], ['Meio', 0.5], ['Baixo', 0.72], ['Rodapé', 0.86]].map(([r, v]) => `<button onclick="evSet('y', ${v}); evSet('x', 0.5); evMudou(false)">${r}</button>`).join('')}</div>`)}
+      ${evCampo('Altura na tela', `<input type="range" min="0.04" max="0.96" step="0.01" value="${e.y !== undefined ? e.y : 0.7}" oninput="evSet('y', Number(this.value))" onchange="evMudou(false)">`)}
       <div class="ev-sub">Arraste o texto direto no vídeo para posicionar.</div>
       <div class="ev-linha-btn"><button class="ev-btn" onclick="evDuplicarSel()">⧉ Duplicar</button><button class="ev-btn perigo" onclick="evExcluirSel()">🗑️ Excluir</button></div>`;
   } else if (s.tipo === 'ovl') {
@@ -21237,6 +21355,8 @@ async function evAbrirPublicar(acabouDeExportar) {
         <label class="ev-campo"><span>Legenda + hashtags</span><textarea id="ev-pub-leg" rows="9">${escapeHtml(legendaFinal)}</textarea></label>
         <div class="ev-linha-btn"><button class="ev-btn" onclick="navigator.clipboard.writeText(document.getElementById('ev-pub-leg').value).then(()=>mostrarToast('Legenda copiada!'))">📋 Copiar legenda</button>
           ${ex ? `<a class="ev-btn" href="${ex.url}" download="${escapeHtml(ex.nome)}">⬇️ Baixar vídeo</a>` : temVideo ? `<a class="ev-btn" href="${escapeHtml(p.video_url)}" download>⬇️ Baixar vídeo</a>` : ''}</div>
+        ${evAcademyHtml(temVideo)}
+        ${p.tipo === 'aula' ? '<details class="ev-sub"><summary style="cursor:pointer;">📸 Também postar no Instagram</summary>' : ''}
         ${ig.configurado ? `
           <div class="ev-ig-ok">📸 Conectado ao Instagram <b>@${escapeHtml(ig.username || '')}</b></div>
           ${temVideo && mp4 ? `<button class="ev-btn ig grande" onclick="evPublicarAgora()">🚀 Publicar agora no Instagram</button>
@@ -21244,10 +21364,37 @@ async function evAbrirPublicar(acabouDeExportar) {
           <div class="ev-sub">Horários com mais alcance costumam ser 12h–13h e 18h–21h nos dias úteis — confira os horários do seu público nas estatísticas do Instagram.</div>`
           : `<div class="ev-sub" style="color:#fbbf24;">${temVideo ? 'O vídeo foi exportado em WebM — o Instagram exige MP4. Exporte pelo Chrome ou Edge atualizado.' : 'Exporte o vídeo para publicar direto daqui.'}</div>`}`
           : `<div class="ev-sub">Para postar direto daqui, conecte o Instagram em <b>Estúdio de Vídeo › Instagram</b>. Enquanto isso: baixe o vídeo, copie a legenda e poste pelo app (dá para escolher uma música em alta na hora de postar).</div>`}
+        ${p.tipo === 'aula' ? '</details>' : ''}
         ${p.status === 'agendado' ? `<div class="ev-ig-ok">🗓️ Agendado para ${new Date(p.agendado_para).toLocaleString('pt-BR')} <button class="ev-mini" onclick="evCancelarAgendamento()">cancelar</button></div>` : ''}
         ${p.status === 'erro' && p.erro_publicacao ? `<div class="ev-sub" style="color:#fca5a5;">Última tentativa: ${escapeHtml(p.erro_publicacao)}</div>` : ''}
       </div>
     </div></div></div>`;
+}
+function evAcademyHtml(temVideo) {
+  const p = ES.p, a = p.dados.aula || {}, aula = p.tipo === 'aula', salvo = !!p.dados.academyVideoId;
+  setTimeout(evCarregarTrilhasAcademy, 0);
+  return `<div class="ev-academy" style="border:1px solid var(--e-bd);border-radius:12px;padding:10px 12px;margin:10px 0;${aula ? 'background:rgba(79,124,255,.08);' : ''}">
+    <${aula ? 'div' : 'details'}${aula ? '' : ' class="ev-sub"'}>${aula ? '<b>🎓 Salvar na Academy</b>' : '<summary style="cursor:pointer;color:var(--e-tx);">🎓 Salvar este vídeo como aula na Academy</summary>'}
+      ${salvo ? '<div class="ev-sub" style="color:#86efac;">✅ Já está na Academy — salvar de novo atualiza a aula com o vídeo exportado mais recente.</div>' : ''}
+      <label class="ev-campo"><span>Título da aula</span><input id="ac-tit" value="${escapeHtml(p.titulo || '')}"></label>
+      <div class="ev-dupla"><label class="ev-campo" style="flex:1;"><span>Módulo</span><input id="ac-mod" value="${escapeHtml(a.modulo || '')}"></label><label class="ev-campo" style="flex:1;"><span>Trilha (opcional)</span><select id="ac-trilha"><option value="">— nenhuma —</option></select></label></div>
+      <label class="ev-campo"><span>Descrição</span><textarea id="ac-desc" rows="3">${escapeHtml(a.descricao || '')}</textarea></label>
+      ${temVideo ? `<button class="ev-btn primario grande" onclick="evSalvarNaAcademy()">🎓 ${salvo ? 'Atualizar aula na Academy' : 'Salvar na Academy'}</button>` : '<div class="ev-sub">Exporte o vídeo (⬇️ Exportar vídeo) para salvar na Academy.</div>'}
+    </${aula ? 'div' : 'details'}></div>`;
+}
+async function evCarregarTrilhasAcademy() {
+  const sel = document.getElementById('ac-trilha'); if (!sel || sel.dataset.ok) return; sel.dataset.ok = 1;
+  try { const l = await api('/api/tracks'); (l || []).forEach(t => sel.insertAdjacentHTML('beforeend', `<option value="${t.id}">${escapeHtml(t.title || ('Trilha ' + t.id))}</option>`)); } catch (e) {}
+}
+async function evSalvarNaAcademy() {
+  const v = id => (document.getElementById(id) || {}).value || '';
+  const dur = evTotal(), duracao = dur >= 60 ? Math.round(dur / 60) + ' min' : Math.round(dur) + ' s';
+  ES.p.dados.aula = Object.assign({}, ES.p.dados.aula || {}, { modulo: v('ac-mod'), descricao: v('ac-desc') });
+  try {
+    const r = await api(`/api/admin/estudio/projetos/${ES.p.id}/academy`, { method: 'POST', body: JSON.stringify({ title: v('ac-tit'), module_name: v('ac-mod'), description: v('ac-desc'), track_id: v('ac-trilha') || null, duration: duracao }) });
+    ES.p.dados.academyVideoId = r.id; evMudou(false); await evSalvar(true).catch(() => {});
+    mostrarToast(r.message + ' Ela já aparece em Academy Digital.'); evAbrirPublicar();
+  } catch (e) { mostrarToast(e.message, true); }
 }
 function evLegendaDoModal() { const v = (document.getElementById('ev-pub-leg') || {}).value || ''; const tags = (v.match(/(#[\wÀ-ú]+\s*)+$/) || [''])[0]; ES.p.legenda = v.slice(0, v.length - tags.length).trim(); ES.p.hashtags = tags.trim(); }
 async function evPublicarAgora() {
@@ -21680,41 +21827,58 @@ function evCadeiaVoz(ac, entrada, saida) {
 // ---------- Teleprompter: roteiro na tela e gravação pelo celular ----------
 function evRoteiroComoTexto(r) { return (r && r.cenas || []).map(c => String(c.fala || '').trim()).filter(Boolean).join('\n\n') + (r && r.cta ? '\n\n' + r.cta : ''); }
 async function evAbrirTeleprompter() {
-  ES.roteiroTp = ES.roteiroTp || (ES.ultimoRoteiro ? evRoteiroComoTexto(ES.ultimoRoteiro) : '');
+  const aula = ES.p.tipo === 'aula', d = ES.p.dados;
+  ES.roteiroTp = d.roteiro || ES.roteiroTp || (ES.ultimoRoteiro ? evRoteiroComoTexto(ES.ultimoRoteiro) : '');
+  const ritmo = aula ? 135 : 150;
   document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal grande">
-    <div class="ev-modal-cab"><h3>🎥 Gravar com teleprompter</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
-    <div class="ev-sub" style="margin-top:0;">O roteiro fica rolando na tela, perto da câmera, enquanto você grava — no celular ou no computador. O vídeo gravado cai direto aqui no projeto.</div>
-    <div class="ev-dupla"><label class="ev-campo" style="flex:2;"><span>Sobre o que é o vídeo?</span><input id="tp-tema" value="${escapeHtml(ES.iaTema || ES.p.titulo || '')}"></label>
-      <label class="ev-campo"><span>Duração</span><select id="tp-dur">${[15, 30, 45, 60, 90].map(s => `<option value="${s}" ${s === 30 ? 'selected' : ''}>${s} s</option>`).join('')}</select></label></div>
-    <button class="ev-btn ia" style="width:100%;" onclick="evTpGerarRoteiro()">🤖 Criar roteiro com IA</button>
-    <label class="ev-campo"><span>Roteiro (o que você vai falar — deixe linha em branco entre as partes)</span><textarea id="tp-roteiro" rows="9" placeholder="Escreva aqui ou clique em Criar roteiro com IA">${escapeHtml(ES.roteiroTp || '')}</textarea></label>
+    <div class="ev-modal-cab"><h3>🎥 ${aula ? 'Gravar a aula com teleprompter' : 'Gravar com teleprompter'}</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <div class="ev-sub" style="margin-top:0;">1️⃣ Monte o roteiro · 2️⃣ Abra a gravação (no celular ou neste computador) · 3️⃣ Clique em <b>Começar</b>: conta 3‑2‑1 e o texto passa sozinho na tela, no seu ritmo, enquanto você lê e grava. O vídeo cai direto aqui no projeto.</div>
+    <div class="ev-dupla"><label class="ev-campo" style="flex:2;"><span>Sobre o que é ${aula ? 'a aula' : 'o vídeo'}?</span><input id="tp-tema" value="${escapeHtml(ES.iaTema || ES.p.titulo || '')}"></label>
+      <label class="ev-campo"><span>Duração</span><select id="tp-dur">${aula ? [2, 3, 5, 8, 10, 15, 20, 30].map(m => `<option value="${m * 60}" ${m === ((d.aula || {}).minutos || 5) ? 'selected' : ''}>${m} min</option>`).join('') : [15, 30, 45, 60, 90].map(s => `<option value="${s}" ${s === 30 ? 'selected' : ''}>${s} s</option>`).join('')}</select></label></div>
+    <button class="ev-btn ia" style="width:100%;" onclick="evTpGerarRoteiro()">🤖 Criar roteiro ${aula ? 'da aula ' : ''}com IA</button>
+    <label class="ev-campo"><span>Roteiro (o que você vai falar — linha em branco entre as partes; [TÍTULOS] aparecem só como guia)</span><textarea id="tp-roteiro" rows="10" placeholder="Escreva aqui ou clique em Criar roteiro com IA">${escapeHtml(ES.roteiroTp || '')}</textarea></label>
     <div class="ev-sub" id="tp-estimativa"></div>
-    <button class="ev-btn primario grande" onclick="evTpGerarLink()">📱 Gerar link para gravar no celular</button>
+    <div class="ev-linha-btn"><button class="ev-btn primario grande" onclick="evTpGerarLink()">🎬 Abrir a gravação (celular ou computador)</button></div>
     <div id="tp-link"></div>
   </div></div>`;
-  const ta = document.getElementById('tp-roteiro'); const est = () => { const n = (ta.value.match(/\S+/g) || []).length; document.getElementById('tp-estimativa').textContent = n ? `${n} palavras · cerca de ${Math.round(n / 2.4)} s falando em ritmo de Reels` : ''; }; ta.addEventListener('input', est); est();
+  const ta = document.getElementById('tp-roteiro');
+  const est = () => { const t = ta.value.replace(/^\s*\[[^\]]*\]\s*$/gm, ''); const n = (t.match(/\S+/g) || []).length; const seg = Math.round(n / ritmo * 60); document.getElementById('tp-estimativa').textContent = n ? `${n} palavras · cerca de ${seg >= 90 ? Math.round(seg / 60) + ' min' : seg + ' s'} falando ${aula ? 'em ritmo de aula' : 'em ritmo de Reels'}` : ''; };
+  ta.addEventListener('input', est); ta.addEventListener('change', () => { ES.p.dados.roteiro = ta.value; evMudou(false); }); est();
 }
 async function evTpGerarRoteiro() {
   const tema = document.getElementById('tp-tema').value.trim(); if (!tema) return mostrarToast('Diga sobre o que é o vídeo.', true);
-  ES.iaTema = tema;
+  ES.iaTema = tema; const aula = ES.p.tipo === 'aula', d = ES.p.dados;
   try {
-    const r = await evIa('roteiro', { tema, duracao: Number(document.getElementById('tp-dur').value) || 30 }, '📝 Escrevendo o roteiro para você gravar...');
-    ES.ultimoRoteiro = r; ES.roteiroTp = evRoteiroComoTexto(r);
-    if (r.legenda && !ES.p.legenda) ES.p.legenda = r.legenda; if ((r.hashtags || []).length && !ES.p.hashtags) ES.p.hashtags = r.hashtags.join(' ');
+    if (aula) {
+      const a = d.aula || {};
+      const r = await evIa('roteiro-aula', { tema, minutos: Number(document.getElementById('tp-dur').value) / 60, publico: a.publico || '', objetivo: a.objetivo || '', pesquisar: true }, '📚 Pesquisando e escrevendo o roteiro da aula...');
+      ES.roteiroTp = r.texto || '';
+      d.aula = Object.assign({}, a, { descricao: a.descricao || r.descricao || '', modulo: a.modulo || r.modulo || '' });
+    } else {
+      const r = await evIa('roteiro', { tema, duracao: Number(document.getElementById('tp-dur').value) || 30 }, '📝 Escrevendo o roteiro para você gravar...');
+      ES.ultimoRoteiro = r; ES.roteiroTp = evRoteiroComoTexto(r);
+      if (r.legenda && !ES.p.legenda) ES.p.legenda = r.legenda; if ((r.hashtags || []).length && !ES.p.hashtags) ES.p.hashtags = r.hashtags.join(' ');
+    }
+    d.roteiro = ES.roteiroTp; evMudou(false);
     const ta = document.getElementById('tp-roteiro'); if (ta) { ta.value = ES.roteiroTp; ta.dispatchEvent(new Event('input')); }
-    mostrarToast('Roteiro pronto! Ajuste se quiser e gere o link para gravar.');
+    mostrarToast('Roteiro pronto! Ajuste se quiser e abra a gravação.');
   } catch (e) { mostrarToast(/conectada/.test(e.message) ? 'A IA não está conectada — escreva o roteiro no campo (ou conecte a IA em Agente Viral).' : e.message, true); }
 }
-async function evTpGerarLink() {
-  ES.roteiroTp = document.getElementById('tp-roteiro').value;
-  if (ES.roteiroTp.trim().length < 5 && !confirm('O roteiro está vazio. Gerar o link mesmo assim? (dá para escrever no celular)')) return;
+async function evTpGerarLink(semPerguntar) {
+  ES.roteiroTp = document.getElementById('tp-roteiro').value; ES.p.dados.roteiro = ES.roteiroTp; evMudou(false);
+  if (!semPerguntar && ES.roteiroTp.trim().length < 5 && !confirm('O roteiro está vazio. Abrir a gravação mesmo assim? (dá para escrever lá também)')) return;
   try {
+    if (ES.sujo) await evSalvar(true).catch(() => {});
     const r = await api(`/api/admin/estudio/projetos/${ES.p.id}/gravador`, { method: 'POST', body: JSON.stringify({ roteiro: ES.roteiroTp }) });
+    const aula = ES.p.tipo === 'aula';
     document.getElementById('tp-link').innerHTML = `<div class="ev-tp-link">
       <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(r.link)}" alt="QR Code">
-      <div><b>Aponte a câmera do celular para o QR Code</b><div class="ev-sub">ou envie o link para o seu WhatsApp. No celular: permita câmera e microfone, toque no botão vermelho, conte 3‑2‑1 e fale lendo o texto. Ao terminar, toque em <b>Enviar para o projeto</b>.</div>
+      <div><b>Grave onde preferir:</b>
+        <div class="ev-linha-btn"><a class="ev-btn primario" href="${escapeHtml(r.link)}" target="_blank" rel="noopener">💻 Gravar neste computador (webcam)</a></div>
+        <div class="ev-sub">📱 No celular: aponte a câmera para o QR Code ou mande o link no WhatsApp.${aula && ES.p.formato === '16:9' ? ' Para aula horizontal, deixe o celular <b>deitado</b>.' : ''}</div>
         <div class="ev-dupla"><input readonly value="${escapeHtml(r.link)}" onclick="this.select()"><button class="ev-btn" onclick="navigator.clipboard.writeText(${escapeHtml(JSON.stringify(r.link))}).then(()=>mostrarToast('Link copiado!'))">Copiar</button></div>
-        <div class="ev-linha-btn"><a class="ev-btn" href="https://wa.me/?text=${encodeURIComponent('Gravar vídeo — Impulsionar: ' + r.link)}" target="_blank" rel="noopener">💬 Mandar no WhatsApp</a><a class="ev-btn" href="${escapeHtml(r.link)}" target="_blank" rel="noopener">💻 Gravar neste computador</a></div>
+        <div class="ev-linha-btn"><a class="ev-btn" href="https://wa.me/?text=${encodeURIComponent('Gravar ' + (aula ? 'aula' : 'vídeo') + ' — Impulsionar: ' + r.link)}" target="_blank" rel="noopener">💬 Mandar no WhatsApp</a></div>
+        <div class="ev-sub">Na gravação: clique em <b>▶ Começar</b> → 3‑2‑1 → o texto passa sozinho. Ajuste a velocidade com − / + (ou ↑ ↓ no teclado). Pode gravar em partes. Ao terminar, clique em <b>Enviar para o projeto</b>.</div>
         <div class="ev-sub">⏳ Aguardando gravações... elas entram sozinhas na linha do tempo deste projeto.</div></div></div>`;
     evTpVigiar(true);
   } catch (e) { mostrarToast(e.message, true); }
@@ -21740,7 +21904,7 @@ function evTpVigiar(ligar) {
       ES.p.dados.midias.push(m); evAdicionarClipe(m.id, true);
       await api(`/api/admin/estudio/gravacoes/${g.id}/importada`, { method: 'POST', body: '{}' }).catch(() => {});
       evMudou(); if (ES.painel === 'midia') evPainel('midia');
-      mostrarToast('📱 Gravação do celular chegou e já está na linha do tempo! Use ✨ Editar com IA para cortar e legendar.');
+      mostrarToast('🎥 A gravação chegou e já está na linha do tempo! Use ✨ Editar com IA para legendar e deixar profissional.');
       const tp = document.getElementById('tp-link'); if (tp) document.getElementById('ev-modal').innerHTML = '';
     }
   }, 5000);
@@ -22063,8 +22227,9 @@ function evPopBarra(tipo, btn) {
 async function renderEstudioVideo(aba) {
   if (aba) EVL.aba = aba;
   const cont = document.getElementById('conteudo');
-  cont.innerHTML = `<div id="ev-pagina"><div class="ev-pag-topo"><div><h1 style="margin:0;">🎬 Estúdio de Vídeo</h1><div class="plano-meta">Edite Reels, Stories e vídeos do feed no padrão das grandes contas, com o Agente Viral da Impulsionar.</div></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-secundario" style="width:auto;" onclick="evAbrirCriarVideoIa()">🤖 Criar vídeo com IA</button><button class="btn-primario" style="width:auto;" onclick="evNovoProjeto()">＋ Novo vídeo</button></div></div>
+  cont.innerHTML = `<div id="ev-pagina"><div class="estudio-barra"><img src="/assets/logo-impulsionar.jpg" alt=""><b>Estúdio de Vídeo<br><span class="estudio-sync">🔄 Sincronizado com o computador</span></b><a href="/">💻 Sistema</a><button onclick="sair()">Sair</button></div>
+    <div class="ev-pag-topo"><div><h1 style="margin:0;">🎬 Estúdio de Vídeo</h1><div class="plano-meta">Edite Reels, Stories e vídeos do feed no padrão das grandes contas, com o Agente Viral da Impulsionar — e grave aulas para a Academy com teleprompter.</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-secundario" style="width:auto;" onclick="evAbrirNoCelular()">📱 Abrir no celular</button><button class="btn-secundario" style="width:auto;" onclick="evNovaAula()">🎓 Gravar aula</button><button class="btn-secundario" style="width:auto;" onclick="evAbrirCriarVideoIa()">🤖 Criar vídeo com IA</button><button class="btn-primario" style="width:auto;" onclick="evNovoProjeto()">＋ Novo vídeo</button></div></div>
     <div class="ev-pag-abas">${[['projetos', '🎞️ Projetos'], ['agente', '🤖 Agente Viral (treinar)'], ['agenda', '🗓️ Agenda & publicações'], ['instagram', '📸 Instagram']].map(([k, r]) => `<button class="${EVL.aba === k ? 'on' : ''}" onclick="renderEstudioVideo('${k}')">${r}</button>`).join('')}</div>
     <div id="ev-pag-corpo"><p>Carregando...</p></div></div>`;
   const corpo = document.getElementById('ev-pag-corpo');
@@ -22083,7 +22248,7 @@ function evDesenharProjetos(corpo) {
   corpo.innerHTML = `<div class="ev-kpis">${kpi(l.length, 'projetos', '#0b1329')}${kpi(l.filter(p => p.status === 'publicado').length, 'publicados', '#16a34a')}${kpi(l.filter(p => p.status === 'agendado').length, 'agendados', '#7c3aed')}${kpi(l.length ? Math.round(l.reduce((s, p) => s + (p.viral_score || 0), 0) / l.length) : 0, 'nota viral média', '#dc4c4c')}</div>
     ${l.length ? `<div class="ev-cards">${l.map(p => { const st = EV_STATUS[p.status] || EV_STATUS.rascunho; return `<div class="ev-card" onclick="evAbrirEditor(${p.id})">
       <div class="ev-card-capa f${(p.formato || '9:16').replace(':', '-')}">${p.thumb ? `<img src="${escapeHtml(p.thumb)}">` : '<span>🎬</span>'}<i style="background:${st[1]}">${st[0]}</i>${p.viral_score ? `<em>🔥 ${p.viral_score}</em>` : ''}</div>
-      <div class="ev-card-info"><b>${escapeHtml(p.titulo)}</b><small>${escapeHtml(p.formato)} · ${p.qtdClips} clipes · ${evFmtT(p.duracao || 0).slice(0, 5)}</small>
+      <div class="ev-card-info"><b>${escapeHtml(p.titulo)}</b><small>${p.tipo === 'aula' ? '🎓 Aula · ' : ''}${escapeHtml(p.formato)} · ${p.qtdClips} clipes · ${evFmtT(p.duracao || 0).slice(0, 5)}</small>
       ${p.status === 'agendado' && p.agendado_para ? `<small>🗓️ ${new Date(p.agendado_para).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</small>` : ''}
       ${p.ig_permalink ? `<a href="${escapeHtml(p.ig_permalink)}" target="_blank" onclick="event.stopPropagation()">Ver no Instagram ↗</a>` : ''}
       <div class="ev-card-acoes" onclick="event.stopPropagation()"><button onclick="evDuplicarProjeto(${p.id})" title="Duplicar">⧉</button><button onclick="evExcluirProjeto(${p.id})" title="Excluir">🗑️</button></div></div></div>`; }).join('')}</div>`
@@ -22109,6 +22274,79 @@ async function evCriarProjeto() {
   if (kit.logo || kit.arroba) extras.encerramento = { ativo: true, dur: 2.5, texto: kit.cta || 'Siga para mais conteúdos', arroba: kit.arroba || '', cta: kit.ctaSec || '', cor1: kit.cor1 || '#0b1329', cor2: kit.cor2 || '#dc4c4c' };
   try { const r = await api('/api/admin/estudio/projetos', { method: 'POST', body: JSON.stringify({ titulo, formato, tipo: formato === '9:16' ? 'reels' : 'feed', dados: { midias: [], clips: [], textos: [], audios: [], sobreposicoes: [], filtro: 'nenhum', transicao: 'corte', extras, ajustes: { brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 } } }) }); document.getElementById('modal-area').innerHTML = ''; evAbrirEditor(r.id); }
   catch (e) { mostrarToast(e.message, true); }
+}
+// ---------- Abrir o Estúdio no celular (acesso só às abas de vídeo, sincronizado) ----------
+function evAbrirNoCelular() {
+  const link = location.origin + '/estudio';
+  let ma = document.getElementById('modal-area');
+  if (!ma) { document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>'); ma = document.getElementById('modal-area'); }
+  ma.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="modal-caixa" style="max-width:520px;text-align:center;">
+    <h3 style="margin-top:0;">📱 Estúdio de Vídeo no celular</h3>
+    <p class="plano-meta" style="text-align:left;">Abra este endereço no celular e entre com o mesmo login do Master. Aparecem <b>só as abas do Estúdio</b> (criar, editar, gravar e publicar vídeos). Tudo fica <b>sincronizado com o computador</b>: o que você editar num aparelho aparece no outro em segundos.</p>
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(link)}" alt="QR Code" style="border-radius:10px;">
+    <div style="display:flex;gap:6px;margin:12px 0;"><input readonly value="${escapeHtml(link)}" onclick="this.select()"><button class="btn-secundario" style="width:auto;" onclick="navigator.clipboard.writeText('${link}').then(()=>mostrarToast('Link copiado!'))">Copiar</button></div>
+    <a class="btn-secundario" style="display:block;text-decoration:none;" href="https://wa.me/?text=${encodeURIComponent('Estúdio de Vídeo — Impulsionar: ' + link)}" target="_blank" rel="noopener">💬 Mandar no meu WhatsApp</a>
+    <p class="plano-meta" style="text-align:left;margin-top:12px;">💡 Para virar um aplicativo: no Android (Chrome) toque em ⋮ › <b>Adicionar à tela inicial</b>; no iPhone (Safari) toque em <b>Compartilhar › Adicionar à Tela de Início</b>.</p>
+    <button class="btn-primario" style="width:auto;" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button>
+  </div></div>`;
+}
+
+// ---------- Gravar AULA para a Academy (roteiro + teleprompter + edição + salvar na Academy) ----------
+async function evNovaAula() {
+  let ma = document.getElementById('modal-area');
+  if (!ma) { document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>'); ma = document.getElementById('modal-area'); }
+  ma.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="modal-caixa" style="max-width:760px;">
+    <h3 style="margin-top:0;">🎓 Gravar aula para a Academy</h3>
+    <div class="plano-meta" style="margin-bottom:10px;">1️⃣ Monte o roteiro (você escreve ou a IA cria) · 2️⃣ Grave lendo o texto que passa sozinho na tela · 3️⃣ Edite com as mesmas ferramentas dos vídeos · 4️⃣ Salve na Academy.</div>
+    <div class="linha"><div style="flex:2"><label>Tema / título da aula</label><input id="au-tema" placeholder="Ex.: Como dar feedback que gera resultado"></div>
+      <div><label>Duração</label><select id="au-min">${[2, 3, 5, 8, 10, 15, 20, 30].map(m => `<option value="${m}" ${m === 5 ? 'selected' : ''}>${m} min</option>`).join('')}</select></div></div>
+    <div class="linha"><div><label>Módulo / trilha</label><input id="au-modulo" placeholder="Ex.: Liderança na prática"></div><div><label>Público</label><input id="au-publico" placeholder="Ex.: supervisores de operação"></div>
+      <div><label>Nível</label><select id="au-nivel"><option>iniciante</option><option selected>intermediário</option><option>avançado</option></select></div></div>
+    <label>O que o aluno deve sair sabendo? (objetivo)</label><input id="au-obj" placeholder="Ex.: aplicar o modelo SCI de feedback com o time">
+    <label>Orientações para a IA (opcional)</label><textarea id="au-extra" rows="2" placeholder="Ex.: use exemplos de centro de distribuição; cite o ciclo PDCA; tom leve"></textarea>
+    <label style="display:flex;gap:8px;align-items:center;margin:8px 0;"><input type="checkbox" id="au-web" checked style="width:auto;"> Pesquisar na internet para deixar o conteúdo atualizado</label>
+    <label>Formato do vídeo</label><div class="ev-formatos"><label class="ev-formato"><input type="radio" name="au-fmt" value="16:9" checked><span class="f16-9"></span><b>Horizontal 16:9 (aula / Academy)</b></label><label class="ev-formato"><input type="radio" name="au-fmt" value="9:16"><span class="f9-16"></span><b>Vertical 9:16 (celular)</b></label></div>
+    <button class="btn-secundario" id="au-bt-ia" style="width:100%;margin-top:10px;" onclick="evAulaGerarRoteiro()">🤖 Criar roteiro da aula com IA</button>
+    <label style="margin-top:10px;">Roteiro (é o texto que vai passar na tela — títulos entre [COLCHETES] aparecem só como guia, não são para ler)</label>
+    <textarea id="au-roteiro" rows="10" placeholder="Escreva aqui o que você vai falar, ou clique em Criar roteiro da aula com IA."></textarea>
+    <div class="plano-meta" id="au-est"></div>
+    <label>Descrição da aula (aparece na Academy)</label><textarea id="au-desc" rows="2"></textarea>
+    <div class="acoes-form" style="margin-top:14px;"><button class="btn-primario" style="width:auto;" onclick="evCriarAula()">🎬 Ir para a gravação</button><button class="btn-secundario" style="width:auto;" onclick="document.getElementById('modal-area').innerHTML=''">Cancelar</button></div>
+  </div></div>`;
+  const ta = document.getElementById('au-roteiro');
+  const est = () => { const t = ta.value.replace(/^\s*\[[^\]]*\]\s*$/gm, ''); const n = (t.match(/\S+/g) || []).length; document.getElementById('au-est').textContent = n ? `${n} palavras · cerca de ${Math.max(1, Math.round(n / 135))} min de aula lendo em ritmo tranquilo` : ''; };
+  ta.addEventListener('input', est);
+  setTimeout(() => document.getElementById('au-tema').focus(), 50);
+}
+async function evAulaGerarRoteiro() {
+  const v = id => (document.getElementById(id) || {}).value || '';
+  if (!v('au-tema').trim()) return mostrarToast('Escreva o tema da aula.', true);
+  const bt = document.getElementById('au-bt-ia'); bt.disabled = true; bt.textContent = '🤖 Criando o roteiro da aula... (pode levar até 1 minuto)';
+  try {
+    const r = await api('/api/admin/estudio/ia/roteiro-aula', { method: 'POST', body: JSON.stringify({ tema: v('au-tema'), minutos: Number(v('au-min')), publico: v('au-publico'), objetivo: v('au-obj'), nivel: v('au-nivel'), extra: v('au-extra'), pesquisar: document.getElementById('au-web').checked }) });
+    const ta = document.getElementById('au-roteiro'); if (!ta) return;
+    ta.value = r.texto || ''; ta.dispatchEvent(new Event('input'));
+    if (r.descricao && !v('au-desc')) document.getElementById('au-desc').value = r.descricao + (r.exercicio ? '\n\nAtividade prática: ' + r.exercicio : '');
+    if (r.modulo && !v('au-modulo')) document.getElementById('au-modulo').value = r.modulo;
+    if (r.titulo) document.getElementById('au-tema').value = r.titulo;
+    mostrarToast(r.semIa ? 'A IA não está conectada — montei a estrutura da aula para você completar os trechos entre [colchetes].' : 'Roteiro da aula pronto! Revise e clique em Ir para a gravação.', !!r.semIa);
+  } catch (e) { mostrarToast(e.message, true); }
+  finally { if (bt) { bt.disabled = false; bt.textContent = '🤖 Criar roteiro da aula com IA'; } }
+}
+async function evCriarAula() {
+  const v = id => (document.getElementById(id) || {}).value || '';
+  const titulo = v('au-tema').trim() || 'Nova aula', formato = (document.querySelector('input[name=au-fmt]:checked') || {}).value || '16:9';
+  const kit = await evCarregarKit();
+  const extras = { marca: kit.arroba || '@impulsionarv4', barra: false, corBarra: kit.cor2 || '#dc4c4c' };
+  if (kit.logo) extras.logo = { url: kit.logo, pos: 'sd', tam: 0.12, opac: 0.9, ativo: true, fundo: true };
+  extras.encerramento = { ativo: true, dur: 3, texto: 'Até a próxima aula!', arroba: kit.arroba || '', cta: kit.ctaSec || '', cor1: kit.cor1 || '#0b1329', cor2: kit.cor2 || '#dc4c4c' };
+  const aula = { modulo: v('au-modulo'), descricao: v('au-desc'), publico: v('au-publico'), objetivo: v('au-obj'), minutos: Number(v('au-min')) || 5 };
+  try {
+    const r = await api('/api/admin/estudio/projetos', { method: 'POST', body: JSON.stringify({ titulo, formato, tipo: 'aula', dados: { midias: [], clips: [], textos: [], audios: [], sobreposicoes: [], filtro: 'nenhum', transicao: 'corte', extras, roteiro: v('au-roteiro'), aula, ajustes: { brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 } } }) });
+    document.getElementById('modal-area').innerHTML = '';
+    await evAbrirEditor(r.id);
+    if (ES) { evAbrirTeleprompter(); setTimeout(() => { if (document.getElementById('tp-roteiro')) evTpGerarLink(true); }, 50); }
+  } catch (e) { mostrarToast(e.message, true); }
 }
 async function evDuplicarProjeto(id) { try { await api(`/api/admin/estudio/projetos/${id}/duplicar`, { method: 'POST', body: '{}' }); mostrarToast('Projeto duplicado!'); renderEstudioVideo(); } catch (e) { mostrarToast(e.message, true); } }
 async function evExcluirProjeto(id) { if (!confirm('Excluir este projeto de vídeo?')) return; try { await api('/api/admin/estudio/projetos/' + id, { method: 'DELETE' }); renderEstudioVideo(); } catch (e) { mostrarToast(e.message, true); } }
