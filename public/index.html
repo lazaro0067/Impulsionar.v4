@@ -1257,6 +1257,27 @@
   .ev-msg .ev-feedback button { background:#fff; border-color:#e2e8f0; } .ev-fontes { font-size:11.5px; margin-top:6px; color:#64748b; }
   .ev-ag-linha { display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid #f1f5f9; flex-wrap:wrap; font-size:13px; } .ev-ag-linha b { cursor:pointer; } .ev-ag-linha small { color:#64748b; flex:1; } .ev-ag-st { color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; }
   .ev-passos-ig { font-size:13.5px; line-height:1.7; color:#334155; padding-left:20px; }
+
+  .ev-midia button.sb { right:34px; background:#7c3aed; font-size:13px; }
+  .ev-pista.media { height:46px; } .ev-bl.ovl { background:#6d28d9; padding-left:0; } .ev-bl.ovl img { height:100%; width:auto; max-width:45%; object-fit:cover; opacity:.7; pointer-events:none; }
+  .ev-layouts { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; } .ev-layouts button { display:flex; align-items:center; gap:10px; background:var(--e-sup2,#1e2533); border:1px solid var(--e-bd,#2a3244); color:var(--e-tx,#fff); border-radius:10px; padding:10px; cursor:pointer; text-align:left; font-size:12.5px; } .ev-layouts button:hover, .ev-layouts button.on { border-color:#a78bfa; }
+  .ev-layouts.mini { grid-template-columns:repeat(7,1fr); gap:4px; } .ev-layouts.mini button { padding:6px; justify-content:center; }
+  .ly { position:relative; display:block; width:22px; height:38px; border:2px solid #64748b; border-radius:4px; flex-shrink:0; background:#334155; } .ly b { position:absolute; background:#a78bfa; }
+  .ly-cima b { left:0; right:0; top:0; height:50%; } .ly-baixo b { left:0; right:0; bottom:0; height:50%; } .ly-esq b { left:0; top:0; bottom:0; width:50%; } .ly-dir b { right:0; top:0; bottom:0; width:50%; }
+  .ly-pip b { right:2px; top:3px; width:9px; height:13px; border-radius:2px; } .ly-circulo b { right:2px; top:3px; width:10px; height:10px; border-radius:50%; } .ly-cheio b { inset:0; }
+  .ev-filtro-ops { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:8px 0; } .ev-filtro-op { background:var(--e-sup2); border:1px solid var(--e-bd); border-radius:10px; padding:6px; font-size:11.5px; }
+  .ev-filtro-op img { width:100%; aspect-ratio:9/12; object-fit:cover; border-radius:6px; cursor:pointer; display:block; margin-bottom:4px; background:#000; } .ev-filtro-op b { display:block; font-size:12px; } .ev-filtro-op small { color:var(--e-sub); display:block; min-height:28px; }
+  .ev-filtro-op div { display:flex; gap:3px; margin-top:4px; } .ev-filtro-op button { flex:1; background:var(--e-bg); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:6px; font-size:10.5px; padding:4px 2px; cursor:pointer; } .ev-filtro-op button:hover { border-color:var(--e-az); }
+  .ev-filtros img { display:block; width:100%; aspect-ratio:1; object-fit:cover; border-radius:6px; margin-bottom:3px; }
+  .ev-logo-box { display:flex; align-items:center; gap:10px; background:#fff; border-radius:10px; padding:8px; margin:8px 0; } .ev-logo-box img { height:46px; max-width:120px; object-fit:contain; } .ev-logo-box span { color:#64748b; font-size:12px; flex:1; } .ev-logo-box .ev-btn { margin-left:auto; }
+  .ev-modos { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:10px; } .ev-modos button { background:var(--e-sup2,#1e2533); border:2px solid var(--e-bd,#2a3244); color:var(--e-tx,#e6eaf2); border-radius:12px; padding:12px; text-align:left; cursor:pointer; } .ev-modos button.on { border-color:#a78bfa; background:rgba(124,58,237,.15); } .ev-modos b { display:block; margin-bottom:4px; } .ev-modos small { color:var(--e-sub,#8f9ab0); font-size:11.5px; line-height:1.4; }
+  .ev-avatares { display:flex; gap:10px; flex-wrap:wrap; margin:6px 0; } .ev-av { position:relative; width:92px; cursor:pointer; text-align:center; font-size:11px; color:var(--e-sub,#8f9ab0); } .ev-av img { width:92px; height:110px; object-fit:cover; border-radius:10px; border:3px solid transparent; display:block; } .ev-av.on img { border-color:#a78bfa; } .ev-av span { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:3px; }
+  .ev-av button { position:absolute; top:4px; right:4px; width:20px; height:20px; border-radius:50%; border:none; background:rgba(0,0,0,.6); color:#fff; cursor:pointer; font-size:12px; }
+  .ev-av.novo { width:92px; height:110px; border:2px dashed var(--e-bd,#2a3244); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; } .ev-av.novo b { font-size:28px; color:#a78bfa; }
+  .ev-aviso { background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.4); border-radius:10px; padding:10px; font-size:12.5px; line-height:1.5; margin-top:8px; } .ev-aviso a { color:#fbbf24; }
+  .ev-modal input, .ev-modal select, .ev-modal textarea { background:#0d1017; color:#e6eaf2; border:1px solid #2a3244; border-radius:8px; padding:8px 10px; font-size:13px; width:100%; box-sizing:border-box; margin:0; font-family:inherit; }
+  .ev-criar .ev-dupla > * { flex:1; }
+  @media (max-width: 700px) { .ev-modos { grid-template-columns:1fr; } }
   @media (max-width: 1100px) { .ev-corpo { grid-template-columns:280px 1fr; } .ev-dir { display:none; } }
   @media (max-width: 760px) { #ev-editor { grid-template-rows:52px 1fr 200px; } .ev-corpo { grid-template-columns:1fr; grid-template-rows:1fr 200px; } .ev-esq { order:2; } .ev-titulo, .ev-salvo, .ev-sel { display:none; } .ev-pub { grid-template-columns:1fr; } }
 </style>
@@ -20034,10 +20055,8 @@ function evUid() { return Math.random().toString(36).slice(2, 9); }
 function evClipDur(c) { return Math.max(0.1, ((c.fim || 0) - (c.ini || 0)) / (c.vel || 1)); }
 function evInicios() { let s = 0; return ES.p.dados.clips.map(c => { const i = s; s += evClipDur(c); return i; }); }
 function evTotal() {
-  const d = ES.p.dados;
-  const clips = d.clips.reduce((s, c) => s + evClipDur(c), 0);
-  const tx = d.textos.reduce((m, x) => Math.max(m, x.ini + x.dur), 0);
-  return Math.max(clips, d.clips.length ? 0 : tx, 1);
+  const en = (ES.p.dados.extras || {}).encerramento;
+  return evTotalBase() + (en && en.ativo ? Math.max(1, Number(en.dur) || 2.5) : 0);
 }
 function evMidia(id) { return ES.p.dados.midias.find(m => m.id === id); }
 function evFmtT(t) { t = Math.max(0, t || 0); const m = Math.floor(t / 60), s = t - m * 60; return String(m).padStart(2, '0') + ':' + s.toFixed(1).padStart(4, '0'); }
@@ -20049,71 +20068,149 @@ function evCarregarFontes() {
   l.onload = () => { EV_FONTES.forEach(f => { try { document.fonts.load(`900 40px "${f}"`); document.fonts.load(`400 40px "${f}"`); } catch (e) {} }); setTimeout(() => ES && evDesenhar(), 800); };
 }
 
-// ---------- Elementos de mídia (um <video> por clipe para as transições) ----------
-function evElemento(c) {
+// ---------- Elementos de mídia (um <video> por clipe/sobreposição, para as transições) ----------
+function evElemento(c, chave) {
   ES.els = ES.els || {};
   const m = evMidia(c.midia); if (!m) return null;
-  let el = ES.els[c.id];
+  if (m.tipo === 'fundo') return { fundo: true };
+  const k = chave || ('c:' + c.id);
+  let el = ES.els[k];
   if (el && el.__url === m.url) return el;
-  if (m.tipo === 'imagem') { el = new Image(); el.src = m.url; el.onload = () => evDesenhar(); }
-  else { el = document.createElement('video'); el.src = m.url; el.preload = 'auto'; el.playsInline = true; el.crossOrigin = 'anonymous'; el.addEventListener('seeked', () => { if (!ES.tocando) evDesenhar(); }); el.addEventListener('loadeddata', () => { if (!ES.tocando) evDesenhar(); }); evLigarAudio(el, 'c:' + c.id); }
-  el.__url = m.url; ES.els[c.id] = el; return el;
+  if (m.tipo === 'imagem') { el = new Image(); el.onload = () => { if (ES && !ES.tocando) evDesenhar(); }; el.src = m.url; }
+  else {
+    el = document.createElement('video'); el.crossOrigin = 'anonymous'; el.preload = 'auto'; el.playsInline = true; el.src = m.url;
+    el.addEventListener('seeked', () => { if (ES && !ES.tocando) evDesenhar(); }); el.addEventListener('loadeddata', () => { if (ES && !ES.tocando) evDesenhar(); });
+    evRegistrarSom(el, k);
+  }
+  el.__url = m.url; ES.els[k] = el; return el;
 }
 function evElementoAudio(a) {
   ES.aud = ES.aud || {};
   const m = evMidia(a.midia); if (!m) return null;
   let el = ES.aud[a.id];
   if (el && el.__url === m.url) return el;
-  el = new Audio(); el.src = m.url; el.preload = 'auto'; el.crossOrigin = 'anonymous'; el.__url = m.url; ES.aud[a.id] = el; evLigarAudio(el, 'a:' + a.id);
+  el = new Audio(); el.crossOrigin = 'anonymous'; el.preload = 'auto'; el.src = m.url; el.__url = m.url; ES.aud[a.id] = el; evRegistrarSom(el, 'a:' + a.id);
   return el;
 }
-// Todo áudio passa por um AudioContext: assim controlamos volume/fade e gravamos na exportação.
+// Som: na prévia toca direto pelo próprio vídeo/áudio (o caminho mais confiável em
+// qualquer navegador). Na exportação o som é capturado (captureStream) e mixado.
+function evRegistrarSom(el, k) { ES.sons = ES.sons || {}; ES.sons[k] = el; if (ES.exportando) evCapturarSom(el, k); }
 function evAudioCtx() {
   if (!ES.actx) {
     try {
       ES.actx = new (window.AudioContext || window.webkitAudioContext)();
-      ES.mestre = ES.actx.createGain(); ES.mestre.connect(ES.actx.destination);
+      ES.mestre = ES.actx.createGain();
       ES.destGrav = ES.actx.createMediaStreamDestination(); ES.mestre.connect(ES.destGrav);
       ES.ganhos = {};
-      Object.entries(ES.pendentesAudio || {}).forEach(([k, el]) => evLigarAudio(el, k));
     } catch (e) { ES.actx = null; }
   }
   if (ES.actx && ES.actx.state === 'suspended') ES.actx.resume().catch(() => {});
   return ES.actx;
 }
-function evLigarAudio(el, chave) {
-  if (!ES.actx) { ES.pendentesAudio = ES.pendentesAudio || {}; ES.pendentesAudio[chave] = el; return; }
-  if (el.__ligado) return;
-  try { const src = ES.actx.createMediaElementSource(el); const g = ES.actx.createGain(); src.connect(g); g.connect(ES.mestre); ES.ganhos[chave] = g; el.__ligado = true; } catch (e) {}
+function evCapturarSom(el, k) {
+  if (!evAudioCtx() || el.__capturado) return;
+  ES.volAlvo = ES.volAlvo || {};
+  const ligar = tr => {
+    if (!tr || tr.kind !== 'audio' || tr.__ligado) return; tr.__ligado = true;
+    try { const src = ES.actx.createMediaStreamSource(new MediaStream([tr])); const g = ES.actx.createGain(); g.gain.value = ES.volAlvo[k] !== undefined ? ES.volAlvo[k] : 1; src.connect(g); g.connect(ES.mestre); ES.ganhos[k] = g; } catch (e) {}
+  };
+  try {
+    const s = el.captureStream ? el.captureStream() : el.mozCaptureStream ? el.mozCaptureStream() : null;
+    if (s) { el.__capturado = true; s.getAudioTracks().forEach(ligar); s.addEventListener('addtrack', e => ligar(e.track)); return; }
+  } catch (e) {}
+  try { // navegador sem captureStream: passa o som pelo WebAudio (e continua saindo na caixa de som)
+    const src = ES.actx.createMediaElementSource(el); const g = ES.actx.createGain(); src.connect(g); g.connect(ES.mestre); g.connect(ES.actx.destination); ES.ganhos[k] = g; el.__capturado = true; el.__viaGrafo = true;
+  } catch (e) {}
 }
-function evGanho(chave, v) { const g = ES.ganhos && ES.ganhos[chave]; if (g) g.gain.value = Math.max(0, v); }
+function evGanho(k, v) {
+  ES.volAlvo = ES.volAlvo || {}; ES.volAlvo[k] = v;
+  const el = ES.sons && ES.sons[k]; if (!el) return;
+  const g = ES.ganhos && ES.ganhos[k];
+  if (g) g.gain.value = Math.max(0, v);
+  if (el.__viaGrafo) { el.volume = 1; el.muted = false; return; }
+  if (ES.exportando && g) { el.muted = false; el.volume = 1; return; } // na gravação o volume é aplicado na mixagem
+  el.muted = v <= 0.001; el.volume = Math.max(0, Math.min(1, v));
+}
 
 // ---------- Desenho de um quadro ----------
 function evFiltroCss(c) {
-  const d = ES.p.dados, aj = d.ajustes || {};
+  const d = ES.p.dados, aj = Object.assign({}, d.ajustes || {}, (c && c.ajustes) || {});
   const base = EV_FILTROS[(c && c.filtro) || d.filtro || 'nenhum'] || EV_FILTROS.nenhum;
-  const extra = [aj.brilho && aj.brilho !== 100 ? `brightness(${aj.brilho / 100})` : '', aj.contraste && aj.contraste !== 100 ? `contrast(${aj.contraste / 100})` : '', aj.saturacao && aj.saturacao !== 100 ? `saturate(${aj.saturacao / 100})` : ''].filter(Boolean).join(' ');
+  const extra = [aj.brilho && aj.brilho !== 100 ? `brightness(${aj.brilho / 100})` : '', aj.contraste && aj.contraste !== 100 ? `contrast(${aj.contraste / 100})` : '', aj.saturacao && aj.saturacao !== 100 ? `saturate(${aj.saturacao / 100})` : '', aj.temperatura ? (aj.temperatura > 0 ? `sepia(${aj.temperatura / 100})` : `hue-rotate(${-aj.temperatura / 4}deg)`) : ''].filter(Boolean).join(' ');
   return (base[1] + ' ' + extra).trim() || 'none';
 }
-function evDesenharMidia(ctx, c, el, prog, alpha, dx, escalaExtra) {
-  const W = ES.W, H = ES.H;
-  const mw = el.videoWidth || el.naturalWidth || el.width, mh = el.videoHeight || el.naturalHeight || el.height;
-  if (!mw || !mh) return;
+// Fundos animados gerados (vídeos "motion design" criados pela IA, sem câmera).
+function evDesenharFundo(ctx, m, tempo, R) {
+  const c1 = (m.cores && m.cores[0]) || '#0b1329', c2 = (m.cores && m.cores[1]) || '#dc4c4c', k = ES.W / 1080;
+  const ang = tempo * 0.35;
+  const g = ctx.createLinearGradient(R.x + R.w * (0.5 - 0.5 * Math.cos(ang)), R.y, R.x + R.w * (0.5 + 0.5 * Math.cos(ang)), R.y + R.h);
+  g.addColorStop(0, c1); g.addColorStop(1, c2); ctx.fillStyle = g; ctx.fillRect(R.x, R.y, R.w, R.h);
+  ctx.save(); ctx.beginPath(); ctx.rect(R.x, R.y, R.w, R.h); ctx.clip();
+  const est = m.estilo || 'ondas';
+  if (est === 'ondas') { ctx.globalAlpha = 0.18; ctx.fillStyle = '#fff'; for (let i = 0; i < 3; i++) { ctx.beginPath(); const yb = R.y + R.h * (0.55 + i * 0.12); ctx.moveTo(R.x, yb); for (let x = 0; x <= R.w; x += 20) ctx.lineTo(R.x + x, yb + Math.sin(x / (160 * k) + tempo * (1.2 + i * 0.4) + i) * 40 * k); ctx.lineTo(R.x + R.w, R.y + R.h); ctx.lineTo(R.x, R.y + R.h); ctx.fill(); } }
+  else if (est === 'particulas') { ctx.fillStyle = '#fff'; for (let i = 0; i < 40; i++) { const sx = (Math.sin(i * 12.9898) * 43758.5453) % 1, sy = (Math.sin(i * 78.233) * 12345.678) % 1; const x = R.x + Math.abs(sx) * R.w, y = R.y + ((Math.abs(sy) * R.h - tempo * (20 + i % 7 * 12) * k) % R.h + R.h) % R.h; ctx.globalAlpha = 0.15 + (i % 5) * 0.06; ctx.beginPath(); ctx.arc(x, y, (2 + i % 4 * 2) * k, 0, 7); ctx.fill(); } }
+  else if (est === 'grade') { ctx.strokeStyle = 'rgba(255,255,255,.09)'; ctx.lineWidth = 2 * k; const p = 90 * k, off = (tempo * 30 * k) % p; for (let x = R.x - p + off; x < R.x + R.w; x += p) { ctx.beginPath(); ctx.moveTo(x, R.y); ctx.lineTo(x, R.y + R.h); ctx.stroke(); } for (let y = R.y - p + off; y < R.y + R.h; y += p) { ctx.beginPath(); ctx.moveTo(R.x, y); ctx.lineTo(R.x + R.w, y); ctx.stroke(); } }
+  else if (est === 'circulos') { for (let i = 0; i < 5; i++) { ctx.globalAlpha = 0.12; ctx.fillStyle = i % 2 ? '#fff' : c2; ctx.beginPath(); ctx.arc(R.x + R.w * (0.2 + 0.15 * i) + Math.sin(tempo * 0.6 + i) * 60 * k, R.y + R.h * (0.25 + 0.12 * i) + Math.cos(tempo * 0.5 + i) * 80 * k, (180 + i * 50) * k, 0, 7); ctx.fill(); } }
+  ctx.restore();
+}
+// Desenha a mídia de um clipe dentro de um retângulo (tela inteira, metade da tela, janelinha...).
+function evDesenharMidia(ctx, c, el, prog, alpha, dx, escalaExtra, R, forma) {
+  const W = ES.W, H = ES.H; R = R || { x: 0, y: 0, w: W, h: H };
   const m = evMidia(c.midia) || {};
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  if (forma === 'circulo') { ctx.arc(R.x + R.w / 2, R.y + R.h / 2, Math.min(R.w, R.h) / 2, 0, Math.PI * 2); }
+  else if (forma === 'arredondado') evRetArred(ctx, R.x, R.y, R.w, R.h, Math.min(R.w, R.h) * 0.08);
+  else ctx.rect(R.x, R.y, R.w, R.h);
+  ctx.clip();
+  if (m.tipo === 'fundo') { evDesenharFundo(ctx, m, prog * Math.max(1, (c.fim || 3) - (c.ini || 0)) + (c.ini || 0), R); ctx.restore(); return; }
+  const mw = el.videoWidth || el.naturalWidth || el.width, mh = el.videoHeight || el.naturalHeight || el.height;
+  if (!mw || !mh) { ctx.restore(); return; }
   const zoom = m.tipo === 'imagem' ? 1 + ((c.zoom || 1.08) - 1) * prog : (c.zoom || 1); // Ken Burns em imagens
   const z = zoom * (escalaExtra || 1);
-  ctx.save(); ctx.globalAlpha = alpha; ctx.filter = evFiltroCss(c);
-  const cobrir = Math.max(W / mw, H / mh), conter = Math.min(W / mw, H / mh);
+  ctx.filter = evFiltroCss(c);
+  const cobrir = Math.max(R.w / mw, R.h / mh), conter = Math.min(R.w / mw, R.h / mh);
+  const cx = R.x + R.w / 2 + dx + (c.px || 0) * R.w, cy = R.y + R.h / 2 + (c.py || 0) * R.h;
   if (c.ajuste === 'conter') {
     // fundo desfocado (padrão profissional para vídeos horizontais em 9:16)
     ctx.filter = evFiltroCss(c) + ' blur(40px) brightness(0.7)';
-    const s0 = cobrir * 1.1; ctx.drawImage(el, (W - mw * s0) / 2 + dx, (H - mh * s0) / 2, mw * s0, mh * s0);
+    const s0 = cobrir * 1.1; ctx.drawImage(el, R.x + R.w / 2 - mw * s0 / 2 + dx, R.y + R.h / 2 - mh * s0 / 2, mw * s0, mh * s0);
     ctx.filter = evFiltroCss(c);
-    const s1 = conter * z; ctx.drawImage(el, (W - mw * s1) / 2 + dx + (c.px || 0) * W, (H - mh * s1) / 2 + (c.py || 0) * H, mw * s1, mh * s1);
+    const s1 = conter * z; ctx.drawImage(el, cx - mw * s1 / 2, cy - mh * s1 / 2, mw * s1, mh * s1);
   } else {
-    const s = cobrir * z; ctx.drawImage(el, (W - mw * s) / 2 + dx + (c.px || 0) * W, (H - mh * s) / 2 + (c.py || 0) * H, mw * s, mh * s);
+    const s = cobrir * z; ctx.drawImage(el, cx - mw * s / 2, cy - mh * s / 2, mw * s, mh * s);
   }
   ctx.restore();
+}
+// Retângulos da tela dividida / janelinha.
+const EV_LAYOUTS = { cima: 'Tela dividida — em cima', baixo: 'Tela dividida — embaixo', esq: 'Lado a lado — esquerda', dir: 'Lado a lado — direita', pip: 'Janelinha (PiP)', circulo: 'Janelinha redonda', cheio: 'Tela cheia (cobertura / B-roll)' };
+function evRetSobreposicao(o) {
+  const W = ES.W, H = ES.H, L = o.layout || 'baixo';
+  if (L === 'cima') return { x: 0, y: 0, w: W, h: H / 2 };
+  if (L === 'baixo') return { x: 0, y: H / 2, w: W, h: H / 2 };
+  if (L === 'esq') return { x: 0, y: 0, w: W / 2, h: H };
+  if (L === 'dir') return { x: W / 2, y: 0, w: W / 2, h: H };
+  if (L === 'cheio') return { x: 0, y: 0, w: W, h: H };
+  const tam = o.tam || (L === 'circulo' ? 0.36 : 0.34), w = W * tam, h = L === 'circulo' ? w : w * (o.proporcao || 1.4);
+  return { x: (o.x !== undefined ? o.x : 0.6) * W, y: (o.y !== undefined ? o.y : 0.5) * H, w, h };
+}
+function evRetPrincipal(ativas) {
+  const W = ES.W, H = ES.H; const div = ativas.find(o => ['cima', 'baixo', 'esq', 'dir'].includes(o.layout));
+  if (!div) return { x: 0, y: 0, w: W, h: H };
+  return { cima: { x: 0, y: H / 2, w: W, h: H / 2 }, baixo: { x: 0, y: 0, w: W, h: H / 2 }, esq: { x: W / 2, y: 0, w: W / 2, h: H }, dir: { x: 0, y: 0, w: W / 2, h: H } }[div.layout];
+}
+function evImagemCache(url) {
+  ES.imgs = ES.imgs || {};
+  if (!url) return null;
+  if (!ES.imgs[url]) { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => { if (ES && !ES.tocando) evDesenhar(); }; i.src = url; ES.imgs[url] = i; }
+  return ES.imgs[url].complete && ES.imgs[url].naturalWidth ? ES.imgs[url] : null;
+}
+function evTotalBase() {
+  const d = ES.p.dados;
+  const clips = d.clips.reduce((s, c) => s + evClipDur(c), 0);
+  const tx = d.textos.reduce((m, x) => Math.max(m, x.ini + x.dur), 0);
+  return Math.max(clips, d.clips.length ? 0 : tx, 1);
 }
 function evQuebrar(ctx, texto, larg) {
   const linhas = [];
@@ -20170,30 +20267,85 @@ function evDesenharTexto(ctx, x, t) {
   ctx.restore();
 }
 function easeOut(p) { return 1 - Math.pow(1 - p, 3); }
+function evDesenharEncerramento(ctx, tl) {
+  const W = ES.W, H = ES.H, k = W / 1080, ex = ES.p.dados.extras || {}, en = ex.encerramento || {};
+  const c1 = en.cor1 || '#0b1329', c2 = en.cor2 || '#dc4c4c';
+  const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, c1); g.addColorStop(1, c2); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  evDesenharFundo(ctx, { cores: [c1, c2], estilo: 'particulas' }, tl + 3, { x: 0, y: 0, w: W, h: H });
+  const p = easeOut(Math.min(1, tl / 0.6));
+  const logo = ex.logo && ex.logo.url ? evImagemCache(ex.logo.url) : null;
+  let y = H * 0.4;
+  if (logo) {
+    const lw = W * 0.42 * (0.8 + 0.2 * p), lh = lw * logo.naturalHeight / logo.naturalWidth;
+    ctx.save(); ctx.globalAlpha = p; ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 30 * k;
+    ctx.fillStyle = '#fff'; evRetArred(ctx, W / 2 - lw / 2 - 30 * k, y - lh / 2 - 30 * k, lw + 60 * k, lh + 60 * k, 36 * k); ctx.fill();
+    ctx.shadowColor = 'transparent'; ctx.drawImage(logo, W / 2 - lw / 2, y - lh / 2, lw, lh); ctx.restore();
+    y += lh / 2 + 120 * k;
+  }
+  ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
+  const p2 = easeOut(Math.max(0, Math.min(1, (tl - 0.25) / 0.5)));
+  ctx.globalAlpha = p2; ctx.font = `900 ${76 * k}px Montserrat, Arial`; ctx.fillText(en.texto || 'Siga para mais conteúdos', W / 2, y + (1 - p2) * 40 * k);
+  const p3 = easeOut(Math.max(0, Math.min(1, (tl - 0.5) / 0.5)));
+  if (ex.marca || en.arroba) {
+    ctx.globalAlpha = p3; const arroba = en.arroba || ex.marca; ctx.font = `800 ${58 * k}px Montserrat, Arial`; const wl = ctx.measureText(arroba).width;
+    ctx.fillStyle = '#ffffff'; evRetArred(ctx, W / 2 - wl / 2 - 40 * k, y + 70 * k, wl + 80 * k, 100 * k, 50 * k); ctx.fill();
+    ctx.fillStyle = c1; ctx.fillText(arroba, W / 2, y + 122 * k);
+  }
+  if (en.cta) { ctx.globalAlpha = p3; ctx.fillStyle = '#fff'; ctx.font = `600 ${44 * k}px Poppins, Arial`; ctx.fillText(en.cta, W / 2, y + 250 * k); }
+  ctx.restore();
+}
 function evDesenhar(tForcado, exportando) {
   if (!ES || !ES.ctx) return;
   const ctx = ES.ctx, W = ES.W, H = ES.H, d = ES.p.dados, t = tForcado !== undefined ? tForcado : ES.t;
   exportando = exportando || !!ES.exportando; // guias de edição nunca entram no vídeo final
   ES.caixas = {};
-  ctx.save(); ctx.fillStyle = (d.extras && d.extras.corFundo) || '#000'; ctx.fillRect(0, 0, W, H); ctx.restore();
-  const ini = evInicios();
-  let idx = -1; for (let i = 0; i < d.clips.length; i++) if (t >= ini[i] && t < ini[i] + evClipDur(d.clips[i])) { idx = i; break; }
-  if (idx < 0 && d.clips.length && t >= ini[ini.length - 1]) idx = d.clips.length - 1;
-  if (idx >= 0) {
-    const c = d.clips[idx], el = evElemento(c), local = t - ini[idx], prog = local / evClipDur(c);
-    const tr = c.transicao || d.transicao || 'corte', TD = 0.4;
-    if (idx > 0 && tr !== 'corte' && local < TD) {
-      const pc = d.clips[idx - 1], pel = evElemento(pc), p = local / TD;
-      if (pel) evDesenharMidia(ctx, pc, pel, 1, 1, tr === 'deslizar' ? -p * W : 0, tr === 'zoom' ? 1 + p * 0.15 : 1);
-      if (el) evDesenharMidia(ctx, c, el, prog, tr === 'fade' || tr === 'zoom' ? p : 1, tr === 'deslizar' ? (1 - easeOut(p)) * W : 0, tr === 'zoom' ? 1.15 - 0.15 * p : 1);
-      if (tr === 'flash') { ctx.save(); ctx.globalAlpha = 1 - p; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
-    } else if (el) evDesenharMidia(ctx, c, el, prog, 1, 0, 1);
-  } else if (!d.clips.length && !exportando) {
-    ctx.save(); ctx.fillStyle = '#1b2233'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center'; ctx.font = `600 ${42 * W / 1080}px Poppins, Arial`; ctx.fillText('Adicione vídeos ou fotos', W / 2, H / 2 - 30); ctx.font = `400 ${30 * W / 1080}px Poppins, Arial`; ctx.fillText('em Mídia, à esquerda', W / 2, H / 2 + 30); ctx.restore();
+  const ex = d.extras || {}, k = W / 1080, base = evTotalBase();
+  ctx.save(); ctx.fillStyle = ex.corFundo || '#000'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  if (ex.encerramento && ex.encerramento.ativo && t >= base) {
+    evDesenharEncerramento(ctx, t - base);
+  } else {
+    const ativas = (d.sobreposicoes || []).filter(o => t >= o.ini && t < o.ini + o.dur && evMidia(o.midia));
+    const R = evRetPrincipal(ativas);
+    const ini = evInicios();
+    let idx = -1; for (let i = 0; i < d.clips.length; i++) if (t >= ini[i] && t < ini[i] + evClipDur(d.clips[i])) { idx = i; break; }
+    if (idx < 0 && d.clips.length && t >= ini[ini.length - 1]) idx = d.clips.length - 1;
+    if (idx >= 0) {
+      const c = d.clips[idx], el = evElemento(c), local = t - ini[idx], prog = local / evClipDur(c);
+      const tr = c.transicao || d.transicao || 'corte', TD = 0.4;
+      if (idx > 0 && tr !== 'corte' && local < TD) {
+        const pc = d.clips[idx - 1], pel = evElemento(pc), p = local / TD;
+        if (pel) evDesenharMidia(ctx, pc, pel, 1, 1, tr === 'deslizar' ? -p * R.w : 0, tr === 'zoom' ? 1 + p * 0.15 : 1, R);
+        if (el) evDesenharMidia(ctx, c, el, prog, tr === 'fade' || tr === 'zoom' ? p : 1, tr === 'deslizar' ? (1 - easeOut(p)) * R.w : 0, tr === 'zoom' ? 1.15 - 0.15 * p : 1, R);
+        if (tr === 'flash') { ctx.save(); ctx.globalAlpha = 1 - p; ctx.fillStyle = '#fff'; ctx.fillRect(R.x, R.y, R.w, R.h); ctx.restore(); }
+      } else if (el) evDesenharMidia(ctx, c, el, prog, 1, 0, 1, R);
+    } else if (!d.clips.length && !ativas.length && !exportando) {
+      ctx.save(); ctx.fillStyle = '#1b2233'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center'; ctx.font = `600 ${42 * k}px Poppins, Arial`; ctx.fillText('Adicione vídeos ou fotos', W / 2, H / 2 - 30); ctx.font = `400 ${30 * k}px Poppins, Arial`; ctx.fillText('em Mídia, à esquerda', W / 2, H / 2 + 30); ctx.restore();
+    }
+    // segundo vídeo: tela dividida, lado a lado, janelinha ou cobertura (B-roll)
+    ativas.sort((a, b) => (a.layout === 'cheio' ? 0 : 1) - (b.layout === 'cheio' ? 0 : 1)).forEach(o => {
+      const el = evElemento(o, 'o:' + o.id); if (!el) return;
+      const loc = t - o.ini, alpha = o.layout === 'cheio' ? Math.min(1, loc / 0.2, (o.dur - loc) / 0.2) : Math.min(1, loc / 0.25);
+      const Ro = evRetSobreposicao(o), forma = o.layout === 'circulo' ? 'circulo' : o.layout === 'pip' ? 'arredondado' : null;
+      if (forma) { ctx.save(); ctx.globalAlpha = alpha * 0.5; ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 30 * k; ctx.fillStyle = '#000'; ctx.beginPath(); if (forma === 'circulo') ctx.arc(Ro.x + Ro.w / 2, Ro.y + Ro.h / 2, Ro.w / 2, 0, 7); else evRetArred(ctx, Ro.x, Ro.y, Ro.w, Ro.h, Math.min(Ro.w, Ro.h) * 0.08); ctx.fill(); ctx.restore(); }
+      evDesenharMidia(ctx, o, el, loc / o.dur, alpha, 0, 1, Ro, forma);
+      if (o.borda !== false && forma) { ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = o.corBorda || '#ffffff'; ctx.lineWidth = 8 * k; ctx.beginPath(); if (forma === 'circulo') ctx.arc(Ro.x + Ro.w / 2, Ro.y + Ro.h / 2, Ro.w / 2, 0, 7); else evRetArred(ctx, Ro.x, Ro.y, Ro.w, Ro.h, Math.min(Ro.w, Ro.h) * 0.08); ctx.stroke(); ctx.restore(); }
+      if (['cima', 'baixo', 'esq', 'dir'].includes(o.layout) && o.borda !== false) { ctx.save(); ctx.fillStyle = o.corBorda || '#ffffff'; if (o.layout === 'cima' || o.layout === 'baixo') ctx.fillRect(0, H / 2 - 4 * k, W, 8 * k); else ctx.fillRect(W / 2 - 4 * k, 0, 8 * k, H); ctx.restore(); }
+    });
+    d.textos.slice().sort((a, b) => (a.camada || 0) - (b.camada || 0)).forEach(x => evDesenharTexto(ctx, x, t));
+    // logo da marca
+    if (ex.logo && ex.logo.url && ex.logo.ativo !== false) {
+      const img = evImagemCache(ex.logo.url);
+      if (img) {
+        const lw = W * (ex.logo.tam || 0.16), lh = lw * img.naturalHeight / img.naturalWidth, m = 40 * k, pos = ex.logo.pos || 'sd';
+        const x = pos.includes('e') && !pos.includes('d') ? m : W - lw - m;
+        const y = pos.startsWith('s') ? (ES.p.formato === '9:16' ? 270 * k : m) : H - lh - (ES.p.formato === '9:16' ? 470 * k : m);
+        ctx.save(); ctx.globalAlpha = ex.logo.opac !== undefined ? ex.logo.opac : 0.9;
+        if (ex.logo.fundo !== false) { ctx.fillStyle = 'rgba(255,255,255,.92)'; evRetArred(ctx, x - 12 * k, y - 12 * k, lw + 24 * k, lh + 24 * k, 16 * k); ctx.fill(); }
+        ctx.drawImage(img, x, y, lw, lh); ctx.restore();
+      }
+    }
+    if (ex.marca) { ctx.save(); ctx.globalAlpha = 0.75; ctx.fillStyle = '#fff'; ctx.font = `700 ${30 * k}px Montserrat, Arial`; ctx.textAlign = 'right'; ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 8 * k; ctx.fillText(ex.marca, W - 40 * k, H * (ES.p.formato === '9:16' ? 0.86 : 0.95)); ctx.restore(); }
   }
-  d.textos.slice().sort((a, b) => (a.camada || 0) - (b.camada || 0)).forEach(x => evDesenharTexto(ctx, x, t));
-  const ex = d.extras || {}, k = W / 1080;
-  if (ex.marca) { ctx.save(); ctx.globalAlpha = 0.7; ctx.fillStyle = '#fff'; ctx.font = `700 ${30 * k}px Montserrat, Arial`; ctx.textAlign = 'right'; ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 8 * k; ctx.fillText(ex.marca, W - 40 * k, H * (ES.p.formato === '9:16' ? 0.86 : 0.95)); ctx.restore(); }
   if (ex.barra) { const tot = evTotal(); ctx.save(); ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(0, 0, W, 10 * k); ctx.fillStyle = ex.corBarra || '#dc4c4c'; ctx.fillRect(0, 0, W * Math.min(1, t / tot), 10 * k); ctx.restore(); }
   if (!exportando) {
     if (ES.zonaSegura && ES.p.formato === '9:16') {
@@ -20202,10 +20354,22 @@ function evDesenhar(tForcado, exportando) {
     }
     const s = ES.sel;
     if (s && s.tipo === 'texto' && ES.caixas[s.id]) { const b = ES.caixas[s.id]; ctx.save(); ctx.strokeStyle = '#4f7cff'; ctx.lineWidth = 4 * k; ctx.setLineDash([14 * k, 10 * k]); ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.restore(); }
+    if (s && s.tipo === 'ovl') { const o = (d.sobreposicoes || []).find(x => x.id === s.id); if (o && t >= o.ini && t < o.ini + o.dur) { const b = evRetSobreposicao(o); ctx.save(); ctx.strokeStyle = '#4f7cff'; ctx.lineWidth = 5 * k; ctx.setLineDash([14 * k, 10 * k]); ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.restore(); } }
   }
 }
 
 // ---------- Reprodução ----------
+function evSincronizarVideo(el, ativo, quer, tocando, vel, k, vol) {
+  evGanho(k, ES.narrando ? 0 : vol);
+  if (ativo && tocando) {
+    el.playbackRate = vel || 1;
+    if (el.paused) { el.currentTime = quer; el.play().catch(() => {}); }
+    else if (Math.abs(el.currentTime - quer) > 0.3) el.currentTime = quer;
+  } else {
+    if (!el.paused) el.pause();
+    if (ativo && Math.abs(el.currentTime - quer) > 0.06) el.currentTime = quer;
+  }
+}
 function evSincronizar(t, tocando) {
   const d = ES.p.dados, ini = evInicios();
   d.clips.forEach((c, i) => {
@@ -20213,15 +20377,14 @@ function evSincronizar(t, tocando) {
     const el = evElemento(c); if (!el) return;
     const dur = evClipDur(c), ativo = t >= ini[i] - 0.05 && t < ini[i] + dur;
     const quer = (c.ini || 0) + Math.max(0, Math.min(dur, t - ini[i])) * (c.vel || 1);
-    evGanho('c:' + c.id, c.mudo || ES.narrando ? 0 : (c.vol !== undefined ? c.vol : 1));
-    if (ativo && tocando) {
-      el.playbackRate = c.vel || 1;
-      if (el.paused) { el.currentTime = quer; el.play().catch(() => {}); }
-      else if (Math.abs(el.currentTime - quer) > 0.3) el.currentTime = quer;
-    } else {
-      if (!el.paused) el.pause();
-      if (ativo || (t >= ini[i] + dur && t < ini[i] + dur + 0.45)) { const alvo = ativo ? quer : (c.fim || 0) - 0.05; if (Math.abs(el.currentTime - alvo) > 0.06) el.currentTime = alvo; }
-    }
+    evSincronizarVideo(el, ativo, quer, tocando, c.vel, 'c:' + c.id, c.mudo ? 0 : (c.vol !== undefined ? c.vol : 1));
+    if (!ativo && !tocando && t >= ini[i] + dur && t < ini[i] + dur + 0.45) { const alvo = (c.fim || 0) - 0.05; if (Math.abs(el.currentTime - alvo) > 0.06) el.currentTime = alvo; }
+  });
+  (d.sobreposicoes || []).forEach(o => {
+    const m = evMidia(o.midia); if (!m || m.tipo !== 'video') return;
+    const el = evElemento(o, 'o:' + o.id); if (!el) return;
+    const ativo = t >= o.ini && t < o.ini + o.dur, quer = (o.corte || 0) + Math.max(0, t - o.ini) * (o.vel || 1);
+    evSincronizarVideo(el, ativo, quer, tocando, o.vel, 'o:' + o.id, o.mudo ? 0 : (o.vol !== undefined ? o.vol : 0));
   });
   d.audios.forEach(a => {
     const el = evElementoAudio(a); if (!el) return;
@@ -20275,6 +20438,9 @@ async function evExportar() {
   if (!ES.p.dados.clips.length && !ES.p.dados.textos.length) return mostrarToast('Adicione mídia ou textos antes de exportar.', true);
   if (!window.MediaRecorder || !ES.canvas.captureStream) return mostrarToast('Seu navegador não exporta vídeo. Use o Chrome ou o Edge no computador.', true);
   evPausar(); evAudioCtx(); await evSalvar(true).catch(() => {});
+  // cria todos os elementos e captura o som de cada um para a mixagem do arquivo final
+  ES.t = 0; evSincronizar(0, false);
+  Object.entries(ES.sons || {}).forEach(([k, el]) => evCapturarSom(el, k));
   const mime = evMimeExport();
   const fluxo = ES.canvas.captureStream(30);
   if (ES.destGrav) ES.destGrav.stream.getAudioTracks().forEach(tr => fluxo.addTrack(tr));
@@ -20326,7 +20492,7 @@ async function evAbrirEditor(id) {
   let p;
   try { p = await api('/api/admin/estudio/projetos/' + id); } catch (e) { return mostrarToast(e.message, true); }
   const d = p.dados || {};
-  ['midias', 'clips', 'textos', 'audios'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
+  ['midias', 'clips', 'textos', 'audios', 'sobreposicoes'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
   d.extras = d.extras || {}; d.ajustes = d.ajustes || { brilho: 100, contraste: 100, saturacao: 100 }; d.filtro = d.filtro || 'nenhum'; d.transicao = d.transicao || 'corte';
   p.dados = d;
   const f = EV_FORMATOS[p.formato] || EV_FORMATOS['9:16'];
@@ -20428,6 +20594,11 @@ function evLigarCanvas() {
   const pos = e => { const b = cv.getBoundingClientRect(); return { x: (e.clientX - b.left) * ES.W / b.width, y: (e.clientY - b.top) * ES.H / b.height }; };
   cv.addEventListener('pointerdown', e => {
     const p = pos(e);
+    const ovl = (ES.p.dados.sobreposicoes || []).filter(o => ['pip', 'circulo'].includes(o.layout) && ES.t >= o.ini && ES.t < o.ini + o.dur).reverse().find(o => { const r = evRetSobreposicao(o); return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h; });
+    if (ovl && !Object.values(ES.caixas).some(b => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h)) {
+      evSelecionar('ovl', ovl.id); const r = evRetSobreposicao(ovl);
+      arr = { ovl, dx: p.x - r.x, dy: p.y - r.y, mexeu: false }; cv.setPointerCapture(e.pointerId); return;
+    }
     const alvo = Object.entries(ES.caixas).reverse().find(([, b]) => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h);
     if (alvo) {
       const x = ES.p.dados.textos.find(t => t.id === alvo[0]); if (!x) return;
@@ -20439,6 +20610,7 @@ function evLigarCanvas() {
   });
   cv.addEventListener('pointermove', e => {
     if (!arr) return; const p = pos(e);
+    if (arr.ovl) { arr.ovl.x = Math.max(0, Math.min(0.95, (p.x - arr.dx) / ES.W)); arr.ovl.y = Math.max(0, Math.min(0.95, (p.y - arr.dy) / ES.H)); arr.mexeu = true; evDesenhar(); return; }
     arr.x.x = Math.max(0.05, Math.min(0.95, (p.x - arr.dx) / ES.W)); arr.x.y = Math.max(0.04, Math.min(0.96, (p.y - arr.dy) / ES.H));
     if (Math.abs(arr.x.x - 0.5) < 0.015) arr.x.x = 0.5; // ímã no centro
     arr.mexeu = true; evDesenhar();
@@ -20479,7 +20651,7 @@ function evDesenharLinha() {
   const d = ES.p.dados, px = ES.pxs, tot = evTotal(), larg = Math.max(tot + 10, 30) * px, ini = evInicios(), s = ES.sel || {};
   const regua = []; const passo = px < 30 ? 5 : px < 70 ? 2 : 1;
   for (let x = 0; x <= tot + 10; x += passo) regua.push(`<span style="left:${x * px}px">${x % 60 === 0 && x ? Math.floor(x / 60) + 'min' : x + 's'}</span>`);
-  const fxT = evFaixas(d.textos), fxA = evFaixas(d.audios);
+  const fxT = evFaixas(d.textos), fxA = evFaixas(d.audios), fxO = evFaixas(d.sobreposicoes || []);
   const bloco = (tipo, x, cls, conteudo, left, width) => `<div class="ev-bl ${cls} ${s.tipo === tipo && s.id === x.id ? 'sel' : ''}" style="left:${left}px;width:${Math.max(18, width)}px" data-tipo="${tipo}" data-id="${x.id}" onpointerdown="evPegarBloco(event,'${tipo}','${x.id}')">${conteudo}<i class="ev-al esq" data-lado="esq"></i><i class="ev-al dir" data-lado="dir"></i></div>`;
   document.getElementById('ev-linha-int').innerHTML = `
     <div class="ev-regua" style="width:${larg}px" onpointerdown="evClicarRegua(event)">${regua.join('')}</div>
@@ -20487,6 +20659,7 @@ function evDesenharLinha() {
       ${d.clips.map((c, i) => { const m = evMidia(c.midia) || {}; return bloco('clip', c, 'clip' + (m.tipo === 'imagem' ? ' img' : ''), `${m.thumb ? `<img src="${m.thumb}">` : ''}<span>${escapeHtml(m.nome || 'clipe')}${c.vel && c.vel !== 1 ? ' · ' + c.vel + 'x' : ''}</span>${i > 0 && (c.transicao || d.transicao) !== 'corte' ? '<b class="ev-trans" title="Transição">⟷</b>' : ''}`, ini[i] * px, evClipDur(c) * px); }).join('') || '<div class="ev-vazio-pista">Arraste ou adicione vídeos e fotos aqui</div>'}
     </div></div>
     ${(fxT.length ? fxT : [{ itens: [] }]).map((f, k) => `<div class="ev-pista curta"><div class="ev-rot">${k ? '' : '🔤 Texto'}</div><div class="ev-trilho" style="width:${larg}px">${f.itens.map(x => bloco('texto', x, 'texto e-' + (x.estilo || 'apoio'), `<span>${escapeHtml(x.texto || '…')}</span>`, x.ini * px, x.dur * px)).join('')}</div></div>`).join('')}
+    ${(fxO.length ? fxO : [{ itens: [] }]).map((f, k) => `<div class="ev-pista media"><div class="ev-rot">${k ? '' : '🧩 2º vídeo'}</div><div class="ev-trilho" style="width:${larg}px">${f.itens.map(o => { const m = evMidia(o.midia) || {}; return bloco('ovl', o, 'ovl', `${m.thumb ? `<img src="${m.thumb}">` : ''}<span>${escapeHtml((EV_LAYOUTS[o.layout] || '').split(' — ')[0])} · ${escapeHtml(m.nome || '')}</span>`, o.ini * px, o.dur * px); }).join('') || (k ? '' : '<div class="ev-vazio-pista">Tela dividida, janelinha ou cobertura: use ⧉ na mídia</div>')}</div></div>`).join('')}
     ${(fxA.length ? fxA : [{ itens: [] }]).map((f, k) => `<div class="ev-pista curta"><div class="ev-rot">${k ? '' : '🎵 Áudio'}</div><div class="ev-trilho" style="width:${larg}px">${f.itens.map(a => bloco('audio', a, 'audio', `<span>🎵 ${escapeHtml((evMidia(a.midia) || {}).nome || 'áudio')}</span>`, a.ini * px, a.dur * px)).join('')}</div></div>`).join('')}
     <div class="ev-cabeca" id="ev-cabeca"><i></i></div>`;
   evAtualizarCabeca();
@@ -20502,11 +20675,11 @@ function evClicarRegua(e) {
 function evPegarBloco(e, tipo, id) {
   e.stopPropagation();
   const d = ES.p.dados, lado = e.target.dataset ? e.target.dataset.lado : null;
-  const lista = tipo === 'clip' ? d.clips : tipo === 'texto' ? d.textos : d.audios;
+  const lista = evLista(tipo);
   const x = lista.find(i => i.id === id); if (!x) return;
   evSelecionar(tipo, id, true);
   const x0 = e.clientX, orig = JSON.parse(JSON.stringify(x)), px = ES.pxs, antes = JSON.stringify(d); let mexeu = false;
-  const m = tipo === 'clip' ? evMidia(x.midia) : tipo === 'audio' ? evMidia(x.midia) : null;
+  const m = tipo === 'texto' ? null : evMidia(x.midia);
   const durMidia = m && m.tipo !== 'imagem' ? (m.duracao || 9999) : 9999;
   const mover = ev => {
     const dt = (ev.clientX - x0) / px; if (Math.abs(ev.clientX - x0) > 3) mexeu = true; if (!mexeu) return;
@@ -20520,8 +20693,8 @@ function evPegarBloco(e, tipo, id) {
         const at = lista.indexOf(x); if (alvo !== at) { lista.splice(at, 1); lista.splice(alvo, 0, x); }
       }
     } else {
-      if (lado === 'esq') { const novo = Math.max(0, Math.min(orig.ini + orig.dur - 0.2, orig.ini + dt)); x.dur = orig.dur - (novo - orig.ini); if (tipo === 'audio') x.corte = Math.max(0, (orig.corte || 0) + (novo - orig.ini)); x.ini = novo; }
-      else if (lado === 'dir') x.dur = Math.max(0.2, Math.min(tipo === 'audio' ? durMidia - (x.corte || 0) : 600, orig.dur + dt));
+      if (lado === 'esq') { const novo = Math.max(0, Math.min(orig.ini + orig.dur - 0.2, orig.ini + dt)); x.dur = orig.dur - (novo - orig.ini); if (tipo === 'audio' || tipo === 'ovl') x.corte = Math.max(0, (orig.corte || 0) + (novo - orig.ini)); x.ini = novo; }
+      else if (lado === 'dir') x.dur = Math.max(0.2, Math.min(tipo === 'audio' || tipo === 'ovl' ? durMidia - (x.corte || 0) : 600, orig.dur + dt));
       else { x.ini = Math.max(0, orig.ini + dt); const pc = [0, ES.t, ...evInicios()].find(v => Math.abs(v - x.ini) < 6 / px * 1.5); if (pc !== undefined) x.ini = pc; }
     }
     evDesenharLinha(); evDesenhar();
@@ -20534,13 +20707,15 @@ function evSelecionar(tipo, id, semLinha) {
   if (!semLinha) evDesenharLinha(); else document.querySelectorAll('.ev-bl').forEach(b => b.classList.toggle('sel', b.dataset.tipo === tipo && b.dataset.id === id));
   evDesenharProps(); evDesenhar();
 }
-function evItemSel() { const s = ES.sel; if (!s) return null; const d = ES.p.dados; return (s.tipo === 'clip' ? d.clips : s.tipo === 'texto' ? d.textos : d.audios).find(x => x.id === s.id) || null; }
+const EV_CHAVES = { clip: 'clips', texto: 'textos', audio: 'audios', ovl: 'sobreposicoes' };
+function evLista(tipo) { const d = ES.p.dados, k = EV_CHAVES[tipo] || 'textos'; if (!Array.isArray(d[k])) d[k] = []; return d[k]; }
+function evItemSel() { const s = ES.sel; if (!s) return null; return evLista(s.tipo).find(x => x.id === s.id) || null; }
 function evDividir() {
   const d = ES.p.dados, t = ES.t;
   if (ES.sel && ES.sel.tipo !== 'clip') {
     const x = evItemSel(); if (!x || t <= x.ini + 0.1 || t >= x.ini + x.dur - 0.1) return mostrarToast('Coloque o cursor no meio do item para dividir.', true);
-    const novo = Object.assign(JSON.parse(JSON.stringify(x)), { id: evUid(), ini: t, dur: x.ini + x.dur - t }); if (ES.sel.tipo === 'audio') novo.corte = (x.corte || 0) + (t - x.ini);
-    x.dur = t - x.ini; (ES.sel.tipo === 'texto' ? d.textos : d.audios).push(novo); evMudou(); return;
+    const novo = Object.assign(JSON.parse(JSON.stringify(x)), { id: evUid(), ini: t, dur: x.ini + x.dur - t }); if (ES.sel.tipo === 'audio' || ES.sel.tipo === 'ovl') novo.corte = (x.corte || 0) + (t - x.ini) * (x.vel || 1);
+    x.dur = t - x.ini; evLista(ES.sel.tipo).push(novo); evMudou(); return;
   }
   const ini = evInicios(); const i = d.clips.findIndex((c, k) => t > ini[k] + 0.1 && t < ini[k] + evClipDur(c) - 0.1);
   if (i < 0) return mostrarToast('Coloque o cursor no meio de um clipe para dividir.', true);
@@ -20550,13 +20725,13 @@ function evDividir() {
 }
 function evExcluirSel() {
   const s = ES.sel; if (!s) return; const d = ES.p.dados;
-  const k = s.tipo === 'clip' ? 'clips' : s.tipo === 'texto' ? 'textos' : 'audios';
+  const k = EV_CHAVES[s.tipo];
   d[k] = d[k].filter(x => x.id !== s.id); ES.sel = null; evMudou(); evDesenharProps();
 }
 function evDuplicarSel() {
   const x = evItemSel(); if (!x) return; const d = ES.p.dados, s = ES.sel;
   const novo = Object.assign(JSON.parse(JSON.stringify(x)), { id: evUid() });
-  if (s.tipo === 'clip') d.clips.splice(d.clips.indexOf(x) + 1, 0, novo); else { novo.ini = x.ini + x.dur; (s.tipo === 'texto' ? d.textos : d.audios).push(novo); }
+  if (s.tipo === 'clip') d.clips.splice(d.clips.indexOf(x) + 1, 0, novo); else { novo.ini = x.ini + x.dur; evLista(s.tipo).push(novo); }
   ES.sel = { tipo: s.tipo, id: novo.id }; evMudou(); evDesenharProps();
 }
 
@@ -20569,8 +20744,9 @@ function evPainel(qual) {
     el.innerHTML = `<h4>Mídia do projeto</h4>
       <label class="ev-up"><input type="file" multiple accept="video/*,image/*,audio/*" hidden onchange="evSubir(this.files)"><b>⬆️ Subir vídeos, fotos ou áudios</b><small>Do computador ou do celular. Até 1GB por arquivo.</small></label>
       <div id="ev-up-prog"></div>
-      <div class="ev-midias">${d.midias.filter(m => m.tipo !== 'audio').map(m => `<div class="ev-midia" title="${escapeHtml(m.nome)}">${m.thumb ? `<img src="${m.thumb}">` : `<div class="ev-midia-ico">${m.tipo === 'video' ? '🎬' : '🖼️'}</div>`}<span>${m.tipo === 'video' ? evFmtT(m.duracao) : 'foto'}</span><button onclick="evAdicionarClipe('${m.id}')" title="Adicionar na linha do tempo">＋</button><button class="x" onclick="evRemoverMidia('${m.id}')" title="Remover do projeto">×</button></div>`).join('') || '<div class="ev-vazio">Nenhuma mídia ainda.</div>'}</div>
+      <div class="ev-midias">${d.midias.filter(m => m.tipo !== 'audio').map(m => `<div class="ev-midia" title="${escapeHtml(m.nome)}">${m.tipo === 'fundo' ? `<div class="ev-midia-ico" style="background:linear-gradient(135deg,${(m.cores || [])[0] || '#0b1329'},${(m.cores || [])[1] || '#dc4c4c'})">✨</div>` : m.thumb ? `<img src="${m.thumb}">` : `<div class="ev-midia-ico">${m.tipo === 'video' ? '🎬' : '🖼️'}</div>`}<span>${m.tipo === 'video' ? evFmtT(m.duracao) : m.tipo === 'fundo' ? 'cena animada' : 'foto'}</span><button onclick="evAdicionarClipe('${m.id}')" title="Adicionar na linha do tempo">＋</button><button class="sb" onclick="evEscolherSobreposicao('${m.id}')" title="Usar como 2º vídeo: tela dividida, janelinha ou cobertura">⧉</button><button class="x" onclick="evRemoverMidia('${m.id}')" title="Remover do projeto">×</button></div>`).join('') || '<div class="ev-vazio">Nenhuma mídia ainda.</div>'}</div>
       ${d.midias.some(m => m.tipo !== 'audio') ? `<button class="ev-btn" onclick="evAdicionarTodas()">＋ Colocar todas na linha do tempo</button>` : ''}
+      <div class="ev-dica-fixa">🧩 <b>Dois vídeos juntos:</b> clique em ⧉ numa mídia para usar como tela dividida (em cima/embaixo), lado a lado, janelinha ou cobertura (B-roll).</div>
       <div class="ev-dica-fixa">💡 Dica de edição viral: cortes curtos (1,5 a 3 s), o melhor momento primeiro e nada de introdução.</div>`;
   } else if (qual === 'texto') {
     el.innerHTML = `<h4>Adicionar texto</h4><div class="ev-estilos">${Object.entries(EV_ESTILOS).filter(([k]) => k !== 'emoji').map(([k, e]) => `<button class="ev-estilo e-${k}" onclick="evAdicionarTexto('${k}')"><span style="font-family:'${e.fonte}';font-weight:${e.peso};color:${e.cor};${e.fundo ? 'background:' + e.fundo + ';padding:2px 8px;border-radius:6px;' : ''}${e.contorno ? '-webkit-text-stroke:1px #000;' : ''}">${e.maiusc ? e.rot.toUpperCase() : e.rot}</span></button>`).join('')}</div>
@@ -20589,22 +20765,9 @@ function evPainel(qual) {
       <h4>Volume do som original</h4>
       <div class="ev-sub">Ajuste por clipe (selecione o clipe na linha do tempo) ou para todos:</div>
       <div class="ev-linha-btn"><button class="ev-btn" onclick="evVolumeTodos(1)">🔊 100%</button><button class="ev-btn" onclick="evVolumeTodos(0.3)">🔉 30%</button><button class="ev-btn" onclick="evVolumeTodos(0)">🔇 Mudo</button></div>`;
-  } else if (qual === 'filtros') {
-    const aj = d.ajustes;
-    el.innerHTML = `<h4>Filtro do vídeo</h4><div class="ev-filtros">${Object.entries(EV_FILTROS).map(([k, f]) => `<button class="${d.filtro === k ? 'on' : ''}" onclick="ES.p.dados.filtro='${k}'; evMudou(); evPainel('filtros')"><i style="filter:${f[1] || 'none'}"></i>${f[0]}</button>`).join('')}</div>
-      <h4>Ajustes</h4>${[['brilho', 'Brilho'], ['contraste', 'Contraste'], ['saturacao', 'Saturação']].map(([k, r]) => `<label class="ev-slider">${r} <b id="ev-aj-${k}">${aj[k] || 100}%</b><input type="range" min="50" max="150" value="${aj[k] || 100}" oninput="ES.p.dados.ajustes.${k}=Number(this.value); document.getElementById('ev-aj-${k}').textContent=this.value+'%'; evDesenhar()" onchange="evMudou(false)"></label>`).join('')}
-      <h4>Transição padrão entre clipes</h4><div class="ev-chips">${Object.entries(EV_TRANS).map(([k, r]) => `<button class="${d.transicao === k ? 'on' : ''}" onclick="ES.p.dados.transicao='${k}'; ES.p.dados.clips.forEach(c=>delete c.transicao); evMudou(); evPainel('filtros')">${r}</button>`).join('')}</div>`;
-  } else if (qual === 'elementos') {
-    const ex = d.extras;
-    const emojis = ['🔥', '🚀', '✅', '❌', '⚠️', '💡', '👇', '👉', '📈', '📉', '💰', '🎯', '⭐', '❤️', '😱', '🤯', '👏', '💪', '🧠', '⏰', '📌', '🏆', '🍺', '🚚'];
-    el.innerHTML = `<h4>Emojis e figurinhas</h4><div class="ev-emojis">${emojis.map(e => `<button onclick="evAdicionarTexto('emoji','${e}')">${e}</button>`).join('')}</div>
-      <h4>Elementos da marca</h4>
-      <label class="ev-chk2"><input type="checkbox" ${ex.barra ? 'checked' : ''} onchange="ES.p.dados.extras.barra=this.checked; evMudou(false); evDesenhar()"> Barra de progresso no topo (aumenta retenção)</label>
-      <label>Cor da barra <input type="color" value="${ex.corBarra || '#dc4c4c'}" onchange="ES.p.dados.extras.corBarra=this.value; evMudou(false); evDesenhar()"></label>
-      <label>Marca d'água / @ <input value="${escapeHtml(ex.marca || '')}" placeholder="@impulsionarv4" onchange="ES.p.dados.extras.marca=this.value; evMudou(false); evDesenhar()"></label>
-      <label>Cor de fundo <input type="color" value="${ex.corFundo || '#000000'}" onchange="ES.p.dados.extras.corFundo=this.value; evMudou(false); evDesenhar()"></label>
-      <h4>Modelos prontos</h4><div class="ev-chips col">${EV_MODELOS.map((m, i) => `<button onclick="evAplicarModelo(${i})">${m.ico} ${m.nome}</button>`).join('')}</div>`;
-  } else if (qual === 'ia') evPainelIa();
+  } else if (qual === 'filtros') evPainelFiltros();
+  else if (qual === 'elementos') evPainelElementos();
+  else if (qual === 'ia') evPainelIa();
 }
 
 // ---------- Mídia ----------
@@ -20774,6 +20937,8 @@ function evDesenharProps() {
       ${evCampo('Posição', `<div class="ev-chips">${[['Topo', 0.2], ['Meio', 0.5], ['Baixo', 0.72]].map(([r, v]) => `<button onclick="evSet('y', ${v}); evSet('x', 0.5); evMudou(false)">${r}</button>`).join('')}</div>`)}
       <div class="ev-sub">Arraste o texto direto no vídeo para posicionar.</div>
       <div class="ev-linha-btn"><button class="ev-btn" onclick="evDuplicarSel()">⧉ Duplicar</button><button class="ev-btn perigo" onclick="evExcluirSel()">🗑️ Excluir</button></div>`;
+  } else if (s.tipo === 'ovl') {
+    el.innerHTML = evPropsSobreposicao(x);
   } else if (s.tipo === 'audio') {
     const m = evMidia(x.midia) || {};
     el.innerHTML = `<h4>🎵 Áudio <small>${escapeHtml(m.nome || '')}</small></h4>
@@ -20824,7 +20989,11 @@ function evPainelIa() {
       <button onclick="evAbrirAnalise()">📊 Análise viral</button>
       <button onclick="evIaIdeias()">💡 Ideias de posts</button>
       <button onclick="evIaCapa()">🖼️ Texto da capa</button>
+      <button onclick="evPainel('filtros'); evFiltroIa()">🎨 Filtro com IA</button>
+      <button onclick="evUsarPessoaDoVideo()">📸 Pessoa → avatar</button>
     </div>
+    <button class="ev-btn ia grande" style="background:linear-gradient(135deg,#dc4c4c,#7c3aed);" onclick="evAbrirCriarVideoIa()">🎬 Criar vídeo novo com IA</button>
+    <div class="ev-sub">A IA cria um vídeo do zero: com uma pessoa falando (foto salva), animado com a sua marca, ou com as mídias deste projeto.</div>
     <div id="ev-ia-saida"></div>`;
   if (typeof mtStatusIa === 'function') mtStatusIa('ev-ia-status');
 }
@@ -20886,6 +21055,9 @@ async function evIaEditar() {
   if (EV_TRANS[plano.transicao]) { d.transicao = plano.transicao; d.clips.forEach(c => delete c.transicao); }
   d.audios.forEach(a => { a.vol = Math.max(0.1, Math.min(1, Number(plano.musica_volume) || a.vol)); a.ini = 0; a.dur = Math.min((evMidia(a.midia) || {}).duracao || 999, evTotal()); });
   d.extras.barra = true;
+  // correção de cor automática (luz, contraste, cor) pela análise da imagem
+  ES.ultimoEstado = JSON.stringify(d); evIrPara(0.3);
+  const auto = evFiltroAutomatico(true); if (auto) d.ajustes = Object.assign({ brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 }, auto.opcoes[0].ajustes);
   if (plano.legenda && !ES.p.legenda) ES.p.legenda = plano.legenda;
   if (Array.isArray(plano.hashtags) && plano.hashtags.length && !ES.p.hashtags) ES.p.hashtags = plano.hashtags.join(' ');
   ES.ultimoEstado = JSON.stringify(d); evMudou(true, true); evIrPara(0); evDesenharProps();
@@ -21037,12 +21209,290 @@ async function evCancelarAgendamento(id) {
   catch (e) { mostrarToast(e.message, true); }
 }
 
+
+// ---------- 2º vídeo: tela dividida, janelinha e cobertura ----------
+function evAdicionarSobreposicao(mid, layout) {
+  const m = evMidia(mid); if (!m) return;
+  const tot = evTotalBase(), ini = Math.min(ES.t, Math.max(0, tot - 1));
+  const dur = m.tipo === 'video' ? Math.min(m.duracao || 5, Math.max(1, tot - ini)) : Math.min(4, Math.max(1, tot - ini));
+  const o = { id: evUid(), midia: mid, ini, dur, corte: 0, vel: 1, vol: 0, layout: layout || 'baixo', ajuste: 'cobrir', zoom: 1 };
+  ES.p.dados.sobreposicoes.push(o); ES.sel = { tipo: 'ovl', id: o.id };
+  evMudou(); evDesenharProps(); evIrPara(ini + 0.05);
+  mostrarToast('2º vídeo adicionado. Escolha o modo (tela dividida, janelinha…) no painel da direita.');
+}
+function evEscolherSobreposicao(mid) {
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal">
+    <div class="ev-modal-cab"><h3>Como usar esta mídia junto do vídeo principal?</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <div class="ev-layouts">${Object.entries(EV_LAYOUTS).map(([k, r]) => `<button onclick="document.getElementById('ev-modal').innerHTML=''; evAdicionarSobreposicao('${mid}','${k}')"><i class="ly ly-${k}"><b></b></i>${r}</button>`).join('')}</div>
+    <div class="ev-sub">Começa no ponto onde está o cursor da linha do tempo. Depois você arrasta e ajusta a duração na trilha "2º vídeo".</div></div></div>`;
+}
+function evPropsSobreposicao(x) {
+  const m = evMidia(x.midia) || {};
+  return `<h4>🧩 2º vídeo <small>${escapeHtml(m.nome || '')}</small></h4>
+    ${evCampo('Modo', `<div class="ev-layouts mini">${Object.entries(EV_LAYOUTS).map(([k, r]) => `<button class="${x.layout === k ? 'on' : ''}" title="${r}" onclick="evSet('layout','${k}', true); evMudou(false); evDesenharProps()"><i class="ly ly-${k}"><b></b></i></button>`).join('')}</div><div class="ev-sub">${escapeHtml(EV_LAYOUTS[x.layout] || '')}</div>`)}
+    ${['pip', 'circulo'].includes(x.layout) ? evCampo(`Tamanho <b>${Math.round((x.tam || 0.34) * 100)}%</b>`, `<input type="range" min="0.15" max="0.7" step="0.01" value="${x.tam || (x.layout === 'circulo' ? 0.36 : 0.34)}" oninput="evSet('tam', Number(this.value)); this.parentElement.querySelector('b').textContent=Math.round(this.value*100)+'%'" onchange="evMudou(false)">`) +
+      evCampo('Posição rápida', `<div class="ev-chips">${[['↖', 0.05, 0.14], ['↗', 0.62, 0.14], ['↙', 0.05, 0.6], ['↘', 0.62, 0.6]].map(([r, px, py]) => `<button onclick="evSet('x', ${px}); evSet('y', ${py}); evMudou(false)">${r}</button>`).join('')}</div><div class="ev-sub">Ou arraste a janelinha direto no vídeo.</div>`) : ''}
+    ${evCampo('Começa em / dura (s)', `<div class="ev-dupla"><input type="number" step="0.1" min="0" value="${x.ini.toFixed(1)}" onchange="evSet('ini', Math.max(0, Number(this.value)), true); evMudou(false)"><input type="number" step="0.1" min="0.2" value="${x.dur.toFixed(1)}" onchange="evSet('dur', Math.max(0.2, Number(this.value)), true); evMudou(false)"></div>`)}
+    ${m.tipo === 'video' ? evCampo('Começar o vídeo a partir de (s)', `<input type="number" step="0.1" min="0" value="${(x.corte || 0).toFixed(1)}" onchange="evSet('corte', Math.max(0, Number(this.value))); evMudou(false)">`) : ''}
+    ${m.tipo === 'video' ? evCampo(`Volume do 2º vídeo <b>${Math.round((x.vol || 0) * 100)}%</b>`, `<input type="range" min="0" max="1.5" step="0.05" value="${x.vol || 0}" oninput="evSet('vol', Number(this.value)); this.parentElement.querySelector('b').textContent=Math.round(this.value*100)+'%'" onchange="evMudou(false)">`) : ''}
+    ${evCampo('Zoom', `<input type="range" min="1" max="1.8" step="0.01" value="${x.zoom || 1}" oninput="evSet('zoom', Number(this.value))" onchange="evMudou(false)">`)}
+    ${evCampo('Enquadrar (horizontal / vertical)', `<div class="ev-dupla"><input type="range" min="-0.5" max="0.5" step="0.01" value="${x.px || 0}" oninput="evSet('px', Number(this.value))" onchange="evMudou(false)"><input type="range" min="-0.5" max="0.5" step="0.01" value="${x.py || 0}" oninput="evSet('py', Number(this.value))" onchange="evMudou(false)"></div>`)}
+    <label class="ev-chk2"><input type="checkbox" ${x.borda !== false ? 'checked' : ''} onchange="evSet('borda', this.checked); evMudou(false)"> Borda / linha divisória</label>
+    ${evCampo('Cor da borda', `<input type="color" value="${x.corBorda || '#ffffff'}" oninput="evSet('corBorda', this.value)" onchange="evMudou(false)">`)}
+    ${evCampo('Filtro', `<select onchange="evSet('filtro', this.value || null); evMudou(false)"><option value="">Igual ao vídeo</option>${Object.entries(EV_FILTROS).map(([k, f]) => `<option value="${k}" ${x.filtro === k ? 'selected' : ''}>${f[0]}</option>`).join('')}</select>`)}
+    <div class="ev-linha-btn"><button class="ev-btn" onclick="evDividir()">✂️ Dividir</button><button class="ev-btn" onclick="evDuplicarSel()">⧉ Duplicar</button><button class="ev-btn perigo" onclick="evExcluirSel()">🗑️</button></div>`;
+}
+
+// ---------- Filtros: automático (análise da imagem), sugestão da IA e escolha com prévia ----------
+function evQuadroAtual(larg) {
+  // pega o quadro do clipe principal no tempo atual, sem textos
+  const d = ES.p.dados, ini = evInicios(); let i = d.clips.findIndex((c, k) => ES.t >= ini[k] && ES.t < ini[k] + evClipDur(c)); if (i < 0) i = 0;
+  const c = d.clips[i]; if (!c) return null; const el = evElemento(c); if (!el || el.fundo) return null;
+  const mw = el.videoWidth || el.naturalWidth, mh = el.videoHeight || el.naturalHeight; if (!mw) return null;
+  const cv = document.createElement('canvas'); const r = ES.H / ES.W; cv.width = larg; cv.height = Math.round(larg * r);
+  const g = cv.getContext('2d'); const s = Math.max(cv.width / mw, cv.height / mh); g.drawImage(el, (cv.width - mw * s) / 2, (cv.height - mh * s) / 2, mw * s, mh * s);
+  return { cv, clip: c };
+}
+function evAnalisarCor(cv) {
+  const px = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let L = 0, L2 = 0, S = 0, R = 0, B = 0, n = 0;
+  for (let i = 0; i < px.length; i += 16) { const r = px[i] / 255, g = px[i + 1] / 255, b = px[i + 2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = 0.2126 * r + 0.7152 * g + 0.0722 * b; L += l; L2 += l * l; S += mx ? (mx - mn) / mx : 0; R += r; B += b; n++; }
+  L /= n; S /= n; const desvio = Math.sqrt(Math.max(0, L2 / n - L * L)); return { luz: L, contraste: desvio, saturacao: S, quente: (R - B) / n };
+}
+function evSugestoesFiltro(a) {
+  const ajusteBase = { brilho: Math.round(Math.max(85, Math.min(130, 100 + (0.5 - a.luz) * 70))), contraste: a.contraste < 0.16 ? 115 : a.contraste > 0.3 ? 95 : 105, saturacao: a.saturacao < 0.22 ? 125 : a.saturacao > 0.5 ? 95 : 110, temperatura: a.quente > 0.08 ? -20 : a.quente < -0.05 ? 15 : 0 };
+  const diag = [a.luz < 0.38 ? 'imagem escura' : a.luz > 0.65 ? 'imagem clara demais' : 'boa iluminação', a.contraste < 0.16 ? 'pouco contraste' : 'contraste ok', a.saturacao < 0.22 ? 'cores apagadas' : a.saturacao > 0.5 ? 'cores fortes' : 'cores equilibradas', a.quente > 0.08 ? 'puxando para o amarelo' : a.quente < -0.05 ? 'puxando para o azul' : 'cor neutra'];
+  return { diag, opcoes: [
+    { nome: '✨ Correção automática', filtro: 'nenhum', ajustes: ajusteBase, desc: 'Corrige luz, contraste e cor da sua filmagem.' },
+    { nome: '🔥 Vibrante (Reels)', filtro: 'vibrante', ajustes: Object.assign({}, ajusteBase, { saturacao: Math.min(130, ajusteBase.saturacao + 5) }), desc: 'Cores vivas que se destacam no feed.' },
+    { nome: '🎬 Cinema', filtro: 'cinema', ajustes: Object.assign({}, ajusteBase, { saturacao: 100 }), desc: 'Visual de filme, mais sério e premium.' },
+    { nome: a.quente > 0.03 ? '❄️ Frio corporativo' : '☀️ Quente acolhedor', filtro: a.quente > 0.03 ? 'frio' : 'quente', ajustes: Object.assign({}, ajusteBase, { temperatura: 0 }), desc: 'Muda o clima da cor do vídeo.' }
+  ] };
+}
+function evMiniaturaFiltro(base, op) {
+  const cv = document.createElement('canvas'); cv.width = base.width; cv.height = base.height; const g = cv.getContext('2d');
+  const aj = op.ajustes || {}; const f = [(EV_FILTROS[op.filtro] || EV_FILTROS.nenhum)[1], aj.brilho && aj.brilho !== 100 ? `brightness(${aj.brilho / 100})` : '', aj.contraste && aj.contraste !== 100 ? `contrast(${aj.contraste / 100})` : '', aj.saturacao && aj.saturacao !== 100 ? `saturate(${aj.saturacao / 100})` : '', aj.temperatura ? (aj.temperatura > 0 ? `sepia(${aj.temperatura / 100})` : `hue-rotate(${-aj.temperatura / 4}deg)`) : ''].filter(Boolean).join(' ');
+  g.filter = f || 'none'; g.drawImage(base, 0, 0); return cv.toDataURL('image/jpeg', 0.8);
+}
+function evAplicarFiltroOpcao(i, soClipe) {
+  const op = (ES.filtroOpcoes || [])[i]; if (!op) return;
+  if (soClipe) { const x = evItemSel(); if (!x) return mostrarToast('Selecione um clipe na linha do tempo.', true); x.filtro = op.filtro; x.ajustes = Object.assign({}, op.ajustes); }
+  else { ES.p.dados.filtro = op.filtro; ES.p.dados.ajustes = Object.assign({ brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 }, op.ajustes); ES.p.dados.clips.forEach(c => { delete c.filtro; delete c.ajustes; }); }
+  evMudou(); evPainel('filtros'); mostrarToast(`Filtro "${op.nome.replace(/^\S+\s/, '')}" aplicado${soClipe ? ' neste clipe' : ' no vídeo todo'}.`);
+}
+function evFiltroAutomatico(silencioso) {
+  const q = evQuadroAtual(160); if (!q) { if (!silencioso) mostrarToast('Coloque um vídeo ou foto na linha do tempo primeiro.', true); return null; }
+  const a = evAnalisarCor(q.cv), s = evSugestoesFiltro(a);
+  ES.filtroOpcoes = s.opcoes; ES.filtroDiag = s.diag; ES.filtroBase = q.cv;
+  return s;
+}
+async function evFiltroIa() {
+  const q = evQuadroAtual(512); if (!q) return mostrarToast('Coloque um vídeo ou foto na linha do tempo primeiro.', true);
+  const img = q.cv.toDataURL('image/jpeg', 0.8);
+  try {
+    const r = await evIa('filtro', { imagem: img }, '🎨 O Agente está olhando o seu vídeo para escolher o filtro...');
+    const ops = (r.opcoes || []).filter(o => EV_FILTROS[o.filtro]).slice(0, 4).map(o => ({ nome: '🤖 ' + (o.nome || EV_FILTROS[o.filtro][0]), filtro: o.filtro, ajustes: { brilho: Number(o.brilho) || 100, contraste: Number(o.contraste) || 100, saturacao: Number(o.saturacao) || 100, temperatura: Number(o.temperatura) || 0 }, desc: o.motivo || '' }));
+    if (!ops.length) throw new Error('A IA não sugeriu filtros. Tente de novo.');
+    if (!ES.filtroBase) evFiltroAutomatico(true);
+    ES.filtroOpcoes = ops.concat((ES.filtroOpcoes || []).filter(o => !/^🤖/.test(o.nome))).slice(0, 8); ES.filtroIaTexto = r.analise || '';
+    evPainel('filtros');
+  } catch (e) { mostrarToast(/conectada/.test(e.message) ? 'IA desconectada — use a ✨ Correção automática (funciona sem IA).' : e.message, true); }
+}
+function evPainelFiltros() {
+  const el = document.getElementById('ev-painel'), d = ES.p.dados, aj = d.ajustes;
+  if (!ES.filtroOpcoes) evFiltroAutomatico(true);
+  const base = ES.filtroBase;
+  el.innerHTML = `<h4>🎨 Filtro inteligente</h4>
+    <div class="ev-sub">${ES.filtroDiag ? 'Análise do vídeo: ' + ES.filtroDiag.join(' · ') : 'Coloque um vídeo na linha do tempo para analisar.'}</div>
+    ${ES.filtroIaTexto ? `<div class="ev-dica-fixa" style="margin-top:4px;">🤖 ${escapeHtml(ES.filtroIaTexto)}</div>` : ''}
+    <div class="ev-filtro-ops">${(ES.filtroOpcoes || []).map((o, i) => `<div class="ev-filtro-op"><img src="${base ? evMiniaturaFiltro(base, o) : ''}" onclick="evAplicarFiltroOpcao(${i})"><b>${escapeHtml(o.nome)}</b><small>${escapeHtml(o.desc || '')}</small><div><button onclick="evAplicarFiltroOpcao(${i})">Vídeo todo</button><button onclick="evAplicarFiltroOpcao(${i}, true)">Só no clipe</button></div></div>`).join('')}</div>
+    <div class="ev-linha-btn"><button class="ev-btn" onclick="ES.filtroOpcoes=null; ES.filtroIaTexto=''; evPainel('filtros')">🔄 Analisar de novo</button><button class="ev-btn ia" onclick="evFiltroIa()">🤖 IA escolhe o filtro</button></div>
+    <h4>Todos os filtros</h4><div class="ev-filtros">${Object.entries(EV_FILTROS).map(([k, f]) => `<button class="${d.filtro === k ? 'on' : ''}" onclick="ES.p.dados.filtro='${k}'; evMudou(); evPainel('filtros')">${base ? `<img src="${evMiniaturaFiltro(base, { filtro: k })}">` : `<i style="filter:${f[1] || 'none'}"></i>`}${f[0]}</button>`).join('')}</div>
+    <h4>Ajustes finos</h4>${[['brilho', 'Brilho', 50, 150], ['contraste', 'Contraste', 50, 150], ['saturacao', 'Saturação', 0, 200], ['temperatura', 'Temperatura (frio ↔ quente)', -50, 50]].map(([k, r, mn, mx]) => `<label class="ev-slider">${r} <b id="ev-aj-${k}">${aj[k] !== undefined ? aj[k] : (k === 'temperatura' ? 0 : 100)}</b><input type="range" min="${mn}" max="${mx}" value="${aj[k] !== undefined ? aj[k] : (k === 'temperatura' ? 0 : 100)}" oninput="ES.p.dados.ajustes.${k}=Number(this.value); document.getElementById('ev-aj-${k}').textContent=this.value; evDesenhar()" onchange="evMudou(false)"></label>`).join('')}
+    <button class="ev-btn" onclick="ES.p.dados.filtro='nenhum'; ES.p.dados.ajustes={brilho:100,contraste:100,saturacao:100,temperatura:0}; ES.p.dados.clips.forEach(c=>{delete c.filtro; delete c.ajustes}); evMudou(); evPainel('filtros')">↺ Voltar ao original</button>
+    <h4>Transição padrão entre clipes</h4><div class="ev-chips">${Object.entries(EV_TRANS).map(([k, r]) => `<button class="${d.transicao === k ? 'on' : ''}" onclick="ES.p.dados.transicao='${k}'; ES.p.dados.clips.forEach(c=>delete c.transicao); evMudou(); evPainel('filtros')">${r}</button>`).join('')}</div>`;
+}
+
+// ---------- Marca: logo, @, barra e encerramento ----------
+async function evCarregarKit() { if (EVL.kit) return EVL.kit; try { EVL.kit = await api('/api/admin/estudio/marca'); } catch (e) { EVL.kit = {}; } return EVL.kit; }
+function evAplicarKit(kit, silencioso) {
+  const ex = ES.p.dados.extras;
+  if (kit.logo) ex.logo = Object.assign({ url: kit.logo, pos: 'sd', tam: 0.16, opac: 0.9, ativo: true, fundo: true }, ex.logo || {}, { url: kit.logo });
+  if (kit.arroba) ex.marca = kit.arroba;
+  if (kit.cor1) ex.corBarra = kit.cor2 || kit.cor1;
+  ex.encerramento = Object.assign({ ativo: true, dur: 2.5, texto: kit.cta || 'Siga para mais conteúdos', arroba: kit.arroba || '', cta: kit.ctaSec || '', cor1: kit.cor1 || '#0b1329', cor2: kit.cor2 || '#dc4c4c' }, ex.encerramento && ex.encerramento.ativo ? ex.encerramento : {});
+  if (!silencioso) { evMudou(); evPainel('elementos'); mostrarToast('Marca aplicada: logo, @, cores e encerramento.'); }
+}
+async function evSubirLogo(files) {
+  const f = files && files[0]; if (!f) return;
+  try {
+    const fd = new FormData(); fd.append('file', f);
+    const r = await fetch('/api/admin/estudio/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd }).then(x => x.json());
+    if (!r.url) throw new Error(r.error || 'Falha no envio.');
+    ES.p.dados.extras.logo = Object.assign({ pos: 'sd', tam: 0.16, opac: 0.9, ativo: true, fundo: true }, ES.p.dados.extras.logo || {}, { url: r.url });
+    evMudou(); evPainel('elementos');
+    if (confirm('Salvar esta logo como padrão da marca (todos os vídeos novos já começam com ela)?')) { const kit = await evCarregarKit(); kit.logo = r.url; await api('/api/admin/estudio/marca', { method: 'PUT', body: JSON.stringify(kit) }); mostrarToast('Logo salva no kit da marca!'); }
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function evSalvarKitDoProjeto() {
+  const ex = ES.p.dados.extras, en = ex.encerramento || {};
+  const kit = Object.assign(await evCarregarKit(), { logo: (ex.logo || {}).url || '', arroba: ex.marca || '', cor1: en.cor1 || '#0b1329', cor2: en.cor2 || ex.corBarra || '#dc4c4c', cta: en.texto || '', ctaSec: en.cta || '' });
+  try { await api('/api/admin/estudio/marca', { method: 'PUT', body: JSON.stringify(kit) }); EVL.kit = kit; mostrarToast('Kit da marca salvo! Todos os vídeos novos já começam com ele.'); } catch (e) { mostrarToast(e.message, true); }
+}
+function evSetEx(caminho, v, semHist) { const p = caminho.split('.'); let o = ES.p.dados.extras; for (let i = 0; i < p.length - 1; i++) { o[p[i]] = o[p[i]] || {}; o = o[p[i]]; } o[p[p.length - 1]] = v; evDesenhar(); if (!semHist) evMudou(false); }
+function evPainelElementos() {
+  const el = document.getElementById('ev-painel'), ex = ES.p.dados.extras, lg = ex.logo || {}, en = ex.encerramento || {};
+  const emojis = ['🔥', '🚀', '✅', '❌', '⚠️', '💡', '👇', '👉', '📈', '📉', '💰', '🎯', '⭐', '❤️', '😱', '🤯', '👏', '💪', '🧠', '⏰', '📌', '🏆', '🍺', '🚚'];
+  el.innerHTML = `<h4>🏷️ Marca no vídeo</h4>
+    <button class="ev-btn ia grande" onclick="evCarregarKit().then(k => evAplicarKit(k))">🏷️ Aplicar kit da marca</button>
+    <div class="ev-logo-box">${lg.url ? `<img src="${escapeHtml(lg.url)}">` : '<span>Sem logo</span>'}<label class="ev-btn"><input type="file" accept="image/*" hidden onchange="evSubirLogo(this.files)">${lg.url ? 'Trocar logo' : '⬆️ Subir logo'}</label></div>
+    ${lg.url ? `<label class="ev-chk2"><input type="checkbox" ${lg.ativo !== false ? 'checked' : ''} onchange="evSetEx('logo.ativo', this.checked)"> Mostrar logo durante o vídeo</label>
+    ${evCampo('Posição', `<div class="ev-chips">${[['se', '↖ Topo esq.'], ['sd', '↗ Topo dir.'], ['ie', '↙ Baixo esq.'], ['id', '↘ Baixo dir.']].map(([k, r]) => `<button class="${(lg.pos || 'sd') === k ? 'on' : ''}" onclick="evSetEx('logo.pos','${k}'); evPainel('elementos')">${r}</button>`).join('')}</div>`)}
+    ${evCampo('Tamanho', `<input type="range" min="0.06" max="0.4" step="0.01" value="${lg.tam || 0.16}" oninput="evSetEx('logo.tam', Number(this.value), true)" onchange="evMudou(false)">`)}
+    ${evCampo('Transparência', `<input type="range" min="0.2" max="1" step="0.05" value="${lg.opac !== undefined ? lg.opac : 0.9}" oninput="evSetEx('logo.opac', Number(this.value), true)" onchange="evMudou(false)">`)}
+    <label class="ev-chk2"><input type="checkbox" ${lg.fundo !== false ? 'checked' : ''} onchange="evSetEx('logo.fundo', this.checked)"> Fundo branco atrás da logo</label>` : ''}
+    <label>@ do Instagram <input value="${escapeHtml(ex.marca || '')}" placeholder="@impulsionarv4" onchange="ES.p.dados.extras.marca=this.value; evMudou(false); evDesenhar()"></label>
+    <label class="ev-chk2"><input type="checkbox" ${ex.barra ? 'checked' : ''} onchange="ES.p.dados.extras.barra=this.checked; evMudou(false); evDesenhar()"> Barra de progresso no topo</label>
+    <label>Cor da barra <input type="color" value="${ex.corBarra || '#dc4c4c'}" onchange="ES.p.dados.extras.corBarra=this.value; evMudou(false); evDesenhar()"></label>
+    <h4>🎬 Encerramento com a marca</h4>
+    <label class="ev-chk2"><input type="checkbox" ${en.ativo ? 'checked' : ''} onchange="evSetEx('encerramento.ativo', this.checked); evDesenharLinha(); if(this.checked) evIrPara(evTotalBase()+0.8)"> Tela final com logo, @ e chamada</label>
+    ${en.ativo ? `${evCampo('Frase principal', `<input value="${escapeHtml(en.texto || 'Siga para mais conteúdos')}" onchange="evSetEx('encerramento.texto', this.value)">`)}
+      ${evCampo('Chamada extra (opcional)', `<input value="${escapeHtml(en.cta || '')}" placeholder="Fale com a gente pelo WhatsApp" onchange="evSetEx('encerramento.cta', this.value)">`)}
+      <div class="ev-dupla">${evCampo('Cor 1', `<input type="color" value="${en.cor1 || '#0b1329'}" onchange="evSetEx('encerramento.cor1', this.value)">`)}${evCampo('Cor 2', `<input type="color" value="${en.cor2 || '#dc4c4c'}" onchange="evSetEx('encerramento.cor2', this.value)">`)}${evCampo('Duração', `<input type="number" min="1" max="6" step="0.5" value="${en.dur || 2.5}" onchange="evSetEx('encerramento.dur', Number(this.value)); evDesenharLinha()">`)}</div>` : ''}
+    <button class="ev-btn" onclick="evSalvarKitDoProjeto()">💾 Salvar como kit padrão da marca</button>
+    <h4>Emojis e figurinhas</h4><div class="ev-emojis">${emojis.map(e => `<button onclick="evAdicionarTexto('emoji','${e}')">${e}</button>`).join('')}</div>
+    <label>Cor de fundo <input type="color" value="${ex.corFundo || '#000000'}" onchange="ES.p.dados.extras.corFundo=this.value; evMudou(false); evDesenhar()"></label>
+    <h4>Modelos prontos</h4><div class="ev-chips col">${EV_MODELOS.map((m, i) => `<button onclick="evAplicarModelo(${i})">${m.ico} ${m.nome}</button>`).join('')}</div>`;
+}
+
+// ---------- Avatares (fotos salvas) e criação de vídeo com IA ----------
+async function evUsarPessoaDoVideo() {
+  const q = evQuadroAtual(1080); if (!q) return mostrarToast('Coloque o vídeo com a pessoa na linha do tempo e posicione o cursor num momento em que ela aparece de frente.', true);
+  const nome = prompt('Nome deste avatar (ex.: Lázaro — camisa azul):', 'Avatar ' + new Date().toLocaleDateString('pt-BR')); if (nome === null) return;
+  const blob = await new Promise(ok => q.cv.toBlob(ok, 'image/jpeg', 0.92));
+  try { await evSalvarAvatar(new File([blob], 'avatar.jpg', { type: 'image/jpeg' }), nome); mostrarToast('📸 Pessoa salva como avatar! Use em 🤖 Criar vídeo com IA.'); } catch (e) { mostrarToast(e.message, true); }
+}
+async function evSalvarAvatar(file, nome, voz) {
+  const fd = new FormData(); fd.append('file', file);
+  const up = await fetch('/api/admin/estudio/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd }).then(x => x.json());
+  if (!up.url) throw new Error(up.error || 'Falha no envio da foto.');
+  return api('/api/admin/estudio/avatares', { method: 'POST', body: JSON.stringify({ nome: nome || file.name, url: up.url, voz: voz || 'pt-BR-AntonioNeural' }) });
+}
+let EVIA = { modo: 'avatar', avatar: null, voz: 'pt-BR-AntonioNeural' };
+async function evAbrirCriarVideoIa() {
+  let av = [], prov = {}; try { [av, prov] = await Promise.all([api('/api/admin/estudio/avatares'), api('/api/admin/estudio/provedor-video')]); } catch (e) {}
+  EVIA.avatares = av; EVIA.prov = prov; if (!EVIA.avatar && av[0]) EVIA.avatar = av[0].id;
+  if (!prov.configurado) EVIA.modo = EVIA.modo === 'avatar' && av.length ? 'avatar' : EVIA.modo;
+  const alvo = document.getElementById('ev-modal') || (() => { let ma = document.getElementById('modal-area'); if (!ma) { document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>'); ma = document.getElementById('modal-area'); } return ma; })();
+  EVIA.alvo = alvo.id;
+  alvo.innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal grande ev-criar">
+    <div class="ev-modal-cab"><h3>🤖 Criar vídeo com IA</h3><button onclick="document.getElementById('${alvo.id}').innerHTML=''">✕</button></div>
+    <div class="ev-sub" style="margin-top:0;">O Claude escreve o roteiro no padrão viral e o sistema monta o vídeo completo: cenas, textos, legendas, filtro, marca e encerramento — pronto para ajustar e postar.</div>
+    <label class="ev-campo"><span>Sobre o que é o vídeo? *</span><textarea id="evia-tema" rows="2" placeholder="Ex.: 3 sinais de que o líder está sobrecarregando o time">${escapeHtml(EVIA.tema || '')}</textarea></label>
+    <div class="ev-dupla">
+      <label class="ev-campo"><span>Objetivo</span><select id="evia-obj">${['Alcance (viralizar)', 'Autoridade', 'Gerar clientes (leads)', 'Engajamento (comentários)', 'Divulgar treinamento/evento'].map(o => `<option>${o}</option>`).join('')}</select></label>
+      <label class="ev-campo"><span>Duração</span><select id="evia-dur">${[15, 20, 30, 45, 60].map(s => `<option value="${s}" ${s === 30 ? 'selected' : ''}>${s} segundos</option>`).join('')}</select></label>
+    </div>
+    <span class="ev-campo"><span>Como o vídeo vai ser feito?</span></span>
+    <div class="ev-modos">
+      <button class="${EVIA.modo === 'avatar' ? 'on' : ''}" onclick="EVIA.modo='avatar'; evAbrirCriarVideoIa()"><b>🧑 Com uma pessoa falando</b><small>Usa a foto de um avatar salvo: a pessoa fala o roteiro com voz em português (precisa do D-ID conectado).</small></button>
+      <button class="${EVIA.modo === 'motion' ? 'on' : ''}" onclick="EVIA.modo='motion'; evAbrirCriarVideoIa()"><b>✨ Autonomia total da IA</b><small>Sem câmera: a IA cria um vídeo animado (motion design) com fundos, textos, ícones e as cores da marca.</small></button>
+      <button class="${EVIA.modo === 'meus' ? 'on' : ''}" onclick="EVIA.modo='meus'; evAbrirCriarVideoIa()"><b>🎞️ Com os meus vídeos</b><small>${ES ? 'Usa as mídias deste projeto e monta a edição pelo roteiro.' : 'Abra um projeto com vídeos para usar esta opção.'}</small></button>
+    </div>
+    ${EVIA.modo === 'avatar' ? `
+      <div class="ev-avatares">${av.map(a => `<div class="ev-av ${EVIA.avatar === a.id ? 'on' : ''}" onclick="EVIA.avatar=${a.id}; EVIA.voz='${escapeHtml(a.voz || 'pt-BR-AntonioNeural')}'; evAbrirCriarVideoIa()"><img src="${escapeHtml(a.url)}"><span>${escapeHtml(a.nome)}</span><button title="Excluir" onclick="event.stopPropagation(); evExcluirAvatar(${a.id})">×</button></div>`).join('')}
+        <label class="ev-av novo"><input type="file" accept="image/*" hidden onchange="evNovoAvatar(this.files)"><b>＋</b><span>Subir foto</span></label></div>
+      <div class="ev-sub">Use uma foto de frente, rosto bem iluminado, boca fechada e fundo simples. A foto fica salva para os próximos vídeos.${ES ? ' Dica: em 🤖 Agente IA › "Usar a pessoa deste vídeo" você salva um quadro do seu vídeo como avatar.' : ''}</div>
+      <label class="ev-campo"><span>Voz</span><select onchange="EVIA.voz=this.value">${[['pt-BR-AntonioNeural', 'Antônio (masculina)'], ['pt-BR-FranciscaNeural', 'Francisca (feminina)'], ['pt-BR-ThalitaNeural', 'Thalita (feminina jovem)'], ['pt-BR-DonatoNeural', 'Donato (masculina madura)']].map(([v, r]) => `<option value="${v}" ${EVIA.voz === v ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
+      ${prov.configurado ? `<div class="ev-ig-ok">✅ D-ID conectado${prov.creditos !== undefined ? ' · ' + prov.creditos + ' créditos' : ''}</div>` : `<div class="ev-aviso">Para a pessoa da foto <b>falar</b>, conecte o D-ID (gerador de avatar falante): crie a conta em <a href="https://studio.d-id.com" target="_blank" rel="noopener">studio.d-id.com</a>, copie a API Key e cole aqui.<div class="ev-dupla" style="margin-top:6px;"><input id="evia-did" type="password" placeholder="API Key do D-ID"><button class="ev-btn" onclick="evConectarDid()">Conectar</button></div>Sem o D-ID, o vídeo é montado com a foto animada + textos e legendas (sem voz).</div>`}` : ''}
+    <div class="acoes-form" style="margin-top:12px;"><button class="ev-btn ia grande" onclick="evCriarVideoIa()">🚀 Criar vídeo</button></div>
+  </div></div>`;
+}
+async function evNovoAvatar(files) {
+  const f = files && files[0]; if (!f) return;
+  const nome = prompt('Nome deste avatar:', f.name.replace(/\.[^.]+$/, '')); if (nome === null) return;
+  try { const r = await evSalvarAvatar(f, nome, EVIA.voz); EVIA.avatar = r.id; mostrarToast('Foto salva como avatar!'); evAbrirCriarVideoIa(); } catch (e) { mostrarToast(e.message, true); }
+}
+async function evExcluirAvatar(id) { if (!confirm('Excluir este avatar?')) return; try { await api('/api/admin/estudio/avatares/' + id, { method: 'DELETE' }); if (EVIA.avatar === id) EVIA.avatar = null; evAbrirCriarVideoIa(); } catch (e) { mostrarToast(e.message, true); } }
+async function evConectarDid() {
+  try { const r = await api('/api/admin/estudio/provedor-video', { method: 'PUT', body: JSON.stringify({ chave: document.getElementById('evia-did').value }) }); mostrarToast(r.message); evAbrirCriarVideoIa(); } catch (e) { mostrarToast(e.message, true); }
+}
+function evCarregandoGlobal(msg) { if (ES) return evCarregando(msg); let o = document.getElementById('ev-carregando'); if (!msg) { if (o) o.remove(); return; } if (!o) { o = document.createElement('div'); o.id = 'ev-carregando'; o.className = 'ev-carregando'; document.body.appendChild(o); } o.innerHTML = `<div><div class="ev-spin"></div><b>${escapeHtml(msg)}</b></div>`; }
+const EV_ESTILOS_FUNDO = ['ondas', 'particulas', 'circulos', 'grade'];
+async function evCriarVideoIa() {
+  const tema = document.getElementById('evia-tema').value.trim(); if (tema.length < 4) return mostrarToast('Diga sobre o que é o vídeo.', true);
+  EVIA.tema = tema; const objetivo = document.getElementById('evia-obj').value, duracao = Number(document.getElementById('evia-dur').value) || 30, modo = EVIA.modo;
+  const avatar = (EVIA.avatares || []).find(a => a.id === EVIA.avatar);
+  if (modo === 'avatar' && !avatar) return mostrarToast('Escolha ou suba a foto do avatar.', true);
+  if (modo === 'meus' && (!ES || !ES.p.dados.midias.some(m => m.tipo !== 'audio'))) return mostrarToast('Abra um projeto com vídeos/fotos para usar esta opção.', true);
+  document.getElementById(EVIA.alvo).innerHTML = '';
+  const kit = await evCarregarKit();
+  let rot;
+  evCarregandoGlobal('✍️ O Claude está escrevendo o roteiro viral...');
+  try { rot = await api('/api/admin/estudio/ia/video-autonomo', { method: 'POST', body: JSON.stringify({ tema, objetivo, duracao, modo, pesquisar: true, cores: [kit.cor1, kit.cor2].filter(Boolean) }) }); }
+  catch (e) { evCarregandoGlobal(null); return mostrarToast(/conectada/.test(e.message) ? 'A IA não está conectada. Conecte a chave em Estúdio › Agente Viral para criar vídeos com IA.' : e.message, true); }
+  const cenas = (rot.cenas || []).filter(c => c.fala || c.texto_tela).slice(0, 14); if (!cenas.length) { evCarregandoGlobal(null); return mostrarToast('A IA não montou as cenas. Tente de novo.', true); }
+  // dados do projeto
+  const dados = { midias: [], clips: [], textos: [], audios: [], sobreposicoes: [], filtro: EV_FILTROS[rot.filtro] ? rot.filtro : 'vibrante', transicao: 'corte', ajustes: { brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 }, extras: { barra: true, marca: kit.arroba || '@impulsionarv4', corBarra: kit.cor2 || '#dc4c4c' } };
+  let durs = cenas.map(c => Math.max(1.5, Number(c.duracao) || 3)), soma = durs.reduce((s, v) => s + v, 0);
+  let videoAvatar = null;
+  if (modo === 'avatar' && avatar && EVIA.prov && EVIA.prov.configurado) {
+    try {
+      evCarregandoGlobal('🧑 Gerando a pessoa falando (D-ID)... isso leva de 1 a 3 minutos');
+      const job = await api('/api/admin/estudio/avatar-video', { method: 'POST', body: JSON.stringify({ avatarId: avatar.id, texto: cenas.map(c => c.fala).filter(Boolean).join(' '), voz: EVIA.voz || avatar.voz }) });
+      for (let i = 0; i < 120; i++) {
+        await new Promise(r => setTimeout(r, 4000));
+        const st = await api('/api/admin/estudio/avatar-video/' + job.id);
+        evCarregandoGlobal(`🧑 Gerando a pessoa falando... ${st.status === 'done' || st.url ? 'baixando' : 'processando'} (${(i + 1) * 4}s)`);
+        if (st.erro) throw new Error(st.erro);
+        if (st.url) { videoAvatar = st; break; }
+      }
+      if (!videoAvatar) throw new Error('O D-ID demorou demais. Tente de novo em alguns minutos.');
+    } catch (e) { mostrarToast('Avatar falante: ' + e.message + ' — vou montar com a foto animada.', true); }
+  }
+  if (videoAvatar) {
+    const dv = Number(videoAvatar.duracao) || soma; const f = dv / soma; durs = durs.map(v => v * f); soma = dv;
+    dados.midias.push({ id: 'av', url: videoAvatar.url, nome: avatar.nome + ' falando', tipo: 'video', duracao: dv, w: 1080, h: 1080, thumb: '' });
+    let t = 0; durs.forEach((d, i) => { dados.clips.push({ id: evUid(), midia: 'av', ini: t, fim: Math.min(dv, t + d), vel: 1, vol: 1, zoom: i % 2 ? 1.18 : 1.0, ajuste: 'cobrir', py: -0.05 }); t += d; }); // punch-in alternado = ritmo profissional
+  } else if (modo === 'avatar' && avatar) {
+    dados.midias.push({ id: 'av', url: avatar.url, nome: avatar.nome, tipo: 'imagem', duracao: 0, w: 1080, h: 1350, thumb: avatar.url });
+    durs.forEach((d, i) => dados.clips.push({ id: evUid(), midia: 'av', ini: 0, fim: d, vel: 1, vol: 1, zoom: 1.05 + (i % 3) * 0.06, ajuste: 'cobrir', px: (i % 2 ? 0.03 : -0.03) }));
+  } else if (modo === 'meus' && ES) {
+    const ms = ES.p.dados.midias.filter(m => m.tipo !== 'audio'); dados.midias = JSON.parse(JSON.stringify(ES.p.dados.midias));
+    durs.forEach((d, i) => { const m = ms[i % ms.length], ini = m.tipo === 'video' && m.duracao ? Math.min(Math.max(0, m.duracao - d), (m.duracao / Math.max(1, Math.ceil(cenas.length / ms.length))) * Math.floor(i / ms.length)) : 0; dados.clips.push({ id: evUid(), midia: m.id, ini, fim: m.tipo === 'video' ? Math.min(m.duracao || ini + d, ini + d) : d, vel: 1, vol: 1, zoom: m.tipo === 'imagem' ? 1.15 : (i % 2 ? 1.1 : 1), ajuste: m.w > m.h ? 'conter' : 'cobrir' }); });
+    dados.audios = JSON.parse(JSON.stringify(ES.p.dados.audios));
+  } else {
+    const cores = (rot.paleta && rot.paleta.length >= 2) ? rot.paleta : [kit.cor1 || '#0b1329', kit.cor2 || '#dc4c4c', '#1d3a8a', '#7c3aed'];
+    cenas.forEach((c, i) => { const id = 'f' + i; dados.midias.push({ id, tipo: 'fundo', nome: 'Cena ' + (i + 1), cores: [c.cor1 || cores[i % cores.length], c.cor2 || cores[(i + 1) % cores.length]], estilo: EV_ESTILOS_FUNDO[i % EV_ESTILOS_FUNDO.length], duracao: 0 }); dados.clips.push({ id: evUid(), midia: id, ini: 0, fim: durs[i], vel: 1, vol: 1, zoom: 1, transicao: i ? (['fade', 'deslizar', 'zoom'][i % 3]) : undefined }); });
+    dados.transicao = 'fade';
+  }
+  // textos, ícones e legendas no tempo das cenas
+  let t = 0;
+  cenas.forEach((c, i) => {
+    const d = durs[i];
+    if (c.texto_tela) dados.textos.push({ id: evUid(), texto: c.texto_tela, ini: t, dur: d, estilo: i === 0 ? 'gancho' : modo === 'motion' ? 'titulo' : 'apoio', x: 0.5, y: i === 0 ? EV_ESTILOS.gancho.y : modo === 'motion' ? 0.38 : 0.22 });
+    if (c.emoji && modo === 'motion') dados.textos.push({ id: evUid(), texto: c.emoji, ini: t + 0.2, dur: d - 0.2, estilo: 'emoji', x: 0.5, y: 0.6 });
+    if (c.fala) { const ini0 = t; const fim0 = t + d; evQuebrarLegendas(c.fala, fim0, ini0).forEach(l => dados.textos.push({ id: evUid(), texto: l.texto, ini: l.inicio, dur: l.duracao, estilo: 'legenda', x: 0.5, y: modo === 'motion' ? 0.74 : EV_ESTILOS.legenda.y })); }
+    t += d;
+  });
+  if (rot.cta) dados.textos.push({ id: evUid(), texto: rot.cta, ini: Math.max(0, t - 2.5), dur: 2.5, estilo: 'cta', x: 0.5, y: 0.5 });
+  if (kit.logo) dados.extras.logo = { url: kit.logo, pos: 'sd', tam: 0.15, opac: 0.9, ativo: true, fundo: true };
+  dados.extras.encerramento = { ativo: true, dur: 2.5, texto: kit.cta || 'Siga para mais conteúdos', arroba: kit.arroba || '@impulsionarv4', cta: kit.ctaSec || '', cor1: kit.cor1 || '#0b1329', cor2: kit.cor2 || '#dc4c4c' };
+  try {
+    evCarregandoGlobal('🎬 Montando o vídeo...');
+    const r = await api('/api/admin/estudio/projetos', { method: 'POST', body: JSON.stringify({ titulo: rot.titulo || tema.slice(0, 60), formato: '9:16', tipo: 'reels', dados, legenda: rot.legenda || '', hashtags: (rot.hashtags || []).join(' ') }) });
+    evCarregandoGlobal(null);
+    if (ES) await evFechar();
+    await evAbrirEditor(r.id);
+    setTimeout(() => { evDica(`✅ Vídeo criado pela IA (${cenas.length} cenas). Dê o play ▶, ajuste e exporte.`); }, 600);
+  } catch (e) { evCarregandoGlobal(null); mostrarToast(e.message, true); }
+}
+
 // ---------- Página do Estúdio (Master) ----------
 async function renderEstudioVideo(aba) {
   if (aba) EVL.aba = aba;
   const cont = document.getElementById('conteudo');
   cont.innerHTML = `<div id="ev-pagina"><div class="ev-pag-topo"><div><h1 style="margin:0;">🎬 Estúdio de Vídeo</h1><div class="plano-meta">Edite Reels, Stories e vídeos do feed no padrão das grandes contas, com o Agente Viral da Impulsionar.</div></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-primario" style="width:auto;" onclick="evNovoProjeto()">＋ Novo vídeo</button></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-secundario" style="width:auto;" onclick="evAbrirCriarVideoIa()">🤖 Criar vídeo com IA</button><button class="btn-primario" style="width:auto;" onclick="evNovoProjeto()">＋ Novo vídeo</button></div></div>
     <div class="ev-pag-abas">${[['projetos', '🎞️ Projetos'], ['agente', '🤖 Agente Viral (treinar)'], ['agenda', '🗓️ Agenda & publicações'], ['instagram', '📸 Instagram']].map(([k, r]) => `<button class="${EVL.aba === k ? 'on' : ''}" onclick="renderEstudioVideo('${k}')">${r}</button>`).join('')}</div>
     <div id="ev-pag-corpo"><p>Carregando...</p></div></div>`;
   const corpo = document.getElementById('ev-pag-corpo');
@@ -21081,7 +21531,11 @@ async function evNovoProjeto() {
 async function evCriarProjeto() {
   const titulo = document.getElementById('ev-novo-nome').value.trim() || 'Novo vídeo';
   const formato = (document.querySelector('input[name=ev-fmt]:checked') || {}).value || '9:16';
-  try { const r = await api('/api/admin/estudio/projetos', { method: 'POST', body: JSON.stringify({ titulo, formato, tipo: formato === '9:16' ? 'reels' : 'feed', dados: { midias: [], clips: [], textos: [], audios: [], filtro: 'nenhum', transicao: 'corte', extras: { marca: '@impulsionarv4', barra: false }, ajustes: { brilho: 100, contraste: 100, saturacao: 100 } } }) }); document.getElementById('modal-area').innerHTML = ''; evAbrirEditor(r.id); }
+  const kit = await evCarregarKit();
+  const extras = { marca: kit.arroba || '@impulsionarv4', barra: false, corBarra: kit.cor2 || '#dc4c4c' };
+  if (kit.logo) extras.logo = { url: kit.logo, pos: 'sd', tam: 0.15, opac: 0.9, ativo: true, fundo: true };
+  if (kit.logo || kit.arroba) extras.encerramento = { ativo: true, dur: 2.5, texto: kit.cta || 'Siga para mais conteúdos', arroba: kit.arroba || '', cta: kit.ctaSec || '', cor1: kit.cor1 || '#0b1329', cor2: kit.cor2 || '#dc4c4c' };
+  try { const r = await api('/api/admin/estudio/projetos', { method: 'POST', body: JSON.stringify({ titulo, formato, tipo: formato === '9:16' ? 'reels' : 'feed', dados: { midias: [], clips: [], textos: [], audios: [], sobreposicoes: [], filtro: 'nenhum', transicao: 'corte', extras, ajustes: { brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 } } }) }); document.getElementById('modal-area').innerHTML = ''; evAbrirEditor(r.id); }
   catch (e) { mostrarToast(e.message, true); }
 }
 async function evDuplicarProjeto(id) { try { await api(`/api/admin/estudio/projetos/${id}/duplicar`, { method: 'POST', body: '{}' }); mostrarToast('Projeto duplicado!'); renderEstudioVideo(); } catch (e) { mostrarToast(e.message, true); } }

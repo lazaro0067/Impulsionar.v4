@@ -12888,11 +12888,101 @@ app.post('/api/admin/estudio/ia/:acao', requireRole('admin'), async (req, res) =
         }
         else if (acao === 'analisar') { pedido = `${base}\nDADOS DO VÍDEO: ${JSON.stringify(b.resumo || {}).slice(0, 5000)}\nLEGENDA: ${String(b.legenda || '').slice(0, 2000)}\nAvalie o potencial de viralização (0 a 100) como um editor sênior de Reels. Seja específico e prático: o que está bom, o que mudar (em ordem de impacto) e a melhor hora para postar para esse público no Brasil.\nJSON: {"nota":0,"pontos_fortes":[""],"melhorias":[{"o_que":"","por_que":"","como":""}],"melhor_horario":"","resumo":""}`; }
         else if (acao === 'capa') { pedido = `${base}\nSugira 5 textos para a capa do Reels (máx. 6 palavras, impacto, legível no grid) e a orientação visual da capa.\nJSON: {"textos":[""],"orientacao":""}`; }
+        else if (acao === 'filtro') {
+            const m = String(b.imagem || '').match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);
+            if (!m || m[2].length > 4 * 1024 * 1024) return res.status(400).json({ error: 'Imagem inválida.' });
+            pedido = [{ type: 'image', source: { type: 'base64', media_type: m[1], data: m[2] } }, { type: 'text', text: `Este é um quadro do vídeo (${b.formato || 'Reels'}) sobre: ${tema || 'conteúdo da marca'}. Como colorista profissional de Reels, analise luz, contraste, cor da pele e clima e sugira 4 opções de filtro do MAIS indicado ao menos. Filtros disponíveis: nenhum, vibrante, cinema, quente, frio, pb, suave, contraste, noite. Ajustes: brilho/contraste/saturacao em % (100 = original, 70 a 140) e temperatura (-40 frio a +40 quente).\nJSON: {"analise":"1 frase sobre a imagem","opcoes":[{"nome":"","filtro":"vibrante","brilho":105,"contraste":110,"saturacao":115,"temperatura":0,"motivo":""}]}` }];
+            web = false; max = 1500;
+        }
+        else if (acao === 'video-autonomo') {
+            max = 8000;
+            const modo = String(b.modo || 'motion');
+            pedido = `${base}\nMODO: ${modo === 'avatar' ? 'uma pessoa (avatar) fala para a câmera o tempo todo — a "fala" de cada cena é exatamente o que ela vai dizer, natural e direta' : modo === 'meus' ? 'vídeo montado com filmagens da própria empresa — a "fala" vira legenda na tela' : 'vídeo animado sem pessoa (motion design): a "fala" aparece como legenda dinâmica e o "texto_tela" como título grande'}.\nCORES DA MARCA: ${(Array.isArray(b.cores) ? b.cores : []).join(', ') || '#0b1329, #dc4c4c'}\nCrie o roteiro completo de ~${duracao}s dividido em 5 a 10 cenas curtas. Cena 1 = gancho fortíssimo (até 2,5 s). Ritmo rápido, uma ideia por cena, final com CTA.\nPara cada cena: duracao (s), fala (frases curtas, linguagem falada), texto_tela (até 6 palavras, impacto), emoji (1, combinando com a cena), cor1 e cor2 (hex, para fundo animado, variando dentro da paleta da marca).\nJSON: {"titulo":"","cenas":[{"duracao":2.5,"fala":"","texto_tela":"","emoji":"","cor1":"#","cor2":"#"}],"cta":"texto curto da chamada final","legenda":"legenda do post com gancho na 1ª linha","hashtags":["#..."],"filtro":"vibrante","paleta":["#","#","#"]}`;
+        }
         else if (acao === 'conversar') { const r = await iaEstudio(`${String(b.mensagem || '').slice(0, 4000)}`, { web, json: false, max: 4000 }); return res.json({ resposta: r.texto, fontes: r.fontes }); }
         else return res.status(400).json({ error: 'Ação de IA desconhecida.' });
         const out = await iaEstudio(pedido, { web, max });
         res.json(out);
     } catch (e) { res.status(e.semIa ? 400 : 500).json({ error: e.message, semIa: !!e.semIa }); }
+});
+
+// ----- Kit da marca (logo, @, cores e chamada padrão) -----
+app.get('/api/admin/estudio/marca', requireRole('admin'), async (req, res) => {
+    const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_marca'`).catch(() => null);
+    let kit = {}; try { kit = JSON.parse((r && r.value) || '{}'); } catch (e) {}
+    res.json(Object.assign({ logo: '/assets/logo-impulsionar.jpg', arroba: '@impulsionarv4', cor1: '#0b1329', cor2: '#dc4c4c', cta: 'Siga para mais conteúdos', ctaSec: '' }, kit));
+});
+app.put('/api/admin/estudio/marca', requireRole('admin'), (req, res) => {
+    const b = req.body || {}, cor = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : undefined, url = v => /^\/(uploads|assets)\/[\w.\-]+$/.test(v || '') ? v : '';
+    const kit = { logo: url(b.logo), arroba: String(b.arroba || '').slice(0, 60), cor1: cor(b.cor1) || '#0b1329', cor2: cor(b.cor2) || '#dc4c4c', cta: String(b.cta || '').slice(0, 120), ctaSec: String(b.ctaSec || '').slice(0, 120) };
+    db.run(`INSERT INTO integration_settings (key, value) VALUES ('estudio_marca', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [JSON.stringify(kit)], () => res.json({ ok: true, kit }));
+});
+// ----- Avatares (fotos salvas para criar vídeos com a pessoa) -----
+db.run(`CREATE TABLE IF NOT EXISTS estudio_avatares (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, url TEXT NOT NULL, voz TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+app.get('/api/admin/estudio/avatares', requireRole('admin'), async (req, res) => { try { res.json(await dbAll(`SELECT * FROM estudio_avatares ORDER BY id DESC`)); } catch (e) { res.status(500).json({ error: 'Erro ao carregar os avatares.' }); } });
+app.post('/api/admin/estudio/avatares', requireRole('admin'), (req, res) => {
+    const url = String((req.body || {}).url || '');
+    if (!/^\/uploads\/[\w.\-]+$/.test(url)) return res.status(400).json({ error: 'Foto inválida.' });
+    db.run(`INSERT INTO estudio_avatares (nome, url, voz) VALUES (?, ?, ?)`, [String(req.body.nome || 'Avatar').slice(0, 80), url, String(req.body.voz || 'pt-BR-AntonioNeural').slice(0, 60)], function (err) { if (err) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ id: this.lastID }); });
+});
+app.delete('/api/admin/estudio/avatares/:id', requireRole('admin'), (req, res) => db.run(`DELETE FROM estudio_avatares WHERE id = ?`, [req.params.id], () => res.json({ ok: true })));
+// ----- D-ID: transforma a foto num vídeo da pessoa falando o roteiro -----
+async function chaveDidEst() { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'did_api_key'`).catch(() => null); return (r && r.value) || process.env.DID_API_KEY || ''; }
+function authDidEst(chave) { return 'Basic ' + (chave.includes(':') && !/^[A-Za-z0-9+/=]+$/.test(chave) ? Buffer.from(chave).toString('base64') : chave); }
+app.get('/api/admin/estudio/provedor-video', requireRole('admin'), async (req, res) => {
+    const chave = await chaveDidEst(); if (!chave) return res.json({ configurado: false });
+    try { const r = await fetch('https://api.d-id.com/credits', { headers: { Authorization: authDidEst(chave) } }); const j = await r.json().catch(() => ({})); res.json({ configurado: r.ok, creditos: j.remaining, erro: r.ok ? '' : ((j && (j.description || j.message)) || 'chave recusada') }); }
+    catch (e) { res.json({ configurado: true }); }
+});
+app.put('/api/admin/estudio/provedor-video', requireRole('admin'), async (req, res) => {
+    const chave = String((req.body || {}).chave || '').trim();
+    const salvar = v => new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES ('did_api_key', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [v], () => ok()));
+    if (req.body.remover) { await salvar(''); return res.json({ message: 'D-ID desconectado.' }); }
+    if (chave.length < 10) return res.status(400).json({ error: 'Cole a API Key do D-ID.' });
+    try {
+        const r = await fetch('https://api.d-id.com/credits', { headers: { Authorization: authDidEst(chave) } });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) return res.status(400).json({ error: 'A chave do D-ID não funcionou: ' + ((j && (j.description || j.message || j.kind)) || r.status) });
+        await salvar(chave); res.json({ message: `D-ID conectado! ✅${j.remaining !== undefined ? ' (' + j.remaining + ' créditos)' : ''}` });
+    } catch (e) { res.status(400).json({ error: 'Não consegui falar com o D-ID: ' + e.message }); }
+});
+const JOBS_AVATAR_EST = new Map(); // id -> { status, url, duracao, erro }
+app.post('/api/admin/estudio/avatar-video', requireRole('admin'), async (req, res) => {
+    const b = req.body || {};
+    const chave = await chaveDidEst(); if (!chave) return res.status(400).json({ error: 'Conecte o D-ID para gerar a pessoa falando.' });
+    const av = await dbGet(`SELECT * FROM estudio_avatares WHERE id = ?`, [b.avatarId]).catch(() => null);
+    if (!av) return res.status(404).json({ error: 'Avatar não encontrado.' });
+    const texto = String(b.texto || '').trim().slice(0, 4500); if (texto.length < 5) return res.status(400).json({ error: 'Roteiro vazio.' });
+    const base = baseUrlPublicaDpo(req); const fonte = base.replace(/\/$/, '') + av.url;
+    if (!/^https:\/\//.test(fonte)) return res.status(400).json({ error: 'A foto precisa estar num endereço público (https) para o D-ID acessar.' });
+    try {
+        const r = await fetch('https://api.d-id.com/talks', { method: 'POST', headers: { Authorization: authDidEst(chave), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source_url: fonte, script: { type: 'text', input: texto, provider: { type: 'microsoft', voice_id: /^pt-BR-\w+Neural$/.test(b.voz || '') ? b.voz : (av.voz || 'pt-BR-AntonioNeural') } }, config: { stitch: true, fluent: true } }) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.id) return res.status(400).json({ error: 'D-ID: ' + ((j && (j.description || j.message || j.kind)) || 'erro ' + r.status) });
+        const job = { status: 'processando', criado: Date.now() }; JOBS_AVATAR_EST.set(j.id, job);
+        (async () => { // acompanha em segundo plano e baixa o vídeo pronto para o nosso servidor
+            for (let i = 0; i < 100; i++) {
+                await new Promise(r2 => setTimeout(r2, 3000));
+                try {
+                    const st = await fetch('https://api.d-id.com/talks/' + j.id, { headers: { Authorization: authDidEst(chave) } }).then(x => x.json());
+                    if (st.status === 'error' || st.status === 'rejected') { job.erro = 'D-ID: ' + ((st.error && (st.error.description || st.error.kind)) || st.status); return; }
+                    if (st.status === 'done' && st.result_url) {
+                        const vid = await fetch(st.result_url); const buf = Buffer.from(await vid.arrayBuffer());
+                        const nome = 'avatar-' + Date.now() + '.mp4'; const destino = path.join(PASTA_UPLOADS, nome);
+                        fs.writeFileSync(destino, buf); copiarUploadParaBanco({ filename: nome, path: destino, size: buf.length, mimetype: 'video/mp4' });
+                        job.url = '/uploads/' + nome; job.duracao = Number(st.duration) || 0; job.status = 'done'; return;
+                    }
+                } catch (e) { /* tenta de novo */ }
+            }
+            job.erro = 'O D-ID demorou demais para gerar o vídeo.';
+        })();
+        res.json({ id: j.id });
+    } catch (e) { res.status(500).json({ error: 'Erro ao chamar o D-ID: ' + e.message }); }
+});
+app.get('/api/admin/estudio/avatar-video/:id', requireRole('admin'), (req, res) => {
+    const j = JOBS_AVATAR_EST.get(String(req.params.id)); if (!j) return res.status(404).json({ error: 'Geração não encontrada.' });
+    res.json(j);
 });
 
 // ----- Instagram (Graph API) -----
