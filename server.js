@@ -13069,6 +13069,52 @@ app.post('/api/admin/estudio/transcrever', requireRole('admin'), (req, res) => {
     });
 });
 
+// ----- Teleprompter: link para gravar no celular com o roteiro rolando na tela -----
+db.run(`CREATE TABLE IF NOT EXISTS estudio_gravadores (codigo TEXT PRIMARY KEY, projeto_id INTEGER, titulo TEXT, roteiro TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+db.run(`CREATE TABLE IF NOT EXISTS estudio_gravacoes (id INTEGER PRIMARY KEY AUTOINCREMENT, projeto_id INTEGER, url TEXT, nome TEXT, duracao REAL, mime TEXT, importada INTEGER DEFAULT 0, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+async function gravadorValidoEst(codigo) {
+    const g = await dbGet(`SELECT * FROM estudio_gravadores WHERE codigo = ?`, [String(codigo || '')]).catch(() => null);
+    if (!g) return null;
+    if (Date.now() - new Date(String(g.criado_em).replace(' ', 'T') + 'Z').getTime() > 14 * 864e5) return null; // vale 14 dias
+    return g;
+}
+app.post('/api/admin/estudio/projetos/:id/gravador', requireRole('admin'), async (req, res) => {
+    const p = await dbGet(`SELECT id, titulo FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
+    if (!p) return res.status(404).json({ error: 'Projeto não encontrado.' });
+    const roteiro = String((req.body || {}).roteiro || '').slice(0, 20000);
+    let g = await dbGet(`SELECT codigo FROM estudio_gravadores WHERE projeto_id = ? ORDER BY criado_em DESC LIMIT 1`, [p.id]).catch(() => null);
+    if (g && await gravadorValidoEst(g.codigo)) await new Promise(ok => db.run(`UPDATE estudio_gravadores SET roteiro = ?, titulo = ? WHERE codigo = ?`, [roteiro, p.titulo, g.codigo], ok));
+    else { g = { codigo: require('crypto').randomBytes(8).toString('base64url') }; await new Promise(ok => db.run(`INSERT INTO estudio_gravadores (codigo, projeto_id, titulo, roteiro) VALUES (?, ?, ?, ?)`, [g.codigo, p.id, p.titulo, roteiro], ok)); }
+    res.json({ codigo: g.codigo, link: `${baseUrlPublicaDpo(req)}/gravar.html?c=${g.codigo}` });
+});
+app.get('/api/admin/estudio/projetos/:id/gravacoes-novas', requireRole('admin'), async (req, res) => {
+    try { res.json(await dbAll(`SELECT * FROM estudio_gravacoes WHERE projeto_id = ? AND importada = 0 ORDER BY id`, [req.params.id])); } catch (e) { res.json([]); }
+});
+app.post('/api/admin/estudio/gravacoes/:id/importada', requireRole('admin'), (req, res) => db.run(`UPDATE estudio_gravacoes SET importada = 1 WHERE id = ?`, [req.params.id], () => res.json({ ok: true })));
+app.get('/api/public/gravador/:codigo', async (req, res) => {
+    const g = await gravadorValidoEst(req.params.codigo);
+    if (!g) return res.status(404).json({ error: 'Link de gravação inválido ou vencido. Gere um novo no Estúdio de Vídeo.' });
+    const kit = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_marca'`).catch(() => null);
+    let marca = {}; try { marca = JSON.parse((kit && kit.value) || '{}'); } catch (e) {}
+    res.json({ titulo: g.titulo, roteiro: g.roteiro || '', cor: marca.cor2 || '#dc4c4c' });
+});
+app.put('/api/public/gravador/:codigo/roteiro', async (req, res) => {
+    const g = await gravadorValidoEst(req.params.codigo); if (!g) return res.status(404).json({ error: 'Link inválido.' });
+    db.run(`UPDATE estudio_gravadores SET roteiro = ? WHERE codigo = ?`, [String((req.body || {}).roteiro || '').slice(0, 20000), g.codigo], () => res.json({ ok: true }));
+});
+app.post('/api/public/gravador/:codigo/video', async (req, res) => {
+    const g = await gravadorValidoEst(req.params.codigo);
+    if (!g) return res.status(404).json({ error: 'Link de gravação inválido ou vencido.' });
+    uploadEstudio.single('file')(req, res, (err) => {
+        if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Vídeo muito grande (máximo 1GB).' : err.message });
+        if (!req.file || !/^video\//.test(req.file.mimetype || 'video/')) return res.status(400).json({ error: 'Nenhum vídeo recebido.' });
+        copiarUploadParaBanco(req.file);
+        const nome = 'Gravação celular ' + new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+        db.run(`INSERT INTO estudio_gravacoes (projeto_id, url, nome, duracao, mime) VALUES (?, ?, ?, ?, ?)`, [g.projeto_id, '/uploads/' + req.file.filename, nome, Number(req.body.duracao) || 0, req.file.mimetype],
+            function (e2) { if (e2) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ ok: true, message: 'Vídeo enviado para o projeto! ✅ Ele aparece no Estúdio de Vídeo em instantes.' }); });
+    });
+});
+
 // ----- Instagram (Graph API) -----
 async function lerIgEst() {
     const l = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN ('ig_user_id','ig_access_token','ig_username')`).catch(() => []);

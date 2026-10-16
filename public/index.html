@@ -1282,6 +1282,9 @@
 
   .ev-checks { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0; } .ev-check2 { display:flex; gap:10px; align-items:flex-start; background:var(--e-sup2,#1e2533); border:1px solid var(--e-bd,#2a3244); border-radius:10px; padding:10px; cursor:pointer; font-size:12.5px; } .ev-check2 input { margin-top:3px; width:auto !important; } .ev-check2 b { display:block; font-size:13px; color:#fff; } .ev-check2 { color:#e6eaf2; margin:0; } .ev-check2 small { color:var(--e-sub,#8f9ab0); line-height:1.4; } .ev-check2.desl { opacity:.55; cursor:not-allowed; }
   @media (max-width: 700px) { .ev-checks { grid-template-columns:1fr; } }
+
+  .ev-tp-link { display:flex; gap:16px; align-items:flex-start; margin-top:14px; background:var(--e-sup2,#1e2533); border:1px solid var(--e-bd,#2a3244); border-radius:12px; padding:14px; } .ev-tp-link img { width:180px; height:180px; border-radius:10px; background:#fff; flex-shrink:0; } .ev-tp-link b { font-size:15px; }
+  @media (max-width: 700px) { .ev-tp-link { flex-direction:column; align-items:center; } }
   @media (max-width: 1100px) { .ev-corpo { grid-template-columns:280px minmax(0,1fr); } .ev-dir { display:none; } }
   @media (max-width: 760px) { #ev-editor { grid-template-rows:52px 1fr 200px; } .ev-corpo { grid-template-columns:1fr; grid-template-rows:1fr 200px; } .ev-esq { order:2; } .ev-titulo, .ev-salvo, .ev-sel { display:none; } .ev-pub { grid-template-columns:1fr; } }
 </style>
@@ -20559,6 +20562,7 @@ async function evAbrirEditor(id) {
   evLigarCanvas();
   document.addEventListener('keydown', evTeclas);
   evPainel('midia'); evDesenharProps(); evDesenharLinha(); evDesenhar(); evAtualizarCabeca(); evAtualizarScore();
+  evTpVigiar(true);
   ES.autosave = setInterval(() => { if (ES && ES.sujo && !ES.exportando) evSalvar(true).catch(() => {}); }, 5000);
   if (!d.clips.length && !d.textos.length) setTimeout(() => evDica('Comece subindo seus vídeos e fotos em 🎞️ Mídia — ou peça ao 🤖 Agente IA para montar a edição.'), 400);
 }
@@ -20567,7 +20571,7 @@ async function evFechar() {
   if (ES.exportando) return mostrarToast('Aguarde a exportação terminar (ou cancele).', true);
   evPausar();
   if (ES.sujo) await evSalvar(true).catch(() => {});
-  clearInterval(ES.autosave);
+  clearInterval(ES.autosave); clearInterval(ES.tpTimer);
   if (ES.obsPalco) ES.obsPalco.disconnect(); window.removeEventListener('resize', evAjustarPalco);
   document.removeEventListener('keydown', evTeclas);
   Object.values(ES.els || {}).forEach(el => { try { el.pause && el.pause(); el.removeAttribute && el.removeAttribute('src'); } catch (e) {} });
@@ -20765,6 +20769,7 @@ function evPainel(qual) {
   if (qual === 'midia') {
     el.innerHTML = `<h4>Mídia do projeto</h4>
       <label class="ev-up"><input type="file" multiple accept="video/*,image/*,audio/*" hidden onchange="evSubir(this.files)"><b>⬆️ Subir vídeos, fotos ou áudios</b><small>Do computador ou do celular. Até 1GB por arquivo.</small></label>
+      <button class="ev-btn ia" style="width:100%;margin-top:8px;" onclick="evAbrirTeleprompter()">🎥 Gravar com teleprompter (celular)</button>
       <div id="ev-up-prog"></div>
       <div class="ev-midias">${d.midias.filter(m => m.tipo !== 'audio').map(m => `<div class="ev-midia" title="${escapeHtml(m.nome)}">${m.tipo === 'fundo' ? `<div class="ev-midia-ico" style="background:linear-gradient(135deg,${(m.cores || [])[0] || '#0b1329'},${(m.cores || [])[1] || '#dc4c4c'})">✨</div>` : m.thumb ? `<img src="${m.thumb}">` : `<div class="ev-midia-ico">${m.tipo === 'video' ? '🎬' : '🖼️'}</div>`}<span>${m.tipo === 'video' ? evFmtT(m.duracao) : m.tipo === 'fundo' ? 'cena animada' : 'foto'}</span><button onclick="evAdicionarClipe('${m.id}')" title="Adicionar na linha do tempo">＋</button><button class="sb" onclick="evEscolherSobreposicao('${m.id}')" title="Usar como 2º vídeo: tela dividida, janelinha ou cobertura">⧉</button><button class="x" onclick="evRemoverMidia('${m.id}')" title="Remover do projeto">×</button></div>`).join('') || '<div class="ev-vazio">Nenhuma mídia ainda.</div>'}</div>
       ${d.midias.some(m => m.tipo !== 'audio') ? `<button class="ev-btn" onclick="evAdicionarTodas()">＋ Colocar todas na linha do tempo</button>` : ''}
@@ -21008,6 +21013,7 @@ function evPainelIa() {
     <button class="ev-btn ia grande" onclick="evAbrirEdicaoCompleta()">✨ Editar com IA (edição completa)</button>
     <div class="ev-sub">Corta pausas e silêncios, gera as legendas da fala, limpa a voz, escolhe os melhores trechos, coloca gancho, títulos, CTA, cor, marca e cobertura — vídeo pronto para viralizar.</div>
     <button class="ev-btn" style="width:100%;" onclick="evIaEditar()">⚡ Montagem rápida por ritmo (clipes e fotos)</button>
+    <button class="ev-btn" style="width:100%;" onclick="evAbrirTeleprompter()">🎥 Roteiro + teleprompter para gravar no celular</button>
     <div class="ev-grade-ia">
       <button onclick="evIaGanchos()">🎯 Ganchos</button>
       <button onclick="evIaRoteiro()">📝 Roteiro</button>
@@ -21102,6 +21108,7 @@ async function evIaRoteiro() {
     evIaSaida(`<div class="ev-ia-card"><b>📝 ${escapeHtml(r.titulo || 'Roteiro')}</b>${(r.cenas || []).map((c, i) => `<div class="ev-cena"><small>${Number(c.inicio || 0).toFixed(0)}s · ${Number(c.duracao || 0).toFixed(1)}s</small><div><b>Fala:</b> ${escapeHtml(c.fala || '')}</div>${c.texto_tela ? `<div><b>Na tela:</b> ${escapeHtml(c.texto_tela)}</div>` : ''}<div><b>Filmar:</b> ${escapeHtml(c.visual || '')}</div></div>`).join('')}
       ${r.cta ? `<div class="ev-cena"><b>CTA:</b> ${escapeHtml(r.cta)}</div>` : ''}
       <div class="ev-linha-btn"><button class="ev-btn" onclick="evRoteiroParaTextos()">🔤 Colocar textos na tela</button><button class="ev-btn" onclick="evRoteiroParaLegendas()">💬 Fala → legendas</button></div>
+      <button class="ev-btn ia" onclick="ES.roteiroTp=evRoteiroComoTexto(ES.ultimoRoteiro); evAbrirTeleprompter()">🎥 Gravar este roteiro no teleprompter</button>
       <button class="ev-btn" onclick="ES.p.legenda=ES.ultimoRoteiro.legenda||ES.p.legenda; ES.p.hashtags=(ES.ultimoRoteiro.hashtags||[]).join(' ')||ES.p.hashtags; evMudou(false); evDesenharProps(); mostrarToast('Legenda do post preenchida!')">📄 Usar legenda e hashtags</button>
       ${evFeedbackHtml('roteiro')}</div>`);
   } catch (e) { mostrarToast(e.message, true); }
@@ -21668,6 +21675,75 @@ function evCadeiaVoz(ac, entrada, saida) {
   const comp = ac.createDynamicsCompressor(); comp.threshold.value = -24; comp.knee.value = 20; comp.ratio.value = 4; comp.attack.value = 0.005; comp.release.value = 0.2;
   const ganho = ac.createGain(); ganho.gain.value = 1.35;
   entrada.connect(hp); hp.connect(lp); lp.connect(lama); lama.connect(pres); pres.connect(comp); comp.connect(ganho); ganho.connect(saida);
+}
+
+
+// ---------- Teleprompter: roteiro na tela e gravação pelo celular ----------
+function evRoteiroComoTexto(r) { return (r && r.cenas || []).map(c => String(c.fala || '').trim()).filter(Boolean).join('\n\n') + (r && r.cta ? '\n\n' + r.cta : ''); }
+async function evAbrirTeleprompter() {
+  ES.roteiroTp = ES.roteiroTp || (ES.ultimoRoteiro ? evRoteiroComoTexto(ES.ultimoRoteiro) : '');
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal grande">
+    <div class="ev-modal-cab"><h3>🎥 Gravar com teleprompter</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <div class="ev-sub" style="margin-top:0;">O roteiro fica rolando na tela, perto da câmera, enquanto você grava — no celular ou no computador. O vídeo gravado cai direto aqui no projeto.</div>
+    <div class="ev-dupla"><label class="ev-campo" style="flex:2;"><span>Sobre o que é o vídeo?</span><input id="tp-tema" value="${escapeHtml(ES.iaTema || ES.p.titulo || '')}"></label>
+      <label class="ev-campo"><span>Duração</span><select id="tp-dur">${[15, 30, 45, 60, 90].map(s => `<option value="${s}" ${s === 30 ? 'selected' : ''}>${s} s</option>`).join('')}</select></label></div>
+    <button class="ev-btn ia" style="width:100%;" onclick="evTpGerarRoteiro()">🤖 Criar roteiro com IA</button>
+    <label class="ev-campo"><span>Roteiro (o que você vai falar — deixe linha em branco entre as partes)</span><textarea id="tp-roteiro" rows="9" placeholder="Escreva aqui ou clique em Criar roteiro com IA">${escapeHtml(ES.roteiroTp || '')}</textarea></label>
+    <div class="ev-sub" id="tp-estimativa"></div>
+    <button class="ev-btn primario grande" onclick="evTpGerarLink()">📱 Gerar link para gravar no celular</button>
+    <div id="tp-link"></div>
+  </div></div>`;
+  const ta = document.getElementById('tp-roteiro'); const est = () => { const n = (ta.value.match(/\S+/g) || []).length; document.getElementById('tp-estimativa').textContent = n ? `${n} palavras · cerca de ${Math.round(n / 2.4)} s falando em ritmo de Reels` : ''; }; ta.addEventListener('input', est); est();
+}
+async function evTpGerarRoteiro() {
+  const tema = document.getElementById('tp-tema').value.trim(); if (!tema) return mostrarToast('Diga sobre o que é o vídeo.', true);
+  ES.iaTema = tema;
+  try {
+    const r = await evIa('roteiro', { tema, duracao: Number(document.getElementById('tp-dur').value) || 30 }, '📝 Escrevendo o roteiro para você gravar...');
+    ES.ultimoRoteiro = r; ES.roteiroTp = evRoteiroComoTexto(r);
+    if (r.legenda && !ES.p.legenda) ES.p.legenda = r.legenda; if ((r.hashtags || []).length && !ES.p.hashtags) ES.p.hashtags = r.hashtags.join(' ');
+    const ta = document.getElementById('tp-roteiro'); if (ta) { ta.value = ES.roteiroTp; ta.dispatchEvent(new Event('input')); }
+    mostrarToast('Roteiro pronto! Ajuste se quiser e gere o link para gravar.');
+  } catch (e) { mostrarToast(/conectada/.test(e.message) ? 'A IA não está conectada — escreva o roteiro no campo (ou conecte a IA em Agente Viral).' : e.message, true); }
+}
+async function evTpGerarLink() {
+  ES.roteiroTp = document.getElementById('tp-roteiro').value;
+  if (ES.roteiroTp.trim().length < 5 && !confirm('O roteiro está vazio. Gerar o link mesmo assim? (dá para escrever no celular)')) return;
+  try {
+    const r = await api(`/api/admin/estudio/projetos/${ES.p.id}/gravador`, { method: 'POST', body: JSON.stringify({ roteiro: ES.roteiroTp }) });
+    document.getElementById('tp-link').innerHTML = `<div class="ev-tp-link">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(r.link)}" alt="QR Code">
+      <div><b>Aponte a câmera do celular para o QR Code</b><div class="ev-sub">ou envie o link para o seu WhatsApp. No celular: permita câmera e microfone, toque no botão vermelho, conte 3‑2‑1 e fale lendo o texto. Ao terminar, toque em <b>Enviar para o projeto</b>.</div>
+        <div class="ev-dupla"><input readonly value="${escapeHtml(r.link)}" onclick="this.select()"><button class="ev-btn" onclick="navigator.clipboard.writeText(${escapeHtml(JSON.stringify(r.link))}).then(()=>mostrarToast('Link copiado!'))">Copiar</button></div>
+        <div class="ev-linha-btn"><a class="ev-btn" href="https://wa.me/?text=${encodeURIComponent('Gravar vídeo — Impulsionar: ' + r.link)}" target="_blank" rel="noopener">💬 Mandar no WhatsApp</a><a class="ev-btn" href="${escapeHtml(r.link)}" target="_blank" rel="noopener">💻 Gravar neste computador</a></div>
+        <div class="ev-sub">⏳ Aguardando gravações... elas entram sozinhas na linha do tempo deste projeto.</div></div></div>`;
+    evTpVigiar(true);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+function evInfoUrl(url) {
+  return new Promise(ok => {
+    const v = document.createElement('video'); v.preload = 'auto'; v.muted = true; v.crossOrigin = 'anonymous';
+    const fim = (d) => ok(d); let info = { duracao: 0, w: 0, h: 0, thumb: '' };
+    v.onloadedmetadata = () => { info.duracao = isFinite(v.duration) ? v.duration : 0; info.w = v.videoWidth; info.h = v.videoHeight; if (!isFinite(v.duration)) { v.currentTime = 1e6; v.ontimeupdate = () => { v.ontimeupdate = null; info.duracao = v.duration || 0; v.currentTime = Math.min(1, info.duracao / 3); }; } else v.currentTime = Math.min(1, info.duracao / 3); };
+    v.onseeked = () => { if (!info.duracao && isFinite(v.duration)) info.duracao = v.duration; try { const c = document.createElement('canvas'); const s = 160 / Math.max(v.videoWidth, v.videoHeight); c.width = v.videoWidth * s; c.height = v.videoHeight * s; c.getContext('2d').drawImage(v, 0, 0, c.width, c.height); info.thumb = c.toDataURL('image/jpeg', 0.7); } catch (e) {} if (info.duracao) fim(info); };
+    v.onerror = () => fim(info); setTimeout(() => fim(info), 15000); v.src = url;
+  });
+}
+function evTpVigiar(ligar) {
+  if (!ES) return; if (ES.tpTimer) return;
+  ES.tpTimer = setInterval(async () => {
+    if (!ES) return;
+    let l = []; try { l = await api(`/api/admin/estudio/projetos/${ES.p.id}/gravacoes-novas`); } catch (e) { return; }
+    for (const g of l) {
+      const info = await evInfoUrl(g.url);
+      const m = { id: evUid(), url: g.url, nome: g.nome || 'Gravação celular', tipo: 'video', duracao: info.duracao || Number(g.duracao) || 0, w: info.w, h: info.h, thumb: info.thumb };
+      ES.p.dados.midias.push(m); evAdicionarClipe(m.id, true);
+      await api(`/api/admin/estudio/gravacoes/${g.id}/importada`, { method: 'POST', body: '{}' }).catch(() => {});
+      evMudou(); if (ES.painel === 'midia') evPainel('midia');
+      mostrarToast('📱 Gravação do celular chegou e já está na linha do tempo! Use ✨ Editar com IA para cortar e legendar.');
+      const tp = document.getElementById('tp-link'); if (tp) document.getElementById('ev-modal').innerHTML = '';
+    }
+  }, 5000);
 }
 
 // ---------- Página do Estúdio (Master) ----------
