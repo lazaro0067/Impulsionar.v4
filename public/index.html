@@ -1370,6 +1370,35 @@
   .eh-pagina #ev-pag-corpo > :not(.eh) { padding:12px; }
   .eh-carregando { display:flex; justify-content:center; padding:30vh 0; }
   .eh-menu { display:flex; flex-direction:column; gap:8px; max-width:360px; } .eh-menu button, .eh-menu a { text-align:left; background:#f1f5f9; border:none; border-radius:10px; padding:12px; font-size:14.5px; cursor:pointer; color:#0b1329; text-decoration:none; font-family:inherit; } .eh-menu .perigo { color:#b91c1c; }
+
+  /* Radar Viral */
+  .evr { display:flex; flex-direction:column; gap:16px; max-width:1100px; }
+  .evr-form { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:16px; } .evr-form label { display:block; font-size:12.5px; font-weight:700; color:#475569; margin:10px 0 4px; } .evr-form input, .evr-form select { width:100%; box-sizing:border-box; }
+  .evr-cab b { font-size:19px; display:block; } .evr-cab span { font-size:13px; color:#64748b; line-height:1.5; display:block; margin-top:4px; }
+  .evr-dupla { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .evr-chips { display:flex; flex-wrap:wrap; gap:6px; } .evr-chips button { border:1px solid #cbd5e1; background:#f8fafc; border-radius:18px; padding:6px 12px; font-size:13px; cursor:pointer; } .evr-chips button.on { background:#0b1329; color:#fff; border-color:#0b1329; }
+  .evr-bt { width:100%; margin-top:14px; border:none; border-radius:14px; padding:14px; font-size:16px; font-weight:800; color:#fff; background:linear-gradient(135deg,#4f46e5,#dc4c4c); cursor:pointer; } .evr-bt:disabled { opacity:.7; }
+  .evr-carregando { display:flex; align-items:center; gap:14px; margin-top:14px; background:#0b1329; color:#fff; border-radius:14px; padding:14px; } .evr-carregando small { display:block; color:#94a3b8; font-size:12px; margin-top:3px; }
+  .evr-radar { width:46px; height:46px; border-radius:50%; border:2px solid rgba(79,124,255,.5); position:relative; overflow:hidden; flex-shrink:0; background:radial-gradient(circle,rgba(79,124,255,.25),transparent 70%); }
+  .evr-radar i { position:absolute; inset:0; background:conic-gradient(from 0deg, rgba(220,76,76,.85), transparent 30%); animation:eiGira 1.4s linear infinite; border-radius:50%; }
+  .evr-erro { margin-top:12px; color:#b91c1c; font-size:13.5px; } .evr-vazio { color:#64748b; text-align:center; padding:20px; }
+  .evr-res h3 { margin:18px 0 10px; } .evr-resumo { background:#eef2ff; border-radius:12px; padding:12px; font-size:14px; line-height:1.5; } .evr-aprendeu { margin-top:8px; font-size:12.5px; color:#15803d; font-weight:600; }
+  .evr-ideias, .evr-tend { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:12px; }
+  .evr-ideia, .evr-t { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:6px; }
+  .evr-ideia-top { display:flex; justify-content:space-between; align-items:center; } .evr-ideia-top small, .evr-t small { color:#64748b; font-size:12px; }
+  .evr-pot { font-weight:800; font-size:12.5px; border-radius:10px; padding:2px 8px; background:#e2e8f0; } .evr-pot.alto { background:#dcfce7; color:#15803d; } .evr-pot.medio { background:#fef9c3; color:#a16207; }
+  .evr-gancho { font-style:italic; color:#7c2d12; background:#fff7ed; border-radius:8px; padding:6px 9px; font-size:13.5px; } .evr-base { color:#64748b; font-size:11.5px; }
+  .evr-rot { white-space:pre-wrap; font-size:13px; line-height:1.55; background:#f8fafc; border-radius:8px; padding:10px; margin-top:6px; max-height:280px; overflow:auto; } .evr-tt { font-size:12px; color:#475569; margin-top:4px; }
+  .evr-acoes { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; } .evr-acoes button { border:1px solid #cbd5e1; background:#f8fafc; border-radius:10px; padding:7px 10px; font-size:12.5px; cursor:pointer; font-weight:600; } .evr-acoes button.pri { background:#dc2626; color:#fff; border-color:#dc2626; }
+  .evr-t p { margin:0; font-size:13px; color:#334155; line-height:1.5; } .evr-t a, .evr-fontes a { font-size:12.5px; color:#2563eb; text-decoration:none; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .evr-padroes { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px; } .evr-padroes > div { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px; } .evr-padroes ul { margin:6px 0 0; padding-left:18px; font-size:13px; line-height:1.5; }
+  .evr-fontes { margin-top:12px; font-size:13px; } .evr-hist { display:flex; flex-wrap:wrap; gap:6px; align-items:center; } .evr-hist button { border:1px solid #cbd5e1; background:#fff; border-radius:14px; padding:5px 10px; font-size:12px; cursor:pointer; }
+  body.modo-estudio .evr-form, body.modo-estudio .evr-ideia, body.modo-estudio .evr-t, body.modo-estudio .evr-padroes > div, body.modo-estudio .evr-hist button { background:#0f172e; border-color:#1c2747; color:#e6eaf2; }
+  body.modo-estudio .evr-form label, body.modo-estudio .evr-cab span, body.modo-estudio .evr-t p { color:#cbd5e1; } body.modo-estudio .evr-resumo { background:#1e1b4b; color:#e0e7ff; } body.modo-estudio .evr-rot { background:#0b1329; color:#e6eaf2; }
+  body.modo-estudio .evr-gancho { background:#3b1d0d; color:#fed7aa; } body.modo-estudio .evr-chips button, body.modo-estudio .evr-acoes button:not(.pri) { background:#16224a; border-color:#25325c; color:#e6eaf2; } body.modo-estudio .evr-chips button.on { background:#dc4c4c; border-color:#dc4c4c; }
+  body.modo-estudio .evr-form input, body.modo-estudio .evr-form select { background:#0b1329; color:#fff; border-color:#25325c; } body.modo-estudio .evr-res h3 { color:#fff; }
+  .eh-acao.eh-radar { grid-column:1 / -1; background:linear-gradient(135deg,#1e1b4b,#3b0d1c); border-color:#4c1d95; }
+  @media (max-width: 600px) { .evr-dupla { grid-template-columns:1fr; } .evr-ideias, .evr-tend { grid-template-columns:1fr; } }
   .ev-so-pequeno, .ev-sheet-x, .ev-so-cel { display:none !important; }
   .ev-linha-barra button { display:inline-flex; align-items:center; gap:5px; } .ev-linha-barra button i { font-style:normal; }
   .ev-play-acao { background:var(--e-sup2) !important; border:1px solid var(--e-bd) !important; border-radius:18px !important; padding:6px 10px !important; font-size:12.5px !important; font-weight:700; color:var(--e-tx) !important; } .ev-play-acao.grava { background:#dc2626 !important; border-color:#dc2626 !important; color:#fff !important; }
@@ -20570,11 +20599,27 @@ function evCarregarFontes() {
 }
 
 // ---------- Elementos de mídia (um <video> por clipe/sobreposição, para as transições) ----------
+// Um mesmo vídeo cortado em vários pedaços usa no máximo 2 players (antes era 1 por pedaço):
+// muito menos memória e decodificação — é isso que travava no celular.
+function evChaveClip(c) {
+  const d = ES.p.dados, sig = d.clips.map(x => x.id + '|' + x.midia + '|' + x.ini + '|' + x.fim).join(';');
+  if (ES.chavesSig !== sig) {
+    ES.chavesSig = sig; ES.chaves = {}; const slots = {};
+    d.clips.forEach((x, i) => {
+      const L = slots[x.midia] = slots[x.midia] || [];
+      let s = L.findIndex(sl => sl.idx === i - 1 && Math.abs((sl.fim || 0) - (x.ini || 0)) < 0.08); // continua de onde o anterior parou
+      if (s < 0) s = L.findIndex(sl => sl.idx !== i - 1);
+      if (s < 0) { if (L.length < 2) { L.push({}); s = L.length - 1; } else s = L[0].idx < L[1].idx ? 0 : 1; }
+      L[s].fim = x.fim; L[s].idx = i; ES.chaves[x.id] = 'm:' + x.midia + ':' + s;
+    });
+  }
+  return ES.chaves[c.id] || ('c:' + c.id);
+}
 function evElemento(c, chave) {
   ES.els = ES.els || {};
   const m = evMidia(c.midia); if (!m) return null;
   if (m.tipo === 'fundo') return { fundo: true };
-  const k = chave || ('c:' + c.id);
+  const k = chave || (ES.p.dados.clips.includes(c) ? evChaveClip(c) : ('c:' + c.id));
   let el = ES.els[k];
   if (el && el.__url === m.url) return el;
   if (m.tipo === 'imagem') { el = new Image(); el.onload = () => { if (ES && !ES.tocando) evDesenhar(); }; el.src = m.url; }
@@ -20696,11 +20741,15 @@ function evDesenharMidia(ctx, c, el, prog, alpha, dx, escalaExtra, R, forma) {
   const z = zoom * (escalaExtra || 1);
   // correção de cor na placa de vídeo (rápida); se não der, cai no filtro SVG
   let fonte = el, semGrade = false;
-  if (ES.p.dados.corAuto && m.grade && c.corAuto !== false && !EVGL.lento) {
+  if (ES.leveAgora) {
+    // modo leve (celular tocando): o filtro vai no elemento da tela (placa de vídeo), não em cada quadro
+    if (!ES.filtroTela) ES.filtroTela = (ES.p.dados.corAuto && m.grade && c.corAuto !== false ? evGradeAprox(m.grade, ES.p.dados.corIntensidade) + ' ' : '') + evFiltroCss(c, true).replace(/^none$/, '');
+    semGrade = true; ctx.filter = 'none';
+  } else if (ES.p.dados.corAuto && m.grade && c.corAuto !== false && !EVGL.lento) {
     const t0 = performance.now(), gc = evGLGrade(el, mw, mh, m.grade, ES.p.dados.corIntensidade);
     if (gc) { fonte = gc; semGrade = true; const dt = performance.now() - t0; EVGL.n = (EVGL.n || 0) + 1; EVGL.soma = (EVGL.soma || 0) + dt; if (EVGL.n >= 15 && EVGL.soma / EVGL.n > 30) EVGL.lento = true; } // computador sem aceleração: usa o filtro mais leve
   }
-  ctx.filter = evFiltroCss(c, semGrade);
+  if (!ES.leveAgora) ctx.filter = evFiltroCss(c, semGrade);
   const cobrir = Math.max(R.w / mw, R.h / mh), conter = Math.min(R.w / mw, R.h / mh);
   let cx = R.x + R.w / 2 + dx + (c.px || 0) * R.w, cy = R.y + R.h / 2 + (c.py || 0) * R.h, z2 = z;
   // enquadramento inteligente: segue o rosto com suavidade, centralizado e com o "ar" certo acima da cabeça
@@ -20721,9 +20770,9 @@ function evDesenharMidia(ctx, c, el, prog, alpha, dx, escalaExtra, R, forma) {
   if (c.espelhar) { ctx.translate(2 * (R.x + R.w / 2), 0); ctx.scale(-1, 1); }
   if (c.ajuste === 'conter') {
     // fundo desfocado (padrão profissional para vídeos horizontais em 9:16)
-    ctx.filter = evFiltroCss(c, semGrade) + ' blur(40px) brightness(0.7)';
-    const s0 = cobrir * 1.1; ctx.drawImage(fonte, R.x + R.w / 2 - mw * s0 / 2 + dx, R.y + R.h / 2 - mh * s0 / 2, mw * s0, mh * s0);
-    ctx.filter = evFiltroCss(c, semGrade);
+    ctx.filter = ES.leveAgora ? 'brightness(0.55)' : evFiltroCss(c, semGrade) + ' blur(40px) brightness(0.7)';
+    const s0 = cobrir * (ES.leveAgora ? 1.25 : 1.1); ctx.drawImage(fonte, R.x + R.w / 2 - mw * s0 / 2 + dx, R.y + R.h / 2 - mh * s0 / 2, mw * s0, mh * s0);
+    ctx.filter = ES.leveAgora ? 'none' : evFiltroCss(c, semGrade);
     const s1 = conter * z; ctx.drawImage(fonte, cx - mw * s1 / 2, cy - mh * s1 / 2, mw * s1, mh * s1);
   } else {
     const s = cobrir * z2; ctx.drawImage(fonte, cx - mw * s / 2, cy - mh * s / 2, mw * s, mh * s);
@@ -20858,6 +20907,7 @@ function evDesenhar(tForcado, exportando) {
   if (!ES || !ES.ctx) return;
   const ctx = ES.ctx, W = ES.W, H = ES.H, d = ES.p.dados, t = tForcado !== undefined ? tForcado : ES.t;
   ctx.setTransform(ES.esc || 1, 0, 0, ES.esc || 1, 0, 0);
+  ES.leveAgora = !!(ES.leve && ES.tocando && !ES.exportando && !ES.telaCheia); ES.filtroTela = '';
   exportando = exportando || !!ES.exportando || !!ES.telaCheia; // guias de edição nunca entram no vídeo final (nem na tela cheia)
   ES.caixas = {};
   const ex = d.extras || {}, k = W / 1080, base = evTotalBase();
@@ -20919,6 +20969,8 @@ function evDesenhar(tForcado, exportando) {
     if (s && s.tipo === 'texto' && ES.caixas[s.id]) { const b = ES.caixas[s.id]; ctx.save(); ctx.strokeStyle = '#4f7cff'; ctx.lineWidth = 4 * k; ctx.setLineDash([14 * k, 10 * k]); ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.restore(); }
     if (s && s.tipo === 'ovl') { const o = (d.sobreposicoes || []).find(x => x.id === s.id); if (o && t >= o.ini && t < o.ini + o.dur) { const b = evRetSobreposicao(o); ctx.save(); ctx.strokeStyle = '#4f7cff'; ctx.lineWidth = 5 * k; ctx.setLineDash([14 * k, 10 * k]); ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.restore(); } }
   }
+  const fTela = ES.leveAgora ? (ES.filtroTela || '').trim() || 'none' : 'none';
+  if (ES.canvas.style.filter !== fTela) ES.canvas.style.filter = fTela;
 }
 
 // ---------- Reprodução ----------
@@ -20935,12 +20987,13 @@ function evSincronizarVideo(el, ativo, quer, tocando, vel, k, vol) {
 }
 function evSincronizar(t, tocando) {
   const d = ES.p.dados, ini = evInicios();
-  d.clips.forEach((c, i) => {
-    const m = evMidia(c.midia); if (!m || m.tipo !== 'video') return;
+  const lista = d.clips.map((c, i) => { const m = evMidia(c.midia); if (!m || m.tipo !== 'video') return null; const dur = evClipDur(c); return { c, i, k: evChaveClip(c), dur, ativo: t >= ini[i] - 0.05 && t < ini[i] + dur }; }).filter(Boolean);
+  const emUso = new Set(lista.filter(x => x.ativo).map(x => x.k));
+  lista.forEach(({ c, i, k, dur, ativo }) => {
+    if (!ativo && emUso.has(k)) return; // o mesmo player está tocando outro pedaço agora
     const el = evElemento(c); if (!el) return;
-    const dur = evClipDur(c), ativo = t >= ini[i] - 0.05 && t < ini[i] + dur;
     const quer = (c.ini || 0) + Math.max(0, Math.min(dur, t - ini[i])) * (c.vel || 1);
-    evSincronizarVideo(el, ativo, quer, tocando, c.vel, 'c:' + c.id, c.mudo ? 0 : (c.vol !== undefined ? c.vol : 1));
+    evSincronizarVideo(el, ativo, quer, tocando, c.vel, k, c.mudo ? 0 : (c.vol !== undefined ? c.vol : 1));
     if (!ativo && !tocando && t >= ini[i] + dur && t < ini[i] + dur + 0.45) { const alvo = (c.fim || 0) - 0.05; if (Math.abs(el.currentTime - alvo) > 0.06) el.currentTime = alvo; }
   });
   (d.sobreposicoes || []).forEach(o => {
@@ -20972,7 +21025,9 @@ function evTocar() {
     if (!ES || !ES.tocando) return;
     const t = (performance.now() - ES.t0) / 1000, tot = evTotal();
     if (t >= tot) { ES.t = tot; evPausar(); if (ES.exportando) evFimExportacao(); else { ES.t = 0; evDesenhar(); evAtualizarCabeca(); } return; }
+    const q0 = performance.now();
     ES.t = t; evSincronizar(t, true); evDesenhar(undefined, !!ES.exportando); evAtualizarCabeca();
+    if (!ES.exportando && !ES.leve) { const dq = performance.now() - q0; ES.qn = (ES.qn || 0) + 1; ES.qs = (ES.qs || 0) + dq; if (ES.qn >= 40) { if (ES.qs / ES.qn > 22) { ES.leve = true; evAjustarPalco(); mostrarToast('⚡ Modo leve ligado para a prévia rodar sem travar (o vídeo final sai com qualidade total).'); } ES.qn = 0; ES.qs = 0; } }
     if (ES.exportando) evProgressoExport(t / tot);
     ES.raf = requestAnimationFrame(loop);
   };
@@ -20984,6 +21039,7 @@ function evPausar() {
   Object.values(ES.els || {}).forEach(el => { if (el.pause) el.pause(); });
   Object.values(ES.aud || {}).forEach(el => el.pause());
   evAtualizarBotaoPlay();
+  if (ES.leve && !ES.exportando) setTimeout(() => { if (ES && !ES.tocando) evDesenhar(); }, 30); // parado: volta para a qualidade completa
 }
 function evIrPara(t) {
   if (!ES) return;
@@ -21061,7 +21117,7 @@ async function evAbrirEditor(id) {
   d.extras = d.extras || {}; d.ajustes = d.ajustes || { brilho: 100, contraste: 100, saturacao: 100 }; d.filtro = d.filtro || 'nenhum'; d.transicao = d.transicao || 'corte';
   p.dados = d;
   const f = EV_FORMATOS[p.formato] || EV_FORMATOS['9:16'];
-  ES = { p, W: f.w, H: f.h, t: 0, tocando: false, sel: null, pxs: 60, hist: [], fut: [], sujo: false, painel: 'midia', zonaSegura: false, els: {}, aud: {}, caixas: {} };
+  ES = { p, W: f.w, H: f.h, t: 0, tocando: false, sel: null, pxs: 60, hist: [], fut: [], sujo: false, painel: 'midia', zonaSegura: false, els: {}, aud: {}, caixas: {}, leve: /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || (navigator.hardwareConcurrency || 8) <= 4 };
   evCarregarFontes();
   let el = document.getElementById('ev-editor');
   if (!el) { el = document.createElement('div'); el.id = 'ev-editor'; document.body.appendChild(el); }
@@ -21151,7 +21207,7 @@ function evAjustarPalco() {
 // na exportação e na tela cheia volta para a resolução completa.
 function evResolucaoCanvas(cheia, escTela) {
   if (!ES || !ES.canvas) return;
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const dpr = Math.min(ES.leve ? 1.25 : 2, window.devicePixelRatio || 1);
   const e = escTela || (parseFloat(ES.canvas.style.width) || ES.W) / ES.W;
   const k = cheia ? 1 : Math.max(0.4, Math.min(1, e * dpr * 1.05));
   const w = Math.round(ES.W * k), h = Math.round(ES.H * k);
@@ -22276,6 +22332,12 @@ function evGLIniciar() {
     return gl;
   } catch (e) { console.warn('WebGL indisponível para a correção de cor:', e.message); EVGL.gl = null; return null; }
 }
+// Versão aproximada da correção em filtros CSS (usada só na prévia leve do celular).
+function evGradeAprox(g, it) {
+  it = it === undefined ? 1 : it; const mix = (a, b) => a + (b - a) * it;
+  const meio = evCurvaGrade(g, 0.5), br = mix(1, Math.max(0.75, Math.min(1.35, meio / 0.5))), ct = mix(1, 1 + (g.curvaS || 0) * 1.6 + ((g.branco - g.preto) < 0.9 ? 0.06 : 0)), sat = mix(1, g.sat || 1);
+  return `brightness(${br.toFixed(3)}) contrast(${ct.toFixed(3)}) saturate(${sat.toFixed(3)})`;
+}
 function evGLGrade(el, mw, mh, g, intensidade) {
   const gl = evGLIniciar(); if (!gl || !g) return null;
   const it = intensidade === undefined ? 1 : intensidade, mix = (a, b) => a + (b - a) * it;
@@ -23128,18 +23190,112 @@ function evPopBarra(tipo, btn) {
 }
 
 // ---------- Página do Estúdio (Master) ----------
+// ---------- 📡 Radar Viral: pesquisa no mercado o que viraliza e cria conteúdos com os mesmos padrões ----------
+let EVR = { atual: null, job: null, hist: null };
+const EVR_FASES = ['🔎 Procurando vídeos em alta no seu nicho…', '📈 Lendo números de visualização e engajamento…', '🧠 Descobrindo por que esses vídeos viralizaram…', '🎣 Separando os ganchos que mais prendem…', '✍️ Criando roteiros originais com os mesmos padrões…', '🎯 Calculando o potencial de cada ideia…'];
+async function evDesenharRadar(corpo) {
+  let salvo = {}; try { salvo = JSON.parse(localStorage.getItem('evr_form') || '{}'); } catch (e) {}
+  if (!EVR.hist) { try { EVR.hist = await api('/api/admin/estudio/radares'); } catch (e) { EVR.hist = []; } if (!EVR.atual && EVR.hist[0]) EVR.atual = EVR.hist[0].dados; }
+  const plats = salvo.plataformas || ['Instagram Reels', 'TikTok', 'YouTube Shorts'];
+  corpo.innerHTML = `<div class="evr">
+    <div class="evr-form">
+      <div class="evr-cab"><b>📡 Radar Viral</b><span>A IA pesquisa na internet os vídeos que estão viralizando agora no seu nicho, descobre o padrão e cria roteiros originais prontos para gravar. O Agente Viral aprende esses padrões e passa a usá-los em tudo.</span></div>
+      <label>Nicho / assunto</label><input id="evr-nicho" value="${escapeHtml(salvo.nicho || 'liderança, gestão de pessoas, RH e operação logística')}">
+      <div class="evr-dupla"><div><label>Público</label><input id="evr-publico" value="${escapeHtml(salvo.publico || 'líderes, gestores e empresários')}"></div><div><label>Objetivo</label><select id="evr-obj">${['alcance e seguidores', 'autoridade', 'gerar clientes (vendas)', 'engajamento (comentários e compartilhamentos)'].map(o => `<option ${salvo.objetivo === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div></div>
+      <label>Onde pesquisar</label><div class="evr-chips" id="evr-plats">${['Instagram Reels', 'TikTok', 'YouTube Shorts', 'LinkedIn'].map(p => `<button class="${plats.includes(p) ? 'on' : ''}" onclick="this.classList.toggle('on')">${p}</button>`).join('')}</div>
+      <div class="evr-dupla"><div><label>Período</label><select id="evr-per">${['últimos 7 dias', 'últimos 30 dias', 'últimos 90 dias'].map(o => `<option ${(salvo.periodo || 'últimos 30 dias') === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div><div><label>Ideias</label><select id="evr-qtd">${[5, 8, 12].map(n => `<option ${(salvo.qtd || 8) == n ? 'selected' : ''}>${n}</option>`).join('')}</select></div></div>
+      <button class="evr-bt" id="evr-bt" onclick="evRadarRodar()">📡 Pesquisar o que está viralizando</button>
+      <div id="evr-prog"></div>
+    </div>
+    <div id="evr-res">${EVR.atual ? evRadarResultadoHtml(EVR.atual) : '<div class="evr-vazio">Rode o radar para ver as tendências e receber roteiros prontos.</div>'}</div>
+    ${(EVR.hist || []).length > 1 ? `<div class="evr-hist"><b>Pesquisas anteriores</b>${EVR.hist.map((h, i) => `<button onclick="EVR.atual=EVR.hist[${i}].dados; document.getElementById('evr-res').innerHTML=evRadarResultadoHtml(EVR.atual); window.scrollTo(0,0)">${escapeHtml(h.nicho || '')} · ${new Date(String(h.created_at).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR')}</button>`).join('')}</div>` : ''}
+  </div>`;
+  if (EVR.job) evRadarAcompanhar();
+}
+async function evRadarRodar() {
+  const v = id => (document.getElementById(id) || {}).value || '';
+  const plataformas = Array.from(document.querySelectorAll('#evr-plats button.on')).map(b => b.textContent);
+  const corpo = { nicho: v('evr-nicho'), publico: v('evr-publico'), objetivo: v('evr-obj'), periodo: v('evr-per'), qtd: Number(v('evr-qtd')) || 8, plataformas };
+  try { localStorage.setItem('evr_form', JSON.stringify(corpo)); } catch (e) {}
+  try { const r = await api('/api/admin/estudio/radar', { method: 'POST', body: JSON.stringify(corpo) }); EVR.job = r.id; evRadarAcompanhar(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+function evRadarAcompanhar() {
+  const bt = document.getElementById('evr-bt'); if (bt) { bt.disabled = true; bt.textContent = '📡 Pesquisando o mercado…'; }
+  clearInterval(EVR.timer);
+  const passo = async () => {
+    let j; try { j = await api('/api/admin/estudio/radar/' + EVR.job); } catch (e) { clearInterval(EVR.timer); EVR.job = null; const p = document.getElementById('evr-prog'); if (p) p.innerHTML = `<div class="evr-erro">⚠️ ${escapeHtml(e.message)}</div>`; if (bt) { bt.disabled = false; bt.textContent = '📡 Pesquisar o que está viralizando'; } return; }
+    const p = document.getElementById('evr-prog');
+    if (j.status === 'pesquisando') { if (p) p.innerHTML = `<div class="evr-carregando"><div class="evr-radar"><i></i></div><div><b>${EVR_FASES[Math.min(EVR_FASES.length - 1, Math.floor(j.segundos / 18))]}</b><small>${j.segundos}s · leva de 1 a 3 minutos. Pode navegar pelo sistema enquanto isso.</small></div></div>`; return; }
+    clearInterval(EVR.timer); EVR.job = null;
+    const b2 = document.getElementById('evr-bt'); if (b2) { b2.disabled = false; b2.textContent = '📡 Pesquisar de novo'; }
+    if (j.status === 'erro') { if (p) p.innerHTML = `<div class="evr-erro">⚠️ ${escapeHtml(j.erro || 'Falha na pesquisa.')}</div>`; return; }
+    if (p) p.innerHTML = ''; EVR.atual = j.resultado; EVR.hist = null;
+    const res = document.getElementById('evr-res'); if (res) { res.innerHTML = evRadarResultadoHtml(EVR.atual); res.scrollIntoView({ behavior: 'smooth' }); }
+    mostrarToast('📡 Radar pronto! O Agente Viral já aprendeu os padrões.');
+  };
+  EVR.timer = setInterval(passo, 3000); passo();
+}
+function evRadarResultadoHtml(r) {
+  if (!r) return '';
+  const p = r.padroes || {}, lista = a => (Array.isArray(a) ? a : a ? [a] : []).map(x => `<li>${escapeHtml(typeof x === 'string' ? x : JSON.stringify(x))}</li>`).join('');
+  const link = u => /^https?:\/\//.test(u || '') ? u : '';
+  return `<div class="evr-res">
+    ${r.resumo ? `<div class="evr-resumo">📊 ${escapeHtml(r.resumo)}</div>` : ''}
+    <div class="evr-aprendeu">✅ O Agente Viral aprendeu estes padrões e vai usá-los em roteiros, legendas e edições.</div>
+    <h3>💡 Ideias prontas para gravar</h3>
+    <div class="evr-ideias">${(r.ideias || []).map((x, i) => `<div class="evr-ideia">
+      <div class="evr-ideia-top"><span class="evr-pot ${x.potencial >= 80 ? 'alto' : x.potencial >= 60 ? 'medio' : ''}">🔥 ${Number(x.potencial) || '—'}</span><small>${escapeHtml(x.formato || '')} · ${Number(x.duracao) || 30}s</small></div>
+      <b>${escapeHtml(x.titulo || '')}</b>
+      <div class="evr-gancho">“${escapeHtml(x.gancho || '')}”</div>
+      ${x.baseado_em ? `<small class="evr-base">Baseado em: ${escapeHtml(x.baseado_em)}</small>` : ''}
+      <details><summary>Ver roteiro</summary><div class="evr-rot">${escapeHtml(x.roteiro || '')}</div>${(x.texto_tela || []).length ? `<div class="evr-tt">Texto na tela: ${x.texto_tela.map(escapeHtml).join(' · ')}</div>` : ''}${x.cta ? `<div class="evr-tt">CTA: ${escapeHtml(x.cta)}</div>` : ''}</details>
+      <div class="evr-acoes"><button class="pri" onclick="evRadarUsar(${i}, 'camera')">🎥 Gravar agora</button><button onclick="evRadarUsar(${i}, 'tp')">📱 Teleprompter</button><button onclick="evRadarUsar(${i}, 'ia')">🤖 Vídeo com IA</button><button onclick="navigator.clipboard.writeText(EVR.atual.ideias[${i}].roteiro || '').then(()=>mostrarToast('Roteiro copiado!'))">📋</button></div>
+    </div>`).join('')}</div>
+    <h3>🔥 O que está viralizando</h3>
+    <div class="evr-tend">${(r.tendencias || []).map(t => `<div class="evr-t"><b>${escapeHtml(t.titulo || '')}</b><small>${escapeHtml(t.formato || '')}</small><p>${escapeHtml(t.por_que_viraliza || '')}</p>${t.gancho_exemplo ? `<div class="evr-gancho">“${escapeHtml(t.gancho_exemplo)}”</div>` : ''}
+      ${(t.exemplos || []).filter(e => link(e.url)).map(e => `<a href="${escapeHtml(link(e.url))}" target="_blank" rel="noopener">▶ ${escapeHtml(e.titulo || e.plataforma || 'ver exemplo')}${e.metricas ? ' · ' + escapeHtml(e.metricas) : ''}</a>`).join('')}</div>`).join('')}</div>
+    <h3>🧬 Padrões que fazem viralizar</h3>
+    <div class="evr-padroes">
+      ${p.ganchos ? `<div><b>🎣 Ganchos</b><ul>${lista(p.ganchos)}</ul></div>` : ''}
+      ${p.estruturas ? `<div><b>🏗️ Estrutura</b><ul>${lista(p.estruturas)}</ul></div>` : ''}
+      <div><b>⏱️ Formato</b><ul>${p.duracao_ideal ? `<li>Duração: ${escapeHtml(p.duracao_ideal)}</li>` : ''}${p.ritmo ? `<li>Ritmo: ${escapeHtml(p.ritmo)}</li>` : ''}${p.texto_tela ? `<li>Texto na tela: ${escapeHtml(p.texto_tela)}</li>` : ''}</ul></div>
+      ${p.cta ? `<div><b>📣 CTAs</b><ul>${lista(p.cta)}</ul></div>` : ''}
+      ${p.audios ? `<div><b>🎵 Áudios em alta</b><ul>${lista(p.audios)}</ul></div>` : ''}
+      ${p.evitar ? `<div><b>🚫 Evitar</b><ul>${lista(p.evitar)}</ul></div>` : ''}
+    </div>
+    ${(r.fontes || []).length ? `<details class="evr-fontes"><summary>📚 Fontes pesquisadas (${r.fontes.length})</summary>${r.fontes.map(f => `<a href="${escapeHtml(link(f.url))}" target="_blank" rel="noopener">${escapeHtml(f.titulo || f.url)}</a>`).join('')}</details>` : ''}
+  </div>`;
+}
+async function evRadarUsar(i, modo) {
+  const x = (EVR.atual.ideias || [])[i]; if (!x) return;
+  if (modo === 'ia') { EVIA.tema = (x.titulo || '') + ' — gancho: ' + (x.gancho || '') + '\n' + (x.roteiro || '').slice(0, 900); return evAbrirCriarVideoIa(); }
+  try {
+    const kit = await evCarregarKit();
+    const extras = { marca: kit.arroba || '@impulsionarv4', barra: false, corBarra: kit.cor2 || '#dc4c4c' };
+    if (kit.logo) extras.logo = { url: kit.logo, pos: 'sd', tam: 0.15, opac: 0.9, ativo: true, fundo: true };
+    extras.encerramento = { ativo: true, dur: 2.5, texto: x.cta || kit.cta || 'Siga para mais conteúdos', arroba: kit.arroba || '', cta: '', cor1: kit.cor1 || '#0b1329', cor2: kit.cor2 || '#dc4c4c' };
+    const textos = x.gancho ? [{ id: evUid(), texto: String(x.gancho).toUpperCase(), ini: 0, dur: 2.6, estilo: 'gancho', y: EV_ESTILOS.gancho.y }] : [];
+    const r = await api('/api/admin/estudio/projetos', { method: 'POST', body: JSON.stringify({ titulo: (x.titulo || 'Ideia do radar').slice(0, 120), formato: '9:16', tipo: 'reels', legenda: x.legenda || '', hashtags: (x.hashtags || []).join(' '), dados: { midias: [], clips: [], textos, audios: [], sobreposicoes: [], filtro: 'nenhum', transicao: 'corte', extras, roteiro: x.roteiro || '', radar: { gancho: x.gancho, texto_tela: x.texto_tela, baseado_em: x.baseado_em }, ajustes: { brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 } } }) });
+    await evAbrirEditor(r.id); if (!ES) return;
+    ES.iaTema = x.titulo;
+    if (modo === 'camera') { evAbrirCamera(); setTimeout(() => { const c = document.getElementById('ev-cam-usatp'); if (c) { c.checked = true; evCamTp(); } }, 400); }
+    else evAbrirTeleprompter();
+  } catch (e) { mostrarToast(e.message, true); }
+}
 // ---------- App do celular (/estudio): logo animada, tela de início e navegação por baixo ----------
 function eiLogo(tamanho) {
   return `<div class="ei-logo ${tamanho || ''}"><div class="ei-marca"><i class="ei-anel"></i><b>V4</b></div><div class="ei-nome"><b>IMPULSIONAR</b><small>Estúdio de Vídeo</small></div></div>`;
 }
 function evNavCelular() {
-  return `<nav class="eh-nav">${[['projetos', '🏠', 'Início'], ['agente', '🤖', 'Agente'], ['agenda', '🗓️', 'Agenda'], ['instagram', '📸', 'Instagram']].map(([k, i, r]) => `<button class="${EVL.aba === k ? 'on' : ''}" onclick="renderEstudioVideo('${k}')"><span>${i}</span>${r}</button>`).join('')}<button onclick="evMenuCelular()"><span>☰</span>Mais</button></nav>`;
+  return `<nav class="eh-nav">${[['projetos', '🏠', 'Início'], ['radar', '📡', 'Radar'], ['agente', '🤖', 'Agente'], ['agenda', '🗓️', 'Agenda']].map(([k, i, r]) => `<button class="${EVL.aba === k ? 'on' : ''}" onclick="renderEstudioVideo('${k}')"><span>${i}</span>${r}</button>`).join('')}<button onclick="evMenuCelular()"><span>☰</span>Mais</button></nav>`;
 }
 function evMenuCelular() {
   let ma = document.getElementById('modal-area');
   if (!ma) { document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>'); ma = document.getElementById('modal-area'); }
   ma.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="modal-caixa eh-menu">
     <b>${escapeHtml((ESTADO.usuario || {}).name || '')}</b>
+    <button onclick="document.getElementById('modal-area').innerHTML=''; renderEstudioVideo('instagram')">📸 Instagram (conectar e publicar)</button>
     <button onclick="document.getElementById('modal-area').innerHTML=''; evNovaAula()">🎓 Gravar aula para a Academy</button>
     <button onclick="document.getElementById('modal-area').innerHTML=''; evNovoProjeto()">＋ Novo projeto (escolher formato)</button>
     <button onclick="location.reload()">🔄 Atualizar (sincronizar agora)</button>
@@ -23181,6 +23337,7 @@ function evDesenharHomeCelular(corpo) {
       <button class="eh-acao" onclick="evAbrirCriarVideoIa()"><span>🤖</span><b>Criar com IA</b><small>Roteiro, pessoa ou animação</small></button>
       <button class="eh-acao" onclick="evNovaAula()"><span>🎓</span><b>Gravar aula</b><small>Teleprompter + Academy</small></button>
       <button class="eh-acao" onclick="evNovoProjeto()"><span>✂️</span><b>Editar do zero</b><small>Projeto em branco</small></button>
+      <button class="eh-acao eh-radar" onclick="renderEstudioVideo('radar')"><span>📡</span><b>Radar Viral</b><small>O que está viralizando agora + roteiros prontos para gravar</small></button>
     </div>
     <div class="eh-titulo"><h3>Seus vídeos</h3><span>${l.length}</span></div>
     ${l.length ? `<div class="eh-lista">${l.map(p => `<div class="eh-item" onclick="evAbrirEditor(${p.id})">
@@ -23195,13 +23352,15 @@ async function renderEstudioVideo(aba) {
   if (aba) EVL.aba = aba;
   const cont = document.getElementById('conteudo');
   if (document.body.classList.contains('modo-estudio')) {
-    cont.innerHTML = `<div id="ev-pagina" class="eh-pagina">${EVL.aba === 'projetos' ? '' : `<div class="eh-mini">${eiLogo('mini')}<b>${{ agente: '🤖 Agente Viral', agenda: '🗓️ Agenda', instagram: '📸 Instagram' }[EVL.aba] || ''}</b></div>`}<div id="ev-pag-corpo"><div class="eh-carregando">${eiLogo('grande')}</div></div>${evNavCelular()}</div>`;
+    cont.innerHTML = `<div id="ev-pagina" class="eh-pagina">${EVL.aba === 'projetos' ? '' : `<div class="eh-mini">${eiLogo('mini')}<b>${{ radar: '📡 Radar Viral', agente: '🤖 Agente Viral', agenda: '🗓️ Agenda', instagram: '📸 Instagram' }[EVL.aba] || ''}</b></div>`}<div id="ev-pag-corpo"><div class="eh-carregando">${eiLogo('grande')}</div></div>${evNavCelular()}</div>`;
     const corpo = document.getElementById('ev-pag-corpo');
     try {
       if (EVL.aba === 'projetos' || EVL.aba === 'agenda') EVL.lista = await api('/api/admin/estudio/projetos');
       if (EVL.aba === 'projetos') evDesenharHomeCelular(corpo);
       else if (EVL.aba === 'agenda') evDesenharAgenda(corpo);
-      else if (EVL.aba === 'agente') await evDesenharAgente(corpo);
+      else if (EVL.aba === 'radar') await evDesenharRadar(corpo);
+      else if (EVL.aba === 'radar') await evDesenharRadar(corpo);
+    else if (EVL.aba === 'agente') await evDesenharAgente(corpo);
       else if (EVL.aba === 'instagram') await evDesenharInstagram(corpo);
     } catch (e) { corpo.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
     return;
@@ -23209,13 +23368,14 @@ async function renderEstudioVideo(aba) {
   cont.innerHTML = `<div id="ev-pagina"><div class="estudio-barra">${eiLogo('mini')}<b style="flex:1"></b><a href="/">💻 Sistema</a><button onclick="sair()">Sair</button></div>
     <div class="ev-pag-topo"><div><h1 style="margin:0;">🎬 Estúdio de Vídeo</h1><div class="plano-meta">Edite Reels, Stories e vídeos do feed no padrão das grandes contas, com o Agente Viral da Impulsionar — e grave aulas para a Academy com teleprompter.</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-secundario" style="width:auto;" onclick="evAbrirNoCelular()">📱 Abrir no celular</button><button class="btn-secundario" style="width:auto;" onclick="evNovaAula()">🎓 Gravar aula</button><button class="btn-secundario" style="width:auto;" onclick="evAbrirCriarVideoIa()">🤖 Criar vídeo com IA</button><button class="btn-primario" style="width:auto;" onclick="evNovoProjeto()">＋ Novo vídeo</button></div></div>
-    <div class="ev-pag-abas">${[['projetos', '🎞️ Projetos'], ['agente', '🤖 Agente Viral (treinar)'], ['agenda', '🗓️ Agenda & publicações'], ['instagram', '📸 Instagram']].map(([k, r]) => `<button class="${EVL.aba === k ? 'on' : ''}" onclick="renderEstudioVideo('${k}')">${r}</button>`).join('')}</div>
+    <div class="ev-pag-abas">${[['projetos', '🎞️ Projetos'], ['radar', '📡 Radar Viral'], ['agente', '🤖 Agente Viral (treinar)'], ['agenda', '🗓️ Agenda & publicações'], ['instagram', '📸 Instagram']].map(([k, r]) => `<button class="${EVL.aba === k ? 'on' : ''}" onclick="renderEstudioVideo('${k}')">${r}</button>`).join('')}</div>
     <div id="ev-pag-corpo"><p>Carregando...</p></div></div>`;
   const corpo = document.getElementById('ev-pag-corpo');
   try {
     if (EVL.aba === 'projetos' || EVL.aba === 'agenda') EVL.lista = await api('/api/admin/estudio/projetos');
     if (EVL.aba === 'projetos') evDesenharProjetos(corpo);
     else if (EVL.aba === 'agenda') evDesenharAgenda(corpo);
+    else if (EVL.aba === 'radar') await evDesenharRadar(corpo);
     else if (EVL.aba === 'agente') await evDesenharAgente(corpo);
     else if (EVL.aba === 'instagram') await evDesenharInstagram(corpo);
   } catch (e) { corpo.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
@@ -23360,7 +23520,7 @@ async function evConectarIg() {
 async function evDesconectarIg() { if (!confirm('Desconectar o Instagram?')) return; try { await api('/api/admin/estudio/instagram', { method: 'PUT', body: JSON.stringify({ remover: true }) }); renderEstudioVideo('instagram'); } catch (e) { mostrarToast(e.message, true); } }
 
 // ---------- Treinar o Agente Viral ----------
-const EV_TIPOS_AG = { regra: ['📏 Regras', 'O que o agente deve SEMPRE fazer (estilo, linguagem, estrutura).', 'Ex.: Sempre falar com o líder de operação, linguagem do chão de fábrica, sem termos em inglês.'], proibido: ['🚫 Nunca fazer', 'Palavras, promessas e assuntos proibidos.', 'Ex.: Nunca prometer resultado em X dias; nunca citar concorrentes.'], exemplo: ['🏆 Posts que deram certo', 'Cole o gancho/roteiro/legenda de posts que performaram bem, com os números.', 'Cole aqui o roteiro ou a legenda do post…'], referencia: ['⭐ Referências', 'Perfis, criadores e estilos que você admira.', 'Ex.: @perfil — ganchos com pergunta e cortes a cada 2 s'] };
+const EV_TIPOS_AG = { regra: ['📏 Regras', 'O que o agente deve SEMPRE fazer (estilo, linguagem, estrutura).', 'Ex.: Sempre falar com o líder de operação, linguagem do chão de fábrica, sem termos em inglês.'], proibido: ['🚫 Nunca fazer', 'Palavras, promessas e assuntos proibidos.', 'Ex.: Nunca prometer resultado em X dias; nunca citar concorrentes.'], exemplo: ['🏆 Posts que deram certo', 'Cole o gancho/roteiro/legenda de posts que performaram bem, com os números.', 'Cole aqui o roteiro ou a legenda do post…'], referencia: ['⭐ Referências', 'Perfis, criadores e estilos que você admira.', 'Ex.: @perfil — ganchos com pergunta e cortes a cada 2 s'], tendencia: ['📡 Tendências do mercado', 'Preenchido sozinho pelo Radar Viral: o que está viralizando agora no seu nicho. O agente usa as 2 pesquisas mais recentes.', 'Rode o 📡 Radar Viral para atualizar automaticamente.'] };
 async function evDesenharAgente(corpo) {
   const l = EVL.agente = await api('/api/admin/estudio/agente');
   const perfil = l.find(x => x.tipo === 'perfil'), por = t => l.filter(x => x.tipo === t);

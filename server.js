@@ -404,6 +404,8 @@ function cabecalhosIA(chave, workspace) {
     return h;
 }
 let ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
+// Modelo mais forte para criação viral e pesquisa de mercado (cai para o padrão se a chave não tiver acesso).
+let ANTHROPIC_MODEL_AVANCADO = process.env.ANTHROPIC_MODEL_AVANCADO || 'claude-sonnet-5-5';
 if (!ANTHROPIC_API_KEY) {
     console.warn('⚠️  ANTHROPIC_API_KEY não definido no .env — o Assistente de IA fica desativado até configurar.');
 }
@@ -9379,13 +9381,17 @@ app.post('/api/admin/treinamentos-mt/ia/estruturar', requireRole('admin'), async
 });
 // IA com pesquisa na internet (ferramenta web_search da Anthropic). Devolve o texto
 // final e as fontes consultadas. Se a pesquisa não estiver liberada na conta, tenta sem ela.
-async function iaPesquisarMt(sistema, pedido, maxTokens, comWeb) {
+async function iaPesquisarMt(sistema, pedido, maxTokens, comWeb, opcoes) {
     if (!iaDisponivelMt()) { const e = new Error('A IA ainda não está conectada. Cadastre uma chave válida da Anthropic.'); e.semIa = true; throw e; }
+    opcoes = opcoes || {};
+    let modelo = opcoes.modelo || ANTHROPIC_MODEL;
     const chamar = async (mensagens, usarWeb) => {
-        const corpo = { model: ANTHROPIC_MODEL, max_tokens: maxTokens || 16000, system: sistema, messages: mensagens };
-        if (usarWeb) corpo.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 8, user_location: { type: 'approximate', country: 'BR', timezone: 'America/Sao_Paulo' } }];
+        const corpo = { model: modelo, max_tokens: maxTokens || 16000, system: sistema, messages: mensagens };
+        if (usarWeb) corpo.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: opcoes.maxBuscas || 8, user_location: { type: 'approximate', country: 'BR', timezone: 'America/Sao_Paulo' } }];
         const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: cabecalhosIA(), body: JSON.stringify(corpo) });
         const j = await r.json().catch(() => ({}));
+        // modelo avançado indisponível para esta chave: usa o modelo padrão sem falhar
+        if (!r.ok && modelo !== ANTHROPIC_MODEL && (r.status === 404 || (r.status === 400 && /model/i.test((j.error && j.error.message) || '')))) { console.warn('Modelo avançado indisponível (' + modelo + '), usando ' + ANTHROPIC_MODEL); modelo = ANTHROPIC_MODEL; return chamar(mensagens, usarWeb); }
         if (!r.ok) {
             if (r.status === 401 || r.status === 403) { CHAVE_IA_RECUSADA_MT = ANTHROPIC_API_KEY; const e = new Error('A chave da IA cadastrada não é válida. Cadastre uma chave nova.'); e.semIa = true; throw e; }
             const e = new Error('IA: ' + ((j.error && j.error.message) || ('erro ' + r.status))); e.status = r.status; throw e;
@@ -12723,7 +12729,7 @@ db.run(`CREATE TABLE IF NOT EXISTS estudio_agente (
     id INTEGER PRIMARY KEY AUTOINCREMENT, tipo TEXT NOT NULL, titulo TEXT, conteudo TEXT, metricas TEXT, ativo INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
 
-const TIPOS_AGENTE_EST = ['perfil', 'regra', 'exemplo', 'proibido', 'feedback', 'referencia'];
+const TIPOS_AGENTE_EST = ['perfil', 'regra', 'exemplo', 'proibido', 'feedback', 'referencia', 'tendencia'];
 const FORMATOS_EST = ['9:16', '4:5', '1:1', '16:9'];
 const uploadEstudio = multer({ storage: armazenamentoUpload, limits: { fileSize: 1024 * 1024 * 1024 },
     fileFilter: (req, file, cb) => (/^(video|image|audio)\//.test(file.mimetype) || /\.(mp4|mov|webm|m4a|mp3|wav|aac|ogg|png|jpe?g|gif|webp)$/i.test(file.originalname)) ? cb(null, true) : cb(new Error('Envie vídeo, imagem ou áudio.')) });
@@ -12743,6 +12749,7 @@ async function contextoAgenteEst() {
     if (por('proibido').length) partes.push('NUNCA FAÇA / NUNCA USE:\n' + por('proibido').slice(0, 30).map(x => '- ' + x.conteudo).join('\n'));
     if (por('exemplo').length) partes.push('POSTS QUE DERAM CERTO (aprenda o padrão):\n' + por('exemplo').slice(0, 12).map(x => { let m = ''; try { const o = JSON.parse(x.metricas || '{}'); m = Object.entries(o).filter(([, v]) => v).map(([k, v]) => k + ': ' + v).join(', '); } catch (e) {} return `- ${x.titulo || 'Post'}${m ? ' (' + m + ')' : ''}:\n${String(x.conteudo || '').slice(0, 900)}`; }).join('\n'));
     if (por('referencia').length) partes.push('REFERÊNCIAS E PERFIS QUE ADMIRAMOS:\n' + por('referencia').slice(0, 15).map(x => '- ' + (x.titulo || '') + ' ' + x.conteudo).join('\n'));
+    if (por('tendencia').length) partes.push('O QUE ESTÁ VIRALIZANDO AGORA NO NICHO (pesquisado no mercado pelo Radar Viral — use estes padrões como base de tudo que criar):\n' + por('tendencia').slice(0, 2).map(x => '- ' + (x.titulo || '') + ':\n' + String(x.conteudo || '').slice(0, 3500)).join('\n'));
     if (por('feedback').length) partes.push('CORREÇÕES QUE O USUÁRIO JÁ TE DEU (não repita os erros):\n' + por('feedback').slice(0, 25).map(x => '- ' + x.conteudo).join('\n'));
     return partes.join('\n\n');
 }
@@ -12756,10 +12763,10 @@ Princípios de viralização que você domina e aplica:
 - Legenda: primeira linha = gancho (aparece antes do "mais"), parágrafos curtos, palavras‑chave do assunto (o Instagram funciona como buscador), CTA, 3 a 5 hashtags bem escolhidas (nicho + assunto), sem lista enorme de hashtags.
 - Áudio em alta ajuda o alcance; sugira o TIPO de áudio/estilo, sem inventar nomes de músicas específicas.
 - Nunca invente números, depoimentos ou resultados. Nada de promessas enganosas ou clickbait que não se cumpre.`;
-async function iaEstudio(pedido, { web = false, json = true, max = 6000 } = {}) {
+async function iaEstudio(pedido, { web = false, json = true, max = 6000, avancado = false, maxBuscas } = {}) {
     const ctx = await contextoAgenteEst();
     const sistema = SISTEMA_AGENTE_EST + (ctx ? '\n\n' + ctx : '') + (json ? '\nResponda APENAS com JSON válido no final da resposta.' : '');
-    const r = await iaPesquisarMt(sistema, pedido, max, web);
+    const r = await iaPesquisarMt(sistema, pedido, max, web, { modelo: avancado ? ANTHROPIC_MODEL_AVANCADO : null, maxBuscas });
     if (!json) return { texto: r.texto, fontes: r.fontes };
     const fim = r.texto.lastIndexOf('}');
     for (let ini = r.texto.indexOf('{'); ini >= 0 && ini < fim; ini = r.texto.indexOf('{', ini + 1)) { try { return { ...JSON.parse(r.texto.slice(ini, fim + 1)), __fontes: r.fontes }; } catch (e) {} }
@@ -12998,7 +13005,7 @@ app.post('/api/admin/estudio/ia/:acao', requireRole('admin'), async (req, res) =
         }
         else if (acao === 'conversar') { const r = await iaEstudio(`${String(b.mensagem || '').slice(0, 4000)}`, { web, json: false, max: 4000 }); return res.json({ resposta: r.texto, fontes: r.fontes }); }
         else return res.status(400).json({ error: 'Ação de IA desconhecida.' });
-        const out = await iaEstudio(pedido, { web, max });
+        const out = await iaEstudio(pedido, { web, max, avancado: ['ideias', 'roteiro', 'viralizar', 'video-autonomo', 'cortes', 'plano-edicao', 'legenda', 'analisar', 'ganchos'].includes(acao) });
         res.json(out);
     } catch (e) { res.status(e.semIa ? 400 : 500).json({ error: e.message, semIa: !!e.semIa }); }
 });
@@ -13041,7 +13048,7 @@ Escreva o roteiro COMPLETO para ser LIDO EM VOZ ALTA no teleprompter, como um in
 - o total de palavras faladas deve ficar perto de ${palavras}.
 Também gere: titulo (curto e claro), descricao (2 a 3 frases para a página da aula), modulo (nome sugerido de trilha/módulo), pontos_chave (3 a 5) e exercicio (uma atividade prática curta).
 JSON: {"titulo":"","descricao":"","modulo":"","blocos":[{"titulo":"Abertura","fala":""}],"pontos_chave":[""],"exercicio":"","referencias":[{"titulo":"","url":""}]}`;
-    const out = await iaEstudio(pedido, { web: !!b.pesquisar, max: Math.min(16000, 3000 + palavras * 3) });
+    const out = await iaEstudio(pedido, { web: !!b.pesquisar, max: Math.min(16000, 3000 + palavras * 3), avancado: true });
     if (!Array.isArray(out.blocos) || !out.blocos.length) throw new Error('A IA não devolveu o roteiro. Tente de novo.');
     out.texto = textoAulaEst(out); out.minutos = minutos;
     return out;
@@ -13087,6 +13094,56 @@ app.post('/api/admin/estudio/projetos/:id/academy', requireRole('admin'), async 
         }
         res.json({ ok: true, id: videoId, message: 'Aula salva na Academy! 🎓' });
     } catch (e) { res.status(500).json({ error: 'Erro ao salvar na Academy: ' + e.message }); }
+});
+
+// ----- Radar Viral: pesquisa no mercado o que está viralizando e cria conteúdos com os mesmos padrões -----
+db.run(`CREATE TABLE IF NOT EXISTS estudio_radar (id INTEGER PRIMARY KEY AUTOINCREMENT, nicho TEXT, dados TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+const RADAR_JOBS = new Map();
+function textoPadroesRadar(r) {
+    const p = r.padroes || {}, l = (a) => (Array.isArray(a) ? a : []).filter(Boolean).map(x => '  • ' + (typeof x === 'string' ? x : JSON.stringify(x))).join('\n');
+    return [p.resumo ? 'Resumo: ' + p.resumo : '', p.ganchos ? 'Ganchos que mais prendem:\n' + l(p.ganchos) : '', p.estruturas ? 'Estruturas/formatos que viralizam:\n' + l(p.estruturas) : '',
+        p.duracao_ideal ? 'Duração ideal: ' + p.duracao_ideal : '', p.ritmo ? 'Ritmo de edição: ' + p.ritmo : '', p.texto_tela ? 'Texto na tela: ' + p.texto_tela : '', p.cta ? 'CTAs que funcionam:\n' + l(p.cta) : '',
+        p.audios ? 'Áudios/trilhas em alta: ' + (Array.isArray(p.audios) ? p.audios.join(', ') : p.audios) : '', p.evitar ? 'Evitar:\n' + l(p.evitar) : '',
+        (r.tendencias || []).length ? 'Tendências do momento:\n' + r.tendencias.slice(0, 8).map(t => `  • ${t.titulo}: ${t.por_que_viraliza || ''}`).join('\n') : ''].filter(Boolean).join('\n');
+}
+app.post('/api/admin/estudio/radar', requireRole('admin'), async (req, res) => {
+    if (!iaDisponivelMt()) return res.status(400).json({ error: 'A IA não está conectada. Conecte a chave em Estúdio › Agente Viral.', semIa: true });
+    const b = req.body || {};
+    const nicho = String(b.nicho || '').slice(0, 300) || 'liderança, gestão de pessoas e operação (consultoria)';
+    const plataformas = (Array.isArray(b.plataformas) && b.plataformas.length ? b.plataformas : ['Instagram Reels', 'TikTok', 'YouTube Shorts']).slice(0, 4).map(x => String(x).slice(0, 40));
+    const publico = String(b.publico || '').slice(0, 300), objetivo = String(b.objetivo || '').slice(0, 300), periodo = String(b.periodo || 'últimos 30 dias').slice(0, 60), qtd = Math.max(3, Math.min(12, Number(b.qtd) || 8));
+    const id = require('crypto').randomBytes(6).toString('hex');
+    RADAR_JOBS.set(id, { status: 'pesquisando', inicio: Date.now() });
+    res.json({ id });
+    const pedido = `MISSÃO: RADAR VIRAL. Pesquise na internet AGORA (${periodo}) o que está viralizando em vídeos curtos (${plataformas.join(', ')}) no Brasil e no mundo para o nicho: "${nicho}".${publico ? ' Público: ' + publico + '.' : ''}${objetivo ? ' Objetivo: ' + objetivo + '.' : ''}
+Faça várias buscas: vídeos e criadores em alta no nicho, matérias e relatórios de tendências de Reels/TikTok/Shorts, formatos e áudios em alta, ganchos que mais retêm. Use dados reais (visualizações, curtidas, datas) quando encontrar e SEMPRE traga o link de cada exemplo. Não invente números nem links.
+Depois, como estrategista sênior, extraia os PADRÕES que explicam a viralização e crie ${qtd} ideias ORIGINAIS para a nossa marca usando exatamente esses padrões (sem copiar ninguém), cada uma pronta para gravar.
+JSON: {"resumo":"2-3 frases sobre o momento do nicho","tendencias":[{"titulo":"","formato":"talking head|lista|antes/depois|bastidores|tutorial|polêmica|storytelling|trend de áudio...","por_que_viraliza":"","gancho_exemplo":"","exemplos":[{"titulo":"","url":"","plataforma":"","metricas":"ex.: 2,3 mi de views em 5 dias"}]}],
+"padroes":{"resumo":"","ganchos":["modelos de gancho com lacunas, ex.: 'Pare de ___ se você quer ___'"],"estruturas":["passo a passo da estrutura que retém"],"duracao_ideal":"","ritmo":"","texto_tela":"","cta":["",""],"audios":["tendências de áudio/trilha"],"evitar":[""]},
+"ideias":[{"titulo":"","gancho":"frase dos 2 primeiros segundos","formato":"","roteiro":"texto falado completo, frases curtas, linha em branco entre as partes, pronto para o teleprompter","texto_tela":["textos curtos para a tela"],"cta":"","legenda":"legenda do post com gancho na 1ª linha","hashtags":["#..."],"duracao":30,"potencial":85,"baseado_em":"qual tendência/padrão usou"}]}`;
+    try {
+        const out = await iaEstudio(pedido, { web: true, max: 16000, avancado: true, maxBuscas: 14 });
+        out.fontes = (out.__fontes || []).slice(0, 30); delete out.__fontes;
+        out.nicho = nicho; out.plataformas = plataformas; out.criadoEm = new Date().toISOString();
+        await new Promise(ok => db.run(`INSERT INTO estudio_radar (nicho, dados) VALUES (?, ?)`, [nicho, JSON.stringify(out)], ok));
+        // "treina" o agente: os padrões do mercado passam a guiar todas as criações (mantém só os 2 radares mais recentes ativos)
+        const txt = textoPadroesRadar(out);
+        if (txt) {
+            await new Promise(ok => db.run(`INSERT INTO estudio_agente (tipo, titulo, conteudo) VALUES ('tendencia', ?, ?)`, [`Radar viral — ${nicho.slice(0, 60)} (${new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })})`, txt.slice(0, 7900)], ok));
+            db.run(`UPDATE estudio_agente SET ativo = 0 WHERE tipo = 'tendencia' AND id NOT IN (SELECT id FROM estudio_agente WHERE tipo = 'tendencia' ORDER BY id DESC LIMIT 2)`);
+        }
+        RADAR_JOBS.set(id, { status: 'pronto', resultado: out });
+    } catch (e) { RADAR_JOBS.set(id, { status: 'erro', erro: e.message }); }
+    setTimeout(() => RADAR_JOBS.delete(id), 30 * 60 * 1000);
+});
+app.get('/api/admin/estudio/radar/:id', requireRole('admin'), (req, res) => {
+    const j = RADAR_JOBS.get(req.params.id);
+    if (!j) return res.status(404).json({ error: 'Pesquisa não encontrada (o servidor pode ter reiniciado). Veja o histórico ou rode de novo.' });
+    res.json(Object.assign({ segundos: j.inicio ? Math.round((Date.now() - j.inicio) / 1000) : 0 }, j));
+});
+app.get('/api/admin/estudio/radares', requireRole('admin'), async (req, res) => {
+    try { res.json((await dbAll(`SELECT id, nicho, dados, created_at FROM estudio_radar ORDER BY id DESC LIMIT 10`)).map(r => { let d = {}; try { d = JSON.parse(r.dados); } catch (e) {} return { id: r.id, nicho: r.nicho, created_at: r.created_at, dados: d }; })); }
+    catch (e) { res.json([]); }
 });
 
 // ----- Kit da marca (logo, @, cores e chamada padrão) -----
