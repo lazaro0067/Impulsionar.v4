@@ -1007,7 +1007,23 @@
   @keyframes vcAceno { 50% { transform:rotate(-14deg); } }
   .vc-tile-fixar { position:absolute; right:8px; top:8px; background:rgba(10,12,18,.65); border:none; color:#fff; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; opacity:0; transition:.15s; }
   .vc-tile-fixar svg { width:16px; height:16px; } .vc-tile:hover .vc-tile-fixar, .vc-tile.fixado .vc-tile-fixar { opacity:1; } .vc-tile.fixado .vc-tile-fixar { background:var(--vc-azul); }
-  .vc-tile-instavel { display:none; position:absolute; inset:0; background:rgba(0,0,0,.55); align-items:center; justify-content:center; font-size:13px; color:#fbbf24; } .vc-tile.instavel .vc-tile-instavel { display:flex; }
+  .vc-tile-instavel { display:none; position:absolute; inset:0; background:rgba(0,0,0,.6); flex-direction:column; gap:8px; align-items:center; justify-content:center; font-size:13px; color:#fbbf24; text-align:center; padding:12px; } .vc-tile.instavel .vc-tile-instavel { display:flex; }
+  .vc-tile-instavel .vc-gira { width:26px; height:26px; border:3px solid rgba(251,191,36,.3); border-top-color:#fbbf24; border-radius:50%; animation:vcGira 1s linear infinite; } @keyframes vcGira { to { transform:rotate(360deg); } }
+  .vc-tile-instavel small { color:#cbd5e1; font-size:11.5px; max-width:300px; line-height:1.4; } .vc-tile-instavel button { background:#fbbf24; color:#111; border:none; border-radius:8px; padding:6px 12px; font-weight:700; cursor:pointer; font-size:12px; }
+  .vc-sinal { display:inline-flex; align-items:flex-end; gap:1.5px; height:12px; margin-left:4px; flex-shrink:0; } .vc-sinal i { width:3px; background:rgba(255,255,255,.3); border-radius:1px; } .vc-sinal i:nth-child(1) { height:4px; } .vc-sinal i:nth-child(2) { height:8px; } .vc-sinal i:nth-child(3) { height:12px; }
+  .vc-sinal.q3 i { background:#22c55e; } .vc-sinal.q2 i:nth-child(-n+2) { background:#eab308; } .vc-sinal.q1 i:nth-child(1) { background:#ef4444; } .vc-sinal.q0 i:nth-child(1) { background:#ef4444; }
+  .vc-legendas { position:absolute; left:50%; bottom:18px; transform:translateX(-50%); width:min(900px, 92%); z-index:7; display:flex; flex-direction:column; gap:4px; pointer-events:none; }
+  .vc-legendas div { background:rgba(0,0,0,.78); color:#fff; padding:6px 12px; border-radius:8px; font-size:17px; line-height:1.4; text-align:center; } .vc-legendas b { color:#93c5fd; font-weight:700; margin-right:6px; }
+  .vc-enquete { position:absolute; right:16px; top:16px; z-index:8; width:min(340px, 88%); background:var(--vc-painel, #1c2130); border:1px solid var(--vc-borda, #2c3346); border-radius:14px; padding:14px; box-shadow:0 12px 40px rgba(0,0,0,.5); color:var(--vc-txt, #fff); }
+  .vc-enquete h4 { margin:0 0 4px; font-size:12px; color:#93c5fd; text-transform:uppercase; letter-spacing:.05em; } .vc-enquete .perg { font-weight:700; font-size:15px; margin-bottom:10px; }
+  .vc-enquete button.op { display:block; width:100%; text-align:left; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:inherit; border-radius:9px; padding:9px 11px; margin:5px 0; cursor:pointer; font-size:13.5px; position:relative; overflow:hidden; }
+  .vc-enquete button.op:hover { border-color:#4f7cff; } .vc-enquete button.op .bar { position:absolute; left:0; top:0; bottom:0; background:rgba(79,124,255,.28); z-index:0; transition:width .4s; } .vc-enquete button.op span { position:relative; z-index:1; display:flex; justify-content:space-between; gap:8px; }
+  .vc-enquete button.op.meu { border-color:#4f7cff; } .vc-enquete .rod { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#94a3b8; margin-top:8px; } .vc-enquete .rod button { background:none; border:1px solid rgba(255,255,255,.2); color:inherit; border-radius:7px; padding:4px 9px; cursor:pointer; font-size:12px; }
+  .vc-diag table { width:100%; border-collapse:collapse; font-size:12.5px; margin:8px 0; background:transparent !important; box-shadow:none !important; } .vc-diag tr, .vc-diag thead { background:transparent !important; } .vc-diag th, .vc-diag td { text-align:left; padding:6px 6px; border-bottom:1px solid rgba(255,255,255,.08); background:transparent !important; color:var(--vc-txt, #e6eaf2); } .vc-diag th { color:#94a3b8; font-weight:600; }
+  .vc-diag .ok { color:#22c55e; } .vc-diag .ruim { color:#f87171; } .vc-diag .med { color:#eab308; }
+  .vc-modal .vc-opcoes { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 10px; } .vc-modal .vc-opcoes button { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); color:inherit; border-radius:9px; padding:8px 12px; cursor:pointer; font-size:13px; } .vc-modal .vc-opcoes button.on { border-color:#4f7cff; background:rgba(79,124,255,.2); }
+  .vc-modal input[type=text], .vc-modal input:not([type]), .vc-modal input[type=password] { width:100%; box-sizing:border-box; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); color:inherit; border-radius:8px; padding:8px 10px; margin:3px 0 8px; font-size:13.5px; }
+  .vc-modal .vc-bt { background:#4f7cff; color:#fff; border:none; border-radius:9px; padding:9px 14px; font-weight:700; cursor:pointer; font-size:13.5px; } .vc-modal .vc-bt.sec { background:rgba(255,255,255,.08); }
   .vc-banner-apres { position:absolute; top:16px; left:50%; transform:translateX(-50%); z-index:5; display:flex; align-items:center; gap:12px; background:#14532d; border:1px solid #22c55e; color:#dcfce7; padding:7px 8px 7px 14px; border-radius:10px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.4); }
   .vc-banner-apres span { display:flex; align-items:center; gap:8px; } .vc-banner-apres svg { width:17px; height:17px; }
   .vc-banner-apres button { background:var(--vc-verm); color:#fff; border:none; border-radius:7px; padding:6px 12px; font-weight:700; cursor:pointer; font-size:12.5px; }
@@ -19008,6 +19024,13 @@ let VC_PIP_CANVAS = null;
 let VC_PIP_VIDEO_OCULTO = null;
 let VC_PIP_ANIMACAO_ID = null;
 const VC_REACOES = ['👍', '👏', '❤️', '😂', '😮', '🎉'];
+let VC_ICE = null;                   // { iceServers, turn } vindo do servidor (STUN + TURN)
+let VC_REC = new Map();              // socketId -> { tentativas, timer } (reconexão automática)
+let VC_QUAL = new Map();             // socketId -> { nivel, rtt, perda, rota, fps }
+let VC_QUALIDADE = 'auto';           // 'auto' | 'alta' | 'economia'
+let VC_LEG = { ver: false, falar: false, rec: null, linhas: new Map(), transcricao: [] };
+let VC_ENQ = null;                   // enquete aberta
+let VC_FUNDO = { modo: 'nenhum', bruta: null, proc: null, seg: null, rodando: false };
 
 // Ícones (traço) — visual limpo, igual às plataformas de reunião.
 const VC_ICO = {
@@ -19286,6 +19309,8 @@ function vcMontarReuniao() {
           <div class="vc-faixa" id="vc-faixa"></div>
           <div class="vc-voando" id="vc-voando"></div>
           <div class="vc-notifs" id="vc-notifs"></div>
+          <div class="vc-legendas" id="vc-legendas"></div>
+          <div id="vc-enquete-box"></div>
           <div class="vc-espera" id="vc-espera">
             <div class="vc-espera-caixa"><div class="vc-pulso"></div><b>Aguardando outras pessoas entrarem…</b>
             ${!VC_SOU_CONVIDADO ? `<span>Envie o link para quem vai participar.</span><button onclick="abrirConviteVideochamada()">${VC_ICO.link} Copiar link de convite</button>` : '<span>O organizador vai entrar em instantes.</span>'}</div>
@@ -19323,6 +19348,11 @@ function vcMontarReuniao() {
             <button class="vc-cb" onclick="vcAbrirPop('vc-pop-mais', event)">${VC_ICO.mais}<span>Mais</span></button>
             <div class="vc-pop vc-pop-menu" id="vc-pop-mais" hidden>
               <button onclick="vcFecharPops();vcAbrirConfig()">${VC_ICO.config} Configurações de áudio e vídeo</button>
+              <button onclick="vcFecharPops();vcAbrirFundo()">🖼️&nbsp; Efeitos de fundo (desfocar)</button>
+              <button id="vc-btn-leg" onclick="vcFecharPops();vcAlternarLegendas()">💬&nbsp; Ativar legendas ao vivo</button>
+              ${!VC_SOU_CONVIDADO ? `<button onclick="vcFecharPops();vcCriarEnquete()">📊&nbsp; Criar enquete</button>` : ''}
+              <button onclick="vcFecharPops();vcAbrirDiagnostico()">📶&nbsp; Qualidade e conexão</button>
+              <button onclick="vcFecharPops();vcBaixarTranscricao()">📝&nbsp; Baixar transcrição / chat</button>
               <button id="vc-btn-pip-sistema" onclick="vcFecharPops();alternarPipSistema()">${VC_ICO.pip} Janela flutuante (fora da aba)</button>
               <button onclick="vcFecharPops();alternarTelaCheiaVideochamada()">${VC_ICO.cheia} Tela cheia</button>
               ${!VC_SOU_CONVIDADO ? `<button onclick="vcFecharPops();abrirConviteVideochamada()">${VC_ICO.link} Copiar link de convite</button>` : ''}
@@ -19350,14 +19380,16 @@ function vcMontarReuniao() {
   document.addEventListener('keydown', vcTeclas);
   document.addEventListener('click', vcCliqueFora);
   VC_INICIO = Date.now();
-  VC_TIMERS.push(setInterval(vcRelogio, 1000), setInterval(vcDetectarFala, 200));
+  VC_TIMERS.push(setInterval(vcRelogio, 1000), setInterval(vcDetectarFala, 200), setInterval(vcMedirQualidade, 3000), setInterval(vcDesenharLegendas, 1000));
   vcRelogio();
 }
 
 // ---------- Conexão (sinalização) ----------
-function vcConectar() {
+async function vcConectar() {
   vcStatus('Conectando à sala…');
-  VC_SOCKET = io();
+  await vcCarregarIce();
+  if (!VC_NA_SALA && !document.getElementById('vc-tela')) return;
+  VC_SOCKET = io({ reconnectionDelayMax: 4000 });
   let jaConectou = false;
   VC_SOCKET.on('connect', () => {
     if (jaConectou) { vcLimparRemotos(); vcNotificar('Conexão restabelecida.'); }
@@ -19376,11 +19408,14 @@ function vcConectar() {
     vcStatus(d.outros.length ? 'Conectando aos participantes…' : 'Você está na reunião');
     for (const p of d.outros) {
       vcRegistrarParticipante(p.socketId, p.name, p.convidado, p.estado);
+      const velho = VC_PEERS.get(p.socketId); if (velho) { velho.__descartado = true; try { velho.close(); } catch (e) {} }
       const peer = criarConexaoPeer(p.socketId, true);
-      try { const oferta = await peer.createOffer(); await peer.setLocalDescription(oferta); VC_SOCKET.emit('sinal-webrtc', { tipo: 'offer', dados: oferta, paraSocketId: p.socketId }); } catch (e) { /* tenta de novo na reconexão */ }
+      await vcEnviarOferta(p.socketId, peer);
     }
     vcLayout(); vcDesenharPessoas();
     if (VC_GRAV) vcEnviarEstado();
+    if (VC_LEG.ver) VC_SOCKET.emit('vc-evento', { tipo: 'legendas-pedido', dados: {} });
+    if (VC_ENQ && !VC_SOU_CONVIDADO && VC_ENQ.minha) VC_SOCKET.emit('vc-evento', { tipo: 'enquete', dados: VC_ENQ.def });
   });
   VC_SOCKET.on('usuario-entrou', ({ socketId, name, convidado, estado }) => {
     vcRegistrarParticipante(socketId, name, convidado, estado);
@@ -19415,20 +19450,33 @@ function vcConectar() {
   });
   VC_SOCKET.on('sinal-webrtc', async ({ tipo, dados, de }) => {
     let peer = VC_PEERS.get(de);
+    // o outro lado recriou a conexão do zero: descarta a antiga
+    if (tipo === 'offer-nova' && peer) { peer.__descartado = true; try { peer.close(); } catch (e) {} VC_PEERS.delete(de); peer = null; }
     if (!peer) { if (!VC_INFO.has(de)) vcRegistrarParticipante(de, VC_NOMES.get(de) || 'Participante', false, null); peer = criarConexaoPeer(de, false); vcLayout(); }
     try {
-      if (tipo === 'offer') {
+      if (tipo === 'offer' || tipo === 'offer-nova') {
+        // ofertas cruzadas (os dois tentaram reconectar ao mesmo tempo): um lado cede
+        if (peer.signalingState !== 'stable') {
+          if (vcEuOferto(de)) return; // eu tenho prioridade; o outro vai aceitar a minha
+          await peer.setLocalDescription({ type: 'rollback' }).catch(() => {});
+        }
         await peer.setRemoteDescription(new RTCSessionDescription(dados));
+        await vcAdicionarCandidatos(peer);
         const resposta = await peer.createAnswer();
         await peer.setLocalDescription(resposta);
-        VC_SOCKET.emit('sinal-webrtc', { tipo: 'answer', dados: resposta, paraSocketId: de });
+        VC_SOCKET.emit('sinal-webrtc', { tipo: 'answer', dados: peer.localDescription, paraSocketId: de });
       } else if (tipo === 'answer') {
+        if (peer.signalingState !== 'have-local-offer') return;
         await peer.setRemoteDescription(new RTCSessionDescription(dados));
+        await vcAdicionarCandidatos(peer);
       } else if (tipo === 'candidate' && dados) {
-        try { await peer.addIceCandidate(new RTCIceCandidate(dados)); } catch (e) { /* candidato tardio */ }
+        // candidato que chega antes da oferta/resposta fica guardado (antes ele se perdia e a conexão falhava)
+        if (!peer.remoteDescription || !peer.remoteDescription.type) peer.__pendentes.push(new RTCIceCandidate(dados));
+        else { try { await peer.addIceCandidate(new RTCIceCandidate(dados)); } catch (e) { /* candidato tardio */ } }
       }
     } catch (e) { console.warn('WebRTC:', e); }
   });
+  VC_SOCKET.on('vc-evento', vcAoEvento);
 }
 function vcMeuEstado() { return { mic: VC_MICRO_LIGADO && !!(VC_STREAM_LOCAL && VC_STREAM_LOCAL.getAudioTracks().length), cam: VC_CAMERA_LIGADA && !VC_SEM_CAMERA, mao: VC_MAO, tela: VC_COMPARTILHANDO_TELA, gravando: !!VC_GRAV }; }
 function vcEnviarEstado() {
@@ -19445,7 +19493,8 @@ function vcRegistrarParticipante(id, nome, convidado, estado) {
   vcAtualizarTile(id); vcAtualizarRec();
 }
 function vcRemoverParticipante(id) {
-  const peer = VC_PEERS.get(id); if (peer) { try { peer.close(); } catch (e) {} VC_PEERS.delete(id); }
+  const peer = VC_PEERS.get(id); if (peer) { peer.__descartado = true; try { peer.close(); } catch (e) {} VC_PEERS.delete(id); }
+  const rc = VC_REC.get(id); if (rc) clearTimeout(rc.timer); VC_REC.delete(id); VC_QUAL.delete(id); VC_LEG.linhas.delete(id);
   VC_NOMES.delete(id); VC_INFO.delete(id); VC_STREAMS_REMOTOS.delete(id); vcPararAnalise(id);
   if (VC_FIXADO === id) VC_FIXADO = null;
   if (VC_ATIVO === id) VC_ATIVO = null;
@@ -19454,8 +19503,66 @@ function vcRemoverParticipante(id) {
 }
 function vcLimparRemotos() { Array.from(VC_INFO.keys()).forEach(vcRemoverParticipante); vcLayout(); vcDesenharPessoas(); }
 
+const VC_STUN_PADRAO = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }];
+async function vcCarregarIce() {
+  try { const r = await fetch('/api/public/vc-ice', { cache: 'no-store' }); const j = await r.json(); if (j && Array.isArray(j.iceServers) && j.iceServers.length) VC_ICE = j; }
+  catch (e) {}
+  if (!VC_ICE) VC_ICE = { iceServers: VC_STUN_PADRAO, turn: false };
+  return VC_ICE;
+}
+function vcEuOferto(id) { return String(VC_MEU_ID || (VC_SOCKET && VC_SOCKET.id) || '') < String(id); }
+async function vcEnviarOferta(id, peer, opcoes, tipo) {
+  if (!peer || !VC_SOCKET) return;
+  try { const of = await peer.createOffer(opcoes || {}); if (peer.signalingState === 'closed') return; await peer.setLocalDescription(of); VC_SOCKET.emit('sinal-webrtc', { tipo: tipo || 'offer', dados: peer.localDescription, paraSocketId: id }); }
+  catch (e) { console.warn('Oferta WebRTC:', e); }
+}
+// Reconexão automática: 1º reinicia o ICE (troca de rota sem derrubar), depois recria a conexão inteira.
+function vcReconectar(id, motivo) {
+  const peer = VC_PEERS.get(id); if (!peer || !VC_SOCKET || !VC_NA_SALA) return;
+  const r = VC_REC.get(id) || { tentativas: 0 }; VC_REC.set(id, r);
+  r.tentativas++;
+  const info = document.getElementById('vc-inst-' + id);
+  if (r.tentativas <= 2) {
+    if (info) info.textContent = `Tentativa ${r.tentativas} de restabelecer a conexão…`;
+    if (peer.restartIce) try { peer.restartIce(); } catch (e) {}
+    vcEnviarOferta(id, peer, { iceRestart: true });
+  } else if (r.tentativas <= 4) {
+    if (info) info.textContent = 'Recriando a conexão de vídeo…';
+    vcRecriarPeer(id);
+  } else {
+    if (info) info.innerHTML = (VC_ICE && VC_ICE.turn ? 'A rede de um dos participantes está muito instável.' : 'A rede (empresa, Wi‑Fi corporativo ou 4G) está bloqueando a conexão direta. ' + (vcEuModerador() ? 'Ative o servidor TURN em Mais › Qualidade e conexão.' : 'Peça ao organizador para ativar o servidor TURN.')) + `<br><button onclick="VC_REC.set('${id}', { tentativas: 0 }); vcRecriarPeer('${id}')">Tentar de novo</button>`;
+    return;
+  }
+  clearTimeout(r.timer);
+  r.timer = setTimeout(() => { const p = VC_PEERS.get(id); if (p && (p.connectionState || p.iceConnectionState) !== 'connected' && p.iceConnectionState !== 'completed') vcReconectar(id, 'tempo'); }, 9000);
+}
+function vcRecriarPeer(id) {
+  if (!VC_SOCKET || !VC_INFO.has(id)) return;
+  const velho = VC_PEERS.get(id); if (velho) { velho.__descartado = true; try { velho.close(); } catch (e) {} VC_PEERS.delete(id); }
+  const peer = criarConexaoPeer(id, true);
+  vcEnviarOferta(id, peer, {}, 'offer-nova');
+}
+function vcAoMudarConexao(id, peer) {
+  if (peer.__descartado || VC_PEERS.get(id) !== peer) return;
+  const st = peer.connectionState || peer.iceConnectionState, t = document.getElementById('vc-tile-' + id);
+  const ruim = st === 'disconnected' || st === 'failed';
+  if (t) t.classList.toggle('instavel', ruim);
+  const r = VC_REC.get(id) || { tentativas: 0 }; VC_REC.set(id, r);
+  if (st === 'connected') {
+    clearTimeout(r.timer); if (r.tentativas) vcNotificar(`Conexão com ${VC_NOMES.get(id) || 'o participante'} restabelecida ✅`);
+    r.tentativas = 0; vcStatus('Você está na reunião'); vcAplicarQualidade();
+  } else if (st === 'disconnected') {
+    vcStatus(`Conexão instável com ${VC_NOMES.get(id) || 'um participante'} — reconectando…`, true);
+    clearTimeout(r.timer); r.timer = setTimeout(() => { if (!['connected'].includes(peer.connectionState)) { if (vcEuOferto(id)) vcReconectar(id); else r.timer = setTimeout(() => { if (peer.connectionState !== 'connected') vcReconectar(id); }, 5000); } }, 3500);
+  } else if (st === 'failed') {
+    vcStatus(`Reconectando com ${VC_NOMES.get(id) || 'um participante'}…`, true);
+    clearTimeout(r.timer);
+    if (vcEuOferto(id)) vcReconectar(id); else r.timer = setTimeout(() => { if (peer.connectionState !== 'connected') vcReconectar(id); }, 4000);
+  }
+}
 function criarConexaoPeer(socketId, iniciador) {
-  const peer = new RTCPeerConnection({ iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }, { urls: 'stun:global.stun.twilio.com:3478' }] });
+  const peer = new RTCPeerConnection({ iceServers: (VC_ICE && VC_ICE.iceServers) || VC_STUN_PADRAO, iceCandidatePoolSize: 4, bundlePolicy: 'max-bundle' });
+  peer.__pendentes = [];
   VC_PEERS.set(socketId, peer);
   const faixaTela = VC_COMPARTILHANDO_TELA && VC_STREAM_TELA ? VC_STREAM_TELA.getVideoTracks()[0] : null;
   VC_STREAM_LOCAL.getTracks().forEach(track => {
@@ -19463,7 +19570,7 @@ function criarConexaoPeer(socketId, iniciador) {
     else peer.addTrack(track, VC_STREAM_LOCAL);
   });
   if (iniciador && !VC_STREAM_LOCAL.getAudioTracks().length) { try { peer.addTransceiver('audio', { direction: 'recvonly' }); } catch (e) {} }
-  peer.onicecandidate = (ev) => { if (ev.candidate && VC_SOCKET) VC_SOCKET.emit('sinal-webrtc', { tipo: 'candidate', dados: ev.candidate, paraSocketId: socketId }); };
+  peer.onicecandidate = (ev) => { if (ev.candidate && VC_SOCKET && VC_PEERS.get(socketId) === peer) VC_SOCKET.emit('sinal-webrtc', { tipo: 'candidate', dados: ev.candidate, paraSocketId: socketId }); };
   peer.ontrack = (ev) => {
     const stream = ev.streams[0] || new MediaStream([ev.track]);
     VC_STREAMS_REMOTOS.set(socketId, stream);
@@ -19475,12 +19582,54 @@ function criarConexaoPeer(socketId, iniciador) {
     }
     vcStatus('Você está na reunião');
   };
-  peer.onconnectionstatechange = () => {
-    const st = peer.connectionState, t = document.getElementById('vc-tile-' + socketId);
-    if (t) t.classList.toggle('instavel', st === 'disconnected' || st === 'failed');
-    if (st === 'failed') { vcStatus(`Conexão perdida com ${VC_NOMES.get(socketId) || 'um participante'}.`, true); try { peer.restartIce && peer.restartIce(); } catch (e) {} }
-  };
+  peer.onconnectionstatechange = () => vcAoMudarConexao(socketId, peer);
+  // navegadores sem connectionState (Safari antigo) usam o estado do ICE
+  peer.oniceconnectionstatechange = () => { if (!('connectionState' in peer)) vcAoMudarConexao(socketId, peer); };
   return peer;
+}
+async function vcAdicionarCandidatos(peer) { const l = peer.__pendentes.splice(0); for (const c of l) { try { await peer.addIceCandidate(c); } catch (e) {} } }
+
+// ---------- Qualidade da conexão (sinal por participante) ----------
+async function vcMedirQualidade() {
+  for (const [id, peer] of VC_PEERS) {
+    if (peer.connectionState === 'closed') continue;
+    let st; try { st = await peer.getStats(); } catch (e) { continue; }
+    let rtt = null, rota = '', perdidos = 0, recebidos = 0, fps = null, bytes = 0;
+    st.forEach(r => {
+      if (r.type === 'candidate-pair' && (r.nominated || r.selected) && r.state === 'succeeded') { if (r.currentRoundTripTime !== undefined) rtt = r.currentRoundTripTime * 1000; const lc = st.get(r.localCandidateId), rc = st.get(r.remoteCandidateId); rota = (lc && lc.candidateType === 'relay') || (rc && rc.candidateType === 'relay') ? 'TURN (retransmitida)' : 'Direta'; }
+      if (r.type === 'inbound-rtp' && !r.isRemote) { perdidos += r.packetsLost || 0; recebidos += r.packetsReceived || 0; bytes += r.bytesReceived || 0; if (r.kind === 'video' && r.framesPerSecond !== undefined) fps = r.framesPerSecond; }
+    });
+    const ant = VC_QUAL.get(id) || {};
+    const dp = Math.max(0, perdidos - (ant.perdidos || 0)), dr = Math.max(0, recebidos - (ant.recebidos || 0));
+    const perda = dr + dp ? dp / (dr + dp) * 100 : 0;
+    const kbps = ant.bytes !== undefined && ant.t ? Math.max(0, (bytes - ant.bytes) * 8 / ((Date.now() - ant.t) / 1000) / 1000) : 0;
+    let nivel = 3; if (peer.connectionState !== 'connected') nivel = 0; else if ((rtt || 0) > 400 || perda > 8) nivel = 1; else if ((rtt || 0) > 200 || perda > 3) nivel = 2;
+    VC_QUAL.set(id, { nivel, rtt, perda, rota, fps, kbps, perdidos, recebidos, bytes, t: Date.now(), estado: peer.connectionState });
+    const s = document.getElementById('vc-sinal-' + id);
+    if (s) { s.className = 'vc-sinal q' + nivel; s.title = `Conexão ${['sem sinal', 'fraca', 'razoável', 'boa'][nivel]} · ${rtt !== null ? Math.round(rtt) + ' ms' : '—'} · perda ${perda.toFixed(1)}% · ${rota || '—'}`; }
+  }
+  if (VC_QUALIDADE === 'auto') vcAplicarQualidade();
+  const d = document.getElementById('vc-diag-tab'); if (d) d.innerHTML = vcDiagLinhas();
+}
+// Ajusta o envio de vídeo: alta, economia ou automático (cai sozinho quando a rede de alguém piora).
+function vcAplicarQualidade() {
+  const ruim = Array.from(VC_QUAL.values()).some(q => q.nivel === 1);
+  const n = Math.max(1, VC_PEERS.size);
+  const alvo = VC_QUALIDADE === 'alta' ? { br: 2500000, esc: 1 } : VC_QUALIDADE === 'economia' ? { br: 300000, esc: 2 } : ruim ? { br: 450000, esc: 1.5 } : { br: n > 4 ? 800000 : 1500000, esc: 1 };
+  if (VC_COMPARTILHANDO_TELA) alvo.esc = 1;
+  for (const peer of VC_PEERS.values()) peer.getSenders().forEach(sd => {
+    if (!sd.track || sd.track.kind !== 'video' || !sd.getParameters) return;
+    const pr = sd.getParameters(); if (!pr.encodings || !pr.encodings.length) pr.encodings = [{}];
+    if (pr.encodings[0].maxBitrate === alvo.br && (pr.encodings[0].scaleResolutionDownBy || 1) === alvo.esc) return;
+    pr.encodings[0].maxBitrate = alvo.br; pr.encodings[0].scaleResolutionDownBy = alvo.esc;
+    sd.setParameters(pr).catch(() => {});
+  });
+}
+function vcDiagLinhas() {
+  const l = Array.from(VC_INFO.entries());
+  if (!l.length) return '<tr><td colspan="6">Ninguém mais na reunião ainda.</td></tr>';
+  return l.map(([id, p]) => { const q = VC_QUAL.get(id) || {}, cls = ['ruim', 'ruim', 'med', 'ok'][q.nivel || 0];
+    return `<tr><td><b>${escapeHtml(p.nome)}</b></td><td class="${cls}">${['Sem conexão', 'Fraca', 'Razoável', 'Boa'][q.nivel || 0]}</td><td>${q.rtt != null ? Math.round(q.rtt) + ' ms' : '—'}</td><td>${q.perda != null ? q.perda.toFixed(1) + '%' : '—'}</td><td>${q.kbps ? Math.round(q.kbps) + ' kbps' : '—'}${q.fps ? ' · ' + Math.round(q.fps) + ' fps' : ''}</td><td>${q.rota || '—'}</td></tr>`; }).join('');
 }
 
 // ---------- Blocos de vídeo ----------
@@ -19494,9 +19643,9 @@ function vcCriarTile(id, nome, local) {
     <video id="vc-video-${id}" autoplay playsinline ${local ? 'muted' : ''}></video>
     <div class="vc-semcam"><div class="vc-avatar" style="background:${vcCor(nome)}">${escapeHtml(vcIniciais(nome.replace(' (Você)', '')))}</div></div>
     <div class="vc-tile-mao">✋</div>
-    <div class="vc-tile-nome"><span class="vc-tile-mic">${VC_ICO.micOff}</span><span class="vc-tile-txt">${escapeHtml(nome)}</span></div>
+    <div class="vc-tile-nome"><span class="vc-tile-mic">${VC_ICO.micOff}</span><span class="vc-tile-txt">${escapeHtml(nome)}</span>${local ? '' : `<span class="vc-sinal" id="vc-sinal-${id}" title="Qualidade da conexão"><i></i><i></i><i></i></span>`}</div>
     <button class="vc-tile-fixar" onclick="vcFixar('${id}')" title="Fixar / desafixar">${VC_ICO.fixar}</button>
-    <div class="vc-tile-instavel">Reconectando…</div>`;
+    <div class="vc-tile-instavel"><div class="vc-gira"></div><b>Reconectando…</b><small id="vc-inst-${id}">Tentando restabelecer o vídeo automaticamente.</small></div>`;
   div.addEventListener('dblclick', () => vcFixar(id));
   grade.appendChild(div);
   if (!local && VC_STREAMS_REMOTOS.get(id)) { const v = div.querySelector('video'); v.srcObject = VC_STREAMS_REMOTOS.get(id); vcAplicarSaidaSom(v); }
@@ -19891,6 +20040,212 @@ function vcModerar(acao, alvo) {
   vcNotificar({ silenciar: 'Microfone do participante desligado', 'silenciar-todos': 'Todos foram silenciados', remover: 'Participante removido', 'abaixar-mao': 'Mão abaixada' }[acao] || 'Pronto');
 }
 
+// ---------- Eventos ao vivo (legendas, enquetes) ----------
+function vcAoEvento({ tipo, dados, socketId, nome }) {
+  dados = dados || {};
+  if (tipo === 'legenda') {
+    const txt = String(dados.texto || '').slice(0, 400); if (!txt) return;
+    VC_LEG.linhas.set(socketId, { nome, texto: txt, t: Date.now() });
+    if (dados.final) VC_LEG.transcricao.push({ t: Date.now(), nome, texto: txt });
+    if (VC_LEG.ver) vcDesenharLegendas();
+  } else if (tipo === 'legendas-pedido') {
+    if (!VC_LEG.falar) { vcIniciarLegendas(true); if (VC_LEG.falar) vcNotificar(`💬 ${nome} ativou as legendas ao vivo — sua fala vai aparecer como legenda.`); }
+  } else if (tipo === 'enquete') {
+    if (!dados.id || !Array.isArray(dados.opcoes)) return;
+    if (VC_ENQ && VC_ENQ.def.id === dados.id) return;
+    VC_ENQ = { def: { id: String(dados.id), pergunta: String(dados.pergunta || '').slice(0, 200), opcoes: dados.opcoes.slice(0, 6).map(o => String(o).slice(0, 80)) }, votos: new Map(), meu: null, minha: false, aberta: true, autor: nome };
+    vcSom('msg'); vcNotificar(`📊 ${nome} abriu uma enquete`); vcDesenharEnquete();
+  } else if (tipo === 'voto') {
+    if (!VC_ENQ || dados.id !== VC_ENQ.def.id || !VC_ENQ.aberta) return;
+    const op = Number(dados.opcao); if (!(op >= 0 && op < VC_ENQ.def.opcoes.length)) return;
+    VC_ENQ.votos.set(socketId, op); vcDesenharEnquete();
+  } else if (tipo === 'enquete-fim') {
+    if (VC_ENQ && dados.id === VC_ENQ.def.id) { VC_ENQ.aberta = false; vcDesenharEnquete(); vcNotificar('📊 Enquete encerrada — veja o resultado.'); }
+  }
+}
+// Legendas ao vivo: cada participante transcreve a PRÓPRIA fala no navegador (pt-BR) e envia para todos.
+function vcAlternarLegendas() {
+  VC_LEG.ver = !VC_LEG.ver;
+  const b = document.getElementById('vc-btn-leg'); if (b) b.innerHTML = VC_LEG.ver ? '💬&nbsp; Desativar legendas ao vivo' : '💬&nbsp; Ativar legendas ao vivo';
+  if (VC_LEG.ver) {
+    vcIniciarLegendas();
+    if (VC_SOCKET) VC_SOCKET.emit('vc-evento', { tipo: 'legendas-pedido', dados: {} });
+    vcNotificar(window.SpeechRecognition || window.webkitSpeechRecognition ? '💬 Legendas ao vivo ativadas para todos que usam Chrome ou Edge.' : '💬 Legendas ativadas. Seu navegador não transcreve a sua voz — use o Chrome ou o Edge para que a sua fala também vire legenda.');
+  }
+  vcDesenharLegendas();
+}
+function vcIniciarLegendas(silencioso) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR || VC_LEG.falar) return;
+  let rec; try { rec = new SR(); } catch (e) { return; }
+  rec.lang = 'pt-BR'; rec.continuous = true; rec.interimResults = true;
+  let ultimoEnvio = 0;
+  rec.onresult = ev => {
+    if (!VC_MICRO_LIGADO) return;
+    let parcial = '', final = '';
+    for (let i = ev.resultIndex; i < ev.results.length; i++) { const t = ev.results[i][0].transcript; if (ev.results[i].isFinal) final += t; else parcial += t; }
+    const texto = (final || parcial).trim(); if (!texto) return;
+    VC_LEG.linhas.set('local', { nome: VC_MEU_NOME, texto, t: Date.now() });
+    if (final) VC_LEG.transcricao.push({ t: Date.now(), nome: VC_MEU_NOME, texto: final.trim() });
+    if (VC_LEG.ver) vcDesenharLegendas();
+    if (VC_SOCKET && (final || Date.now() - ultimoEnvio > 350)) { ultimoEnvio = Date.now(); VC_SOCKET.emit('vc-evento', { tipo: 'legenda', dados: { texto: texto.slice(-300), final: !!final } }); }
+  };
+  rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { VC_LEG.falar = false; VC_LEG.rec = null; } };
+  rec.onend = () => { if (VC_LEG.falar && VC_NA_SALA) { try { rec.start(); } catch (e) {} } };
+  try { rec.start(); VC_LEG.rec = rec; VC_LEG.falar = true; } catch (e) {}
+}
+function vcPararLegendas() { VC_LEG.falar = false; if (VC_LEG.rec) { try { VC_LEG.rec.onend = null; VC_LEG.rec.stop(); } catch (e) {} VC_LEG.rec = null; } }
+function vcDesenharLegendas() {
+  const el = document.getElementById('vc-legendas'); if (!el) return;
+  if (!VC_LEG.ver) { el.innerHTML = ''; return; }
+  const agora = Date.now();
+  el.innerHTML = Array.from(VC_LEG.linhas.values()).filter(l => agora - l.t < 6000).sort((a, b) => a.t - b.t).slice(-3)
+    .map(l => `<div><b>${escapeHtml(l.nome)}:</b>${escapeHtml(l.texto.length > 160 ? '…' + l.texto.slice(-160) : l.texto)}</div>`).join('');
+}
+function vcBaixarTranscricao() {
+  const chat = Array.from(document.querySelectorAll('#vc-chat-lista .vc-msg')).map(m => { const n = m.querySelector('.vc-msg-cab b'), h = m.querySelector('.vc-msg-cab span'); return Array.from(m.querySelectorAll('.vc-msg-b')).map(b => `[${h ? h.textContent : ''}] ${n ? n.textContent : ''}: ${b.textContent}`).join('\n'); }).join('\n');
+  const fala = VC_LEG.transcricao.map(l => `[${vcHora(l.t)}] ${l.nome}: ${l.texto}`).join('\n');
+  if (!chat && !fala) return vcNotificar('Ainda não há transcrição nem mensagens. Ative as legendas ao vivo para transcrever a reunião.', 'erro');
+  const txt = `${VC_TITULO}\n${new Date().toLocaleString('pt-BR')}\nParticipantes: ${[VC_MEU_NOME, ...Array.from(VC_INFO.values()).map(p => p.nome)].join(', ')}\n\n=== TRANSCRIÇÃO DA FALA ===\n${fala || '(legendas ao vivo não foram ativadas)'}\n\n=== CHAT ===\n${chat || '(sem mensagens)'}\n`;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain;charset=utf-8' })); a.download = 'reuniao-' + new Date().toISOString().slice(0, 10) + '.txt'; a.click();
+}
+// ---------- Enquete ----------
+function vcCriarEnquete() {
+  const area = document.getElementById('modal-area-vc'); if (!area) return;
+  area.innerHTML = `<div class="vc-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="vc-modal">
+    <div class="vc-modal-cab"><h3>📊 Criar enquete</h3><button class="vc-x" onclick="document.getElementById('modal-area-vc').innerHTML=''">${VC_ICO.fechar}</button></div>
+    <label>Pergunta</label><input id="vc-enq-p" placeholder="Ex.: Qual tema vocês querem aprofundar?">
+    <label>Opções (uma por linha, até 6)</label><textarea id="vc-enq-o" rows="4" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:inherit;border-radius:8px;padding:8px;font-family:inherit;">Sim\nNão</textarea>
+    <div style="display:flex;gap:8px;margin-top:10px;"><button class="vc-bt" onclick="vcLancarEnquete()">Lançar para todos</button><button class="vc-bt sec" onclick="document.getElementById('modal-area-vc').innerHTML=''">Cancelar</button></div>
+  </div></div>`;
+  setTimeout(() => document.getElementById('vc-enq-p').focus(), 30);
+}
+function vcLancarEnquete() {
+  const pergunta = document.getElementById('vc-enq-p').value.trim(), opcoes = document.getElementById('vc-enq-o').value.split('\n').map(x => x.trim()).filter(Boolean).slice(0, 6);
+  if (!pergunta || opcoes.length < 2) return vcNotificar('Escreva a pergunta e pelo menos 2 opções.', 'erro');
+  const def = { id: Date.now().toString(36), pergunta, opcoes };
+  VC_ENQ = { def, votos: new Map(), meu: null, minha: true, aberta: true, autor: VC_MEU_NOME };
+  if (VC_SOCKET) VC_SOCKET.emit('vc-evento', { tipo: 'enquete', dados: def });
+  document.getElementById('modal-area-vc').innerHTML = ''; vcDesenharEnquete(); vcNotificar('📊 Enquete enviada para todos.');
+}
+function vcVotar(op) {
+  if (!VC_ENQ || !VC_ENQ.aberta) return;
+  VC_ENQ.meu = op; VC_ENQ.votos.set('local', op);
+  if (VC_SOCKET) VC_SOCKET.emit('vc-evento', { tipo: 'voto', dados: { id: VC_ENQ.def.id, opcao: op } });
+  vcDesenharEnquete();
+}
+function vcEncerrarEnquete() { if (!VC_ENQ) return; VC_ENQ.aberta = false; if (VC_SOCKET) VC_SOCKET.emit('vc-evento', { tipo: 'enquete-fim', dados: { id: VC_ENQ.def.id } }); vcDesenharEnquete(); }
+function vcDesenharEnquete() {
+  const box = document.getElementById('vc-enquete-box'); if (!box) return;
+  if (!VC_ENQ) { box.innerHTML = ''; return; }
+  const e = VC_ENQ, tot = e.votos.size, cont = e.def.opcoes.map((_, i) => Array.from(e.votos.values()).filter(v => v === i).length);
+  const mostrar = e.meu !== null || !e.aberta || e.minha;
+  box.innerHTML = `<div class="vc-enquete"><h4>📊 Enquete ${e.aberta ? '' : '· encerrada'}</h4><div class="perg">${escapeHtml(e.def.pergunta)}</div>
+    ${e.def.opcoes.map((o, i) => { const pc = tot ? Math.round(cont[i] / tot * 100) : 0; return `<button class="op ${e.meu === i ? 'meu' : ''}" ${e.aberta ? `onclick="vcVotar(${i})"` : 'disabled'}><div class="bar" style="width:${mostrar ? pc : 0}%"></div><span><span>${e.meu === i ? '✔ ' : ''}${escapeHtml(o)}</span>${mostrar ? `<b>${pc}% (${cont[i]})</b>` : ''}</span></button>`; }).join('')}
+    <div class="rod"><span>${tot} voto(s)${e.autor ? ' · por ' + escapeHtml(e.autor) : ''}</span><span>${e.minha && e.aberta ? '<button onclick="vcEncerrarEnquete()">Encerrar</button>' : ''} <button onclick="VC_ENQ=null; vcDesenharEnquete()">Fechar</button></span></div></div>`;
+}
+// ---------- Qualidade e conexão (diagnóstico + servidor TURN) ----------
+async function vcAbrirDiagnostico() {
+  const area = document.getElementById('modal-area-vc'); if (!area) return;
+  const admin = !VC_SOU_CONVIDADO && ESTADO.usuario && ESTADO.usuario.role === 'admin';
+  area.innerHTML = `<div class="vc-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="vc-modal vc-diag" style="max-width:720px;">
+    <div class="vc-modal-cab"><h3>📶 Qualidade e conexão</h3><button class="vc-x" onclick="document.getElementById('modal-area-vc').innerHTML=''">${VC_ICO.fechar}</button></div>
+    <label>Qualidade do meu vídeo</label>
+    <div class="vc-opcoes">${[['auto', '⚡ Automática (recomendado)'], ['alta', '🎥 Alta definição'], ['economia', '📉 Economia de dados']].map(([k, r]) => `<button class="${VC_QUALIDADE === k ? 'on' : ''}" onclick="VC_QUALIDADE='${k}'; vcAplicarQualidade(); vcAbrirDiagnostico()">${r}</button>`).join('')}</div>
+    <table><thead><tr><th>Participante</th><th>Sinal</th><th>Atraso</th><th>Perda</th><th>Recebendo</th><th>Rota</th></tr></thead><tbody id="vc-diag-tab">${vcDiagLinhas()}</tbody></table>
+    <div class="vc-modal-dica">${VC_ICE && VC_ICE.turn ? '✅ Servidor TURN ativo: mesmo em redes corporativas, Wi‑Fi de empresa ou 4G a reunião consegue se conectar (retransmitida pela porta 443 quando a rede bloqueia).' : '⚠️ Sem servidor TURN: quem estiver em rede corporativa, Wi‑Fi de empresa ou 4G pode ficar em "Reconectando…". ' + (admin ? 'Ative abaixo (Cloudflare tem plano gratuito).' : 'Peça ao administrador para ativar o servidor TURN.')}</div>
+    ${admin ? `<div id="vc-turn-form" style="margin-top:12px;border-top:1px solid rgba(255,255,255,.1);padding-top:12px;"><b>🛰️ Servidor TURN (conexão em qualquer rede)</b><div class="plano-meta" style="color:#94a3b8;">Carregando…</div></div>` : ''}
+  </div></div>`;
+  if (admin) vcDesenharTurnForm();
+}
+async function vcDesenharTurnForm(prov) {
+  const el = document.getElementById('vc-turn-form'); if (!el) return;
+  let c = {}; try { c = await api('/api/admin/vc-turn'); } catch (e) {}
+  const p = prov !== undefined ? prov : (c.provedor === 'env' ? '' : c.provedor || 'cloudflare');
+  el.innerHTML = `<b>🛰️ Servidor TURN (conexão em qualquer rede)</b> ${c.configurado ? '<span class="ok">● ativo</span>' : '<span class="ruim">● desligado</span>'}
+    <div class="vc-opcoes">${[['cloudflare', 'Cloudflare (grátis até 1.000 GB/mês)'], ['metered', 'Metered'], ['manual', 'Meu próprio servidor'], ['', 'Desligar']].map(([k, r]) => `<button class="${p === k ? 'on' : ''}" onclick="vcDesenharTurnForm('${k}')">${r}</button>`).join('')}</div>
+    ${p === 'cloudflare' ? `<div class="vc-modal-dica">No painel da Cloudflare: <b>Realtime › TURN Server › Create</b>. Copie o <b>Turn Token ID</b> e o <b>API Token</b>.</div><label>Turn Token ID</label><input id="vt-keyId" value="${escapeHtml(c.keyId || '')}"><label>API Token</label><input id="vt-token" type="password" value="${escapeHtml(c.token || '')}">` : ''}
+    ${p === 'metered' ? `<div class="vc-modal-dica">Em metered.ca › TURN Server: o nome do app (ex.: <b>minhaempresa</b>.metered.live) e a <b>API Key</b>.</div><label>Nome do app</label><input id="vt-app" value="${escapeHtml(c.app || '')}" placeholder="minhaempresa"><label>API Key</label><input id="vt-apiKey" type="password" value="${escapeHtml(c.apiKey || '')}">` : ''}
+    ${p === 'manual' ? `<label>Endereços TURN (separados por vírgula)</label><input id="vt-urls" value="${escapeHtml(c.urls || '')}" placeholder="turn:turn.suaempresa.com:3478, turns:turn.suaempresa.com:443?transport=tcp"><label>Usuário</label><input id="vt-usuario" value="${escapeHtml(c.usuario || '')}"><label>Senha</label><input id="vt-senha" type="password" value="${escapeHtml(c.senha || '')}">` : ''}
+    <div style="display:flex;gap:8px;align-items:center;"><button class="vc-bt" onclick="vcSalvarTurn('${p}')">${p ? 'Testar e salvar' : 'Desligar TURN'}</button><span id="vt-msg" style="font-size:12.5px;"></span></div>`;
+}
+async function vcSalvarTurn(p) {
+  const v = id => (document.getElementById(id) || {}).value || '';
+  const m = document.getElementById('vt-msg'); m.textContent = 'Testando…'; m.className = '';
+  try {
+    const r = await api('/api/admin/vc-turn', { method: 'PUT', body: JSON.stringify({ provedor: p, keyId: v('vt-keyId'), token: v('vt-token'), app: v('vt-app'), apiKey: v('vt-apiKey'), urls: v('vt-urls'), usuario: v('vt-usuario'), senha: v('vt-senha') }) });
+    m.textContent = r.message; m.className = 'ok';
+    await vcCarregarIce();
+    for (const [id, peer] of VC_PEERS) { try { peer.setConfiguration(Object.assign(peer.getConfiguration(), { iceServers: VC_ICE.iceServers })); } catch (e) {} if (peer.connectionState !== 'connected') { VC_REC.set(id, { tentativas: 0 }); vcReconectar(id); } }
+    vcDesenharTurnForm();
+  } catch (e) { m.textContent = '⚠️ ' + e.message; m.className = 'ruim'; }
+}
+// ---------- Efeitos de fundo: desfocar ou fundo da marca (segmentação no próprio navegador) ----------
+const VC_MP_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/';
+function vcAbrirFundo() {
+  const area = document.getElementById('modal-area-vc'); if (!area) return;
+  area.innerHTML = `<div class="vc-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="vc-modal">
+    <div class="vc-modal-cab"><h3>🖼️ Efeitos de fundo</h3><button class="vc-x" onclick="document.getElementById('modal-area-vc').innerHTML=''">${VC_ICO.fechar}</button></div>
+    <div class="vc-opcoes">${[['nenhum', '🚫 Nenhum'], ['leve', '🌫️ Desfocar leve'], ['forte', '🌁 Desfocar forte'], ['marca', '🏢 Fundo Impulsionar'], ['escritorio', '🪴 Escritório claro']].map(([k, r]) => `<button class="${VC_FUNDO.modo === k ? 'on' : ''}" onclick="vcFundo('${k}')">${r}</button>`).join('')}</div>
+    <div class="vc-modal-dica" id="vc-fundo-msg">O efeito é feito no seu computador — ninguém vê o ambiente atrás de você. Em computadores mais simples, use "Nenhum" para economizar processamento.</div>
+  </div></div>`;
+}
+function vcCarregarScript(src) { return new Promise((ok, ko) => { if (document.querySelector(`script[src="${src}"]`) && window.SelfieSegmentation) return ok(); const s = document.createElement('script'); s.src = src; s.crossOrigin = 'anonymous'; s.onload = ok; s.onerror = () => ko(new Error('Não consegui carregar o efeito de fundo (verifique a internet).')); document.head.appendChild(s); }); }
+async function vcFundo(modo) {
+  const msg = t => { const m = document.getElementById('vc-fundo-msg'); if (m) m.textContent = t; };
+  if (modo === 'nenhum') { vcPararFundo(); VC_FUNDO.modo = 'nenhum'; vcAbrirFundo(); return; }
+  if (VC_SEM_CAMERA || !VC_STREAM_LOCAL || !VC_STREAM_LOCAL.getVideoTracks()[0]) return msg('Ligue a câmera para usar efeitos de fundo.');
+  VC_FUNDO.modo = modo; vcAbrirFundo(); msg('Carregando o efeito…');
+  try {
+    if (!VC_FUNDO.rodando) await vcIniciarFundo();
+    msg('✅ Efeito aplicado. Todos já veem o novo fundo.');
+  } catch (e) { VC_FUNDO.modo = 'nenhum'; vcPararFundo(); vcAbrirFundo(); msg('⚠️ ' + e.message); }
+}
+async function vcIniciarFundo() {
+  await vcCarregarScript(VC_MP_URL + 'selfie_segmentation.js');
+  const bruta = VC_STREAM_LOCAL.getVideoTracks()[0];
+  const cfg = bruta.getSettings ? bruta.getSettings() : {}, w = Math.min(960, cfg.width || 640), h = Math.round(w * (cfg.height || 360) / (cfg.width || 640));
+  const vid = document.createElement('video'); vid.muted = true; vid.playsInline = true; vid.srcObject = new MediaStream([bruta]); await vid.play().catch(() => {});
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const ctx = cv.getContext('2d');
+  const seg = new window.SelfieSegmentation({ locateFile: f => VC_MP_URL + f }); seg.setOptions({ modelSelection: 1, selfieMode: false });
+  const logo = new Image(); logo.src = '/assets/logo-impulsionar.jpg';
+  seg.onResults(r => {
+    const m = VC_FUNDO.modo; ctx.save(); ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(r.segmentationMask, 0, 0, w, h);
+    ctx.globalCompositeOperation = 'source-in'; ctx.drawImage(r.image, 0, 0, w, h);
+    ctx.globalCompositeOperation = 'destination-over';
+    if (m === 'leve' || m === 'forte') { ctx.filter = `blur(${m === 'forte' ? 18 : 8}px)`; ctx.drawImage(r.image, 0, 0, w, h); ctx.filter = 'none'; }
+    else {
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      if (m === 'marca') { g.addColorStop(0, '#0b1329'); g.addColorStop(1, '#1e3a8a'); } else { g.addColorStop(0, '#f1f5f9'); g.addColorStop(1, '#cbd5e1'); }
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+      if (m === 'marca' && logo.complete && logo.naturalWidth) { const lw = w * 0.16, lh = lw * logo.naturalHeight / logo.naturalWidth; ctx.globalAlpha = 0.9; ctx.drawImage(logo, w - lw - w * 0.03, h * 0.04, lw, lh); }
+    }
+    ctx.restore();
+  });
+  await seg.initialize();
+  const proc = cv.captureStream(24).getVideoTracks()[0];
+  VC_FUNDO = Object.assign(VC_FUNDO, { bruta, proc, seg, vid, rodando: true });
+  // troca a faixa enviada sem parar a câmera de verdade
+  VC_STREAM_LOCAL.removeTrack(bruta); VC_STREAM_LOCAL.addTrack(proc); proc.enabled = VC_CAMERA_LIGADA;
+  if (!VC_COMPARTILHANDO_TELA) for (const peer of VC_PEERS.values()) { const sd = peer.getSenders().find(x => x.track === bruta) || peer.getSenders().find(x => x.track && x.track.kind === 'video'); if (sd) await sd.replaceTrack(proc).catch(() => {}); }
+  const v = document.getElementById('vc-video-local'); if (v) { v.srcObject = null; v.srcObject = VC_STREAM_LOCAL; }
+  let ocupado = false;
+  const laco = async () => { if (!VC_FUNDO.rodando) return; if (!ocupado && vid.readyState >= 2) { ocupado = true; try { await seg.send({ image: vid }); } catch (e) {} ocupado = false; } VC_FUNDO.timer = setTimeout(laco, 1000 / 24); };
+  laco();
+}
+function vcPararFundo(saindo) {
+  const f = VC_FUNDO; if (!f.rodando) return;
+  f.rodando = false; clearTimeout(f.timer);
+  try { f.seg && f.seg.close(); } catch (e) {}
+  if (!saindo && VC_STREAM_LOCAL && f.bruta && f.bruta.readyState === 'live') {
+    VC_STREAM_LOCAL.removeTrack(f.proc); VC_STREAM_LOCAL.addTrack(f.bruta); f.bruta.enabled = VC_CAMERA_LIGADA;
+    if (!VC_COMPARTILHANDO_TELA) for (const peer of VC_PEERS.values()) { const sd = peer.getSenders().find(x => x.track === f.proc); if (sd) sd.replaceTrack(f.bruta).catch(() => {}); }
+    const v = document.getElementById('vc-video-local'); if (v) { v.srcObject = null; v.srcObject = VC_STREAM_LOCAL; }
+  } else if (f.bruta) { try { f.bruta.stop(); } catch (e) {} }
+  try { f.proc && f.proc.stop(); } catch (e) {}
+  VC_FUNDO = { modo: saindo ? 'nenhum' : f.modo, bruta: null, proc: null, seg: null, rodando: false };
+}
+
 // ---------- Gravação (fica no seu computador) ----------
 async function vcGravar() {
   if (VC_GRAV) { if (VC_GRAV.rec.state !== 'inactive') VC_GRAV.rec.stop(); return; }
@@ -19952,6 +20307,8 @@ async function vcAbrirConfig() {
 }
 async function vcTrocarDispositivo(tipo, id) {
   VC_DISP[tipo] = id;
+  const fundoAntes = tipo === 'cam' && VC_FUNDO.rodando ? VC_FUNDO.modo : null; if (fundoAntes) vcPararFundo();
+  if (fundoAntes) setTimeout(() => vcFundo(fundoAntes), 800);
   try {
     const s = await navigator.mediaDevices.getUserMedia(tipo === 'cam' ? { video: vcRestricoes('video') } : { audio: vcRestricoes('audio') });
     const nova = tipo === 'cam' ? s.getVideoTracks()[0] : s.getAudioTracks()[0];
@@ -20069,6 +20426,9 @@ function vcLimparTudo() {
   if (VC_STREAM_TELA) { VC_STREAM_TELA.getTracks().forEach(t => t.stop()); VC_STREAM_TELA = null; }
   VC_COMPARTILHANDO_TELA = false; VC_MAO = false; VC_NA_SALA = false; VC_FIXADO = null; VC_ATIVO = null; VC_PAINEL = null; VC_NAO_LIDAS = 0;
   VC_TIMERS.forEach(clearInterval); VC_TIMERS = [];
+  VC_REC.forEach(r => clearTimeout(r.timer)); VC_REC.clear(); VC_QUAL.clear(); VC_ENQ = null;
+  vcPararLegendas(); VC_LEG.ver = false; VC_LEG.linhas.clear(); VC_LEG.transcricao = [];
+  vcPararFundo(true);
   if (VC_OBS_TAMANHO) { VC_OBS_TAMANHO.disconnect(); VC_OBS_TAMANHO = null; }
   document.removeEventListener('keydown', vcTeclas);
   document.removeEventListener('click', vcCliqueFora);
