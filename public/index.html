@@ -1157,7 +1157,7 @@
   #ev-editor input[type=color] { width:40px; height:30px; padding:2px; }
   .ev-topo { display:flex; align-items:center; gap:8px; padding:0 12px; background:var(--e-sup); border-bottom:1px solid var(--e-bd); }
   .ev-tb { flex-shrink:0; background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:8px; padding:7px 12px; cursor:pointer; font-size:13px; white-space:nowrap; }
-  .ev-tb:hover { border-color:var(--e-az); } .ev-tb.primario { background:var(--e-vm); border-color:var(--e-vm); font-weight:700; }
+  .ev-tb:hover { border-color:var(--e-az); } .ev-bt-salvar.pend { background:#16a34a; border-color:#16a34a; color:#fff; font-weight:700; } .ev-bt-salvar:disabled { opacity:.8; } .ev-tb.primario { background:var(--e-vm); border-color:var(--e-vm); font-weight:700; }
   #ev-editor .ev-titulo { flex:0 1 260px; min-width:90px; width:260px; font-weight:700; font-size:14px; background:transparent; border-color:transparent; } #ev-editor .ev-titulo:hover, #ev-editor .ev-titulo:focus { border-color:var(--e-bd); }
   #ev-editor .ev-sel { width:auto; }
   .ev-salvo { font-size:12px; color:var(--e-sub); } .ev-salvo.pend { color:#fbbf24; }
@@ -21128,6 +21128,7 @@ async function evAbrirEditor(id) {
       <input class="ev-titulo" id="ev-titulo" value="${escapeHtml(p.titulo)}" onchange="ES.p.titulo=this.value; evMudou(false)">
       <select class="ev-sel" onchange="evMudarFormato(this.value)">${Object.entries(EV_FORMATOS).map(([k, v]) => `<option value="${k}" ${p.formato === k ? 'selected' : ''}>${v.rot}</option>`).join('')}</select>
       <button class="ev-tb ev-desf" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)">↶</button><button class="ev-tb ev-desf" onclick="evRefazer()" title="Refazer (Ctrl+Y)">↷</button>
+      <button class="ev-tb ev-bt-salvar" id="ev-bt-salvar" onclick="evSalvarManual()" title="Salvar agora (Ctrl+S)">💾<span class="ev-tbr"> Salvar</span></button>
       <span class="ev-salvo" id="ev-salvo">Salvo</span>
       <div style="flex:1"></div>
       <button class="ev-score" id="ev-score" onclick="evAbrirAnalise()" title="Potencial de viralização"></button>
@@ -21223,11 +21224,20 @@ function evMudou(redesenhar = true, semHistorico) {
   evAplicarEstiloLegendas();
   ES.ultimoEstado = JSON.stringify(ES.p.dados);
   ES.sujo = true; const s = document.getElementById('ev-salvo'); if (s) { s.textContent = '● Alterações não salvas'; s.classList.add('pend'); }
+  const bs = document.getElementById('ev-bt-salvar'); if (bs && !bs.disabled) { bs.classList.add('pend'); bs.innerHTML = '💾<span class="ev-tbr"> Salvar</span>'; }
   if (redesenhar) { evDesenharLinha(); evDesenhar(); evAtualizarCabeca(); }
   evAtualizarScore();
 }
 function evDesfazer() { if (!ES || !ES.hist.length) return; ES.fut.push(JSON.stringify(ES.p.dados)); ES.p.dados = JSON.parse(ES.hist.pop()); ES.ultimoEstado = JSON.stringify(ES.p.dados); ES.sel = null; evMudou(true, true); evDesenharProps(); }
 function evRefazer() { if (!ES || !ES.fut.length) return; ES.hist.push(JSON.stringify(ES.p.dados)); ES.p.dados = JSON.parse(ES.fut.pop()); ES.ultimoEstado = JSON.stringify(ES.p.dados); ES.sel = null; evMudou(true, true); evDesenharProps(); }
+// Botão "Salvar": além do salvamento automático, salva na hora e confirma.
+async function evSalvarManual() {
+  if (!ES) return; const b = document.getElementById('ev-bt-salvar'), s = document.getElementById('ev-salvo');
+  if (b) { b.disabled = true; b.innerHTML = '⏳<span class="ev-tbr"> Salvando…</span>'; }
+  try { ES.sujo = true; await evSalvar(true); if (b) b.innerHTML = '✅<span class="ev-tbr"> Salvo</span>'; mostrarToast('💾 Projeto salvo!'); }
+  catch (e) { if (s) { s.textContent = '⚠️ Não salvou — tente de novo'; s.classList.add('pend'); } mostrarToast('Não consegui salvar: ' + e.message + ' (confira a internet e clique em Salvar de novo).', true); if (b) b.innerHTML = '💾<span class="ev-tbr"> Salvar</span>'; }
+  finally { if (b) { b.disabled = false; setTimeout(() => { const x = document.getElementById('ev-bt-salvar'); if (x && !ES.sujo) x.innerHTML = '💾<span class="ev-tbr"> Salvar</span>'; }, 2500); } }
+}
 async function evSalvar(silencioso) {
   if (!ES) return;
   const s = document.getElementById('ev-salvo');
@@ -21235,7 +21245,7 @@ async function evSalvar(silencioso) {
   const r = await api('/api/admin/estudio/projetos/' + ES.p.id, { method: 'PUT', body: JSON.stringify({ titulo: ES.p.titulo, formato: ES.p.formato, tipo: ES.p.tipo, dados: ES.p.dados, legenda: ES.p.legenda || '', hashtags: ES.p.hashtags || '', viral_score: ES.score || 0 }) });
   if (!ES) return; if (r && r.updated_at) ES.p.updated_at = r.updated_at;
   if ((ES.ultimoEstado || JSON.stringify(ES.p.dados)) !== enviado) return; // mexeram enquanto salvava: o autosave salva de novo
-  ES.sujo = false; if (s) { s.textContent = '✓ Salvo ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); s.classList.remove('pend'); }
+  ES.sujo = false; { const bs = document.getElementById('ev-bt-salvar'); if (bs) bs.classList.remove('pend'); } if (s) { s.textContent = '✓ Salvo ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); s.classList.remove('pend'); }
   if (!silencioso) mostrarToast('Projeto salvo!');
 }
 function evMudarFormato(f) {
@@ -21278,7 +21288,7 @@ function evTeclas(e) {
   const digitando = /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '') || (document.activeElement || {}).isContentEditable;
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !digitando) { e.preventDefault(); e.shiftKey ? evRefazer() : evDesfazer(); return; }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y' && !digitando) { e.preventDefault(); evRefazer(); return; }
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); evSalvar(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); evSalvarManual(); return; }
   if (digitando) return;
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') { e.preventDefault(); evDuplicarSel(); return; }
   if (ES.telaCheia && e.key === 'Escape') { evSairTelaCheia(); return; }
