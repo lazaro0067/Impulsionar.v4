@@ -1332,6 +1332,14 @@
     .ev-linha-barra { overflow-x:auto; flex-wrap:nowrap; scrollbar-width:thin; } .ev-linha-barra button { white-space:nowrap; flex-shrink:0; } .ev-linha-barra input[type=range] { width:90px !important; flex-shrink:0; }
     .ev-pub { grid-template-columns:1fr; } .ev-modal { width:100% !important; max-height:92vh; }
   }
+  .ev-cam .ev-chk2 { color:var(--e-tx); } .ev-cam-corpo { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:16px; } @media (max-width: 760px) { .ev-cam-corpo { grid-template-columns:1fr; } }
+  .ev-cam-palco { position:relative; background:#000; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; max-height:66vh; }
+  .ev-cam-palco { min-height:52vh; } .ev-cam-palco canvas { max-width:100%; height:62vh; width:auto; object-fit:contain; display:block; } @media (max-width: 760px) { .ev-cam-palco canvas { height:auto; width:100%; max-height:55vh; } }
+  .ev-cam-tp { position:absolute; left:0; right:0; top:0; height:34%; background:linear-gradient(rgba(0,0,0,.8), rgba(0,0,0,.45) 85%, transparent); overflow:hidden; -webkit-mask-image:linear-gradient(transparent, #000 12%, #000 80%, transparent); mask-image:linear-gradient(transparent, #000 12%, #000 80%, transparent); }
+  .ev-cam-tp-txt { padding:40% 18px 0; color:#fff; font-size:22px; font-weight:700; line-height:1.45; text-align:center; white-space:pre-wrap; will-change:transform; }
+  .ev-cam-rec { position:absolute; top:10px; right:10px; background:#dc2626; color:#fff; font-weight:800; font-size:13px; padding:4px 10px; border-radius:12px; font-variant-numeric:tabular-nums; }
+  .ev-cam-conta { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:120px; font-weight:900; color:#fff; text-shadow:0 6px 30px rgba(0,0,0,.6); pointer-events:none; }
+  .ev-medidor { height:6px; background:var(--e-bd); border-radius:3px; overflow:hidden; margin:2px 0 8px; } .ev-medidor i { display:block; height:100%; width:0; background:#22c55e; transition:width .08s; }
   .ev-sheet-x { position:fixed; z-index:45; right:10px; top:60px; width:34px; height:34px; border-radius:50%; border:1px solid var(--e-bd); background:var(--e-sup2); color:var(--e-tx); align-items:center; justify-content:center; font-size:15px; cursor:pointer; }
   /* tela cheia para avaliar o vídeo editado */
   .ev-palco.tela-cheia { position:fixed; inset:0; z-index:9999; background:#000; padding:0; }
@@ -20559,11 +20567,22 @@ function evGanho(k, v) {
 }
 
 // ---------- Desenho de um quadro ----------
-function evFiltroCss(c) {
+// Look de estilo com força ajustável (1 = original; 0,5 = metade do efeito), para não estourar pele.
+function evSuavizarLook(css, f) {
+  if (!css || f === undefined || f >= 0.999) return css;
+  return css.replace(/(saturate|contrast|brightness|sepia|grayscale|hue-rotate)\(([-\d.]+)(deg)?\)/g, (_, fn, v, deg) => {
+    const n = Number(v), neutro = ['sepia', 'grayscale', 'hue-rotate'].includes(fn) ? 0 : 1;
+    return `${fn}(${(neutro + (n - neutro) * f).toFixed(3)}${deg || ''})`;
+  });
+}
+function evFiltroCss(c, semGrade) {
   const d = ES.p.dados, aj = Object.assign({}, d.ajustes || {}, (c && c.ajustes) || {});
-  const base = EV_FILTROS[(c && c.filtro) || d.filtro || 'nenhum'] || EV_FILTROS.nenhum;
+  const baseOrig = EV_FILTROS[(c && c.filtro) || d.filtro || 'nenhum'] || EV_FILTROS.nenhum;
+  const base = [baseOrig[0], evSuavizarLook(baseOrig[1], d.filtroForca)];
+  const m = c && c.midia ? evMidia(c.midia) : null;
+  const grade = !semGrade && d.corAuto && m && m.grade && c.corAuto !== false ? evFiltroGrade(m.grade, d.corIntensidade) : '';
   const extra = [aj.brilho && aj.brilho !== 100 ? `brightness(${aj.brilho / 100})` : '', aj.contraste && aj.contraste !== 100 ? `contrast(${aj.contraste / 100})` : '', aj.saturacao && aj.saturacao !== 100 ? `saturate(${aj.saturacao / 100})` : '', aj.temperatura ? (aj.temperatura > 0 ? `sepia(${aj.temperatura / 100})` : `hue-rotate(${-aj.temperatura / 4}deg)`) : ''].filter(Boolean).join(' ');
-  return (base[1] + ' ' + extra).trim() || 'none';
+  return (grade + ' ' + base[1] + ' ' + extra).trim() || 'none';
 }
 // Fundos animados gerados (vídeos "motion design" criados pela IA, sem câmera).
 function evDesenharFundo(ctx, m, tempo, R) {
@@ -20595,18 +20614,39 @@ function evDesenharMidia(ctx, c, el, prog, alpha, dx, escalaExtra, R, forma) {
   if (!mw || !mh) { ctx.restore(); return; }
   const zoom = m.tipo === 'imagem' ? 1 + ((c.zoom || 1.08) - 1) * prog : (c.zoom || 1); // Ken Burns em imagens
   const z = zoom * (escalaExtra || 1);
-  ctx.filter = evFiltroCss(c);
+  // correção de cor na placa de vídeo (rápida); se não der, cai no filtro SVG
+  let fonte = el, semGrade = false;
+  if (ES.p.dados.corAuto && m.grade && c.corAuto !== false && !EVGL.lento) {
+    const t0 = performance.now(), gc = evGLGrade(el, mw, mh, m.grade, ES.p.dados.corIntensidade);
+    if (gc) { fonte = gc; semGrade = true; const dt = performance.now() - t0; EVGL.n = (EVGL.n || 0) + 1; EVGL.soma = (EVGL.soma || 0) + dt; if (EVGL.n >= 15 && EVGL.soma / EVGL.n > 30) EVGL.lento = true; } // computador sem aceleração: usa o filtro mais leve
+  }
+  ctx.filter = evFiltroCss(c, semGrade);
   const cobrir = Math.max(R.w / mw, R.h / mh), conter = Math.min(R.w / mw, R.h / mh);
-  const cx = R.x + R.w / 2 + dx + (c.px || 0) * R.w, cy = R.y + R.h / 2 + (c.py || 0) * R.h;
+  let cx = R.x + R.w / 2 + dx + (c.px || 0) * R.w, cy = R.y + R.h / 2 + (c.py || 0) * R.h, z2 = z;
+  // enquadramento inteligente: segue o rosto com suavidade, centralizado e com o "ar" certo acima da cabeça
+  if (ES.p.dados.enquadrarRosto && c.enquadrar !== false && c.ajuste !== 'conter' && m.rostos && m.rostos.length && forma !== 'circulo') {
+    const tFonte = m.tipo === 'video' ? (el.currentTime || 0) : 0, r = evRostoNoTempo(m.rostos, tFonte);
+    if (r) {
+      const vertical = R.h > R.w * 1.2, alvoAlt = vertical ? 0.2 : 0.3, alvoY = vertical ? 0.4 : 0.44;
+      const altRosto = r.h * mh * cobrir / R.h; // altura do rosto na tela com zoom 1
+      let zr = altRosto > 0.02 ? Math.max(1, Math.min(1.3, alvoAlt / altRosto)) : 1;
+      // rosto fora do centro e sem sobra de imagem: aproxima um pouco para conseguir centralizar
+      const desvio = Math.abs(r.x - 0.5); if (desvio > 0.05) zr = Math.max(zr, Math.min(1.2, R.w / (mw * cobrir * Math.max(0.5, 1 - 2 * desvio))));
+      z2 = z * zr;
+      const s = cobrir * z2, folgaX = Math.max(0, (mw * s - R.w) / 2), folgaY = Math.max(0, (mh * s - R.h) / 2);
+      const offX = Math.max(-folgaX, Math.min(folgaX, -(r.x - 0.5) * mw * s)), offY = Math.max(-folgaY, Math.min(folgaY, (alvoY - 0.5) * R.h - (r.y - 0.5) * mh * s));
+      cx = R.x + R.w / 2 + dx + offX + (c.px || 0) * R.w; cy = R.y + R.h / 2 + offY + (c.py || 0) * R.h;
+    }
+  }
   if (c.espelhar) { ctx.translate(2 * (R.x + R.w / 2), 0); ctx.scale(-1, 1); }
   if (c.ajuste === 'conter') {
     // fundo desfocado (padrão profissional para vídeos horizontais em 9:16)
-    ctx.filter = evFiltroCss(c) + ' blur(40px) brightness(0.7)';
-    const s0 = cobrir * 1.1; ctx.drawImage(el, R.x + R.w / 2 - mw * s0 / 2 + dx, R.y + R.h / 2 - mh * s0 / 2, mw * s0, mh * s0);
-    ctx.filter = evFiltroCss(c);
-    const s1 = conter * z; ctx.drawImage(el, cx - mw * s1 / 2, cy - mh * s1 / 2, mw * s1, mh * s1);
+    ctx.filter = evFiltroCss(c, semGrade) + ' blur(40px) brightness(0.7)';
+    const s0 = cobrir * 1.1; ctx.drawImage(fonte, R.x + R.w / 2 - mw * s0 / 2 + dx, R.y + R.h / 2 - mh * s0 / 2, mw * s0, mh * s0);
+    ctx.filter = evFiltroCss(c, semGrade);
+    const s1 = conter * z; ctx.drawImage(fonte, cx - mw * s1 / 2, cy - mh * s1 / 2, mw * s1, mh * s1);
   } else {
-    const s = cobrir * z; ctx.drawImage(el, cx - mw * s / 2, cy - mh * s / 2, mw * s, mh * s);
+    const s = cobrir * z2; ctx.drawImage(fonte, cx - mw * s / 2, cy - mh * s / 2, mw * s, mh * s);
   }
   ctx.restore();
 }
@@ -20667,8 +20707,21 @@ function evDesenharTexto(ctx, x, t) {
   ctx.font = `${est.peso || 800} ${tam}px "${est.fonte || 'Montserrat'}", Arial, sans-serif`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const linhas = evQuebrar(ctx, txt, W * (est.largura || 0.84));
-  const lh = tam * 1.18, cx = (est.x !== undefined ? est.x : 0.5) * W, cy = (est.y !== undefined ? est.y : 0.5) * H + dy;
+  const lh = tam * 1.18, cx = (est.x !== undefined ? est.x : 0.5) * W;
+  let cy = (est.y !== undefined ? est.y : 0.5) * H + dy;
   const altTot = linhas.length * lh;
+  // nada de texto em cima de texto: a legenda desvia de títulos/ganchos que estão na tela
+  { let maxL0 = 0; linhas.forEach(l => { maxL0 = Math.max(maxL0, ctx.measureText(l).width); });
+    const mg = 18 * k, caixa = () => ({ x1: cx - maxL0 / 2 - mg, x2: cx + maxL0 / 2 + mg, y1: cy - altTot / 2 - mg, y2: cy + altTot / 2 + mg });
+    ES.ocupados = ES.ocupados || [];
+    if (x.estilo === 'legenda' || x.estilo === 'apoio') {
+      for (let tent = 0; tent < 3; tent++) {
+        const b = caixa(), o = ES.ocupados.find(q => b.x1 < q.x2 && b.x2 > q.x1 && b.y1 < q.y2 && b.y2 > q.y1); if (!o) break;
+        const abaixo = o.y2 + altTot / 2 + mg * 1.5, acima = o.y1 - altTot / 2 - mg * 1.5;
+        cy = abaixo + altTot / 2 < H * 0.9 ? abaixo : acima;
+      }
+    }
+    ES.ocupados.push(caixa()); }
   ctx.globalAlpha = Math.max(0, alpha);
   ctx.translate(cx, cy); ctx.scale(escala, escala);
   let maxL = 0; linhas.forEach(l => { maxL = Math.max(maxL, ctx.measureText(l).width); });
@@ -20758,7 +20811,8 @@ function evDesenhar(tForcado, exportando) {
       if (o.borda !== false && forma) { ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = o.corBorda || '#ffffff'; ctx.lineWidth = 8 * k; ctx.beginPath(); if (forma === 'circulo') ctx.arc(Ro.x + Ro.w / 2, Ro.y + Ro.h / 2, Ro.w / 2, 0, 7); else evRetArred(ctx, Ro.x, Ro.y, Ro.w, Ro.h, Math.min(Ro.w, Ro.h) * 0.08); ctx.stroke(); ctx.restore(); }
       if (['cima', 'baixo', 'esq', 'dir'].includes(o.layout) && o.borda !== false) { ctx.save(); ctx.fillStyle = o.corBorda || '#ffffff'; if (o.layout === 'cima' || o.layout === 'baixo') ctx.fillRect(0, H / 2 - 4 * k, W, 8 * k); else ctx.fillRect(W / 2 - 4 * k, 0, 8 * k, H); ctx.restore(); }
     });
-    d.textos.slice().sort((a, b) => (a.camada || 0) - (b.camada || 0)).forEach(x => evDesenharTexto(ctx, x, t));
+    ES.ocupados = [];
+    d.textos.slice().sort((a, b) => ((a.camada || 0) - (b.camada || 0)) || ((a.estilo === 'legenda') - (b.estilo === 'legenda'))).forEach(x => evDesenharTexto(ctx, x, t));
     // logo da marca
     // logo só aparece durante o vídeo se o usuário ligar; por padrão fica apenas na tela final
     if (ex.logo && ex.logo.url && ex.logo.noVideo === true) {
@@ -20973,6 +21027,7 @@ async function evAbrirEditor(id) {
         <button onclick="evPopBarra('zoom', this)" title="Zoom">🔍 Zoom</button>
         <button onclick="evPopBarra('enquadrar', this)" title="Enquadrar, espelhar e posicionar">🖼️ Enquadrar</button>
         <button onclick="evPopBarra('transicao', this)" title="Transição">🔀 Transição</button><span class="ev-sep"></span>
+        <button onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor">📷 Gravar</button>
         <button onclick="evPopBarra('texto', this)" title="Adicionar texto">🔤 Texto</button>
         <button onclick="evLegendasDaFala()" title="Legendas automáticas do que é falado">💬 Legendas</button>
         <button onclick="evPopBarra('musica', this)" title="Música de fundo">🎵 Música</button>
@@ -21002,7 +21057,7 @@ async function evFechar() {
   if (ES.exportando) return mostrarToast('Aguarde a exportação terminar (ou cancele).', true);
   evPausar();
   if (ES.sujo) await evSalvar(true).catch(() => {});
-  clearInterval(ES.autosave); clearInterval(ES.tpTimer); clearInterval(ES.sync); evSairTelaCheia();
+  clearInterval(ES.autosave); clearInterval(ES.tpTimer); clearInterval(ES.sync); evSairTelaCheia(); if (EVCAM.stream || EVCAM.rec) { EVCAM.rec = null; evFecharCamera(); }
   if (ES.obsPalco) ES.obsPalco.disconnect(); window.removeEventListener('resize', evAjustarPalco);
   document.removeEventListener('keydown', evTeclas);
   Object.values(ES.els || {}).forEach(el => { try { el.pause && el.pause(); el.removeAttribute && el.removeAttribute('src'); } catch (e) {} });
@@ -21088,6 +21143,7 @@ function evTeclas(e) {
   if (digitando) return;
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') { e.preventDefault(); evDuplicarSel(); return; }
   if (ES.telaCheia && e.key === 'Escape') { evSairTelaCheia(); return; }
+  if (document.getElementById('ev-cam-cv')) { if (e.key === 'Enter') { e.preventDefault(); evCamGravar(); } return; }
   if (e.key.toLowerCase() === 'f' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); ES.telaCheia ? evSairTelaCheia() : evTelaCheia(); return; }
   if (e.key === ' ') { e.preventDefault(); evTocar(); }
   else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); evExcluirSel(); }
@@ -21250,7 +21306,8 @@ function evPainel(qual) {
   if (qual === 'midia') {
     el.innerHTML = `<h4>Mídia do projeto</h4>
       <label class="ev-up"><input type="file" multiple accept="video/*,image/*,audio/*" hidden onchange="evSubir(this.files)"><b>⬆️ Subir vídeos, fotos ou áudios</b><small>Do computador ou do celular. Até 1GB por arquivo.</small></label>
-      <button class="ev-btn ia" style="width:100%;margin-top:8px;" onclick="evAbrirTeleprompter()">🎥 Gravar com teleprompter (celular ou computador)</button>
+      <button class="ev-btn primario" style="width:100%;margin-top:8px;" onclick="evAbrirCamera()">📷 Gravar aqui (câmera ou tela)</button>
+      <button class="ev-btn ia" style="width:100%;margin-top:6px;" onclick="evAbrirTeleprompter()">🎥 Gravar com teleprompter (celular ou computador)</button>
       <div id="ev-up-prog"></div>
       <div class="ev-midias">${d.midias.filter(m => m.tipo !== 'audio').map(m => `<div class="ev-midia" title="${escapeHtml(m.nome)}">${m.tipo === 'fundo' ? `<div class="ev-midia-ico" style="background:linear-gradient(135deg,${(m.cores || [])[0] || '#0b1329'},${(m.cores || [])[1] || '#dc4c4c'})">✨</div>` : m.thumb ? `<img src="${m.thumb}">` : `<div class="ev-midia-ico">${m.tipo === 'video' ? '🎬' : '🖼️'}</div>`}<span>${m.tipo === 'video' ? evFmtT(m.duracao) : m.tipo === 'fundo' ? 'cena animada' : 'foto'}</span><button onclick="evAdicionarClipe('${m.id}')" title="Adicionar na linha do tempo">＋</button><button class="sb" onclick="evEscolherSobreposicao('${m.id}')" title="Usar como 2º vídeo: tela dividida, janelinha ou cobertura">⧉</button><button class="x" onclick="evRemoverMidia('${m.id}')" title="Remover do projeto">×</button></div>`).join('') || '<div class="ev-vazio">Nenhuma mídia ainda.</div>'}</div>
       ${d.midias.some(m => m.tipo !== 'audio') ? `<button class="ev-btn" onclick="evAdicionarTodas()">＋ Colocar todas na linha do tempo</button>` : ''}
@@ -21321,9 +21378,142 @@ async function evSubir(files) {
   if (prog) prog.innerHTML = '';
   evMudou(); evPainel(ES.painel);
 }
+// ---------- Gravar direto no editor: câmera, tela ou tela + câmera, com teleprompter ----------
+const EVCAM = { stream: null, tela: null, rec: null, partes: [], raf: null, modo: 'camera', rolando: false, pos: 0, ppm: 140 };
+async function evAbrirCamera() {
+  evPausar();
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo"><div class="ev-modal grande ev-cam">
+    <div class="ev-modal-cab"><h3>📷 Gravar aqui no editor</h3><button onclick="evFecharCamera()">✕</button></div>
+    <div class="ev-cam-corpo">
+      <div class="ev-cam-palco" id="ev-cam-palco"><canvas id="ev-cam-cv"></canvas>
+        <div class="ev-cam-tp" id="ev-cam-tp" hidden><div class="ev-cam-tp-txt" id="ev-cam-tp-txt"></div><i></i></div>
+        <div class="ev-cam-rec" id="ev-cam-rec" hidden>● 00:00</div><div class="ev-cam-conta" id="ev-cam-conta"></div></div>
+      <div class="ev-cam-lado">
+        <div class="ev-chips" id="ev-cam-modos">${[['camera', '📷 Câmera'], ['tela', '🖥️ Tela'], ['telacam', '🖥️+📷 Tela com câmera']].map(([k, r]) => `<button class="${EVCAM.modo === k ? 'on' : ''}" onclick="evCamModo('${k}')">${r}</button>`).join('')}</div>
+        <label class="ev-campo"><span>Câmera</span><select id="ev-cam-sel" onchange="evCamLigar()"></select></label>
+        <label class="ev-campo"><span>Microfone</span><select id="ev-mic-sel" onchange="evCamLigar()"></select></label>
+        <div class="ev-medidor"><i id="ev-cam-nivel"></i></div>
+        <label class="ev-campo"><span>Qualidade</span><select id="ev-cam-res" onchange="evCamLigar()"><option value="1080">Full HD (1080p)</option><option value="720" selected>HD (720p)</option><option value="480">Leve (480p)</option></select></label>
+        <label class="ev-chk2"><input type="checkbox" id="ev-cam-espelho" checked onchange="evCamDesenharLoop()"> Espelhar a minha imagem na prévia</label>
+        <label class="ev-chk2"><input type="checkbox" id="ev-cam-luz" checked> ✨ Melhorar luz e cor automaticamente depois</label>
+        <label class="ev-chk2"><input type="checkbox" id="ev-cam-usatp" ${(ES.p.dados.roteiro || '').trim() ? 'checked' : ''} onchange="evCamTp()"> 📝 Mostrar o roteiro (teleprompter)</label>
+        <div id="ev-cam-tpcfg" class="ev-dupla" style="align-items:center;"><button class="ev-mini" onclick="EVCAM.ppm=Math.max(60,EVCAM.ppm-10); evCamTp()">−</button><span id="ev-cam-ppm" style="font-size:12px;">${EVCAM.ppm} ppm</span><button class="ev-mini" onclick="EVCAM.ppm=Math.min(260,EVCAM.ppm+10); evCamTp()">+</button><button class="ev-mini" onclick="evAbrirTeleprompter()">✏️ roteiro</button></div>
+        <div class="ev-linha-btn" style="margin-top:10px;"><button class="ev-btn primario grande" id="ev-cam-bt" onclick="evCamGravar()">⏺ Começar a gravar</button></div>
+        <div class="ev-linha-btn"><button class="ev-btn" id="ev-cam-pausa" onclick="evCamPausar()" disabled>⏸ Pausar</button></div>
+        <div class="ev-sub" id="ev-cam-msg">A gravação entra direto na linha do tempo (no ponto em que ela termina). Atalho: Enter começa/para.</div>
+      </div>
+    </div></div></div>`;
+  await evCamLigar(true); evCamTp();
+}
+async function evCamModo(m) { EVCAM.modo = m; document.querySelectorAll('#ev-cam-modos button').forEach(b => b.classList.toggle('on', b.getAttribute('onclick').includes(`'${m}'`))); if (m !== 'camera' && !EVCAM.tela) { try { EVCAM.tela = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true }); EVCAM.tela.getVideoTracks()[0].onended = () => { EVCAM.tela = null; if (!EVCAM.rec) evCamModo('camera'); }; } catch (e) { EVCAM.modo = 'camera'; evCamModo('camera'); return mostrarToast('Compartilhamento de tela cancelado.', true); } } if (m === 'camera' && EVCAM.tela && !EVCAM.rec) { EVCAM.tela.getTracks().forEach(t => t.stop()); EVCAM.tela = null; } evCamDesenharLoop(); }
+async function evCamLigar(primeira) {
+  if (EVCAM.rec) return;
+  if (EVCAM.stream) EVCAM.stream.getTracks().forEach(t => t.stop());
+  const v = id => (document.getElementById(id) || {}).value || '', alt = Number(v('ev-cam-res')) || 720;
+  try {
+    EVCAM.stream = await navigator.mediaDevices.getUserMedia({ video: Object.assign({ height: { ideal: alt }, width: { ideal: Math.round(alt * 16 / 9) }, frameRate: { ideal: 30 } }, v('ev-cam-sel') ? { deviceId: { exact: v('ev-cam-sel') } } : {}), audio: Object.assign({ echoCancellation: true, noiseSuppression: true, autoGainControl: true }, v('ev-mic-sel') ? { deviceId: { exact: v('ev-mic-sel') } } : {}) });
+  } catch (e) { document.getElementById('ev-cam-msg').textContent = '⚠️ ' + (typeof traduzirErroMidia === 'function' ? traduzirErroMidia(e) : e.message); return; }
+  if (primeira) {
+    const dev = await navigator.mediaDevices.enumerateDevices(), cam = EVCAM.stream.getVideoTracks()[0], mic = EVCAM.stream.getAudioTracks()[0];
+    const opts = (k, atual) => dev.filter(d => d.kind === k).map((d, i) => `<option value="${d.deviceId}" ${atual && atual.getSettings().deviceId === d.deviceId ? 'selected' : ''}>${escapeHtml(d.label || (k === 'videoinput' ? 'Câmera ' : 'Microfone ') + (i + 1))}</option>`).join('');
+    document.getElementById('ev-cam-sel').innerHTML = opts('videoinput', cam); document.getElementById('ev-mic-sel').innerHTML = opts('audioinput', mic);
+  }
+  EVCAM.vid = EVCAM.vid || Object.assign(document.createElement('video'), { muted: true, playsInline: true });
+  EVCAM.vid.srcObject = EVCAM.stream; await EVCAM.vid.play().catch(() => {});
+  try { const ac = evAudioCtx(); EVCAM.an = ac.createAnalyser(); EVCAM.an.fftSize = 512; ac.createMediaStreamSource(EVCAM.stream).connect(EVCAM.an); } catch (e) {}
+  evCamDesenharLoop();
+}
+// Desenha a prévia (e o que é gravado) já no formato do projeto: câmera recortada, tela, ou tela com a câmera em círculo.
+function evCamDesenharLoop() {
+  cancelAnimationFrame(EVCAM.raf);
+  const cv = document.getElementById('ev-cam-cv'); if (!cv) return;
+  const F = EV_FORMATOS[ES.p.formato] || EV_FORMATOS['9:16'], esc = Math.min(1, 1280 / Math.max(F.w, F.h)); cv.width = Math.round(F.w * esc); cv.height = Math.round(F.h * esc);
+  const g = cv.getContext('2d'), W = cv.width, H = cv.height;
+  if (EVCAM.tela && !EVCAM.vTela) { EVCAM.vTela = Object.assign(document.createElement('video'), { muted: true, playsInline: true }); }
+  if (EVCAM.tela && EVCAM.vTela.srcObject !== EVCAM.tela) { EVCAM.vTela.srcObject = EVCAM.tela; EVCAM.vTela.play().catch(() => {}); }
+  const cobrir = (el, x, y, w, h, espelho) => { const mw = el.videoWidth, mh = el.videoHeight; if (!mw) return; const s = Math.max(w / mw, h / mh); g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip(); if (espelho) { g.translate(2 * x + w, 0); g.scale(-1, 1); } g.drawImage(el, x + (w - mw * s) / 2, y + (h - mh * s) / 2, mw * s, mh * s); g.restore(); };
+  const conter = (el) => { const mw = el.videoWidth, mh = el.videoHeight; if (!mw) return; const s = Math.min(W / mw, H / mh); g.drawImage(el, (W - mw * s) / 2, (H - mh * s) / 2, mw * s, mh * s); };
+  const passo = () => {
+    const esp = (document.getElementById('ev-cam-espelho') || {}).checked && !EVCAM.rec; // na gravação nunca sai espelhado (texto da camisa fica certo)
+    g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+    if (EVCAM.modo === 'camera' || !EVCAM.tela) { if (EVCAM.vid) cobrir(EVCAM.vid, 0, 0, W, H, esp); }
+    else {
+      conter(EVCAM.vTela);
+      if (EVCAM.modo === 'telacam' && EVCAM.vid) { const r = Math.round(Math.min(W, H) * 0.32), x = W - r - W * 0.04, y = H - r - H * 0.04; g.save(); g.beginPath(); g.arc(x + r / 2, y + r / 2, r / 2, 0, 7); g.clip(); cobrir(EVCAM.vid, x, y, r, r, esp); g.restore(); g.strokeStyle = '#fff'; g.lineWidth = 6; g.beginPath(); g.arc(x + r / 2, y + r / 2, r / 2, 0, 7); g.stroke(); }
+    }
+    if (EVCAM.an) { const b = new Uint8Array(EVCAM.an.fftSize); EVCAM.an.getByteTimeDomainData(b); let m = 0; b.forEach(x => { m = Math.max(m, Math.abs(x - 128)); }); const n = document.getElementById('ev-cam-nivel'); if (n) n.style.width = Math.min(100, m / 128 * 260) + '%'; }
+    if (EVCAM.rolando) { const t = document.getElementById('ev-cam-tp-txt'); if (t) { const agora = performance.now(), dt = EVCAM.ult ? (agora - EVCAM.ult) / 1000 : 0; EVCAM.ult = agora; const pal = Math.max(1, ((ES.p.dados.roteiro || '').match(/\S+/g) || []).length); EVCAM.pos += t.scrollHeight / pal * EVCAM.ppm / 60 * dt; t.style.transform = `translateY(${-EVCAM.pos}px)`; } }
+    EVCAM.raf = requestAnimationFrame(passo);
+  };
+  passo();
+}
+function evCamTp() {
+  const on = (document.getElementById('ev-cam-usatp') || {}).checked, tp = document.getElementById('ev-cam-tp'); if (!tp) return;
+  tp.hidden = !on; document.getElementById('ev-cam-tpcfg').style.display = on ? '' : 'none'; document.getElementById('ev-cam-ppm').textContent = EVCAM.ppm + ' ppm';
+  document.getElementById('ev-cam-tp-txt').textContent = (ES.p.dados.roteiro || 'Escreva o roteiro em ✏️ roteiro.').replace(/^\s*\[[^\]]*\]\s*$/gm, '') + '\n\n\n';
+}
+async function evCamGravar() {
+  if (EVCAM.rec) { if (EVCAM.rec.state === 'paused') EVCAM.rec.resume(); EVCAM.rec.stop(); return; }
+  if (!EVCAM.stream) return evCamLigar(true);
+  const conta = document.getElementById('ev-cam-conta');
+  for (const n of [3, 2, 1]) { conta.textContent = n; await new Promise(r => setTimeout(r, 800)); }
+  conta.textContent = '';
+  const cv = document.getElementById('ev-cam-cv'), fluxo = cv.captureStream(30);
+  // som: microfone + (se gravar a tela) o som do computador
+  try {
+    const ac = evAudioCtx(), dest = ac.createMediaStreamDestination();
+    ac.createMediaStreamSource(new MediaStream(EVCAM.stream.getAudioTracks())).connect(dest);
+    if (EVCAM.modo !== 'camera' && EVCAM.tela && EVCAM.tela.getAudioTracks().length) ac.createMediaStreamSource(new MediaStream(EVCAM.tela.getAudioTracks())).connect(dest);
+    dest.stream.getAudioTracks().forEach(t => fluxo.addTrack(t));
+  } catch (e) { EVCAM.stream.getAudioTracks().forEach(t => fluxo.addTrack(t)); }
+  const mime = ['video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+  EVCAM.partes = []; EVCAM.rec = new MediaRecorder(fluxo, mime ? { mimeType: mime, videoBitsPerSecond: 8000000 } : undefined);
+  EVCAM.rec.ondataavailable = e => { if (e.data.size) EVCAM.partes.push(e.data); };
+  EVCAM.rec.onstop = evCamTerminou;
+  EVCAM.rec.start(1000); EVCAM.inicio = Date.now(); EVCAM.pausado = 0;
+  if ((document.getElementById('ev-cam-usatp') || {}).checked) { EVCAM.pos = 0; EVCAM.ult = 0; EVCAM.rolando = true; }
+  document.getElementById('ev-cam-bt').textContent = '⏹ Parar e usar no vídeo'; document.getElementById('ev-cam-pausa').disabled = false;
+  const rc = document.getElementById('ev-cam-rec'); rc.hidden = false;
+  EVCAM.timer = setInterval(() => { if (!EVCAM.rec || EVCAM.rec.state !== 'recording') return; const s = Math.floor((Date.now() - EVCAM.inicio - EVCAM.pausado) / 1000); rc.textContent = '● ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }, 300);
+}
+function evCamPausar() {
+  const r = EVCAM.rec; if (!r) return; const b = document.getElementById('ev-cam-pausa');
+  if (r.state === 'recording') { r.pause(); EVCAM.pausaEm = Date.now(); EVCAM.rolando = false; b.textContent = '⏺ Continuar'; }
+  else if (r.state === 'paused') { EVCAM.pausado += Date.now() - EVCAM.pausaEm; r.resume(); EVCAM.ult = 0; EVCAM.rolando = (document.getElementById('ev-cam-usatp') || {}).checked; b.textContent = '⏸ Pausar'; }
+}
+async function evCamTerminou() {
+  clearInterval(EVCAM.timer); EVCAM.rolando = false;
+  const tipo = (EVCAM.rec && EVCAM.rec.mimeType) || 'video/webm', dur = (Date.now() - EVCAM.inicio - EVCAM.pausado) / 1000; EVCAM.rec = null;
+  const blob = new Blob(EVCAM.partes, { type: tipo }), nome = 'gravacao-' + new Date().toLocaleTimeString('pt-BR').replace(/:/g, '') + (/mp4/.test(tipo) ? '.mp4' : '.webm');
+  const msg = document.getElementById('ev-cam-msg'), melhorar = (document.getElementById('ev-cam-luz') || {}).checked;
+  if (msg) msg.textContent = 'Enviando a gravação para o projeto...';
+  try {
+    const r = await new Promise((ok, ko) => { const x = new XMLHttpRequest(); x.open('POST', '/api/admin/estudio/upload'); x.setRequestHeader('Authorization', 'Bearer ' + ESTADO.token);
+      x.upload.onprogress = e => { if (msg && e.lengthComputable) msg.textContent = `Enviando... ${Math.round(e.loaded * 100 / e.total)}%`; };
+      x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch (e) {} x.status < 300 ? ok(j) : ko(new Error(j.error || 'Falha no envio.')); }; x.onerror = () => ko(new Error('Falha de conexão.'));
+      const fd = new FormData(); fd.append('file', new File([blob], nome, { type: tipo })); x.send(fd); });
+    const info = await evInfoUrl(r.url);
+    const F = EV_FORMATOS[ES.p.formato] || EV_FORMATOS['9:16'];
+    const m = { id: evUid(), url: r.url, nome: EVCAM.modo === 'camera' ? 'Gravação da câmera' : 'Gravação da tela', tipo: 'video', duracao: info.duracao || dur, w: info.w || F.w, h: info.h || F.h, thumb: info.thumb };
+    ES.p.dados.midias.push(m); evAdicionarClipe(m.id, true); evMudou(); evPainel('midia');
+    evFecharCamera();
+    mostrarToast('🎥 Gravação na linha do tempo! Use ✨ Editar com IA para legendar e deixar viral.');
+    if (melhorar && EVCAM.modo === 'camera') evImagemInteligente({ silencioso: false });
+  } catch (e) {
+    if (msg) msg.innerHTML = '⚠️ ' + escapeHtml(e.message) + ` — <a href="${URL.createObjectURL(blob)}" download="${nome}" style="color:#93c5fd;">baixar a gravação</a>`;
+  }
+}
+function evFecharCamera() {
+  if (EVCAM.rec && !confirm('Parar e descartar a gravação em andamento?')) return;
+  if (EVCAM.rec) { EVCAM.rec.onstop = null; try { EVCAM.rec.stop(); } catch (e) {} EVCAM.rec = null; }
+  cancelAnimationFrame(EVCAM.raf); clearInterval(EVCAM.timer); EVCAM.rolando = false;
+  [EVCAM.stream, EVCAM.tela].forEach(s => s && s.getTracks().forEach(t => t.stop())); EVCAM.stream = null; EVCAM.tela = null; EVCAM.an = null;
+  if (EVCAM.vid) EVCAM.vid.srcObject = null; if (EVCAM.vTela) EVCAM.vTela.srcObject = null;
+  const md = document.getElementById('ev-modal'); if (md && md.querySelector('.ev-cam')) md.innerHTML = '';
+}
 function evAdicionarClipe(mid, semRedesenhar) {
   const m = evMidia(mid); if (!m) return;
-  const c = { id: evUid(), midia: mid, ini: 0, fim: m.tipo === 'imagem' ? 3 : Math.min(m.duracao || 5, 60), vel: 1, vol: 1, zoom: m.tipo === 'imagem' ? 1.12 : 1, ajuste: m.w && m.h && m.w > m.h && ES.p.formato === '9:16' ? 'conter' : 'cobrir' };
+  const c = { id: evUid(), midia: mid, ini: 0, fim: m.tipo === 'imagem' ? 3 : Math.min(m.duracao || 5, 3 * 3600), vel: 1, vol: 1, zoom: m.tipo === 'imagem' ? 1.12 : 1, ajuste: m.w && m.h && m.w > m.h && ES.p.formato === '9:16' ? 'conter' : 'cobrir' };
   ES.p.dados.clips.push(c);
   if (!semRedesenhar) { evMudou(); evPainel(ES.painel); }
 }
@@ -21818,6 +22008,225 @@ function evQuadroAtual(larg) {
   const g = cv.getContext('2d'); const s = Math.max(cv.width / mw, cv.height / mh); g.drawImage(el, (cv.width - mw * s) / 2, (cv.height - mh * s) / 2, mw * s, mh * s);
   return { cv, clip: c };
 }
+// ==========================================================
+// IMAGEM INTELIGENTE: correção de cor/luz por análise real do vídeo (vários quadros,
+// pele, pontos neutros, realces estourados) + enquadramento automático no rosto.
+// ==========================================================
+const EV_MP_VISION = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+let EV_DETECTOR_ROSTO = null, EV_DETECTOR_TENTOU = false;
+async function evCarregarDetectorRosto() {
+  if (EV_DETECTOR_ROSTO || EV_DETECTOR_TENTOU) return EV_DETECTOR_ROSTO;
+  EV_DETECTOR_TENTOU = true;
+  try {
+    const tempo = new Promise((_, ko) => setTimeout(() => ko(new Error('tempo')), 12000));
+    const carregar = (async () => {
+      const v = await import(EV_MP_VISION + '/vision_bundle.mjs');
+      const fs = await v.FilesetResolver.forVisionTasks(EV_MP_VISION + '/wasm');
+      return v.FaceDetector.createFromOptions(fs, { baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite' }, runningMode: 'IMAGE', minDetectionConfidence: 0.45 });
+    })();
+    EV_DETECTOR_ROSTO = await Promise.race([carregar, tempo]);
+  } catch (e) { console.warn('Detector de rosto indisponível, usando detecção por tom de pele:', e.message); EV_DETECTOR_ROSTO = null; }
+  return EV_DETECTOR_ROSTO;
+}
+// Rosto pelo tom de pele (funciona sem internet): maior região de pele na parte de cima do quadro.
+function evRostoPorPele(img, w, h) {
+  const px = img.data, mask = new Uint8Array(w * h);
+  for (let i = 0, p = 0; p < w * h; p++, i += 4) {
+    const r = px[i], g = px[i + 1], b = px[i + 2];
+    const y = 0.299 * r + 0.587 * g + 0.114 * b, cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b, cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    // YCbCr + regra RGB (tira bege, madeira e teto de carro, que enganam só pelo YCbCr)
+    mask[p] = (y > 45 && cb >= 77 && cb <= 127 && cr >= 138 && cr <= 175 && r > 95 && g > 40 && b > 20 && mx - mn > 18 && r - g > 12 && r > b) ? 1 : 0;
+  }
+  const vis = new Uint8Array(w * h), pilha = new Int32Array(w * h); let melhor = null;
+  for (let p0 = 0; p0 < w * h; p0++) {
+    if (!mask[p0] || vis[p0]) continue;
+    let topo = 0, n = 0, x0 = w, x1 = 0, y0 = h, y1 = 0; pilha[topo++] = p0; vis[p0] = 1;
+    while (topo) { const p = pilha[--topo], x = p % w, y = (p / w) | 0; n++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      const viz = [p - 1, p + 1, p - w, p + w]; for (let k = 0; k < 4; k++) { const q = viz[k]; if (q < 0 || q >= w * h || vis[q] || !mask[q]) continue; if ((k === 0 && x === 0) || (k === 1 && x === w - 1)) continue; vis[q] = 1; pilha[topo++] = q; } }
+    if (n < w * h * 0.01) continue;
+    const cy = (y0 + y1) / 2 / h, prop = ((y1 - y0) / h * h) / Math.max(1, (x1 - x0) / w * w), cheio = n / Math.max(1, (x1 - x0 + 1) * (y1 - y0 + 1));
+    const nota = n * (cy < 0.75 ? 1 : 0.3) * ((x1 - x0) / w < 0.75 ? 1 : 0.35) * (prop > 0.7 && prop < 2.4 ? 1 : 0.5) * (cheio > 0.35 ? 1 : 0.6);
+    if (!melhor || nota > melhor.nota) melhor = { nota, x0, x1, y0, y1 };
+  }
+  if (!melhor) return null;
+  const fw = (melhor.x1 - melhor.x0) / w, fhMax = fw * 1.35 * (w / h), fh = Math.min((melhor.y1 - melhor.y0) / h, fhMax);
+  return { x: (melhor.x0 + melhor.x1) / 2 / w, y: melhor.y0 / h + fh / 2, w: fw, h: fh, fonte: 'pele' };
+}
+function evPercentil(hist, total, p) { let s = 0; const alvo = total * p; for (let i = 0; i < hist.length; i++) { s += hist[i]; if (s >= alvo) return i / 255; } return 1; }
+// Analisa um quadro: histograma de luz, pele, pontos neutros (para balanço de branco), saturação e realces estourados.
+function evAnalisarQuadro(img, w, h) {
+  const px = img.data, hist = new Float64Array(256); let n = 0, sat = 0, est = 0, pele = { n: 0, y: 0, s: 0 }, neu = { n: 0, r: 0, g: 0, b: 0 };
+  for (let i = 0; i < px.length; i += 8) {
+    const r = px[i] / 255, g = px[i + 1] / 255, b = px[i + 2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    const y = 0.2126 * r + 0.7152 * g + 0.0722 * b, s = mx ? (mx - mn) / mx : 0;
+    hist[Math.min(255, Math.round(y * 255))]++; n++; sat += s; if (y > 0.97) est++;
+    const cb = 128 - 0.168736 * px[i] - 0.331264 * px[i + 1] + 0.5 * px[i + 2], cr = 128 + 0.5 * px[i] - 0.418688 * px[i + 1] - 0.081312 * px[i + 2];
+    if (y > 0.18 && cb >= 77 && cb <= 127 && cr >= 135 && cr <= 175) { pele.n++; pele.y += y; pele.s += s; }
+    else if (s < 0.14 && y > 0.25 && y < 0.88) { neu.n++; neu.r += r; neu.g += g; neu.b += b; }
+  }
+  return { hist, n, sat: sat / n, estourado: est / n, pele, neu };
+}
+// Junta a análise de vários quadros e calcula a correção (níveis, gama, curva, balanço de branco, saturação, nitidez).
+function evCalcularGrade(analises, larguraFonte) {
+  const hist = new Float64Array(256); let n = 0, sat = 0, est = 0; const pele = { n: 0, y: 0, s: 0 }, neu = { n: 0, r: 0, g: 0, b: 0 };
+  analises.forEach(a => { for (let i = 0; i < 256; i++) hist[i] += a.hist[i]; n += a.n; sat += a.sat * a.n; est += a.estourado * a.n; ['n', 'y', 's'].forEach(k => pele[k] += a.pele[k]); ['n', 'r', 'g', 'b'].forEach(k => neu[k] += a.neu[k]); });
+  sat /= n; est /= n;
+  const p005 = evPercentil(hist, n, 0.005), p50 = evPercentil(hist, n, 0.5), p95 = evPercentil(hist, n, 0.95), p995 = evPercentil(hist, n, 0.995);
+  const preto = Math.min(0.12, p005), branco = Math.max(0.72, Math.min(1, p995 + 0.01));
+  const temPele = pele.n > n * 0.015, peleY = temPele ? pele.y / pele.n : null, peleS = temPele ? pele.s / pele.n : null;
+  // exposição guiada pela PELE (o que importa num vídeo de pessoa), não pela janela clara ao fundo
+  let alvo, ref;
+  if (temPele) { ref = peleY; alvo = peleY < 0.4 ? 0.5 : peleY > 0.7 ? 0.62 : Math.min(0.62, Math.max(0.5, peleY)); }
+  else { ref = p50; alvo = Math.min(0.55, Math.max(0.42, p50)); }
+  const refN = Math.min(0.95, Math.max(0.05, (ref - preto) / (branco - preto)));
+  const gama = Math.max(0.65, Math.min(1.5, Math.log(alvo) / Math.log(refN)));
+  // realces: se a janela/fundo está estourado, comprime os claros (recupera céu, vidro, parede branca)
+  const ombro = est > 0.04 || p95 > 0.9 ? 0.72 : p95 > 0.82 ? 0.8 : 0.9;
+  const desvio = Math.sqrt(hist.reduce((s, c, i) => s + c * Math.pow(i / 255 - p50, 2), 0) / n);
+  const curvaS = desvio < 0.16 ? 0.14 : desvio < 0.22 ? 0.08 : 0.03;
+  // balanço de branco pelos pontos neutros (paredes, teto, camisa clara), aplicado com moderação
+  let wb = [1, 1, 1];
+  if (neu.n > n * 0.02) { const r = neu.r / neu.n, g = neu.g / neu.n, b = neu.b / neu.n, m = (r + g + b) / 3; wb = [m / r, m / g, m / b].map(x => Math.max(0.88, Math.min(1.12, 1 + (x - 1) * 0.7))); }
+  // saturação: dá vida a cores apagadas, mas segura quando a pele já está avermelhada
+  let satF = Math.max(0.85, Math.min(1.25, 0.34 / Math.max(0.08, sat)));
+  if (temPele) satF = Math.min(satF, 1.12);
+  if (temPele && peleS > 0.42) satF = Math.min(satF, 0.92); else if (temPele && peleS > 0.34) satF = Math.min(satF, 1.02);
+  const nitidez = larguraFonte && larguraFonte < 900 ? 0.32 : 0.16;
+  return { v: 2, preto: +preto.toFixed(3), branco: +branco.toFixed(3), gama: +gama.toFixed(3), ombro, curvaS, wb: wb.map(x => +x.toFixed(3)), sat: +satF.toFixed(3), nitidez,
+    diag: { luz: +p50.toFixed(2), pele: peleY && +peleY.toFixed(2), estourado: +(est * 100).toFixed(1), sat: +sat.toFixed(2) } };
+}
+function evCurvaGrade(g, x) {
+  let v = Math.max(0, Math.min(1, (x - g.preto) / (g.branco - g.preto)));
+  v = Math.pow(v, g.gama);
+  if (v > g.ombro) { const k = 2.2, t = (v - g.ombro) / (1 - g.ombro); v = g.ombro + (1 - g.ombro) * (1 - Math.exp(-k * t)) / (1 - Math.exp(-k)); }
+  v = v + g.curvaS * Math.sin((v - 0.5) * Math.PI) * 0.5 * (1 - Math.abs(2 * v - 1) * 0.3); // contraste em S suave
+  return Math.max(0, Math.min(1, 0.012 + v * 0.976));
+}
+// Cria (uma vez) o filtro SVG da correção e devolve o url(#id) para o canvas.
+function evFiltroGrade(g, intensidade) {
+  if (!g) return '';
+  const it = intensidade === undefined ? 1 : intensidade;
+  const chave = 'evg' + Math.abs(JSON.stringify([g.preto, g.branco, g.gama, g.ombro, g.curvaS, g.wb, g.sat, g.nitidez, it]).split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7)).toString(36);
+  if (!document.getElementById(chave)) {
+    let defs = document.getElementById('ev-svg-filtros');
+    if (!defs) { document.body.insertAdjacentHTML('beforeend', '<svg id="ev-svg-filtros" width="0" height="0" style="position:absolute;width:0;height:0;pointer-events:none" aria-hidden="true"><defs></defs></svg>'); defs = document.getElementById('ev-svg-filtros'); }
+    const mix = (a, b) => a + (b - a) * it;
+    const tabela = Array.from({ length: 33 }, (_, i) => { const x = i / 32; return mix(x, evCurvaGrade(g, x)).toFixed(4); }).join(' ');
+    const wb = g.wb.map(x => mix(1, x)), s = mix(1, g.sat), a = g.nitidez * it;
+    defs.querySelector('defs').insertAdjacentHTML('beforeend', `<filter id="${chave}" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%">
+      <feColorMatrix type="matrix" values="${wb[0]} 0 0 0 0  0 ${wb[1]} 0 0 0  0 0 ${wb[2]} 0 0  0 0 0 1 0"/>
+      <feComponentTransfer><feFuncR type="table" tableValues="${tabela}"/><feFuncG type="table" tableValues="${tabela}"/><feFuncB type="table" tableValues="${tabela}"/></feComponentTransfer>
+      <feColorMatrix type="saturate" values="${s.toFixed(3)}"/>
+    </filter>`);
+  }
+  return `url(#${chave})`;
+}
+// Correção na placa de vídeo (WebGL): balanço de branco, curva de tons, saturação e nitidez em tempo real.
+const EVGL = { tentou: false };
+function evGLIniciar() {
+  if (EVGL.tentou) return EVGL.gl; EVGL.tentou = true;
+  try {
+    const cv = document.createElement('canvas'), gl = cv.getContext('webgl', { premultipliedAlpha: false, preserveDrawingBuffer: true, antialias: false });
+    if (!gl) return null;
+    const sh = (t, src) => { const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+    const pr = gl.createProgram();
+    gl.attachShader(pr, sh(gl.VERTEX_SHADER, 'attribute vec2 p; varying vec2 v; void main(){ v = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }'));
+    gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, `precision mediump float; uniform sampler2D uImg; uniform sampler2D uLut; uniform vec3 uWb; uniform float uSat; uniform float uNit; uniform vec2 uPx; varying vec2 v;
+      float L(float x){ return texture2D(uLut, vec2(x * 255.0 / 256.0 + 0.5 / 256.0, 0.5)).r; }
+      void main(){ vec3 c = texture2D(uImg, v).rgb;
+        if (uNit > 0.0) { vec3 n = texture2D(uImg, v + vec2(uPx.x, 0.0)).rgb + texture2D(uImg, v - vec2(uPx.x, 0.0)).rgb + texture2D(uImg, v + vec2(0.0, uPx.y)).rgb + texture2D(uImg, v - vec2(0.0, uPx.y)).rgb; c = clamp(c * (1.0 + 4.0 * uNit) - n * uNit, 0.0, 1.0); }
+        c = clamp(c * uWb, 0.0, 1.0); c = vec3(L(c.r), L(c.g), L(c.b));
+        float l = dot(c, vec3(0.2126, 0.7152, 0.0722)); gl_FragColor = vec4(clamp(mix(vec3(l), c, uSat), 0.0, 1.0), 1.0); }`));
+    gl.linkProgram(pr); if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+    gl.useProgram(pr);
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    const tex = (u) => { const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + u); gl.bindTexture(gl.TEXTURE_2D, t); [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach(k => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE)); [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER].forEach(k => gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR)); return t; };
+    EVGL.texImg = tex(0); EVGL.texLut = tex(1);
+    gl.uniform1i(gl.getUniformLocation(pr, 'uImg'), 0); gl.uniform1i(gl.getUniformLocation(pr, 'uLut'), 1);
+    EVGL.u = { wb: gl.getUniformLocation(pr, 'uWb'), sat: gl.getUniformLocation(pr, 'uSat'), nit: gl.getUniformLocation(pr, 'uNit'), px: gl.getUniformLocation(pr, 'uPx') };
+    EVGL.cv = cv; EVGL.gl = gl; EVGL.lutChave = '';
+    return gl;
+  } catch (e) { console.warn('WebGL indisponível para a correção de cor:', e.message); EVGL.gl = null; return null; }
+}
+function evGLGrade(el, mw, mh, g, intensidade) {
+  const gl = evGLIniciar(); if (!gl || !g) return null;
+  const it = intensidade === undefined ? 1 : intensidade, mix = (a, b) => a + (b - a) * it;
+  const esc = Math.min(1, 1920 / Math.max(mw, mh)), w = Math.round(mw * esc), h = Math.round(mh * esc);
+  if (EVGL.cv.width !== w || EVGL.cv.height !== h) { EVGL.cv.width = w; EVGL.cv.height = h; gl.viewport(0, 0, w, h); }
+  const chave = JSON.stringify([g.preto, g.branco, g.gama, g.ombro, g.curvaS, it]);
+  if (chave !== EVGL.lutChave) {
+    const lut = new Uint8Array(256 * 4); for (let i = 0; i < 256; i++) { const x = i / 255, y = Math.round(mix(x, evCurvaGrade(g, x)) * 255); lut[i * 4] = lut[i * 4 + 1] = lut[i * 4 + 2] = y; lut[i * 4 + 3] = 255; }
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, EVGL.texLut); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, lut); EVGL.lutChave = chave;
+  }
+  try { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, EVGL.texImg); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, el); }
+  catch (e) { return null; }
+  gl.uniform3f(EVGL.u.wb, mix(1, g.wb[0]), mix(1, g.wb[1]), mix(1, g.wb[2])); gl.uniform1f(EVGL.u.sat, mix(1, g.sat)); gl.uniform1f(EVGL.u.nit, (g.nitidez || 0) * Math.min(1, it)); gl.uniform2f(EVGL.u.px, 1 / mw, 1 / mh);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  return EVGL.cv;
+}
+// Lê quadros espalhados pela mídia (sem atrapalhar a prévia), analisa cor e procura o rosto.
+async function evAnalisarMidia(m, aoProgresso) {
+  if (!m || m.tipo === 'fundo') return null;
+  const ehVideo = m.tipo === 'video', el = ehVideo ? document.createElement('video') : new Image();
+  el.crossOrigin = 'anonymous'; if (ehVideo) { el.muted = true; el.preload = 'auto'; el.playsInline = true; }
+  await new Promise((ok, ko) => { el[ehVideo ? 'onloadeddata' : 'onload'] = ok; el.onerror = () => ko(new Error('Não consegui ler a mídia.')); el.src = m.url; setTimeout(ok, 15000); });
+  const mw = el.videoWidth || el.naturalWidth, mh = el.videoHeight || el.naturalHeight; if (!mw) return null;
+  const dur = ehVideo ? (isFinite(el.duration) ? el.duration : (m.duracao || 0)) : 0;
+  const larg = 192, alt = Math.round(larg * mh / mw), cv = document.createElement('canvas'); cv.width = larg; cv.height = alt; const g = cv.getContext('2d', { willReadFrequently: true });
+  const qtd = ehVideo ? Math.max(4, Math.min(40, Math.round(dur / 0.6))) : 1;
+  const detector = await evCarregarDetectorRosto();
+  const analises = [], rostos = [];
+  for (let i = 0; i < qtd; i++) {
+    const t = ehVideo ? Math.min(dur - 0.05, (i + 0.5) * dur / qtd) : 0;
+    if (ehVideo) await new Promise(ok => { const fim = () => { el.removeEventListener('seeked', fim); ok(); }; el.addEventListener('seeked', fim); el.currentTime = Math.max(0, t); setTimeout(fim, 3000); });
+    g.drawImage(el, 0, 0, larg, alt);
+    const img = g.getImageData(0, 0, larg, alt);
+    if (i % Math.max(1, Math.floor(qtd / 8)) === 0) analises.push(evAnalisarQuadro(img, larg, alt));
+    let r = null;
+    if (detector) { try { const d = detector.detect(cv).detections || []; const b = d.sort((a, c) => c.boundingBox.width * c.boundingBox.height - a.boundingBox.width * a.boundingBox.height)[0]; if (b) r = { x: (b.boundingBox.originX + b.boundingBox.width / 2) / larg, y: (b.boundingBox.originY + b.boundingBox.height / 2) / alt, w: b.boundingBox.width / larg, h: b.boundingBox.height / alt, fonte: 'ia' }; } catch (e) {} }
+    if (!r) r = evRostoPorPele(img, larg, alt);
+    if (r) rostos.push({ t: +t.toFixed(2), x: +r.x.toFixed(3), y: +r.y.toFixed(3), w: +r.w.toFixed(3), h: +r.h.toFixed(3) });
+    if (aoProgresso) aoProgresso((i + 1) / qtd);
+  }
+  el.removeAttribute('src'); if (ehVideo) el.load();
+  return { grade: evCalcularGrade(analises, Math.min(mw, mh)), rostos: evSuavizarRostos(rostos), fonteRosto: detector ? 'ia' : 'pele', w: mw, h: mh };
+}
+// Movimento de câmera suave: mediana para tirar erros + média móvel de ±1,2 s (sem tremer).
+function evSuavizarRostos(l) {
+  if (l.length < 2) return l;
+  const med = l.map((p, i) => { const jan = l.slice(Math.max(0, i - 2), i + 3); const ord = k => jan.map(q => q[k]).sort((a, b) => a - b)[Math.floor(jan.length / 2)]; return { t: p.t, x: ord('x'), y: ord('y'), w: ord('w'), h: ord('h') }; });
+  return med.map(p => { const jan = med.filter(q => Math.abs(q.t - p.t) <= 1.2); const m = k => jan.reduce((s, q) => s + q[k], 0) / jan.length; return { t: p.t, x: +m('x').toFixed(3), y: +m('y').toFixed(3), w: +m('w').toFixed(3), h: +m('h').toFixed(3) }; });
+}
+function evRostoNoTempo(rostos, t) {
+  if (!rostos || !rostos.length) return null;
+  if (t <= rostos[0].t) return rostos[0]; const u = rostos[rostos.length - 1]; if (t >= u.t) return u;
+  for (let i = 1; i < rostos.length; i++) if (rostos[i].t >= t) { const a = rostos[i - 1], b = rostos[i], k = (t - a.t) / Math.max(0.001, b.t - a.t), e = k * k * (3 - 2 * k); return { x: a.x + (b.x - a.x) * e, y: a.y + (b.y - a.y) * e, w: a.w + (b.w - a.w) * e, h: a.h + (b.h - a.h) * e }; }
+  return u;
+}
+// Aplica: analisa cada mídia usada e liga correção + enquadramento.
+async function evImagemInteligente(opcoes) {
+  opcoes = Object.assign({ cor: true, enquadrar: true, silencioso: false }, opcoes || {});
+  const d = ES.p.dados, usadas = d.midias.filter(m => (m.tipo === 'video' || m.tipo === 'imagem') && (d.clips.some(c => c.midia === m.id) || (d.sobreposicoes || []).some(o => o.midia === m.id)));
+  if (!usadas.length) { if (!opcoes.silencioso) mostrarToast('Coloque um vídeo ou foto na linha do tempo primeiro.', true); return 0; }
+  if (!opcoes.silencioso) evCarregando('🎨 Analisando luz, cor e rosto em vários quadros do vídeo...');
+  let feitos = 0;
+  try {
+    for (const m of usadas) {
+      const a = await evAnalisarMidia(m, p => { const e = document.querySelector('#ev-carregando b'); if (e) e.textContent = `🎨 Analisando "${m.nome || 'mídia'}"… ${Math.round(p * 100)}%`; });
+      if (!a) continue;
+      m.grade = a.grade; m.rostos = a.rostos; m.fonteRosto = a.fonteRosto; feitos++;
+    }
+    if (opcoes.cor) { d.corAuto = true; d.corIntensidade = d.corIntensidade || 1; }
+    if (opcoes.enquadrar) { d.enquadrarRosto = true; }
+    // looks fortes demais estragam pele: com a correção ligada, o filtro de estilo entra mais suave
+    if (opcoes.cor && ['vibrante', 'contraste'].includes(d.filtro)) d.filtroForca = 0.5;
+    if (!opcoes.silencioso) { evCarregando(null); evMudou(); if (ES.painel === 'filtros') evPainel('filtros'); mostrarToast(`✨ Imagem ajustada: luz, cor${opcoes.enquadrar ? ' e enquadramento no rosto' : ''} em ${feitos} mídia(s).`); }
+  } catch (e) { if (!opcoes.silencioso) { evCarregando(null); mostrarToast('Não consegui analisar: ' + e.message, true); } }
+  return feitos;
+}
+
 function evAnalisarCor(cv) {
   const px = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let L = 0, L2 = 0, S = 0, R = 0, B = 0, n = 0;
   for (let i = 0; i < px.length; i += 16) { const r = px[i] / 255, g = px[i + 1] / 255, b = px[i + 2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = 0.2126 * r + 0.7152 * g + 0.0722 * b; L += l; L2 += l * l; S += mx ? (mx - mn) / mx : 0; R += r; B += b; n++; }
@@ -21866,7 +22275,16 @@ function evPainelFiltros() {
   const el = document.getElementById('ev-painel'), d = ES.p.dados, aj = d.ajustes;
   if (!ES.filtroOpcoes) evFiltroAutomatico(true);
   const base = ES.filtroBase;
-  el.innerHTML = `<h4>🎨 Filtro inteligente</h4>
+  const midG = d.midias.find(m => m.grade), gd = midG && midG.grade && midG.grade.diag;
+  el.innerHTML = `<h4>✨ Imagem inteligente</h4>
+    <div class="ev-dica-fixa" style="margin:0 0 8px;">Analisa vários quadros do vídeo — luz da pele, fundo estourado, cor do ambiente — e corrige como um colorista. Também enquadra o rosto no centro, seguindo a pessoa com suavidade.</div>
+    <button class="ev-btn ia grande" onclick="evImagemInteligente()">✨ ${d.corAuto || d.enquadrarRosto ? 'Analisar de novo e reajustar' : 'Ajustar imagem automaticamente'}</button>
+    ${d.corAuto || d.enquadrarRosto ? `<label class="ev-chk2"><input type="checkbox" ${d.corAuto ? 'checked' : ''} onchange="ES.p.dados.corAuto=this.checked; evMudou(); evPainel('filtros')"> Correção de luz e cor</label>
+      ${d.corAuto ? `<label class="ev-slider">Intensidade da correção <b id="ev-cor-int">${Math.round((d.corIntensidade || 1) * 100)}%</b><input type="range" min="0" max="1.5" step="0.05" value="${d.corIntensidade || 1}" oninput="ES.p.dados.corIntensidade=Number(this.value); document.getElementById('ev-cor-int').textContent=Math.round(this.value*100)+'%'; evDesenhar()" onchange="evMudou(false)"></label>` : ''}
+      <label class="ev-chk2"><input type="checkbox" ${d.enquadrarRosto ? 'checked' : ''} onchange="ES.p.dados.enquadrarRosto=this.checked; evMudou(); evPainel('filtros')"> 🎯 Enquadrar e seguir o rosto</label>
+      ${gd ? `<div class="ev-sub">Diagnóstico: luz média ${Math.round(gd.luz * 100)}%${gd.pele ? ` · pele ${Math.round(gd.pele * 100)}%` : ''} · ${gd.estourado}% estourado · rosto ${midG.rostos && midG.rostos.length ? (midG.fonteRosto === 'ia' ? 'detectado pela IA' : 'detectado pelo tom de pele') : 'não encontrado'}</div>` : ''}
+      ${['vibrante', 'contraste', 'cinema', 'quente', 'frio', 'noite', 'pb', 'suave'].includes(d.filtro) ? `<label class="ev-slider">Força do filtro "${EV_FILTROS[d.filtro][0]}" <b id="ev-ff">${Math.round((d.filtroForca === undefined ? 1 : d.filtroForca) * 100)}%</b><input type="range" min="0" max="1" step="0.05" value="${d.filtroForca === undefined ? 1 : d.filtroForca}" oninput="ES.p.dados.filtroForca=Number(this.value); document.getElementById('ev-ff').textContent=Math.round(this.value*100)+'%'; evDesenhar()" onchange="evMudou(false)"></label>` : ''}` : ''}
+    <h4>🎨 Estilo (filtro)</h4>
     <div class="ev-sub">${ES.filtroDiag ? 'Análise do vídeo: ' + ES.filtroDiag.join(' · ') : 'Coloque um vídeo na linha do tempo para analisar.'}</div>
     ${ES.filtroIaTexto ? `<div class="ev-dica-fixa" style="margin-top:4px;">🤖 ${escapeHtml(ES.filtroIaTexto)}</div>` : ''}
     <div class="ev-filtro-ops">${(ES.filtroOpcoes || []).map((o, i) => `<div class="ev-filtro-op"><img src="${base ? evMiniaturaFiltro(base, o) : ''}" onclick="evAplicarFiltroOpcao(${i})"><b>${escapeHtml(o.nome)}</b><small>${escapeHtml(o.desc || '')}</small><div><button onclick="evAplicarFiltroOpcao(${i})">Vídeo todo</button><button onclick="evAplicarFiltroOpcao(${i}, true)">Só no clipe</button></div></div>`).join('')}</div>
@@ -22162,8 +22580,8 @@ async function evEdicaoCompleta() {
     if (Array.isArray(plano.hashtags) && plano.hashtags.length && !ES.p.hashtags) ES.p.hashtags = plano.hashtags.join(' ');
     if (op.cor) {
       if (EV_FILTROS[plano.filtro]) d.filtro = plano.filtro;
-      ES.ultimoEstado = JSON.stringify(d); evIrPara(0.5); await new Promise(r => setTimeout(r, 500));
-      const auto = evFiltroAutomatico(true); if (auto) d.ajustes = Object.assign({ brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 }, auto.opcoes[0].ajustes);
+      d.ajustes = { brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 };
+      evCarregando('🎨 Ajustando luz, cor e enquadramento...'); await evImagemInteligente({ silencioso: true }); d.filtroForca = 0.45;
     }
     ES.hist.push(antes); ES.ultimoEstado = JSON.stringify(d); evMudou(true, true); evIrPara(0); evDesenharProps(); evCarregando(null);
     const cortado = a.duracao - t;
@@ -22390,7 +22808,7 @@ async function evAbrirEdicaoCompleta() {
       ${op('ec-pesquisa', '🔎 Pesquisar vídeos que viralizaram', ia ? 'Pesquisa na internet o que está viralizando no tema e aplica a mesma estratégia.' : 'Precisa da IA conectada.', ia, true)}
       ${op('ec-musica', '🎵 Música de fundo automática', 'Se o vídeo não tiver música, a IA escolhe o estilo e cria uma trilha sem direitos autorais que abaixa quando você fala.', true, !d.audios.length)}
       ${op('ec-voz', '🎙️ Voz limpa', 'Reduz ruído, iguala o volume e realça a voz (no vídeo exportado).', true, true)}
-      ${op('ec-cor', '🎨 Cor e filtro automático', 'Corrige luz e cor.', true, true)}
+      ${op('ec-cor', '🎨 Imagem inteligente', 'Corrige luz e cor da pele, recupera fundo estourado e enquadra o rosto.', true, true)}
       ${op('ec-marca', '🏷️ Marca no encerramento', 'Logo e @ apenas na tela final — o vídeo fica limpo.', true, true)}
       ${op('ec-broll', '🧩 Outras mídias como cobertura (B-roll)', 'Coloca seus outros vídeos/fotos por cima em momentos-chave.', d.midias.filter(m => m.tipo !== 'audio').length > 1, false)}
     </div>
@@ -22480,7 +22898,7 @@ async function evEdicaoViral() {
     if (op.broll) { const outras = d.midias.filter(x => x.id !== m.id && (x.tipo === 'video' || x.tipo === 'imagem')); let k = 0; for (let tt = 6; tt < tot - 4 && k < outras.length * 2; tt += 8, k++) d.sobreposicoes.push({ id: evUid(), midia: outras[k % outras.length].id, ini: tt, dur: 2, corte: 0, vel: 1, vol: 0, layout: 'cheio', ajuste: 'cobrir', zoom: 1.08, auto: true }); }
     d.extras = d.extras || {}; if (op.voz) d.extras.vozLimpa = true;
     if (op.marca) { evAplicarKit(await evCarregarKit(), true); }
-    if (op.cor) { if (EV_FILTROS[plano.filtro]) d.filtro = plano.filtro; ES.ultimoEstado = JSON.stringify(d); evIrPara(Math.min(1, tot / 2)); await new Promise(r => setTimeout(r, 500)); const auto = evFiltroAutomatico(true); if (auto) d.ajustes = Object.assign({ brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 }, auto.opcoes[0].ajustes); }
+    if (op.cor) { if (EV_FILTROS[plano.filtro]) d.filtro = plano.filtro; d.ajustes = { brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 }; evCarregando('🎨 Ajustando luz, cor e enquadramento no rosto...'); await evImagemInteligente({ silencioso: true }); d.filtroForca = 0.45; }
     ES.hist.push(antes); ES.ultimoEstado = JSON.stringify(d); evMudou(true, true); evIrPara(0); evDesenharProps(); evCarregando(null);
     if (op.musica && !d.audios.length && plano.musica !== 'nenhuma') await evAdicionarTrilha(EV_TRILHAS[plano.musica] ? plano.musica : 'corporativo', true);
     if (ES.painel !== 'ia') evPainel('ia');
@@ -22564,7 +22982,7 @@ function evPopBarra(tipo, btn) {
   else if (tipo === 'volume') html = `<b>🔊 Volume do trecho <span id="pb-vol">${Math.round((c.mudo ? 0 : c.vol !== undefined ? c.vol : 1) * 100)}%</span></b><input type="range" min="0" max="2" step="0.05" value="${c.mudo ? 0 : c.vol !== undefined ? c.vol : 1}" oninput="evSet('vol', Number(this.value)); evSet('mudo', Number(this.value)===0); document.getElementById('pb-vol').textContent=Math.round(this.value*100)+'%'" onchange="evMudou(false)"><div class="ev-chips"><button onclick="evSet('mudo', true); evSet('vol', 0); evMudou(false); evPopBarra('volume')">🔇 Mudo</button><button onclick="evVolumeTodos(1); evPopBarra('volume')">Todos 100%</button></div>`;
   else if (tipo === 'zoom') html = `<b>🔍 Zoom do trecho</b><input type="range" min="1" max="1.8" step="0.01" value="${c.zoom || 1}" oninput="evSet('zoom', Number(this.value))" onchange="evMudou(false)"><div class="ev-chips">${[[1, 'Normal'], [1.15, 'Aproximar'], [1.3, 'Close'], [1.5, 'Bem perto']].map(([z, r]) => `<button onclick="evSet('zoom', ${z}); evMudou(false)">${r}</button>`).join('')}</div><div class="ev-sub">Dica: divida (✂️) no momento da frase forte e dê zoom só nesse trecho.</div>`;
   else if (tipo === 'transicao') html = `<b>🔀 Transição de entrada do trecho</b><div class="ev-chips">${Object.entries(EV_TRANS).map(([k, r]) => `<button class="${(c.transicao || d.transicao) === k ? 'on' : ''}" onclick="evSet('transicao','${k}', true); evMudou(false); evPopBarra('transicao')">${r}</button>`).join('')}</div><button class="ev-btn" onclick="ES.p.dados.transicao=(evItemSel().transicao||'corte'); ES.p.dados.clips.forEach(c=>delete c.transicao); evMudou(); evFecharPopBarra()">Aplicar em todos os cortes</button>`;
-  else if (tipo === 'enquadrar') html = `<b>🖼️ Enquadramento</b><div class="ev-chips">${[['cobrir', 'Preencher a tela'], ['conter', 'Inteiro + fundo desfocado']].map(([k, r]) => `<button class="${(c.ajuste || 'cobrir') === k ? 'on' : ''}" onclick="evSet('ajuste','${k}'); evMudou(false); evPopBarra('enquadrar')">${r}</button>`).join('')}</div><label class="ev-chk2"><input type="checkbox" ${c.espelhar ? 'checked' : ''} onchange="evSet('espelhar', this.checked); evMudou(false)"> Espelhar (inverter lados)</label><div class="ev-sub">Posição (horizontal / vertical):</div><div class="ev-dupla"><input type="range" min="-0.5" max="0.5" step="0.01" value="${c.px || 0}" oninput="evSet('px', Number(this.value))" onchange="evMudou(false)"><input type="range" min="-0.5" max="0.5" step="0.01" value="${c.py || 0}" oninput="evSet('py', Number(this.value))" onchange="evMudou(false)"></div>`;
+  else if (tipo === 'enquadrar') html = `<b>🖼️ Enquadramento</b><button class="ev-btn ia" style="width:100%;margin:6px 0;" onclick="evFecharPopBarra(); ES.p.dados.enquadrarRosto=true; evImagemInteligente({ cor: !!ES.p.dados.corAuto })">🎯 Enquadrar no rosto (automático)</button>${ES.p.dados.enquadrarRosto ? `<label class="ev-chk2"><input type="checkbox" ${c.enquadrar !== false ? 'checked' : ''} onchange="evSet('enquadrar', this.checked ? null : false); evMudou(false)"> Seguir o rosto neste clipe</label>` : ''}<div class="ev-chips">${[['cobrir', 'Preencher a tela'], ['conter', 'Inteiro + fundo desfocado']].map(([k, r]) => `<button class="${(c.ajuste || 'cobrir') === k ? 'on' : ''}" onclick="evSet('ajuste','${k}'); evMudou(false); evPopBarra('enquadrar')">${r}</button>`).join('')}</div><label class="ev-chk2"><input type="checkbox" ${c.espelhar ? 'checked' : ''} onchange="evSet('espelhar', this.checked); evMudou(false)"> Espelhar (inverter lados)</label><div class="ev-sub">Posição (horizontal / vertical):</div><div class="ev-dupla"><input type="range" min="-0.5" max="0.5" step="0.01" value="${c.px || 0}" oninput="evSet('px', Number(this.value))" onchange="evMudou(false)"><input type="range" min="-0.5" max="0.5" step="0.01" value="${c.py || 0}" oninput="evSet('py', Number(this.value))" onchange="evMudou(false)"></div>`;
   else if (tipo === 'musica') html = `<b>🎵 Música de fundo</b><div class="ev-sub">Trilhas criadas na hora para o seu vídeo, sem direitos autorais:</div><div class="ev-trilhas">${Object.entries(EV_TRILHAS).map(([k, t]) => `<button onclick="evFecharPopBarra(); evAdicionarTrilha('${k}')"><span>${t.ico}</span>${t.nome}</button>`).join('')}</div><div class="ev-linha-btn"><label class="ev-btn" style="cursor:pointer;"><input type="file" accept="audio/*" hidden onchange="evFecharPopBarra(); evSubir(this.files)">⬆️ Subir a minha música</label><button class="ev-btn" onclick="evFecharPopBarra(); evPainel('audio')">Mais opções de áudio</button></div>`;
   else if (tipo === 'texto') html = `<b>🔤 Adicionar texto no cursor</b><div class="ev-chips col">${Object.entries(EV_ESTILOS).filter(([k]) => k !== 'emoji').map(([k, e]) => `<button onclick="evFecharPopBarra(); evAdicionarTexto('${k}')">${e.rot}</button>`).join('')}</div>`;
   else if (tipo === 'mais') html = `<b>Mais ferramentas</b><div class="ev-chips col">

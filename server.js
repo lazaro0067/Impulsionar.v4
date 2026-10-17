@@ -13322,8 +13322,65 @@ setInterval(async () => {
 // explícito para que o Socket.IO possa se acoplar a ele (sinalização
 // offer/answer/ICE candidate). Nenhum vídeo/áudio passa pelo servidor — ele
 // só troca as mensagens de sinalização entre os dois participantes; a
-// chamada em si é peer-to-peer (WebRTC), via STUN público do Google.
+// chamada em si é peer-to-peer (WebRTC), via STUN público e, quando configurado, TURN (retransmissão para redes restritas).
 // ============================================================
+// ----- Servidores ICE (STUN/TURN) da reunião on-line -----
+// Só STUN não basta quando um dos lados está em rede corporativa/4G com NAT restrito ou firewall:
+// a conexão cai em "Reconectando...". O TURN retransmite o vídeo por um servidor (inclusive pela porta 443).
+const STUN_PADRAO_VC = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }];
+let CACHE_ICE_VC = { ate: 0, servidores: null };
+async function lerTurnVc() { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'vc_turn'`).catch(() => null); try { return JSON.parse((r && r.value) || '{}'); } catch (e) { return {}; } }
+async function gerarIceVc(cfg, semCache) {
+    cfg = cfg || await lerTurnVc();
+    if (!semCache && CACHE_ICE_VC.servidores && CACHE_ICE_VC.ate > Date.now()) return CACHE_ICE_VC.servidores;
+    let turn = [];
+    const env = { urls: process.env.TURN_URLS, user: process.env.TURN_USERNAME, pass: process.env.TURN_CREDENTIAL };
+    if (cfg.provedor === 'cloudflare' && cfg.keyId && cfg.token) {
+        const r = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(cfg.keyId)}/credentials/generate-ice-servers`, { method: 'POST', headers: { Authorization: 'Bearer ' + cfg.token, 'Content-Type': 'application/json' }, body: JSON.stringify({ ttl: 86400 }), signal: AbortSignal.timeout(8000) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error('Cloudflare TURN: ' + ((j.errors && j.errors[0] && j.errors[0].message) || j.error || ('HTTP ' + r.status)));
+        turn = Array.isArray(j.iceServers) ? j.iceServers : (j.iceServers ? [j.iceServers] : []);
+    } else if (cfg.provedor === 'metered' && cfg.app && cfg.apiKey) {
+        const host = String(cfg.app).replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/\.metered\.live$/, '') + '.metered.live';
+        const r = await fetch(`https://${host}/api/v1/turn/credentials?apiKey=${encodeURIComponent(cfg.apiKey)}`, { signal: AbortSignal.timeout(8000) });
+        const j = await r.json().catch(() => null);
+        if (!r.ok || !Array.isArray(j)) throw new Error('Metered TURN: ' + ((j && (j.error || j.message)) || ('HTTP ' + r.status)));
+        turn = j;
+    } else if (cfg.provedor === 'manual' && cfg.urls) {
+        turn = [{ urls: String(cfg.urls).split(/[\s,]+/).filter(u => /^turns?:/.test(u)), username: cfg.usuario || '', credential: cfg.senha || '' }];
+    } else if (env.urls) {
+        turn = [{ urls: String(env.urls).split(/[\s,]+/).filter(Boolean), username: env.user || '', credential: env.pass || '' }];
+    }
+    // a porta 53 é bloqueada pelos navegadores e só atrasa a conexão
+    turn = turn.map(sv => ({ ...sv, urls: (Array.isArray(sv.urls) ? sv.urls : [sv.urls]).filter(u => u && !/:53(\?|$)/.test(u)) })).filter(sv => sv.urls.length);
+    const servidores = { iceServers: [...STUN_PADRAO_VC, ...turn], turn: turn.some(sv => sv.urls.some(u => /^turns?:/.test(u))) };
+    CACHE_ICE_VC = { ate: Date.now() + 6 * 3600 * 1000, servidores };
+    return servidores;
+}
+// Público: o convidado externo (sem login) também precisa dos servidores para conseguir se conectar.
+app.get('/api/public/vc-ice', async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    try { res.json(await gerarIceVc()); }
+    catch (e) { console.warn('ICE:', e.message); res.json({ iceServers: STUN_PADRAO_VC, turn: false, aviso: e.message }); }
+});
+app.get('/api/admin/vc-turn', requireRole('admin'), async (req, res) => {
+    const c = await lerTurnVc();
+    const mascara = v => v ? String(v).slice(0, 4) + '••••' + String(v).slice(-3) : '';
+    res.json({ provedor: c.provedor || (process.env.TURN_URLS ? 'env' : ''), keyId: c.keyId || '', token: mascara(c.token), app: c.app || '', apiKey: mascara(c.apiKey), urls: c.urls || '', usuario: c.usuario || '', senha: c.senha ? '••••' : '', configurado: !!(c.provedor || process.env.TURN_URLS) });
+});
+app.put('/api/admin/vc-turn', requireRole('admin'), async (req, res) => {
+    const b = req.body || {}, atual = await lerTurnVc();
+    const manter = (novo, velho) => (novo && !/••••/.test(novo)) ? String(novo).trim() : (velho || '');
+    const cfg = { provedor: ['cloudflare', 'metered', 'manual', ''].includes(b.provedor) ? b.provedor : '', keyId: String(b.keyId || '').trim(), token: manter(b.token, atual.token), app: String(b.app || '').trim(), apiKey: manter(b.apiKey, atual.apiKey), urls: String(b.urls || '').trim(), usuario: String(b.usuario || '').trim(), senha: manter(b.senha, atual.senha) };
+    try {
+        let teste = { turn: false };
+        if (cfg.provedor) { teste = await gerarIceVc(cfg, true); if (!teste.turn) throw new Error('O provedor não devolveu nenhum servidor TURN. Confira os dados.'); }
+        await new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES ('vc_turn', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [JSON.stringify(cfg)], ok));
+        CACHE_ICE_VC = { ate: 0, servidores: null };
+        res.json({ ok: true, message: cfg.provedor ? '✅ Servidor TURN conectado! As próximas conexões já usam o TURN.' : 'TURN desligado.' });
+    } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
 const httpServer = http.createServer(app);
 const io = new SocketIOServer(httpServer, { cors: { origin: '*' } });
 
@@ -13499,6 +13556,16 @@ io.on('connection', (socket) => {
             io.to(alvo).emit('vc-moderado', { acao: 'remover', por: eu.name });
             const s2 = io.sockets.sockets.get(alvo); if (s2) sairDaSalaVideochamada(s2);
         }
+    });
+
+    // Recursos ao vivo: legendas, enquetes e pedidos de legenda — só repassa para a mesma sala.
+    socket.on('vc-evento', ({ tipo, dados } = {}) => {
+        const sala = socket.data.sala; if (!sala) return;
+        const ps = SALAS_VIDEOCHAMADA.get(sala), eu = ps && ps.get(socket.id); if (!eu) return;
+        if (!['legenda', 'legendas-pedido', 'enquete', 'voto', 'enquete-fim'].includes(tipo)) return;
+        if (['enquete', 'enquete-fim'].includes(tipo) && eu.convidado) return;
+        const j = JSON.stringify(dados || {}); if (j.length > 4000) return;
+        socket.to(sala).emit('vc-evento', { tipo, dados: dados || {}, socketId: socket.id, nome: eu.name });
     });
 
     socket.on('sair-sala-mentoria', () => sairDaSalaVideochamada(socket));
