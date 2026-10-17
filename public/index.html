@@ -1157,7 +1157,7 @@
   #ev-editor input[type=color] { width:40px; height:30px; padding:2px; }
   .ev-topo { display:flex; align-items:center; gap:8px; padding:0 12px; background:var(--e-sup); border-bottom:1px solid var(--e-bd); }
   .ev-tb { flex-shrink:0; background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:8px; padding:7px 12px; cursor:pointer; font-size:13px; white-space:nowrap; }
-  .ev-tb:hover { border-color:var(--e-az); } .ev-bt-salvar.pend { background:#16a34a; border-color:#16a34a; color:#fff; font-weight:700; } .ev-bt-salvar:disabled { opacity:.8; } .ev-tb.primario { background:var(--e-vm); border-color:var(--e-vm); font-weight:700; }
+  .ev-tb:hover { border-color:var(--e-az); } .ev-previa { font-size:11.5px !important; border:1px solid var(--e-bd) !important; border-radius:14px !important; padding:4px 10px !important; color:var(--e-sub) !important; } .ev-bt-salvar.pend { background:#16a34a; border-color:#16a34a; color:#fff; font-weight:700; } .ev-bt-salvar:disabled { opacity:.8; } .ev-tb.primario { background:var(--e-vm); border-color:var(--e-vm); font-weight:700; }
   #ev-editor .ev-titulo { flex:0 1 260px; min-width:90px; width:260px; font-weight:700; font-size:14px; background:transparent; border-color:transparent; } #ev-editor .ev-titulo:hover, #ev-editor .ev-titulo:focus { border-color:var(--e-bd); }
   #ev-editor .ev-sel { width:auto; }
   .ev-salvo { font-size:12px; color:var(--e-sub); } .ev-salvo.pend { color:#fbbf24; }
@@ -20602,6 +20602,8 @@ function evCarregarFontes() {
 // Um mesmo vídeo cortado em vários pedaços usa no máximo 2 players (antes era 1 por pedaço):
 // muito menos memória e decodificação — é isso que travava no celular.
 function evChaveClip(c) {
+  if (ES.chaves && ES.chaves[c.id] && ES.chavesT && performance.now() - ES.chavesT < 400) return ES.chaves[c.id];
+  ES.chavesT = performance.now();
   const d = ES.p.dados, sig = d.clips.map(x => x.id + '|' + x.midia + '|' + x.ini + '|' + x.fim).join(';');
   if (ES.chavesSig !== sig) {
     ES.chavesSig = sig; ES.chaves = {}; const slots = {};
@@ -21033,6 +21035,11 @@ function evTocar() {
   };
   evSincronizar(ES.t, true); loop();
 }
+function evAlternarPrevia() {
+  ES.leve = !ES.leve; try { localStorage.setItem('ev_previa', ES.leve ? 'leve' : 'max'); } catch (e) {}
+  const b = document.getElementById('ev-previa'); if (b) b.textContent = ES.leve ? '⚡ Prévia leve' : '🎞️ Prévia máxima';
+  evAjustarPalco(); evDesenhar(); mostrarToast(ES.leve ? '⚡ Prévia leve: roda liso; o vídeo final sai em qualidade máxima.' : '🎞️ Prévia em qualidade máxima (pode travar em computador mais simples).');
+}
 function evPausar() {
   if (!ES) return;
   ES.tocando = false; cancelAnimationFrame(ES.raf);
@@ -21117,7 +21124,7 @@ async function evAbrirEditor(id) {
   d.extras = d.extras || {}; d.ajustes = d.ajustes || { brilho: 100, contraste: 100, saturacao: 100 }; d.filtro = d.filtro || 'nenhum'; d.transicao = d.transicao || 'corte';
   p.dados = d;
   const f = EV_FORMATOS[p.formato] || EV_FORMATOS['9:16'];
-  ES = { p, W: f.w, H: f.h, t: 0, tocando: false, sel: null, pxs: 60, hist: [], fut: [], sujo: false, painel: 'midia', zonaSegura: false, els: {}, aud: {}, caixas: {}, leve: /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || (navigator.hardwareConcurrency || 8) <= 4 };
+  ES = { p, W: f.w, H: f.h, t: 0, tocando: false, sel: null, pxs: 60, hist: [], fut: [], sujo: false, painel: 'midia', zonaSegura: false, els: {}, aud: {}, caixas: {}, leve: (() => { try { return localStorage.getItem('ev_previa') !== 'max'; } catch (e) { return true; } })() };
   evCarregarFontes();
   let el = document.getElementById('ev-editor');
   if (!el) { el = document.createElement('div'); el.id = 'ev-editor'; document.body.appendChild(el); }
@@ -21150,7 +21157,8 @@ async function evAbrirEditor(id) {
           <button class="ev-play-btn" id="ev-play" onclick="evTocar()" title="Reproduzir (espaço)">▶</button>
           <span class="ev-tempo"><b id="ev-t">00:00.0</b> / <span id="ev-tt">00:00.0</span></span>
           <label class="ev-chk"><input type="checkbox" ${ES.zonaSegura ? 'checked' : ''} onchange="ES.zonaSegura=this.checked; evDesenhar()"> Área segura</label>
-          <button onclick="evTelaCheia()" title="Ver em tela cheia (F)" style="font-size:15px;">⛶</button>
+"          <button onclick="evTelaCheia()" title="Ver em tela cheia (F)" style="font-size:15px;">⛶</button>
+          <button class="ev-previa ev-so-pc" id="ev-previa" onclick="evAlternarPrevia()" title="Prévia leve: roda liso em qualquer computador (o vídeo exportado sai sempre em qualidade máxima)">${ES.leve ? '⚡ Prévia leve' : '🎞️ Prévia máxima'}</button>
           <button class="ev-so-cel ev-play-acao" onclick="document.getElementById('ev-galeria').click()" title="Galeria">＋🖼️</button>
           <button class="ev-so-cel ev-play-acao grava" onclick="evAbrirCamera()" title="Gravar">● Gravar</button>
         </div>
@@ -21242,7 +21250,10 @@ async function evSalvar(silencioso) {
   if (!ES) return;
   const s = document.getElementById('ev-salvo');
   const enviado = ES.ultimoEstado || JSON.stringify(ES.p.dados);
-  const r = await api('/api/admin/estudio/projetos/' + ES.p.id, { method: 'PUT', body: JSON.stringify({ titulo: ES.p.titulo, formato: ES.p.formato, tipo: ES.p.tipo, dados: ES.p.dados, legenda: ES.p.legenda || '', hashtags: ES.p.hashtags || '', viral_score: ES.score || 0 }) });
+  const limpar = (k, v) => (typeof k === 'string' && k.startsWith('__')) || (v && v.buffer instanceof ArrayBuffer) ? undefined : v; // nunca salva caches pesados (áudio decodificado etc.)
+  const corpo = JSON.stringify({ titulo: ES.p.titulo, formato: ES.p.formato, tipo: ES.p.tipo, dados: ES.p.dados, legenda: ES.p.legenda || '', hashtags: ES.p.hashtags || '', viral_score: ES.score || 0 }, limpar);
+  if (corpo.length > 30 * 1048576) { const pesos = Object.entries(ES.p.dados).map(([k, v]) => [k, JSON.stringify(v, limpar).length]).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => k + ' ' + Math.round(n / 1024) + ' KB').join(', '); throw new Error('Projeto pesado demais (' + Math.round(corpo.length / 1048576) + ' MB): ' + pesos); }
+  const r = await api('/api/admin/estudio/projetos/' + ES.p.id, { method: 'PUT', body: corpo });
   if (!ES) return; if (r && r.updated_at) ES.p.updated_at = r.updated_at;
   if ((ES.ultimoEstado || JSON.stringify(ES.p.dados)) !== enviado) return; // mexeram enquanto salvava: o autosave salva de novo
   ES.sujo = false; { const bs = document.getElementById('ev-bt-salvar'); if (bs) bs.classList.remove('pend'); } if (s) { s.textContent = '✓ Salvo ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); s.classList.remove('pend'); }
@@ -21661,10 +21672,14 @@ async function evCamGravar() {
     dest.stream.getAudioTracks().forEach(t => fluxo.addTrack(t));
   } catch (e) { EVCAM.stream.getAudioTracks().forEach(t => fluxo.addTrack(t)); }
   const mime = ['video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
-  EVCAM.partes = []; EVCAM.rec = new MediaRecorder(fluxo, mime ? { mimeType: mime, videoBitsPerSecond: 8000000 } : undefined);
-  EVCAM.rec.ondataavailable = e => { if (e.data.size) EVCAM.partes.push(e.data); };
-  EVCAM.rec.onstop = evCamTerminou;
-  EVCAM.rec.start(1000); EVCAM.inicio = Date.now(); EVCAM.pausado = 0;
+  EVCAM.partes = []; EVCAM.tamLocal = 0; EVCAM.rec = new MediaRecorder(fluxo, mime ? { mimeType: mime, videoBitsPerSecond: EVCAM.modo === 'camera' ? 4000000 : 3000000 } : undefined);
+  // envio contínuo: a gravação vai subindo para o servidor enquanto você grava (aulas de até 2 h sem estourar a memória)
+  EVCAM.mime = EVCAM.rec.mimeType || mime || 'video/webm';
+  EVCAM.envio = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), i: 0, fila: [], enviando: false, enviado: 0, resposta: null };
+  EVCAM.envio.pronto = new Promise(ok => { EVCAM.envio.concluir = ok; });
+  EVCAM.rec.ondataavailable = e => { if (!e.data.size) return; if (EVCAM.tamLocal < 300 * 1048576) { EVCAM.partes.push(e.data); EVCAM.tamLocal += e.data.size; } EVCAM.envio.fila.push({ blob: e.data }); evCamEnviarFila(); };
+  EVCAM.rec.onstop = () => { EVCAM.envio.fila.push({ blob: new Blob([]), fim: true }); evCamEnviarFila(); evCamTerminou(); };
+  EVCAM.rec.start(4000); EVCAM.inicio = Date.now(); EVCAM.pausado = 0;
   if ((document.getElementById('ev-cam-usatp') || {}).checked) { EVCAM.pos = 0; EVCAM.ult = 0; EVCAM.rolando = true; }
   document.getElementById('ev-cam-bt').textContent = '⏹ Parar e usar no vídeo'; document.getElementById('ev-cam-pausa').disabled = false;
   const rc = document.getElementById('ev-cam-rec'); rc.hidden = false;
@@ -21675,14 +21690,35 @@ function evCamPausar() {
   if (r.state === 'recording') { r.pause(); EVCAM.pausaEm = Date.now(); EVCAM.rolando = false; b.textContent = '⏺ Continuar'; }
   else if (r.state === 'paused') { EVCAM.pausado += Date.now() - EVCAM.pausaEm; r.resume(); EVCAM.ult = 0; EVCAM.rolando = (document.getElementById('ev-cam-usatp') || {}).checked; b.textContent = '⏸ Pausar'; }
 }
+async function evCamEnviarFila() {
+  const E = EVCAM.envio; if (!E || E.enviando) return; E.enviando = true;
+  const ext = /mp4/.test(EVCAM.mime) ? 'mp4' : 'webm';
+  while (E.fila.length) {
+    const item = E.fila[0]; let tent = 0;
+    while (true) {
+      try {
+        const r = await fetch('/api/admin/estudio/upload-parte', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token, 'Content-Type': 'application/octet-stream', 'x-upload-id': E.id, 'x-parte': String(E.i), 'x-total': '0', 'x-fim': item.fim ? '1' : '0', 'x-nome': encodeURIComponent('gravacao.' + ext), 'x-mime': EVCAM.mime }, body: item.blob });
+        const j = await r.json().catch(() => ({}));
+        if (r.status === 409 && Number.isInteger(j.prox) && j.prox > E.i) { E.i = j.prox; break; }
+        if (!r.ok) throw new Error(j.error || 'Falha no envio.');
+        if (item.fim || j.completo) E.resposta = j;
+        E.i++; E.enviado += item.blob.size; break;
+      } catch (e) { tent++; const m = document.getElementById('ev-cam-msg'); if (m) m.textContent = `⚠️ Internet oscilou — tentando enviar de novo (${tent})… não feche esta tela.`; await new Promise(z => setTimeout(z, Math.min(15000, 1500 * tent))); }
+    }
+    E.fila.shift();
+    const m = document.getElementById('ev-cam-msg'); if (m && EVCAM.rec) m.textContent = `☁️ Já salvo no servidor: ${(E.enviado / 1048576).toFixed(0)} MB (a gravação sobe enquanto você grava).`;
+    if (E.resposta) { E.concluir(E.resposta); break; }
+  }
+  E.enviando = false;
+}
 async function evCamTerminou() {
   clearInterval(EVCAM.timer); EVCAM.rolando = false;
-  const tipo = (EVCAM.rec && EVCAM.rec.mimeType) || 'video/webm', dur = (Date.now() - EVCAM.inicio - EVCAM.pausado) / 1000; EVCAM.rec = null;
-  const blob = new Blob(EVCAM.partes, { type: tipo }), nome = 'gravacao-' + new Date().toLocaleTimeString('pt-BR').replace(/:/g, '') + (/mp4/.test(tipo) ? '.mp4' : '.webm');
+  const tipo = EVCAM.mime || 'video/webm', dur = (Date.now() - EVCAM.inicio - EVCAM.pausado) / 1000; EVCAM.rec = null;
+  const blob = EVCAM.tamLocal < 300 * 1048576 ? new Blob(EVCAM.partes, { type: tipo }) : null, nome = 'gravacao-' + new Date().toLocaleTimeString('pt-BR').replace(/:/g, '') + (/mp4/.test(tipo) ? '.mp4' : '.webm');
   const msg = document.getElementById('ev-cam-msg'), melhorar = (document.getElementById('ev-cam-luz') || {}).checked;
-  if (msg) msg.textContent = 'Enviando a gravação para o projeto...';
+  if (msg) msg.textContent = 'Finalizando o envio da gravação…';
   try {
-    const r = await evEnviarArquivo(new File([blob], nome, { type: tipo }), p => { if (msg) msg.textContent = `Enviando... ${Math.round(p * 100)}%`; });
+    const r = await EVCAM.envio.pronto;
     const info = await evInfoUrl(r.url);
     const F = EV_FORMATOS[ES.p.formato] || EV_FORMATOS['9:16'];
     const m = { id: evUid(), url: r.url, nome: EVCAM.modo === 'camera' ? 'Gravação da câmera' : 'Gravação da tela', tipo: 'video', duracao: info.duracao || dur, w: info.w || F.w, h: info.h || F.h, thumb: info.thumb };
@@ -21691,11 +21727,12 @@ async function evCamTerminou() {
     mostrarToast('🎥 Gravação na linha do tempo! Use ✨ Editar com IA para legendar e deixar viral.');
     if (melhorar && EVCAM.modo === 'camera') evImagemInteligente({ silencioso: false });
   } catch (e) {
-    if (msg) msg.innerHTML = '⚠️ ' + escapeHtml(e.message) + ` — <a href="${URL.createObjectURL(blob)}" download="${nome}" style="color:#93c5fd;">baixar a gravação</a>`;
+    if (msg) msg.innerHTML = '⚠️ ' + escapeHtml(e.message) + (blob ? ` — <a href="${URL.createObjectURL(blob)}" download="${nome}" style="color:#93c5fd;">baixar a gravação</a>` : '');
   }
 }
 function evFecharCamera() {
   if (EVCAM.rec && !confirm('Parar e descartar a gravação em andamento?')) return;
+  if (!EVCAM.rec && EVCAM.envio && EVCAM.envio.fila.length && !confirm('A gravação ainda está sendo enviada. Fechar agora pode perder o final. Fechar mesmo assim?')) return;
   if (EVCAM.rec) { EVCAM.rec.onstop = null; try { EVCAM.rec.stop(); } catch (e) {} EVCAM.rec = null; }
   cancelAnimationFrame(EVCAM.raf); clearInterval(EVCAM.timer); EVCAM.rolando = false;
   [EVCAM.stream, EVCAM.tela].forEach(s => s && s.getTracks().forEach(t => t.stop())); EVCAM.stream = null; EVCAM.tela = null; EVCAM.an = null;
@@ -22351,7 +22388,8 @@ function evGradeAprox(g, it) {
 function evGLGrade(el, mw, mh, g, intensidade) {
   const gl = evGLIniciar(); if (!gl || !g) return null;
   const it = intensidade === undefined ? 1 : intensidade, mix = (a, b) => a + (b - a) * it;
-  const esc = Math.min(1, 1920 / Math.max(mw, mh)), w = Math.round(mw * esc), h = Math.round(mh * esc);
+  const lim = ES.exportando || ES.telaCheia ? 1920 : Math.max(720, Math.round(Math.max(ES.canvas.width, ES.canvas.height) * 1.3));
+  const esc = Math.min(1, lim / Math.max(mw, mh)), w = Math.round(mw * esc), h = Math.round(mh * esc);
   if (EVGL.cv.width !== w || EVGL.cv.height !== h) { EVGL.cv.width = w; EVGL.cv.height = h; gl.viewport(0, 0, w, h); }
   const chave = JSON.stringify([g.preto, g.branco, g.gama, g.ombro, g.curvaS, it]);
   if (chave !== EVGL.lutChave) {
@@ -22927,10 +22965,24 @@ async function evSalvarTranscricao() {
   try { const r = await api('/api/admin/estudio/transcricao', { method: 'PUT', body: JSON.stringify({ chave: document.getElementById('tr-chave').value }) }); mostrarToast(r.message); document.getElementById('ev-modal').innerHTML = ''; if (ES.depoisTranscricao) ES.depoisTranscricao(); }
   catch (e) { mostrarToast(e.message, true); }
 }
+async function evTranscreverNoServidor(m) {
+  const r = await fetch('/api/admin/estudio/transcrever-url', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token, 'Content-Type': 'application/json' }, body: JSON.stringify({ url: m.url }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.semFfmpeg ? 'Para transcrever vídeos longos (aulas), o servidor precisa do ffmpeg — veja a orientação de instalação no Railway.' : (j.error || 'Falha na transcrição.'));
+  for (let volta = 0; volta < 1800; volta++) {
+    await new Promise(z => setTimeout(z, 3000));
+    const st = await api('/api/admin/estudio/transcrever-url/' + j.id);
+    if (st.status === 'pronto') { m.transcricao = (st.palavras || []).map(p => ({ w: p.w, ini: +Number(p.ini).toFixed(2), fim: +Number(p.fim).toFixed(2) })); return m.transcricao; }
+    if (st.status === 'erro') throw new Error(st.erro || 'Falha na transcrição.');
+    const el = document.querySelector('#ev-carregando b'); if (el) el.textContent = `💬 Transcrevendo a fala do vídeo longo… parte ${st.feitos || 0} de ${st.total || '…'} (cada parte = 10 min)`;
+  }
+  throw new Error('A transcrição demorou demais.');
+}
 async function evTranscreverMidia(m) {
   if (Array.isArray(m.transcricao)) return m.transcricao;
+  if (m.duracao > 480) return evTranscreverNoServidor(m); // aula/vídeo longo: o servidor transcreve em pedaços
   const a = await evDecodificarAudio(m.url);
-  m.__audio = a;
+  Object.defineProperty(m, '__audio', { value: a, enumerable: false, writable: true, configurable: true }); // fica só na memória (não vai para o projeto salvo)
   const fd = new FormData(); fd.append('file', evWav(a), 'fala.wav');
   const r = await fetch('/api/admin/estudio/transcrever', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd });
   const j = await r.json().catch(() => ({}));

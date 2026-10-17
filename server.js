@@ -12819,7 +12819,7 @@ app.put('/api/admin/estudio/projetos/:id', requireRole('admin'), async (req, res
     if (b.titulo !== undefined) { sets.push('titulo = ?'); vals.push(String(b.titulo).trim().slice(0, 150) || 'Sem título'); }
     if (b.formato !== undefined && FORMATOS_EST.includes(b.formato)) { sets.push('formato = ?'); vals.push(b.formato); }
     if (b.tipo !== undefined) { sets.push('tipo = ?'); vals.push(String(b.tipo).slice(0, 20)); }
-    if (b.dados !== undefined) { const j = JSON.stringify(b.dados || {}); if (j.length > 5 * 1024 * 1024) return res.status(400).json({ error: 'Projeto grande demais.' }); sets.push('dados = ?'); vals.push(j); }
+    if (b.dados !== undefined) { const j = JSON.stringify(b.dados || {}); if (j.length > 40 * 1024 * 1024) return res.status(400).json({ error: 'Projeto grande demais (' + Math.round(j.length / 1048576) + ' MB).' }); sets.push('dados = ?'); vals.push(j); }
     ['legenda', 'hashtags', 'capa_url'].forEach(k => { if (b[k] !== undefined) { sets.push(k + ' = ?'); vals.push(String(b[k] || '').slice(0, 5000)); } });
     if (b.viral_score !== undefined) { sets.push('viral_score = ?'); vals.push(Math.max(0, Math.min(100, Number(b.viral_score) || 0))); }
     if (b.status !== undefined && ['rascunho', 'pronto'].includes(b.status)) { sets.push('status = ?'); vals.push(b.status); }
@@ -12855,58 +12855,91 @@ app.post('/api/admin/estudio/upload', requireRole('admin'), (req, res) => {
         res.json({ url: '/uploads/' + req.file.filename, nome, mime: req.file.mimetype, tamanho: req.file.size });
     });
 });
+// ffmpeg: usa o binário do pacote ffmpeg-static (vem junto no deploy) ou o do sistema.
+const FFMPEG_BIN = (() => { try { const p = require('ffmpeg-static'); if (p && fs.existsSync(p)) return p; } catch (e) {} return 'ffmpeg'; })();
+let FFMPEG_OK = null;
+function ffmpegDisponivel() { if (FFMPEG_OK !== null) return Promise.resolve(FFMPEG_OK); return new Promise(ok => { try { require('child_process').execFile(FFMPEG_BIN, ['-version'], { timeout: 10000 }, e => { FFMPEG_OK = !e; ok(FFMPEG_OK); }); } catch (e) { FFMPEG_OK = false; ok(false); } }); }
+function rodarFfmpeg(args, tempoMs) { return new Promise((ok, ko) => { try { require('child_process').execFile(FFMPEG_BIN, args, { timeout: tempoMs || 30 * 60 * 1000, maxBuffer: 64 * 1024 * 1024 }, (e, out, err) => e ? ko(Object.assign(e, { stderr: String(err || '') })) : ok(String(err || '') + String(out || ''))); } catch (e) { ko(e); } }); }
+async function duracaoFfmpeg(arq) { try { await rodarFfmpeg(['-hide_banner', '-i', arq], 20000); } catch (e) { const m = String(e.stderr || '').match(/Duration: (\d+):(\d+):([\d.]+)/); if (m) return Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]); } return 0; }
+// Gravações do navegador (WebM/MP4 em pedaços) não têm índice: sem isso o vídeo longo não deixa avançar/voltar.
+// Aqui o arquivo é "reempacotado" sem perder qualidade (cópia direta, rápido) e fica com duração e índice certos.
+async function reempacotarVideo(arq) {
+    if (!(await ffmpegDisponivel())) return false;
+    const ext = path.extname(arq).toLowerCase(); if (!/^\.(webm|mp4|m4v|mov|mkv)$/.test(ext)) return false;
+    const tmp = arq + '.fix' + ext;
+    try {
+        await rodarFfmpeg(['-y', '-hide_banner', '-loglevel', 'error', '-fflags', '+genpts', '-i', arq, '-c', 'copy', ...(ext === '.webm' || ext === '.mkv' ? [] : ['-movflags', '+faststart']), tmp], 60 * 60 * 1000);
+        await fs.promises.rename(tmp, arq); return true;
+    } catch (e) { fs.unlink(tmp, () => {}); console.warn('Reempacotar vídeo:', String(e.stderr || e.message).slice(0, 200)); return false; }
+}
+
 // Envio em partes (8 MB cada): vídeos longos e grandes sobem sem cair por tempo limite e sem pesar a memória do servidor.
 const PASTA_PARTES = path.join(require('os').tmpdir(), 'impulsionar-partes');
 try { fs.mkdirSync(PASTA_PARTES, { recursive: true }); } catch (e) {}
-const ENVIOS_EM_PARTES = new Map();
+const ENVIOS_EM_PARTES = new Map(), FINALIZADOS_PARTES = new Map();
 setInterval(() => { const agora = Date.now(); ENVIOS_EM_PARTES.forEach((e, id) => { if (agora - e.t > 6 * 3600 * 1000) { fs.unlink(e.tmp, () => {}); ENVIOS_EM_PARTES.delete(id); } }); }, 30 * 60 * 1000);
 async function receberParteEst(req, res, aoFinal) {
     const id = String(req.headers['x-upload-id'] || '').replace(/[^\w-]/g, '').slice(0, 48);
-    const i = Number(req.headers['x-parte']), total = Number(req.headers['x-total']);
+    const i = Number(req.headers['x-parte']), total = Number(req.headers['x-total']), fluxo = total === 0, fimFluxo = String(req.headers['x-fim'] || '') === '1';
+    if (FINALIZADOS_PARTES.has(id)) return res.json(FINALIZADOS_PARTES.get(id)); // já terminou (nova tentativa do último pedaço)
     const nomeOrig = decodeURIComponent(String(req.headers['x-nome'] || 'video.mp4')).slice(0, 150);
     const ext = (path.extname(nomeOrig) || '.mp4').toLowerCase();
-    if (!id || !Number.isInteger(i) || !Number.isInteger(total) || i < 0 || total < 1 || i >= total || total > 500) return res.status(400).json({ error: 'Parte inválida.' });
+    if (!id || !Number.isInteger(i) || !Number.isInteger(total) || i < 0 || (!fluxo && (total < 1 || i >= total || total > 500)) || (fluxo && i > 20000)) return res.status(400).json({ error: 'Parte inválida.' });
     if (!/^\.(mp4|mov|m4v|webm|mkv|avi|3gp|m4a|mp3|wav|aac|ogg|png|jpe?g|gif|webp|heic)$/.test(ext)) return res.status(400).json({ error: 'Tipo de arquivo não permitido.' });
-    if (!Buffer.isBuffer(req.body)) return res.status(400).json({ error: 'Parte vazia.' });
+    if (!Buffer.isBuffer(req.body)) { if (fluxo && fimFluxo) req.body = Buffer.alloc(0); else return res.status(400).json({ error: 'Parte vazia.' }); }
     let e = ENVIOS_EM_PARTES.get(id);
     if (!e) { if (i !== 0) return res.status(409).json({ error: 'Envio não encontrado — recomece.', prox: 0 }); e = { prox: 0, tam: 0, tmp: path.join(PASTA_PARTES, id + '.part'), t: Date.now(), mime: String(req.headers['x-mime'] || '') }; ENVIOS_EM_PARTES.set(id, e); try { fs.unlinkSync(e.tmp); } catch (x) {} }
     if (i < e.prox) return res.json({ ok: true, prox: e.prox }); // parte repetida (nova tentativa após falha de rede)
     if (i > e.prox) return res.status(409).json({ error: 'Parte fora de ordem.', prox: e.prox });
     try { await fs.promises.appendFile(e.tmp, req.body); } catch (x) { return res.status(500).json({ error: 'Erro ao gravar a parte no servidor.' }); }
     e.prox++; e.tam += req.body.length; e.t = Date.now();
-    if (e.tam > 3 * 1024 * 1024 * 1024) { fs.unlink(e.tmp, () => {}); ENVIOS_EM_PARTES.delete(id); return res.status(413).json({ error: 'Arquivo grande demais (máximo 3 GB).' }); }
-    if (e.prox < total) return res.json({ ok: true, prox: e.prox });
+    if (e.tam > 8 * 1024 * 1024 * 1024) { fs.unlink(e.tmp, () => {}); ENVIOS_EM_PARTES.delete(id); return res.status(413).json({ error: 'Arquivo grande demais (máximo 8 GB).' }); }
+    if (fluxo ? !fimFluxo : e.prox < total) return res.json({ ok: true, prox: e.prox });
     ENVIOS_EM_PARTES.delete(id);
     const final = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + ext, destino = path.join(PASTA_UPLOADS, final);
     try { await fs.promises.rename(e.tmp, destino); } catch (x) { try { await fs.promises.copyFile(e.tmp, destino); await fs.promises.unlink(e.tmp); } catch (y) { return res.status(500).json({ error: 'Erro ao finalizar o envio.' }); } }
     const mime = e.mime || ({ '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm', '.m4v': 'video/mp4', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.wav': 'audio/wav' }[ext] || 'application/octet-stream');
     copiarUploadParaBanco({ filename: final, path: destino, size: e.tam, mimetype: mime });
     const dados = { url: '/uploads/' + final, nome: nomeOrig, mime, tamanho: e.tam, completo: true };
+    FINALIZADOS_PARTES.set(id, dados); setTimeout(() => FINALIZADOS_PARTES.delete(id), 3 * 3600 * 1000);
+    if (/^video\//.test(mime) || /\.(webm|mp4|mov|m4v)$/.test(ext)) reempacotarVideo(destino).catch(() => {}); // deixa o vídeo "navegável" (avançar/voltar)
     if (aoFinal) return aoFinal(dados);
     res.json(dados);
 }
 app.post('/api/admin/estudio/upload-parte', requireRole('admin'), express.raw({ type: () => true, limit: '12mb' }), (req, res) => receberParteEst(req, res));
-// Teleprompter (celular/computador sem login): a gravação longa da aula também sobe em partes.
+// Teleprompter (celular/computador sem login): a gravação sobe em pedaços ENQUANTO é feita (aulas de até 2 h).
+// Ao terminar, a pessoa revisa: "Enviar para o projeto" registra a gravação; "Gravar de novo" descarta o arquivo.
 app.post('/api/public/gravador/:codigo/video-parte', express.raw({ type: () => true, limit: '12mb' }), async (req, res) => {
     const g = await gravadorValidoEst(req.params.codigo);
     if (!g) return res.status(404).json({ error: 'Link de gravação inválido ou vencido.' });
-    receberParteEst(req, res, (d) => {
-        const tipo = String(req.headers['x-tipo'] || ''), parte = Number(req.headers['x-parte-aula']) || 0;
-        const nome = (/aula/.test(tipo) ? 'Gravação da aula ' : 'Gravação ') + (parte ? 'parte ' + parte + ' · ' : '') + new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
-        db.run(`INSERT INTO estudio_gravacoes (projeto_id, url, nome, duracao, mime) VALUES (?, ?, ?, ?, ?)`, [g.projeto_id, d.url, nome, Number(req.headers['x-duracao']) || 0, d.mime],
-            function (e2) { if (e2) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ ok: true, completo: true, message: 'Vídeo enviado para o projeto! ✅ Ele aparece no Estúdio de Vídeo em instantes.' }); });
-    });
+    receberParteEst(req, res);
+});
+const arquivoGravacaoValido = (url) => { const nome = path.basename(String(url || '')); return /^file-\d+-\d+\.(webm|mp4|mov|m4v)$/.test(nome) && fs.existsSync(path.join(PASTA_UPLOADS, nome)) ? nome : null; };
+app.post('/api/public/gravador/:codigo/registrar', async (req, res) => {
+    const g = await gravadorValidoEst(req.params.codigo);
+    if (!g) return res.status(404).json({ error: 'Link de gravação inválido ou vencido.' });
+    const b = req.body || {}, nome = arquivoGravacaoValido(b.url);
+    if (!nome) return res.status(400).json({ error: 'Gravação não encontrada no servidor.' });
+    const ja = await dbGet(`SELECT id FROM estudio_gravacoes WHERE url = ?`, ['/uploads/' + nome]).catch(() => null);
+    if (ja) return res.json({ ok: true, message: 'Vídeo já está no projeto! ✅' });
+    const parte = Number(b.parte) || 0, rot = (/aula/.test(String(b.tipo || '')) ? 'Gravação da aula ' : 'Gravação ') + (parte ? 'parte ' + parte + ' · ' : '') + new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+    db.run(`INSERT INTO estudio_gravacoes (projeto_id, url, nome, duracao, mime) VALUES (?, ?, ?, ?, ?)`, [g.projeto_id, '/uploads/' + nome, rot, Number(b.duracao) || 0, /\.mp4$/.test(nome) ? 'video/mp4' : 'video/webm'],
+        function (e2) { if (e2) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ ok: true, message: 'Vídeo enviado para o projeto! ✅ Ele aparece no Estúdio de Vídeo em instantes.' }); });
+});
+app.post('/api/public/gravador/:codigo/descartar', async (req, res) => {
+    const g = await gravadorValidoEst(req.params.codigo); if (!g) return res.status(404).json({ error: 'Link inválido.' });
+    const nome = arquivoGravacaoValido((req.body || {}).url); if (!nome) return res.json({ ok: true });
+    const usado = await dbGet(`SELECT id FROM estudio_gravacoes WHERE url = ?`, ['/uploads/' + nome]).catch(() => null);
+    const arq = path.join(PASTA_UPLOADS, nome), st = fs.statSync(arq);
+    if (!usado && Date.now() - st.mtimeMs < 12 * 3600 * 1000) { fs.unlink(arq, () => {}); db.run(`DELETE FROM arquivos_persistidos WHERE nome = ?`, [nome]); }
+    res.json({ ok: true });
 });
 // Duração real do vídeo pelo servidor (quando o navegador não consegue ler, ex.: vídeo HEVC do iPhone).
-app.get('/api/admin/estudio/info-midia', requireRole('admin'), (req, res) => {
+app.get('/api/admin/estudio/info-midia', requireRole('admin'), async (req, res) => {
     const nome = path.basename(String(req.query.url || '')); const arq = path.join(PASTA_UPLOADS, nome);
     if (!nome || !fs.existsSync(arq)) return res.status(404).json({ error: 'Arquivo não encontrado.' });
-    try {
-        require('child_process').execFile('ffprobe', ['-v', 'error', '-show_entries', 'format=duration:stream=width,height,codec_name', '-of', 'json', arq], { timeout: 20000 }, (err, out) => {
-            if (err) return res.json({ duracao: 0, semFfprobe: true });
-            try { const j = JSON.parse(out), v = (j.streams || []).find(x => x.width) || {}; res.json({ duracao: Number((j.format || {}).duration) || 0, w: v.width || 0, h: v.height || 0, codec: v.codec_name || '' }); } catch (x) { res.json({ duracao: 0 }); }
-        });
-    } catch (x) { res.json({ duracao: 0, semFfprobe: true }); }
+    if (!(await ffmpegDisponivel())) return res.json({ duracao: 0, semFfmpeg: true });
+    res.json({ duracao: await duracaoFfmpeg(arq) });
 });
 // Vídeo final renderizado no navegador. Se vier em WebM e o servidor tiver ffmpeg, converte para MP4 (o Instagram exige MP4).
 app.post('/api/admin/estudio/projetos/:id/exportado', requireRole('admin'), (req, res) => {
@@ -12918,7 +12951,7 @@ app.post('/api/admin/estudio/projetos/:id/exportado', requireRole('admin'), (req
             const destino = req.file.path.replace(/\.[^.]+$/, '') + '.mp4';
             const ok = await new Promise(fim => {
                 try {
-                    require('child_process').execFile('ffmpeg', ['-y', '-i', req.file.path, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', destino], { timeout: 10 * 60 * 1000 }, e => fim(!e));
+                    require('child_process').execFile(FFMPEG_BIN, ['-y', '-i', req.file.path, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', destino], { timeout: 10 * 60 * 1000 }, e => fim(!e));
                 } catch (e) { fim(false); }
             });
             if (ok) { url = '/uploads/' + path.basename(destino); mime = 'video/mp4'; }
@@ -13253,9 +13286,9 @@ async function cfgTranscricaoEst() {
     return { chave, provedor };
 }
 function urlTranscricaoEst(prov) { return prov === 'groq' ? 'https://api.groq.com/openai/v1/audio/transcriptions' : 'https://api.openai.com/v1/audio/transcriptions'; }
-async function transcreverEst(buf, nome, cfg) {
+async function transcreverEst(buf, nome, cfg, mime) {
     const fd = new FormData();
-    fd.append('file', new Blob([buf], { type: 'audio/wav' }), nome || 'audio.wav');
+    fd.append('file', new Blob([buf], { type: mime || 'audio/wav' }), nome || 'audio.wav');
     fd.append('model', cfg.provedor === 'groq' ? 'whisper-large-v3-turbo' : 'whisper-1');
     fd.append('language', 'pt'); fd.append('response_format', 'verbose_json');
     fd.append('timestamp_granularities[]', 'word'); fd.append('timestamp_granularities[]', 'segment');
@@ -13282,6 +13315,39 @@ app.put('/api/admin/estudio/transcricao', requireRole('admin'), async (req, res)
         await salvar('transcricao_chave', chave); await salvar('transcricao_provedor', provedor);
         res.json({ message: `Legendas automáticas conectadas (${provedor === 'groq' ? 'Groq' : 'OpenAI'})! ✅` });
     } catch (e) { res.status(400).json({ error: 'A chave não funcionou: ' + e.message }); }
+});
+// Transcrição de vídeos longos (aulas de até 2 h): o servidor extrai o áudio em pedaços de 10 min,
+// transcreve cada um e junta tudo com os tempos certos. Roda em segundo plano (o editor acompanha o progresso).
+const JOBS_TRANSC = new Map();
+app.post('/api/admin/estudio/transcrever-url', requireRole('admin'), async (req, res) => {
+    const nome = path.basename(String((req.body || {}).url || '')), arq = path.join(PASTA_UPLOADS, nome);
+    if (!nome || !fs.existsSync(arq)) return res.status(404).json({ error: 'Arquivo não encontrado no servidor.' });
+    const cfg = await cfgTranscricaoEst();
+    if (!cfg.chave) return res.status(400).json({ error: 'Conecte as legendas automáticas (chave da OpenAI ou Groq) para transcrever a fala.', semTranscricao: true });
+    if (!(await ffmpegDisponivel())) return res.status(400).json({ error: 'sem-ffmpeg', semFfmpeg: true });
+    const id = require('crypto').randomBytes(6).toString('hex'), job = { status: 'rodando', feitos: 0, total: 0, palavras: [] };
+    JOBS_TRANSC.set(id, job); res.json({ id });
+    const pasta = path.join(require('os').tmpdir(), 'tr-' + id);
+    try {
+        await fs.promises.mkdir(pasta, { recursive: true });
+        await rodarFfmpeg(['-y', '-hide_banner', '-loglevel', 'error', '-i', arq, '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'libmp3lame', '-b:a', '32k', '-f', 'segment', '-segment_time', '600', '-reset_timestamps', '1', path.join(pasta, 'p%03d.mp3')], 60 * 60 * 1000);
+        const partes = (await fs.promises.readdir(pasta)).filter(n => /^p\d+\.mp3$/.test(n)).sort();
+        job.total = partes.length;
+        for (let k = 0; k < partes.length; k++) {
+            const buf = await fs.promises.readFile(path.join(pasta, partes[k]));
+            let r, tent = 0;
+            while (true) { try { r = await transcreverEst(buf, partes[k], cfg, 'audio/mpeg'); break; } catch (e) { if (++tent >= 3) throw e; await new Promise(z => setTimeout(z, 3000 * tent)); } }
+            const off = k * 600; r.palavras.forEach(p => job.palavras.push({ w: p.w, ini: +(p.ini + off).toFixed(2), fim: +(p.fim + off).toFixed(2) }));
+            job.feitos = k + 1;
+        }
+        job.status = 'pronto';
+    } catch (e) { job.status = 'erro'; job.erro = 'Transcrição: ' + (e.message || 'falhou'); }
+    fs.promises.rm(pasta, { recursive: true, force: true }).catch(() => {});
+    setTimeout(() => JOBS_TRANSC.delete(id), 60 * 60 * 1000);
+});
+app.get('/api/admin/estudio/transcrever-url/:id', requireRole('admin'), (req, res) => {
+    const j = JOBS_TRANSC.get(req.params.id); if (!j) return res.status(404).json({ error: 'Transcrição não encontrada (o servidor reiniciou). Tente de novo.' });
+    res.json(j.status === 'pronto' ? { status: 'pronto', palavras: j.palavras } : { status: j.status, feitos: j.feitos, total: j.total, erro: j.erro });
 });
 app.post('/api/admin/estudio/transcrever', requireRole('admin'), (req, res) => {
     uploadAudioEst.single('file')(req, res, async (err) => {

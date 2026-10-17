@@ -31,6 +31,7 @@
   .topo .tit { flex: 1; font-size: 13px; font-weight: 700; opacity: .9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .rec-tempo { background: var(--cor); padding: 4px 10px; border-radius: 12px; font-size: 13px; font-weight: 800; display: none; font-variant-numeric: tabular-nums; }
   .rec-tempo.on { display: inline-block; animation: pisca 1.2s infinite; } .rec-tempo.pausado { animation: none; background: #b45309; } @keyframes pisca { 50% { opacity: .6; } }
+  .nuvem { display: none; font-size: 11.5px; background: rgba(0,0,0,.55); border-radius: 12px; padding: 4px 9px; white-space: nowrap; } .nuvem.on { display: inline-block; }
   .ic { width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(0,0,0,.5); color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(6px); flex-shrink: 0; }
   .ic.on { background: var(--cor); }
   .base { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 14px calc(env(safe-area-inset-bottom) + 16px); z-index: 5; background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.75)); }
@@ -82,7 +83,7 @@
   <div class="prompter" id="prompter"><div class="janela" id="janela"><div class="texto" id="texto"></div><div class="linha-leitura"></div></div></div>
   <div class="topo">
     <span class="tit" id="titulo">Impulsionar V4</span>
-    <span class="rec-tempo" id="tempo">● 00:00</span>
+    <span class="rec-tempo" id="tempo">● 00:00</span><span class="nuvem" id="nuvem"></span>
     <button class="ic" onclick="abrirEditor()" title="Editar roteiro">✏️</button>
     <button class="ic on" id="b-prompter" onclick="alternarPrompter()" title="Mostrar/ocultar texto">📝</button>
     <button class="ic" onclick="virarCamera()" title="Trocar câmera" id="b-virar">🔄</button>
@@ -257,6 +258,39 @@ function atualizarBotoes() {
   $('lado-pausa').style.display = on && rec.pause ? 'flex' : 'none'; $('b-virar').style.visibility = on ? 'hidden' : '';
 }
 let contando = false;
+// ===== Envio contínuo: a gravação sobe para o servidor enquanto você grava (aulas de até 2 h) =====
+let envio = null;
+function novoEnvio(mime) {
+  const E = { id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), i: 0, fila: [], enviando: false, enviado: 0, resposta: null, mime, descartar: false };
+  E.pronto = new Promise(ok => { E.concluir = ok; });
+  return E;
+}
+async function enviarFila(E) {
+  if (!E || E.enviando) return; E.enviando = true;
+  const ext = /mp4/.test(E.mime) ? 'mp4' : 'webm';
+  while (E.fila.length) {
+    const item = E.fila[0]; let tent = 0;
+    while (true) {
+      try {
+        const r = await fetch('/api/public/gravador/' + encodeURIComponent(codigo) + '/video-parte', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'x-upload-id': E.id, 'x-parte': String(E.i), 'x-total': '0', 'x-fim': item.fim ? '1' : '0', 'x-nome': encodeURIComponent('gravacao.' + ext), 'x-mime': E.mime }, body: item.blob });
+        const j = await r.json().catch(() => ({}));
+        if (r.status === 409 && Number.isInteger(j.prox) && j.prox > E.i) { E.i = j.prox; break; }
+        if (!r.ok) throw new Error(j.error || 'Falha no envio.');
+        if (item.fim || j.completo) E.resposta = j;
+        E.i++; E.enviado += item.blob.size; break;
+      } catch (e) { tent++; $('nuvem').textContent = '⚠️ internet oscilou — reenviando…'; await new Promise(z => setTimeout(z, Math.min(15000, 1500 * tent))); }
+    }
+    E.fila.shift();
+    const mb = E.enviado / 1048576; $('nuvem').textContent = '☁️ ' + (mb >= 1024 ? (mb / 1024).toFixed(2) + ' GB' : mb.toFixed(mb < 10 ? 1 : 0) + ' MB') + ' salvos' + (E.fila.length > 3 ? ' · ' + E.fila.length + ' na fila' : '');
+    if (E.resposta) {
+      E.concluir(E.resposta);
+      if (E.descartar) descartarServidor(E.resposta.url);
+      break;
+    }
+  }
+  E.enviando = false;
+}
+function descartarServidor(url) { fetch('/api/public/gravador/' + encodeURIComponent(codigo) + '/descartar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) }).catch(() => {}); }
 async function alternarGravacao() {
   if (contando) return;
   if (rec) { if (rec.state === 'paused') rec.resume(); rec.stop(); return; }
@@ -268,23 +302,29 @@ async function alternarGravacao() {
   contando = true;
   for (const n of [3, 2, 1]) { $('contagem-n').textContent = n; $('contagem').classList.add('on'); await new Promise(r => setTimeout(r, 850)); }
   $('contagem').classList.remove('on'); contando = false;
-  const tipoMime = tipoGravacao(); partes = []; tempoPausado = 0;
-  const bits = tipo === 'aula' ? 5000000 : 8000000; // aula é mais longa: arquivo menor, mesma nitidez
+  const tipoMime = tipoGravacao(); partes = []; tempoPausado = 0; let tamLocal = 0;
+  const bits = tipo === 'aula' ? 2500000 : 6000000; // aula longa: arquivo leve (2 h ≈ 2,3 GB), boa nitidez para quem fala
   rec = new MediaRecorder(stream, tipoMime ? { mimeType: tipoMime, videoBitsPerSecond: bits } : undefined);
-  rec.ondataavailable = e => { if (e.data.size) partes.push(e.data); };
+  envio = novoEnvio(rec.mimeType || tipoMime || 'video/webm');
+  const E = envio;
+  rec.ondataavailable = e => { if (!e.data.size) return; if (tamLocal < 250 * 1048576) { partes.push(e.data); tamLocal += e.data.size; } else partes = null; E.fila.push({ blob: e.data }); enviarFila(E); };
   rec.onstop = () => {
     clearInterval(timerRec); $('tempo').classList.remove('on', 'pausado'); alternarRolagem(false);
-    blobFinal = new Blob(partes, { type: rec.mimeType || 'video/mp4' }); blobFinal.duracao = (Date.now() - inicioRec - tempoPausado) / 1000; rec = null; atualizarBotoes();
-    const url = URL.createObjectURL(blobFinal); $('revisao').src = url; $('b-baixar').href = url; $('b-baixar').download = (tipo === 'aula' ? 'aula-parte-' + parte : 'gravacao') + '.' + (/mp4/.test(blobFinal.type) ? 'mp4' : 'webm');
+    E.fila.push({ blob: new Blob([]), fim: true }); enviarFila(E);
+    const dur = (Date.now() - inicioRec - tempoPausado) / 1000;
+    blobFinal = partes ? new Blob(partes, { type: E.mime }) : null; E.duracao = dur; rec = null; atualizarBotoes();
+    $('b-baixar').style.display = blobFinal ? '' : 'none';
+    if (blobFinal) { const url = URL.createObjectURL(blobFinal); $('revisao').src = url; $('b-baixar').href = url; $('b-baixar').download = (tipo === 'aula' ? 'aula-parte-' + parte : 'gravacao') + '.' + (/mp4/.test(E.mime) ? 'mp4' : 'webm'); }
+    else { $('revisao').removeAttribute('src'); E.pronto.then(j => { if (envio === E && j && j.url) $('revisao').src = j.url; }); }
     $('rev-tit').textContent = tipo === 'aula' ? `🎬 Parte ${parte} — ficou boa?` : '🎬 Ficou bom?';
-    $('msg').textContent = ''; $('barra').style.display = 'none'; $('b-enviar').disabled = false; $('b-enviar').style.display = ''; $('b-proxima').style.display = 'none'; enviado = false;
+    $('msg').textContent = E.fila.length > 1 ? 'Terminando de salvar no servidor…' : ''; $('barra').style.display = 'none'; $('b-enviar').disabled = false; $('b-enviar').style.display = ''; $('b-proxima').style.display = 'none'; enviado = false;
     $('tela-revisao').classList.add('on');
     if (wake) { wake.release().catch(() => {}); wake = null; }
   };
-  rec.start(1000); inicioRec = Date.now(); atualizarBotoes();
+  rec.start(4000); inicioRec = Date.now(); atualizarBotoes(); $('nuvem').textContent = '☁️ salvando enquanto grava'; $('nuvem').classList.add('on');
   try { wake = await navigator.wakeLock.request('screen'); } catch (e) {}
   $('tempo').classList.add('on'); $('tempo').textContent = '● 00:00';
-  timerRec = setInterval(() => { if (!rec || rec.state === 'paused') return; const s = Math.floor((Date.now() - inicioRec - tempoPausado) / 1000); $('tempo').textContent = '● ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }, 300);
+  timerRec = setInterval(() => { if (!rec || rec.state === 'paused') return; const s = Math.floor((Date.now() - inicioRec - tempoPausado) / 1000); $('tempo').textContent = '● ' + (s >= 3600 ? Math.floor(s / 3600) + ':' : '') + String(Math.floor(s / 60) % 60).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }, 300);
   alternarRolagem(true);
 }
 function pausarGravacao() {
@@ -292,7 +332,10 @@ function pausarGravacao() {
   if (rec.state === 'recording') { rec.pause(); pausadoEm = Date.now(); alternarRolagem(false); $('b-pausa').textContent = '⏺'; $('r-pausa').textContent = 'Continuar'; $('tempo').classList.add('pausado'); $('tempo').textContent = '⏸ Pausado'; }
   else if (rec.state === 'paused') { tempoPausado += Date.now() - pausadoEm; rec.resume(); alternarRolagem(true); $('b-pausa').textContent = '⏸'; $('r-pausa').textContent = 'Pausar'; $('tempo').classList.remove('pausado'); }
 }
-function gravarDeNovo() { $('tela-revisao').classList.remove('on'); $('revisao').pause(); pos = posInicioParte; aplicarPos(); }
+function gravarDeNovo() {
+  $('tela-revisao').classList.remove('on'); $('revisao').pause(); pos = posInicioParte; aplicarPos();
+  if (envio && !enviado) { const E = envio; E.descartar = true; if (E.resposta) descartarServidor(E.resposta.url); } // essa tomada não vai para o projeto
+}
 function proximaParte() { $('tela-revisao').classList.remove('on'); $('revisao').pause(); parte++; atualizarBotoes(); }
 function concluirEnvio(j) {
   enviado = true; $('b-enviar').style.display = 'none';
@@ -300,40 +343,18 @@ function concluirEnvio(j) {
   $('msg').innerHTML = '✅ ' + (j.message || 'Enviado!') + (resta ? '<br>Ainda tem texto pela frente — grave a próxima parte quando quiser.' : '<br>Roteiro concluído! Volte ao Estúdio para editar.');
   $('b-proxima').style.display = resta ? '' : 'none';
 }
+// "Enviar para o projeto": o vídeo já está no servidor; aqui só espera terminar e coloca no projeto.
 async function enviar() {
-  if (!blobFinal || enviado) return;
-  const ext = /mp4/.test(blobFinal.type) ? 'mp4' : 'webm';
-  $('barra').style.display = 'block'; $('b-enviar').disabled = true; $('msg').textContent = 'Enviando...';
-  const prog = p => { $('barra-i').style.width = Math.round(p * 100) + '%'; $('msg').textContent = 'Enviando... ' + Math.round(p * 100) + '% (mantenha esta tela aberta)'; };
-  // gravações longas sobem em partes de 8 MB, com nova tentativa automática se a internet oscilar
-  if (blobFinal.size > 12 * 1024 * 1024) {
-    const TAM = 8 * 1024 * 1024, total = Math.ceil(blobFinal.size / TAM), id = blobFinal.__id || (blobFinal.__id = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
-    let i = 0, ultimo = {};
-    try {
-      while (i < total) {
-        let tent = 0;
-        while (true) {
-          try {
-            const r = await fetch('/api/public/gravador/' + encodeURIComponent(codigo) + '/video-parte', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'x-upload-id': id, 'x-parte': String(i), 'x-total': String(total), 'x-nome': encodeURIComponent('gravacao.' + ext), 'x-mime': blobFinal.type, 'x-tipo': tipo, 'x-parte-aula': String(parte), 'x-duracao': String(blobFinal.duracao || 0) }, body: blobFinal.slice(i * TAM, Math.min(blobFinal.size, (i + 1) * TAM)) });
-            const j = await r.json().catch(() => ({}));
-            if (r.status === 409 && Number.isInteger(j.prox)) { i = j.prox; break; }
-            if (!r.ok) throw new Error(j.error || 'Falha no envio.');
-            ultimo = j; i++; break;
-          } catch (e) { if (++tent >= 5) throw e; await new Promise(z => setTimeout(z, 2000 * tent)); }
-        }
-        prog(i / total);
-      }
-      concluirEnvio(ultimo);
-    } catch (e) { $('msg').textContent = '⚠️ ' + e.message + ' — toque em Enviar de novo (continua de onde parou) ou salve no aparelho.'; $('b-enviar').disabled = false; }
-    return;
-  }
-  const fd = new FormData(); fd.append('duracao', String(blobFinal.duracao || 0)); fd.append('tipo', tipo); fd.append('parte', String(parte));
-  fd.append('file', blobFinal, 'gravacao.' + ext);
-  const x = new XMLHttpRequest(); x.open('POST', '/api/public/gravador/' + encodeURIComponent(codigo) + '/video');
-  x.upload.onprogress = e => { if (e.lengthComputable) prog(e.loaded / e.total); };
-  x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch (e) {} if (x.status < 300) concluirEnvio(j); else { $('msg').textContent = '⚠️ ' + (j.error || 'Falha no envio.'); $('b-enviar').disabled = false; } };
-  x.onerror = () => { $('msg').textContent = '⚠️ Falha de conexão. Tente de novo (ou salve no aparelho).'; $('b-enviar').disabled = false; };
-  x.send(fd);
+  if (!envio || enviado) return; const E = envio;
+  $('b-enviar').disabled = true; $('barra').style.display = 'block';
+  const t = setInterval(() => { const tot = E.enviado + E.fila.reduce((s, x) => s + x.blob.size, 0); $('barra-i').style.width = (tot ? Math.round(E.enviado * 100 / tot) : 100) + '%'; $('msg').textContent = E.fila.length ? 'Terminando de salvar… ' + E.fila.length + ' pedaço(s) restantes. Não feche esta tela.' : 'Colocando no projeto…'; }, 400);
+  try {
+    const j = await E.pronto; clearInterval(t);
+    const r = await fetch('/api/public/gravador/' + encodeURIComponent(codigo) + '/registrar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: j.url, duracao: E.duracao || 0, tipo, parte }) });
+    const k = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(k.error || 'Falha ao colocar no projeto.');
+    $('barra-i').style.width = '100%'; concluirEnvio(k);
+  } catch (e) { clearInterval(t); $('msg').textContent = '⚠️ ' + e.message + ' — toque em Enviar de novo.'; $('b-enviar').disabled = false; }
 }
 // atalhos no computador
 document.addEventListener('keydown', e => {
@@ -346,7 +367,7 @@ document.addEventListener('keydown', e => {
   else if (e.key === '-') tamanho(-3);
   else if (e.key.toLowerCase() === 'p') pausarGravacao();
 });
-window.addEventListener('beforeunload', e => { if (rec || (blobFinal && !enviado)) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', e => { if (rec || (envio && envio.fila.length) || (envio && !enviado && !envio.descartar)) { e.preventDefault(); e.returnValue = ''; } });
 carregar();
 </script>
 </body>

@@ -1,0 +1,4 @@
+# Instala o ffmpeg no servidor (Railway): deixa os vídeos longos "navegáveis",
+# transcreve aulas de até 2 h em pedaços e converte vídeos para MP4.
+[phases.setup]
+aptPkgs = ["...", "ffmpeg"]
