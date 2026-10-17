@@ -294,22 +294,44 @@ function pausarGravacao() {
 }
 function gravarDeNovo() { $('tela-revisao').classList.remove('on'); $('revisao').pause(); pos = posInicioParte; aplicarPos(); }
 function proximaParte() { $('tela-revisao').classList.remove('on'); $('revisao').pause(); parte++; atualizarBotoes(); }
-function enviar() {
+function concluirEnvio(j) {
+  enviado = true; $('b-enviar').style.display = 'none';
+  const resta = pos < $('texto').scrollHeight - tam * 1.42 * 5;
+  $('msg').innerHTML = '✅ ' + (j.message || 'Enviado!') + (resta ? '<br>Ainda tem texto pela frente — grave a próxima parte quando quiser.' : '<br>Roteiro concluído! Volte ao Estúdio para editar.');
+  $('b-proxima').style.display = resta ? '' : 'none';
+}
+async function enviar() {
   if (!blobFinal || enviado) return;
-  const fd = new FormData(); fd.append('duracao', String(blobFinal.duracao || 0)); fd.append('tipo', tipo); fd.append('parte', String(parte));
-  fd.append('file', blobFinal, 'gravacao.' + (/mp4/.test(blobFinal.type) ? 'mp4' : 'webm'));
-  const x = new XMLHttpRequest(); x.open('POST', '/api/public/gravador/' + encodeURIComponent(codigo) + '/video');
+  const ext = /mp4/.test(blobFinal.type) ? 'mp4' : 'webm';
   $('barra').style.display = 'block'; $('b-enviar').disabled = true; $('msg').textContent = 'Enviando...';
-  x.upload.onprogress = e => { if (e.lengthComputable) { $('barra-i').style.width = Math.round(e.loaded * 100 / e.total) + '%'; $('msg').textContent = 'Enviando... ' + Math.round(e.loaded * 100 / e.total) + '%'; } };
-  x.onload = () => {
-    let j = {}; try { j = JSON.parse(x.responseText); } catch (e) {}
-    if (x.status < 300) {
-      enviado = true; $('b-enviar').style.display = 'none';
-      const resta = pos < $('texto').scrollHeight - tam * 1.42 * 5;
-      $('msg').innerHTML = '✅ ' + (j.message || 'Enviado!') + (resta ? '<br>Ainda tem texto pela frente — grave a próxima parte quando quiser.' : '<br>Roteiro concluído! Volte ao Estúdio para editar.');
-      $('b-proxima').style.display = resta ? '' : 'none';
-    } else { $('msg').textContent = '⚠️ ' + (j.error || 'Falha no envio.'); $('b-enviar').disabled = false; }
-  };
+  const prog = p => { $('barra-i').style.width = Math.round(p * 100) + '%'; $('msg').textContent = 'Enviando... ' + Math.round(p * 100) + '% (mantenha esta tela aberta)'; };
+  // gravações longas sobem em partes de 8 MB, com nova tentativa automática se a internet oscilar
+  if (blobFinal.size > 12 * 1024 * 1024) {
+    const TAM = 8 * 1024 * 1024, total = Math.ceil(blobFinal.size / TAM), id = blobFinal.__id || (blobFinal.__id = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+    let i = 0, ultimo = {};
+    try {
+      while (i < total) {
+        let tent = 0;
+        while (true) {
+          try {
+            const r = await fetch('/api/public/gravador/' + encodeURIComponent(codigo) + '/video-parte', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'x-upload-id': id, 'x-parte': String(i), 'x-total': String(total), 'x-nome': encodeURIComponent('gravacao.' + ext), 'x-mime': blobFinal.type, 'x-tipo': tipo, 'x-parte-aula': String(parte), 'x-duracao': String(blobFinal.duracao || 0) }, body: blobFinal.slice(i * TAM, Math.min(blobFinal.size, (i + 1) * TAM)) });
+            const j = await r.json().catch(() => ({}));
+            if (r.status === 409 && Number.isInteger(j.prox)) { i = j.prox; break; }
+            if (!r.ok) throw new Error(j.error || 'Falha no envio.');
+            ultimo = j; i++; break;
+          } catch (e) { if (++tent >= 5) throw e; await new Promise(z => setTimeout(z, 2000 * tent)); }
+        }
+        prog(i / total);
+      }
+      concluirEnvio(ultimo);
+    } catch (e) { $('msg').textContent = '⚠️ ' + e.message + ' — toque em Enviar de novo (continua de onde parou) ou salve no aparelho.'; $('b-enviar').disabled = false; }
+    return;
+  }
+  const fd = new FormData(); fd.append('duracao', String(blobFinal.duracao || 0)); fd.append('tipo', tipo); fd.append('parte', String(parte));
+  fd.append('file', blobFinal, 'gravacao.' + ext);
+  const x = new XMLHttpRequest(); x.open('POST', '/api/public/gravador/' + encodeURIComponent(codigo) + '/video');
+  x.upload.onprogress = e => { if (e.lengthComputable) prog(e.loaded / e.total); };
+  x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch (e) {} if (x.status < 300) concluirEnvio(j); else { $('msg').textContent = '⚠️ ' + (j.error || 'Falha no envio.'); $('b-enviar').disabled = false; } };
   x.onerror = () => { $('msg').textContent = '⚠️ Falha de conexão. Tente de novo (ou salve no aparelho).'; $('b-enviar').disabled = false; };
   x.send(fd);
 }

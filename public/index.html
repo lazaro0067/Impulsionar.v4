@@ -1311,7 +1311,68 @@
   .ev-pop-barra { position:fixed; z-index:10015; background:var(--e-sup); border:1px solid var(--e-bd); border-radius:12px; padding:12px 14px; width:340px; box-shadow:0 16px 40px rgba(0,0,0,.55); font-size:13px; } .ev-pop-barra > b { display:block; margin-bottom:8px; padding-right:24px; } .ev-pop-barra input[type=range] { width:100%; margin:6px 0; }
   .ev-pop-x { position:absolute; top:8px; right:8px; background:none; border:none; color:var(--e-sub); cursor:pointer; font-size:14px; }
   .ev-trilhas { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:6px 0; } .ev-trilhas button { display:flex; flex-direction:column; align-items:center; gap:2px; background:var(--e-sup2); border:1px solid var(--e-bd); color:var(--e-tx); border-radius:10px; padding:9px 4px; cursor:pointer; font-size:11.5px; } .ev-trilhas button span { font-size:20px; } .ev-trilhas button:hover { border-color:#a78bfa; }
-  .ev-so-pequeno, .ev-sheet-x { display:none !important; }
+
+  /* ===== Marca animada (app do Estúdio) ===== */
+  .ei-logo { display:inline-flex; align-items:center; gap:10px; color:#fff; }
+  .ei-marca { position:relative; width:42px; height:42px; border-radius:13px; background:#0b1329; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; box-shadow:0 6px 20px rgba(220,76,76,.35); }
+  .ei-marca::before { content:''; position:absolute; inset:-60%; background:conic-gradient(from 0deg, #dc4c4c, #f59e0b, #4f7cff, #7c3aed, #dc4c4c); animation:eiGira 4s linear infinite; }
+  .ei-marca::after { content:''; position:absolute; inset:2.5px; border-radius:11px; background:linear-gradient(145deg,#0b1329,#16224a); }
+  .ei-marca b { position:relative; z-index:2; font-family:Montserrat, 'Segoe UI', Arial, sans-serif; font-weight:900; font-size:17px; letter-spacing:-.5px; background:linear-gradient(90deg,#fff 20%,#ffb4b4 40%,#fff 60%); background-size:200% 100%; -webkit-background-clip:text; background-clip:text; color:transparent; animation:eiBrilho 3s ease-in-out infinite; }
+  .ei-anel { position:absolute; z-index:1; inset:6px; border-radius:9px; border:1.5px solid rgba(220,76,76,.55); animation:eiPulso 2.2s ease-out infinite; }
+  .ei-nome { display:flex; flex-direction:column; line-height:1.05; }
+  .ei-nome b { font-family:Montserrat, 'Segoe UI', Arial, sans-serif; font-weight:900; font-size:15px; letter-spacing:1.5px; background:linear-gradient(90deg,#fff,#ffd1d1,#fff,#c7d2fe,#fff); background-size:300% 100%; -webkit-background-clip:text; background-clip:text; color:transparent; animation:eiBrilho 5s linear infinite; }
+  .ei-nome small { font-size:10.5px; letter-spacing:2px; text-transform:uppercase; color:#fca5a5; font-weight:700; margin-top:3px; }
+  .ei-logo.mini .ei-marca { width:34px; height:34px; border-radius:11px; } .ei-logo.mini .ei-marca b { font-size:14px; } .ei-logo.mini .ei-nome b { font-size:12.5px; } .ei-logo.mini .ei-nome small { font-size:9px; }
+  .ei-logo.grande { flex-direction:column; gap:14px; text-align:center; } .ei-logo.grande .ei-marca { width:84px; height:84px; border-radius:24px; } .ei-logo.grande .ei-marca::after { inset:4px; border-radius:20px; } .ei-logo.grande .ei-marca b { font-size:34px; } .ei-logo.grande .ei-anel { inset:12px; border-radius:16px; }
+  .ei-logo.grande .ei-nome { align-items:center; } .ei-logo.grande .ei-nome b { font-size:24px; letter-spacing:3px; } .ei-logo.grande .ei-nome small { font-size:12px; letter-spacing:4px; }
+  @keyframes eiGira { to { transform:rotate(360deg); } } @keyframes eiBrilho { 0% { background-position:100% 0; } 100% { background-position:-100% 0; } }
+  @keyframes eiPulso { 0% { transform:scale(.85); opacity:.9; } 100% { transform:scale(1.6); opacity:0; } }
+  .ei-login-hero { display:none; }
+  /* login do app do Estúdio */
+  html.estudio #tela-login { background:#070b18; position:relative; overflow:hidden; padding:20px; }
+  html.estudio #tela-login::before, html.estudio #tela-login::after { content:''; position:absolute; width:70vmax; height:70vmax; border-radius:50%; filter:blur(70px); opacity:.55; animation:ehFlutua 14s ease-in-out infinite alternate; }
+  html.estudio #tela-login::before { background:radial-gradient(circle,#dc4c4c,transparent 60%); top:-35vmax; left:-25vmax; }
+  html.estudio #tela-login::after { background:radial-gradient(circle,#4f46e5,transparent 60%); bottom:-35vmax; right:-25vmax; animation-delay:-7s; }
+  html.estudio .card-login { position:relative; z-index:1; background:rgba(17,24,45,.72); backdrop-filter:blur(18px); border:1px solid rgba(255,255,255,.1); color:#e6eaf2; }
+  html.estudio .card-login label { color:#cbd5e1; } html.estudio .card-login input { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.15); color:#fff; }
+  html.estudio .card-login .btn-primario { background:linear-gradient(135deg,#dc4c4c,#f97316); border:none; }
+  html.estudio .logo-login, html.estudio .logo-fallback-login, html.estudio .link-esqueci:last-of-type { display:none !important; }
+  html.estudio .ei-login-hero { display:block; text-align:center; margin-bottom:22px; } html.estudio .ei-login-hero p { color:#94a3b8; font-size:13.5px; line-height:1.5; margin:14px 0 0; }
+  @keyframes ehFlutua { 0% { transform:translate(0,0) scale(1); } 100% { transform:translate(12vmax,10vmax) scale(1.15); } }
+  /* tela de início do app */
+  body.modo-estudio { background:#070b18; } body.modo-estudio #app .conteudo { background:#070b18; padding:0 !important; min-height:100vh; }
+  .eh-pagina { color:#e6eaf2; padding-bottom:84px; min-height:100vh; }
+  .eh-hero { position:relative; overflow:hidden; padding:calc(env(safe-area-inset-top) + 16px) 18px 22px; background:linear-gradient(160deg,#0b1329 0%,#1e1b4b 55%,#3b0d1c 100%); border-radius:0 0 26px 26px; }
+  .eh-bolha { position:absolute; border-radius:50%; filter:blur(30px); opacity:.6; animation:ehFlutua 9s ease-in-out infinite alternate; }
+  .eh-bolha.b1 { width:200px; height:200px; background:#dc4c4c; top:-70px; right:-60px; } .eh-bolha.b2 { width:160px; height:160px; background:#4f46e5; bottom:-60px; left:-40px; animation-delay:-3s; } .eh-bolha.b3 { width:90px; height:90px; background:#f59e0b; top:40%; left:55%; opacity:.35; animation-delay:-6s; }
+  .eh-hero > * { position:relative; z-index:1; }
+  .eh-hero-topo { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .eh-sync { font-size:11px; background:rgba(255,255,255,.1); border-radius:20px; padding:4px 10px; color:#cbd5e1; }
+  .eh-hero h2 { margin:22px 0 2px; font-size:24px; color:#fff; } .eh-hero p { margin:0 0 18px; color:#cbd5e1; font-size:14px; }
+  .eh-gravar { width:100%; display:flex; align-items:center; justify-content:center; gap:12px; border:none; border-radius:18px; padding:17px; font-size:17px; font-weight:800; color:#fff; background:linear-gradient(135deg,#dc2626,#f97316); box-shadow:0 10px 30px rgba(220,38,38,.45); cursor:pointer; }
+  .eh-gravar i { width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 0 0 0 rgba(255,255,255,.7); animation:ehRec 1.6s infinite; } @keyframes ehRec { 70% { box-shadow:0 0 0 12px rgba(255,255,255,0); } 100% { box-shadow:0 0 0 0 rgba(255,255,255,0); } }
+  .eh-acoes { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:16px; }
+  .eh-acao { display:flex; flex-direction:column; align-items:flex-start; gap:3px; background:#111a33; border:1px solid #1f2b4d; border-radius:16px; padding:14px; color:#e6eaf2; text-align:left; cursor:pointer; font-family:inherit; }
+  .eh-acao span { font-size:26px; margin-bottom:4px; } .eh-acao b { font-size:14.5px; } .eh-acao small { font-size:11.5px; color:#94a3b8; line-height:1.3; } .eh-acao:active { transform:scale(.97); }
+  .eh-titulo { display:flex; align-items:center; justify-content:space-between; padding:4px 18px 6px; } .eh-titulo h3 { margin:0; font-size:17px; color:#fff; } .eh-titulo span { background:#1f2b4d; border-radius:12px; padding:2px 10px; font-size:12px; }
+  .eh-lista { display:flex; flex-direction:column; gap:10px; padding:6px 16px 16px; }
+  .eh-item { display:flex; align-items:center; gap:12px; background:#0f172e; border:1px solid #1c2747; border-radius:14px; padding:8px; cursor:pointer; }
+  .eh-capa { position:relative; width:54px; height:96px; border-radius:10px; overflow:hidden; background:linear-gradient(160deg,#1e1b4b,#3b0d1c); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:24px; }
+  .eh-capa.f16-9 { width:96px; height:54px; } .eh-capa.f1-1 { width:70px; height:70px; } .eh-capa.f4-5 { width:64px; height:80px; }
+  .eh-capa img { width:100%; height:100%; object-fit:cover; } .eh-capa em { position:absolute; bottom:3px; left:3px; font-style:normal; font-size:10px; background:rgba(0,0,0,.7); border-radius:6px; padding:1px 4px; }
+  .eh-info { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; } .eh-info b { font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff; } .eh-info small { color:#94a3b8; font-size:12px; }
+  .eh-st { align-self:flex-start; font-size:10.5px; color:#fff; border-radius:8px; padding:2px 8px; font-weight:700; }
+  .eh-mais { background:none; border:none; font-size:17px; padding:8px; cursor:pointer; opacity:.7; }
+  .eh-vazio { text-align:center; padding:30px 20px; color:#94a3b8; } .eh-vazio div { font-size:44px; } .eh-vazio b { color:#fff; display:block; margin:6px 0; }
+  .eh-nav { position:fixed; left:0; right:0; bottom:0; z-index:60; display:flex; background:rgba(11,19,41,.95); backdrop-filter:blur(12px); border-top:1px solid #1f2b4d; padding:6px 4px calc(env(safe-area-inset-bottom) + 6px); }
+  .eh-nav button { flex:1; background:none; border:none; color:#94a3b8; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:10.5px; padding:4px 0; cursor:pointer; font-family:inherit; } .eh-nav button span { font-size:20px; } .eh-nav button.on { color:#fff; } .eh-nav button.on span { filter:drop-shadow(0 0 8px rgba(220,76,76,.8)); }
+  .eh-mini { display:flex; align-items:center; gap:12px; padding:calc(env(safe-area-inset-top) + 12px) 16px 12px; background:#0b1329; position:sticky; top:0; z-index:40; } .eh-mini b { color:#fff; font-size:15px; margin-left:auto; }
+  .eh-pagina #ev-pag-corpo > :not(.eh) { padding:12px; }
+  .eh-carregando { display:flex; justify-content:center; padding:30vh 0; }
+  .eh-menu { display:flex; flex-direction:column; gap:8px; max-width:360px; } .eh-menu button, .eh-menu a { text-align:left; background:#f1f5f9; border:none; border-radius:10px; padding:12px; font-size:14.5px; cursor:pointer; color:#0b1329; text-decoration:none; font-family:inherit; } .eh-menu .perigo { color:#b91c1c; }
+  .ev-so-pequeno, .ev-sheet-x, .ev-so-cel { display:none !important; }
+  .ev-linha-barra button { display:inline-flex; align-items:center; gap:5px; } .ev-linha-barra button i { font-style:normal; }
+  .ev-play-acao { background:var(--e-sup2) !important; border:1px solid var(--e-bd) !important; border-radius:18px !important; padding:6px 10px !important; font-size:12.5px !important; font-weight:700; color:var(--e-tx) !important; } .ev-play-acao.grava { background:#dc2626 !important; border-color:#dc2626 !important; color:#fff !important; }
   @media (max-width: 1100px) { .ev-corpo { grid-template-columns:280px minmax(0,1fr); } .ev-dir { display:none; }
     .ev-abas button.ev-so-pequeno { display:flex !important; }
     #ev-editor.sheet-props .ev-dir { display:block; position:fixed; right:0; top:52px; bottom:0; width:min(360px,100%); z-index:40; box-shadow:-10px 0 40px rgba(0,0,0,.6); padding-top:44px; }
@@ -1329,7 +1390,16 @@
     #ev-editor.sheet-props .ev-dir { top:auto; left:0; width:100%; height:64vh; border-radius:16px 16px 0 0; }
     .ev-sheet-x.painel { top:auto; bottom:calc(64vh - 40px); }
     .ev-palco { padding:6px; } .ev-play { gap:6px; padding:4px 6px; } .ev-chk { margin-left:4px; }
-    .ev-linha-barra { overflow-x:auto; flex-wrap:nowrap; scrollbar-width:thin; } .ev-linha-barra button { white-space:nowrap; flex-shrink:0; } .ev-linha-barra input[type=range] { width:90px !important; flex-shrink:0; }
+    .ev-so-cel { display:inline-flex !important; } .ev-so-pc { display:none !important; }
+    .ev-play .ev-chk { display:none; } .ev-tempo { font-size:12px; }
+    .ev-cam .ev-cam-corpo { padding-bottom:78px; } .ev-cam #ev-cam-bt { position:fixed; left:16px; right:16px; bottom:calc(env(safe-area-inset-bottom) + 14px); width:auto; z-index:60; padding:16px; font-size:16px; border-radius:16px; box-shadow:0 10px 30px rgba(220,38,38,.45); }
+    .ev-cam-palco { min-height:0; } .ev-abas { display:none !important; } .ev-esq { border-top:none; }
+    #ev-editor { grid-template-rows:48px minmax(0,1fr) 214px; }
+    .ev-linha-barra { overflow-x:auto; flex-wrap:nowrap; scrollbar-width:none; gap:2px; padding:4px 6px; } .ev-linha-barra::-webkit-scrollbar { display:none; }
+    .ev-linha-barra button { flex-direction:column; gap:2px; min-width:58px; padding:5px 4px !important; border:none !important; background:transparent !important; font-size:10.5px !important; flex-shrink:0; white-space:nowrap; border-radius:10px !important; }
+    .ev-linha-barra button i { font-size:20px; line-height:1.1; } .ev-linha-barra button:active { background:var(--e-sup2) !important; }
+    .ev-linha-barra .ev-tl-ia { background:linear-gradient(135deg,#4f46e5,#7c3aed) !important; }
+    .ev-linha-barra .ev-sep { width:1px; align-self:stretch; background:var(--e-bd); margin:6px 3px; flex-shrink:0; }
     .ev-pub { grid-template-columns:1fr; } .ev-modal { width:100% !important; max-height:92vh; }
   }
   .ev-cam .ev-chk2 { color:var(--e-tx); } .ev-cam-corpo { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:16px; } @media (max-width: 760px) { .ev-cam-corpo { grid-template-columns:1fr; } }
@@ -1368,6 +1438,7 @@
 <!-- ===================== TELA DE LOGIN ===================== -->
 <div id="tela-login">
   <div class="card-login">
+    <div class="ei-login-hero"><div class="ei-logo grande"><div class="ei-marca"><i class="ei-anel"></i><b>V4</b></div><div class="ei-nome"><b>IMPULSIONAR</b><small>Estúdio de Vídeo</small></div></div><p>Grave, edite com IA e publique vídeos profissionais — direto do celular.</p></div>
     <img src="/assets/logo-impulsionar.jpg" alt="Impulsionar V4" class="logo-login" onerror="this.outerHTML='&lt;div class=&quot;logo-fallback-login&quot;&gt;IMPULSIONAR V4&lt;/div&gt;'">
     <form id="form-login">
       <label>E-mail de Acesso</label>
@@ -20510,9 +20581,18 @@ function evElemento(c, chave) {
   else {
     el = document.createElement('video'); el.crossOrigin = 'anonymous'; el.preload = 'auto'; el.playsInline = true; el.src = m.url;
     el.addEventListener('seeked', () => { if (ES && !ES.tocando) evDesenhar(); }); el.addEventListener('loadeddata', () => { if (ES && !ES.tocando) evDesenhar(); });
+    el.addEventListener('loadedmetadata', () => evCorrigirDuracao(m, el));
+    el.addEventListener('durationchange', () => evCorrigirDuracao(m, el));
     evRegistrarSom(el, k);
   }
   el.__url = m.url; ES.els[k] = el; return el;
+}
+function evCorrigirDuracao(m, el) {
+  if (!ES || !isFinite(el.duration) || el.duration <= 0) return;
+  const d = el.duration; if (m.duracao && Math.abs(m.duracao - d) < 0.3 && !ES.p.dados.clips.some(c => c.midia === m.id && c.fimAuto)) return;
+  m.duracao = d; let mudou = false;
+  ES.p.dados.clips.forEach(c => { if (c.midia === m.id && (c.fimAuto || c.fim > d + 0.05)) { c.fim = Math.min(c.fimAuto ? d : c.fim, d); delete c.fimAuto; mudou = true; } });
+  if (mudou) { evMudou(); }
 }
 function evElementoAudio(a) {
   ES.aud = ES.aud || {};
@@ -20777,6 +20857,7 @@ function evDesenharEncerramento(ctx, tl) {
 function evDesenhar(tForcado, exportando) {
   if (!ES || !ES.ctx) return;
   const ctx = ES.ctx, W = ES.W, H = ES.H, d = ES.p.dados, t = tForcado !== undefined ? tForcado : ES.t;
+  ctx.setTransform(ES.esc || 1, 0, 0, ES.esc || 1, 0, 0);
   exportando = exportando || !!ES.exportando || !!ES.telaCheia; // guias de edição nunca entram no vídeo final (nem na tela cheia)
   ES.caixas = {};
   const ex = d.extras || {}, k = W / 1080, base = evTotalBase();
@@ -20925,6 +21006,7 @@ async function evExportar() {
   ES.t = 0; evSincronizar(0, false);
   Object.entries(ES.sons || {}).forEach(([k, el]) => evCapturarSom(el, k));
   const mime = evMimeExport();
+  evResolucaoCanvas(true); ES.esc = 1;
   const fluxo = ES.canvas.captureStream(30);
   if (ES.destGrav) ES.destGrav.stream.getAudioTracks().forEach(tr => fluxo.addTrack(tr));
   let rec; try { rec = new MediaRecorder(fluxo, mime ? { mimeType: mime, videoBitsPerSecond: 12000000, audioBitsPerSecond: 192000 } : undefined); } catch (e) { return mostrarToast('Não foi possível iniciar a exportação: ' + e.message, true); }
@@ -20947,7 +21029,7 @@ function evProgressoExport(p) {
 function evFimExportacao() { if (ES.exportando && ES.exportando.rec.state !== 'inactive') setTimeout(() => ES.exportando.rec.stop(), 300); }
 function evCancelarExport() { if (!ES || !ES.exportando) return; ES.exportando.cancelado = true; evPausar(); try { ES.exportando.rec.stop(); } catch (e) {} }
 async function evConcluirExport() {
-  const ex = ES.exportando; ES.exportando = null;
+  const ex = ES.exportando; ES.exportando = null; evAjustarPalco();
   const tx = document.getElementById('ev-export-txt');
   if (ex.cancelado) { document.getElementById('ev-export-ov').hidden = true; return mostrarToast('Exportação cancelada.'); }
   const ext = /mp4/.test(ex.mime) ? 'mp4' : 'webm';
@@ -21012,29 +21094,18 @@ async function evAbrirEditor(id) {
           <span class="ev-tempo"><b id="ev-t">00:00.0</b> / <span id="ev-tt">00:00.0</span></span>
           <label class="ev-chk"><input type="checkbox" ${ES.zonaSegura ? 'checked' : ''} onchange="ES.zonaSegura=this.checked; evDesenhar()"> Área segura</label>
           <button onclick="evTelaCheia()" title="Ver em tela cheia (F)" style="font-size:15px;">⛶</button>
+          <button class="ev-so-cel ev-play-acao" onclick="document.getElementById('ev-galeria').click()" title="Galeria">＋🖼️</button>
+          <button class="ev-so-cel ev-play-acao grava" onclick="evAbrirCamera()" title="Gravar">● Gravar</button>
         </div>
       </main>
       <aside class="ev-dir" id="ev-props"></aside>
     </div>
     <section class="ev-linha">
       <div class="ev-linha-barra">
-        <button onclick="evDesfazer()" title="Desfazer (Ctrl+Z)">↶</button><button onclick="evRefazer()" title="Refazer (Ctrl+Y)">↷</button><span class="ev-sep"></span>
-        <button onclick="evDividir()" title="Dividir no cursor (S)">✂️ Dividir</button>
-        <button onclick="evDuplicarSel()" title="Duplicar (Ctrl+D)">⧉ Duplicar</button>
-        <button onclick="evExcluirSel()" title="Excluir (Delete)">🗑️ Excluir</button><span class="ev-sep"></span>
-        <button onclick="evPopBarra('velocidade', this)" title="Velocidade">⏩ Velocidade</button>
-        <button onclick="evPopBarra('volume', this)" title="Volume">🔊 Volume</button>
-        <button onclick="evPopBarra('zoom', this)" title="Zoom">🔍 Zoom</button>
-        <button onclick="evPopBarra('enquadrar', this)" title="Enquadrar, espelhar e posicionar">🖼️ Enquadrar</button>
-        <button onclick="evPopBarra('transicao', this)" title="Transição">🔀 Transição</button><span class="ev-sep"></span>
-        <button onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor">📷 Gravar</button>
-        <button onclick="evPopBarra('texto', this)" title="Adicionar texto">🔤 Texto</button>
-        <button onclick="evLegendasDaFala()" title="Legendas automáticas do que é falado">💬 Legendas</button>
-        <button onclick="evPopBarra('musica', this)" title="Música de fundo">🎵 Música</button>
-        <button onclick="evPopBarra('mais', this)" title="Mais ferramentas">⋯ Mais</button><span class="ev-sep"></span>
-        <button class="ev-tl-ia" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA">✨ Editar com IA</button>
-        <div style="flex:1"></div>
-        <span style="font-size:12px;opacity:.7;">Zoom</span><input type="range" min="15" max="200" value="${ES.pxs}" oninput="ES.pxs=Number(this.value); evDesenharLinha()">
+        <button class="ev-tl-ia ev-so-cel" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button><button class="ev-so-cel" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="ev-so-cel" onclick="document.getElementById('ev-galeria').click()" title="Adicionar fotos e vídeos da galeria"><i>🖼️</i><span>Galeria</span></button><span class="ev-sep ev-so-cel"></span><button class="ev-so-pc" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)"><i>↶</i><span>Desfazer</span></button><button class="ev-so-pc" onclick="evRefazer()" title="Refazer (Ctrl+Y)"><i>↷</i><span>Refazer</span></button><span class="ev-sep ev-so-pc"></span><button class="" onclick="evDividir()" title="Dividir no cursor (S)"><i>✂️</i><span>Dividir</span></button><button class="" onclick="evExcluirSel()" title="Excluir (Delete)"><i>🗑️</i><span>Excluir</span></button><button class="" onclick="evDuplicarSel()" title="Duplicar (Ctrl+D)"><i>⧉</i><span>Duplicar</span></button><span class="ev-sep"></span><button class="" onclick="evPopBarra('velocidade', this)" title="Velocidade"><i>⏩</i><span>Velocidade</span></button><button class="" onclick="evPopBarra('volume', this)" title="Volume"><i>🔊</i><span>Volume</span></button><button class="" onclick="evPopBarra('zoom', this)" title="Zoom"><i>🔍</i><span>Zoom</span></button><button class="" onclick="evPopBarra('enquadrar', this)" title="Enquadrar, espelhar e posicionar"><i>🎯</i><span>Enquadrar</span></button><button class="" onclick="evPopBarra('transicao', this)" title="Transição"><i>🔀</i><span>Transição</span></button><span class="ev-sep"></span><button class="ev-so-pc" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="" onclick="evPopBarra('texto', this)" title="Adicionar texto"><i>🔤</i><span>Texto</span></button><button class="" onclick="evLegendasDaFala()" title="Legendas automáticas do que é falado"><i>💬</i><span>Legendas</span></button><button class="" onclick="evPopBarra('musica', this)" title="Música de fundo"><i>🎵</i><span>Música</span></button><button class="ev-so-cel" onclick="evPainel('filtros'); evSheet('painel')" title="Filtros e imagem inteligente"><i>🎨</i><span>Filtros</span></button><button class="ev-so-cel" onclick="evPainel('elementos'); evSheet('painel')" title="Logo, emojis e encerramento"><i>🏷️</i><span>Marca</span></button><button class="ev-so-cel" onclick="evPainel('midia'); evSheet('painel')" title="Mídias do projeto"><i>🎞️</i><span>Mídias</span></button><button class="ev-so-cel" onclick="evPainel('ia'); evSheet('painel')" title="Agente IA"><i>🤖</i><span>Agente</span></button><button class="ev-so-cel" onclick="evSheet('props')" title="Ajustes do item selecionado"><i>⚙️</i><span>Ajustes</span></button><button class="" onclick="evPopBarra('mais', this)" title="Mais ferramentas"><i>⋯</i><span>Mais</span></button><span class="ev-sep ev-so-pc"></span><button class="ev-tl-ia ev-so-pc" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button>
+        <div style="flex:1" class="ev-so-pc"></div>
+        <span class="ev-so-pc" style="font-size:12px;opacity:.7;">Zoom</span><input class="ev-so-pc" type="range" min="15" max="200" value="${ES.pxs}" oninput="ES.pxs=Number(this.value); evDesenharLinha()">
+        <input type="file" id="ev-galeria" accept="video/*,image/*,audio/*" multiple hidden onchange="evSubir(this.files); this.value=''">
       </div>
       <div class="ev-linha-scroll" id="ev-linha-scroll"><div class="ev-linha-int" id="ev-linha-int"></div></div>
     </section>
@@ -21074,6 +21145,18 @@ function evAjustarPalco() {
   const w = Math.max(50, pal.clientWidth - 28), h = Math.max(50, pal.clientHeight - 28);
   const esc = Math.min(w / ES.W, h / ES.H);
   ES.canvas.style.width = Math.floor(ES.W * esc) + 'px'; ES.canvas.style.height = Math.floor(ES.H * esc) + 'px';
+  evResolucaoCanvas(!!ES.exportando || !!ES.telaCheia, esc);
+}
+// Prévia leve: o quadro é desenhado no tamanho em que aparece na tela (bem mais rápido, sem travar);
+// na exportação e na tela cheia volta para a resolução completa.
+function evResolucaoCanvas(cheia, escTela) {
+  if (!ES || !ES.canvas) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const e = escTela || (parseFloat(ES.canvas.style.width) || ES.W) / ES.W;
+  const k = cheia ? 1 : Math.max(0.4, Math.min(1, e * dpr * 1.05));
+  const w = Math.round(ES.W * k), h = Math.round(ES.H * k);
+  if (ES.canvas.width !== w || ES.canvas.height !== h) { ES.canvas.width = w; ES.canvas.height = h; ES.esc = w / ES.W; if (!ES.tocando) evDesenhar(); }
+  ES.esc = w / ES.W;
 }
 function evDica(txt) { const n = document.createElement('div'); n.className = 'ev-dica'; n.textContent = txt; document.getElementById('ev-palco').appendChild(n); setTimeout(() => n.remove(), 6000); }
 
@@ -21100,7 +21183,7 @@ async function evSalvar(silencioso) {
   if (!silencioso) mostrarToast('Projeto salvo!');
 }
 function evMudarFormato(f) {
-  ES.p.formato = f; const F = EV_FORMATOS[f]; ES.W = F.w; ES.H = F.h; ES.canvas.width = F.w; ES.canvas.height = F.h;
+  ES.p.formato = f; const F = EV_FORMATOS[f]; ES.W = F.w; ES.H = F.h; ES.canvas.width = F.w; ES.canvas.height = F.h; ES.esc = 1;
   ES.ctx = ES.canvas.getContext('2d'); evAjustarPalco(); evMudou();
 }
 
@@ -21185,7 +21268,7 @@ async function evSincronizarAparelhos() {
 function evTelaCheia() {
   if (!ES) return; const pal = document.getElementById('ev-palco'); if (!pal || ES.telaCheia) return;
   evSelecionar && ES.sel && evSelecionar(null);
-  ES.telaCheia = true; pal.classList.add('tela-cheia');
+  ES.telaCheia = true; pal.classList.add('tela-cheia'); evResolucaoCanvas(true);
   const fim = () => { evAjustarPalco(); evAtualizarCabeca(); evAtualizarBotaoPlay(); evDesenhar(); };
   try { if (pal.requestFullscreen) pal.requestFullscreen({ navigationUI: 'hide' }).then(fim).catch(fim); else if (pal.webkitRequestFullscreen) { pal.webkitRequestFullscreen(); fim(); } else fim(); } catch (e) { fim(); }
   try { if (screen.orientation && screen.orientation.lock && ES.W > ES.H) screen.orientation.lock('landscape').catch(() => {}); } catch (e) {}
@@ -21305,7 +21388,7 @@ function evPainel(qual) {
   const el = document.getElementById('ev-painel'), d = ES.p.dados;
   if (qual === 'midia') {
     el.innerHTML = `<h4>Mídia do projeto</h4>
-      <label class="ev-up"><input type="file" multiple accept="video/*,image/*,audio/*" hidden onchange="evSubir(this.files)"><b>⬆️ Subir vídeos, fotos ou áudios</b><small>Do computador ou do celular. Até 1GB por arquivo.</small></label>
+      <label class="ev-up"><input type="file" multiple accept="video/*,image/*,audio/*" hidden onchange="evSubir(this.files)"><b>⬆️ Subir vídeos, fotos ou áudios</b><small>Do computador ou da galeria do celular. Vídeos longos sobem em partes, sem cortar (até 3 GB).</small></label>
       <button class="ev-btn primario" style="width:100%;margin-top:8px;" onclick="evAbrirCamera()">📷 Gravar aqui (câmera ou tela)</button>
       <button class="ev-btn ia" style="width:100%;margin-top:6px;" onclick="evAbrirTeleprompter()">🎥 Gravar com teleprompter (celular ou computador)</button>
       <div id="ev-up-prog"></div>
@@ -21352,10 +21435,55 @@ function evInfoMidia(file, url) {
     const miniatura = (el, w, h) => { try { const c = document.createElement('canvas'); const s = 160 / Math.max(w, h); c.width = Math.round(w * s); c.height = Math.round(h * s); c.getContext('2d').drawImage(el, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.7); } catch (e) { return ''; } };
     if (tipo === 'imagem') { const i = new Image(); i.onload = () => { base.w = i.naturalWidth; base.h = i.naturalHeight; base.thumb = miniatura(i, i.naturalWidth, i.naturalHeight); URL.revokeObjectURL(local); ok(base); }; i.onerror = () => ok(base); i.src = local; return; }
     const el = document.createElement(tipo === 'audio' ? 'audio' : 'video'); el.preload = 'auto'; el.muted = true;
-    el.onloadedmetadata = () => { base.duracao = isFinite(el.duration) ? el.duration : 0; base.w = el.videoWidth; base.h = el.videoHeight; if (tipo === 'audio') { URL.revokeObjectURL(local); ok(base); } else el.currentTime = Math.min(1, base.duracao / 3); };
-    el.onseeked = () => { base.thumb = miniatura(el, el.videoWidth, el.videoHeight); URL.revokeObjectURL(local); ok(base); };
+    let medindo = false;
+    el.onloadedmetadata = () => {
+      base.w = el.videoWidth; base.h = el.videoHeight;
+      if (isFinite(el.duration) && el.duration > 0) { base.duracao = el.duration; if (tipo === 'audio') { URL.revokeObjectURL(local); ok(base); } else el.currentTime = Math.min(1, base.duracao / 3); }
+      else { medindo = true; el.currentTime = 1e7; } // vídeos gravados no celular (WebM) vêm sem duração: pula para o fim para descobrir
+    };
+    el.onseeked = () => {
+      if (medindo) { medindo = false; base.duracao = isFinite(el.duration) ? el.duration : (el.currentTime || 0); if (tipo === 'audio') { URL.revokeObjectURL(local); return ok(base); } el.currentTime = Math.min(1, base.duracao / 3); return; }
+      base.thumb = miniatura(el, el.videoWidth, el.videoHeight); URL.revokeObjectURL(local); ok(base);
+    };
+    setTimeout(() => ok(base), 20000);
     el.onerror = () => ok(base); el.src = local;
   });
+}
+// Envio de arquivos: até 12 MB vai de uma vez; maiores vão em partes de 8 MB (com nova tentativa automática),
+// para vídeos longos não caírem no meio nem travarem o servidor.
+async function evEnviarArquivo(f, aoProgresso) {
+  const nome = f.name || 'video.mp4';
+  if (f.size <= 12 * 1024 * 1024) {
+    return new Promise((ok, ko) => {
+      const x = new XMLHttpRequest(); x.open('POST', '/api/admin/estudio/upload'); x.setRequestHeader('Authorization', 'Bearer ' + ESTADO.token);
+      x.upload.onprogress = e => { if (e.lengthComputable && aoProgresso) aoProgresso(e.loaded / e.total); };
+      x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch (e) {} x.status < 300 ? ok(j) : ko(new Error(j.error || 'Falha no envio.')); };
+      x.onerror = () => ko(new Error('Falha de conexão.')); const fd = new FormData(); fd.append('file', f, nome); x.send(fd);
+    });
+  }
+  const TAM = 8 * 1024 * 1024, total = Math.ceil(f.size / TAM), id = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  let i = 0, resp = null;
+  while (i < total) {
+    let tent = 0, r;
+    while (true) {
+      try {
+        r = await fetch('/api/admin/estudio/upload-parte', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token, 'Content-Type': 'application/octet-stream', 'x-upload-id': id, 'x-parte': String(i), 'x-total': String(total), 'x-nome': encodeURIComponent(nome), 'x-mime': f.type || '' }, body: f.slice(i * TAM, Math.min(f.size, (i + 1) * TAM)) });
+        const j = await r.json().catch(() => ({}));
+        if (r.status === 409 && Number.isInteger(j.prox)) { i = j.prox; break; }
+        if (!r.ok) throw new Error(j.error || 'Falha no envio.');
+        resp = j; i++; break;
+      } catch (e) { if (++tent >= 4) throw e; await new Promise(z => setTimeout(z, 1500 * tent)); }
+    }
+    if (aoProgresso) aoProgresso(i / total);
+  }
+  return resp;
+}
+// Se o navegador não leu a duração, pergunta ao servidor (vídeos HEVC/MOV do iPhone).
+async function evGarantirDuracao(m) {
+  if (m.tipo === 'imagem' || m.duracao) return m;
+  try { const i = await evInfoUrl(m.url); if (i.duracao) { m.duracao = i.duracao; m.w = m.w || i.w; m.h = m.h || i.h; m.thumb = m.thumb || i.thumb; return m; } } catch (e) {}
+  try { const j = await api('/api/admin/estudio/info-midia?url=' + encodeURIComponent(m.url)); if (j.duracao) { m.duracao = j.duracao; m.w = m.w || j.w; m.h = m.h || j.h; } } catch (e) {}
+  return m;
 }
 async function evSubir(files) {
   files = Array.from(files || []); if (!files.length) return;
@@ -21364,18 +21492,15 @@ async function evSubir(files) {
     const f = files[i];
     if (prog) prog.innerHTML = `<div class="ev-prog"><span>Enviando ${escapeHtml(f.name)} (${i + 1}/${files.length})</span><div><i id="ev-up-barra"></i></div></div>`;
     try {
-      const r = await new Promise((ok, ko) => {
-        const x = new XMLHttpRequest(); x.open('POST', '/api/admin/estudio/upload'); x.setRequestHeader('Authorization', 'Bearer ' + ESTADO.token);
-        x.upload.onprogress = e => { const b = document.getElementById('ev-up-barra'); if (b && e.lengthComputable) b.style.width = Math.round(e.loaded * 100 / e.total) + '%'; };
-        x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch (e) {} x.status < 300 ? ok(j) : ko(new Error(j.error || 'Falha no envio.')); };
-        x.onerror = () => ko(new Error('Falha de conexão.')); const fd = new FormData(); fd.append('file', f); x.send(fd);
-      });
-      const m = await evInfoMidia(f, r.url);
+      const [r, info] = await Promise.all([evEnviarArquivo(f, p => { const b = document.getElementById('ev-up-barra'); if (b) b.style.width = Math.round(p * 100) + '%'; if (!document.getElementById('ev-up-barra')) evCarregando(`Enviando ${f.name}… ${Math.round(p * 100)}%`); }), evInfoMidia(f, '')]);
+      const m = await evGarantirDuracao(Object.assign(info, { url: r.url }));
+      if (!document.getElementById('ev-up-barra')) evCarregando(null);
       ES.p.dados.midias.push(m);
       if (m.tipo === 'audio') evAdicionarAudio(m.id, true); else evAdicionarClipe(m.id, true);
-    } catch (e) { mostrarToast(f.name + ': ' + e.message, true); }
+    } catch (e) { evCarregando(null); mostrarToast(f.name + ': ' + e.message, true); }
   }
   if (prog) prog.innerHTML = '';
+  { const tot = evTotal(); if (tot * ES.pxs > 12000) ES.pxs = Math.max(2, Math.round(9000 / tot)); } // vídeo longo: linha do tempo cabe na tela
   evMudou(); evPainel(ES.painel);
 }
 // ---------- Gravar direto no editor: câmera, tela ou tela + câmera, com teleprompter ----------
@@ -21390,7 +21515,7 @@ async function evAbrirCamera() {
         <div class="ev-cam-rec" id="ev-cam-rec" hidden>● 00:00</div><div class="ev-cam-conta" id="ev-cam-conta"></div></div>
       <div class="ev-cam-lado">
         <div class="ev-chips" id="ev-cam-modos">${[['camera', '📷 Câmera'], ['tela', '🖥️ Tela'], ['telacam', '🖥️+📷 Tela com câmera']].map(([k, r]) => `<button class="${EVCAM.modo === k ? 'on' : ''}" onclick="evCamModo('${k}')">${r}</button>`).join('')}</div>
-        <label class="ev-campo"><span>Câmera</span><select id="ev-cam-sel" onchange="evCamLigar()"></select></label>
+        <div class="ev-dupla"><label class="ev-campo" style="flex:1;margin:0;"><span>Câmera</span><select id="ev-cam-sel" onchange="evCamLigar()"></select></label><button class="ev-btn" style="align-self:flex-end;" onclick="EVCAM.traseira=!EVCAM.traseira; EVCAM.virou=true; evCamLigar()" title="Trocar câmera frontal/traseira">🔄 Virar</button></div>
         <label class="ev-campo"><span>Microfone</span><select id="ev-mic-sel" onchange="evCamLigar()"></select></label>
         <div class="ev-medidor"><i id="ev-cam-nivel"></i></div>
         <label class="ev-campo"><span>Qualidade</span><select id="ev-cam-res" onchange="evCamLigar()"><option value="1080">Full HD (1080p)</option><option value="720" selected>HD (720p)</option><option value="480">Leve (480p)</option></select></label>
@@ -21410,10 +21535,13 @@ async function evCamLigar(primeira) {
   if (EVCAM.rec) return;
   if (EVCAM.stream) EVCAM.stream.getTracks().forEach(t => t.stop());
   const v = id => (document.getElementById(id) || {}).value || '', alt = Number(v('ev-cam-res')) || 720;
+  const celular = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent), vertical = (ES.p.formato || '9:16') !== '16:9' && celular;
+  const camSel = EVCAM.virou ? null : v('ev-cam-sel');
   try {
-    EVCAM.stream = await navigator.mediaDevices.getUserMedia({ video: Object.assign({ height: { ideal: alt }, width: { ideal: Math.round(alt * 16 / 9) }, frameRate: { ideal: 30 } }, v('ev-cam-sel') ? { deviceId: { exact: v('ev-cam-sel') } } : {}), audio: Object.assign({ echoCancellation: true, noiseSuppression: true, autoGainControl: true }, v('ev-mic-sel') ? { deviceId: { exact: v('ev-mic-sel') } } : {}) });
+    EVCAM.stream = await navigator.mediaDevices.getUserMedia({ video: Object.assign({ height: { ideal: vertical ? Math.round(alt * 16 / 9) : alt }, width: { ideal: vertical ? alt : Math.round(alt * 16 / 9) }, frameRate: { ideal: 30 } }, camSel ? { deviceId: { exact: camSel } } : { facingMode: EVCAM.traseira ? 'environment' : 'user' }), audio: Object.assign({ echoCancellation: true, noiseSuppression: true, autoGainControl: true }, v('ev-mic-sel') ? { deviceId: { exact: v('ev-mic-sel') } } : {}) });
   } catch (e) { document.getElementById('ev-cam-msg').textContent = '⚠️ ' + (typeof traduzirErroMidia === 'function' ? traduzirErroMidia(e) : e.message); return; }
-  if (primeira) {
+  EVCAM.virou = false;
+  if (primeira || true) {
     const dev = await navigator.mediaDevices.enumerateDevices(), cam = EVCAM.stream.getVideoTracks()[0], mic = EVCAM.stream.getAudioTracks()[0];
     const opts = (k, atual) => dev.filter(d => d.kind === k).map((d, i) => `<option value="${d.deviceId}" ${atual && atual.getSettings().deviceId === d.deviceId ? 'selected' : ''}>${escapeHtml(d.label || (k === 'videoinput' ? 'Câmera ' : 'Microfone ') + (i + 1))}</option>`).join('');
     document.getElementById('ev-cam-sel').innerHTML = opts('videoinput', cam); document.getElementById('ev-mic-sel').innerHTML = opts('audioinput', mic);
@@ -21434,7 +21562,7 @@ function evCamDesenharLoop() {
   const cobrir = (el, x, y, w, h, espelho) => { const mw = el.videoWidth, mh = el.videoHeight; if (!mw) return; const s = Math.max(w / mw, h / mh); g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip(); if (espelho) { g.translate(2 * x + w, 0); g.scale(-1, 1); } g.drawImage(el, x + (w - mw * s) / 2, y + (h - mh * s) / 2, mw * s, mh * s); g.restore(); };
   const conter = (el) => { const mw = el.videoWidth, mh = el.videoHeight; if (!mw) return; const s = Math.min(W / mw, H / mh); g.drawImage(el, (W - mw * s) / 2, (H - mh * s) / 2, mw * s, mh * s); };
   const passo = () => {
-    const esp = (document.getElementById('ev-cam-espelho') || {}).checked && !EVCAM.rec; // na gravação nunca sai espelhado (texto da camisa fica certo)
+    const esp = (document.getElementById('ev-cam-espelho') || {}).checked && !EVCAM.rec && !EVCAM.traseira; // na gravação nunca sai espelhado (texto da camisa fica certo)
     g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
     if (EVCAM.modo === 'camera' || !EVCAM.tela) { if (EVCAM.vid) cobrir(EVCAM.vid, 0, 0, W, H, esp); }
     else {
@@ -21488,10 +21616,7 @@ async function evCamTerminou() {
   const msg = document.getElementById('ev-cam-msg'), melhorar = (document.getElementById('ev-cam-luz') || {}).checked;
   if (msg) msg.textContent = 'Enviando a gravação para o projeto...';
   try {
-    const r = await new Promise((ok, ko) => { const x = new XMLHttpRequest(); x.open('POST', '/api/admin/estudio/upload'); x.setRequestHeader('Authorization', 'Bearer ' + ESTADO.token);
-      x.upload.onprogress = e => { if (msg && e.lengthComputable) msg.textContent = `Enviando... ${Math.round(e.loaded * 100 / e.total)}%`; };
-      x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch (e) {} x.status < 300 ? ok(j) : ko(new Error(j.error || 'Falha no envio.')); }; x.onerror = () => ko(new Error('Falha de conexão.'));
-      const fd = new FormData(); fd.append('file', new File([blob], nome, { type: tipo })); x.send(fd); });
+    const r = await evEnviarArquivo(new File([blob], nome, { type: tipo }), p => { if (msg) msg.textContent = `Enviando... ${Math.round(p * 100)}%`; });
     const info = await evInfoUrl(r.url);
     const F = EV_FORMATOS[ES.p.formato] || EV_FORMATOS['9:16'];
     const m = { id: evUid(), url: r.url, nome: EVCAM.modo === 'camera' ? 'Gravação da câmera' : 'Gravação da tela', tipo: 'video', duracao: info.duracao || dur, w: info.w || F.w, h: info.h || F.h, thumb: info.thumb };
@@ -21513,7 +21638,8 @@ function evFecharCamera() {
 }
 function evAdicionarClipe(mid, semRedesenhar) {
   const m = evMidia(mid); if (!m) return;
-  const c = { id: evUid(), midia: mid, ini: 0, fim: m.tipo === 'imagem' ? 3 : Math.min(m.duracao || 5, 3 * 3600), vel: 1, vol: 1, zoom: m.tipo === 'imagem' ? 1.12 : 1, ajuste: m.w && m.h && m.w > m.h && ES.p.formato === '9:16' ? 'conter' : 'cobrir' };
+  // duração ainda desconhecida: usa provisória e corrige sozinho quando o vídeo carregar (nunca corta vídeo longo)
+  const c = { id: evUid(), midia: mid, ini: 0, fim: m.tipo === 'imagem' ? 3 : Math.min(m.duracao || 3600, 3 * 3600), fimAuto: m.tipo !== 'imagem' && !m.duracao ? true : undefined, vel: 1, vol: 1, zoom: m.tipo === 'imagem' ? 1.12 : 1, ajuste: m.w && m.h && m.w > m.h && ES.p.formato === '9:16' ? 'conter' : 'cobrir' };
   ES.p.dados.clips.push(c);
   if (!semRedesenhar) { evMudou(); evPainel(ES.painel); }
 }
@@ -23002,10 +23128,85 @@ function evPopBarra(tipo, btn) {
 }
 
 // ---------- Página do Estúdio (Master) ----------
+// ---------- App do celular (/estudio): logo animada, tela de início e navegação por baixo ----------
+function eiLogo(tamanho) {
+  return `<div class="ei-logo ${tamanho || ''}"><div class="ei-marca"><i class="ei-anel"></i><b>V4</b></div><div class="ei-nome"><b>IMPULSIONAR</b><small>Estúdio de Vídeo</small></div></div>`;
+}
+function evNavCelular() {
+  return `<nav class="eh-nav">${[['projetos', '🏠', 'Início'], ['agente', '🤖', 'Agente'], ['agenda', '🗓️', 'Agenda'], ['instagram', '📸', 'Instagram']].map(([k, i, r]) => `<button class="${EVL.aba === k ? 'on' : ''}" onclick="renderEstudioVideo('${k}')"><span>${i}</span>${r}</button>`).join('')}<button onclick="evMenuCelular()"><span>☰</span>Mais</button></nav>`;
+}
+function evMenuCelular() {
+  let ma = document.getElementById('modal-area');
+  if (!ma) { document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>'); ma = document.getElementById('modal-area'); }
+  ma.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="modal-caixa eh-menu">
+    <b>${escapeHtml((ESTADO.usuario || {}).name || '')}</b>
+    <button onclick="document.getElementById('modal-area').innerHTML=''; evNovaAula()">🎓 Gravar aula para a Academy</button>
+    <button onclick="document.getElementById('modal-area').innerHTML=''; evNovoProjeto()">＋ Novo projeto (escolher formato)</button>
+    <button onclick="location.reload()">🔄 Atualizar (sincronizar agora)</button>
+    <a href="/">💻 Abrir o sistema completo</a>
+    <button class="perigo" onclick="sair()">Sair</button>
+  </div></div>`;
+}
+async function evCriarProjetoBase(titulo, formato, tipo) {
+  const kit = await evCarregarKit();
+  const extras = { marca: kit.arroba || '@impulsionarv4', barra: false, corBarra: kit.cor2 || '#dc4c4c' };
+  if (kit.logo) extras.logo = { url: kit.logo, pos: 'sd', tam: 0.15, opac: 0.9, ativo: true, fundo: true };
+  if (kit.logo || kit.arroba) extras.encerramento = { ativo: true, dur: 2.5, texto: kit.cta || 'Siga para mais conteúdos', arroba: kit.arroba || '', cta: kit.ctaSec || '', cor1: kit.cor1 || '#0b1329', cor2: kit.cor2 || '#dc4c4c' };
+  const r = await api('/api/admin/estudio/projetos', { method: 'POST', body: JSON.stringify({ titulo, formato, tipo: tipo || (formato === '9:16' ? 'reels' : 'feed'), dados: { midias: [], clips: [], textos: [], audios: [], sobreposicoes: [], filtro: 'nenhum', transicao: 'corte', extras, ajustes: { brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 } } }) });
+  return r.id;
+}
+function evNomeAgora(pref) { return pref + ' ' + new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+async function evCelGravar() {
+  try { const id = await evCriarProjetoBase(evNomeAgora('Vídeo'), '9:16'); await evAbrirEditor(id); if (ES) evAbrirCamera(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function evCelGaleria(files) {
+  if (!files || !files.length) return;
+  const lista = Array.from(files);
+  try { const id = await evCriarProjetoBase(evNomeAgora('Vídeo'), '9:16'); await evAbrirEditor(id); if (ES) await evSubir(lista); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+function evDesenharHomeCelular(corpo) {
+  const l = EVL.lista || [], nome = String((ESTADO.usuario || {}).name || '').split(' ')[0];
+  const hora = new Date().getHours(), saud = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+  const st = p => EV_STATUS[p.status] || EV_STATUS.rascunho;
+  corpo.innerHTML = `<div class="eh">
+    <header class="eh-hero"><i class="eh-bolha b1"></i><i class="eh-bolha b2"></i><i class="eh-bolha b3"></i>
+      <div class="eh-hero-topo">${eiLogo()}<span class="eh-sync" title="Sincronizado com o computador">🔄 Sincronizado</span></div>
+      <h2>${saud}${nome ? ', ' + escapeHtml(nome) : ''} 👋</h2><p>O que vamos criar hoje?</p>
+      <button class="eh-gravar" onclick="evCelGravar()"><i></i>Gravar agora</button>
+    </header>
+    <div class="eh-acoes">
+      <label class="eh-acao"><input type="file" accept="video/*,image/*" multiple hidden onchange="evCelGaleria(this.files); this.value=''"><span>🖼️</span><b>Da galeria</b><small>Fotos e vídeos do celular</small></label>
+      <button class="eh-acao" onclick="evAbrirCriarVideoIa()"><span>🤖</span><b>Criar com IA</b><small>Roteiro, pessoa ou animação</small></button>
+      <button class="eh-acao" onclick="evNovaAula()"><span>🎓</span><b>Gravar aula</b><small>Teleprompter + Academy</small></button>
+      <button class="eh-acao" onclick="evNovoProjeto()"><span>✂️</span><b>Editar do zero</b><small>Projeto em branco</small></button>
+    </div>
+    <div class="eh-titulo"><h3>Seus vídeos</h3><span>${l.length}</span></div>
+    ${l.length ? `<div class="eh-lista">${l.map(p => `<div class="eh-item" onclick="evAbrirEditor(${p.id})">
+      <div class="eh-capa f${(p.formato || '9:16').replace(':', '-')}">${p.thumb ? `<img src="${escapeHtml(p.thumb)}" alt="">` : `<span>${p.tipo === 'aula' ? '🎓' : '🎬'}</span>`}${p.viral_score ? `<em>🔥${p.viral_score}</em>` : ''}</div>
+      <div class="eh-info"><b>${escapeHtml(p.titulo)}</b><small>${escapeHtml(p.formato || '')} · ${evFmtT(p.duracao || 0).slice(0, 5)} · ${p.qtdClips || 0} clipes</small>
+        <span class="eh-st" style="background:${st(p)[1]}">${st(p)[0]}</span></div>
+      <button class="eh-mais" onclick="event.stopPropagation(); evExcluirProjeto(${p.id})">🗑️</button></div>`).join('')}</div>`
+      : `<div class="eh-vazio"><div>🎬</div><b>Nenhum vídeo ainda</b><p>Toque em <b>Gravar agora</b> ou escolha vídeos da <b>galeria</b> para começar.</p></div>`}
+  </div>`;
+}
 async function renderEstudioVideo(aba) {
   if (aba) EVL.aba = aba;
   const cont = document.getElementById('conteudo');
-  cont.innerHTML = `<div id="ev-pagina"><div class="estudio-barra"><img src="/assets/logo-impulsionar.jpg" alt=""><b>Estúdio de Vídeo<br><span class="estudio-sync">🔄 Sincronizado com o computador</span></b><a href="/">💻 Sistema</a><button onclick="sair()">Sair</button></div>
+  if (document.body.classList.contains('modo-estudio')) {
+    cont.innerHTML = `<div id="ev-pagina" class="eh-pagina">${EVL.aba === 'projetos' ? '' : `<div class="eh-mini">${eiLogo('mini')}<b>${{ agente: '🤖 Agente Viral', agenda: '🗓️ Agenda', instagram: '📸 Instagram' }[EVL.aba] || ''}</b></div>`}<div id="ev-pag-corpo"><div class="eh-carregando">${eiLogo('grande')}</div></div>${evNavCelular()}</div>`;
+    const corpo = document.getElementById('ev-pag-corpo');
+    try {
+      if (EVL.aba === 'projetos' || EVL.aba === 'agenda') EVL.lista = await api('/api/admin/estudio/projetos');
+      if (EVL.aba === 'projetos') evDesenharHomeCelular(corpo);
+      else if (EVL.aba === 'agenda') evDesenharAgenda(corpo);
+      else if (EVL.aba === 'agente') await evDesenharAgente(corpo);
+      else if (EVL.aba === 'instagram') await evDesenharInstagram(corpo);
+    } catch (e) { corpo.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+    return;
+  }
+  cont.innerHTML = `<div id="ev-pagina"><div class="estudio-barra">${eiLogo('mini')}<b style="flex:1"></b><a href="/">💻 Sistema</a><button onclick="sair()">Sair</button></div>
     <div class="ev-pag-topo"><div><h1 style="margin:0;">🎬 Estúdio de Vídeo</h1><div class="plano-meta">Edite Reels, Stories e vídeos do feed no padrão das grandes contas, com o Agente Viral da Impulsionar — e grave aulas para a Academy com teleprompter.</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-secundario" style="width:auto;" onclick="evAbrirNoCelular()">📱 Abrir no celular</button><button class="btn-secundario" style="width:auto;" onclick="evNovaAula()">🎓 Gravar aula</button><button class="btn-secundario" style="width:auto;" onclick="evAbrirCriarVideoIa()">🤖 Criar vídeo com IA</button><button class="btn-primario" style="width:auto;" onclick="evNovoProjeto()">＋ Novo vídeo</button></div></div>
     <div class="ev-pag-abas">${[['projetos', '🎞️ Projetos'], ['agente', '🤖 Agente Viral (treinar)'], ['agenda', '🗓️ Agenda & publicações'], ['instagram', '📸 Instagram']].map(([k, r]) => `<button class="${EVL.aba === k ? 'on' : ''}" onclick="renderEstudioVideo('${k}')">${r}</button>`).join('')}</div>

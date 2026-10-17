@@ -12696,13 +12696,13 @@ app.get('/api/ranking', async (req, res) => {
 // código, se UPLOADS_PATH estiver definido) — tem que vir ANTES do estático
 // genérico de /public pra funcionar mesmo quando os dois caminhos são diferentes.
 app.use('/uploads', express.static(PASTA_UPLOADS));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res, arq) => { if (/\.html$/.test(arq)) res.setHeader('Cache-Control', 'no-cache, must-revalidate'); } }));
 // Acesso só ao Estúdio de Vídeo (celular): mesmo sistema, abre direto nas abas de criar/editar vídeo.
 // Pode ser instalado na tela inicial do celular (PWA) e sincroniza com o computador pelo servidor.
 app.get(['/estudio', '/estudio/'], (req, res) => {
     fs.readFile(path.join(__dirname, 'public', 'index.html'), 'utf8', (err, html) => {
         if (err) return res.status(500).send('Erro ao abrir o Estúdio.');
-        const cab = '<link rel="manifest" href="/estudio.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Estúdio"><link rel="apple-touch-icon" href="/assets/logo-impulsionar.jpg"><script>window.MODO_ESTUDIO = true;</script>';
+        const cab = '<link rel="manifest" href="/estudio.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Estúdio"><link rel="apple-touch-icon" href="/assets/logo-impulsionar.jpg"><meta name="theme-color" content="#070b18"><script>window.MODO_ESTUDIO = true; document.documentElement.classList.add(\'estudio\');</script>';
         res.set('Cache-Control', 'no-cache').type('html').send(html.replace('</head>', cab + '</head>'));
     });
 });
@@ -12847,6 +12847,59 @@ app.post('/api/admin/estudio/upload', requireRole('admin'), (req, res) => {
         const nome = typeof consertarAcentoMt === 'function' ? consertarAcentoMt(req.file.originalname) : req.file.originalname;
         res.json({ url: '/uploads/' + req.file.filename, nome, mime: req.file.mimetype, tamanho: req.file.size });
     });
+});
+// Envio em partes (8 MB cada): vídeos longos e grandes sobem sem cair por tempo limite e sem pesar a memória do servidor.
+const PASTA_PARTES = path.join(require('os').tmpdir(), 'impulsionar-partes');
+try { fs.mkdirSync(PASTA_PARTES, { recursive: true }); } catch (e) {}
+const ENVIOS_EM_PARTES = new Map();
+setInterval(() => { const agora = Date.now(); ENVIOS_EM_PARTES.forEach((e, id) => { if (agora - e.t > 6 * 3600 * 1000) { fs.unlink(e.tmp, () => {}); ENVIOS_EM_PARTES.delete(id); } }); }, 30 * 60 * 1000);
+async function receberParteEst(req, res, aoFinal) {
+    const id = String(req.headers['x-upload-id'] || '').replace(/[^\w-]/g, '').slice(0, 48);
+    const i = Number(req.headers['x-parte']), total = Number(req.headers['x-total']);
+    const nomeOrig = decodeURIComponent(String(req.headers['x-nome'] || 'video.mp4')).slice(0, 150);
+    const ext = (path.extname(nomeOrig) || '.mp4').toLowerCase();
+    if (!id || !Number.isInteger(i) || !Number.isInteger(total) || i < 0 || total < 1 || i >= total || total > 500) return res.status(400).json({ error: 'Parte inválida.' });
+    if (!/^\.(mp4|mov|m4v|webm|mkv|avi|3gp|m4a|mp3|wav|aac|ogg|png|jpe?g|gif|webp|heic)$/.test(ext)) return res.status(400).json({ error: 'Tipo de arquivo não permitido.' });
+    if (!Buffer.isBuffer(req.body)) return res.status(400).json({ error: 'Parte vazia.' });
+    let e = ENVIOS_EM_PARTES.get(id);
+    if (!e) { if (i !== 0) return res.status(409).json({ error: 'Envio não encontrado — recomece.', prox: 0 }); e = { prox: 0, tam: 0, tmp: path.join(PASTA_PARTES, id + '.part'), t: Date.now(), mime: String(req.headers['x-mime'] || '') }; ENVIOS_EM_PARTES.set(id, e); try { fs.unlinkSync(e.tmp); } catch (x) {} }
+    if (i < e.prox) return res.json({ ok: true, prox: e.prox }); // parte repetida (nova tentativa após falha de rede)
+    if (i > e.prox) return res.status(409).json({ error: 'Parte fora de ordem.', prox: e.prox });
+    try { await fs.promises.appendFile(e.tmp, req.body); } catch (x) { return res.status(500).json({ error: 'Erro ao gravar a parte no servidor.' }); }
+    e.prox++; e.tam += req.body.length; e.t = Date.now();
+    if (e.tam > 3 * 1024 * 1024 * 1024) { fs.unlink(e.tmp, () => {}); ENVIOS_EM_PARTES.delete(id); return res.status(413).json({ error: 'Arquivo grande demais (máximo 3 GB).' }); }
+    if (e.prox < total) return res.json({ ok: true, prox: e.prox });
+    ENVIOS_EM_PARTES.delete(id);
+    const final = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + ext, destino = path.join(PASTA_UPLOADS, final);
+    try { await fs.promises.rename(e.tmp, destino); } catch (x) { try { await fs.promises.copyFile(e.tmp, destino); await fs.promises.unlink(e.tmp); } catch (y) { return res.status(500).json({ error: 'Erro ao finalizar o envio.' }); } }
+    const mime = e.mime || ({ '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm', '.m4v': 'video/mp4', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.wav': 'audio/wav' }[ext] || 'application/octet-stream');
+    copiarUploadParaBanco({ filename: final, path: destino, size: e.tam, mimetype: mime });
+    const dados = { url: '/uploads/' + final, nome: nomeOrig, mime, tamanho: e.tam, completo: true };
+    if (aoFinal) return aoFinal(dados);
+    res.json(dados);
+}
+app.post('/api/admin/estudio/upload-parte', requireRole('admin'), express.raw({ type: () => true, limit: '12mb' }), (req, res) => receberParteEst(req, res));
+// Teleprompter (celular/computador sem login): a gravação longa da aula também sobe em partes.
+app.post('/api/public/gravador/:codigo/video-parte', express.raw({ type: () => true, limit: '12mb' }), async (req, res) => {
+    const g = await gravadorValidoEst(req.params.codigo);
+    if (!g) return res.status(404).json({ error: 'Link de gravação inválido ou vencido.' });
+    receberParteEst(req, res, (d) => {
+        const tipo = String(req.headers['x-tipo'] || ''), parte = Number(req.headers['x-parte-aula']) || 0;
+        const nome = (/aula/.test(tipo) ? 'Gravação da aula ' : 'Gravação ') + (parte ? 'parte ' + parte + ' · ' : '') + new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+        db.run(`INSERT INTO estudio_gravacoes (projeto_id, url, nome, duracao, mime) VALUES (?, ?, ?, ?, ?)`, [g.projeto_id, d.url, nome, Number(req.headers['x-duracao']) || 0, d.mime],
+            function (e2) { if (e2) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ ok: true, completo: true, message: 'Vídeo enviado para o projeto! ✅ Ele aparece no Estúdio de Vídeo em instantes.' }); });
+    });
+});
+// Duração real do vídeo pelo servidor (quando o navegador não consegue ler, ex.: vídeo HEVC do iPhone).
+app.get('/api/admin/estudio/info-midia', requireRole('admin'), (req, res) => {
+    const nome = path.basename(String(req.query.url || '')); const arq = path.join(PASTA_UPLOADS, nome);
+    if (!nome || !fs.existsSync(arq)) return res.status(404).json({ error: 'Arquivo não encontrado.' });
+    try {
+        require('child_process').execFile('ffprobe', ['-v', 'error', '-show_entries', 'format=duration:stream=width,height,codec_name', '-of', 'json', arq], { timeout: 20000 }, (err, out) => {
+            if (err) return res.json({ duracao: 0, semFfprobe: true });
+            try { const j = JSON.parse(out), v = (j.streams || []).find(x => x.width) || {}; res.json({ duracao: Number((j.format || {}).duration) || 0, w: v.width || 0, h: v.height || 0, codec: v.codec_name || '' }); } catch (x) { res.json({ duracao: 0 }); }
+        });
+    } catch (x) { res.json({ duracao: 0, semFfprobe: true }); }
 });
 // Vídeo final renderizado no navegador. Se vier em WebM e o servidor tiver ffmpeg, converte para MP4 (o Instagram exige MP4).
 app.post('/api/admin/estudio/projetos/:id/exportado', requireRole('admin'), (req, res) => {
