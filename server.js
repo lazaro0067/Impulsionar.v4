@@ -1994,6 +1994,8 @@ db.run(`CREATE TABLE IF NOT EXISTS arquivos_persistidos (nome TEXT PRIMARY KEY, 
 function copiarUploadParaBanco(f) {
     try {
         if (!f || !f.filename || !f.path || !(f.size <= LIMITE_COPIA_UPLOAD)) return;
+        if (process.env.UPLOADS_PATH) return; // disco persistente: não precisa duplicar no banco (economiza memória e espaço)
+        if (/^(video|audio)\//.test(f.mimetype || '') || /\.(mp4|webm|mov|m4v|mkv|mp3|wav|m4a|aac|ogg|part)$/i.test(f.filename)) return; // vídeo/áudio não vão para o banco
         fs.readFile(f.path, (err, dados) => {
             if (err) return;
             db.run(`INSERT OR REPLACE INTO arquivos_persistidos (nome, mime, tamanho, dados) VALUES (?, ?, ?, ?)`, [f.filename, f.mimetype || '', f.size || dados.length, dados], () => {});
@@ -2032,22 +2034,31 @@ app.get('/uploads/:nome', async (req, res, next) => {
     res.set('Cache-Control', 'public, max-age=86400');
     res.send(r.dados);
 });
-// Ao subir o servidor, já guarda no banco os arquivos que ainda estão no disco e não têm cópia.
+// Ao subir o servidor, guarda no banco (um por vez, sem pesar a memória) os arquivos pequenos que ainda não têm cópia.
+// Com disco persistente (UPLOADS_PATH) isso não é necessário e fica desligado.
 setTimeout(() => {
+    if (process.env.UPLOADS_PATH) return;
     try {
         fs.readdir(PASTA_UPLOADS, (err, nomes) => {
             if (err) return;
-            db.all(`SELECT nome FROM arquivos_persistidos`, [], (e2, rows) => {
+            db.all(`SELECT nome FROM arquivos_persistidos`, [], async (e2, rows) => {
                 const ja = new Set((rows || []).map(r => r.nome));
-                (nomes || []).filter(n => !ja.has(n)).forEach(n => {
+                for (const n of (nomes || []).filter(n => !ja.has(n) && !/\.(mp4|webm|mov|m4v|mkv|mp3|wav|m4a|part)$/i.test(n))) {
                     const caminho = path.join(PASTA_UPLOADS, n);
-                    fs.stat(caminho, (e3, st) => { if (!e3 && st.isFile() && st.size <= LIMITE_COPIA_UPLOAD) copiarUploadParaBanco({ filename: n, path: caminho, size: st.size, mimetype: ({ '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif', '.pdf': 'application/pdf' })[path.extname(n).toLowerCase()] || '' }); });
-                });
+                    try {
+                        const st = await fs.promises.stat(caminho);
+                        if (!st.isFile() || st.size > LIMITE_COPIA_UPLOAD) continue;
+                        const dados = await fs.promises.readFile(caminho);
+                        await new Promise(ok => db.run(`INSERT OR REPLACE INTO arquivos_persistidos (nome, mime, tamanho, dados) VALUES (?, ?, ?, ?)`, [n, ({ '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif', '.pdf': 'application/pdf' })[path.extname(n).toLowerCase()] || '', st.size, dados], ok));
+                    } catch (e) {}
+                }
             });
         });
     } catch (e) {}
-}, 8000);
+}, 15000);
 
+// Verificação de saúde (usada pelo servidor próprio / Docker para reiniciar sozinho se travar).
+app.get('/saude', (req, res) => res.json({ ok: true, memoriaMB: Math.round(process.memoryUsage().rss / 1048576), noArDesde: Math.round(process.uptime()) }));
 app.use(authenticateToken);
 
 // Neutraliza CSV Injection: se o valor começa com =, +, - ou @, o Excel/Sheets
@@ -12859,8 +12870,27 @@ app.post('/api/admin/estudio/upload', requireRole('admin'), (req, res) => {
 const FFMPEG_BIN = (() => { try { const p = require('ffmpeg-static'); if (p && fs.existsSync(p)) return p; } catch (e) {} return 'ffmpeg'; })();
 let FFMPEG_OK = null;
 function ffmpegDisponivel() { if (FFMPEG_OK !== null) return Promise.resolve(FFMPEG_OK); return new Promise(ok => { try { require('child_process').execFile(FFMPEG_BIN, ['-version'], { timeout: 10000 }, e => { FFMPEG_OK = !e; ok(FFMPEG_OK); }); } catch (e) { FFMPEG_OK = false; ok(false); } }); }
-function rodarFfmpeg(args, tempoMs) { return new Promise((ok, ko) => { try { require('child_process').execFile(FFMPEG_BIN, args, { timeout: tempoMs || 30 * 60 * 1000, maxBuffer: 64 * 1024 * 1024 }, (e, out, err) => e ? ko(Object.assign(e, { stderr: String(err || '') })) : ok(String(err || '') + String(out || ''))); } catch (e) { ko(e); } }); }
-async function duracaoFfmpeg(arq) { try { await rodarFfmpeg(['-hide_banner', '-i', arq], 20000); } catch (e) { const m = String(e.stderr || '').match(/Duration: (\d+):(\d+):([\d.]+)/); if (m) return Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]); } return 0; }
+// Fila do ffmpeg: um trabalho pesado por vez, com poucos núcleos e prioridade baixa —
+// assim converter/transcrever vídeo grande nunca derruba o sistema para os outros usuários.
+let FILA_FFMPEG = Promise.resolve();
+const THREADS_FFMPEG = String(Math.max(1, Math.min(4, Math.floor((require('os').cpus() || []).length / 2) || 1)));
+function rodarFfmpegJa(args, tempoMs) {
+    return new Promise((ok, ko) => {
+        try {
+            const pesado = args.includes('-i') && !args.includes('-version');
+            const a = pesado && !args.includes('-threads') ? ['-threads', THREADS_FFMPEG, ...args] : args;
+            const filho = require('child_process').execFile(FFMPEG_BIN, a, { timeout: tempoMs || 30 * 60 * 1000, maxBuffer: 64 * 1024 * 1024 }, (e, out, err) => e ? ko(Object.assign(e, { stderr: String(err || '') })) : ok(String(err || '') + String(out || '')));
+            try { if (filho.pid) require('os').setPriority(filho.pid, 15); } catch (e) {}
+        } catch (e) { ko(e); }
+    });
+}
+function rodarFfmpeg(args, tempoMs) {
+    if (args.length <= 3) return rodarFfmpegJa(args, tempoMs); // consultas rápidas (versão/duração) não entram na fila
+    const r = FILA_FFMPEG.then(() => rodarFfmpegJa(args, tempoMs));
+    FILA_FFMPEG = r.catch(() => {});
+    return r;
+}
+async function duracaoFfmpeg(arq) { try { await rodarFfmpegJa(['-hide_banner', '-i', arq], 20000); } catch (e) { const m = String(e.stderr || '').match(/Duration: (\d+):(\d+):([\d.]+)/); if (m) return Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]); } return 0; }
 // Gravações do navegador (WebM/MP4 em pedaços) não têm índice: sem isso o vídeo longo não deixa avançar/voltar.
 // Aqui o arquivo é "reempacotado" sem perder qualidade (cópia direta, rápido) e fica com duração e índice certos.
 async function reempacotarVideo(arq) {
@@ -12951,7 +12981,7 @@ app.post('/api/admin/estudio/projetos/:id/exportado', requireRole('admin'), (req
             const destino = req.file.path.replace(/\.[^.]+$/, '') + '.mp4';
             const ok = await new Promise(fim => {
                 try {
-                    require('child_process').execFile(FFMPEG_BIN, ['-y', '-i', req.file.path, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', destino], { timeout: 10 * 60 * 1000 }, e => fim(!e));
+                    rodarFfmpeg(['-y', '-hide_banner', '-loglevel', 'error', '-i', req.file.path, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', destino], 60 * 60 * 1000).then(() => fim(true), () => fim(false));
                 } catch (e) { fim(false); }
             });
             if (ok) { url = '/uploads/' + path.basename(destino); mime = 'video/mp4'; }
@@ -13764,6 +13794,10 @@ app.use((err, req, res, next) => {
 // em algum ponto) derrube o servidor inteiro — só registra no log.
 process.on('unhandledRejection', (reason) => {
     console.error('Promise rejeitada sem tratamento:', reason);
+});
+// Um erro inesperado num pedido não pode derrubar o sistema para todo mundo: registra e segue.
+process.on('uncaughtException', (err) => {
+    console.error('Erro inesperado (o servidor continua no ar):', err && err.stack || err);
 });
 
 httpServer.listen(PORT, () => console.log(`🚀 Plataforma Completa Impulsionar V4 em http://127.0.0.1:${PORT}`));
