@@ -12751,7 +12751,7 @@ colunasUsuarioEst(); setTimeout(colunasUsuarioEst, 1500); setTimeout(colunasUsua
 db.run(`CREATE TABLE IF NOT EXISTS estudio_uso (user_id INTEGER, mes TEXT, tipo TEXT, qtd REAL DEFAULT 0, PRIMARY KEY (user_id, mes, tipo))`);
 db.run(`CREATE TABLE IF NOT EXISTS estudio_pagamentos (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, plano_id INTEGER, valor REAL, meses INTEGER DEFAULT 1, status TEXT DEFAULT 'pendente', mp_preference_id TEXT, mp_payment_id TEXT, link TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, pago_em DATETIME)`);
 // Limites por mês (vazio = ilimitado, 0 = não incluído no plano)
-const LIMITES_EST = { projetos: 'Projetos novos', exportacoes: 'Vídeos exportados', ia: 'Pedidos à IA (roteiro, legenda, edição)', imagens_ia: 'Imagens criadas pela IA', limpeza_audio: 'Limpezas de áudio', transcricoes: 'Legendas / transcrições', radar: 'Pesquisas do Radar Viral', avatar: 'Vídeos com avatar (D-ID)', instagram: 'Publicações no Instagram' };
+const LIMITES_EST = { projetos: 'Projetos novos', exportacoes: 'Vídeos exportados', ia: 'Pedidos à IA (roteiro, legenda, edição)', imagens_ia: 'Imagens criadas pela IA', limpeza_audio: 'Limpezas de áudio', transcricoes: 'Legendas / transcrições', radar: 'Pesquisas do Radar Viral', avatar: 'Vídeos com avatar (D-ID)', instagram: 'Publicações no Instagram', narracoes: 'Narrações com voz da IA' };
 db.run(`CREATE TABLE IF NOT EXISTS estudio_planos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, descricao TEXT, preco REAL DEFAULT 0, limites TEXT, ativo INTEGER DEFAULT 1, ordem INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`, () => {
     db.get(`SELECT COUNT(*) AS n FROM estudio_planos`, (e, r) => {
         if (e || (r && r.n)) return;
@@ -13301,6 +13301,149 @@ app.post('/api/admin/estudio/ia/imagens-fala', requireRole('admin', 'estudio'), 
 app.get('/api/admin/estudio/ia/imagens-fala/:id', requireRole('admin', 'estudio'), (req, res) => {
     const j = JOBS_IMAGENS.get(req.params.id); if (!j) return res.status(404).json({ error: 'Processamento não encontrado (o servidor reiniciou).' });
     res.json(j);
+});
+// ===== Narração com voz (texto → fala) =====
+// Padrão: vozes neurais em português da Microsoft (as mesmas do Edge "Ler em voz alta"), grátis, com o tempo de
+// cada palavra (legenda sincronizada). Opcional: OpenAI ou ElevenLabs (voz ainda mais natural), com chave própria.
+const TOKEN_EDGE_TTS = '6A5AA1D4EAFF4E9FB37E23D68491D6F4', VERSAO_EDGE_TTS = '130.0.2849.68';
+function gecEdgeTts() {
+    let t = Date.now() / 1000 + 11644473600; t -= t % 300;
+    return require('crypto').createHash('sha256').update(BigInt(Math.round(t)) * 10000000n + TOKEN_EDGE_TTS, 'ascii').digest('hex').toUpperCase();
+}
+// Cliente WebSocket mínimo (sem dependências): conecta, manda texto e recebe texto/binário.
+function wsConectarEst(url, cabecalhos) {
+    return new Promise((ok, ko) => {
+        const u = new URL(url), crypto = require('crypto'), chave = crypto.randomBytes(16).toString('base64');
+        const sock = require('tls').connect({ host: u.hostname, port: Number(u.port) || 443, servername: u.hostname, ALPNProtocols: ['http/1.1'] });
+        let buf = Buffer.alloc(0), aberto = false, frag = null, fragOp = 0;
+        const api = { aoTexto: null, aoBinario: null, aoFechar: null,
+            enviar(txt) { const dados = Buffer.from(txt, 'utf8'), m = crypto.randomBytes(4); let cab;
+                if (dados.length < 126) cab = Buffer.from([0x81, 0x80 | dados.length]);
+                else if (dados.length < 65536) { cab = Buffer.alloc(4); cab[0] = 0x81; cab[1] = 0x80 | 126; cab.writeUInt16BE(dados.length, 2); }
+                else { cab = Buffer.alloc(10); cab[0] = 0x81; cab[1] = 0x80 | 127; cab.writeBigUInt64BE(BigInt(dados.length), 2); }
+                const mascarado = Buffer.alloc(dados.length); for (let i = 0; i < dados.length; i++) mascarado[i] = dados[i] ^ m[i % 4];
+                sock.write(Buffer.concat([cab, m, mascarado])); },
+            fechar() { try { sock.end(Buffer.from([0x88, 0x80, 0, 0, 0, 0])); } catch (e) {} sock.destroy(); } };
+        const timer = setTimeout(() => { sock.destroy(); ko(new Error('Tempo esgotado ao conectar no serviço de voz.')); }, 15000);
+        sock.on('error', e => { clearTimeout(timer); if (!aberto) ko(e); else if (api.aoFechar) api.aoFechar(e); });
+        sock.on('close', () => { if (aberto && api.aoFechar) api.aoFechar(); });
+        sock.on('secureConnect', () => {
+            const linhas = [`GET ${u.pathname}${u.search} HTTP/1.1`, `Host: ${u.host}`, 'Upgrade: websocket', 'Connection: Upgrade', `Sec-WebSocket-Key: ${chave}`, 'Sec-WebSocket-Version: 13', ...Object.entries(cabecalhos || {}).map(([k, v]) => `${k}: ${v}`)];
+            sock.write(linhas.join('\r\n') + '\r\n\r\n');
+        });
+        sock.on('data', d => {
+            buf = Buffer.concat([buf, d]);
+            if (!aberto) {
+                const fim = buf.indexOf('\r\n\r\n'); if (fim < 0) return;
+                const cab = buf.slice(0, fim).toString(); buf = buf.slice(fim + 4);
+                if (!/^HTTP\/1\.1 101/.test(cab)) { clearTimeout(timer); sock.destroy(); return ko(new Error('Serviço de voz recusou a conexão (' + cab.split('\r\n')[0] + ').')); }
+                aberto = true; clearTimeout(timer); ok(api);
+            }
+            while (buf.length >= 2) {
+                const fin = buf[0] & 0x80, op = buf[0] & 0x0f; let len = buf[1] & 0x7f, p = 2;
+                if (len === 126) { if (buf.length < 4) return; len = buf.readUInt16BE(2); p = 4; }
+                else if (len === 127) { if (buf.length < 10) return; len = Number(buf.readBigUInt64BE(2)); p = 10; }
+                const mask = buf[1] & 0x80 ? 4 : 0; if (buf.length < p + mask + len) return;
+                let dados = buf.slice(p + mask, p + mask + len); if (mask) { const m = buf.slice(p, p + 4); dados = Buffer.from(dados.map((x, i) => x ^ m[i % 4])); }
+                buf = buf.slice(p + mask + len);
+                if (op === 0x9) { const pong = Buffer.concat([Buffer.from([0x8a, 0x80 | dados.length]), Buffer.alloc(4), dados]); sock.write(pong); continue; }
+                if (op === 0x8) { sock.destroy(); continue; }
+                if (op === 0x1 || op === 0x2) { frag = [dados]; fragOp = op; } else if (op === 0x0 && frag) frag.push(dados); else continue;
+                if (fin) { const tudo = Buffer.concat(frag); frag = null; if (fragOp === 0x1) api.aoTexto && api.aoTexto(tudo.toString('utf8')); else api.aoBinario && api.aoBinario(tudo); }
+            }
+        });
+    });
+}
+const escXmlEst = t => String(t).replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' })[c]);
+async function falarEdgeEst(texto, voz, velocidade) {
+    const idCon = require('crypto').randomBytes(16).toString('hex'), dataJs = () => new Date().toUTCString().replace('GMT', 'GMT+0000 (Coordinated Universal Time)');
+    const url = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${TOKEN_EDGE_TTS}&Sec-MS-GEC=${gecEdgeTts()}&Sec-MS-GEC-Version=1-${VERSAO_EDGE_TTS}&ConnectionId=${idCon}`;
+    const ws = await wsConectarEst(url, { Pragma: 'no-cache', 'Cache-Control': 'no-cache', Origin: 'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold', 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+        'User-Agent': `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${VERSAO_EDGE_TTS.split('.')[0]}.0.0.0 Safari/537.36 Edg/${VERSAO_EDGE_TTS.split('.')[0]}.0.0.0`, Cookie: 'muid=' + require('crypto').randomBytes(16).toString('hex').toUpperCase() + ';' });
+    const partes = [], palavras = [];
+    const fim = new Promise((ok, ko) => {
+        const t = setTimeout(() => { ws.fechar(); ko(new Error('O serviço de voz demorou demais.')); }, 90000);
+        ws.aoTexto = msg => {
+            const sep = msg.indexOf('\r\n\r\n'), cab = msg.slice(0, sep), corpo = msg.slice(sep + 4);
+            if (/Path:audio\.metadata/i.test(cab)) { try { (JSON.parse(corpo).Metadata || []).forEach(m => { if (m.Type === 'WordBoundary') palavras.push({ w: m.Data.text.Text, ini: m.Data.Offset / 1e7, fim: (m.Data.Offset + m.Data.Duration) / 1e7 }); }); } catch (e) {} }
+            else if (/Path:turn\.end/i.test(cab)) { clearTimeout(t); ws.fechar(); ok(); }
+        };
+        ws.aoBinario = b => { const n = b.readUInt16BE(0), cab = b.slice(2, 2 + n).toString(); if (/Path:audio/i.test(cab)) partes.push(b.slice(2 + n)); };
+        ws.aoFechar = e => { clearTimeout(t); partes.length ? ok() : ko(e || new Error('O serviço de voz fechou a conexão.')); };
+    });
+    ws.enviar(`X-Timestamp:${dataJs()}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"true"},"outputFormat":"audio-24khz-96kbitrate-mono-mp3"}}}}\r\n`);
+    const nomeVoz = `Microsoft Server Speech Text to Speech Voice (pt-BR, ${String(voz || 'pt-BR-AntonioNeural').replace(/^pt-BR-/, '')})`;
+    ws.enviar(`X-RequestId:${require('crypto').randomBytes(16).toString('hex')}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${dataJs()}Z\r\nPath:ssml\r\n\r\n<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='pt-BR'><voice name='${nomeVoz}'><prosody pitch='+0Hz' rate='${velocidade >= 0 ? '+' : ''}${Math.round(velocidade || 0)}%' volume='+0%'>${escXmlEst(texto)}</prosody></voice></speak>`);
+    await fim;
+    if (!partes.length) throw new Error('O serviço de voz não devolveu áudio.');
+    return { mp3: Buffer.concat(partes), palavras };
+}
+async function lerVozConfigEst() { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_voz'`).catch(() => null); try { return JSON.parse((r && r.value) || '{}'); } catch (e) { return {}; } }
+async function falarEst(texto, voz, velocidade) {
+    const cfg = await lerVozConfigEst();
+    if (/^eleven:/.test(voz || '') && cfg.elevenlabs) {
+        const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voz.slice(7))}?output_format=mp3_44100_128`, { method: 'POST', headers: { 'xi-api-key': cfg.elevenlabs, 'Content-Type': 'application/json' }, body: JSON.stringify({ text: texto, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.45, similarity_boost: 0.8, style: 0.3, speed: Math.max(0.7, Math.min(1.2, 1 + (velocidade || 0) / 100)) } }) });
+        if (!r.ok) throw new Error('ElevenLabs: ' + ((await r.text()).slice(0, 160)));
+        return { mp3: Buffer.from(await r.arrayBuffer()), palavras: [] };
+    }
+    if (/^openai:/.test(voz || '') && cfg.openai) {
+        const r = await fetch('https://api.openai.com/v1/audio/speech', { method: 'POST', headers: { Authorization: 'Bearer ' + cfg.openai, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice: voz.slice(7), input: texto, instructions: 'Fale em português do Brasil, com energia de criador de conteúdo profissional, natural e confiante.', speed: Math.max(0.7, Math.min(1.5, 1 + (velocidade || 0) / 100)), response_format: 'mp3' }) });
+        if (!r.ok) throw new Error('OpenAI: ' + ((await r.text()).slice(0, 160)));
+        return { mp3: Buffer.from(await r.arrayBuffer()), palavras: [] };
+    }
+    return falarEdgeEst(texto, /^(eleven|openai):/.test(voz || '') ? 'pt-BR-AntonioNeural' : voz, velocidade);
+}
+// Distribui as cenas no tempo da fala (pelas palavras; sem tempo por palavra, pelo tamanho do texto)
+function tempoDasCenasEst(falas, palavras, duracao) {
+    const conta = t => (String(t || '').match(/[\p{L}\p{N}]+/gu) || []).length, n = falas.map(conta), tot = n.reduce((a, b) => a + b, 0) || 1;
+    const out = []; let k = 0, tAnt = 0;
+    falas.forEach((f, i) => {
+        let fimT;
+        if (palavras.length && Math.abs(palavras.length - tot) <= Math.max(3, tot * 0.15)) { k += n[i]; const p = palavras[Math.min(palavras.length - 1, Math.round(k * palavras.length / tot) - 1)]; fimT = i === falas.length - 1 ? duracao : (p ? p.fim + 0.12 : tAnt); }
+        else { k += n[i]; fimT = duracao * k / tot; }
+        out.push({ ini: tAnt, fim: Math.max(tAnt + 0.3, fimT) }); tAnt = out[out.length - 1].fim;
+    });
+    return out;
+}
+app.post('/api/admin/estudio/narrar', requireRole('admin', 'estudio'), async (req, res) => {
+    const b = req.body || {}, falas = (Array.isArray(b.falas) ? b.falas : [b.texto]).map(f => String(f || '').trim()).filter(Boolean).slice(0, 60);
+    const texto = falas.join(' ').slice(0, b.amostra ? 220 : 9000); if (texto.length < 3) return res.status(400).json({ error: 'Não há texto para narrar.' });
+    if (!b.amostra) { try { await consumirEst('narracoes', 1); } catch (e) { return erroLimiteEst(res, e); } }
+    try {
+        // texto grande vai em pedaços (o serviço aceita ~3000 caracteres por vez)
+        const blocos = []; let atual = '';
+        texto.split(/(?<=[.!?])\s+/).forEach(fr => { if ((atual + ' ' + fr).length > 2500 && atual) { blocos.push(atual); atual = fr; } else atual = (atual ? atual + ' ' : '') + fr; }); if (atual) blocos.push(atual);
+        const vel = Math.max(-30, Math.min(40, Number(b.velocidade) || 0)), mp3s = [], palavras = []; let deslocamento = 0;
+        for (const bl of blocos) {
+            const r = await falarEst(bl, String(b.voz || 'pt-BR-AntonioNeural').slice(0, 80), vel);
+            const arqTmp = path.join(PASTA_UPLOADS, 'tmp-voz-' + Date.now() + '.mp3'); fs.writeFileSync(arqTmp, r.mp3);
+            let dur = await duracaoFfmpeg(arqTmp).catch(() => 0); fs.unlink(arqTmp, () => {});
+            if (!dur) dur = r.palavras.length ? r.palavras[r.palavras.length - 1].fim + 0.3 : r.mp3.length / (r.mp3.length > 0 ? 12000 : 1); // 96 kbps ≈ 12 kB/s
+            r.palavras.forEach(p => palavras.push({ w: p.w, ini: +(p.ini + deslocamento).toFixed(3), fim: +(p.fim + deslocamento).toFixed(3) }));
+            mp3s.push(r.mp3); deslocamento += dur;
+        }
+        const nome = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + '.mp3', arq = path.join(PASTA_UPLOADS, nome);
+        fs.writeFileSync(arq, Buffer.concat(mp3s));
+        copiarUploadParaBanco({ filename: nome, path: arq, size: fs.statSync(arq).size, mimetype: 'audio/mpeg' });
+        res.json({ url: '/uploads/' + nome, duracao: +deslocamento.toFixed(2), palavras, cenas: tempoDasCenasEst(falas, palavras, deslocamento) });
+    } catch (e) { console.warn('Narração:', e.message); res.status(502).json({ error: 'Não consegui gerar a voz agora: ' + e.message }); }
+});
+app.get('/api/admin/estudio/vozes', requireRole('admin', 'estudio'), async (req, res) => {
+    const cfg = await lerVozConfigEst();
+    const vozes = [['pt-BR-AntonioNeural', 'Antônio — masculina, firme'], ['pt-BR-FranciscaNeural', 'Francisca — feminina, calorosa'], ['pt-BR-ThalitaNeural', 'Thalita — feminina, jovem'], ['pt-BR-ThalitaMultilingualNeural', 'Thalita Pro — feminina, expressiva'], ['pt-BR-MacerioMultilingualNeural', 'Macério — masculina, expressiva']]
+        .map(([id, nome]) => ({ id, nome, provedor: 'Microsoft (grátis)' }));
+    if (cfg.openai) [['openai:ash', 'Ash — masculina, natural'], ['openai:coral', 'Coral — feminina, natural'], ['openai:sage', 'Sage — feminina, suave'], ['openai:ballad', 'Ballad — masculina, grave']].forEach(([id, nome]) => vozes.push({ id, nome, provedor: 'OpenAI' }));
+    if (cfg.elevenlabs) (cfg.elevenVozes || []).forEach(v => vozes.push({ id: 'eleven:' + v.id, nome: v.nome, provedor: 'ElevenLabs' }));
+    res.json({ vozes, master: req.user.role === 'admin', openai: !!cfg.openai, elevenlabs: !!cfg.elevenlabs });
+});
+app.put('/api/admin/estudio-voz', requireRole('admin'), async (req, res) => {
+    const b = req.body || {}, cfg = await lerVozConfigEst();
+    if (b.openai !== undefined) cfg.openai = String(b.openai || '').trim();
+    if (b.elevenlabs !== undefined) {
+        cfg.elevenlabs = String(b.elevenlabs || '').trim(); cfg.elevenVozes = [];
+        if (cfg.elevenlabs) { try { const r = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': cfg.elevenlabs } }); const j = await r.json(); if (!r.ok) throw new Error((j.detail && j.detail.message) || 'chave recusada'); cfg.elevenVozes = (j.voices || []).slice(0, 40).map(v => ({ id: v.voice_id, nome: v.name })); } catch (e) { return res.status(400).json({ error: 'ElevenLabs: ' + e.message }); } }
+    }
+    db.run(`INSERT INTO integration_settings (key, value) VALUES ('estudio_voz', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [JSON.stringify(cfg)], () => res.json({ ok: true, message: 'Vozes atualizadas! ✅' }));
 });
 app.get('/api/admin/estudio/preparo/:id', requireRole('admin', 'estudio'), (req, res) => {
     const j = JOBS_PREPARO.get(req.params.id); if (!j) return res.status(404).json({ error: 'Preparo não encontrado (o servidor reiniciou).' });
