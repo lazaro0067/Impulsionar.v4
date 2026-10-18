@@ -1412,7 +1412,7 @@
   .ea-plano-cab { display:flex; justify-content:space-between; align-items:baseline; } .ea-plano-cab b { font-size:18px; } .ea-plano-cab span { font-size:20px; font-weight:800; color:#dc4c4c; } .ea-plano-cab small { font-size:12px; color:#64748b; font-weight:400; }
   .ea-plano p { margin:0; color:#64748b; font-size:13px; } .ea-plano ul { list-style:none; padding:0; margin:0; font-size:12.5px; } .ea-plano li { display:flex; justify-content:space-between; gap:8px; padding:4px 0; border-bottom:1px dashed #e2e8f0; } .ea-plano li span { color:#475569; }
   .ea-pags { display:grid; gap:6px; } .ea-pag { display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; font-size:13px; }
-  .ea-fundo { position:fixed; inset:0; background:rgba(2,6,23,.6); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; } .ea-caixa { background:#fff; color:#0b1329; border-radius:18px; width:min(520px,100%); max-height:90vh; overflow-y:auto; padding:20px; box-shadow:0 20px 60px rgba(0,0,0,.4); }
+  .ea-fundo { position:fixed; inset:0; background:rgba(2,6,23,.6); z-index:20000; display:flex; align-items:center; justify-content:center; padding:16px; } .ea-caixa { background:#fff; color:#0b1329; border-radius:18px; width:min(520px,100%); max-height:90vh; overflow-y:auto; padding:20px; box-shadow:0 20px 60px rgba(0,0,0,.4); }
   .ea-caixa h3 { margin:0 0 6px; } .ea-caixa label { display:flex; flex-direction:column; gap:4px; font-size:12.5px; font-weight:700; color:#475569; margin:10px 0; } .ea-caixa input, .ea-caixa select { border:1px solid #cbd5e1; border-radius:10px; padding:10px; font-size:14px; font-weight:400; color:#0b1329; background:#fff; }
   .ea-caixa .ea-chk { flex-direction:row; align-items:center; } .ea-linha { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; flex-wrap:wrap; } .ea-linha .ea-bt { flex:1; } .ea-sub { color:#64748b; font-size:12.5px; }
   .ea-sec { font-weight:800; font-size:13px; margin:14px 0 6px; color:#0b1329; } .ea-recursos { display:grid; gap:6px; } .ea-rec { flex-direction:row !important; align-items:center; gap:10px !important; border:1px solid #e2e8f0; border-radius:12px; padding:9px 10px; margin:0 !important; cursor:pointer; } .ea-rec.principal { border-color:#fecaca; background:#fff7f7; }
@@ -1420,6 +1420,9 @@
   .ea-soma { margin-top:8px; font-size:13px; color:#475569; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .ea-tags { display:flex; flex-wrap:wrap; gap:5px; } .ea-tags span { font-size:11.5px; border-radius:12px; padding:3px 8px; } .ea-tags span.on { background:#dcfce7; color:#166534; } .ea-tags span.off { background:#f1f5f9; color:#94a3b8; text-decoration:line-through; } .ea-tags.grande span { font-size:13px; padding:6px 10px; } .ea-plano details summary { cursor:pointer; font-size:12.5px; color:#64748b; }
   body.modo-estudio .ea-tags span.on { background:#14532d; color:#bbf7d0; } body.modo-estudio .ea-tags span.off { background:#1c2747; color:#64748b; }
+  .ea-integ { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px; margin:12px 0; } .ea-integ-cab { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:8px; font-size:13px; } .ea-integ-cab b.ok { color:#16a34a; } .ea-integ-cab b.nao { color:#94a3b8; }
+  .ea-integ-lin { display:flex; gap:8px; align-items:flex-end; margin-bottom:8px; } .ea-integ-lin label { flex:1; display:flex; flex-direction:column; gap:4px; font-size:12.5px; font-weight:700; color:#475569; } .ea-integ-lin input { border:1px solid #cbd5e1; border-radius:10px; padding:10px; font-size:14px; }
+  body.modo-estudio .ea-integ { background:#0f172e; border-color:#1c2747; } body.modo-estudio .ea-integ-lin label { color:#cbd5e1; } body.modo-estudio .ea-integ-lin input { background:#0b1329; color:#fff; border-color:#25325c; }
   .ea-cred { white-space:pre-wrap; background:#f1f5f9; border-radius:12px; padding:12px; font-size:13px; font-family:inherit; } .ea-lims { display:grid; grid-template-columns:1fr 1fr; gap:0 10px; } .ea-uso { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:#475569; background:#f8fafc; border-radius:10px; padding:10px; margin-top:8px; } .ea-uso > b { width:100%; }
   .ea-conta { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; background:linear-gradient(135deg,#0b1329,#3b0d1c); color:#fff; border-radius:18px; padding:18px; } .ea-conta small { color:#cbd5e1; } .ea-conta h2 { color:#fff; }
   .ea-barras { display:grid; gap:10px; } .ea-barra { display:grid; grid-template-columns:1fr auto; gap:4px 10px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; font-size:13px; } .ea-barra i { grid-column:1 / -1; height:7px; background:#e2e8f0; border-radius:6px; overflow:hidden; } .ea-barra em { display:block; height:100%; } .ea-barra.off { opacity:.6; }
@@ -24206,11 +24209,16 @@ async function evDesenharAcessos(corpo) {
   const ativos = d.acessos.filter(a => a.ativo), receita = ativos.reduce((t, a) => t + Number(a.estudio_preco !== null && a.estudio_preco !== undefined ? a.estudio_preco : (d.planos.find(p => p.id === a.estudio_plano_id) || {}).preco || 0), 0);
   const vencendo = ativos.filter(a => a.estudio_validade && new Date(a.estudio_validade) - Date.now() < 7 * 86400000).length;
   const kpi = (n, r, c) => `<div class="ea-kpi"><b style="color:${c}">${n}</b><span>${r}</span></div>`;
+  setTimeout(eaStatusChaves, 50);
   corpo.innerHTML = `<div class="ea">
     <div class="ea-topo"><div><h2>👥 Estúdio para clientes</h2><p>Crie acessos para terceiros usarem o Estúdio de Vídeo com plano pago. Cada cliente vê só os próprios vídeos, marca, agente e Instagram.</p></div>
       <button class="ea-bt pri" onclick="eaNovoAcesso()">＋ Novo acesso</button></div>
     <div class="ea-kpis">${kpi(ativos.length, 'acessos ativos', '#16a34a')}${kpi(fmtReal(receita), 'receita mensal (planos ativos)', '#0b1329')}${kpi(vencendo, 'vencem em 7 dias', '#d97706')}${kpi(d.acessos.length, 'acessos no total', '#64748b')}</div>
     ${d.mercadoPago ? '' : '<div class="ea-aviso">💳 Para cobrar online, configure o token do Mercado Pago em <b>Meu Perfil</b>. Sem ele, você libera os acessos manualmente.</div>'}
+    <div class="ea-integ" id="ea-integ"><div class="ea-integ-cab"><b>🔑 Chaves de voz (narração e minha voz)</b><span id="ea-integ-st">carregando…</span></div>
+      <div class="ea-integ-lin"><label>ElevenLabs (voz natural e voz clonada)<input id="ea-k-eleven" type="password" placeholder="sk_..." autocomplete="off"></label><button class="ea-bt pri" onclick="eaSalvarChave('elevenlabs')">Salvar</button></div>
+      <div class="ea-integ-lin"><label>OpenAI (vozes extras, opcional)<input id="ea-k-openai" type="password" placeholder="sk-..." autocomplete="off"></label><button class="ea-bt" onclick="eaSalvarChave('openai')">Salvar</button></div>
+      <div class="ea-sub">A chave fica guardada só no servidor (não vai para o código). Depois de salvar, use "Usar a MINHA voz" no Criar vídeo com IA para treinar a sua voz.</div></div>
     <h3>Acessos</h3>
     ${d.acessos.length ? `<div class="ea-lista">${d.acessos.map(a => { const st = eaStatus(a); return `<div class="ea-item">
       <div class="ea-av">${escapeHtml((a.name || '?').trim()[0] || '?').toUpperCase()}</div>
@@ -24218,7 +24226,7 @@ async function evDesenharAcessos(corpo) {
         <small>Plano <b>${escapeHtml(planoNome(a.estudio_plano_id))}</b>${a.recursos ? ' (sob medida)' : ''}${a.estudio_preco !== null && a.estudio_preco !== undefined ? ' · ' + fmtReal(a.estudio_preco) + '/mês' : ''} · até ${fmtDataEA(a.estudio_validade)} · ${a.projetos} projetos · este mês: ${a.uso.exportacoes || 0} vídeos, ${a.uso.ia || 0} IA, ${a.uso.imagens_ia || 0} imagens</small></div>
       <span class="ea-st" style="background:${st[1]}">${st[0]}</span>
       <div class="ea-acoes"><button onclick="eaEditar(${a.id})" title="Editar">✏️</button><button onclick="eaRenovar(${a.id}, 30)" title="Liberar +30 dias">+30d</button><button onclick="eaCobrar(${a.id})" title="Gerar link de pagamento">💳</button></div></div>`; }).join('')}</div>` : '<div class="ea-vazio">Nenhum acesso ainda. Clique em <b>＋ Novo acesso</b> para criar o primeiro cliente do Estúdio.</div>'}
-    <div class="ea-titulo2"><h3>Planos</h3><div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="ea-bt" onclick="eaPrecosFunc()">💲 Preço por funcionalidade</button><button class="ea-bt" onclick="eaEditarPlano()">＋ Novo plano</button></div></div>
+    <div class="ea-titulo2" data-x="1"><h3>Planos</h3><div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="ea-bt" onclick="eaPrecosFunc()">💲 Preço por funcionalidade</button><button class="ea-bt" onclick="eaEditarPlano()">＋ Novo plano</button></div></div>
     <div class="ea-planos">${d.planos.map(p => `<div class="ea-plano ${p.ativo ? '' : 'off'}"><div class="ea-plano-cab"><b>${escapeHtml(p.nome)}</b><span>${fmtReal(p.preco)}<small>/mês</small></span></div>
       <p>${escapeHtml(p.descricao || '')}</p><div class="ea-tags">${Object.entries(d.funcionalidades).map(([k, f]) => `<span class="${p.recursos.includes(k) ? 'on' : 'off'}">${p.recursos.includes(k) ? '✓' : '✕'} ${f.nome}</span>`).join('')}</div>
       <details><summary>Limites por mês</summary><ul>${Object.entries(d.limites).map(([k, r]) => `<li><span>${r}</span><b>${eaLimTxt(p.limites[k])}</b></li>`).join('')}</ul></details>
@@ -24235,6 +24243,16 @@ function eaSoma(l) { const F = EA.dados.funcionalidades; return (l || []).reduce
 function eaRecursosMarcados() { return Array.from(document.querySelectorAll('[data-rec]')).filter(i => i.checked).map(i => i.dataset.rec); }
 function eaSomarRecursos(idPreco) { const e = document.getElementById('ea-soma'); if (e) e.textContent = fmtReal(eaSoma(eaRecursosMarcados())); if (idPreco && EA.precoAuto) { const i = document.getElementById(idPreco); if (i) i.value = eaSoma(eaRecursosMarcados()).toFixed(2); } }
 function eaPlanoEscolhido(sel) { const p = EA.dados.planos.find(x => x.id === Number(sel.value)); if (!p) return; document.querySelectorAll('[data-rec]').forEach(i => { i.checked = p.recursos.includes(i.dataset.rec); }); const pr = document.getElementById('ea-preco'); if (pr) pr.value = Number(p.preco).toFixed(2); eaSomarRecursos(); }
+async function eaStatusChaves() {
+  const st = document.getElementById('ea-integ-st'); if (!st) return;
+  try { const r = await api('/api/admin/estudio/vozes'); st.innerHTML = `ElevenLabs: <b class="${r.elevenlabs ? 'ok' : 'nao'}">${r.elevenlabs ? '✅ conectada' : 'não conectada'}</b> · OpenAI: <b class="${r.openai ? 'ok' : 'nao'}">${r.openai ? '✅ conectada' : 'não conectada'}</b>`; }
+  catch (e) { st.textContent = ''; }
+}
+async function eaSalvarChave(qual) {
+  const i = document.getElementById(qual === 'openai' ? 'ea-k-openai' : 'ea-k-eleven'), v = i.value.trim(); if (!v) return mostrarToast('Cole a chave no campo.', true);
+  try { const r = await api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify({ [qual]: v }) }); i.value = ''; mostrarToast(qual === 'openai' ? 'OpenAI conectada! ✅' : 'ElevenLabs conectada! ✅ As vozes da sua conta já aparecem na narração.'); if (typeof EVIA !== 'undefined') EVIA.vozes = null; eaStatusChaves(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
 async function eaPrecosFunc() {
   const F = EA.dados.funcionalidades;
   eaModal(`<h3>💲 Preço de cada funcionalidade</h3><p class="ea-sub">Esses valores servem para montar planos e pacotes sob medida (a soma aparece na hora de criar o plano ou o acesso).</p>
