@@ -1477,7 +1477,8 @@
   .evc-tempo { top:calc(env(safe-area-inset-top) + 70px) !important; right:auto !important; left:50% !important; transform:translateX(-50%); font-size:15px !important; }
   .evc-topo { position:absolute; top:0; left:0; right:0; z-index:3; display:flex; align-items:center; gap:8px; padding:calc(env(safe-area-inset-top) + 10px) 12px 14px; background:linear-gradient(rgba(0,0,0,.6), transparent); }
   .evc-ic { width:42px; height:42px; flex:0 0 42px; border-radius:50%; border:none; background:rgba(0,0,0,.45); color:#fff; font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
-  .evc-ic.on { background:#facc15; color:#000; }
+  .evc-ic.on { background:#facc15; color:#000; } .evc-div-rot { background:rgba(124,58,237,.85); border-radius:18px; padding:6px 10px; font-size:12.5px; font-weight:700; } .evc-div-rot button { border:none; background:rgba(255,255,255,.2); color:#fff; border-radius:12px; padding:3px 8px; margin-left:4px; font-size:12px; }
+  .ev-div-tit { font-weight:800; margin:4px 0 6px; } .ev-layouts button.on { outline:3px solid #7c3aed; }
   .evc-rev { position:absolute; inset:0; z-index:8; background:rgba(2,6,23,.96); display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 16px); gap:12px; }
   .evc-rev-video { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; } .evc-rev-video video { max-width:100%; max-height:100%; border-radius:14px; background:#000; } .evc-rev-sem { color:#cbd5e1; text-align:center; padding:20px; }
   .evc-rev-info { display:flex; flex-direction:column; gap:4px; text-align:center; } .evc-rev-info b { font-size:16px; } .evc-rev-info span { font-size:13px; color:#cbd5e1; }
@@ -21712,7 +21713,7 @@ function evPainel(qual) {
       <button class="ev-btn primario" style="width:100%;margin-top:8px;" onclick="evAbrirCamera()">📷 Gravar aqui (câmera ou tela)</button>
       <button class="ev-btn ia" style="width:100%;margin-top:6px;" onclick="evAbrirTeleprompter()">🎥 Gravar com teleprompter (celular ou computador)</button>
       <div id="ev-up-prog"></div>
-      <div class="ev-midias">${d.midias.filter(m => m.tipo !== 'audio').map(m => `<div class="ev-midia" title="${escapeHtml(m.nome)}">${m.tipo === 'fundo' ? `<div class="ev-midia-ico" style="background:linear-gradient(135deg,${(m.cores || [])[0] || '#0b1329'},${(m.cores || [])[1] || '#dc4c4c'})">✨</div>` : m.thumb ? `<img src="${m.thumb}">` : `<div class="ev-midia-ico">${m.tipo === 'video' ? '🎬' : '🖼️'}</div>`}<span>${m.tipo === 'video' ? evFmtT(m.duracao) : m.tipo === 'fundo' ? 'cena animada' : 'foto'}</span><button onclick="evAdicionarClipe('${m.id}')" title="Adicionar na linha do tempo">＋</button><button class="sb" onclick="evEscolherSobreposicao('${m.id}')" title="Usar como 2º vídeo: tela dividida, janelinha ou cobertura">⧉</button><button class="x" onclick="evRemoverMidia('${m.id}')" title="Remover do projeto">×</button></div>`).join('') || '<div class="ev-vazio">Nenhuma mídia ainda.</div>'}</div>
+      <div class="ev-midias">${d.midias.filter(m => m.tipo !== 'audio').map(m => `<div class="ev-midia" title="${escapeHtml(m.nome)}" onclick="if(event.target.closest('button')) return; evMenuMidia('${m.id}')" style="cursor:pointer;">${m.tipo === 'fundo' ? `<div class="ev-midia-ico" style="background:linear-gradient(135deg,${(m.cores || [])[0] || '#0b1329'},${(m.cores || [])[1] || '#dc4c4c'})">✨</div>` : m.thumb ? `<img src="${m.thumb}">` : `<div class="ev-midia-ico">${m.tipo === 'video' ? '🎬' : '🖼️'}</div>`}<span>${m.tipo === 'video' ? evFmtT(m.duracao) : m.tipo === 'fundo' ? 'cena animada' : 'foto'}</span><button onclick="evAdicionarClipe('${m.id}')" title="Adicionar na linha do tempo">＋</button><button class="sb" onclick="evMenuMidia('${m.id}')" title="Tela dividida: gravar narrando ou usar como 2º vídeo">⧉</button><button class="x" onclick="evRemoverMidia('${m.id}')" title="Remover do projeto">×</button></div>`).join('') || '<div class="ev-vazio">Nenhuma mídia ainda.</div>'}</div>
       ${d.midias.some(m => m.tipo !== 'audio') ? `<button class="ev-btn" onclick="evAdicionarTodas()">＋ Colocar todas na linha do tempo</button>` : ''}
       <div class="ev-dica-fixa">🧩 <b>Dois vídeos juntos:</b> clique em ⧉ numa mídia para usar como tela dividida (em cima/embaixo), lado a lado, janelinha ou cobertura (B-roll).</div>
       <div class="ev-dica-fixa">💡 Dica de edição viral: cortes curtos (1,5 a 3 s), o melhor momento primeiro e nada de introdução.</div>`;
@@ -22122,7 +22123,10 @@ const EVCAM = { stream: null, tela: null, rec: null, partes: [], raf: null, modo
 async function evAbrirCamera() {
   if (!evPrecisa('gravadora')) return;
   evPausar();
-  const temTela = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) && !evCelularAqui();
+  const temTela = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) && !evCelularAqui() && !EVCAM.div;
+  if (EVCAM.div) { EVCAM.modo = 'camera'; const m = evMidia(EVCAM.div.midia); EVCAM.divEl = null;
+    if (m && m.tipo === 'video') { const v = document.createElement('video'); v.src = evSrc(m); v.crossOrigin = 'anonymous'; v.playsInline = true; v.preload = 'auto'; v.volume = 0.7; v.addEventListener('loadedmetadata', () => { v.currentTime = EVCAM.div.mediaIni || 0; }); EVCAM.divEl = v; }
+    else if (m) { const im = new Image(); im.src = evSrc(m); EVCAM.divEl = im; } }
   const temRoteiro = !!(ES.p.dados.roteiro || '').trim();
   document.getElementById('ev-modal').innerHTML = `<div class="evc" id="evc">
     <div class="evc-palco ev-cam-palco" id="ev-cam-palco"><canvas id="ev-cam-cv"></canvas>
@@ -22130,7 +22134,7 @@ async function evAbrirCamera() {
       <div class="ev-cam-rec evc-tempo" id="ev-cam-rec" hidden>● 00:00</div><div class="ev-cam-conta" id="ev-cam-conta"></div></div>
     <div class="evc-topo">
       <button class="evc-ic" onclick="evFecharCamera()" title="Fechar">✕</button>
-      <div class="evc-modos" id="ev-cam-modos">${temTela ? [['camera', '📷 Câmera'], ['tela', '🖥️ Tela'], ['telacam', '🖥️+📷']].map(([k, r]) => `<button class="${EVCAM.modo === k ? 'on' : ''}" onclick="evCamModo('${k}')">${r}</button>`).join('') : ''}</div>
+      <div class="evc-modos" id="ev-cam-modos">${EVCAM.div ? `<span class="evc-div-rot">🎙️ Tela dividida${EVCAM.divEl && EVCAM.divEl.tagName === 'VIDEO' ? ` · <button onclick="EVCAM.divEl.muted=!EVCAM.divEl.muted; this.textContent=EVCAM.divEl.muted?'🔇 som do vídeo':'🔊 som do vídeo'">🔊 som do vídeo</button>` : ''}</span>` : ''}${temTela ? [['camera', '📷 Câmera'], ['tela', '🖥️ Tela'], ['telacam', '🖥️+📷']].map(([k, r]) => `<button class="${EVCAM.modo === k ? 'on' : ''}" onclick="evCamModo('${k}')">${r}</button>`).join('') : ''}</div>
       <button class="evc-ic" id="evc-flash" hidden onclick="evCamFlash()" title="Lanterna / flash">⚡</button>
       <button class="evc-ic" onclick="evCamVirar()" title="Trocar câmera (frontal / traseira)">🔄</button>
       <button class="evc-ic" onclick="evCamAjustes()" title="Ajustes da câmera">⚙️</button>
@@ -22209,10 +22213,25 @@ function evCamDesenharLoop() {
   if (EVCAM.tela && EVCAM.vTela.srcObject !== EVCAM.tela) { EVCAM.vTela.srcObject = EVCAM.tela; EVCAM.vTela.play().catch(() => {}); }
   const cobrir = (el, x, y, w, h, espelho) => { const mw = el.videoWidth, mh = el.videoHeight; if (!mw) return; const s = Math.max(w / mw, h / mh); g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip(); if (espelho) { g.translate(2 * x + w, 0); g.scale(-1, 1); } g.drawImage(el, x + (w - mw * s) / 2, y + (h - mh * s) / 2, mw * s, mh * s); g.restore(); };
   const conter = (el) => { const mw = el.videoWidth, mh = el.videoHeight; if (!mw) return; const s = Math.min(W / mw, H / mh); g.drawImage(el, (W - mw * s) / 2, (H - mh * s) / 2, mw * s, mh * s); };
+  if (EVCAM.div && !EVCAM.cvRec) EVCAM.cvRec = document.createElement('canvas');
+  if (EVCAM.div) { EVCAM.cvRec.width = W; EVCAM.cvRec.height = H; }
+  const gR = EVCAM.div ? EVCAM.cvRec.getContext('2d') : null;
+  const cobrirEm = (ctx, el, R, espelho, forma) => { const mw = el.videoWidth || el.naturalWidth, mh = el.videoHeight || el.naturalHeight; if (!mw) return; const s2 = Math.max(R.w / mw, R.h / mh); ctx.save(); ctx.beginPath(); if (forma === 'circulo') ctx.arc(R.x + R.w / 2, R.y + R.h / 2, R.w / 2, 0, 7); else if (forma === 'pip') evRetArred(ctx, R.x, R.y, R.w, R.h, R.w * 0.08); else ctx.rect(R.x, R.y, R.w, R.h); ctx.clip(); if (espelho) { ctx.translate(2 * R.x + R.w, 0); ctx.scale(-1, 1); } ctx.drawImage(el, R.x + (R.w - mw * s2) / 2, R.y + (R.h - mh * s2) / 2, mw * s2, mh * s2); ctx.restore(); };
   const passo = () => {
     const esp = (document.getElementById('ev-cam-espelho') || {}).checked && !EVCAM.rec && !EVCAM.traseira; // na gravação nunca sai espelhado (texto da camisa fica certo)
     g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
-    if (EVCAM.modo === 'camera' || !EVCAM.tela) { if (EVCAM.vid) cobrir(EVCAM.vid, 0, 0, W, H, esp); }
+    if (EVCAM.div) {
+      // gravação: só a câmera, em tela cheia (no projeto ela é encaixada na parte escolhida)
+      if (EVCAM.vid) { gR.fillStyle = '#000'; gR.fillRect(0, 0, W, H); cobrirEm(gR, EVCAM.vid, { x: 0, y: 0, w: W, h: H }, false); }
+      // prévia: como vai ficar no vídeo
+      const r = evRetDiv(EVCAM.div.layout, W, H), k = W / 1080;
+      if (EVCAM.divEl) cobrirEm(g, EVCAM.divEl, r.mid, false);
+      if (EVCAM.vid) cobrirEm(g, EVCAM.vid, r.cam, esp, r.cam.forma);
+      g.fillStyle = '#fff';
+      if (['cima', 'baixo'].includes(EVCAM.div.layout)) g.fillRect(0, H / 2 - 4 * k, W, 8 * k); else if (['esq', 'dir'].includes(EVCAM.div.layout)) g.fillRect(W / 2 - 4 * k, 0, 8 * k, H);
+      else { g.save(); g.strokeStyle = '#fff'; g.lineWidth = 8 * k; g.beginPath(); if (r.cam.forma === 'circulo') g.arc(r.cam.x + r.cam.w / 2, r.cam.y + r.cam.h / 2, r.cam.w / 2, 0, 7); else evRetArred(g, r.cam.x, r.cam.y, r.cam.w, r.cam.h, r.cam.w * 0.08); g.stroke(); g.restore(); }
+    }
+    else if (EVCAM.modo === 'camera' || !EVCAM.tela) { if (EVCAM.vid) cobrir(EVCAM.vid, 0, 0, W, H, esp); }
     else {
       conter(EVCAM.vTela);
       if (EVCAM.modo === 'telacam' && EVCAM.vid) { const r = Math.round(Math.min(W, H) * 0.32), x = W - r - W * 0.04, y = H - r - H * 0.04; g.save(); g.beginPath(); g.arc(x + r / 2, y + r / 2, r / 2, 0, 7); g.clip(); cobrir(EVCAM.vid, x, y, r, r, esp); g.restore(); g.strokeStyle = '#fff'; g.lineWidth = 6; g.beginPath(); g.arc(x + r / 2, y + r / 2, r / 2, 0, 7); g.stroke(); }
@@ -22234,7 +22253,8 @@ async function evCamGravar() {
   const conta = document.getElementById('ev-cam-conta');
   for (const n of [3, 2, 1]) { conta.textContent = n; await new Promise(r => setTimeout(r, 800)); }
   conta.textContent = '';
-  const cv = document.getElementById('ev-cam-cv'), fluxo = cv.captureStream(30);
+  const cv = document.getElementById('ev-cam-cv'), fluxo = (EVCAM.div && EVCAM.cvRec ? EVCAM.cvRec : cv).captureStream(30);
+  if (EVCAM.div && EVCAM.divEl && EVCAM.divEl.play) { try { EVCAM.divEl.currentTime = EVCAM.div.mediaIni || 0; } catch (e) {} EVCAM.divEl.play().catch(() => {}); }
   // som: microfone + (se gravar a tela) o som do computador
   try {
     const ac = evAudioCtx(), dest = ac.createMediaStreamDestination();
@@ -22260,8 +22280,8 @@ async function evCamGravar() {
 }
 function evCamPausar() {
   const r = EVCAM.rec; if (!r) return; const b = document.getElementById('ev-cam-pausa');
-  if (r.state === 'recording') { r.pause(); EVCAM.pausaEm = Date.now(); EVCAM.rolando = false; b.textContent = '▶'; }
-  else if (r.state === 'paused') { EVCAM.pausado += Date.now() - EVCAM.pausaEm; r.resume(); EVCAM.ult = 0; EVCAM.rolando = (document.getElementById('ev-cam-usatp') || {}).checked; b.textContent = '⏸'; }
+  if (r.state === 'recording') { r.pause(); EVCAM.pausaEm = Date.now(); EVCAM.rolando = false; b.textContent = '▶'; if (EVCAM.divEl && EVCAM.divEl.pause) EVCAM.divEl.pause(); }
+  else if (r.state === 'paused') { EVCAM.pausado += Date.now() - EVCAM.pausaEm; r.resume(); EVCAM.ult = 0; EVCAM.rolando = (document.getElementById('ev-cam-usatp') || {}).checked; b.textContent = '⏸'; if (EVCAM.divEl && EVCAM.divEl.play) EVCAM.divEl.play().catch(() => {}); }
 }
 // pedaços grandes (sinal fraco acumula) vão em partes de até 6 MB
 function evCamEnfileirar(E, blob) { const T = 6 * 1048576; for (let p = 0; p < blob.size; p += T) { const it = { blob: blob.slice(p, Math.min(blob.size, p + T)) }; E.fila.push(it); E.todas.push(it); } }
@@ -22299,7 +22319,7 @@ async function evCamEnviarFila(E) {
 }
 // Fim da gravação: tela de revisão com Usar no vídeo / Salvar no aparelho / Gravar de novo / Sair
 async function evCamTerminou() {
-  clearInterval(EVCAM.timer); EVCAM.rolando = false;
+  clearInterval(EVCAM.timer); EVCAM.rolando = false; if (EVCAM.divEl && EVCAM.divEl.pause) EVCAM.divEl.pause();
   const tipo = EVCAM.mime || 'video/webm', dur = (Date.now() - EVCAM.inicio - EVCAM.pausado) / 1000; EVCAM.rec = null;
   const blob = EVCAM.tamLocal < 300 * 1048576 ? new Blob(EVCAM.partes, { type: tipo }) : null, nome = 'gravacao-' + new Date().toLocaleString('pt-BR').replace(/[/:, ]+/g, '-') + (/mp4/.test(tipo) ? '.mp4' : '.webm');
   EVCAM.ultima = { blob, tipo, dur, nome, envio: EVCAM.envio, modo: EVCAM.modo, url: blob ? URL.createObjectURL(blob) : '' };
@@ -22334,6 +22354,7 @@ function evCamGravarDeNovo() {
   const g = EVCAM.ultima; if (g && !g.usada && g.envio) g.envio.cancelado = true;
   EVCAM.ultima = null; clearInterval(EVCAM.revTimer); const rv = document.getElementById('evc-rev'); if (rv) rv.remove();
   EVCAM.partes = []; EVCAM.tamLocal = 0; EVCAM.pos = 0; const t = document.getElementById('ev-cam-tp-txt'); if (t) t.style.transform = '';
+  if (EVCAM.div && EVCAM.divEl && EVCAM.divEl.pause) { EVCAM.divEl.pause(); try { EVCAM.divEl.currentTime = EVCAM.div.mediaIni || 0; } catch (e) {} }
   const m = document.getElementById('ev-cam-msg'); if (m) m.textContent = 'Pronto para gravar de novo · toque no botão vermelho';
   evCamDesenharLoop();
 }
@@ -22346,7 +22367,10 @@ async function evCamUsar() {
   if (!g.url) { // sem cópia no aparelho: espera o envio terminar
     evCarregando('☁️ Terminando de enviar a gravação…'); try { const r = await E.pronto; m.url = r.url; delete m.enviando; } finally { evCarregando(null); }
   }
-  ES.p.dados.midias.push(m); evAdicionarClipe(m.id, true); evMudou(); evPainel('midia');
+  ES.p.dados.midias.push(m);
+  const div = EVCAM.div;
+  if (div) evEncaixarDividida(div, m, g.dur); else evAdicionarClipe(m.id, true);
+  evMudou(); evPainel('midia');
   evFecharCamera(true);
   mostrarToast('🎥 Gravação na linha do tempo! Ela termina de subir sozinha em segundo plano.');
   if (melhorar && g.modo === 'camera') setTimeout(() => evImagemInteligente({ silencioso: false }), 600);
@@ -22369,7 +22393,7 @@ function evFecharCamera(forcar) {
   [EVCAM.stream, EVCAM.tela].forEach(s => s && s.getTracks().forEach(t => t.stop())); EVCAM.stream = null; EVCAM.tela = null; EVCAM.an = null;
   if (EVCAM.vid) EVCAM.vid.srcObject = null; if (EVCAM.vTela) EVCAM.vTela.srcObject = null;
   const md = document.getElementById('ev-modal'); if (md && md.querySelector('.evc, .ev-cam')) md.innerHTML = '';
-  EVCAM.ultima = null;
+  EVCAM.ultima = null; if (EVCAM.divEl && EVCAM.divEl.pause) EVCAM.divEl.pause(); EVCAM.div = null; EVCAM.divEl = null;
 }
 function evAdicionarClipe(mid, semRedesenhar) {
   const m = evMidia(mid); if (!m) return;
@@ -22836,6 +22860,63 @@ function evAdicionarSobreposicao(mid, layout) {
   ES.p.dados.sobreposicoes.push(o); ES.sel = { tipo: 'ovl', id: o.id };
   evMudou(); evDesenharProps(); evIrPara(ini + 0.05);
   mostrarToast('2º vídeo adicionado. Escolha o modo (tela dividida, janelinha…) no painel da direita.');
+}
+// ---------- Tela dividida: escolher como dividir e gravar narrando vendo a mídia ----------
+const EV_DIVISOES = {
+  baixo: { rot: 'Vídeo em cima · eu embaixo', ico: 'ly-baixo' }, cima: { rot: 'Eu em cima · vídeo embaixo', ico: 'ly-cima' },
+  dir: { rot: 'Lado a lado (eu à direita)', ico: 'ly-dir' }, esq: { rot: 'Lado a lado (eu à esquerda)', ico: 'ly-esq' },
+  circulo: { rot: 'Eu numa bolinha sobre o vídeo', ico: 'ly-circulo' }, pip: { rot: 'Eu numa janelinha sobre o vídeo', ico: 'ly-pip' }
+};
+function evMenuMidia(mid) {
+  const m = evMidia(mid); if (!m) return; const ok = m.tipo === 'video' || m.tipo === 'imagem';
+  EVCAM.divSel = EVCAM.divSel || 'baixo';
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal">
+    <div class="ev-modal-cab"><h3>${m.thumb ? `<img src="${m.thumb}" style="width:34px;height:34px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:6px;">` : ''}${escapeHtml(m.nome || 'Mídia')}</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    ${ok ? `<div class="ev-div-tit">🎙️ Gravar narrando em tela dividida</div>
+    <div class="ev-sub">Você grava a sua câmera <b>vendo este ${m.tipo === 'video' ? 'vídeo tocar' : 'conteúdo'}</b> na tela — perfeito para comentar, explicar ou reagir. Escolha como dividir:</div>
+    <div class="ev-layouts">${Object.entries(EV_DIVISOES).map(([k, d]) => `<button class="${EVCAM.divSel === k ? 'on' : ''}" onclick="EVCAM.divSel='${k}'; evMenuMidia('${mid}')"><i class="ly ${d.ico}"><b></b></i>${d.rot}</button>`).join('')}</div>
+    <button class="ev-btn primario grande" style="width:100%;margin-top:10px;" onclick="evGravarDividida('${mid}')">🎥 Gravar agora vendo ${m.tipo === 'video' ? 'o vídeo' : 'a imagem'}</button>
+    <div class="ev-sub">Dica: use fone de ouvido para o som do vídeo não vazar no seu microfone.</div>
+    <div class="ev-div-tit" style="margin-top:14px;">Ou sem gravar</div>` : ''}
+    <div class="ev-linha-btn"><button class="ev-btn" onclick="document.getElementById('ev-modal').innerHTML=''; evAdicionarClipe('${mid}')">＋ Colocar na linha do tempo</button>${ok ? `<button class="ev-btn" onclick="evEscolherSobreposicao('${mid}')">⧉ Usar como 2º vídeo</button>` : ''}</div></div></div>`;
+}
+function evGravarDividida(mid) {
+  const m = evMidia(mid); if (!m) return;
+  if (!evPrecisa('gravadora')) return;
+  // ponto de início: onde está o cursor (se ele estiver em cima desta mídia); senão a mídia entra no fim da linha do tempo
+  const d = ES.p.dados, ini = evInicios(); let T0 = null, mediaIni = 0, clipe = null;
+  if (EVCAM.divSel !== 'pip') d.clips.forEach((c, i) => { if (T0 === null && c.midia === mid && ES.t >= ini[i] - 0.01 && ES.t < ini[i] + evClipDur(c) - 0.3) { T0 = ES.t; mediaIni = (c.ini || 0) + (ES.t - ini[i]) * (c.vel || 1); clipe = c; } });
+  EVCAM.div = { midia: mid, layout: EVCAM.divSel, T0, mediaIni, clipe: clipe && clipe.id };
+  document.getElementById('ev-modal').innerHTML = '';
+  evAbrirCamera();
+}
+// Coloca a gravação no projeto já como tela dividida, sincronizada com a mídia que você estava vendo
+function evEncaixarDividida(div, cam, dur) {
+  const d = ES.p.dados, md = evMidia(div.midia); if (!md) return evAdicionarClipe(cam.id, true);
+  const o = { id: evUid(), vel: 1, ajuste: 'cobrir', zoom: 1, borda: true };
+  if (div.layout === 'pip') { // a gravação vira o vídeo principal e a mídia fica numa janelinha por cima
+    evAdicionarClipe(cam.id, true); const c = d.clips[d.clips.length - 1], T = evInicios()[d.clips.length - 1];
+    d.sobreposicoes.push(Object.assign(o, { midia: md.id, ini: T, dur, corte: div.mediaIni || 0, vol: md.tipo === 'video' ? 0.4 : 0, layout: 'pip', tam: 0.42, x: 0.52, y: 0.08 }));
+    return;
+  }
+  let T0 = div.T0;
+  if (T0 === null || T0 === undefined) { // a mídia ainda não estava no ponto: entra no fim da linha do tempo
+    evAdicionarClipe(md.id, true); const i = d.clips.length - 1, c = d.clips[i]; T0 = evInicios()[i];
+    if (md.tipo === 'imagem') c.fim = (c.ini || 0) + dur; // foto fica na tela o tempo todo da fala
+    else if (md.duracao && md.duracao < dur) { /* vídeo mais curto que a fala: a câmera continua sozinha depois */ }
+  } else if (md.tipo === 'imagem') { const c = d.clips.find(x => x.id === div.clipe); if (c) c.fim = Math.max(c.fim, (c.ini || 0) + (T0 - evInicios()[d.clips.indexOf(c)]) + dur); }
+  d.clips.forEach(c => { if (c.midia === md.id && md.tipo === 'video') c.vol = Math.min(c.vol !== undefined ? c.vol : 1, 0.35); }); // a sua voz fica na frente do som do vídeo
+  d.sobreposicoes.push(Object.assign(o, { midia: cam.id, ini: T0, dur, corte: 0, vol: 1, layout: div.layout, tam: div.layout === 'circulo' ? 0.36 : undefined, x: div.layout === 'circulo' ? 0.6 : undefined, y: div.layout === 'circulo' ? 0.5 : undefined }));
+  ES.t = T0;
+}
+// retângulos da câmera e da mídia na tela dividida
+function evRetDiv(L, W, H) {
+  if (L === 'baixo') return { cam: { x: 0, y: H / 2, w: W, h: H / 2 }, mid: { x: 0, y: 0, w: W, h: H / 2 } };
+  if (L === 'cima') return { cam: { x: 0, y: 0, w: W, h: H / 2 }, mid: { x: 0, y: H / 2, w: W, h: H / 2 } };
+  if (L === 'dir') return { cam: { x: W / 2, y: 0, w: W / 2, h: H }, mid: { x: 0, y: 0, w: W / 2, h: H } };
+  if (L === 'esq') return { cam: { x: 0, y: 0, w: W / 2, h: H }, mid: { x: W / 2, y: 0, w: W / 2, h: H } };
+  const t = L === 'circulo' ? 0.36 : 0.34, w = W * t, h = L === 'circulo' ? w : w * 1.4;
+  return { cam: { x: W * 0.6, y: H * 0.5, w, h, forma: L }, mid: { x: 0, y: 0, w: W, h: H } };
 }
 function evEscolherSobreposicao(mid) {
   document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal">
