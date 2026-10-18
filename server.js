@@ -13305,9 +13305,10 @@ app.get('/api/admin/estudio/ia/imagens-fala/:id', requireRole('admin', 'estudio'
 // ===== Narração com voz (texto → fala) =====
 // Padrão: vozes neurais em português da Microsoft (as mesmas do Edge "Ler em voz alta"), grátis, com o tempo de
 // cada palavra (legenda sincronizada). Opcional: OpenAI ou ElevenLabs (voz ainda mais natural), com chave própria.
-const TOKEN_EDGE_TTS = '6A5AA1D4EAFF4E9FB37E23D68491D6F4', VERSAO_EDGE_TTS = '130.0.2849.68';
+const TOKEN_EDGE_TTS = '6A5AA1D4EAFF4E9FB37E23D68491D6F4', VERSOES_EDGE_TTS = ['143.0.3650.75', '140.0.3485.14', '130.0.2849.68'];
+let VERSAO_EDGE_TTS = VERSOES_EDGE_TTS[0], DESVIO_RELOGIO_EDGE = 0, ULTIMO_ERRO_VOZ = '';
 function gecEdgeTts() {
-    let t = Date.now() / 1000 + 11644473600; t -= t % 300;
+    let t = (Date.now() + DESVIO_RELOGIO_EDGE) / 1000 + 11644473600; t -= t % 300;
     return require('crypto').createHash('sha256').update(BigInt(Math.round(t)) * 10000000n + TOKEN_EDGE_TTS, 'ascii').digest('hex').toUpperCase();
 }
 // Cliente WebSocket mínimo (sem dependências): conecta, manda texto e recebe texto/binário.
@@ -13336,7 +13337,7 @@ function wsConectarEst(url, cabecalhos) {
             if (!aberto) {
                 const fim = buf.indexOf('\r\n\r\n'); if (fim < 0) return;
                 const cab = buf.slice(0, fim).toString(); buf = buf.slice(fim + 4);
-                if (!/^HTTP\/1\.1 101/.test(cab)) { clearTimeout(timer); sock.destroy(); return ko(new Error('Serviço de voz recusou a conexão (' + cab.split('\r\n')[0] + ').')); }
+                if (!/^HTTP\/1\.1 101/.test(cab)) { clearTimeout(timer); sock.destroy(); const e = new Error('Serviço de voz recusou a conexão (' + cab.split('\r\n')[0] + ').'); e.cabecalho = cab; return ko(e); }
                 aberto = true; clearTimeout(timer); ok(api);
             }
             while (buf.length >= 2) {
@@ -13391,7 +13392,64 @@ async function falarEst(texto, voz, velocidade) {
         if (!r.ok) throw new Error('OpenAI: ' + ((await r.text()).slice(0, 160)));
         return { mp3: Buffer.from(await r.arrayBuffer()), palavras: [] };
     }
-    return falarEdgeEst(texto, /^(eleven|openai):/.test(voz || '') ? 'pt-BR-AntonioNeural' : voz, velocidade);
+    const vozMs = /^(eleven|openai|google):/.test(voz || '') ? 'pt-BR-AntonioNeural' : voz;
+    if (!/^google:/.test(voz || '')) {
+        // Vozes neurais da Microsoft: tenta com o relógio do servidor da Microsoft e versões diferentes do Edge
+        for (let tent = 0; tent < VERSOES_EDGE_TTS.length + 1; tent++) {
+            try { const r = await falarEdgeEst(texto, vozMs, velocidade); ULTIMO_ERRO_VOZ = ''; return r; }
+            catch (e) {
+                ULTIMO_ERRO_VOZ = 'Microsoft: ' + e.message;
+                const data = e.cabecalho && (e.cabecalho.match(/^date:\s*(.+)$/im) || [])[1];
+                if (data && !isNaN(new Date(data))) DESVIO_RELOGIO_EDGE = new Date(data).getTime() - Date.now();
+                if (!/403|401|recusou/i.test(e.message)) break;
+                VERSAO_EDGE_TTS = VERSOES_EDGE_TTS[(VERSOES_EDGE_TTS.indexOf(VERSAO_EDGE_TTS) + 1) % VERSOES_EDGE_TTS.length];
+            }
+        }
+        console.warn('Voz Microsoft indisponível, usando a voz do Google:', ULTIMO_ERRO_VOZ);
+    }
+    return falarGoogleEst(texto, velocidade);
+}
+// Reserva: voz do Google Tradutor (simples e estável). Sem tempo por palavra: a legenda é distribuída pelo tamanho do texto.
+async function falarGoogleEst(texto, velocidade) {
+    const pedacos = []; let atual = '';
+    String(texto).split(/\s+/).forEach(w => { if ((atual + ' ' + w).trim().length > 180) { if (atual) pedacos.push(atual); atual = w; } else atual = (atual + ' ' + w).trim(); }); if (atual) pedacos.push(atual);
+    const partes = [];
+    for (const [i, q] of pedacos.entries()) {
+        const u = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt-BR&total=${pedacos.length}&idx=${i}&textlen=${q.length}&q=${encodeURIComponent(q)}`;
+        const r = await fetch(u, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', Referer: 'https://translate.google.com/' }, signal: AbortSignal.timeout(20000) });
+        if (!r.ok) throw new Error('Google voz: HTTP ' + r.status + (ULTIMO_ERRO_VOZ ? ' · ' + ULTIMO_ERRO_VOZ : ''));
+        partes.push(Buffer.from(await r.arrayBuffer()));
+    }
+    let mp3 = Buffer.concat(partes);
+    // ritmo (Reels mais dinâmico) e volume no padrão, quando o servidor tem ffmpeg
+    if (await ffmpegDisponivel()) {
+        const ent = path.join(PASTA_UPLOADS, 'tmp-g-' + Date.now() + '.mp3'), sai = ent.replace('.mp3', '-r.mp3'); fs.writeFileSync(ent, mp3);
+        try { await rodarFfmpegJa(['-y', '-hide_banner', '-loglevel', 'error', '-i', ent, '-af', `atempo=${Math.max(0.8, Math.min(1.5, 1.08 + (velocidade || 0) / 100)).toFixed(2)},loudnorm=I=-16:TP=-1.5`, '-ar', '44100', '-b:a', '128k', sai], 60000); mp3 = fs.readFileSync(sai); } catch (e) {}
+        fs.unlink(ent, () => {}); fs.unlink(sai, () => {});
+    }
+    return { mp3, palavras: [], provedor: 'google' };
+}
+app.get('/api/admin/estudio/voz-diagnostico', requireRole('admin'), async (req, res) => {
+    const out = {};
+    try { const r = await falarEdgeEst('Teste de voz.', 'pt-BR-AntonioNeural', 0); out.microsoft = 'ok (' + r.mp3.length + ' bytes)'; } catch (e) { out.microsoft = 'erro: ' + e.message; }
+    try { const r = await falarGoogleEst('Teste de voz.', 0); out.google = 'ok (' + r.mp3.length + ' bytes)'; } catch (e) { out.google = 'erro: ' + e.message; }
+    res.json(out);
+});
+// Duração de um MP3 lendo os quadros (não depende do ffmpeg)
+function duracaoMp3(b) {
+    let p = 0, seg = 0;
+    if (b.slice(0, 3).toString() === 'ID3') p = 10 + ((b[6] & 127) << 21 | (b[7] & 127) << 14 | (b[8] & 127) << 7 | (b[9] & 127));
+    const BR = { 1: [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320], 2: [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160] };
+    const SR = { 3: [44100, 48000, 32000], 2: [22050, 24000, 16000], 0: [11025, 12000, 8000] };
+    while (p + 4 <= b.length) {
+        if (b[p] !== 0xff || (b[p + 1] & 0xe0) !== 0xe0) { p++; continue; }
+        const ver = (b[p + 1] >> 3) & 3, cam = (b[p + 1] >> 1) & 3, bi = b[p + 2] >> 4, si = (b[p + 2] >> 2) & 3, pad = (b[p + 2] >> 1) & 1;
+        if (ver === 1 || cam !== 1 || bi === 0 || bi === 15 || si === 3) { p++; continue; }
+        const br = BR[ver === 3 ? 1 : 2][bi] * 1000, sr = SR[ver][si], amostras = ver === 3 ? 1152 : 576;
+        const tam = Math.floor((ver === 3 ? 144 : 72) * br / sr) + pad; if (tam < 4) { p++; continue; }
+        seg += amostras / sr; p += tam;
+    }
+    return seg;
 }
 // Distribui as cenas no tempo da fala (pelas palavras; sem tempo por palavra, pelo tamanho do texto)
 function tempoDasCenasEst(falas, palavras, duracao) {
@@ -13417,8 +13475,12 @@ app.post('/api/admin/estudio/narrar', requireRole('admin', 'estudio'), async (re
         for (const bl of blocos) {
             const r = await falarEst(bl, String(b.voz || 'pt-BR-AntonioNeural').slice(0, 80), vel);
             const arqTmp = path.join(PASTA_UPLOADS, 'tmp-voz-' + Date.now() + '.mp3'); fs.writeFileSync(arqTmp, r.mp3);
-            let dur = await duracaoFfmpeg(arqTmp).catch(() => 0); fs.unlink(arqTmp, () => {});
+            let dur = duracaoMp3(r.mp3) || await duracaoFfmpeg(arqTmp).catch(() => 0); fs.unlink(arqTmp, () => {});
             if (!dur) dur = r.palavras.length ? r.palavras[r.palavras.length - 1].fim + 0.3 : r.mp3.length / (r.mp3.length > 0 ? 12000 : 1); // 96 kbps ≈ 12 kB/s
+            if (!r.palavras.length) { // voz sem tempo por palavra: estima pelo tamanho de cada palavra (pausa maior na pontuação)
+                const ws = bl.split(/\s+/).filter(Boolean), peso = w => w.length + 2 + (/[.!?]$/.test(w) ? 6 : /[,;:]$/.test(w) ? 3 : 0), tot = ws.reduce((a, w) => a + peso(w), 0) || 1, util = Math.max(0.5, dur - 0.25);
+                let t = 0.1; ws.forEach(w => { const d = util * peso(w) / tot; r.palavras.push({ w, ini: t, fim: t + d * 0.85 }); t += d; });
+            }
             r.palavras.forEach(p => palavras.push({ w: p.w, ini: +(p.ini + deslocamento).toFixed(3), fim: +(p.fim + deslocamento).toFixed(3) }));
             mp3s.push(r.mp3); deslocamento += dur;
         }
@@ -13444,6 +13506,37 @@ app.put('/api/admin/estudio-voz', requireRole('admin'), async (req, res) => {
         if (cfg.elevenlabs) { try { const r = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': cfg.elevenlabs } }); const j = await r.json(); if (!r.ok) throw new Error((j.detail && j.detail.message) || 'chave recusada'); cfg.elevenVozes = (j.voices || []).slice(0, 40).map(v => ({ id: v.voice_id, nome: v.name })); } catch (e) { return res.status(400).json({ error: 'ElevenLabs: ' + e.message }); } }
     }
     db.run(`INSERT INTO integration_settings (key, value) VALUES ('estudio_voz', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [JSON.stringify(cfg)], () => res.json({ ok: true, message: 'Vozes atualizadas! ✅' }));
+});
+// ===== Músicas da internet livres para usar (Openverse: Jamendo, ccMixter, Wikimedia — licenças Creative Commons) =====
+const CACHE_MUSICAS = new Map();
+const HUMORES_MUSICA = { motivacional: 'motivational upbeat', corporativo: 'corporate business background', inspirador: 'inspiring cinematic', animado: 'happy energetic pop', calmo: 'calm relaxing ambient', epico: 'epic cinematic trailer', lofi: 'lofi chill hip hop', eletronico: 'electronic dance', acustico: 'acoustic guitar', emocionante: 'emotional piano', tecnologia: 'technology future', suspense: 'suspense tension' };
+async function buscarMusicasEst(q) {
+    const chave = q.toLowerCase(); const c = CACHE_MUSICAS.get(chave); if (c && c.t > Date.now() - 3600000) return c.l;
+    const u = `https://api.openverse.org/v1/audio/?q=${encodeURIComponent(q)}&category=music&license_type=commercial&page_size=30&mature=false`;
+    const r = await fetch(u, { headers: { 'User-Agent': 'ImpulsionarV4/1.0 (estudio de video; contato@impulsionarv4.com.br)' }, signal: AbortSignal.timeout(15000) });
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error('Busca de músicas: ' + (j.detail || ('HTTP ' + r.status)));
+    const l = (j.results || []).filter(x => x.url && (!x.duration || x.duration >= 20000)).map(x => ({ id: x.id, titulo: x.title || 'Sem título', artista: x.creator || '', duracao: x.duration ? Math.round(x.duration / 1000) : 0, licenca: ((x.license || '') + ' ' + (x.license_version || '')).toUpperCase().trim(), fonte: x.source || x.provider || '', ouvir: x.url, capa: x.thumbnail || '', generos: (x.genres || []).slice(0, 3) }));
+    CACHE_MUSICAS.set(chave, { t: Date.now(), l }); return l;
+}
+app.get('/api/admin/estudio/musicas', requireRole('admin', 'estudio'), async (req, res) => {
+    const humor = String(req.query.humor || ''), q = String(req.query.q || '').trim().slice(0, 80) || HUMORES_MUSICA[humor] || 'background music';
+    try { res.json({ musicas: await buscarMusicasEst(q) }); } catch (e) { res.status(502).json({ error: e.message }); }
+});
+app.post('/api/admin/estudio/musicas/usar', requireRole('admin', 'estudio'), async (req, res) => {
+    const id = String((req.body || {}).id || '').replace(/[^\w-]/g, ''); if (!id) return res.status(400).json({ error: 'Música inválida.' });
+    try {
+        const r = await fetch(`https://api.openverse.org/v1/audio/${id}/`, { headers: { 'User-Agent': 'ImpulsionarV4/1.0' }, signal: AbortSignal.timeout(15000) });
+        const x = await r.json(); if (!r.ok || !x.url) throw new Error('música não encontrada');
+        const a = await fetch(x.url, { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(60000) });
+        if (!a.ok) throw new Error('download recusado (HTTP ' + a.status + ')');
+        const buf = Buffer.from(await a.arrayBuffer()); if (buf.length < 20000) throw new Error('arquivo de áudio inválido');
+        if (buf.length > 30 * 1048576) throw new Error('arquivo grande demais');
+        const tipo = a.headers.get('content-type') || '', ext = /ogg/.test(tipo) || /\.ogg/i.test(x.url) ? '.ogg' : /wav/.test(tipo) ? '.wav' : /flac/.test(tipo) ? '.flac' : '.mp3';
+        const nome = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + ext, arq = path.join(PASTA_UPLOADS, nome); fs.writeFileSync(arq, buf);
+        copiarUploadParaBanco({ filename: nome, path: arq, size: buf.length, mimetype: ext === '.mp3' ? 'audio/mpeg' : 'audio/' + ext.slice(1) });
+        const lic = ((x.license || '') + ' ' + (x.license_version || '')).toUpperCase().trim();
+        res.json({ url: '/uploads/' + nome, titulo: x.title || 'Música', artista: x.creator || '', duracao: x.duration ? x.duration / 1000 : (ext === '.mp3' ? duracaoMp3(buf) : 0), licenca: lic, credito: `🎵 Música: "${x.title || ''}"${x.creator ? ' — ' + x.creator : ''} (${lic || 'CC'})` });
+    } catch (e) { res.status(502).json({ error: 'Não consegui baixar esta música: ' + e.message + '. Tente outra.' }); }
 });
 app.get('/api/admin/estudio/preparo/:id', requireRole('admin', 'estudio'), (req, res) => {
     const j = JOBS_PREPARO.get(req.params.id); if (!j) return res.status(404).json({ error: 'Preparo não encontrado (o servidor reiniciou).' });

@@ -1423,6 +1423,8 @@
   .ev-so-pequeno, .ev-sheet-x, .ev-so-cel { display:none !important; }
   .ev-comparar { display:grid; gap:8px; margin-top:8px; } .ev-comparar b { display:block; font-size:12px; margin-bottom:3px; } .ev-comparar audio { width:100%; height:36px; }
   .ev-narr { margin-top:12px; padding:12px; border:1px solid var(--e-bd, #25325c); border-radius:12px; background:rgba(124,58,237,.08); } .ev-narr-op { display:flex !important; gap:8px; align-items:flex-start; margin:6px 0; font-size:13.5px; line-height:1.4; color:inherit; cursor:pointer; } .ev-narr-op input { margin-top:3px; flex-shrink:0; width:auto; } .ev-narr-op b { white-space:nowrap; }
+  .ev-mus-lista { display:grid; gap:6px; margin-top:8px; max-height:340px; overflow-y:auto; } .ev-mus { display:flex; align-items:center; gap:8px; padding:7px; border:1px solid var(--e-bd, #25325c); border-radius:10px; }
+  .ev-mus-play { width:34px; height:34px; border-radius:50%; border:none; background:#7c3aed; color:#fff; flex-shrink:0; cursor:pointer; } .ev-mus-info { flex:1; min-width:0; } .ev-mus-info b { display:block; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .ev-mus-info small { font-size:11px; opacity:.75; } .ev-mus .ev-btn { padding:6px 9px; font-size:12px; }
   .ev-envio { font-size:12px; font-weight:700; color:#fff; background:#2563eb; border-radius:14px; padding:5px 10px; white-space:nowrap; } .ev-envio.prep { background:#7c3aed; }
   #ev-canvas { touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
   .ev-txtbar { position:absolute; left:50%; top:8px; transform:translateX(-50%); display:flex; gap:6px; z-index:8; background:rgba(11,19,41,.92); border:1px solid rgba(255,255,255,.18); border-radius:22px; padding:5px; box-shadow:0 8px 24px rgba(0,0,0,.5); max-width:calc(100% - 16px); overflow-x:auto; }
@@ -21717,7 +21719,9 @@ function evPainel(qual) {
     el.innerHTML = `<h4>Música e narração</h4>
       <label class="ev-up"><input type="file" multiple accept="audio/*" hidden onchange="evSubir(this.files)"><b>🎵 Subir música / áudio</b><small>MP3, WAV, M4A…</small></label>
       <button class="ev-btn" id="ev-btn-narrar" onclick="evNarrar()">🎙️ Gravar narração</button>
-      <h4>🎼 Trilhas sem direitos autorais</h4><div class="ev-sub">Criadas na hora, no tamanho exato do vídeo:</div>
+      <h4 id="ev-mus-titulo">🌐 Músicas da internet</h4><div class="ev-sub">Músicas reais, livres para usar (Creative Commons). O crédito entra sozinho na legenda do post.</div>
+      <div id="ev-musicas">${evHtmlMusicas()}</div>
+      <h4>🎼 Trilhas geradas na hora</h4><div class="ev-sub">Simples, no tamanho exato do vídeo:</div>
       <div class="ev-trilhas">${Object.entries(EV_TRILHAS).map(([k, t]) => `<button onclick="evAdicionarTrilha('${k}')"><span>${t.ico}</span>${t.nome}</button>`).join('')}</div>
       <div class="ev-midias lista">${auds.map(m => `<div class="ev-aud"><span>🎵 ${escapeHtml(m.nome)} <small>${evFmtT(m.duracao)}</small></span><button onclick="evAdicionarAudio('${m.id}')" title="Adicionar">＋</button><button class="x" onclick="evRemoverMidia('${m.id}')">×</button></div>`).join('') || '<div class="ev-vazio">Nenhum áudio ainda.</div>'}</div>
       <div class="ev-dica-fixa">🔥 Áudios em alta aumentam o alcance. Use aqui uma trilha sua ou sem direitos autorais; para músicas em alta do Instagram, poste o vídeo sem música e escolha o áudio no próprio app (as músicas comerciais não podem ser embutidas no arquivo).</div>
@@ -21799,6 +21803,62 @@ async function evGerarImagensIa() {
     if (!ok) throw new Error('Não consegui colocar as imagens no vídeo. Tente de novo.');
     mostrarToast(`✨ ${ok} imagens criadas pela IA e colocadas no momento certo da fala. Toque numa delas na linha do tempo para ajustar.`);
   } catch (e) { evCarregando(null); mostrarToast(e.message, true); }
+}
+
+// ---------- Músicas da internet (Openverse / Creative Commons) ----------
+const EV_HUMORES = [['motivacional', '🚀 Motivacional'], ['corporativo', '💼 Corporativa'], ['inspirador', '✨ Inspiradora'], ['animado', '😄 Animada'], ['lofi', '🎧 Lo-fi'], ['eletronico', '⚡ Eletrônica'], ['emocionante', '🎹 Emocionante'], ['epico', '🎬 Épica'], ['calmo', '🌿 Calma'], ['acustico', '🎸 Acústica'], ['tecnologia', '🤖 Tecnologia'], ['suspense', '🕵️ Suspense']];
+const EVMUS = { humor: 'motivacional', lista: null, carregando: false, tocando: null };
+function evHtmlMusicas() {
+  return `<div class="ev-chips">${EV_HUMORES.map(([k, r]) => `<button class="${EVMUS.humor === k && !EVMUS.q ? 'on' : ''}" onclick="EVMUS.q=''; evBuscarMusicas('${k}')">${r}</button>`).join('')}</div>
+    <div class="ev-dupla" style="margin-top:6px;"><input id="ev-mus-q" placeholder="Ou pesquise: piano, rock, funk, natal…" value="${escapeHtml(EVMUS.q || '')}" onkeydown="if(event.key==='Enter') evBuscarMusicas(null, this.value)" style="flex:1;"><button class="ev-btn" onclick="evBuscarMusicas(null, document.getElementById('ev-mus-q').value)">🔎</button></div>
+    <div class="ev-mus-lista">${EVMUS.carregando ? '<div class="ev-sub">⏳ Buscando músicas…</div>' : !EVMUS.lista ? '<div class="ev-sub">Escolha um estilo para ver as músicas.</div>' : EVMUS.lista.length ? EVMUS.lista.map((m, i) => `<div class="ev-mus">
+      <button class="ev-mus-play" onclick="evOuvirMusica(${i})">${EVMUS.tocando === i ? '⏸' : '▶'}</button>
+      <div class="ev-mus-info"><b>${escapeHtml(m.titulo)}</b><small>${escapeHtml(m.artista || '')}${m.duracao ? ' · ' + evFmtT(m.duracao).slice(0, 5) : ''}${m.licenca ? ' · ' + escapeHtml(m.licenca) : ''}</small></div>
+      <button class="ev-btn ia" onclick="evUsarMusica(${i})">＋ Usar</button></div>`).join('') : '<div class="ev-sub">Nada encontrado. Tente outro estilo.</div>'}</div>`;
+}
+function evAtualizarMusicas() { const e = document.getElementById('ev-musicas'); if (e) e.innerHTML = evHtmlMusicas(); }
+function evAbrirMusicas() { evPainel('audio'); if (typeof evSheet === 'function') evSheet('painel'); if (!EVMUS.lista) evBuscarMusicas(EVMUS.humor); setTimeout(() => { const t = document.getElementById('ev-mus-titulo'); if (t) t.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 120); }
+async function evBuscarMusicas(humor, q) {
+  if (humor) EVMUS.humor = humor; EVMUS.q = (q || '').trim(); EVMUS.carregando = true; evAtualizarMusicas();
+  try { const r = await api('/api/admin/estudio/musicas?' + (EVMUS.q ? 'q=' + encodeURIComponent(EVMUS.q) : 'humor=' + EVMUS.humor)); EVMUS.lista = r.musicas || []; }
+  catch (e) { EVMUS.lista = []; mostrarToast(e.message, true); }
+  EVMUS.carregando = false; evAtualizarMusicas();
+}
+function evOuvirMusica(i) {
+  if (EVMUS.audio) EVMUS.audio.pause();
+  if (EVMUS.tocando === i) { EVMUS.tocando = null; return evAtualizarMusicas(); }
+  const m = EVMUS.lista[i]; EVMUS.audio = new Audio(m.ouvir); EVMUS.audio.volume = 0.8; EVMUS.audio.play().catch(() => mostrarToast('Não consegui tocar a prévia desta música.', true));
+  EVMUS.audio.onended = () => { EVMUS.tocando = null; evAtualizarMusicas(); }; EVMUS.tocando = i; evAtualizarMusicas();
+}
+// Baixa a música para o servidor e coloca no vídeo (abaixa sozinha quando alguém fala)
+async function evUsarMusica(i, silencioso) {
+  const m = typeof i === 'object' ? i : EVMUS.lista[i]; if (!m || !ES) return false;
+  if (EVMUS.audio) { EVMUS.audio.pause(); EVMUS.tocando = null; }
+  try {
+    if (!silencioso) evCarregando(`🎵 Baixando "${m.titulo}"…`);
+    const r = await api('/api/admin/estudio/musicas/usar', { method: 'POST', body: JSON.stringify({ id: m.id }) });
+    const md = { id: evUid(), url: r.url, nome: `Música: ${r.titulo}${r.artista ? ' — ' + r.artista : ''}`, tipo: 'audio', duracao: r.duracao || m.duracao || 0, credito: r.credito };
+    const d = ES.p.dados; d.midias.push(md);
+    d.audios = d.audios.filter(a => { const n = (evMidia(a.midia) || { nome: '' }).nome; return !n.startsWith('Trilha ') && !n.startsWith('Música: '); });
+    const tot = evTotal(), temFala = d.textos.some(x => x.estilo === 'legenda') || d.audios.some(a => a.narracao) || d.clips.some(c => (evMidia(c.midia) || {}).tipo === 'video' && !c.mudo);
+    const durM = md.duracao || tot, corte = durM > tot + 20 ? Math.min(25, durM * 0.15) : 0; // pula a introdução lenta de músicas longas
+    d.audios.push({ id: evUid(), midia: md.id, ini: 0, corte, dur: Math.min(durM - corte, tot), vol: temFala ? 0.14 : 0.5, fadeIn: 0.8, fadeOut: 2, abaixarNaFala: temFala });
+    if (r.credito && !(ES.p.legenda || '').includes(r.credito)) ES.p.legenda = ((ES.p.legenda || '').replace(/\n*🎵 Música: .*$/m, '') + '\n\n' + r.credito).trim();
+    if (!silencioso) evCarregando(null);
+    evMudou(); if (ES.painel === 'audio') evPainel('audio'); evDesenharProps();
+    if (!silencioso) mostrarToast(`🎵 "${r.titulo}" no fundo do vídeo${temFala ? ' (abaixa quando tem fala)' : ''}. Crédito adicionado na legenda do post.`);
+    return true;
+  } catch (e) { if (!silencioso) { evCarregando(null); mostrarToast(e.message, true); } return false; }
+}
+// Para o vídeo criado pela IA: escolhe sozinha uma música da internet que combina com o roteiro
+async function evMusicaAutomatica(humor) {
+  const mapa = { motivacional: 'motivacional', corporativo: 'corporativo', inspirador: 'inspirador', animado: 'animado', calmo: 'calmo', epico: 'epico', lofi: 'lofi', eletronico: 'eletronico', emocionante: 'emocionante', tecnologia: 'tecnologia' };
+  try {
+    const r = await api('/api/admin/estudio/musicas?humor=' + (mapa[humor] || 'motivacional'));
+    const tot = evTotal(), boas = (r.musicas || []).filter(m => !m.duracao || m.duracao >= tot * 0.8);
+    for (const m of boas.slice(0, 3)) if (await evUsarMusica(m, true)) return true;
+  } catch (e) {}
+  return false;
 }
 
 // ---------- Tirar ruído do áudio (IA + manual) ----------
@@ -23127,11 +23187,16 @@ async function evAbrirCriarVideoIa() {
         <label class="ev-campo" style="flex:2;margin:0;"><span>Voz</span><select onchange="EVIA.vozNarr=this.value">${EVIA.vozes.map(v => `<option value="${escapeHtml(v.id)}" ${EVIA.vozNarr === v.id ? 'selected' : ''}>${escapeHtml(v.nome)}${v.provedor && !/grátis/.test(v.provedor) ? ' · ' + escapeHtml(v.provedor) : ''}</option>`).join('')}</select></label>
         <label class="ev-campo" style="flex:1;margin:0;"><span>Ritmo</span><select onchange="EVIA.velNarr=Number(this.value)">${[[-8, 'Calmo'], [0, 'Natural'], [8, 'Dinâmico'], [18, 'Rápido (Reels)']].map(([v, r]) => `<option value="${v}" ${EVIA.velNarr === v ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
         <button class="ev-btn" id="evia-ouvir" onclick="evOuvirVoz()">▶ Ouvir</button></div>
-        <label class="ev-narr-op"><input type="checkbox" ${EVIA.trilha ? 'checked' : ''} onchange="EVIA.trilha=this.checked"> 🎵 Trilha de fundo sem direitos autorais (abaixa sozinha quando a voz fala)</label>
-        ${EVIA.vozesInfo && EVIA.vozesInfo.master ? `<button class="ev-mini" onclick="evConfigVozes()">⚙️ Vozes premium (OpenAI / ElevenLabs)</button>` : ''}` : ''}
+        <label class="ev-narr-op"><input type="checkbox" ${EVIA.trilha ? 'checked' : ''} onchange="EVIA.trilha=this.checked"> 🎵 Música de fundo da internet, livre para usar (abaixa sozinha quando a voz fala)</label>
+        ${EVIA.vozesInfo && EVIA.vozesInfo.master ? `<button class="ev-mini" onclick="evConfigVozes()">⚙️ Vozes premium (OpenAI / ElevenLabs)</button> <button class="ev-mini" onclick="evDiagnosticoVoz()">🩺 Testar serviço de voz</button>` : ''}` : `<label class="ev-narr-op"><input type="checkbox" ${EVIA.trilha ? 'checked' : ''} onchange="EVIA.trilha=this.checked"> 🎵 Música de fundo da internet, livre para usar</label>`}
     </div>`}
     <div class="acoes-form" style="margin-top:12px;"><button class="ev-btn ia grande" onclick="evCriarVideoIa()">🚀 Criar vídeo</button></div>
   </div></div>`;
+}
+async function evDiagnosticoVoz() {
+  mostrarToast('Testando os serviços de voz…');
+  try { const r = await api('/api/admin/estudio/voz-diagnostico'); eaModal(`<h3>🩺 Serviço de voz</h3><p><b>Microsoft (vozes neurais):</b> ${escapeHtml(r.microsoft)}</p><p><b>Google (reserva):</b> ${escapeHtml(r.google)}</p><p class="ea-sub">Se os dois derem erro, o servidor está sem acesso a esses serviços — conecte uma chave da OpenAI ou ElevenLabs em ⚙️ Vozes premium.</p><div class="ea-linha"><button class="ea-bt pri" onclick="eaModal('')">OK</button></div>`); }
+  catch (e) { mostrarToast(e.message, true); }
 }
 async function evOuvirVoz() {
   const b = document.getElementById('evia-ouvir'); if (b) { b.disabled = true; b.textContent = '⏳'; }
@@ -23207,7 +23272,7 @@ async function evCriarVideoIa() {
       if (narr.cenas && narr.cenas.length === cenas.length) { durs = narr.cenas.map((c, i) => Math.max(1.2, c.fim - c.ini) + (i === cenas.length - 1 ? 0.6 : 0)); soma = durs.reduce((s2, v) => s2 + v, 0); }
       dados.midias.push({ id: 'narr', url: narr.url, nome: 'Narração da IA', tipo: 'audio', duracao: narr.duracao, transcricao: narr.palavras || [] });
       dados.audios.push({ id: evUid(), midia: 'narr', ini: 0, corte: 0, dur: narr.duracao, vol: 1, narracao: true });
-    } catch (e) { narr = null; mostrarToast('Voz: ' + e.message + ' — o vídeo vai sair só com legendas.', true); }
+    } catch (e) { narr = null; alert('A voz não pôde ser gerada: ' + e.message + '\n\nO vídeo vai ser criado com legendas e música. Você pode tentar a voz de novo depois, ou conectar uma voz premium (OpenAI/ElevenLabs).'); }
   }
   if (videoAvatar) {
     const dv = Number(videoAvatar.duracao) || soma; const f = dv / soma; durs = durs.map(v => v * f); soma = dv;
@@ -23245,7 +23310,7 @@ async function evCriarVideoIa() {
     evCarregandoGlobal(null);
     if (ES) await evFechar();
     await evAbrirEditor(r.id);
-    if (narr && EVIA.trilha && ES) await evAdicionarTrilha(EV_TRILHAS[rot.musica] ? rot.musica : (modo === 'motion' ? 'motivacional' : 'corporativo'), true).catch(() => {});
+    if (EVIA.trilha && ES) { evCarregandoGlobal('🎵 Escolhendo a música de fundo…'); const okMus = await evMusicaAutomatica(rot.musica || (modo === 'motion' ? 'motivacional' : 'corporativo')); if (!okMus) await evAdicionarTrilha(EV_TRILHAS[rot.musica] ? rot.musica : (modo === 'motion' ? 'motivacional' : 'corporativo'), true).catch(() => {}); evCarregandoGlobal(null); }
     setTimeout(() => { evDica(`✅ Vídeo criado pela IA (${cenas.length} cenas${narr ? ', com voz narrando' : ''}). Dê o play ▶, ajuste e exporte.`); }, 600);
   } catch (e) { evCarregandoGlobal(null); mostrarToast(e.message, true); }
 }
@@ -23779,7 +23844,7 @@ function evPopBarra(tipo, btn) {
   else if (tipo === 'zoom') html = `<b>🔍 Zoom do trecho</b><input type="range" min="1" max="1.8" step="0.01" value="${c.zoom || 1}" oninput="evSet('zoom', Number(this.value))" onchange="evMudou(false)"><div class="ev-chips">${[[1, 'Normal'], [1.15, 'Aproximar'], [1.3, 'Close'], [1.5, 'Bem perto']].map(([z, r]) => `<button onclick="evSet('zoom', ${z}); evMudou(false)">${r}</button>`).join('')}</div><div class="ev-sub">Dica: divida (✂️) no momento da frase forte e dê zoom só nesse trecho.</div>`;
   else if (tipo === 'transicao') html = `<b>🔀 Transição de entrada do trecho</b><div class="ev-chips">${Object.entries(EV_TRANS).map(([k, r]) => `<button class="${(c.transicao || d.transicao) === k ? 'on' : ''}" onclick="evSet('transicao','${k}', true); evMudou(false); evPopBarra('transicao')">${r}</button>`).join('')}</div><button class="ev-btn" onclick="ES.p.dados.transicao=(evItemSel().transicao||'corte'); ES.p.dados.clips.forEach(c=>delete c.transicao); evMudou(); evFecharPopBarra()">Aplicar em todos os cortes</button>`;
   else if (tipo === 'enquadrar') html = `<b>🖼️ Enquadramento</b><button class="ev-btn ia" style="width:100%;margin:6px 0;" onclick="evFecharPopBarra(); ES.p.dados.enquadrarRosto=true; evImagemInteligente({ cor: !!ES.p.dados.corAuto })">🎯 Enquadrar no rosto (automático)</button>${ES.p.dados.enquadrarRosto ? `<label class="ev-chk2"><input type="checkbox" ${c.enquadrar !== false ? 'checked' : ''} onchange="evSet('enquadrar', this.checked ? null : false); evMudou(false)"> Seguir o rosto neste clipe</label>` : ''}<div class="ev-chips">${[['cobrir', 'Preencher a tela'], ['conter', 'Inteiro + fundo desfocado']].map(([k, r]) => `<button class="${(c.ajuste || 'cobrir') === k ? 'on' : ''}" onclick="evSet('ajuste','${k}'); evMudou(false); evPopBarra('enquadrar')">${r}</button>`).join('')}</div><label class="ev-chk2"><input type="checkbox" ${c.espelhar ? 'checked' : ''} onchange="evSet('espelhar', this.checked); evMudou(false)"> Espelhar (inverter lados)</label><div class="ev-sub">Posição (horizontal / vertical):</div><div class="ev-dupla"><input type="range" min="-0.5" max="0.5" step="0.01" value="${c.px || 0}" oninput="evSet('px', Number(this.value))" onchange="evMudou(false)"><input type="range" min="-0.5" max="0.5" step="0.01" value="${c.py || 0}" oninput="evSet('py', Number(this.value))" onchange="evMudou(false)"></div>`;
-  else if (tipo === 'musica') html = `<b>🎵 Música de fundo</b><div class="ev-sub">Trilhas criadas na hora para o seu vídeo, sem direitos autorais:</div><div class="ev-trilhas">${Object.entries(EV_TRILHAS).map(([k, t]) => `<button onclick="evFecharPopBarra(); evAdicionarTrilha('${k}')"><span>${t.ico}</span>${t.nome}</button>`).join('')}</div><div class="ev-linha-btn"><label class="ev-btn" style="cursor:pointer;"><input type="file" accept="audio/*" hidden onchange="evFecharPopBarra(); evSubir(this.files)">⬆️ Subir a minha música</label><button class="ev-btn" onclick="evFecharPopBarra(); evPainel('audio')">Mais opções de áudio</button></div>`;
+  else if (tipo === 'musica') html = `<b>🎵 Música de fundo</b><button class="ev-btn ia" style="width:100%;margin:6px 0;" onclick="evFecharPopBarra(); evAbrirMusicas()">🌐 Buscar músicas da internet</button><div class="ev-sub">Ou uma trilha gerada na hora:</div><div class="ev-trilhas">${Object.entries(EV_TRILHAS).map(([k, t]) => `<button onclick="evFecharPopBarra(); evAdicionarTrilha('${k}')"><span>${t.ico}</span>${t.nome}</button>`).join('')}</div><div class="ev-linha-btn"><label class="ev-btn" style="cursor:pointer;"><input type="file" accept="audio/*" hidden onchange="evFecharPopBarra(); evSubir(this.files)">⬆️ Subir a minha música</label><button class="ev-btn" onclick="evFecharPopBarra(); evPainel('audio')">Mais opções de áudio</button></div>`;
   else if (tipo === 'texto') html = `<b>🔤 Adicionar texto no cursor</b><div class="ev-chips col">${Object.entries(EV_ESTILOS).filter(([k]) => k !== 'emoji').map(([k, e]) => `<button onclick="evFecharPopBarra(); evAdicionarTexto('${k}')">${e.rot}</button>`).join('')}</div>`;
   else if (tipo === 'mais') html = `<b>Mais ferramentas</b><div class="ev-chips col">
     <button onclick="evFecharPopBarra(); evPainel('filtros')">🎨 Filtros e cor</button>
