@@ -1438,6 +1438,25 @@
     .ev-linha-barra .ev-sep { width:1px; align-self:stretch; background:var(--e-bd); margin:6px 3px; flex-shrink:0; }
     .ev-pub { grid-template-columns:1fr; } .ev-modal { width:100% !important; max-height:92vh; }
   }
+  .evc { position:fixed; inset:0; z-index:400; background:#000; color:#fff; overflow:hidden; }
+  .evc .evc-palco { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#000; border-radius:0; max-height:none; min-height:0; }
+  .evc .evc-palco canvas { width:100%; height:100%; max-width:none; max-height:none; object-fit:contain; display:block; }
+  .evc .ev-cam-tp { top:calc(env(safe-area-inset-top) + 64px); }
+  .evc-tempo { top:calc(env(safe-area-inset-top) + 70px) !important; right:auto !important; left:50% !important; transform:translateX(-50%); font-size:15px !important; }
+  .evc-topo { position:absolute; top:0; left:0; right:0; z-index:3; display:flex; align-items:center; gap:8px; padding:calc(env(safe-area-inset-top) + 10px) 12px 14px; background:linear-gradient(rgba(0,0,0,.6), transparent); }
+  .evc-ic { width:42px; height:42px; flex:0 0 42px; border-radius:50%; border:none; background:rgba(0,0,0,.45); color:#fff; font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .evc-ic.on { background:#facc15; color:#000; } .evc [hidden] { display:none !important; }
+  .evc-modos { flex:1; display:flex; justify-content:center; gap:6px; } .evc-modos button { border:none; border-radius:18px; padding:7px 12px; background:rgba(0,0,0,.45); color:#fff; font-weight:700; font-size:12.5px; cursor:pointer; } .evc-modos button.on { background:#fff; color:#000; }
+  .evc-base { position:absolute; left:0; right:0; bottom:0; z-index:3; padding:14px 16px calc(env(safe-area-inset-bottom) + 20px); background:linear-gradient(transparent, rgba(0,0,0,.65)); }
+  .evc-msg { text-align:center; font-size:12.5px; color:#e2e8f0; margin-bottom:12px; text-shadow:0 1px 3px #000; }
+  .evc-botoes { display:flex; align-items:center; justify-content:center; gap:44px; }
+  .evc-rec { width:78px; height:78px; border-radius:50%; border:5px solid #fff; background:transparent; padding:0; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .evc-rec i { display:block; width:60px; height:60px; border-radius:50%; background:#ef4444; transition:all .2s; } .evc-rec.gravando i { width:30px; height:30px; border-radius:8px; }
+  .evc-lat { width:50px; height:50px; border-radius:50%; border:none; background:rgba(255,255,255,.2); color:#fff; font-size:20px; cursor:pointer; } .evc-lat:disabled { opacity:.35; } .evc-lat.on { background:#fff; color:#000; }
+  .evc-zoom { position:absolute; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom) + 150px); z-index:3; display:flex; align-items:center; gap:8px; background:rgba(0,0,0,.45); padding:6px 10px; border-radius:22px; }
+  .evc-zoom input { width:150px; } .evc-zoom b { font-size:13px; min-width:38px; text-align:center; } .evc-zoom button { width:28px; height:28px; border-radius:50%; border:none; background:rgba(255,255,255,.2); color:#fff; font-weight:800; }
+  .evc-ajustes { position:absolute; top:0; right:0; bottom:0; width:min(360px,100%); z-index:5; background:rgba(15,23,42,.97); padding:calc(env(safe-area-inset-top) + 12px) 16px 24px; overflow-y:auto; color:#e2e8f0; }
+  .evc-aj-cab { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; } .evc .ev-chk2 { color:#e2e8f0; }
   .ev-cam .ev-chk2 { color:var(--e-tx); } .ev-cam-corpo { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:16px; } @media (max-width: 760px) { .ev-cam-corpo { grid-template-columns:1fr; } }
   .ev-cam-palco { position:relative; background:#000; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; max-height:66vh; }
   .ev-cam-palco { min-height:52vh; } .ev-cam-palco canvas { max-width:100%; height:62vh; width:auto; object-fit:contain; display:block; } @media (max-width: 760px) { .ev-cam-palco canvas { height:auto; width:100%; max-height:55vh; } }
@@ -21323,7 +21342,7 @@ async function evAbrirEditor(id) {
     </div>
     <section class="ev-linha">
       <div class="ev-linha-barra">
-        <button class="ev-tl-ia ev-so-cel" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button><button class="ev-so-cel" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="ev-so-cel" onclick="document.getElementById('ev-galeria').click()" title="Adicionar fotos e vídeos da galeria"><i>🖼️</i><span>Galeria</span></button><span class="ev-sep ev-so-cel"></span><button class="ev-so-pc" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)"><i>↶</i><span>Desfazer</span></button><button class="ev-so-pc" onclick="evRefazer()" title="Refazer (Ctrl+Y)"><i>↷</i><span>Refazer</span></button><span class="ev-sep ev-so-pc"></span><button class="" onclick="evDividir()" title="Dividir no cursor (S)"><i>✂️</i><span>Dividir</span></button><button class="" onclick="evExcluirSel()" title="Excluir (Delete)"><i>🗑️</i><span>Excluir</span></button><button class="" onclick="evDuplicarSel()" title="Duplicar (Ctrl+D)"><i>⧉</i><span>Duplicar</span></button><span class="ev-sep"></span><button class="" onclick="evPopBarra('velocidade', this)" title="Velocidade"><i>⏩</i><span>Velocidade</span></button><button class="" onclick="evPopBarra('volume', this)" title="Volume"><i>🔊</i><span>Volume</span></button><button class="" onclick="evPopBarra('zoom', this)" title="Zoom"><i>🔍</i><span>Zoom</span></button><button class="" onclick="evPopBarra('enquadrar', this)" title="Enquadrar, espelhar e posicionar"><i>🎯</i><span>Enquadrar</span></button><button class="" onclick="evPopBarra('transicao', this)" title="Transição"><i>🔀</i><span>Transição</span></button><span class="ev-sep"></span><button class="ev-so-pc" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="" onclick="evPopBarra('texto', this)" title="Adicionar texto"><i>🔤</i><span>Texto</span></button><button class="" onclick="evLegendasDaFala()" title="Legendas automáticas do que é falado"><i>💬</i><span>Legendas</span></button><button class="" onclick="evPopBarra('musica', this)" title="Música de fundo"><i>🎵</i><span>Música</span></button><button class="" onclick="evPainel('audio'); evSheet('painel'); setTimeout(()=>{const e=document.getElementById('ev-limpeza'); if(e) e.scrollIntoView({block:'start'});},80)" title="Tirar ruído do áudio com IA"><i>🎧</i><span>Limpar áudio</span></button><button class="ev-so-cel" onclick="evPainel('filtros'); evSheet('painel')" title="Filtros e imagem inteligente"><i>🎨</i><span>Filtros</span></button><button class="ev-so-cel" onclick="evPainel('elementos'); evSheet('painel')" title="Logo, emojis e encerramento"><i>🏷️</i><span>Marca</span></button><button class="ev-so-cel" onclick="evPainel('midia'); evSheet('painel')" title="Mídias do projeto"><i>🎞️</i><span>Mídias</span></button><button class="ev-so-cel" onclick="evPainel('ia'); evSheet('painel')" title="Agente IA"><i>🤖</i><span>Agente</span></button><button class="ev-so-cel" onclick="evSheet('props')" title="Ajustes do item selecionado"><i>⚙️</i><span>Ajustes</span></button><button class="" onclick="evPopBarra('mais', this)" title="Mais ferramentas"><i>⋯</i><span>Mais</span></button><span class="ev-sep ev-so-pc"></span><button class="ev-tl-ia ev-so-pc" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button>
+        <button class="ev-tl-ia ev-so-cel" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button><button class="ev-so-cel" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="ev-so-cel" onclick="document.getElementById('ev-galeria').click()" title="Adicionar fotos e vídeos da galeria"><i>🖼️</i><span>Galeria</span></button><span class="ev-sep ev-so-cel"></span><button class="ev-so-pc" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)"><i>↶</i><span>Desfazer</span></button><button class="ev-so-pc" onclick="evRefazer()" title="Refazer (Ctrl+Y)"><i>↷</i><span>Refazer</span></button><span class="ev-sep ev-so-pc"></span><button class="" onclick="evDividir()" title="Dividir no cursor (S)"><i>✂️</i><span>Dividir</span></button><button class="" onclick="evExcluirSel()" title="Excluir (Delete)"><i>🗑️</i><span>Excluir</span></button><button class="" onclick="evDuplicarSel()" title="Duplicar (Ctrl+D)"><i>⧉</i><span>Duplicar</span></button><span class="ev-sep"></span><button class="" onclick="evPopBarra('velocidade', this)" title="Velocidade"><i>⏩</i><span>Velocidade</span></button><button class="" onclick="evPopBarra('volume', this)" title="Volume"><i>🔊</i><span>Volume</span></button><button class="" onclick="evPopBarra('zoom', this)" title="Zoom"><i>🔍</i><span>Zoom</span></button><button class="" onclick="evPopBarra('enquadrar', this)" title="Enquadrar, espelhar e posicionar"><i>🎯</i><span>Enquadrar</span></button><button class="" onclick="evPopBarra('transicao', this)" title="Transição"><i>🔀</i><span>Transição</span></button><span class="ev-sep"></span><button class="ev-so-pc" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="" onclick="evPopBarra('texto', this)" title="Adicionar texto"><i>🔤</i><span>Texto</span></button><button class="" onclick="evLegendasDaFala()" title="Legendas automáticas do que é falado"><i>💬</i><span>Legendas</span></button><button class="" onclick="evPopBarra('musica', this)" title="Música de fundo"><i>🎵</i><span>Música</span></button><button class="ev-tl-ia" onclick="evAbrirImagensIa()" title="A IA cria imagens conforme você fala"><i>🖼️</i><span>Imagens IA</span></button><button class="" onclick="evPainel('audio'); evSheet('painel'); setTimeout(()=>{const e=document.getElementById('ev-limpeza'); if(e) e.scrollIntoView({block:'start'});},80)" title="Tirar ruído do áudio com IA"><i>🎧</i><span>Limpar áudio</span></button><button class="ev-so-cel" onclick="evPainel('filtros'); evSheet('painel')" title="Filtros e imagem inteligente"><i>🎨</i><span>Filtros</span></button><button class="ev-so-cel" onclick="evPainel('elementos'); evSheet('painel')" title="Logo, emojis e encerramento"><i>🏷️</i><span>Marca</span></button><button class="ev-so-cel" onclick="evPainel('midia'); evSheet('painel')" title="Mídias do projeto"><i>🎞️</i><span>Mídias</span></button><button class="ev-so-cel" onclick="evPainel('ia'); evSheet('painel')" title="Agente IA"><i>🤖</i><span>Agente</span></button><button class="ev-so-cel" onclick="evSheet('props')" title="Ajustes do item selecionado"><i>⚙️</i><span>Ajustes</span></button><button class="" onclick="evPopBarra('mais', this)" title="Mais ferramentas"><i>⋯</i><span>Mais</span></button><span class="ev-sep ev-so-pc"></span><button class="ev-tl-ia ev-so-pc" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button>
         <div style="flex:1" class="ev-so-pc"></div>
         <span class="ev-so-pc" style="font-size:12px;opacity:.7;">Zoom</span><input class="ev-so-pc" type="range" min="15" max="200" value="${ES.pxs}" oninput="ES.pxs=Number(this.value); evDesenharLinha()">
         <input type="file" id="ev-galeria" accept="video/*,image/*,audio/*" multiple hidden onchange="evSubir(this.files); this.value=''">
@@ -21687,21 +21706,90 @@ function evPainel(qual) {
   else if (qual === 'ia') evPainelIa();
 }
 
-// ---------- Tirar ruído do áudio (IA + manual) ----------
-const EV_LIMPEZA_PADRAO = { ia: 0.9, reducao: 12, graves: 80, zumbido: 0, chiado: 20000, realce: 2, silencio: true, nivelar: true, ganho: 0 };
-const EV_LIMPEZA_NIVEIS = {
-  leve: { rot: '🌿 Leve', d: 'Só o barulho de fundo', c: { ia: 0.6, reducao: 6, realce: 1, silencio: false } },
-  recomendado: { rot: '✨ Recomendado', d: 'Voz limpa e natural', c: {} },
-  forte: { rot: '💪 Forte', d: 'Ambiente muito barulhento', c: { ia: 1, reducao: 22, graves: 110, realce: 3, chiado: 14000 } }
+// ---------- Imagens automáticas com IA conforme a fala ----------
+const EV_ESTILOS_IMG = {
+  flat: ['🎨 Ilustração moderna', 'ilustração vetorial flat moderna, colorida, com profundidade, gradientes suaves e sombras'],
+  isometrico: ['🧊 3D isométrico', 'ilustração isométrica 3D estilizada, volumes, luz e sombra, cores vivas'],
+  minimal: ['⚪ Minimalista', 'minimalista e elegante, poucas formas grandes, muito espaço, 2 a 3 cores'],
+  neon: ['🌃 Neon / tecnologia', 'estilo neon futurista, fundo escuro, linhas e brilhos coloridos, clima tecnológico'],
+  corporativo: ['💼 Corporativo', 'ilustração corporativa profissional, pessoas estilizadas, gráficos, ícones de negócios, cores sóbrias']
 };
-function evCfgLimpeza() { const ex = ES.p.dados.extras; ex.limpeza = ex.limpeza || Object.assign({ nivel: 'recomendado' }, EV_LIMPEZA_PADRAO); return ex.limpeza; }
+function evAbrirImagensIa() {
+  const d = ES.p.dados; if (!d.clips.some(c => (evMidia(c.midia) || {}).tipo === 'video')) return mostrarToast('Coloque na linha do tempo o vídeo em que você fala.', true);
+  const tot = evTotal(), sug = Math.max(2, Math.round(tot / 7)), cfg = ES.imgIa = ES.imgIa || { qtd: Math.min(sug, 20), estilo: 'flat', layout: (ES.p.formato || '9:16') === '9:16' ? 'cima' : 'cheio', texto: false };
+  const chip = (k, v, r) => `<button class="${cfg[k] === v ? 'on' : ''}" onclick="ES.imgIa.${k}=${typeof v === 'string' ? `'${v}'` : v}; evAbrirImagensIa()">${r}</button>`;
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal">
+    <div class="ev-modal-cab"><h3>🖼️ Imagens automáticas com IA</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <div class="ev-sub">A IA (Claude) ouve o que você fala, escolhe os momentos mais fortes e desenha uma imagem para cada um — ela aparece no vídeo exatamente quando você fala daquilo.</div>
+    ${evCampo('Estilo das imagens', `<div class="ev-chips">${Object.entries(EV_ESTILOS_IMG).map(([k, e]) => chip('estilo', k, e[0])).join('')}</div>`)}
+    ${evCampo('Como aparecem no vídeo', `<div class="ev-chips">${chip('layout', 'cima', '⬒ Em cima, você embaixo')}${chip('layout', 'cheio', '⛶ Tela cheia por cima')}${chip('layout', 'pip', '▣ Janelinha')}</div>`)}
+    ${evCampo(`Quantidade <b>${cfg.qtd}</b> <small>(vídeo de ${evFmtT(tot).slice(0, 5)} · sugerido ${sug})</small>`, `<input type="range" min="1" max="${Math.max(3, Math.min(40, Math.round(tot / 3)))}" value="${cfg.qtd}" oninput="ES.imgIa.qtd=Number(this.value); this.parentElement.querySelector('b').textContent=this.value">`)}
+    <label class="ev-chk2"><input type="checkbox" ${cfg.texto ? 'checked' : ''} onchange="ES.imgIa.texto=this.checked"> Escrever a palavra-chave dentro da imagem</label>
+    ${d.sobreposicoes.some(o => o.iaImagem) ? '<div class="ev-dica-fixa">As imagens criadas antes serão trocadas pelas novas.</div>' : ''}
+    <button class="ev-btn ia grande" onclick="evGerarImagensIa()">✨ Criar as imagens</button></div></div>`;
+}
+async function evSvgParaPng(svg, w, h) {
+  if (!/xmlns=/.test(svg)) svg = svg.replace(/<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+  const img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  await img.decode();
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const g = cv.getContext('2d'); g.drawImage(img, 0, 0, w, h);
+  const blob = await new Promise(ok => cv.toBlob(ok, 'image/png'));
+  const t = document.createElement('canvas'), k = 160 / Math.max(w, h); t.width = Math.round(w * k); t.height = Math.round(h * k); t.getContext('2d').drawImage(cv, 0, 0, t.width, t.height);
+  return { blob, thumb: t.toDataURL('image/jpeg', 0.7) };
+}
+async function evGerarImagensIa() {
+  const cfg = ES.imgIa, d = ES.p.dados; document.getElementById('ev-modal').innerHTML = ''; evPausar();
+  if (!(await evTranscricaoConfigurada())) return evPedirTranscricao(() => evGerarImagensIa());
+  try {
+    const medias = [...new Set(d.clips.map(c => c.midia))].map(evMidia).filter(m => m && m.tipo === 'video');
+    for (let i = 0; i < medias.length; i++) { evCarregando(`👂 Ouvindo a fala${medias.length > 1 ? ` (${i + 1}/${medias.length})` : ''}…`); await evTranscreverMidia(medias[i]); }
+    const frases = evFrasesDaFala(evPalavrasNaTimeline()); if (!frases.length) throw new Error('Não encontrei fala no vídeo.');
+    const kit = await evCarregarKit(), vertical = cfg.layout === 'cheio' && (ES.p.formato || '9:16') === '9:16';
+    evCarregando('🧠 A IA está escolhendo os momentos…');
+    const job = await api('/api/admin/estudio/ia/imagens-fala', { method: 'POST', body: JSON.stringify({ frases, qtd: cfg.qtd, estilo: EV_ESTILOS_IMG[cfg.estilo][1], cores: [kit.cor1, kit.cor2].filter(Boolean), formato: vertical ? 'vertical' : 'quadrado', comTexto: cfg.texto }) });
+    let st = null;
+    for (let k = 0; k < 1800; k++) {
+      await new Promise(z => setTimeout(z, 2500)); st = await api('/api/admin/estudio/ia/imagens-fala/' + job.id).catch(() => st);
+      if (!st) continue; if (st.status === 'pronto' || st.status === 'erro') break;
+      const e = document.querySelector('#ev-carregando b'); if (e) e.textContent = st.status === 'planejando' ? '🧠 A IA está escolhendo os momentos…' : `🎨 Desenhando as imagens… ${st.feitas} de ${st.total}`;
+    }
+    if (!st || st.status !== 'pronto') throw new Error((st && st.error) || 'A criação das imagens não terminou.');
+    // troca as imagens de IA anteriores
+    const antigas = new Set(d.sobreposicoes.filter(o => o.iaImagem).map(o => o.midia));
+    d.sobreposicoes = d.sobreposicoes.filter(o => !o.iaImagem); d.midias = d.midias.filter(m => !antigas.has(m.id) || !m.iaImagem);
+    const W = 1080, H = vertical ? 1920 : 1080, tot = evTotal(); let n = 0, ok = 0;
+    for (const im of st.imagens) {
+      const e = document.querySelector('#ev-carregando b'); if (e) e.textContent = `📤 Colocando no vídeo… ${++n} de ${st.imagens.length}`;
+      try {
+        const { blob, thumb } = await evSvgParaPng(im.svg, W, H);
+        const up = await evEnviarArquivo(new File([blob], 'imagem-ia-' + n + '.png', { type: 'image/png' }));
+        const m = { id: evUid(), url: up.url, nome: 'IA: ' + (im.titulo || 'imagem ' + n), tipo: 'imagem', duracao: 0, w: W, h: H, thumb, iaImagem: true };
+        d.midias.push(m);
+        const ini = Math.max(0, Math.min(im.ini, tot - 1)), dur = Math.max(1.5, Math.min(im.dur, tot - ini));
+        d.sobreposicoes.push({ id: evUid(), midia: m.id, ini, dur, corte: 0, vel: 1, vol: 0, layout: cfg.layout, ajuste: 'cobrir', zoom: 1.1, iaImagem: true, tam: cfg.layout === 'pip' ? 0.42 : undefined }); ok++;
+      } catch (e) { console.warn('imagem IA', e); }
+    }
+    evCarregando(null); evMudou(); evPainel(ES.painel);
+    if (!ok) throw new Error('Não consegui colocar as imagens no vídeo. Tente de novo.');
+    mostrarToast(`✨ ${ok} imagens criadas pela IA e colocadas no momento certo da fala. Toque numa delas na linha do tempo para ajustar.`);
+  } catch (e) { evCarregando(null); mostrarToast(e.message, true); }
+}
+
+// ---------- Tirar ruído do áudio (IA + manual) ----------
+const EV_LIMPEZA_PADRAO = { ia: 1, reducao: 24, graves: 100, zumbido: 0, chiado: 9000, realce: 2.5, silencio: true, nivelar: true, ganho: 0, isolar: true };
+const EV_LIMPEZA_NIVEIS = {
+  voz: { rot: '🎙️ Só a voz', d: 'Tira TODOS os sons de fundo e deixa só a voz de quem fala', c: {} },
+  leve: { rot: '🌿 Leve', d: 'Só o barulho de fundo, som bem natural', c: { ia: 0.6, reducao: 6, graves: 80, chiado: 20000, realce: 1, silencio: false, isolar: false } },
+  recomendado: { rot: '✨ Natural', d: 'Voz limpa mantendo o ambiente suave', c: { ia: 0.9, reducao: 12, graves: 80, chiado: 20000, realce: 2, isolar: false } }
+};
+function evCfgLimpeza() { const ex = ES.p.dados.extras; ex.limpeza = ex.limpeza || Object.assign({ nivel: 'voz' }, EV_LIMPEZA_PADRAO); return ex.limpeza; }
 function evVideosComSom() { const d = ES.p.dados, ids = [...new Set(d.clips.map(c => c.midia).concat((d.sobreposicoes || []).map(o => o.midia)))]; return ids.map(evMidia).filter(m => m && m.tipo === 'video'); }
 function evHtmlLimpeza() {
   if (!ES) return '';
   const c = evCfgLimpeza(), vids = evVideosComSom(), limpos = vids.filter(m => m.audioLimpo);
   const sl = (k, rot, min, max, passo, fmt) => `<label class="ev-campo"><span>${rot} <b id="ev-la-${k}">${fmt(c[k])}</b></span><input type="range" min="${min}" max="${max}" step="${passo}" value="${c[k]}" oninput="evSetLimpeza('${k}', Number(this.value)); document.getElementById('ev-la-${k}').textContent=(${fmt.toString()})(Number(this.value))"></label>`;
   return `<h4>🎧 Tirar ruído do áudio</h4>
-    <div class="ev-sub">A IA tira o barulho de fundo (ar-condicionado, vento, trânsito, chiado, eco da sala, zumbido) e deixa a voz clara e no mesmo volume.</div>
+    <div class="ev-sub">A IA separa a voz de quem fala de todo o resto (ar-condicionado, vento, trânsito, música, conversa ao fundo, chiado, zumbido) e deixa a voz clara e no mesmo volume.</div>
     <div class="ev-chips">${Object.entries(EV_LIMPEZA_NIVEIS).map(([k, n]) => `<button class="${c.nivel === k ? 'on' : ''}" title="${n.d}" onclick="evNivelLimpeza('${k}')">${n.rot}</button>`).join('')}${c.nivel === 'manual' ? '<button class="on">🎛️ Manual</button>' : ''}</div>
     <details ${c.nivel === 'manual' ? 'open' : ''} style="margin:8px 0;"><summary style="cursor:pointer;font-weight:700;font-size:13px;">🎛️ Ajuste manual</summary>
       ${sl('ia', '🤖 Força da IA (ruído de fundo)', 0, 1, 0.05, v => v ? Math.round(v * 100) + '%' : 'desligada')}
@@ -21713,7 +21801,8 @@ function evHtmlLimpeza() {
       <label class="ev-campo"><span>⚡ Zumbido da rede elétrica</span><div class="ev-chips">${[[0, 'Não tem'], [60, '60 Hz (Brasil)'], [50, '50 Hz']].map(([v, r]) => `<button class="${Number(c.zumbido) === v ? 'on' : ''}" onclick="evSetLimpeza('zumbido', ${v}); evAtualizarLimpeza()">${r}</button>`).join('')}</div></label>
       <label class="ev-chk2"><input type="checkbox" ${c.silencio ? 'checked' : ''} onchange="evSetLimpeza('silencio', this.checked)"> 🤫 Silenciar o fundo nas pausas da fala</label>
       <label class="ev-chk2"><input type="checkbox" ${c.nivelar ? 'checked' : ''} onchange="evSetLimpeza('nivelar', this.checked)"> 📏 Nivelar o volume da voz (sem altos e baixos)</label>
-      <button class="ev-mini" onclick="evNivelLimpeza('recomendado')">↺ Voltar ao recomendado</button>
+      <label class="ev-chk2"><input type="checkbox" ${c.isolar ? 'checked' : ''} onchange="evSetLimpeza('isolar', this.checked)"> 🎙️ Isolar a voz (2ª passada da IA: tira música, conversa e barulho de fundo)</label>
+      <button class="ev-mini" onclick="evNivelLimpeza('voz')">↺ Voltar para "Só a voz"</button>
     </details>
     <div class="ev-linha-btn"><button class="ev-btn" onclick="evOuvirLimpeza()">🎧 Ouvir antes / depois</button><button class="ev-btn ia" onclick="evAplicarLimpeza()">✨ Limpar o áudio</button></div>
     <div id="ev-la-amostra"></div>
@@ -21930,39 +22019,72 @@ window.addEventListener('beforeunload', e => { if (EVENV.ativos > 0) { e.prevent
 const EVCAM = { stream: null, tela: null, rec: null, partes: [], raf: null, modo: 'camera', rolando: false, pos: 0, ppm: 140 };
 async function evAbrirCamera() {
   evPausar();
-  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo"><div class="ev-modal grande ev-cam">
-    <div class="ev-modal-cab"><h3>📷 Gravar aqui no editor</h3><button onclick="evFecharCamera()">✕</button></div>
-    <div class="ev-cam-corpo">
-      <div class="ev-cam-palco" id="ev-cam-palco"><canvas id="ev-cam-cv"></canvas>
-        <div class="ev-cam-tp" id="ev-cam-tp" hidden><div class="ev-cam-tp-txt" id="ev-cam-tp-txt"></div><i></i></div>
-        <div class="ev-cam-rec" id="ev-cam-rec" hidden>● 00:00</div><div class="ev-cam-conta" id="ev-cam-conta"></div></div>
-      <div class="ev-cam-lado">
-        <div class="ev-chips" id="ev-cam-modos">${[['camera', '📷 Câmera'], ['tela', '🖥️ Tela'], ['telacam', '🖥️+📷 Tela com câmera']].map(([k, r]) => `<button class="${EVCAM.modo === k ? 'on' : ''}" onclick="evCamModo('${k}')">${r}</button>`).join('')}</div>
-        <div class="ev-dupla"><label class="ev-campo" style="flex:1;margin:0;"><span>Câmera</span><select id="ev-cam-sel" onchange="evCamLigar()"></select></label><button class="ev-btn" style="align-self:flex-end;" onclick="EVCAM.traseira=!EVCAM.traseira; EVCAM.virou=true; evCamLigar()" title="Trocar câmera frontal/traseira">🔄 Virar</button></div>
-        <label class="ev-campo"><span>Microfone</span><select id="ev-mic-sel" onchange="evCamLigar()"></select></label>
-        <div class="ev-medidor"><i id="ev-cam-nivel"></i></div>
-        <label class="ev-campo"><span>Qualidade</span><select id="ev-cam-res" onchange="evCamLigar()"><option value="1080">Full HD (1080p)</option><option value="720" selected>HD (720p)</option><option value="480">Leve (480p)</option></select></label>
-        <label class="ev-chk2"><input type="checkbox" id="ev-cam-espelho" checked onchange="evCamDesenharLoop()"> Espelhar a minha imagem na prévia</label>
-        <label class="ev-chk2"><input type="checkbox" id="ev-cam-luz" checked> ✨ Melhorar luz e cor automaticamente depois</label>
-        <label class="ev-chk2"><input type="checkbox" id="ev-cam-usatp" ${(ES.p.dados.roteiro || '').trim() ? 'checked' : ''} onchange="evCamTp()"> 📝 Mostrar o roteiro (teleprompter)</label>
-        <div id="ev-cam-tpcfg" class="ev-dupla" style="align-items:center;"><button class="ev-mini" onclick="EVCAM.ppm=Math.max(60,EVCAM.ppm-10); evCamTp()">−</button><span id="ev-cam-ppm" style="font-size:12px;">${EVCAM.ppm} ppm</span><button class="ev-mini" onclick="EVCAM.ppm=Math.min(260,EVCAM.ppm+10); evCamTp()">+</button><button class="ev-mini" onclick="evAbrirTeleprompter()">✏️ roteiro</button></div>
-        <div class="ev-linha-btn" style="margin-top:10px;"><button class="ev-btn primario grande" id="ev-cam-bt" onclick="evCamGravar()">⏺ Começar a gravar</button></div>
-        <div class="ev-linha-btn"><button class="ev-btn" id="ev-cam-pausa" onclick="evCamPausar()" disabled>⏸ Pausar</button></div>
-        <div class="ev-sub" id="ev-cam-msg">A gravação entra direto na linha do tempo (no ponto em que ela termina). Atalho: Enter começa/para.</div>
+  const temTela = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) && !evCelularAqui();
+  const temRoteiro = !!(ES.p.dados.roteiro || '').trim();
+  document.getElementById('ev-modal').innerHTML = `<div class="evc" id="evc">
+    <div class="evc-palco ev-cam-palco" id="ev-cam-palco"><canvas id="ev-cam-cv"></canvas>
+      <div class="ev-cam-tp" id="ev-cam-tp" hidden><div class="ev-cam-tp-txt" id="ev-cam-tp-txt"></div><i></i></div>
+      <div class="ev-cam-rec evc-tempo" id="ev-cam-rec" hidden>● 00:00</div><div class="ev-cam-conta" id="ev-cam-conta"></div></div>
+    <div class="evc-topo">
+      <button class="evc-ic" onclick="evFecharCamera()" title="Fechar">✕</button>
+      <div class="evc-modos" id="ev-cam-modos">${temTela ? [['camera', '📷 Câmera'], ['tela', '🖥️ Tela'], ['telacam', '🖥️+📷']].map(([k, r]) => `<button class="${EVCAM.modo === k ? 'on' : ''}" onclick="evCamModo('${k}')">${r}</button>`).join('') : ''}</div>
+      <button class="evc-ic" id="evc-flash" hidden onclick="evCamFlash()" title="Lanterna / flash">⚡</button>
+      <button class="evc-ic" onclick="evCamVirar()" title="Trocar câmera (frontal / traseira)">🔄</button>
+      <button class="evc-ic" onclick="evCamAjustes()" title="Ajustes da câmera">⚙️</button>
+    </div>
+    <div class="evc-zoom" id="evc-zoom" hidden><button onclick="evCamZoomPasso(-1)">−</button><b id="evc-zoom-v">1x</b><input type="range" id="ev-cam-zoom" oninput="evCamZoom(this.value)"><button onclick="evCamZoomPasso(1)">+</button></div>
+    <div class="evc-base">
+      <div class="evc-msg" id="ev-cam-msg">Toque no botão vermelho para gravar · a gravação entra direto no vídeo</div>
+      <div class="evc-botoes">
+        <button class="evc-lat" id="ev-cam-pausa" onclick="evCamPausar()" disabled title="Pausar">⏸</button>
+        <button class="evc-rec" id="ev-cam-bt" onclick="evCamGravar()" title="Gravar (Enter)"><i></i></button>
+        <button class="evc-lat ${temRoteiro ? 'on' : ''}" id="evc-tp-bt" onclick="const c=document.getElementById('ev-cam-usatp'); c.checked=!c.checked; this.classList.toggle('on', c.checked); evCamTp()" title="Roteiro na tela (teleprompter)">📝</button>
       </div>
-    </div></div></div>`;
+    </div>
+    <div class="evc-ajustes" id="evc-ajustes" hidden>
+      <div class="evc-aj-cab"><b>⚙️ Ajustes da câmera</b><button class="evc-ic" onclick="evCamAjustes()">✕</button></div>
+      <label class="ev-campo"><span>Câmera</span><select id="ev-cam-sel" onchange="evCamLigar()"></select></label>
+      <label class="ev-campo"><span>Microfone</span><select id="ev-mic-sel" onchange="evCamLigar()"></select></label>
+      <div class="ev-medidor"><i id="ev-cam-nivel"></i></div>
+      <label class="ev-campo"><span>Qualidade</span><select id="ev-cam-res" onchange="evCamLigar()"><option value="2160">4K (se a câmera tiver)</option><option value="1080" selected>Full HD 1080p (recomendado)</option><option value="720">HD 720p (mais leve)</option></select></label>
+      <div class="ev-sub" id="evc-info"></div>
+      <label class="ev-chk2"><input type="checkbox" id="ev-cam-espelho" checked onchange="evCamDesenharLoop()"> Espelhar a minha imagem na prévia</label>
+      <label class="ev-chk2"><input type="checkbox" id="ev-cam-luz" checked> ✨ Melhorar luz e cor automaticamente depois</label>
+      <label class="ev-chk2"><input type="checkbox" id="ev-cam-usatp" ${temRoteiro ? 'checked' : ''} onchange="document.getElementById('evc-tp-bt').classList.toggle('on', this.checked); evCamTp()"> 📝 Mostrar o roteiro (teleprompter)</label>
+      <div id="ev-cam-tpcfg" class="ev-dupla" style="align-items:center;"><button class="ev-mini" onclick="EVCAM.ppm=Math.max(60,EVCAM.ppm-10); evCamTp()">−</button><span id="ev-cam-ppm" style="font-size:12px;">${EVCAM.ppm} ppm</span><button class="ev-mini" onclick="EVCAM.ppm=Math.min(260,EVCAM.ppm+10); evCamTp()">+</button><button class="ev-mini" onclick="evAbrirTeleprompter()">✏️ roteiro</button></div>
+    </div>
+  </div>`;
   await evCamLigar(true); evCamTp();
 }
+function evCamAjustes() { const a = document.getElementById('evc-ajustes'); if (a) a.hidden = !a.hidden; }
+function evCamVirar() { if (EVCAM.rec) return mostrarToast('Pare a gravação para trocar de câmera.', true); EVCAM.traseira = !EVCAM.traseira; EVCAM.virou = true; evCamLigar(); }
+// Recursos da própria câmera (quando o aparelho oferece): zoom óptico/digital e lanterna.
+function evCamRecursos() {
+  const tr = EVCAM.stream && EVCAM.stream.getVideoTracks()[0]; if (!tr) return;
+  const cap = tr.getCapabilities ? tr.getCapabilities() : {}, st = tr.getSettings ? tr.getSettings() : {};
+  const z = document.getElementById('evc-zoom'), zi = document.getElementById('ev-cam-zoom');
+  if (z && cap.zoom && cap.zoom.max > cap.zoom.min) { z.hidden = false; zi.min = cap.zoom.min; zi.max = cap.zoom.max; zi.step = cap.zoom.step || 0.1; zi.value = st.zoom || cap.zoom.min; document.getElementById('evc-zoom-v').textContent = Number(zi.value).toFixed(1) + 'x'; } else if (z) z.hidden = true;
+  const fl = document.getElementById('evc-flash'); if (fl) { fl.hidden = !cap.torch; fl.classList.toggle('on', !!EVCAM.flash); }
+  const info = document.getElementById('evc-info'); if (info && st.width) info.textContent = `Câmera em ${st.width}×${st.height}${st.frameRate ? ' · ' + Math.round(st.frameRate) + ' fps' : ''}`;
+}
+function evCamZoom(v) { const tr = EVCAM.stream && EVCAM.stream.getVideoTracks()[0]; if (!tr) return; tr.applyConstraints({ advanced: [{ zoom: Number(v) }] }).catch(() => {}); const b = document.getElementById('evc-zoom-v'); if (b) b.textContent = Number(v).toFixed(1) + 'x'; }
+function evCamZoomPasso(d) { const zi = document.getElementById('ev-cam-zoom'); if (!zi) return; zi.value = Math.max(Number(zi.min), Math.min(Number(zi.max), Number(zi.value) + d * Math.max(0.5, (zi.max - zi.min) / 8))); evCamZoom(zi.value); }
+function evCamFlash() { const tr = EVCAM.stream && EVCAM.stream.getVideoTracks()[0]; if (!tr) return; EVCAM.flash = !EVCAM.flash; tr.applyConstraints({ advanced: [{ torch: EVCAM.flash }] }).catch(() => { EVCAM.flash = false; }); const fl = document.getElementById('evc-flash'); if (fl) fl.classList.toggle('on', EVCAM.flash); }
 async function evCamModo(m) { EVCAM.modo = m; document.querySelectorAll('#ev-cam-modos button').forEach(b => b.classList.toggle('on', b.getAttribute('onclick').includes(`'${m}'`))); if (m !== 'camera' && !EVCAM.tela) { try { EVCAM.tela = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true }); EVCAM.tela.getVideoTracks()[0].onended = () => { EVCAM.tela = null; if (!EVCAM.rec) evCamModo('camera'); }; } catch (e) { EVCAM.modo = 'camera'; evCamModo('camera'); return mostrarToast('Compartilhamento de tela cancelado.', true); } } if (m === 'camera' && EVCAM.tela && !EVCAM.rec) { EVCAM.tela.getTracks().forEach(t => t.stop()); EVCAM.tela = null; } evCamDesenharLoop(); }
 async function evCamLigar(primeira) {
   if (EVCAM.rec) return;
   if (EVCAM.stream) EVCAM.stream.getTracks().forEach(t => t.stop());
-  const v = id => (document.getElementById(id) || {}).value || '', alt = Number(v('ev-cam-res')) || 720;
-  const celular = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent), vertical = (ES.p.formato || '9:16') !== '16:9' && celular;
+  const v = id => (document.getElementById(id) || {}).value || '', alt = Number(v('ev-cam-res')) || 1080;
   const camSel = EVCAM.virou ? null : v('ev-cam-sel');
-  try {
-    EVCAM.stream = await navigator.mediaDevices.getUserMedia({ video: Object.assign({ height: { ideal: vertical ? Math.round(alt * 16 / 9) : alt }, width: { ideal: vertical ? alt : Math.round(alt * 16 / 9) }, frameRate: { ideal: 30 } }, camSel ? { deviceId: { exact: camSel } } : { facingMode: EVCAM.traseira ? 'environment' : 'user' }), audio: Object.assign({ echoCancellation: true, noiseSuppression: true, autoGainControl: true }, v('ev-mic-sel') ? { deviceId: { exact: v('ev-mic-sel') } } : {}) });
-  } catch (e) { document.getElementById('ev-cam-msg').textContent = '⚠️ ' + (typeof traduzirErroMidia === 'function' ? traduzirErroMidia(e) : e.message); return; }
+  // câmera "normal": pede a resolução cheia do sensor (16:9) e deixa o aparelho girar sozinho; o recorte para o formato é feito no desenho
+  const video = Object.assign({ width: { ideal: Math.round(alt * 16 / 9) }, height: { ideal: alt }, frameRate: { ideal: 30, max: 60 } }, camSel ? { deviceId: { exact: camSel } } : { facingMode: { ideal: EVCAM.traseira ? 'environment' : 'user' } });
+  const audio = Object.assign({ echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 }, v('ev-mic-sel') ? { deviceId: { exact: v('ev-mic-sel') } } : {});
+  try { EVCAM.stream = await navigator.mediaDevices.getUserMedia({ video, audio }); }
+  catch (e) {
+    try { EVCAM.stream = await navigator.mediaDevices.getUserMedia({ video: camSel ? { deviceId: { exact: camSel } } : { facingMode: EVCAM.traseira ? 'environment' : 'user' }, audio: true }); } // aparelho que não aceita a resolução pedida
+    catch (e2) { document.getElementById('ev-cam-msg').textContent = '⚠️ ' + (typeof traduzirErroMidia === 'function' ? traduzirErroMidia(e2) : e2.message); return; }
+  }
+  EVCAM.flash = false;
   EVCAM.virou = false;
   if (primeira || true) {
     const dev = await navigator.mediaDevices.enumerateDevices(), cam = EVCAM.stream.getVideoTracks()[0], mic = EVCAM.stream.getAudioTracks()[0];
@@ -21970,7 +22092,7 @@ async function evCamLigar(primeira) {
     document.getElementById('ev-cam-sel').innerHTML = opts('videoinput', cam); document.getElementById('ev-mic-sel').innerHTML = opts('audioinput', mic);
   }
   EVCAM.vid = EVCAM.vid || Object.assign(document.createElement('video'), { muted: true, playsInline: true });
-  EVCAM.vid.srcObject = EVCAM.stream; await EVCAM.vid.play().catch(() => {});
+  EVCAM.vid.srcObject = EVCAM.stream; await EVCAM.vid.play().catch(() => {}); evCamRecursos();
   try { const ac = evAudioCtx(); EVCAM.an = ac.createAnalyser(); EVCAM.an.fftSize = 512; ac.createMediaStreamSource(EVCAM.stream).connect(EVCAM.an); } catch (e) {}
   evCamDesenharLoop();
 }
@@ -21978,7 +22100,7 @@ async function evCamLigar(primeira) {
 function evCamDesenharLoop() {
   cancelAnimationFrame(EVCAM.raf);
   const cv = document.getElementById('ev-cam-cv'); if (!cv) return;
-  const F = EV_FORMATOS[ES.p.formato] || EV_FORMATOS['9:16'], esc = Math.min(1, 1280 / Math.max(F.w, F.h)); cv.width = Math.round(F.w * esc); cv.height = Math.round(F.h * esc);
+  const F = EV_FORMATOS[ES.p.formato] || EV_FORMATOS['9:16'], esc = Math.min(1, 1920 / Math.max(F.w, F.h)); cv.width = Math.round(F.w * esc); cv.height = Math.round(F.h * esc);
   const g = cv.getContext('2d'), W = cv.width, H = cv.height;
   if (EVCAM.tela && !EVCAM.vTela) { EVCAM.vTela = Object.assign(document.createElement('video'), { muted: true, playsInline: true }); }
   if (EVCAM.tela && EVCAM.vTela.srcObject !== EVCAM.tela) { EVCAM.vTela.srcObject = EVCAM.tela; EVCAM.vTela.play().catch(() => {}); }
@@ -22018,7 +22140,7 @@ async function evCamGravar() {
     dest.stream.getAudioTracks().forEach(t => fluxo.addTrack(t));
   } catch (e) { EVCAM.stream.getAudioTracks().forEach(t => fluxo.addTrack(t)); }
   const mime = ['video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
-  EVCAM.partes = []; EVCAM.tamLocal = 0; EVCAM.rec = new MediaRecorder(fluxo, mime ? { mimeType: mime, videoBitsPerSecond: EVCAM.modo === 'camera' ? 4000000 : 3000000 } : undefined);
+  EVCAM.partes = []; EVCAM.tamLocal = 0; EVCAM.rec = new MediaRecorder(fluxo, mime ? { mimeType: mime, videoBitsPerSecond: EVCAM.modo === 'camera' ? 10000000 : 6000000, audioBitsPerSecond: 160000 } : undefined);
   // envio contínuo: a gravação vai subindo para o servidor enquanto você grava (aulas de até 2 h sem estourar a memória)
   EVCAM.mime = EVCAM.rec.mimeType || mime || 'video/webm';
   EVCAM.envio = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), i: 0, fila: [], enviando: false, enviado: 0, resposta: null };
@@ -22027,14 +22149,14 @@ async function evCamGravar() {
   EVCAM.rec.onstop = () => { EVCAM.envio.fila.push({ blob: new Blob([]), fim: true }); evCamEnviarFila(); evCamTerminou(); };
   EVCAM.rec.start(4000); EVCAM.inicio = Date.now(); EVCAM.pausado = 0;
   if ((document.getElementById('ev-cam-usatp') || {}).checked) { EVCAM.pos = 0; EVCAM.ult = 0; EVCAM.rolando = true; }
-  document.getElementById('ev-cam-bt').textContent = '⏹ Parar e usar no vídeo'; document.getElementById('ev-cam-pausa').disabled = false;
+  document.getElementById('ev-cam-bt').classList.add('gravando'); { const m = document.getElementById('ev-cam-msg'); if (m) m.textContent = 'Gravando… toque no quadrado para parar e usar no vídeo'; } document.getElementById('ev-cam-pausa').disabled = false;
   const rc = document.getElementById('ev-cam-rec'); rc.hidden = false;
   EVCAM.timer = setInterval(() => { if (!EVCAM.rec || EVCAM.rec.state !== 'recording') return; const s = Math.floor((Date.now() - EVCAM.inicio - EVCAM.pausado) / 1000); rc.textContent = '● ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }, 300);
 }
 function evCamPausar() {
   const r = EVCAM.rec; if (!r) return; const b = document.getElementById('ev-cam-pausa');
-  if (r.state === 'recording') { r.pause(); EVCAM.pausaEm = Date.now(); EVCAM.rolando = false; b.textContent = '⏺ Continuar'; }
-  else if (r.state === 'paused') { EVCAM.pausado += Date.now() - EVCAM.pausaEm; r.resume(); EVCAM.ult = 0; EVCAM.rolando = (document.getElementById('ev-cam-usatp') || {}).checked; b.textContent = '⏸ Pausar'; }
+  if (r.state === 'recording') { r.pause(); EVCAM.pausaEm = Date.now(); EVCAM.rolando = false; b.textContent = '▶'; }
+  else if (r.state === 'paused') { EVCAM.pausado += Date.now() - EVCAM.pausaEm; r.resume(); EVCAM.ult = 0; EVCAM.rolando = (document.getElementById('ev-cam-usatp') || {}).checked; b.textContent = '⏸'; }
 }
 async function evCamEnviarFila() {
   const E = EVCAM.envio; if (!E || E.enviando) return; E.enviando = true;
@@ -22279,6 +22401,7 @@ function evPainelIa() {
     <label class="ev-campo"><span>Objetivo</span><select id="ev-ia-obj">${['Alcance (viralizar)', 'Autoridade', 'Gerar clientes (leads)', 'Engajamento (comentários)', 'Divulgar treinamento/evento'].map(o => `<option>${o}</option>`).join('')}</select></label>
     <label class="ev-chk2"><input type="checkbox" id="ev-ia-web" checked> 🔎 Pesquisar tendências na internet</label>
     <button class="ev-btn ia grande" onclick="evAbrirEdicaoCompleta()">✨ Editar com IA para viralizar</button>
+    <button class="ev-btn ia" style="width:100%;margin-top:6px;" onclick="evAbrirImagensIa()">🖼️ Imagens automáticas conforme a fala</button>
     <div class="ev-sub">Legendas da fala, zooms estratégicos, gancho, frases de impacto, CTA, voz limpa, cor e marca — pesquisando o que viraliza no tema. Só corta se você pedir.</div>
     <button class="ev-btn" style="width:100%;" onclick="evIaEditar()">⚡ Montagem rápida por ritmo (clipes e fotos)</button>
     <button class="ev-btn" style="width:100%;" onclick="evAbrirTeleprompter()">🎥 Roteiro + teleprompter para gravar no celular</button>

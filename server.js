@@ -13032,17 +13032,21 @@ async function prepararVideoEst(arq) {
 // IA: rede neural de redução de ruído para fala (RNNoise, arquivo modelos/voz.rnnn) + filtros de acabamento.
 // Manual: cada ajuste separado (redução de ruído, zumbido da rede elétrica, graves, chiado, realce da voz, volume).
 const MODELO_VOZ = path.join(__dirname, 'modelos', 'voz.rnnn');
+const MODELO_VOZ2 = path.join(__dirname, 'modelos', 'voz2.rnnn');
 function filtroLimpezaAudio(c) {
     c = c || {}; const n = (v, min, max, pad) => { v = Number(v); return isFinite(v) ? Math.max(min, Math.min(max, v)) : pad; };
     const f = [];
     const graves = n(c.graves, 0, 300, 80); if (graves > 0) f.push(`highpass=f=${graves}`);
     const zumbido = Number(c.zumbido) === 50 || Number(c.zumbido) === 60 ? Number(c.zumbido) : 0;
     if (zumbido) [1, 2, 3, 4].forEach(k => f.push(`bandreject=f=${zumbido * k}:width_type=q:w=12`));
-    const ia = n(c.ia, 0, 1, 0.9); if (ia > 0 && fs.existsSync(MODELO_VOZ)) f.push(`arnndn=m='${MODELO_VOZ.replace(/\\/g, '/').replace(/'/g, '')}':mix=${ia.toFixed(2)}`);
+    const ia = n(c.ia, 0, 1, 0.9), mod = m => `'${m.replace(/\\/g, '/').replace(/'/g, '')}'`;
+    if (ia > 0 && fs.existsSync(MODELO_VOZ)) f.push(`arnndn=m=${mod(MODELO_VOZ)}:mix=${ia.toFixed(2)}`);
+    // "Só a voz": segunda passada com outra rede (treinada para voz x ruído de gravação) + faixa da fala
+    if (c.isolar && fs.existsSync(MODELO_VOZ2)) f.push(`arnndn=m=${mod(MODELO_VOZ2)}:mix=1`);
     const reducao = n(c.reducao, 0, 40, 12); if (reducao > 0) f.push(`afftdn=nr=${reducao}:nf=-45:tn=1`);
-    const chiado = n(c.chiado, 4000, 20000, 20000); if (chiado < 20000) f.push(`lowpass=f=${chiado}`);
+    const chiado = n(c.chiado, 4000, 20000, c.isolar ? 9000 : 20000); if (chiado < 20000) f.push(`lowpass=f=${chiado}`);
     const realce = n(c.realce, 0, 10, 2); if (realce > 0) f.push(`equalizer=f=3000:t=q:w=1.2:g=${realce}`, `equalizer=f=250:t=q:w=1:g=${(-realce / 2).toFixed(1)}`);
-    if (c.silencio !== false && c.silencio !== 0) f.push('agate=threshold=0.012:ratio=3:attack=5:release=250');
+    if (c.silencio !== false && c.silencio !== 0) f.push(c.isolar ? 'agate=threshold=0.02:ratio=8:range=0.01:attack=3:release=180' : 'agate=threshold=0.012:ratio=3:attack=5:release=250');
     if (c.nivelar !== false && c.nivelar !== 0) f.push('speechnorm=e=6:r=0.0005:l=1');
     const ganho = n(c.ganho, -12, 12, 0); if (ganho) f.push(`volume=${ganho}dB`);
     f.push('alimiter=limit=0.95');
@@ -13079,6 +13083,58 @@ app.post('/api/admin/estudio/limpar-audio', requireRole('admin'), async (req, re
 app.get('/api/admin/estudio/limpar-audio/:id', requireRole('admin'), (req, res) => {
     const j = JOBS_AUDIO.get(req.params.id); if (!j) return res.status(404).json({ error: 'Processamento não encontrado (o servidor reiniciou).' });
     res.json(Object.assign({ segundos: Math.round((Date.now() - j.t) / 1000) }, j));
+});
+// ===== Imagens automáticas com a IA (Claude) conforme a fala =====
+// 1) a IA lê a transcrição e escolhe os momentos que merecem uma imagem; 2) desenha cada imagem como
+// ilustração vetorial (SVG) — o editor transforma em PNG e coloca no vídeo, no tempo exato da fala.
+const JOBS_IMAGENS = new Map();
+function limparSvgIa(txt) {
+    let svg = (String(txt || '').match(/<svg[\s\S]*<\/svg>/i) || [])[0]; if (!svg) return null;
+    svg = svg.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, '').replace(/<image\b[^>]*>/gi, '')
+        .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*')/gi, '').replace(/(xlink:)?href\s*=\s*("|')\s*(https?:|javascript:|data:)[^"']*\2/gi, '').replace(/@import[^;]+;/gi, '');
+    if (!/xmlns=/.test(svg)) svg = svg.replace(/<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+    return svg.length > 200 ? svg : null;
+}
+app.post('/api/admin/estudio/ia/imagens-fala', requireRole('admin'), async (req, res) => {
+    if (!iaDisponivelMt()) return res.status(400).json({ error: 'A IA ainda não está conectada. Cadastre a chave da Anthropic nas configurações.' });
+    const b = req.body || {}, frases = (Array.isArray(b.frases) ? b.frases : []).slice(0, 400).map(f => ({ ini: Number(f.ini) || 0, fim: Number(f.fim) || 0, texto: String(f.texto || '').slice(0, 300) })).filter(f => f.texto.trim());
+    if (!frases.length) return res.status(400).json({ error: 'Não encontrei fala no vídeo para criar as imagens.' });
+    const total = Math.max(...frases.map(f => f.fim)), qtd = Math.max(1, Math.min(40, Number(b.qtd) || Math.round(total / 7)));
+    const estilo = String(b.estilo || 'ilustração vetorial flat moderna, colorida, com profundidade e gradientes suaves').slice(0, 200);
+    const cores = (Array.isArray(b.cores) ? b.cores : []).filter(c => /^#[0-9a-f]{3,8}$/i.test(c)).slice(0, 4);
+    const vertical = b.formato === 'vertical', larg = 1080, alt = vertical ? 1920 : 1080;
+    const id = require('crypto').randomBytes(6).toString('hex'), job = { status: 'planejando', feitas: 0, total: qtd, imagens: [], t: Date.now() };
+    JOBS_IMAGENS.set(id, job); setTimeout(() => JOBS_IMAGENS.delete(id), 3 * 3600 * 1000); res.json({ id });
+    try {
+        const linhas = frases.map(f => `[${f.ini.toFixed(1)}-${f.fim.toFixed(1)}] ${f.texto}`).join('\n');
+        const plano = await iaPesquisarMt('Você é diretor de arte de vídeos curtos (Reels/TikTok) e aulas. Responda só com JSON válido.',
+            `Fala do vídeo com o tempo (segundos):\n${linhas.slice(0, 24000)}\n\nEscolha ${qtd} momentos (ou menos, se a fala for curta) para mostrar uma IMAGEM que ilustra exatamente o que está sendo dito naquele instante — de preferência ideias concretas, números, comparações, exemplos e palavras-chave fortes. Espalhe ao longo do vídeo, sem sobrepor; cada imagem fica de 2,5 a 5 s. Para cada momento descreva a cena visual (o que desenhar: objetos, pessoas estilizadas, ícones, setas, gráficos, metáforas visuais) de um jeito que um ilustrador consiga desenhar só com formas vetoriais.\nJSON: {"momentos":[{"ini":0,"dur":3.5,"titulo":"até 4 palavras","cena":"descrição visual detalhada","cores":["#hex","#hex","#hex"]}]}`,
+            4000, false, {});
+        const txt = plano.texto, ini = txt.indexOf('{'), fim = txt.lastIndexOf('}');
+        let momentos = []; try { momentos = JSON.parse(txt.slice(ini, fim + 1)).momentos || []; } catch (e) {}
+        momentos = momentos.filter(m => m && m.cena).slice(0, qtd).map(m => ({ ini: Math.max(0, Number(m.ini) || 0), dur: Math.max(2, Math.min(6, Number(m.dur) || 3.5)), titulo: String(m.titulo || '').slice(0, 60), cena: String(m.cena).slice(0, 900), cores: (m.cores || []).filter(c => /^#[0-9a-f]{3,8}$/i.test(c)).slice(0, 4) }));
+        if (!momentos.length) throw new Error('A IA não encontrou momentos para ilustrar.');
+        Object.assign(job, { status: 'desenhando', total: momentos.length });
+        const desenhar = async m => {
+            const pal = (cores.length ? cores : m.cores).join(', ');
+            const pedido = `Desenhe esta cena como uma imagem SVG de alta qualidade para aparecer num vídeo:\nCENA: ${m.cena}\nESTILO: ${estilo}.\n${pal ? 'PALETA (use como base): ' + pal + '\n' : ''}REGRAS: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${larg} ${alt}" width="${larg}" height="${alt}">; fundo preenchendo tudo (gradiente bonito); composição centralizada com o elemento principal grande e legível de longe (é visto no celular); use formas, gradientes (linearGradient/radialGradient), sombras suaves com opacidade, profundidade e detalhes; ${b.comTexto ? `inclua o texto "${m.titulo}" grande, em negrito, font-family Arial, bem contrastado` : 'SEM nenhum texto escrito'}; proibido: <image>, <foreignObject>, <script>, fontes externas, links. Tamanho máximo ~14000 caracteres. Responda SOMENTE com o código SVG, nada antes ou depois.`;
+            for (let tent = 0; tent < 2; tent++) {
+                try {
+                    const r = await iaPesquisarMt('Você é um ilustrador vetorial excelente. Você responde apenas com código SVG válido e completo.', pedido, 9000, false, { modelo: ANTHROPIC_MODEL_AVANCADO });
+                    const svg = limparSvgIa(r.texto); if (svg) return Object.assign({}, m, { svg });
+                } catch (e) { if (e.semIa) throw e; }
+            }
+            return null;
+        };
+        const fila = momentos.slice(); const trabalhar = async () => { while (fila.length) { const m = fila.shift(); const r = await desenhar(m); if (r) job.imagens.push(r); job.feitas++; } };
+        await Promise.all([trabalhar(), trabalhar(), trabalhar()]);
+        job.imagens.sort((a, b2) => a.ini - b2.ini);
+        Object.assign(job, { status: job.imagens.length ? 'pronto' : 'erro', error: job.imagens.length ? undefined : 'A IA não conseguiu desenhar as imagens. Tente de novo.' });
+    } catch (e) { Object.assign(job, { status: 'erro', error: e.message }); }
+});
+app.get('/api/admin/estudio/ia/imagens-fala/:id', requireRole('admin'), (req, res) => {
+    const j = JOBS_IMAGENS.get(req.params.id); if (!j) return res.status(404).json({ error: 'Processamento não encontrado (o servidor reiniciou).' });
+    res.json(j);
 });
 app.get('/api/admin/estudio/preparo/:id', requireRole('admin'), (req, res) => {
     const j = JOBS_PREPARO.get(req.params.id); if (!j) return res.status(404).json({ error: 'Preparo não encontrado (o servidor reiniciou).' });
