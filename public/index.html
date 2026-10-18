@@ -1399,6 +1399,27 @@
   body.modo-estudio .evr-form input, body.modo-estudio .evr-form select { background:#0b1329; color:#fff; border-color:#25325c; } body.modo-estudio .evr-res h3 { color:#fff; }
   .eh-acao.eh-radar { grid-column:1 / -1; background:linear-gradient(135deg,#1e1b4b,#3b0d1c); border-color:#4c1d95; }
   @media (max-width: 600px) { .evr-dupla { grid-template-columns:1fr; } .evr-ideias, .evr-tend { grid-template-columns:1fr; } }
+  .ea { max-width:1100px; } .ea h2 { margin:0 0 4px; } .ea h3 { margin:22px 0 10px; } .ea-topo { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap; } .ea-topo p { margin:0; color:#64748b; max-width:640px; }
+  .ea-bt { border:1px solid #cbd5e1; background:#fff; color:#0b1329; border-radius:10px; padding:9px 14px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:13.5px; } .ea-bt.pri { background:#dc4c4c; border-color:#dc4c4c; color:#fff; } .ea-bt.mini { padding:5px 9px; font-size:12px; }
+  .ea-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin:16px 0; } .ea-kpi { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px; } .ea-kpi b { display:block; font-size:22px; } .ea-kpi span { font-size:12.5px; color:#64748b; }
+  .ea-aviso { background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; padding:10px 14px; border-radius:12px; font-size:13.5px; margin:8px 0; }
+  .ea-lista { display:grid; gap:8px; } .ea-item { display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px; } .ea-av { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#0b1329,#dc4c4c); color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .ea-info { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; } .ea-info small { color:#64748b; font-size:12px; } .ea-st { color:#fff; font-size:11.5px; font-weight:700; border-radius:20px; padding:4px 10px; white-space:nowrap; }
+  .ea-acoes { display:flex; gap:4px; } .ea-acoes button { border:1px solid #e2e8f0; background:#f8fafc; border-radius:9px; padding:7px 9px; cursor:pointer; font-weight:700; font-size:12.5px; }
+  .ea-vazio { background:#fff; border:2px dashed #cbd5e1; border-radius:14px; padding:26px; text-align:center; color:#64748b; }
+  .ea-titulo2 { display:flex; justify-content:space-between; align-items:center; } .ea-planos { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+  .ea-plano { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:8px; } .ea-plano.off { opacity:.55; } .ea-plano.atual { border:2px solid #dc4c4c; }
+  .ea-plano-cab { display:flex; justify-content:space-between; align-items:baseline; } .ea-plano-cab b { font-size:18px; } .ea-plano-cab span { font-size:20px; font-weight:800; color:#dc4c4c; } .ea-plano-cab small { font-size:12px; color:#64748b; font-weight:400; }
+  .ea-plano p { margin:0; color:#64748b; font-size:13px; } .ea-plano ul { list-style:none; padding:0; margin:0; font-size:12.5px; } .ea-plano li { display:flex; justify-content:space-between; gap:8px; padding:4px 0; border-bottom:1px dashed #e2e8f0; } .ea-plano li span { color:#475569; }
+  .ea-pags { display:grid; gap:6px; } .ea-pag { display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; font-size:13px; }
+  .ea-fundo { position:fixed; inset:0; background:rgba(2,6,23,.6); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; } .ea-caixa { background:#fff; color:#0b1329; border-radius:18px; width:min(520px,100%); max-height:90vh; overflow-y:auto; padding:20px; box-shadow:0 20px 60px rgba(0,0,0,.4); }
+  .ea-caixa h3 { margin:0 0 6px; } .ea-caixa label { display:flex; flex-direction:column; gap:4px; font-size:12.5px; font-weight:700; color:#475569; margin:10px 0; } .ea-caixa input, .ea-caixa select { border:1px solid #cbd5e1; border-radius:10px; padding:10px; font-size:14px; font-weight:400; color:#0b1329; background:#fff; }
+  .ea-caixa .ea-chk { flex-direction:row; align-items:center; } .ea-linha { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; flex-wrap:wrap; } .ea-linha .ea-bt { flex:1; } .ea-sub { color:#64748b; font-size:12.5px; }
+  .ea-cred { white-space:pre-wrap; background:#f1f5f9; border-radius:12px; padding:12px; font-size:13px; font-family:inherit; } .ea-lims { display:grid; grid-template-columns:1fr 1fr; gap:0 10px; } .ea-uso { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:#475569; background:#f8fafc; border-radius:10px; padding:10px; margin-top:8px; } .ea-uso > b { width:100%; }
+  .ea-conta { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; background:linear-gradient(135deg,#0b1329,#3b0d1c); color:#fff; border-radius:18px; padding:18px; } .ea-conta small { color:#cbd5e1; } .ea-conta h2 { color:#fff; }
+  .ea-barras { display:grid; gap:10px; } .ea-barra { display:grid; grid-template-columns:1fr auto; gap:4px 10px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; font-size:13px; } .ea-barra i { grid-column:1 / -1; height:7px; background:#e2e8f0; border-radius:6px; overflow:hidden; } .ea-barra em { display:block; height:100%; } .ea-barra.off { opacity:.6; }
+  body.modo-estudio .ea-kpi, body.modo-estudio .ea-item, body.modo-estudio .ea-plano, body.modo-estudio .ea-pag, body.modo-estudio .ea-barra, body.modo-estudio .ea-vazio { background:#0f172e; border-color:#1c2747; color:#e6eaf2; } body.modo-estudio .ea-acoes button, body.modo-estudio .ea-bt:not(.pri) { background:#16224a; border-color:#25325c; color:#e6eaf2; } body.modo-estudio .ea h3, body.modo-estudio .ea h2 { color:#fff; } body.modo-estudio .ea-plano li { border-color:#1c2747; } body.modo-estudio .ea-plano li span { color:#cbd5e1; } body.modo-estudio .ea-barra i { background:#1c2747; }
+  @media (max-width: 600px) { .ea-item { flex-wrap:wrap; } .ea-acoes { width:100%; } .ea-acoes button { flex:1; } .ea-lims { grid-template-columns:1fr; } }
   .ev-so-pequeno, .ev-sheet-x, .ev-so-cel { display:none !important; }
   .ev-comparar { display:grid; gap:8px; margin-top:8px; } .ev-comparar b { display:block; font-size:12px; margin-bottom:3px; } .ev-comparar audio { width:100%; height:36px; }
   .ev-envio { font-size:12px; font-weight:700; color:#fff; background:#2563eb; border-radius:14px; padding:5px 10px; white-space:nowrap; } .ev-envio.prep { background:#7c3aed; }
@@ -1608,6 +1629,7 @@ async function api(caminho, opcoes = {}) {
     throw new Error(dados.error || 'Acesso negado.');
   }
   const dados = await resp.json().catch(() => ({}));
+  if (resp.status === 402 && (dados.planoInativo || dados.limitePlano) && typeof evAvisoPlano === 'function') evAvisoPlano(dados);
   if (!resp.ok) throw new Error(dados.error || 'Erro na requisição.');
   return dados;
 }
@@ -1831,7 +1853,7 @@ const MENU_POR_PERFIL = {
         ['ministrarTreinamento', 'Meus Treinamentos']
     ]},
     { group: 'Estúdio de Vídeo', items: [
-        ['estudioVideo', 'Projetos de Vídeo'], ['estudioAgente', 'Agente Viral'], ['estudioAgenda', 'Agenda & Instagram']
+        ['estudioVideo', 'Projetos de Vídeo'], ['estudioAgente', 'Agente Viral'], ['estudioAgenda', 'Agenda & Instagram'], ['estudioAcessos', 'Acessos & Planos (clientes)']
     ]},
     { group: 'Teste DISC', items: [
         ['discTesteMaster', 'Testar & Enviar Teste DISC']
@@ -1905,6 +1927,9 @@ const MENU_POR_PERFIL = {
         ['community', 'Comunidade'], ['events', 'Eventos'], ['ranking', 'Ranking']
     ]},
     ['contracts', 'Meus Contratos']
+  ],
+  estudio: [
+    ['estudioVideo', 'Estúdio de Vídeo']
   ],
   candidate: [
     ['portalPerfil', 'Meu Currículo'], ['portalVagas', 'Vagas Disponíveis'], ['portalCandidaturas', 'Minhas Candidaturas'], ['discTeste', 'Teste de Perfil DISC'],
@@ -1991,8 +2016,8 @@ function iniciarApp() {
   });
   const primeiraChave = achatarMenu(itensMenu)[0][0];
   // Acesso pelo celular só ao Estúdio de Vídeo (endereço /estudio)
-  if (window.MODO_ESTUDIO && u.role === 'admin') { document.body.classList.add('modo-estudio'); irPara('estudioVideo'); }
-  else { if (window.MODO_ESTUDIO) mostrarToast('O Estúdio de Vídeo é exclusivo do perfil Master. Abrindo o sistema normal.', true); document.body.classList.remove('modo-estudio'); irPara(primeiraChave); }
+  if ((window.MODO_ESTUDIO && u.role === 'admin') || u.role === 'estudio') { document.body.classList.add('modo-estudio'); irPara('estudioVideo'); }
+  else { if (window.MODO_ESTUDIO) mostrarToast('O Estúdio de Vídeo é para o Master e os clientes do Estúdio. Abrindo o sistema normal.', true); document.body.classList.remove('modo-estudio'); irPara(primeiraChave); }
   iniciarPollinhaNotificacoes();
   tratarVagaPendenteAposLogin();
 }
@@ -2171,7 +2196,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento, estudioVideo: () => renderEstudioVideo('projetos'), estudioAgente: () => renderEstudioVideo('agente'), estudioAgenda: () => renderEstudioVideo('agenda'),
+    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento, estudioVideo: () => renderEstudioVideo('projetos'), estudioAcessos: () => renderEstudioVideo('acessos'), estudioAgente: () => renderEstudioVideo('agente'), estudioAgenda: () => renderEstudioVideo('agenda'),
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster, acessosCandidatos: renderAcessosCandidatos, creditosVagas: renderCreditosVagas
   };
   NAV.profundidade++;
@@ -22314,7 +22339,7 @@ function evDesenharProps() {
   const x = evItemSel(), s = ES.sel;
   if (!x) {
     el.innerHTML = `<h4>Projeto</h4>
-      ${evCampo('Tipo de post', `<select onchange="ES.p.tipo=this.value; evMudou(false)">${[['reels', 'Reels'], ['stories', 'Stories'], ['feed', 'Feed (vídeo)'], ['aula', '🎓 Aula (Academy)']].map(([k, r]) => `<option value="${k}" ${ES.p.tipo === k ? 'selected' : ''}>${r}</option>`).join('')}</select>`)}
+      ${evCampo('Tipo de post', `<select onchange="ES.p.tipo=this.value; evMudou(false)">${[['reels', 'Reels'], ['stories', 'Stories'], ['feed', 'Feed (vídeo)']].concat(ESTADO.usuario.role === 'admin' ? [['aula', '🎓 Aula (Academy)']] : []).map(([k, r]) => `<option value="${k}" ${ES.p.tipo === k ? 'selected' : ''}>${r}</option>`).join('')}</select>`)}
       ${evCampo('Legenda do post', `<textarea rows="6" placeholder="Primeira linha = gancho…" onchange="ES.p.legenda=this.value; evMudou(false)">${escapeHtml(ES.p.legenda || '')}</textarea>`)}
       ${evCampo('Hashtags (3 a 5)', `<input value="${escapeHtml(ES.p.hashtags || '')}" placeholder="#lideranca #gestao" onchange="ES.p.hashtags=this.value; evMudou(false)">`)}
       <div class="ev-linha-btn"><button class="ev-btn ia" onclick="evIaLegenda()">🤖 Legenda + hashtags</button></div>
@@ -23514,7 +23539,7 @@ function evFrasesDaFala(pal) {
 async function evAbrirEdicaoCompleta() {
   const d = ES.p.dados, videos = d.midias.filter(m => m.tipo === 'video');
   if (!d.midias.some(m => m.tipo !== 'audio')) return mostrarToast('Suba seus vídeos e fotos em 🎞️ Mídia primeiro.', true);
-  let tr = false, ia = false; tr = await evTranscricaoConfigurada(); try { ia = !!(await api('/api/admin/treinamentos-mt-config')).iaAtiva; } catch (e) {}
+  let tr = false, ia = false; tr = await evTranscricaoConfigurada(); ia = ES.p.iaAtiva !== undefined ? !!ES.p.iaAtiva : false; if (!ia && ESTADO.usuario.role === 'admin') { try { ia = !!(await api('/api/admin/treinamentos-mt-config')).iaAtiva; } catch (e) {} }
   const principal = videos.slice().sort((a, b) => (b.duracao || 0) - (a.duracao || 0))[0];
   const op = (id, t, s, ok, marcado) => `<label class="ev-check2 ${ok ? '' : 'desl'}"><input type="checkbox" id="${id}" ${marcado && ok ? 'checked' : ''} ${ok ? '' : 'disabled'}><div><b>${t}</b><small>${s}</small></div></label>`;
   document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal grande">
@@ -23815,6 +23840,158 @@ async function evRadarUsar(i, modo) {
     else evAbrirTeleprompter();
   } catch (e) { mostrarToast(e.message, true); }
 }
+// ---------- Estúdio para clientes: acessos, planos pagos e "Meu plano" ----------
+const EA = { dados: null };
+const fmtReal = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtDataEA = d => d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : 'sem vencimento';
+function eaModal(html) { let m = document.getElementById('ea-modal'); if (!m) { m = document.createElement('div'); m.id = 'ea-modal'; document.body.appendChild(m); } m.innerHTML = html ? `<div class="ea-fundo" onclick="if(event.target===this) eaModal('')"><div class="ea-caixa">${html}</div></div>` : ''; }
+function eaStatus(a) {
+  const vencido = a.estudio_validade && new Date(a.estudio_validade) < new Date();
+  if (a.estudio_status === 'ativo' && !vencido) { const dias = a.estudio_validade ? Math.ceil((new Date(a.estudio_validade) - Date.now()) / 86400000) : null; return dias !== null && dias <= 5 ? ['Vence em ' + dias + 'd', '#d97706'] : ['Ativo', '#16a34a']; }
+  if (a.estudio_status === 'ativo' && vencido) return ['Vencido', '#dc2626'];
+  return ({ pendente: ['Aguardando pagamento', '#7c3aed'], bloqueado: ['Bloqueado', '#dc2626'], cancelado: ['Cancelado', '#64748b'] })[a.estudio_status] || ['—', '#64748b'];
+}
+function eaLimTxt(v) { return v === undefined || v === null || v === '' ? 'ilimitado' : Number(v) === 0 ? 'não incluso' : v + '/mês'; }
+async function evDesenharAcessos(corpo) {
+  if (ESTADO.usuario.role !== 'admin') return evDesenharMinhaConta(corpo);
+  const d = EA.dados = await api('/api/admin/estudio-acessos'), planoNome = id => (d.planos.find(p => p.id === id) || {}).nome || '—';
+  const ativos = d.acessos.filter(a => a.ativo), receita = ativos.reduce((t, a) => t + Number((d.planos.find(p => p.id === a.estudio_plano_id) || {}).preco || 0), 0);
+  const vencendo = ativos.filter(a => a.estudio_validade && new Date(a.estudio_validade) - Date.now() < 7 * 86400000).length;
+  const kpi = (n, r, c) => `<div class="ea-kpi"><b style="color:${c}">${n}</b><span>${r}</span></div>`;
+  corpo.innerHTML = `<div class="ea">
+    <div class="ea-topo"><div><h2>👥 Estúdio para clientes</h2><p>Crie acessos para terceiros usarem o Estúdio de Vídeo com plano pago. Cada cliente vê só os próprios vídeos, marca, agente e Instagram.</p></div>
+      <button class="ea-bt pri" onclick="eaNovoAcesso()">＋ Novo acesso</button></div>
+    <div class="ea-kpis">${kpi(ativos.length, 'acessos ativos', '#16a34a')}${kpi(fmtReal(receita), 'receita mensal (planos ativos)', '#0b1329')}${kpi(vencendo, 'vencem em 7 dias', '#d97706')}${kpi(d.acessos.length, 'acessos no total', '#64748b')}</div>
+    ${d.mercadoPago ? '' : '<div class="ea-aviso">💳 Para cobrar online, configure o token do Mercado Pago em <b>Meu Perfil</b>. Sem ele, você libera os acessos manualmente.</div>'}
+    <h3>Acessos</h3>
+    ${d.acessos.length ? `<div class="ea-lista">${d.acessos.map(a => { const st = eaStatus(a); return `<div class="ea-item">
+      <div class="ea-av">${escapeHtml((a.name || '?').trim()[0] || '?').toUpperCase()}</div>
+      <div class="ea-info"><b>${escapeHtml(a.name)}</b><small>${escapeHtml(a.email)}${a.estudio_telefone ? ' · ' + escapeHtml(a.estudio_telefone) : ''}</small>
+        <small>Plano <b>${escapeHtml(planoNome(a.estudio_plano_id))}</b> · até ${fmtDataEA(a.estudio_validade)} · ${a.projetos} projetos · este mês: ${a.uso.exportacoes || 0} vídeos, ${a.uso.ia || 0} IA, ${a.uso.imagens_ia || 0} imagens</small></div>
+      <span class="ea-st" style="background:${st[1]}">${st[0]}</span>
+      <div class="ea-acoes"><button onclick="eaEditar(${a.id})" title="Editar">✏️</button><button onclick="eaRenovar(${a.id}, 30)" title="Liberar +30 dias">+30d</button><button onclick="eaCobrar(${a.id})" title="Gerar link de pagamento">💳</button></div></div>`; }).join('')}</div>` : '<div class="ea-vazio">Nenhum acesso ainda. Clique em <b>＋ Novo acesso</b> para criar o primeiro cliente do Estúdio.</div>'}
+    <div class="ea-titulo2"><h3>Planos</h3><button class="ea-bt" onclick="eaEditarPlano()">＋ Novo plano</button></div>
+    <div class="ea-planos">${d.planos.map(p => `<div class="ea-plano ${p.ativo ? '' : 'off'}"><div class="ea-plano-cab"><b>${escapeHtml(p.nome)}</b><span>${fmtReal(p.preco)}<small>/mês</small></span></div>
+      <p>${escapeHtml(p.descricao || '')}</p><ul>${Object.entries(d.limites).map(([k, r]) => `<li><span>${r}</span><b>${eaLimTxt(p.limites[k])}</b></li>`).join('')}</ul>
+      <button class="ea-bt" onclick="eaEditarPlano(${p.id})">✏️ Editar plano</button>${p.ativo ? '' : '<em>desativado</em>'}</div>`).join('')}</div>
+    ${d.pagamentos.length ? `<h3>Pagamentos</h3><div class="ea-pags">${d.pagamentos.slice(0, 30).map(g => { const a = d.acessos.find(x => x.id === g.user_id) || {}; return `<div class="ea-pag"><span>${new Date(g.created_at + 'Z').toLocaleDateString('pt-BR')}</span><b>${escapeHtml(a.name || 'Acesso ' + g.user_id)}</b><span>${escapeHtml(planoNome(g.plano_id))} · ${g.meses} ${g.meses > 1 ? 'meses' : 'mês'}</span><b>${fmtReal(g.valor)}</b><span class="ea-st" style="background:${g.status === 'pago' ? '#16a34a' : '#7c3aed'}">${g.status === 'pago' ? 'Pago' : 'Pendente'}</span>${g.status === 'pago' ? '' : `<button class="ea-bt mini" onclick="eaConfirmarPag(${g.id})">Confirmar recebido</button>${g.link ? `<button class="ea-bt mini" onclick="navigator.clipboard.writeText('${escapeHtml(g.link)}').then(()=>mostrarToast('Link copiado!'))">Copiar link</button>` : ''}`}</div>`; }).join('')}</div>` : ''}
+  </div>`;
+}
+function eaOpcoesPlano(sel) { return EA.dados.planos.filter(p => p.ativo || p.id === sel).map(p => `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${escapeHtml(p.nome)} — ${fmtReal(p.preco)}/mês</option>`).join(''); }
+function eaNovoAcesso() {
+  eaModal(`<h3>＋ Novo acesso ao Estúdio</h3>
+    <label>Nome do cliente<input id="ea-nome" placeholder="Nome ou empresa"></label>
+    <label>E-mail (será o login)<input id="ea-email" type="email" placeholder="cliente@email.com"></label>
+    <label>WhatsApp (opcional)<input id="ea-tel" placeholder="(11) 99999-9999"></label>
+    <label>Plano<select id="ea-plano">${eaOpcoesPlano((EA.dados.planos.find(p => p.ativo) || {}).id)}</select></label>
+    <label>Liberar agora por<select id="ea-dias"><option value="30">30 dias (já pago)</option><option value="7">7 dias (teste grátis)</option><option value="90">90 dias</option><option value="365">1 ano</option><option value="0">Sem vencimento</option><option value="pendente">Não liberar — aguardar pagamento</option></select></label>
+    <label>Senha (deixe vazio para gerar uma)<input id="ea-senha" placeholder="gerar automaticamente"></label>
+    <label>Observações<input id="ea-obs" placeholder="Ex.: indicação, combinado especial…"></label>
+    <div class="ea-linha"><button class="ea-bt" onclick="eaModal('')">Cancelar</button><button class="ea-bt pri" onclick="eaCriar()">Criar acesso</button></div>`);
+}
+async function eaCriar() {
+  const v = id => document.getElementById(id).value.trim(), dias = v('ea-dias');
+  try {
+    const r = await api('/api/admin/estudio-acessos', { method: 'POST', body: JSON.stringify({ nome: v('ea-nome'), email: v('ea-email'), telefone: v('ea-tel'), plano_id: Number(v('ea-plano')), dias: dias === 'pendente' ? 0 : Number(dias), status: dias === 'pendente' ? 'pendente' : 'ativo', senha: v('ea-senha'), obs: v('ea-obs') }) });
+    eaCredenciais(v('ea-nome'), r.email, r.senha, v('ea-tel'), dias === 'pendente' ? r.id : null);
+    evDesenharAcessos(document.getElementById('ev-pag-corpo'));
+  } catch (e) { mostrarToast(e.message, true); }
+}
+function eaCredenciais(nome, email, senha, tel, cobrarId) {
+  const link = location.origin + '/estudio', msg = `Olá ${nome}! Seu acesso ao Estúdio de Vídeo Impulsionar está pronto 🎬\n\nAcesse: ${link}\nLogin: ${email}\nSenha: ${senha}\n\nDica: no celular, abra o link e toque em "Adicionar à tela inicial" para usar como app.`;
+  const zap = 'https://wa.me/' + (String(tel || '').replace(/\D/g, '').replace(/^(?!55)(\d{10,11})$/, '55$1')) + '?text=' + encodeURIComponent(msg);
+  eaModal(`<h3>✅ Acesso criado</h3><p>Envie estes dados para o cliente:</p><pre class="ea-cred">${escapeHtml(msg)}</pre>
+    <div class="ea-linha"><button class="ea-bt" onclick="navigator.clipboard.writeText(${escapeHtml(JSON.stringify(msg))}).then(()=>mostrarToast('Copiado!'))">📋 Copiar</button><a class="ea-bt pri" target="_blank" href="${zap}">💬 Enviar no WhatsApp</a></div>
+    ${cobrarId ? `<button class="ea-bt" style="width:100%;margin-top:8px;" onclick="eaCobrar(${cobrarId})">💳 Gerar link de pagamento</button>` : ''}`);
+}
+function eaEditar(id) {
+  const a = EA.dados.acessos.find(x => x.id === id); if (!a) return;
+  eaModal(`<h3>✏️ ${escapeHtml(a.name)}</h3><small>${escapeHtml(a.email)}</small>
+    <label>Nome<input id="ea-nome" value="${escapeHtml(a.name)}"></label>
+    <label>WhatsApp<input id="ea-tel" value="${escapeHtml(a.estudio_telefone || '')}"></label>
+    <label>Plano<select id="ea-plano">${eaOpcoesPlano(a.estudio_plano_id)}</select></label>
+    <label>Situação<select id="ea-status">${[['ativo', 'Ativo'], ['pendente', 'Aguardando pagamento'], ['bloqueado', 'Bloqueado'], ['cancelado', 'Cancelado']].map(([k, r]) => `<option value="${k}" ${a.estudio_status === k ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
+    <label>Acesso válido até<input id="ea-val" type="date" value="${a.estudio_validade ? new Date(a.estudio_validade).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }) : ''}"></label>
+    <label>Observações<input id="ea-obs" value="${escapeHtml(a.estudio_obs || '')}"></label>
+    <div class="ea-uso"><b>Uso deste mês</b>${Object.entries(EA.dados.limites).map(([k, r]) => `<span>${r}: <b>${a.uso[k] || 0}</b></span>`).join('')}</div>
+    <div class="ea-linha"><button class="ea-bt" onclick="eaSalvar(${id}, { novaSenha: true })">🔑 Gerar nova senha</button><button class="ea-bt" onclick="eaSalvar(${id}, { zerarUso: true })">↺ Zerar uso do mês</button></div>
+    <div class="ea-linha"><button class="ea-bt" onclick="eaModal('')">Fechar</button><button class="ea-bt pri" onclick="eaSalvar(${id})">Salvar</button></div>`);
+}
+async function eaSalvar(id, extra) {
+  const v = k => (document.getElementById(k) || {}).value;
+  const corpo = extra || { nome: v('ea-nome'), telefone: v('ea-tel'), plano_id: Number(v('ea-plano')), status: v('ea-status'), validade: v('ea-val') || '', obs: v('ea-obs') };
+  try {
+    const r = await api('/api/admin/estudio-acessos/' + id, { method: 'PUT', body: JSON.stringify(corpo) });
+    const a = EA.dados.acessos.find(x => x.id === id);
+    if (r.senha) eaCredenciais(a.name, a.email, r.senha, a.estudio_telefone); else { eaModal(''); mostrarToast(r.message || 'Salvo!'); }
+    evDesenharAcessos(document.getElementById('ev-pag-corpo'));
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function eaRenovar(id, dias) { try { await api('/api/admin/estudio-acessos/' + id, { method: 'PUT', body: JSON.stringify({ renovarDias: dias }) }); mostrarToast(`✅ Acesso liberado por mais ${dias} dias.`); evDesenharAcessos(document.getElementById('ev-pag-corpo')); } catch (e) { mostrarToast(e.message, true); } }
+async function eaCobrar(id) {
+  const a = EA.dados.acessos.find(x => x.id === id) || {};
+  eaModal(`<h3>💳 Cobrança — ${escapeHtml(a.name || '')}</h3>
+    <label>Plano<select id="ea-plano">${eaOpcoesPlano(a.estudio_plano_id)}</select></label>
+    <label>Período<select id="ea-meses"><option value="1">1 mês</option><option value="3">3 meses</option><option value="6">6 meses</option><option value="12">12 meses</option></select></label>
+    <p class="ea-sub">O cliente paga pelo Mercado Pago (Pix, cartão ou boleto) e o acesso é liberado sozinho assim que o pagamento é aprovado.</p>
+    <div class="ea-linha"><button class="ea-bt" onclick="eaModal('')">Cancelar</button><button class="ea-bt pri" onclick="eaGerarCobranca(${id})">Gerar link</button></div><div id="ea-link"></div>`);
+}
+async function eaGerarCobranca(id) {
+  const a = EA.dados.acessos.find(x => x.id === id) || {};
+  try {
+    const r = await api('/api/admin/estudio-acessos/' + id + '/cobranca', { method: 'POST', body: JSON.stringify({ plano_id: Number(document.getElementById('ea-plano').value), meses: Number(document.getElementById('ea-meses').value) }) });
+    const msg = `Olá ${a.name || ''}! Segue o link para pagamento do Estúdio de Vídeo — plano ${r.plano} (${r.meses} ${r.meses > 1 ? 'meses' : 'mês'}): ${fmtReal(r.valor)}\n${r.link}\n\nAssim que o pagamento for aprovado, seu acesso é liberado automaticamente.`;
+    const zap = 'https://wa.me/' + String(a.estudio_telefone || '').replace(/\D/g, '').replace(/^(?!55)(\d{10,11})$/, '55$1') + '?text=' + encodeURIComponent(msg);
+    document.getElementById('ea-link').innerHTML = `<pre class="ea-cred">${escapeHtml(msg)}</pre><div class="ea-linha"><button class="ea-bt" onclick="navigator.clipboard.writeText(${escapeHtml(JSON.stringify(msg))}).then(()=>mostrarToast('Copiado!'))">📋 Copiar</button><a class="ea-bt pri" target="_blank" href="${zap}">💬 WhatsApp</a></div>`;
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function eaConfirmarPag(id) { if (!confirm('Confirmar que este pagamento foi recebido? O acesso será liberado.')) return; try { const r = await api('/api/admin/estudio-pagamentos/' + id + '/confirmar', { method: 'POST' }); mostrarToast(r.message); evDesenharAcessos(document.getElementById('ev-pag-corpo')); } catch (e) { mostrarToast(e.message, true); } }
+function eaEditarPlano(id) {
+  const p = id ? EA.dados.planos.find(x => x.id === id) : { nome: '', descricao: '', preco: 0, limites: {}, ativo: 1, ordem: EA.dados.planos.length };
+  eaModal(`<h3>${id ? '✏️ Editar plano' : '＋ Novo plano'}</h3>
+    <label>Nome<input id="ep-nome" value="${escapeHtml(p.nome)}"></label>
+    <label>Descrição<input id="ep-desc" value="${escapeHtml(p.descricao || '')}"></label>
+    <label>Preço por mês (R$)<input id="ep-preco" type="number" step="0.01" min="0" value="${p.preco}"></label>
+    <p class="ea-sub">Limites por mês — deixe <b>vazio</b> para ilimitado e coloque <b>0</b> para não incluir no plano.</p>
+    <div class="ea-lims">${Object.entries(EA.dados.limites).map(([k, r]) => `<label>${r}<input type="number" min="0" data-lim="${k}" value="${p.limites[k] !== undefined ? p.limites[k] : ''}" placeholder="ilimitado"></label>`).join('')}</div>
+    <label class="ea-chk"><input type="checkbox" id="ep-ativo" ${p.ativo ? 'checked' : ''}> Plano disponível para venda</label>
+    <div class="ea-linha"><button class="ea-bt" onclick="eaModal('')">Cancelar</button><button class="ea-bt pri" onclick="eaSalvarPlano(${id || 0})">Salvar plano</button></div>`);
+}
+async function eaSalvarPlano(id) {
+  const limites = {}; document.querySelectorAll('[data-lim]').forEach(i => { if (i.value !== '') limites[i.dataset.lim] = Number(i.value); });
+  try {
+    const r = await api('/api/admin/estudio-planos', { method: 'POST', body: JSON.stringify({ id: id || undefined, nome: document.getElementById('ep-nome').value, descricao: document.getElementById('ep-desc').value, preco: Number(document.getElementById('ep-preco').value), limites, ativo: document.getElementById('ep-ativo').checked }) });
+    eaModal(''); mostrarToast(r.message); evDesenharAcessos(document.getElementById('ev-pag-corpo'));
+  } catch (e) { mostrarToast(e.message, true); }
+}
+// Cliente: meu plano, uso do mês e renovação
+async function evDesenharMinhaConta(corpo) {
+  const c = await api('/api/estudio/minha-conta'); if (c.master) { corpo.innerHTML = '<div class="msg-vazio">Você é o Master: sem limites de uso. 😉</div>'; return; }
+  const st = eaStatus({ estudio_status: c.status, estudio_validade: c.validade });
+  corpo.innerHTML = `<div class="ea">
+    <div class="ea-conta"><div><small>Seu plano</small><h2>${escapeHtml(c.plano.nome || '—')}</h2><span class="ea-st" style="background:${st[1]}">${st[0]}</span> <small>${c.validade ? 'válido até ' + fmtDataEA(c.validade) : ''}</small></div>
+      ${c.pagamentoOnline ? `<button class="ea-bt pri" onclick="eaPagarCliente()">💳 ${c.ativo ? 'Renovar / mudar de plano' : 'Pagar e liberar acesso'}</button>` : ''}</div>
+    <h3>Uso deste mês</h3>
+    <div class="ea-barras">${Object.entries(c.rotulos).map(([k, r]) => { const lim = c.plano.limites[k], uso = c.uso[k] || 0; if (lim === 0) return `<div class="ea-barra off"><span>${r}</span><b>não incluso no plano</b></div>`; const pct = lim === undefined || lim === null ? 0 : Math.min(100, uso / lim * 100); return `<div class="ea-barra"><span>${r}</span><b>${uso}${lim === undefined || lim === null ? ' · ilimitado' : ' de ' + lim}</b>${lim === undefined || lim === null ? '' : `<i><em style="width:${pct}%;background:${pct > 85 ? '#dc2626' : '#16a34a'}"></em></i>`}</div>`; }).join('')}</div>
+    <h3>Planos</h3><div class="ea-planos">${c.planos.map(p => `<div class="ea-plano ${p.id === c.plano.id ? 'atual' : ''}"><div class="ea-plano-cab"><b>${escapeHtml(p.nome)}</b><span>${fmtReal(p.preco)}<small>/mês</small></span></div><p>${escapeHtml(p.descricao || '')}</p>
+      <ul>${Object.entries(c.rotulos).map(([k, r]) => `<li><span>${r}</span><b>${eaLimTxt(p.limites[k])}</b></li>`).join('')}</ul>
+      ${c.pagamentoOnline ? `<button class="ea-bt ${p.id === c.plano.id ? 'pri' : ''}" onclick="eaPagarCliente(${p.id})">${p.id === c.plano.id ? 'Renovar este plano' : 'Mudar para este plano'}</button>` : ''}</div>`).join('')}</div>
+    ${c.pagamentoOnline ? '' : '<div class="ea-aviso">Para renovar ou mudar de plano, fale com a Impulsionar.</div>'}
+  </div>`;
+}
+async function eaPagarCliente(planoId) {
+  const meses = planoId === undefined ? 1 : Number(prompt('Quantos meses deseja pagar? (1, 3, 6 ou 12)', '1')) || 1;
+  try { const r = await api('/api/estudio/pagar', { method: 'POST', body: JSON.stringify({ plano_id: planoId, meses }) }); mostrarToast('Abrindo o pagamento… depois de aprovado, o acesso é liberado sozinho.'); location.href = r.link; }
+  catch (e) { mostrarToast(e.message, true); }
+}
+// Aviso quando o plano está vencido ou um limite acabou
+function evAvisoPlano(d) {
+  if (EA.avisando && Date.now() - EA.avisando < 4000) return; EA.avisando = Date.now();
+  eaModal(`<div style="text-align:center;font-size:46px;">${d.planoInativo ? '⏳' : '🚀'}</div><h3 style="text-align:center;">${d.planoInativo ? 'Seu acesso precisa ser renovado' : 'Limite do plano atingido'}</h3>
+    <p style="text-align:center;">${escapeHtml(d.error || '')}</p>
+    <div class="ea-linha"><button class="ea-bt" onclick="eaModal('')">Agora não</button><button class="ea-bt pri" onclick="eaModal(''); renderEstudioVideo('conta')">💳 Ver planos e renovar</button></div>`);
+}
+
 // ---------- App do celular (/estudio): logo animada, tela de início e navegação por baixo ----------
 function eiLogo(tamanho) {
   return `<div class="ei-logo ${tamanho || ''}"><div class="ei-marca"><i class="ei-anel"></i><b>V4</b></div><div class="ei-nome"><b>IMPULSIONAR</b><small>Estúdio de Vídeo</small></div></div>`;
@@ -23828,10 +24005,10 @@ function evMenuCelular() {
   ma.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="modal-caixa eh-menu">
     <b>${escapeHtml((ESTADO.usuario || {}).name || '')}</b>
     <button onclick="document.getElementById('modal-area').innerHTML=''; renderEstudioVideo('instagram')">📸 Instagram (conectar e publicar)</button>
-    <button onclick="document.getElementById('modal-area').innerHTML=''; evNovaAula()">🎓 Gravar aula para a Academy</button>
+    ${ESTADO.usuario.role === 'admin' ? `<button onclick="document.getElementById('modal-area').innerHTML=''; evNovaAula()">🎓 Gravar aula para a Academy</button><button onclick="document.getElementById('modal-area').innerHTML=''; renderEstudioVideo('acessos')">👥 Acessos & planos (clientes)</button>` : `<button onclick="document.getElementById('modal-area').innerHTML=''; renderEstudioVideo('conta')">💳 Meu plano e uso</button>`}
     <button onclick="document.getElementById('modal-area').innerHTML=''; evNovoProjeto()">＋ Novo projeto (escolher formato)</button>
     <button onclick="location.reload()">🔄 Atualizar (sincronizar agora)</button>
-    <a href="/">💻 Abrir o sistema completo</a>
+    ${ESTADO.usuario.role === 'admin' ? '<a href="/">💻 Abrir o sistema completo</a>' : ''}
     <button class="perigo" onclick="sair()">Sair</button>
   </div></div>`;
 }
@@ -23867,7 +24044,7 @@ function evDesenharHomeCelular(corpo) {
     <div class="eh-acoes">
       <label class="eh-acao"><input type="file" accept="video/*,image/*" multiple hidden onchange="evCelGaleria(this.files); this.value=''"><span>🖼️</span><b>Da galeria</b><small>Fotos e vídeos do celular</small></label>
       <button class="eh-acao" onclick="evAbrirCriarVideoIa()"><span>🤖</span><b>Criar com IA</b><small>Roteiro, pessoa ou animação</small></button>
-      <button class="eh-acao" onclick="evNovaAula()"><span>🎓</span><b>Gravar aula</b><small>Teleprompter + Academy</small></button>
+      ${ESTADO.usuario.role === 'admin' ? `<button class="eh-acao" onclick="evNovaAula()"><span>🎓</span><b>Gravar aula</b><small>Teleprompter + Academy</small></button>` : `<button class="eh-acao" onclick="renderEstudioVideo('conta')"><span>💳</span><b>Meu plano</b><small>Uso do mês e renovação</small></button>`}
       <button class="eh-acao" onclick="evNovoProjeto()"><span>✂️</span><b>Editar do zero</b><small>Projeto em branco</small></button>
       <button class="eh-acao eh-radar" onclick="renderEstudioVideo('radar')"><span>📡</span><b>Radar Viral</b><small>O que está viralizando agora + roteiros prontos para gravar</small></button>
     </div>
@@ -23884,7 +24061,7 @@ async function renderEstudioVideo(aba) {
   if (aba) EVL.aba = aba;
   const cont = document.getElementById('conteudo');
   if (document.body.classList.contains('modo-estudio')) {
-    cont.innerHTML = `<div id="ev-pagina" class="eh-pagina">${EVL.aba === 'projetos' ? '' : `<div class="eh-mini">${eiLogo('mini')}<b>${{ radar: '📡 Radar Viral', agente: '🤖 Agente Viral', agenda: '🗓️ Agenda', instagram: '📸 Instagram' }[EVL.aba] || ''}</b></div>`}<div id="ev-pag-corpo"><div class="eh-carregando">${eiLogo('grande')}</div></div>${evNavCelular()}</div>`;
+    cont.innerHTML = `<div id="ev-pagina" class="eh-pagina">${EVL.aba === 'projetos' ? '' : `<div class="eh-mini">${eiLogo('mini')}<b>${{ radar: '📡 Radar Viral', agente: '🤖 Agente Viral', agenda: '🗓️ Agenda', instagram: '📸 Instagram', acessos: '👥 Acessos & Planos', conta: '💳 Meu plano' }[EVL.aba] || ''}</b></div>`}<div id="ev-pag-corpo"><div class="eh-carregando">${eiLogo('grande')}</div></div>${evNavCelular()}</div>`;
     const corpo = document.getElementById('ev-pag-corpo');
     try {
       if (EVL.aba === 'projetos' || EVL.aba === 'agenda') EVL.lista = await api('/api/admin/estudio/projetos');
@@ -23894,13 +24071,15 @@ async function renderEstudioVideo(aba) {
       else if (EVL.aba === 'radar') await evDesenharRadar(corpo);
     else if (EVL.aba === 'agente') await evDesenharAgente(corpo);
       else if (EVL.aba === 'instagram') await evDesenharInstagram(corpo);
+      else if (EVL.aba === 'acessos') await evDesenharAcessos(corpo);
+      else if (EVL.aba === 'conta') await evDesenharMinhaConta(corpo);
     } catch (e) { corpo.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
     return;
   }
   cont.innerHTML = `<div id="ev-pagina"><div class="estudio-barra">${eiLogo('mini')}<b style="flex:1"></b><a href="/">💻 Sistema</a><button onclick="sair()">Sair</button></div>
     <div class="ev-pag-topo"><div><h1 style="margin:0;">🎬 Estúdio de Vídeo</h1><div class="plano-meta">Edite Reels, Stories e vídeos do feed no padrão das grandes contas, com o Agente Viral da Impulsionar — e grave aulas para a Academy com teleprompter.</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-secundario" style="width:auto;" onclick="evAbrirNoCelular()">📱 Abrir no celular</button><button class="btn-secundario" style="width:auto;" onclick="evNovaAula()">🎓 Gravar aula</button><button class="btn-secundario" style="width:auto;" onclick="evAbrirCriarVideoIa()">🤖 Criar vídeo com IA</button><button class="btn-primario" style="width:auto;" onclick="evNovoProjeto()">＋ Novo vídeo</button></div></div>
-    <div class="ev-pag-abas">${[['projetos', '🎞️ Projetos'], ['radar', '📡 Radar Viral'], ['agente', '🤖 Agente Viral (treinar)'], ['agenda', '🗓️ Agenda & publicações'], ['instagram', '📸 Instagram']].map(([k, r]) => `<button class="${EVL.aba === k ? 'on' : ''}" onclick="renderEstudioVideo('${k}')">${r}</button>`).join('')}</div>
+    <div class="ev-pag-abas">${[['projetos', '🎞️ Projetos'], ['radar', '📡 Radar Viral'], ['agente', '🤖 Agente Viral (treinar)'], ['agenda', '🗓️ Agenda & publicações'], ['instagram', '📸 Instagram']].concat(ESTADO.usuario.role === 'admin' ? [['acessos', '👥 Acessos & planos']] : [['conta', '💳 Meu plano']]).map(([k, r]) => `<button class="${EVL.aba === k ? 'on' : ''}" onclick="renderEstudioVideo('${k}')">${r}</button>`).join('')}</div>
     <div id="ev-pag-corpo"><p>Carregando...</p></div></div>`;
   const corpo = document.getElementById('ev-pag-corpo');
   try {
@@ -23910,6 +24089,8 @@ async function renderEstudioVideo(aba) {
     else if (EVL.aba === 'radar') await evDesenharRadar(corpo);
     else if (EVL.aba === 'agente') await evDesenharAgente(corpo);
     else if (EVL.aba === 'instagram') await evDesenharInstagram(corpo);
+    else if (EVL.aba === 'acessos') await evDesenharAcessos(corpo);
+    else if (EVL.aba === 'conta') await evDesenharMinhaConta(corpo);
   } catch (e) { corpo.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
 }
 const EV_STATUS = { rascunho: ['Rascunho', '#64748b'], pronto: ['Pronto', '#2563eb'], agendado: ['Agendado', '#7c3aed'], publicando: ['Publicando…', '#d97706'], publicado: ['Publicado', '#16a34a'], erro: ['Erro ao publicar', '#dc2626'] };

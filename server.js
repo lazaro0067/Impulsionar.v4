@@ -2342,7 +2342,7 @@ app.post('/api/login', (req, res) => {
             user: {
                 id: user.id, name: user.name, email: user.email, role: user.role,
                 companyId: user.company_id, employeeId: user.employee_id || null, mentorId: user.mentor_id || null,
-                companyName: user.companyName || (user.role === 'autonomous' ? 'Executivo Autónomo' : user.role === 'mentor' ? 'Mentor Impulsionar' : user.role === 'candidate' ? 'Portal de Vagas' : 'Master Global'),
+                companyName: user.companyName || (user.role === 'autonomous' ? 'Executivo Autónomo' : user.role === 'mentor' ? 'Mentor Impulsionar' : user.role === 'candidate' ? 'Portal de Vagas' : user.role === 'estudio' ? 'Estúdio de Vídeo' : 'Master Global'),
                 companyLogoUrl: user.companyLogoUrl || null,
                 enabledModules
             }
@@ -9288,7 +9288,7 @@ app.get('/api/admin/treinamentos-mt-config', requireRole('admin'), async (req, r
 });
 app.put('/api/admin/treinamentos-mt-config', requireRole('admin'), async (req, res) => {
     try {
-        const salvar = (k, v) => new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => ok()));
+        const salvar = (k, v) => new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [chaveIgEst(k, donoAtualEst()), v], () => ok()));
         const insta = String(req.body.instagram || '').trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/\/$/, '').replace(/^@?/, '').slice(0, 60);
         await salvar('impulsionar_instagram', insta ? '@' + insta : '');
         await salvar('impulsionar_whatsapp', String(req.body.whatsapp || '').trim().slice(0, 30));
@@ -12584,6 +12584,8 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
                     [dataId, jobId], () => resolve()
                 ));
                 if (vaga) notificarGestoresDaEmpresa(vaga.company_id, 'Taxa de fechamento paga', `Pagamento da taxa de fechamento da vaga "${vaga.title}" confirmado.`);
+            } else if (ref.startsWith('estudio:') && pagamento.status === 'approved') {
+                await confirmarPagamentoEst(ref.split(':')[1], String(dataId));
             } else if (ref.startsWith('dpoaudit:') && pagamento.status === 'approved') {
                 const compraId = ref.split(':')[1];
                 const compra = await dbGet(`SELECT * FROM dpo_purchases WHERE id = ?`, [compraId]);
@@ -12722,18 +12724,177 @@ app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res, arq) 
 app.get(['/estudio', '/estudio/'], (req, res) => {
     fs.readFile(path.join(__dirname, 'public', 'index.html'), 'utf8', (err, html) => {
         if (err) return res.status(500).send('Erro ao abrir o Estúdio.');
-        const cab = '<link rel="manifest" href="/estudio.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Estúdio"><link rel="apple-touch-icon" href="/assets/logo-impulsionar.jpg"><meta name="theme-color" content="#070b18"><script>window.MODO_ESTUDIO = true; document.documentElement.classList.add(\'estudio\');</script>';
+        const cab = '<link rel="manifest" href="/estudio.webmanifest?v=2"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Estúdio V4"><link rel="apple-touch-icon" sizes="180x180" href="/assets/estudio-icone-180.png?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/assets/estudio-icone-192.png?v=2"><link rel="icon" type="image/png" sizes="32x32" href="/assets/estudio-icone-32.png?v=2"><meta name="theme-color" content="#070b18"><script>window.MODO_ESTUDIO = true; document.documentElement.classList.add(\'estudio\');</script>';
         res.set('Cache-Control', 'no-cache').type('html').send(html.replace('</head>', cab + '</head>'));
     });
 });
 app.get('/estudio.webmanifest', (req, res) => {
-    res.type('application/manifest+json').send(JSON.stringify({ name: 'Impulsionar Estúdio de Vídeo', short_name: 'Estúdio', start_url: '/estudio', scope: '/', display: 'standalone', orientation: 'any', background_color: '#0d1017', theme_color: '#0b1329', icons: [{ src: '/assets/logo-impulsionar.jpg', sizes: '512x512', type: 'image/jpeg', purpose: 'any' }] }));
+    res.set('Cache-Control', 'no-cache').type('application/manifest+json').send(JSON.stringify({ id: '/estudio', name: 'Impulsionar Estúdio de Vídeo', short_name: 'Estúdio V4', start_url: '/estudio', scope: '/', display: 'standalone', orientation: 'portrait', background_color: '#070b18', theme_color: '#070b18',
+        icons: [192, 512].map(t => ({ src: `/assets/estudio-icone-${t}.png?v=2`, sizes: `${t}x${t}`, type: 'image/png', purpose: 'any' })).concat([{ src: '/assets/estudio-icone-512.png?v=2', sizes: '512x512', type: 'image/png', purpose: 'maskable' }]) }));
 });
 
 // ============================================================
 // ESTÚDIO DE VÍDEO (Master): projetos de Reels/Stories/Feed, agente viral
 // treinável, IA de edição/roteiro/legenda/hashtags e publicação no Instagram.
 // ============================================================
+// ============================================================
+// ESTÚDIO PARA TERCEIROS (acessos com planos pagos)
+// O Master cria acessos de perfil "estudio": cada cliente vê só os próprios projetos,
+// agente, marca, radar, avatares e Instagram. O uso do mês é contado por plano.
+// ============================================================
+const { AsyncLocalStorage } = require('async_hooks');
+const ALS_EST = new AsyncLocalStorage();
+function donoAtualEst() { const st = ALS_EST.getStore(); return (st && st.dono) || 0; }
+// colunas novas em users: roda de novo depois que o banco termina de abrir (num banco novo a tabela ainda não existe aqui)
+function colunasUsuarioEst() { ['estudio_plano_id INTEGER', 'estudio_validade TEXT', 'estudio_status TEXT', 'estudio_obs TEXT', 'estudio_telefone TEXT'].forEach(c => db.run(`ALTER TABLE users ADD COLUMN ${c}`, () => {})); }
+colunasUsuarioEst(); setTimeout(colunasUsuarioEst, 1500); setTimeout(colunasUsuarioEst, 8000);
+db.run(`CREATE TABLE IF NOT EXISTS estudio_uso (user_id INTEGER, mes TEXT, tipo TEXT, qtd REAL DEFAULT 0, PRIMARY KEY (user_id, mes, tipo))`);
+db.run(`CREATE TABLE IF NOT EXISTS estudio_pagamentos (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, plano_id INTEGER, valor REAL, meses INTEGER DEFAULT 1, status TEXT DEFAULT 'pendente', mp_preference_id TEXT, mp_payment_id TEXT, link TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, pago_em DATETIME)`);
+// Limites por mês (vazio = ilimitado, 0 = não incluído no plano)
+const LIMITES_EST = { projetos: 'Projetos novos', exportacoes: 'Vídeos exportados', ia: 'Pedidos à IA (roteiro, legenda, edição)', imagens_ia: 'Imagens criadas pela IA', limpeza_audio: 'Limpezas de áudio', transcricoes: 'Legendas / transcrições', radar: 'Pesquisas do Radar Viral', avatar: 'Vídeos com avatar (D-ID)', instagram: 'Publicações no Instagram' };
+db.run(`CREATE TABLE IF NOT EXISTS estudio_planos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, descricao TEXT, preco REAL DEFAULT 0, limites TEXT, ativo INTEGER DEFAULT 1, ordem INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`, () => {
+    db.get(`SELECT COUNT(*) AS n FROM estudio_planos`, (e, r) => {
+        if (e || (r && r.n)) return;
+        [['Start', 'Para quem está começando: edição com IA, legendas e limpeza de áudio.', 49.9, { projetos: 15, exportacoes: 15, ia: 60, imagens_ia: 40, limpeza_audio: 15, transcricoes: 15, radar: 2, avatar: 0, instagram: 15 }],
+         ['Pro', 'Criador de conteúdo: tudo do Start com muito mais uso, Radar Viral e avatar.', 99.9, { projetos: 50, exportacoes: 50, ia: 300, imagens_ia: 200, limpeza_audio: 50, transcricoes: 50, radar: 10, avatar: 5, instagram: 60 }],
+         ['Agência', 'Para agências e equipes: uso praticamente ilimitado.', 199.9, { radar: 30, avatar: 20 }]]
+            .forEach(([n, d, pr, l], i) => db.run(`INSERT INTO estudio_planos (nome, descricao, preco, limites, ordem) VALUES (?, ?, ?, ?, ?)`, [n, d, pr, JSON.stringify(l), i]));
+    });
+});
+const CACHE_USR_EST = new Map();
+async function usuarioEstudio(id, semCache) {
+    const c = CACHE_USR_EST.get(id); if (!semCache && c && c.t > Date.now() - 20000) return c.u;
+    const u = await dbGet(`SELECT u.id, u.name, u.email, u.role, u.estudio_plano_id, u.estudio_validade, u.estudio_status, p.nome AS plano_nome, p.preco AS plano_preco, p.limites AS plano_limites
+        FROM users u LEFT JOIN estudio_planos p ON p.id = u.estudio_plano_id WHERE u.id = ?`, [id]).catch(() => null);
+    if (u) { try { u.limites = JSON.parse(u.plano_limites || '{}'); } catch (e) { u.limites = {}; } }
+    CACHE_USR_EST.set(id, { t: Date.now(), u }); return u;
+}
+function estudioAtivo(u) { return !!u && u.estudio_status === 'ativo' && (!u.estudio_validade || new Date(u.estudio_validade).getTime() > Date.now()); }
+const mesAtualEst = () => new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 7);
+async function usoMesEst(userId) { const l = await dbAll(`SELECT tipo, qtd FROM estudio_uso WHERE user_id = ? AND mes = ?`, [userId, mesAtualEst()]).catch(() => []); const o = {}; l.forEach(r => { o[r.tipo] = r.qtd; }); return o; }
+// Confere e conta o uso do plano. Master (admin) não tem limite.
+async function consumirEst(tipo, qtd) {
+    const st = ALS_EST.getStore(); if (!st || !st.dono) return;
+    qtd = Number(qtd) || 1;
+    const u = await usuarioEstudio(st.dono), lim = (u && u.limites || {})[tipo];
+    const rot = (LIMITES_EST[tipo] || tipo).toLowerCase();
+    if (lim === 0) { const e = new Error(`O seu plano (${(u && u.plano_nome) || 'atual'}) não inclui ${rot}. Fale com a Impulsionar para fazer upgrade.`); e.status = 402; e.limite = true; throw e; }
+    if (lim !== undefined && lim !== null && lim !== '') {
+        const uso = (await usoMesEst(st.dono))[tipo] || 0;
+        if (uso + qtd > Number(lim)) { const e = new Error(`Você já usou ${uso} de ${lim} ${rot} do seu plano este mês. Faça upgrade para continuar.`); e.status = 402; e.limite = true; throw e; }
+    }
+    await new Promise(ok => db.run(`INSERT INTO estudio_uso (user_id, mes, tipo, qtd) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, mes, tipo) DO UPDATE SET qtd = qtd + excluded.qtd`, [st.dono, mesAtualEst(), tipo, qtd], ok));
+}
+function erroLimiteEst(res, e) { return res.status(e.status || 402).json({ error: e.message, limitePlano: true }); }
+// Rotas do estúdio que continuam só do Master (configurações globais e Academy da Impulsionar)
+const SO_MASTER_EST = [/^PUT \/transcricao$/, /^PUT \/provedor-video$/, /^POST \/projetos\/\d+\/academy$/];
+app.use('/api/admin/estudio', async (req, res, next) => {
+    if (!req.user) return next();
+    if (req.user.role === 'admin') return ALS_EST.run({ dono: 0, admin: true }, next);
+    if (req.user.role !== 'estudio') return next();
+    if (SO_MASTER_EST.some(r => r.test(req.method + ' ' + req.path))) return res.status(403).json({ error: 'Esta configuração é feita pela Impulsionar.' });
+    const u = await usuarioEstudio(req.user.userId);
+    if (!estudioAtivo(u)) return res.status(402).json({ error: u && u.estudio_status === 'ativo' ? 'O seu plano do Estúdio venceu. Renove para continuar criando.' : 'O seu acesso ao Estúdio está inativo. Fale com a Impulsionar ou renove o plano.', planoInativo: true });
+    // projeto de outra conta: não existe para este cliente
+    const mId = req.path.match(/^\/projetos\/(\d+)/);
+    if (mId) { const pr = await dbGet(`SELECT created_by FROM estudio_projetos WHERE id = ?`, [mId[1]]).catch(() => null); if (pr && Number(pr.created_by) !== Number(u.id)) return res.status(404).json({ error: 'Projeto não encontrado.' }); }
+    ALS_EST.run({ dono: u.id }, next);
+});
+// ----- Master: acessos do Estúdio e planos -----
+function linhaPlanoEst(p) { let l = {}; try { l = JSON.parse(p.limites || '{}'); } catch (e) {} return { ...p, limites: l }; }
+function limitesValidosEst(l) { const o = {}; Object.keys(LIMITES_EST).forEach(k => { const v = l && l[k]; if (v !== undefined && v !== null && v !== '') o[k] = Math.max(0, Math.round(Number(v) || 0)); }); return o; }
+app.get('/api/admin/estudio-acessos', requireRole('admin'), async (req, res) => {
+    try {
+        const planos = (await dbAll(`SELECT * FROM estudio_planos ORDER BY ordem, id`)).map(linhaPlanoEst);
+        const acessos = await dbAll(`SELECT u.id, u.name, u.email, u.estudio_plano_id, u.estudio_validade, u.estudio_status, u.estudio_obs, u.estudio_telefone, u.ultimo_login,
+            (SELECT COUNT(*) FROM estudio_projetos p WHERE p.created_by = u.id) AS projetos FROM users u WHERE u.role = 'estudio' ORDER BY u.id DESC`);
+        const usos = await dbAll(`SELECT user_id, tipo, qtd FROM estudio_uso WHERE mes = ?`, [mesAtualEst()]);
+        acessos.forEach(a => { a.uso = {}; usos.filter(u => u.user_id === a.id).forEach(u => { a.uso[u.tipo] = u.qtd; }); a.ativo = estudioAtivo(a); });
+        const pagamentos = await dbAll(`SELECT * FROM estudio_pagamentos ORDER BY id DESC LIMIT 100`);
+        res.json({ planos, acessos, pagamentos, limites: LIMITES_EST, mercadoPago: !!mpPreference });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar os acessos: ' + e.message }); }
+});
+app.post('/api/admin/estudio-planos', requireRole('admin'), (req, res) => {
+    const b = req.body || {}, nome = String(b.nome || '').trim().slice(0, 60); if (!nome) return res.status(400).json({ error: 'Dê um nome ao plano.' });
+    const campos = [nome, String(b.descricao || '').slice(0, 300), Math.max(0, Number(b.preco) || 0), JSON.stringify(limitesValidosEst(b.limites)), b.ativo === false ? 0 : 1, Number(b.ordem) || 0];
+    if (b.id) db.run(`UPDATE estudio_planos SET nome = ?, descricao = ?, preco = ?, limites = ?, ativo = ?, ordem = ? WHERE id = ?`, [...campos, b.id], err => { CACHE_USR_EST.clear(); err ? res.status(500).json({ error: 'Erro ao salvar o plano.' }) : res.json({ ok: true, message: 'Plano salvo! ✅' }); });
+    else db.run(`INSERT INTO estudio_planos (nome, descricao, preco, limites, ativo, ordem) VALUES (?, ?, ?, ?, ?, ?)`, campos, function (err) { err ? res.status(500).json({ error: 'Erro ao criar o plano.' }) : res.json({ ok: true, id: this.lastID, message: 'Plano criado! ✅' }); });
+});
+function validadeMaisDiasEst(atual, dias) { const base = atual && new Date(atual).getTime() > Date.now() ? new Date(atual).getTime() : Date.now(); return new Date(base + dias * 86400000).toISOString(); }
+app.post('/api/admin/estudio-acessos', requireRole('admin'), async (req, res) => {
+    const b = req.body || {}, email = String(b.email || '').trim().toLowerCase(), nome = String(b.nome || '').trim().slice(0, 120);
+    if (!nome || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ error: 'Informe o nome e um e-mail válido.' });
+    const plano = await dbGet(`SELECT id FROM estudio_planos WHERE id = ?`, [b.plano_id]).catch(() => null); if (!plano) return res.status(400).json({ error: 'Escolha o plano.' });
+    const ja = await dbGet(`SELECT id, role FROM users WHERE email = ?`, [email]).catch(() => null);
+    if (ja) return res.status(400).json({ error: ja.role === 'estudio' ? 'Já existe um acesso do Estúdio com este e-mail.' : 'Este e-mail já é usado por outro acesso do sistema.' });
+    const senha = String(b.senha || '').trim() || ('Est' + require('crypto').randomBytes(4).toString('hex') + '!');
+    if (senha.length < 6) return res.status(400).json({ error: 'A senha precisa ter pelo menos 6 caracteres.' });
+    const dias = Math.max(0, Math.min(3650, Number(b.dias) || 0)), status = b.status === 'pendente' ? 'pendente' : 'ativo';
+    const hash = await bcrypt.hash(senha, 10);
+    db.run(`INSERT INTO users (name, email, password, role, estudio_plano_id, estudio_validade, estudio_status, estudio_obs, estudio_telefone) VALUES (?, ?, ?, 'estudio', ?, ?, ?, ?, ?)`,
+        [nome, email, hash, plano.id, dias ? validadeMaisDiasEst(null, dias) : null, status, String(b.obs || '').slice(0, 500), String(b.telefone || '').replace(/[^\d+]/g, '').slice(0, 20)],
+        function (err) { if (err) return res.status(500).json({ error: 'Erro ao criar o acesso: ' + err.message }); res.json({ ok: true, id: this.lastID, email, senha, message: 'Acesso criado! ✅' }); });
+});
+app.put('/api/admin/estudio-acessos/:id', requireRole('admin'), async (req, res) => {
+    const b = req.body || {}, u = await dbGet(`SELECT * FROM users WHERE id = ? AND role = 'estudio'`, [req.params.id]).catch(() => null);
+    if (!u) return res.status(404).json({ error: 'Acesso não encontrado.' });
+    const sets = [], vals = [];
+    if (b.nome) { sets.push('name = ?'); vals.push(String(b.nome).slice(0, 120)); }
+    if (b.plano_id) { sets.push('estudio_plano_id = ?'); vals.push(Number(b.plano_id)); }
+    if (['ativo', 'pendente', 'bloqueado', 'cancelado'].includes(b.status)) { sets.push('estudio_status = ?'); vals.push(b.status); }
+    if (b.renovarDias) { sets.push('estudio_validade = ?'); vals.push(validadeMaisDiasEst(u.estudio_validade, Number(b.renovarDias))); if (!b.status && u.estudio_status !== 'ativo') { sets.push('estudio_status = ?'); vals.push('ativo'); } }
+    if (b.validade !== undefined) { sets.push('estudio_validade = ?'); vals.push(b.validade ? new Date(b.validade + 'T23:59:59-03:00').toISOString() : null); }
+    if (b.obs !== undefined) { sets.push('estudio_obs = ?'); vals.push(String(b.obs).slice(0, 500)); }
+    if (b.telefone !== undefined) { sets.push('estudio_telefone = ?'); vals.push(String(b.telefone).replace(/[^\d+]/g, '').slice(0, 20)); }
+    let senha = null; if (b.novaSenha) { senha = b.novaSenha === true ? 'Est' + require('crypto').randomBytes(4).toString('hex') + '!' : String(b.novaSenha); sets.push('password = ?'); vals.push(await bcrypt.hash(senha, 10)); }
+    if (b.zerarUso) db.run(`DELETE FROM estudio_uso WHERE user_id = ? AND mes = ?`, [u.id, mesAtualEst()]);
+    if (!sets.length) return res.json({ ok: true });
+    db.run(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, [...vals, u.id], err => { CACHE_USR_EST.delete(u.id); err ? res.status(500).json({ error: 'Erro ao salvar.' }) : res.json({ ok: true, senha, message: 'Acesso atualizado! ✅' }); });
+});
+app.delete('/api/admin/estudio-acessos/:id', requireRole('admin'), (req, res) => {
+    db.run(`UPDATE users SET estudio_status = 'cancelado' WHERE id = ? AND role = 'estudio'`, [req.params.id], () => { CACHE_USR_EST.delete(Number(req.params.id)); res.json({ ok: true, message: 'Acesso cancelado (os projetos ficam guardados).' }); });
+});
+// Link de pagamento (Mercado Pago) para ativar/renovar o plano — o pagamento aprovado libera sozinho
+async function criarCobrancaEst(userId, planoId, meses) {
+    if (!mpPreference) throw new Error('Configure o Mercado Pago (token) em Meu Perfil para gerar cobranças.');
+    const u = await dbGet(`SELECT id, name, email FROM users WHERE id = ? AND role = 'estudio'`, [userId]); if (!u) throw new Error('Acesso não encontrado.');
+    const p = await dbGet(`SELECT * FROM estudio_planos WHERE id = ?`, [planoId]); if (!p) throw new Error('Plano não encontrado.');
+    meses = Math.max(1, Math.min(12, Number(meses) || 1)); const valor = Math.round(Number(p.preco) * meses * 100) / 100;
+    if (!(valor > 0)) throw new Error('Este plano está sem preço. Defina o valor do plano.');
+    const pg = await new Promise((ok, ko) => db.run(`INSERT INTO estudio_pagamentos (user_id, plano_id, valor, meses) VALUES (?, ?, ?, ?)`, [u.id, p.id, valor, meses], function (e) { e ? ko(e) : ok(this.lastID); }));
+    const pref = await mpPreference.create({ body: { items: [{ title: `Estúdio de Vídeo — Plano ${p.nome} (${meses} ${meses > 1 ? 'meses' : 'mês'})`, quantity: 1, unit_price: valor, currency_id: 'BRL' }], payer: { email: u.email, name: u.name }, external_reference: `estudio:${pg}`, ...montarRetornoMercadoPago() } });
+    db.run(`UPDATE estudio_pagamentos SET mp_preference_id = ?, link = ? WHERE id = ?`, [pref.id, pref.init_point, pg]);
+    return { id: pg, link: pref.init_point, valor, plano: p.nome, meses };
+}
+async function confirmarPagamentoEst(pagId, mpPaymentId) {
+    const pg = await dbGet(`SELECT * FROM estudio_pagamentos WHERE id = ?`, [pagId]); if (!pg || pg.status === 'pago') return;
+    const u = await dbGet(`SELECT estudio_validade FROM users WHERE id = ?`, [pg.user_id]);
+    await new Promise(ok => db.run(`UPDATE estudio_pagamentos SET status = 'pago', mp_payment_id = ?, pago_em = CURRENT_TIMESTAMP WHERE id = ?`, [mpPaymentId || '', pagId], ok));
+    await new Promise(ok => db.run(`UPDATE users SET estudio_plano_id = ?, estudio_status = 'ativo', estudio_validade = ? WHERE id = ?`, [pg.plano_id, validadeMaisDiasEst(u && u.estudio_validade, 30 * (pg.meses || 1)), pg.user_id], ok));
+    CACHE_USR_EST.delete(pg.user_id);
+}
+app.post('/api/admin/estudio-acessos/:id/cobranca', requireRole('admin'), async (req, res) => {
+    try { const u = await dbGet(`SELECT estudio_plano_id FROM users WHERE id = ?`, [req.params.id]); res.json(await criarCobrancaEst(req.params.id, (req.body || {}).plano_id || (u && u.estudio_plano_id), (req.body || {}).meses)); }
+    catch (e) { res.status(400).json({ error: typeof detalheErroMercadoPago === 'function' && e.cause ? detalheErroMercadoPago(e) : e.message }); }
+});
+app.post('/api/admin/estudio-pagamentos/:id/confirmar', requireRole('admin'), async (req, res) => { await confirmarPagamentoEst(req.params.id, 'manual'); res.json({ ok: true, message: 'Pagamento confirmado e plano liberado! ✅' }); });
+// ----- Cliente do Estúdio: minha conta, uso do mês e pagar -----
+app.get('/api/estudio/minha-conta', requireRole('estudio', 'admin'), async (req, res) => {
+    if (req.user.role === 'admin') return res.json({ master: true });
+    const u = await usuarioEstudio(req.user.userId, true); if (!u) return res.status(404).json({ error: 'Acesso não encontrado.' });
+    const planos = (await dbAll(`SELECT id, nome, descricao, preco, limites FROM estudio_planos WHERE ativo = 1 ORDER BY ordem, id`)).map(linhaPlanoEst);
+    res.json({ nome: u.name, email: u.email, plano: { id: u.estudio_plano_id, nome: u.plano_nome, preco: u.plano_preco, limites: u.limites }, status: u.estudio_status, validade: u.estudio_validade, ativo: estudioAtivo(u), uso: await usoMesEst(u.id), rotulos: LIMITES_EST, planos, pagamentoOnline: !!mpPreference });
+});
+app.post('/api/estudio/pagar', requireRole('estudio'), async (req, res) => {
+    try { const u = await usuarioEstudio(req.user.userId, true); res.json(await criarCobrancaEst(req.user.userId, (req.body || {}).plano_id || (u && u.estudio_plano_id), (req.body || {}).meses)); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+// Dono (cliente) de um projeto: 0 quando é do Master
+async function donoDoProjetoEst(projetoId) {
+    const r = await dbGet(`SELECT u.id, u.role FROM estudio_projetos p JOIN users u ON u.id = p.created_by WHERE p.id = ?`, [projetoId]).catch(() => null);
+    return r && r.role === 'estudio' ? r.id : 0;
+}
+const chaveMarcaEst = dono => dono ? 'estudio_marca:' + dono : 'estudio_marca';
 db.run(`CREATE TABLE IF NOT EXISTS estudio_projetos (
     id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, formato TEXT DEFAULT '9:16', tipo TEXT DEFAULT 'reels',
     dados TEXT, legenda TEXT, hashtags TEXT, capa_url TEXT, status TEXT DEFAULT 'rascunho', video_url TEXT, video_mime TEXT,
@@ -12741,7 +12902,7 @@ db.run(`CREATE TABLE IF NOT EXISTS estudio_projetos (
     created_by INTEGER, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
 db.run(`CREATE TABLE IF NOT EXISTS estudio_agente (
     id INTEGER PRIMARY KEY AUTOINCREMENT, tipo TEXT NOT NULL, titulo TEXT, conteudo TEXT, metricas TEXT, ativo INTEGER DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`, () => db.run(`ALTER TABLE estudio_agente ADD COLUMN dono INTEGER`, () => {}));
 
 const TIPOS_AGENTE_EST = ['perfil', 'regra', 'exemplo', 'proibido', 'feedback', 'referencia', 'tendencia'];
 const FORMATOS_EST = ['9:16', '4:5', '1:1', '16:9'];
@@ -12754,7 +12915,7 @@ function linhaProjetoEst(p) {
     return { ...p, dados };
 }
 async function contextoAgenteEst() {
-    const l = await dbAll(`SELECT tipo, titulo, conteudo, metricas FROM estudio_agente WHERE ativo = 1 ORDER BY id DESC`).catch(() => []);
+    const l = await dbAll(`SELECT tipo, titulo, conteudo, metricas FROM estudio_agente WHERE ativo = 1 AND COALESCE(dono, 0) = ? ORDER BY id DESC`, [donoAtualEst()]).catch(() => []);
     const por = t => l.filter(x => x.tipo === t);
     const perfil = por('perfil')[0];
     const partes = [];
@@ -12779,7 +12940,7 @@ Princípios de viralização que você domina e aplica:
 - Nunca invente números, depoimentos ou resultados. Nada de promessas enganosas ou clickbait que não se cumpre.`;
 async function iaEstudio(pedido, { web = false, json = true, max = 6000, avancado = false, maxBuscas } = {}) {
     const ctx = await contextoAgenteEst();
-    const sistema = SISTEMA_AGENTE_EST + (ctx ? '\n\n' + ctx : '') + (json ? '\nResponda APENAS com JSON válido no final da resposta.' : '');
+    const sistema = (donoAtualEst() ? SISTEMA_AGENTE_EST.replace(/ da Impulsionar V4/g, '') : SISTEMA_AGENTE_EST) + (ctx ? '\n\n' + ctx : '') + (json ? '\nResponda APENAS com JSON válido no final da resposta.' : '');
     const r = await iaPesquisarMt(sistema, pedido, max, web, { modelo: avancado ? ANTHROPIC_MODEL_AVANCADO : null, maxBuscas });
     if (!json) return { texto: r.texto, fontes: r.fontes };
     const fim = r.texto.lastIndexOf('}');
@@ -12810,25 +12971,27 @@ function ganchosLocaisEst(tema) {
     return [`Ninguém te conta isso sobre ${x}`, `O erro nº 1 em ${x} (e como corrigir)`, `Pare de fazer isso se você quer ${x}`, `3 passos para ${x} ainda esta semana`, `Se o seu time faz isso, você tem um problema de ${x}`, `Faça isso amanhã e veja a diferença em ${x}`];
 }
 
-app.get('/api/admin/estudio/projetos', requireRole('admin'), async (req, res) => {
-    try { res.json((await dbAll(`SELECT id, titulo, formato, tipo, status, capa_url, video_url, agendado_para, publicado_em, ig_permalink, erro_publicacao, viral_score, legenda, updated_at, created_at, dados FROM estudio_projetos ORDER BY updated_at DESC`)).map(p => { const o = linhaProjetoEst(p); const d = o.dados || {}; o.duracao = (d.clips || []).reduce((s, c) => s + Math.max(0, ((c.fim || 0) - (c.ini || 0)) / (c.vel || 1)), 0); o.qtdClips = (d.clips || []).length; o.video_existe = o.video_url ? videoExisteEst(o.video_url) : false; o.thumb = (d.midias || []).find(m => m.tipo === 'imagem') ? (d.midias || []).find(m => m.tipo === 'imagem').url : ''; delete o.dados; return o; })); }
+app.get('/api/admin/estudio/projetos', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), filtro = dono ? `WHERE created_by = ${Number(dono)}` : `WHERE created_by IS NULL OR created_by NOT IN (SELECT id FROM users WHERE role = 'estudio')`;
+    try { res.json((await dbAll(`SELECT id, titulo, formato, tipo, status, capa_url, video_url, agendado_para, publicado_em, ig_permalink, erro_publicacao, viral_score, legenda, updated_at, created_at, dados FROM estudio_projetos ${filtro} ORDER BY updated_at DESC`)).map(p => { const o = linhaProjetoEst(p); const d = o.dados || {}; o.duracao = (d.clips || []).reduce((s, c) => s + Math.max(0, ((c.fim || 0) - (c.ini || 0)) / (c.vel || 1)), 0); o.qtdClips = (d.clips || []).length; o.video_existe = o.video_url ? videoExisteEst(o.video_url) : false; o.thumb = (d.midias || []).find(m => m.tipo === 'imagem') ? (d.midias || []).find(m => m.tipo === 'imagem').url : ''; delete o.dados; return o; })); }
     catch (e) { res.status(500).json({ error: 'Erro ao carregar os projetos.' }); }
 });
-app.get('/api/admin/estudio/projetos/:id', requireRole('admin'), async (req, res) => {
+app.get('/api/admin/estudio/projetos/:id', requireRole('admin', 'estudio'), async (req, res) => {
     const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
     if (!p) return res.status(404).json({ error: 'Projeto não encontrado.' });
-    res.json({ ...linhaProjetoEst(p), video_existe: p.video_url ? videoExisteEst(p.video_url) : false, iaAtiva: iaDisponivelMt(), igConfigurado: !!(await lerIgEst()).token });
+    res.json({ ...linhaProjetoEst(p), video_existe: p.video_url ? videoExisteEst(p.video_url) : false, iaAtiva: iaDisponivelMt(), igConfigurado: !!(await lerIgEst(donoAtualEst())).token });
 });
-app.post('/api/admin/estudio/projetos', requireRole('admin'), async (req, res) => {
+app.post('/api/admin/estudio/projetos', requireRole('admin', 'estudio'), async (req, res) => {
     const b = req.body || {};
     const titulo = String(b.titulo || 'Novo vídeo').trim().slice(0, 150) || 'Novo vídeo';
     const formato = FORMATOS_EST.includes(b.formato) ? b.formato : '9:16';
     const dados = b.dados && typeof b.dados === 'object' ? b.dados : { midias: [], clips: [], textos: [], audios: [], filtro: 'nenhum', transicao: 'corte', extras: {} };
+    try { await consumirEst('projetos', 1); } catch (e) { return erroLimiteEst(res, e); }
     db.run(`INSERT INTO estudio_projetos (titulo, formato, tipo, dados, legenda, hashtags, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [titulo, formato, String(b.tipo || 'reels').slice(0, 20), JSON.stringify(dados), String(b.legenda || ''), String(b.hashtags || ''), req.user.userId],
         function (err) { if (err) return res.status(500).json({ error: 'Erro ao criar o projeto.' }); res.json({ id: this.lastID }); });
 });
-app.put('/api/admin/estudio/projetos/:id', requireRole('admin'), async (req, res) => {
+app.put('/api/admin/estudio/projetos/:id', requireRole('admin', 'estudio'), async (req, res) => {
     const b = req.body || {}; const sets = [], vals = [];
     if (b.titulo !== undefined) { sets.push('titulo = ?'); vals.push(String(b.titulo).trim().slice(0, 150) || 'Sem título'); }
     if (b.formato !== undefined && FORMATOS_EST.includes(b.formato)) { sets.push('formato = ?'); vals.push(b.formato); }
@@ -12846,21 +13009,22 @@ app.put('/api/admin/estudio/projetos/:id', requireRole('admin'), async (req, res
     });
 });
 // Versão do projeto: o editor aberto no computador e no celular compara para sincronizar.
-app.get('/api/admin/estudio/projetos/:id/versao', requireRole('admin'), async (req, res) => {
+app.get('/api/admin/estudio/projetos/:id/versao', requireRole('admin', 'estudio'), async (req, res) => {
     const v = await dbGet(`SELECT updated_at FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
     if (!v) return res.status(404).json({ error: 'Projeto não encontrado.' });
     res.json({ updated_at: v.updated_at });
 });
-app.post('/api/admin/estudio/projetos/:id/duplicar', requireRole('admin'), async (req, res) => {
+app.post('/api/admin/estudio/projetos/:id/duplicar', requireRole('admin', 'estudio'), async (req, res) => {
     const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
     if (!p) return res.status(404).json({ error: 'Projeto não encontrado.' });
+    try { await consumirEst('projetos', 1); } catch (e) { return erroLimiteEst(res, e); }
     db.run(`INSERT INTO estudio_projetos (titulo, formato, tipo, dados, legenda, hashtags, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, [p.titulo + ' (cópia)', p.formato, p.tipo, p.dados, p.legenda, p.hashtags, req.user.userId],
         function (err) { if (err) return res.status(500).json({ error: 'Erro ao duplicar.' }); res.json({ id: this.lastID }); });
 });
-app.delete('/api/admin/estudio/projetos/:id', requireRole('admin'), (req, res) => {
+app.delete('/api/admin/estudio/projetos/:id', requireRole('admin', 'estudio'), (req, res) => {
     db.run(`DELETE FROM estudio_projetos WHERE id = ?`, [req.params.id], () => res.json({ ok: true }));
 });
-app.post('/api/admin/estudio/upload', requireRole('admin'), (req, res) => {
+app.post('/api/admin/estudio/upload', requireRole('admin', 'estudio'), (req, res) => {
     uploadEstudio.single('file')(req, res, (err) => {
         if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Arquivo muito grande (máximo 1GB).' : err.message });
         if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo recebido.' });
@@ -12995,7 +13159,7 @@ async function finalizarEnvioEst(e, id, nomeOrig, ext, res, aoFinal, preparar) {
     if (aoFinal) return aoFinal(dados);
     res.json(dados);
 }
-app.post('/api/admin/estudio/upload-parte', requireRole('admin'), express.raw({ type: () => true, limit: '12mb' }), (req, res) => receberParteEst(req, res, String(req.headers['x-preparar'] || '') === '1' ? { preparar: true } : undefined));
+app.post('/api/admin/estudio/upload-parte', requireRole('admin', 'estudio'), express.raw({ type: () => true, limit: '12mb' }), (req, res) => receberParteEst(req, res, String(req.headers['x-preparar'] || '') === '1' ? { preparar: true } : undefined));
 // "Vídeo pronto para edição": o servidor deixa o vídeo num formato que qualquer navegador abre na hora
 // (H.264 + AAC, com índice no começo). Vídeo HEVC do iPhone / MOV / AVI é convertido; os demais só são
 // reorganizados (rápido, sem perder qualidade). O resultado vai para um arquivo NOVO e o endereço antigo
@@ -13053,7 +13217,7 @@ function filtroLimpezaAudio(c) {
     return f.join(',');
 }
 const JOBS_AUDIO = new Map();
-app.post('/api/admin/estudio/limpar-audio', requireRole('admin'), async (req, res) => {
+app.post('/api/admin/estudio/limpar-audio', requireRole('admin', 'estudio'), async (req, res) => {
     const b = req.body || {}, nome = path.basename(String(b.url || '')), arq = path.join(PASTA_UPLOADS, nome);
     if (!nome || !fs.existsSync(arq)) { const r = await restaurarUploadDoBanco(nome).catch(() => null); if (!r) return res.status(404).json({ error: 'Vídeo não encontrado no servidor. Espere terminar de subir ou envie de novo.' }); }
     if (!(await ffmpegDisponivel())) return res.status(400).json({ error: 'sem-ffmpeg', semFfmpeg: true });
@@ -13070,6 +13234,7 @@ app.post('/api/admin/estudio/limpar-audio', requireRole('admin'), async (req, re
         return res.json({ antes: '/uploads/' + antes, depois: '/uploads/' + depois });
     }
     // vídeo inteiro: a imagem é copiada sem mexer; só o áudio é refeito
+    try { await consumirEst('limpeza_audio', 1); } catch (e) { return erroLimiteEst(res, e); }
     const id = require('crypto').randomBytes(6).toString('hex'), job = { status: 'processando', t: Date.now() }; JOBS_AUDIO.set(id, job); res.json({ id });
     setTimeout(() => JOBS_AUDIO.delete(id), 6 * 3600 * 1000);
     const webm = /\.webm$/i.test(nome), novoNome = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + (webm ? '.webm' : '.mp4'), novo = path.join(PASTA_UPLOADS, novoNome), tmp = novo + '.tmp' + (webm ? '.webm' : '.mp4');
@@ -13080,7 +13245,7 @@ app.post('/api/admin/estudio/limpar-audio', requireRole('admin'), async (req, re
         Object.assign(job, { status: 'pronto', url: '/uploads/' + novoNome });
     } catch (e) { fs.unlink(tmp, () => {}); Object.assign(job, { status: 'erro', error: /matches no streams|Stream map '0:a:0'/.test(String(e.stderr)) ? 'Este vídeo não tem som.' : 'Não consegui limpar o áudio: ' + String(e.stderr || e.message).slice(0, 160) }); }
 });
-app.get('/api/admin/estudio/limpar-audio/:id', requireRole('admin'), (req, res) => {
+app.get('/api/admin/estudio/limpar-audio/:id', requireRole('admin', 'estudio'), (req, res) => {
     const j = JOBS_AUDIO.get(req.params.id); if (!j) return res.status(404).json({ error: 'Processamento não encontrado (o servidor reiniciou).' });
     res.json(Object.assign({ segundos: Math.round((Date.now() - j.t) / 1000) }, j));
 });
@@ -13095,7 +13260,7 @@ function limparSvgIa(txt) {
     if (!/xmlns=/.test(svg)) svg = svg.replace(/<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"');
     return svg.length > 200 ? svg : null;
 }
-app.post('/api/admin/estudio/ia/imagens-fala', requireRole('admin'), async (req, res) => {
+app.post('/api/admin/estudio/ia/imagens-fala', requireRole('admin', 'estudio'), async (req, res) => {
     if (!iaDisponivelMt()) return res.status(400).json({ error: 'A IA ainda não está conectada. Cadastre a chave da Anthropic nas configurações.' });
     const b = req.body || {}, frases = (Array.isArray(b.frases) ? b.frases : []).slice(0, 400).map(f => ({ ini: Number(f.ini) || 0, fim: Number(f.fim) || 0, texto: String(f.texto || '').slice(0, 300) })).filter(f => f.texto.trim());
     if (!frases.length) return res.status(400).json({ error: 'Não encontrei fala no vídeo para criar as imagens.' });
@@ -13103,6 +13268,7 @@ app.post('/api/admin/estudio/ia/imagens-fala', requireRole('admin'), async (req,
     const estilo = String(b.estilo || 'ilustração vetorial flat moderna, colorida, com profundidade e gradientes suaves').slice(0, 200);
     const cores = (Array.isArray(b.cores) ? b.cores : []).filter(c => /^#[0-9a-f]{3,8}$/i.test(c)).slice(0, 4);
     const vertical = b.formato === 'vertical', larg = 1080, alt = vertical ? 1920 : 1080;
+    try { await consumirEst('imagens_ia', qtd); } catch (e) { return erroLimiteEst(res, e); }
     const id = require('crypto').randomBytes(6).toString('hex'), job = { status: 'planejando', feitas: 0, total: qtd, imagens: [], t: Date.now() };
     JOBS_IMAGENS.set(id, job); setTimeout(() => JOBS_IMAGENS.delete(id), 3 * 3600 * 1000); res.json({ id });
     try {
@@ -13132,11 +13298,11 @@ app.post('/api/admin/estudio/ia/imagens-fala', requireRole('admin'), async (req,
         Object.assign(job, { status: job.imagens.length ? 'pronto' : 'erro', error: job.imagens.length ? undefined : 'A IA não conseguiu desenhar as imagens. Tente de novo.' });
     } catch (e) { Object.assign(job, { status: 'erro', error: e.message }); }
 });
-app.get('/api/admin/estudio/ia/imagens-fala/:id', requireRole('admin'), (req, res) => {
+app.get('/api/admin/estudio/ia/imagens-fala/:id', requireRole('admin', 'estudio'), (req, res) => {
     const j = JOBS_IMAGENS.get(req.params.id); if (!j) return res.status(404).json({ error: 'Processamento não encontrado (o servidor reiniciou).' });
     res.json(j);
 });
-app.get('/api/admin/estudio/preparo/:id', requireRole('admin'), (req, res) => {
+app.get('/api/admin/estudio/preparo/:id', requireRole('admin', 'estudio'), (req, res) => {
     const j = JOBS_PREPARO.get(req.params.id); if (!j) return res.status(404).json({ error: 'Preparo não encontrado (o servidor reiniciou).' });
     res.json(Object.assign({ segundos: Math.round((Date.now() - j.t) / 1000) }, j));
 });
@@ -13168,14 +13334,14 @@ app.post('/api/public/gravador/:codigo/descartar', async (req, res) => {
     res.json({ ok: true });
 });
 // Duração real do vídeo pelo servidor (quando o navegador não consegue ler, ex.: vídeo HEVC do iPhone).
-app.get('/api/admin/estudio/info-midia', requireRole('admin'), async (req, res) => {
+app.get('/api/admin/estudio/info-midia', requireRole('admin', 'estudio'), async (req, res) => {
     const nome = path.basename(String(req.query.url || '')); const arq = path.join(PASTA_UPLOADS, nome);
     if (!nome || !fs.existsSync(arq)) return res.status(404).json({ error: 'Arquivo não encontrado.' });
     if (!(await ffmpegDisponivel())) return res.json({ duracao: 0, semFfmpeg: true });
     res.json({ duracao: await duracaoFfmpeg(arq) });
 });
 // Vídeo final renderizado no navegador. Se vier em WebM e o servidor tiver ffmpeg, converte para MP4 (o Instagram exige MP4).
-app.post('/api/admin/estudio/projetos/:id/exportado', requireRole('admin'), (req, res) => {
+app.post('/api/admin/estudio/projetos/:id/exportado', requireRole('admin', 'estudio'), (req, res) => {
     uploadEstudio.single('file')(req, res, async (err) => {
         if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Vídeo muito grande (máximo 1GB).' : err.message });
         if (!req.file) return res.status(400).json({ error: 'Nenhum vídeo recebido.' });
@@ -13198,9 +13364,10 @@ app.post('/api/admin/estudio/projetos/:id/exportado', requireRole('admin'), (req
 // Vídeo exportado que já subiu em partes: o servidor finaliza em MP4 completo (com duração e índice certos,
 // abre em qualquer celular/computador e no Instagram). Roda em segundo plano; o editor acompanha.
 const JOBS_EXPORT = new Map();
-app.post('/api/admin/estudio/projetos/:id/exportado-url', requireRole('admin'), async (req, res) => {
+app.post('/api/admin/estudio/projetos/:id/exportado-url', requireRole('admin', 'estudio'), async (req, res) => {
     const nome = path.basename(String((req.body || {}).url || '')), arq = path.join(PASTA_UPLOADS, nome);
     if (!nome || !fs.existsSync(arq)) return res.status(404).json({ error: 'Vídeo exportado não encontrado no servidor.' });
+    try { await consumirEst('exportacoes', 1); } catch (e) { return erroLimiteEst(res, e); }
     const id = require('crypto').randomBytes(5).toString('hex'), job = { status: 'processando' };
     JOBS_EXPORT.set(id, job); res.json({ id });
     let url = '/uploads/' + nome, mime = /\.mp4$/i.test(nome) ? 'video/mp4' : 'video/webm', aviso = '';
@@ -13220,13 +13387,13 @@ app.post('/api/admin/estudio/projetos/:id/exportado-url', requireRole('admin'), 
     } catch (e) { Object.assign(job, { status: 'pronto', url: '/uploads/' + nome, mime, aviso: 'Não consegui converter para MP4: o vídeo ficou no formato original.' }); db.run(`UPDATE estudio_projetos SET video_url = ?, video_mime = ? WHERE id = ?`, ['/uploads/' + nome, mime, req.params.id]); }
     setTimeout(() => JOBS_EXPORT.delete(id), 3 * 3600 * 1000);
 });
-app.get('/api/admin/estudio/exportado/:id', requireRole('admin'), (req, res) => {
+app.get('/api/admin/estudio/exportado/:id', requireRole('admin', 'estudio'), (req, res) => {
     const j = JOBS_EXPORT.get(req.params.id); if (!j) return res.status(404).json({ error: 'Processamento não encontrado (o servidor reiniciou).' });
     res.json(j);
 });
 // Download do vídeo com nome certo (baixa completo, como arquivo).
 function videoExisteEst(url) { const nome = path.basename(String(url || '')); return !!nome && fs.existsSync(path.join(PASTA_UPLOADS, nome)); }
-app.get('/api/admin/estudio/video-existe', requireRole('admin'), (req, res) => {
+app.get('/api/admin/estudio/video-existe', requireRole('admin', 'estudio'), (req, res) => {
     const nome = path.basename(String(req.query.url || '')), arq = path.join(PASTA_UPLOADS, nome);
     try { const st = fs.statSync(arq); res.json({ existe: st.isFile() && st.size > 0, tamanho: st.size }); } catch (e) { res.json({ existe: false }); }
 });
@@ -13240,32 +13407,33 @@ app.get('/api/public/baixar/:nome', async (req, res) => {
 });
 
 // ----- Agente treinável -----
-app.get('/api/admin/estudio/agente', requireRole('admin'), async (req, res) => {
-    try { res.json(await dbAll(`SELECT * FROM estudio_agente ORDER BY tipo, id DESC`)); } catch (e) { res.status(500).json({ error: 'Erro ao carregar o agente.' }); }
+app.get('/api/admin/estudio/agente', requireRole('admin', 'estudio'), async (req, res) => {
+    try { res.json(await dbAll(`SELECT * FROM estudio_agente WHERE COALESCE(dono, 0) = ? ORDER BY tipo, id DESC`, [donoAtualEst()])); } catch (e) { res.status(500).json({ error: 'Erro ao carregar o agente.' }); }
 });
-app.post('/api/admin/estudio/agente', requireRole('admin'), async (req, res) => {
+app.post('/api/admin/estudio/agente', requireRole('admin', 'estudio'), async (req, res) => {
     const b = req.body || {};
     if (!TIPOS_AGENTE_EST.includes(b.tipo)) return res.status(400).json({ error: 'Tipo inválido.' });
     const conteudo = String(b.conteudo || '').trim().slice(0, 8000);
     if (!conteudo) return res.status(400).json({ error: 'Escreva o conteúdo.' });
     const metricas = b.metricas && typeof b.metricas === 'object' ? JSON.stringify(b.metricas) : null;
     if (b.tipo === 'perfil') {
-        const ex = await dbGet(`SELECT id FROM estudio_agente WHERE tipo = 'perfil'`).catch(() => null);
+        const ex = await dbGet(`SELECT id FROM estudio_agente WHERE tipo = 'perfil' AND COALESCE(dono, 0) = ?`, [donoAtualEst()]).catch(() => null);
         if (ex) return db.run(`UPDATE estudio_agente SET conteudo = ?, titulo = ? WHERE id = ?`, [conteudo, String(b.titulo || 'Perfil'), ex.id], () => res.json({ id: ex.id, message: 'Perfil do agente atualizado!' }));
     }
-    db.run(`INSERT INTO estudio_agente (tipo, titulo, conteudo, metricas) VALUES (?, ?, ?, ?)`, [b.tipo, String(b.titulo || '').slice(0, 200), conteudo, metricas],
+    db.run(`INSERT INTO estudio_agente (tipo, titulo, conteudo, metricas, dono) VALUES (?, ?, ?, ?, ?)`, [b.tipo, String(b.titulo || '').slice(0, 200), conteudo, metricas, donoAtualEst() || null],
         function (err) { if (err) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ id: this.lastID, message: b.tipo === 'feedback' ? 'Anotado! O agente vai levar isso em conta daqui pra frente.' : 'Salvo no treinamento do agente!' }); });
 });
-app.put('/api/admin/estudio/agente/:id', requireRole('admin'), (req, res) => {
+app.put('/api/admin/estudio/agente/:id', requireRole('admin', 'estudio'), (req, res) => {
     const b = req.body || {};
-    db.run(`UPDATE estudio_agente SET titulo = COALESCE(?, titulo), conteudo = COALESCE(?, conteudo), metricas = COALESCE(?, metricas), ativo = COALESCE(?, ativo) WHERE id = ?`,
-        [b.titulo !== undefined ? String(b.titulo).slice(0, 200) : null, b.conteudo !== undefined ? String(b.conteudo).slice(0, 8000) : null, b.metricas ? JSON.stringify(b.metricas) : null, b.ativo !== undefined ? (b.ativo ? 1 : 0) : null, req.params.id], () => res.json({ ok: true }));
+    db.run(`UPDATE estudio_agente SET titulo = COALESCE(?, titulo), conteudo = COALESCE(?, conteudo), metricas = COALESCE(?, metricas), ativo = COALESCE(?, ativo) WHERE id = ? AND COALESCE(dono, 0) = ?`,
+        [b.titulo !== undefined ? String(b.titulo).slice(0, 200) : null, b.conteudo !== undefined ? String(b.conteudo).slice(0, 8000) : null, b.metricas ? JSON.stringify(b.metricas) : null, b.ativo !== undefined ? (b.ativo ? 1 : 0) : null, req.params.id, donoAtualEst()], () => res.json({ ok: true }));
 });
-app.delete('/api/admin/estudio/agente/:id', requireRole('admin'), (req, res) => db.run(`DELETE FROM estudio_agente WHERE id = ?`, [req.params.id], () => res.json({ ok: true })));
+app.delete('/api/admin/estudio/agente/:id', requireRole('admin', 'estudio'), (req, res) => db.run(`DELETE FROM estudio_agente WHERE id = ? AND COALESCE(dono, 0) = ?`, [req.params.id, donoAtualEst()], () => res.json({ ok: true })));
 
 // ----- IA do estúdio -----
-app.post('/api/admin/estudio/ia/:acao', requireRole('admin'), async (req, res) => {
+app.post('/api/admin/estudio/ia/:acao', requireRole('admin', 'estudio'), async (req, res) => {
     const b = req.body || {}, acao = req.params.acao;
+    try { await consumirEst('ia', 1); } catch (e) { return erroLimiteEst(res, e); }
     const tema = String(b.tema || '').slice(0, 1500), objetivo = String(b.objetivo || '').slice(0, 500), publico = String(b.publico || '').slice(0, 300);
     const duracao = Math.max(5, Math.min(180, Number(b.duracao) || 30));
     if (acao === 'roteiro-aula') { try { return res.json(await roteiroAulaEst(b)); } catch (e) { return res.status(500).json({ error: e.message }); } }
@@ -13377,7 +13545,7 @@ app.post('/api/public/gravador/:codigo/ia-roteiro', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // ----- Salvar o vídeo exportado como videoaula na Academy -----
-app.post('/api/admin/estudio/projetos/:id/academy', requireRole('admin'), async (req, res) => {
+app.post('/api/admin/estudio/projetos/:id/academy', requireRole('admin', 'estudio'), async (req, res) => {
     const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
     if (!p) return res.status(404).json({ error: 'Projeto não encontrado.' });
     if (!p.video_url) return res.status(400).json({ error: 'Exporte o vídeo antes de salvar na Academy.' });
@@ -13407,7 +13575,7 @@ app.post('/api/admin/estudio/projetos/:id/academy', requireRole('admin'), async 
 });
 
 // ----- Radar Viral: pesquisa no mercado o que está viralizando e cria conteúdos com os mesmos padrões -----
-db.run(`CREATE TABLE IF NOT EXISTS estudio_radar (id INTEGER PRIMARY KEY AUTOINCREMENT, nicho TEXT, dados TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+db.run(`CREATE TABLE IF NOT EXISTS estudio_radar (id INTEGER PRIMARY KEY AUTOINCREMENT, nicho TEXT, dados TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`, () => db.run(`ALTER TABLE estudio_radar ADD COLUMN dono INTEGER`, () => {}));
 const RADAR_JOBS = new Map();
 function textoPadroesRadar(r) {
     const p = r.padroes || {}, l = (a) => (Array.isArray(a) ? a : []).filter(Boolean).map(x => '  • ' + (typeof x === 'string' ? x : JSON.stringify(x))).join('\n');
@@ -13416,8 +13584,10 @@ function textoPadroesRadar(r) {
         p.audios ? 'Áudios/trilhas em alta: ' + (Array.isArray(p.audios) ? p.audios.join(', ') : p.audios) : '', p.evitar ? 'Evitar:\n' + l(p.evitar) : '',
         (r.tendencias || []).length ? 'Tendências do momento:\n' + r.tendencias.slice(0, 8).map(t => `  • ${t.titulo}: ${t.por_que_viraliza || ''}`).join('\n') : ''].filter(Boolean).join('\n');
 }
-app.post('/api/admin/estudio/radar', requireRole('admin'), async (req, res) => {
+app.post('/api/admin/estudio/radar', requireRole('admin', 'estudio'), async (req, res) => {
     if (!iaDisponivelMt()) return res.status(400).json({ error: 'A IA não está conectada. Conecte a chave em Estúdio › Agente Viral.', semIa: true });
+    try { await consumirEst('radar', 1); } catch (e) { return erroLimiteEst(res, e); }
+    const donoRadar = donoAtualEst();
     const b = req.body || {};
     const nicho = String(b.nicho || '').slice(0, 300) || 'liderança, gestão de pessoas e operação (consultoria)';
     const plataformas = (Array.isArray(b.plataformas) && b.plataformas.length ? b.plataformas : ['Instagram Reels', 'TikTok', 'YouTube Shorts']).slice(0, 4).map(x => String(x).slice(0, 40));
@@ -13435,47 +13605,47 @@ JSON: {"resumo":"2-3 frases sobre o momento do nicho","tendencias":[{"titulo":""
         const out = await iaEstudio(pedido, { web: true, max: 16000, avancado: true, maxBuscas: 14 });
         out.fontes = (out.__fontes || []).slice(0, 30); delete out.__fontes;
         out.nicho = nicho; out.plataformas = plataformas; out.criadoEm = new Date().toISOString();
-        await new Promise(ok => db.run(`INSERT INTO estudio_radar (nicho, dados) VALUES (?, ?)`, [nicho, JSON.stringify(out)], ok));
+        await new Promise(ok => db.run(`INSERT INTO estudio_radar (nicho, dados, dono) VALUES (?, ?, ?)`, [nicho, JSON.stringify(out), donoRadar || null], ok));
         // "treina" o agente: os padrões do mercado passam a guiar todas as criações (mantém só os 2 radares mais recentes ativos)
         const txt = textoPadroesRadar(out);
         if (txt) {
-            await new Promise(ok => db.run(`INSERT INTO estudio_agente (tipo, titulo, conteudo) VALUES ('tendencia', ?, ?)`, [`Radar viral — ${nicho.slice(0, 60)} (${new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })})`, txt.slice(0, 7900)], ok));
-            db.run(`UPDATE estudio_agente SET ativo = 0 WHERE tipo = 'tendencia' AND id NOT IN (SELECT id FROM estudio_agente WHERE tipo = 'tendencia' ORDER BY id DESC LIMIT 2)`);
+            await new Promise(ok => db.run(`INSERT INTO estudio_agente (tipo, titulo, conteudo, dono) VALUES ('tendencia', ?, ?, ?)`, [`Radar viral — ${nicho.slice(0, 60)} (${new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })})`, txt.slice(0, 7900), donoRadar || null], ok));
+            db.run(`UPDATE estudio_agente SET ativo = 0 WHERE tipo = 'tendencia' AND COALESCE(dono, 0) = ? AND id NOT IN (SELECT id FROM estudio_agente WHERE tipo = 'tendencia' AND COALESCE(dono, 0) = ? ORDER BY id DESC LIMIT 2)`, [donoRadar, donoRadar]);
         }
         RADAR_JOBS.set(id, { status: 'pronto', resultado: out });
     } catch (e) { RADAR_JOBS.set(id, { status: 'erro', erro: e.message }); }
     setTimeout(() => RADAR_JOBS.delete(id), 30 * 60 * 1000);
 });
-app.get('/api/admin/estudio/radar/:id', requireRole('admin'), (req, res) => {
+app.get('/api/admin/estudio/radar/:id', requireRole('admin', 'estudio'), (req, res) => {
     const j = RADAR_JOBS.get(req.params.id);
     if (!j) return res.status(404).json({ error: 'Pesquisa não encontrada (o servidor pode ter reiniciado). Veja o histórico ou rode de novo.' });
     res.json(Object.assign({ segundos: j.inicio ? Math.round((Date.now() - j.inicio) / 1000) : 0 }, j));
 });
-app.get('/api/admin/estudio/radares', requireRole('admin'), async (req, res) => {
-    try { res.json((await dbAll(`SELECT id, nicho, dados, created_at FROM estudio_radar ORDER BY id DESC LIMIT 10`)).map(r => { let d = {}; try { d = JSON.parse(r.dados); } catch (e) {} return { id: r.id, nicho: r.nicho, created_at: r.created_at, dados: d }; })); }
+app.get('/api/admin/estudio/radares', requireRole('admin', 'estudio'), async (req, res) => {
+    try { res.json((await dbAll(`SELECT id, nicho, dados, created_at FROM estudio_radar WHERE COALESCE(dono, 0) = ? ORDER BY id DESC LIMIT 10`, [donoAtualEst()])).map(r => { let d = {}; try { d = JSON.parse(r.dados); } catch (e) {} return { id: r.id, nicho: r.nicho, created_at: r.created_at, dados: d }; })); }
     catch (e) { res.json([]); }
 });
 
 // ----- Kit da marca (logo, @, cores e chamada padrão) -----
-app.get('/api/admin/estudio/marca', requireRole('admin'), async (req, res) => {
-    const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_marca'`).catch(() => null);
+app.get('/api/admin/estudio/marca', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), r = await dbGet(`SELECT value FROM integration_settings WHERE key = ?`, [chaveMarcaEst(dono)]).catch(() => null);
     let kit = {}; try { kit = JSON.parse((r && r.value) || '{}'); } catch (e) {}
-    res.json(Object.assign({ logo: '/assets/logo-impulsionar.jpg', arroba: '@impulsionarv4', cor1: '#0b1329', cor2: '#dc4c4c', cta: 'Siga para mais conteúdos', ctaSec: '' }, kit));
+    res.json(Object.assign(dono ? { logo: '', arroba: '', cor1: '#0b1329', cor2: '#dc4c4c', cta: 'Siga para mais conteúdos', ctaSec: '' } : { logo: '/assets/logo-impulsionar.jpg', arroba: '@impulsionarv4', cor1: '#0b1329', cor2: '#dc4c4c', cta: 'Siga para mais conteúdos', ctaSec: '' }, kit));
 });
-app.put('/api/admin/estudio/marca', requireRole('admin'), (req, res) => {
+app.put('/api/admin/estudio/marca', requireRole('admin', 'estudio'), (req, res) => {
     const b = req.body || {}, cor = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : undefined, url = v => /^\/(uploads|assets)\/[\w.\-]+$/.test(v || '') ? v : '';
     const kit = { logo: url(b.logo), arroba: String(b.arroba || '').slice(0, 60), cor1: cor(b.cor1) || '#0b1329', cor2: cor(b.cor2) || '#dc4c4c', cta: String(b.cta || '').slice(0, 120), ctaSec: String(b.ctaSec || '').slice(0, 120) };
-    db.run(`INSERT INTO integration_settings (key, value) VALUES ('estudio_marca', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [JSON.stringify(kit)], () => res.json({ ok: true, kit }));
+    db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [chaveMarcaEst(donoAtualEst()), JSON.stringify(kit)], () => res.json({ ok: true, kit }));
 });
 // ----- Avatares (fotos salvas para criar vídeos com a pessoa) -----
-db.run(`CREATE TABLE IF NOT EXISTS estudio_avatares (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, url TEXT NOT NULL, voz TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
-app.get('/api/admin/estudio/avatares', requireRole('admin'), async (req, res) => { try { res.json(await dbAll(`SELECT * FROM estudio_avatares ORDER BY id DESC`)); } catch (e) { res.status(500).json({ error: 'Erro ao carregar os avatares.' }); } });
-app.post('/api/admin/estudio/avatares', requireRole('admin'), (req, res) => {
+db.run(`CREATE TABLE IF NOT EXISTS estudio_avatares (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, url TEXT NOT NULL, voz TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`, () => db.run(`ALTER TABLE estudio_avatares ADD COLUMN dono INTEGER`, () => {}));
+app.get('/api/admin/estudio/avatares', requireRole('admin', 'estudio'), async (req, res) => { try { res.json(await dbAll(`SELECT * FROM estudio_avatares WHERE COALESCE(dono, 0) = ? ORDER BY id DESC`, [donoAtualEst()])); } catch (e) { res.status(500).json({ error: 'Erro ao carregar os avatares.' }); } });
+app.post('/api/admin/estudio/avatares', requireRole('admin', 'estudio'), (req, res) => {
     const url = String((req.body || {}).url || '');
     if (!/^\/uploads\/[\w.\-]+$/.test(url)) return res.status(400).json({ error: 'Foto inválida.' });
-    db.run(`INSERT INTO estudio_avatares (nome, url, voz) VALUES (?, ?, ?)`, [String(req.body.nome || 'Avatar').slice(0, 80), url, String(req.body.voz || 'pt-BR-AntonioNeural').slice(0, 60)], function (err) { if (err) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ id: this.lastID }); });
+    db.run(`INSERT INTO estudio_avatares (nome, url, voz, dono) VALUES (?, ?, ?, ?)`, [String(req.body.nome || 'Avatar').slice(0, 80), url, String(req.body.voz || 'pt-BR-AntonioNeural').slice(0, 60), donoAtualEst() || null], function (err) { if (err) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ id: this.lastID }); });
 });
-app.delete('/api/admin/estudio/avatares/:id', requireRole('admin'), (req, res) => db.run(`DELETE FROM estudio_avatares WHERE id = ?`, [req.params.id], () => res.json({ ok: true })));
+app.delete('/api/admin/estudio/avatares/:id', requireRole('admin', 'estudio'), (req, res) => db.run(`DELETE FROM estudio_avatares WHERE id = ? AND COALESCE(dono, 0) = ?`, [req.params.id, donoAtualEst()], () => res.json({ ok: true })));
 // ----- D-ID: transforma a foto num vídeo da pessoa falando o roteiro -----
 async function chaveDidEst() { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'did_api_key'`).catch(() => null); return (r && r.value) || process.env.DID_API_KEY || ''; }
 // A chave do D-ID vem como "usuario:senha". Algumas contas aceitam a chave como está,
@@ -13495,12 +13665,12 @@ async function testarDidEst(chave) {
     }
     return ultimo;
 }
-app.get('/api/admin/estudio/provedor-video', requireRole('admin'), async (req, res) => {
+app.get('/api/admin/estudio/provedor-video', requireRole('admin', 'estudio'), async (req, res) => {
     const chave = await chaveDidEst(); if (!chave) return res.json({ configurado: false });
     try { const t = await testarDidEst(chave); res.json({ configurado: t.ok, creditos: t.j && t.j.remaining, erro: t.ok ? '' : ((t.j && (t.j.description || t.j.message)) || 'chave recusada') }); }
     catch (e) { res.json({ configurado: true }); }
 });
-app.put('/api/admin/estudio/provedor-video', requireRole('admin'), async (req, res) => {
+app.put('/api/admin/estudio/provedor-video', requireRole('admin', 'estudio'), async (req, res) => {
     const chave = String((req.body || {}).chave || '').trim();
     const salvar = v => new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES ('did_api_key', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [v], () => ok()));
     if (req.body.remover) { await salvar(''); return res.json({ message: 'D-ID desconectado.' }); }
@@ -13514,11 +13684,12 @@ app.put('/api/admin/estudio/provedor-video', requireRole('admin'), async (req, r
     } catch (e) { res.status(400).json({ error: 'Não consegui falar com o D-ID: ' + e.message }); }
 });
 const JOBS_AVATAR_EST = new Map(); // id -> { status, url, duracao, erro }
-app.post('/api/admin/estudio/avatar-video', requireRole('admin'), async (req, res) => {
+app.post('/api/admin/estudio/avatar-video', requireRole('admin', 'estudio'), async (req, res) => {
     const b = req.body || {};
     const chave = await chaveDidEst(); if (!chave) return res.status(400).json({ error: 'Conecte o D-ID para gerar a pessoa falando.' });
     if (!MODO_AUTH_DID) { try { await testarDidEst(chave); } catch (e) {} }
-    const av = await dbGet(`SELECT * FROM estudio_avatares WHERE id = ?`, [b.avatarId]).catch(() => null);
+    const av = await dbGet(`SELECT * FROM estudio_avatares WHERE id = ? AND COALESCE(dono, 0) = ?`, [b.avatarId, donoAtualEst()]).catch(() => null);
+    try { await consumirEst('avatar', 1); } catch (e) { return erroLimiteEst(res, e); }
     if (!av) return res.status(404).json({ error: 'Avatar não encontrado.' });
     const texto = String(b.texto || '').trim().slice(0, 4500); if (texto.length < 5) return res.status(400).json({ error: 'Roteiro vazio.' });
     const base = baseUrlPublicaDpo(req); const fonte = base.replace(/\/$/, '') + av.url;
@@ -13548,7 +13719,7 @@ app.post('/api/admin/estudio/avatar-video', requireRole('admin'), async (req, re
         res.json({ id: j.id });
     } catch (e) { res.status(500).json({ error: 'Erro ao chamar o D-ID: ' + e.message }); }
 });
-app.get('/api/admin/estudio/avatar-video/:id', requireRole('admin'), (req, res) => {
+app.get('/api/admin/estudio/avatar-video/:id', requireRole('admin', 'estudio'), (req, res) => {
     const j = JOBS_AVATAR_EST.get(String(req.params.id)); if (!j) return res.status(404).json({ error: 'Geração não encontrada.' });
     res.json(j);
 });
@@ -13576,8 +13747,8 @@ async function transcreverEst(buf, nome, cfg, mime) {
     if (!palavras.length && Array.isArray(j.segments)) j.segments.forEach(sg => { const ws = String(sg.text || '').trim().split(/\s+/).filter(Boolean); const d = (Number(sg.end) - Number(sg.start)) / Math.max(1, ws.length); ws.forEach((w, i) => palavras.push({ w, ini: Number(sg.start) + i * d, fim: Number(sg.start) + (i + 1) * d })); });
     return { texto: j.text || palavras.map(p => p.w).join(' '), palavras };
 }
-app.get('/api/admin/estudio/transcricao', requireRole('admin'), async (req, res) => { const c = await cfgTranscricaoEst(); res.json({ configurado: !!c.chave, provedor: c.provedor, preview: c.chave ? '••••' + c.chave.slice(-4) : '' }); });
-app.put('/api/admin/estudio/transcricao', requireRole('admin'), async (req, res) => {
+app.get('/api/admin/estudio/transcricao', requireRole('admin', 'estudio'), async (req, res) => { const c = await cfgTranscricaoEst(); res.json({ configurado: !!c.chave, provedor: c.provedor, preview: c.chave ? '••••' + c.chave.slice(-4) : '' }); });
+app.put('/api/admin/estudio/transcricao', requireRole('admin', 'estudio'), async (req, res) => {
     const salvar = (k, v) => new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => ok()));
     if (req.body.remover) { await salvar('transcricao_chave', ''); return res.json({ message: 'Transcrição desconectada.' }); }
     const chave = String(req.body.chave || '').trim();
@@ -13596,7 +13767,8 @@ app.put('/api/admin/estudio/transcricao', requireRole('admin'), async (req, res)
 // Transcrição de vídeos longos (aulas de até 2 h): o servidor extrai o áudio em pedaços de 10 min,
 // transcreve cada um e junta tudo com os tempos certos. Roda em segundo plano (o editor acompanha o progresso).
 const JOBS_TRANSC = new Map();
-app.post('/api/admin/estudio/transcrever-url', requireRole('admin'), async (req, res) => {
+app.post('/api/admin/estudio/transcrever-url', requireRole('admin', 'estudio'), async (req, res) => {
+    try { await consumirEst('transcricoes', 1); } catch (e) { return erroLimiteEst(res, e); }
     const nome = path.basename(String((req.body || {}).url || '')), arq = path.join(PASTA_UPLOADS, nome);
     if (!nome || !fs.existsSync(arq)) return res.status(404).json({ error: 'Arquivo não encontrado no servidor.' });
     const cfg = await cfgTranscricaoEst();
@@ -13622,11 +13794,12 @@ app.post('/api/admin/estudio/transcrever-url', requireRole('admin'), async (req,
     fs.promises.rm(pasta, { recursive: true, force: true }).catch(() => {});
     setTimeout(() => JOBS_TRANSC.delete(id), 60 * 60 * 1000);
 });
-app.get('/api/admin/estudio/transcrever-url/:id', requireRole('admin'), (req, res) => {
+app.get('/api/admin/estudio/transcrever-url/:id', requireRole('admin', 'estudio'), (req, res) => {
     const j = JOBS_TRANSC.get(req.params.id); if (!j) return res.status(404).json({ error: 'Transcrição não encontrada (o servidor reiniciou). Tente de novo.' });
     res.json(j.status === 'pronto' ? { status: 'pronto', palavras: j.palavras } : { status: j.status, feitos: j.feitos, total: j.total, erro: j.erro });
 });
-app.post('/api/admin/estudio/transcrever', requireRole('admin'), (req, res) => {
+app.post('/api/admin/estudio/transcrever', requireRole('admin', 'estudio'), async (req, res) => {
+    try { await consumirEst('transcricoes', 1); } catch (e) { return erroLimiteEst(res, e); }
     uploadAudioEst.single('file')(req, res, async (err) => {
         if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Áudio muito longo para transcrever de uma vez (máx. ~13 min).' : err.message });
         if (!req.file) return res.status(400).json({ error: 'Nenhum áudio recebido.' });
@@ -13646,7 +13819,7 @@ async function gravadorValidoEst(codigo) {
     if (Date.now() - new Date(String(g.criado_em).replace(' ', 'T') + 'Z').getTime() > 14 * 864e5) return null; // vale 14 dias
     return g;
 }
-app.post('/api/admin/estudio/projetos/:id/gravador', requireRole('admin'), async (req, res) => {
+app.post('/api/admin/estudio/projetos/:id/gravador', requireRole('admin', 'estudio'), async (req, res) => {
     const p = await dbGet(`SELECT id, titulo FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
     if (!p) return res.status(404).json({ error: 'Projeto não encontrado.' });
     const roteiro = String((req.body || {}).roteiro || '').slice(0, 20000);
@@ -13655,14 +13828,14 @@ app.post('/api/admin/estudio/projetos/:id/gravador', requireRole('admin'), async
     else { g = { codigo: require('crypto').randomBytes(8).toString('base64url') }; await new Promise(ok => db.run(`INSERT INTO estudio_gravadores (codigo, projeto_id, titulo, roteiro) VALUES (?, ?, ?, ?)`, [g.codigo, p.id, p.titulo, roteiro], ok)); }
     res.json({ codigo: g.codigo, link: `${baseUrlPublicaDpo(req)}/gravar.html?c=${g.codigo}` });
 });
-app.get('/api/admin/estudio/projetos/:id/gravacoes-novas', requireRole('admin'), async (req, res) => {
+app.get('/api/admin/estudio/projetos/:id/gravacoes-novas', requireRole('admin', 'estudio'), async (req, res) => {
     try { res.json(await dbAll(`SELECT * FROM estudio_gravacoes WHERE projeto_id = ? AND importada = 0 ORDER BY id`, [req.params.id])); } catch (e) { res.json([]); }
 });
-app.post('/api/admin/estudio/gravacoes/:id/importada', requireRole('admin'), (req, res) => db.run(`UPDATE estudio_gravacoes SET importada = 1 WHERE id = ?`, [req.params.id], () => res.json({ ok: true })));
+app.post('/api/admin/estudio/gravacoes/:id/importada', requireRole('admin', 'estudio'), (req, res) => db.run(`UPDATE estudio_gravacoes SET importada = 1 WHERE id = ? AND (? = 0 OR projeto_id IN (SELECT id FROM estudio_projetos WHERE created_by = ?))`, [req.params.id, donoAtualEst(), donoAtualEst()], () => res.json({ ok: true })));
 app.get('/api/public/gravador/:codigo', async (req, res) => {
     const g = await gravadorValidoEst(req.params.codigo);
     if (!g) return res.status(404).json({ error: 'Link de gravação inválido ou vencido. Gere um novo no Estúdio de Vídeo.' });
-    const kit = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_marca'`).catch(() => null);
+    const kit = await dbGet(`SELECT value FROM integration_settings WHERE key = ?`, [chaveMarcaEst(await donoDoProjetoEst(g.projeto_id))]).catch(() => null);
     let marca = {}; try { marca = JSON.parse((kit && kit.value) || '{}'); } catch (e) {}
     const pj = await dbGet(`SELECT formato, tipo FROM estudio_projetos WHERE id = ?`, [g.projeto_id]).catch(() => null) || {};
     res.json({ titulo: g.titulo, roteiro: g.roteiro || '', cor: marca.cor2 || '#dc4c4c', formato: pj.formato || '9:16', tipo: pj.tipo || 'reels', ia: iaDisponivelMt() });
@@ -13685,9 +13858,12 @@ app.post('/api/public/gravador/:codigo/video', async (req, res) => {
 });
 
 // ----- Instagram (Graph API) -----
-async function lerIgEst() {
-    const l = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN ('ig_user_id','ig_access_token','ig_username')`).catch(() => []);
-    const c = {}; l.forEach(r => { c[r.key] = r.value; });
+const chaveIgEst = (k, dono) => dono ? k + ':' + dono : k;
+async function lerIgEst(dono) {
+    dono = dono === undefined ? donoAtualEst() : dono;
+    const ks = ['ig_user_id', 'ig_access_token', 'ig_username'].map(k => chaveIgEst(k, dono));
+    const l = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN (?, ?, ?)`, ks).catch(() => []);
+    const c = {}; l.forEach(r => { c[r.key.split(':')[0]] = r.value; });
     return { userId: c.ig_user_id || '', token: c.ig_access_token || '', username: c.ig_username || '' };
 }
 function hostIgEst(token) { return /^IG/.test(token || '') ? 'https://graph.instagram.com/v21.0' : 'https://graph.facebook.com/v21.0'; }
@@ -13699,11 +13875,11 @@ async function igEst(metodo, caminho, params, token) {
     if (!r.ok || j.error) throw new Error((j.error && j.error.message) || ('Instagram: erro ' + r.status));
     return j;
 }
-app.get('/api/admin/estudio/instagram', requireRole('admin'), async (req, res) => {
+app.get('/api/admin/estudio/instagram', requireRole('admin', 'estudio'), async (req, res) => {
     const c = await lerIgEst();
     res.json({ configurado: !!(c.userId && c.token), userId: c.userId, username: c.username, tokenPreview: c.token ? '••••' + c.token.slice(-6) : '' });
 });
-app.put('/api/admin/estudio/instagram', requireRole('admin'), async (req, res) => {
+app.put('/api/admin/estudio/instagram', requireRole('admin', 'estudio'), async (req, res) => {
     const salvar = (k, v) => new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => ok()));
     if (req.body.remover) { await salvar('ig_user_id', ''); await salvar('ig_access_token', ''); await salvar('ig_username', ''); return res.json({ message: 'Instagram desconectado.' }); }
     const userId = String(req.body.userId || '').trim(), token = String(req.body.token || '').trim();
@@ -13719,7 +13895,7 @@ async function publicarProjetoEst(id, base) {
     if (!p) throw new Error('Projeto não encontrado.');
     if (!p.video_url) throw new Error('Exporte o vídeo antes de publicar.');
     if (!/mp4|quicktime/.test(p.video_mime || '') && !/\.mp4$/i.test(p.video_url)) throw new Error('O Instagram só aceita MP4. Exporte de novo pelo Chrome/Edge atualizado.');
-    const ig = await lerIgEst(); if (!ig.userId || !ig.token) throw new Error('Conecte o Instagram em Estúdio › Instagram.');
+    const ig = await lerIgEst(await donoDoProjetoEst(id)); if (!ig.userId || !ig.token) throw new Error('Conecte o Instagram em Estúdio › Instagram.');
     const videoUrl = /^https?:/.test(p.video_url) ? p.video_url : String(base || '').replace(/\/$/, '') + p.video_url;
     if (!/^https:\/\//.test(videoUrl) || /localhost|127\.0\.0\.1/.test(videoUrl)) throw new Error('O vídeo precisa estar num endereço público (https) para o Instagram buscar.');
     const caption = [p.legenda || '', p.hashtags || ''].filter(Boolean).join('\n\n').slice(0, 2200);
@@ -13738,7 +13914,7 @@ async function publicarProjetoEst(id, base) {
     db.run(`UPDATE estudio_projetos SET status = 'publicado', publicado_em = CURRENT_TIMESTAMP, ig_media_id = ?, ig_permalink = ?, erro_publicacao = NULL, agendado_para = NULL WHERE id = ?`, [pub.id, link, id]);
     return { id: pub.id, permalink: link };
 }
-app.post('/api/admin/estudio/projetos/:id/publicar', requireRole('admin'), async (req, res) => {
+app.post('/api/admin/estudio/projetos/:id/publicar', requireRole('admin', 'estudio'), async (req, res) => {
     const base = baseUrlPublicaDpo(req);
     if (req.body && req.body.agendarPara) {
         const quando = new Date(req.body.agendarPara);
@@ -13753,6 +13929,7 @@ app.post('/api/admin/estudio/projetos/:id/publicar', requireRole('admin'), async
     if (!pr) return res.status(404).json({ error: 'Projeto não encontrado.' });
     if (!pr.video_url) return res.status(400).json({ error: 'Exporte o vídeo antes de publicar.' });
     if (!(await lerIgEst()).token) return res.status(400).json({ error: 'Conecte o Instagram em Estúdio de Vídeo › Instagram.' });
+    try { await consumirEst('instagram', 1); } catch (e) { return erroLimiteEst(res, e); }
     // Publica em segundo plano (o Instagram leva alguns minutos para processar o vídeo).
     publicarProjetoEst(req.params.id, base).catch(e => db.run(`UPDATE estudio_projetos SET status = 'erro', erro_publicacao = ? WHERE id = ?`, [e.message, req.params.id]));
     res.json({ message: 'Enviando para o Instagram... isso leva de 1 a 5 minutos. Acompanhe o status no projeto.' });
