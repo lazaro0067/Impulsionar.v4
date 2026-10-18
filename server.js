@@ -2058,7 +2058,7 @@ setTimeout(() => {
 }, 15000);
 
 // Verificação de saúde (usada pelo servidor próprio / Docker para reiniciar sozinho se travar).
-app.get('/saude', (req, res) => res.json({ ok: true, memoriaMB: Math.round(process.memoryUsage().rss / 1048576), noArDesde: Math.round(process.uptime()) }));
+app.get('/saude', (req, res) => res.json({ ok: true, ffmpeg: FFMPEG_OK, memoriaMB: Math.round(process.memoryUsage().rss / 1048576), noArDesde: Math.round(process.uptime()) }));
 app.use(authenticateToken);
 
 // Neutraliza CSV Injection: se o valor começa com =, +, - ou @, o Excel/Sheets
@@ -13010,6 +13010,7 @@ app.post('/api/admin/estudio/projetos/:id/exportado-url', requireRole('admin'), 
                 url = '/uploads/' + path.basename(destino); mime = 'video/mp4'; fs.unlink(arq, () => {});
             }
         } else if (mime !== 'video/mp4') aviso = 'O vídeo ficou em WebM (o servidor está sem ffmpeg). Use o Chrome ou Edge atualizado, que exporta direto em MP4.';
+        else aviso = 'Atenção: o servidor está sem ffmpeg, então o MP4 não foi finalizado — em alguns celulares a galeria mostra só alguns segundos. Ative o ffmpeg no servidor (variável RAILPACK_DEPLOY_APT_PACKAGES=ffmpeg no Railway).';
         job.duracao = await duracaoFfmpeg(path.join(PASTA_UPLOADS, path.basename(url))).catch(() => 0);
         db.run(`UPDATE estudio_projetos SET video_url = ?, video_mime = ?, status = CASE WHEN status IN ('rascunho','erro') THEN 'pronto' ELSE status END, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [url, mime, req.params.id]);
         Object.assign(job, { status: 'pronto', url, mime, aviso });

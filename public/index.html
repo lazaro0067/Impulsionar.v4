@@ -21027,6 +21027,16 @@ function evTocar() {
     if (!ES || !ES.tocando) return;
     const t = (performance.now() - ES.t0) / 1000, tot = evTotal();
     if (t >= tot) { ES.t = tot; evPausar(); if (ES.exportando) evFimExportacao(); else { ES.t = 0; evDesenhar(); evAtualizarCabeca(); } return; }
+    if (ES.exportando && !ES.exportando.cancelado) {
+      const e = ES.exportando;
+      if (evExportCarregando(ES.t) && !(e.espDesde && performance.now() - e.espDesde > 90000)) {
+        if (!e.esperando) { e.esperando = true; e.espDesde = performance.now(); if (e.rec.state === 'recording') e.rec.pause(); evSincronizar(ES.t, false); const tx = document.getElementById('ev-export-txt'); if (tx) tx.textContent = '⏳ Carregando o vídeo… a gravação continua sozinha.'; }
+        e.espN = (e.espN || 0) + 1; if (e.espN % 15 === 0) evSincronizar(ES.t, false);
+        ES.t0 = performance.now() - ES.t * 1000; ES.raf = requestAnimationFrame(loop); return;
+      }
+      if (!evExportCarregando(ES.t)) e.espDesde = 0;
+      if (e.esperando) { e.esperando = false; evSincronizar(ES.t, true); if (e.rec.state === 'paused' && !document.hidden) e.rec.resume(); ES.t0 = performance.now() - ES.t * 1000; ES.raf = requestAnimationFrame(loop); return; }
+    }
     const q0 = performance.now();
     ES.t = t; evSincronizar(t, true); evDesenhar(undefined, !!ES.exportando); evAtualizarCabeca();
     if (!ES.exportando && !ES.leve) { const dq = performance.now() - q0; ES.qn = (ES.qn || 0) + 1; ES.qs = (ES.qs || 0) + dq; if (ES.qn >= 40) { if (ES.qs / ES.qn > 22) { ES.leve = true; evAjustarPalco(); mostrarToast('⚡ Modo leve ligado para a prévia rodar sem travar (o vídeo final sai com qualidade total).'); } ES.qn = 0; ES.qs = 0; } }
@@ -21065,6 +21075,11 @@ async function evExportar() {
   if (!ES.p.dados.clips.length && !ES.p.dados.textos.length) return mostrarToast('Adicione mídia ou textos antes de exportar.', true);
   if (!window.MediaRecorder || !ES.canvas.captureStream) return mostrarToast('Seu navegador não exporta vídeo. Use o Chrome ou o Edge no computador.', true);
   evPausar(); evAudioCtx(); await evSalvar(true).catch(() => {});
+  // confere ANTES se cada vídeo/foto/música carrega de verdade (sem isso o vídeo saía preto e mudo, só com as legendas)
+  evCarregando('🔎 Conferindo os vídeos do projeto…');
+  const faltando = await evConferirMidias().catch(() => []);
+  evCarregando(null);
+  if (faltando.length) return evMostrarFaltando(faltando);
   // cria todos os elementos e captura o som de cada um para a mixagem do arquivo final
   ES.t = 0; evSincronizar(0, false);
   Object.entries(ES.sons || {}).forEach(([k, el]) => evCapturarSom(el, k));
@@ -21090,6 +21105,67 @@ async function evExportar() {
   await new Promise(r => setTimeout(r, 600));
   rec.start(500);
   evTocar();
+}
+// Espera o vídeo/áudio ficar pronto para tocar (ou falhar).
+function evEsperarPronto(el, ms) {
+  return new Promise(ok => {
+    if (!el || el.fundo) return ok(true);
+    if (el instanceof HTMLImageElement) { if (el.complete) return ok(el.naturalWidth > 0); el.addEventListener('load', () => ok(true), { once: true }); el.addEventListener('error', () => ok(false), { once: true }); return setTimeout(() => ok(el.naturalWidth > 0), ms); }
+    if (el.error) return ok(false);
+    if (el.readyState >= 2 && (el.tagName !== 'VIDEO' || el.videoWidth > 0)) return ok(true);
+    const fim = v => { clearTimeout(tm); el.removeEventListener('loadeddata', bom); el.removeEventListener('error', ruim); ok(v); };
+    const bom = () => fim(el.tagName !== 'VIDEO' || el.videoWidth > 0), ruim = () => fim(false);
+    el.addEventListener('loadeddata', bom); el.addEventListener('error', ruim);
+    try { if (el.readyState === 0) el.load(); } catch (e) {}
+    const tm = setTimeout(() => fim(el.readyState >= 1 && !el.error), ms);
+  });
+}
+// Lista as mídias usadas no projeto que NÃO carregam (arquivo apagado do servidor, link quebrado…).
+async function evConferirMidias() {
+  const d = ES.p.dados, usos = new Map();
+  d.clips.forEach(c => { const m = evMidia(c.midia); if (m && m.tipo !== 'fundo' && !usos.has(m.id)) usos.set(m.id, () => evElemento(c)); });
+  (d.sobreposicoes || []).forEach(o => { const m = evMidia(o.midia); if (m && m.tipo !== 'fundo' && !usos.has(m.id)) usos.set(m.id, () => evElemento(o, 'o:' + o.id)); });
+  d.audios.forEach(a => { const m = evMidia(a.midia); if (m && !usos.has(m.id)) usos.set(m.id, () => evElementoAudio(a)); });
+  const faltando = [];
+  await Promise.all([...usos.entries()].map(async ([id, criar]) => {
+    const m = evMidia(id); let ok = true;
+    try { ok = await evEsperarPronto(criar(), 30000); } catch (e) { ok = false; }
+    if (!ok) faltando.push(m);
+  }));
+  return faltando;
+}
+function evMostrarFaltando(lista) {
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo"><div class="ev-modal" style="max-width:520px;">
+    <div style="font-size:44px;text-align:center;">⚠️</div><h3 style="margin:6px 0;text-align:center;">Falta o arquivo original de ${lista.length === 1 ? '1 vídeo' : lista.length + ' mídias'}</h3>
+    <div class="ev-sub" style="text-align:center;">O arquivo não está mais no servidor (ele é apagado quando o sistema é atualizado sem disco permanente). Se exportar assim, o vídeo sai <b>preto e sem som</b>, só com as legendas. Envie o mesmo arquivo de novo: a edição, os cortes e as legendas continuam iguais.</div>
+    ${lista.map(m => `<div class="ev-dupla" style="align-items:center;margin:8px 0;padding:8px;border:1px solid rgba(255,255,255,.12);border-radius:10px;">
+      ${m.thumb ? `<img src="${m.thumb}" style="width:46px;height:46px;object-fit:cover;border-radius:8px;">` : '<span style="font-size:28px;">🎞️</span>'}
+      <div style="flex:1;min-width:0;"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(m.nome || 'Vídeo')}</b><span class="ev-sub" id="ev-falta-${m.id}">${m.duracao ? evFmtT(m.duracao) : ''}</span></div>
+      <label class="ev-btn primario" style="cursor:pointer;margin:0;">📤 Reenviar<input type="file" accept="${m.tipo === 'imagem' ? 'image/*' : m.tipo === 'audio' ? 'audio/*' : 'video/*'}" style="display:none;" onchange="evReenviarMidia('${m.id}', this.files)"></label></div>`).join('')}
+    <button class="ev-btn" style="width:100%;margin-top:6px;" onclick="document.getElementById('ev-modal').innerHTML=''">Fechar</button></div></div>`;
+}
+async function evReenviarMidia(id, files) {
+  const f = files && files[0], m = evMidia(id); if (!f || !m) return;
+  const st = document.getElementById('ev-falta-' + id);
+  try {
+    const r = await evEnviarArquivo(f, p => { if (st) st.textContent = 'Enviando… ' + Math.round(p * 100) + '%'; });
+    m.url = r.url; if (f.name) m.nome = m.nome || f.name;
+    Object.keys(ES.els || {}).forEach(k => { if (ES.els[k] && ES.els[k].__url && !ES.els[k].fundo) { const e = ES.els[k]; if (e.pause) e.pause(); delete ES.els[k]; } });
+    ES.aud = {}; ES.chavesSig = null;
+    evMudou(); await evSalvar(true).catch(() => {});
+    if (st) st.textContent = '✅ Pronto';
+    const falta = await evConferirMidias().catch(() => []);
+    if (falta.length) evMostrarFaltando(falta); else { document.getElementById('ev-modal').innerHTML = ''; evDesenhar(); mostrarToast('✅ Arquivo reenviado. Agora é só exportar.'); }
+  } catch (e) { if (st) st.textContent = '⚠️ ' + e.message; }
+}
+// Na exportação: se o vídeo ainda está carregando (internet/servidor lento), a gravação ESPERA em vez de gravar quadro preto.
+function evExportCarregando(t) {
+  const d = ES.p.dados, ini = evInicios();
+  for (let i = 0; i < d.clips.length; i++) {
+    const c = d.clips[i], m = evMidia(c.midia); if (!m || m.tipo !== 'video') continue;
+    if (t >= ini[i] && t < ini[i] + evClipDur(c) - 0.1) { const el = ES.els && ES.els[evChaveClip(c)]; if (el && !el.error && !el.ended && el.readyState < 3) return true; }
+  }
+  return false;
 }
 // ---------- Baixar o vídeo COMPLETO (computador) ou salvar direto na galeria (celular) ----------
 function evCelularAqui() { return /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent); }
