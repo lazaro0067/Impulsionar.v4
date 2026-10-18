@@ -2027,6 +2027,7 @@ function restaurarUploadDoBanco(nome) {
 // Arquivo pedido em /uploads/... que não está no disco (apagado no deploy) → volta do banco.
 app.get('/uploads/:nome', async (req, res, next) => {
     const nome = path.basename(req.params.nome || '');
+    if (nome && /\.(mp4|m4v)$/i.test(nome) && fs.existsSync(path.join(PASTA_UPLOADS, nome))) { await garantirMp4Completo(path.join(PASTA_UPLOADS, nome)).catch(() => {}); return next(); } // vídeo antigo "em pedaços": completa antes de entregar
     if (!nome || fs.existsSync(path.join(PASTA_UPLOADS, nome))) return next();
     const sub = await new Promise(ok => db.get(`SELECT novo FROM estudio_substitutos WHERE antigo = ?`, [nome], (e, r) => ok(e ? null : r))).catch(() => null);
     if (sub && sub.novo) return res.redirect(301, '/uploads/' + encodeURIComponent(sub.novo)); // vídeo que foi preparado para edição: o endereço antigo leva ao novo
@@ -12896,14 +12897,48 @@ function rodarFfmpeg(args, tempoMs) {
 async function duracaoFfmpeg(arq) { try { await rodarFfmpegJa(['-hide_banner', '-i', arq], 20000); } catch (e) { const m = String(e.stderr || '').match(/Duration: (\d+):(\d+):([\d.]+)/); if (m) return Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]); } return 0; }
 // Gravações do navegador (WebM/MP4 em pedaços) não têm índice: sem isso o vídeo longo não deixa avançar/voltar.
 // Aqui o arquivo é "reempacotado" sem perder qualidade (cópia direta, rápido) e fica com duração e índice certos.
+// Sem ffmpeg: MP4 "em pedaços" do navegador vira MP4 normal só reorganizando o índice (JavaScript puro, sem perder qualidade).
+// É isso que faz a galeria do celular e o Instagram enxergarem o vídeo inteiro (e não só os 3 primeiros segundos).
+const MP4_COMPLETO = require('./public/mp4-completo.js');
+const MP4_CONFERIDOS = new Map();
+const MP4_EM_ANDAMENTO = new Map();
+function garantirMp4Completo(arq) { // um conserto por arquivo de cada vez (vários pedidos ao mesmo vídeo esperam o mesmo)
+    if (MP4_EM_ANDAMENTO.has(arq)) return MP4_EM_ANDAMENTO.get(arq);
+    const p = garantirMp4CompletoJa(arq).finally(() => MP4_EM_ANDAMENTO.delete(arq)); MP4_EM_ANDAMENTO.set(arq, p); return p;
+}
+async function garantirMp4CompletoJa(arq) {
+    if (!/\.(mp4|m4v|mov)$/i.test(arq)) return false;
+    let fd;
+    try {
+        const st = await fs.promises.stat(arq), chave = arq + '|' + st.size + '|' + st.mtimeMs;
+        if (MP4_CONFERIDOS.has(chave)) return MP4_CONFERIDOS.get(chave);
+        fd = await fs.promises.open(arq, 'r');
+        const ler = async (p, n) => { const b = Buffer.alloc(n); const r = await fd.read(b, 0, n, p); return new Uint8Array(b.buffer, b.byteOffset, r.bytesRead); };
+        if (!(await MP4_COMPLETO.ehFragmentado(ler, st.size))) { await fd.close(); fd = null; MP4_CONFERIDOS.set(chave, false); return false; }
+        const pl = await MP4_COMPLETO.planejarMp4Completo(ler, st.size);
+        if (!pl) { await fd.close(); fd = null; MP4_CONFERIDOS.set(chave, false); return false; }
+        const tmp = arq + '.completo.tmp', out = await fs.promises.open(tmp, 'w');
+        try {
+            await out.write(Buffer.from(pl.cabecalho));
+            const buf = Buffer.alloc(4 * 1024 * 1024);
+            for (const [a, b] of pl.pedacos) for (let p = a; p < b;) { const n = Math.min(buf.length, b - p), r = await fd.read(buf, 0, n, p); if (!r.bytesRead) throw new Error('arquivo curto'); await out.write(buf, 0, r.bytesRead); p += r.bytesRead; }
+        } finally { await out.close(); }
+        await fd.close(); fd = null;
+        await fs.promises.rename(tmp, arq);
+        const st2 = await fs.promises.stat(arq); MP4_CONFERIDOS.set(arq + '|' + st2.size + '|' + st2.mtimeMs, false);
+        db.run(`DELETE FROM arquivos_persistidos WHERE nome = ?`, [path.basename(arq)], () => copiarUploadParaBanco({ filename: path.basename(arq), path: arq, size: st2.size, mimetype: 'video/mp4' }));
+        console.log('MP4 completado (' + Math.round(pl.duracao) + ' s):', path.basename(arq));
+        return true;
+    } catch (e) { console.warn('Completar MP4:', e.message); try { if (fd) await fd.close(); } catch (x) {} try { fs.unlinkSync(arq + '.completo.tmp'); } catch (x) {} return false; }
+}
 async function reempacotarVideo(arq) {
-    if (!(await ffmpegDisponivel())) return false;
+    if (!(await ffmpegDisponivel())) return garantirMp4Completo(arq);
     const ext = path.extname(arq).toLowerCase(); if (!/^\.(webm|mp4|m4v|mov|mkv)$/.test(ext)) return false;
     const tmp = arq + '.fix' + ext;
     try {
         await rodarFfmpeg(['-y', '-hide_banner', '-loglevel', 'error', '-fflags', '+genpts', '-i', arq, '-c', 'copy', ...(ext === '.webm' || ext === '.mkv' ? [] : ['-movflags', '+faststart']), tmp], 60 * 60 * 1000);
         await fs.promises.rename(tmp, arq); return true;
-    } catch (e) { fs.unlink(tmp, () => {}); console.warn('Reempacotar vídeo:', String(e.stderr || e.message).slice(0, 200)); return false; }
+    } catch (e) { fs.unlink(tmp, () => {}); console.warn('Reempacotar vídeo:', String(e.stderr || e.message).slice(0, 200)); return garantirMp4Completo(arq); }
 }
 
 // Envio em partes (8 MB cada): vídeos longos e grandes sobem sem cair por tempo limite e sem pesar a memória do servidor.
@@ -12974,7 +13009,7 @@ function iniciarPreparoEst(arq) {
     return id;
 }
 async function prepararVideoEst(arq) {
-    if (!(await ffmpegDisponivel())) return { semFfmpeg: true };
+    if (!(await ffmpegDisponivel())) { await garantirMp4Completo(arq).catch(() => {}); return { semFfmpeg: true }; }
     let info = ''; try { await rodarFfmpegJa(['-hide_banner', '-i', arq], 30000); } catch (e) { info = String(e.stderr || ''); }
     const vcod = ((info.match(/Stream #[^\n]*Video: (\w+)/) || [])[1] || '').toLowerCase(), acod = ((info.match(/Stream #[^\n]*Audio: (\w+)/) || [])[1] || '').toLowerCase();
     if (!vcod) return { aviso: 'Não reconheci o vídeo.' };
@@ -12993,6 +13028,58 @@ async function prepararVideoEst(arq) {
     setTimeout(() => { fs.unlink(arq, () => {}); db.run(`DELETE FROM arquivos_persistidos WHERE nome = ?`, [antigo], () => {}); }, 15 * 60 * 1000); // o original sai depois (quem ainda estiver lendo termina)
     return { url: '/uploads/' + novoNome, mime: novoNome.endsWith('.webm') ? 'video/webm' : 'video/mp4', convertido, duracao: await duracaoFfmpeg(novo).catch(() => 0) };
 }
+// ===== Limpeza do áudio (tirar ruído) =====
+// IA: rede neural de redução de ruído para fala (RNNoise, arquivo modelos/voz.rnnn) + filtros de acabamento.
+// Manual: cada ajuste separado (redução de ruído, zumbido da rede elétrica, graves, chiado, realce da voz, volume).
+const MODELO_VOZ = path.join(__dirname, 'modelos', 'voz.rnnn');
+function filtroLimpezaAudio(c) {
+    c = c || {}; const n = (v, min, max, pad) => { v = Number(v); return isFinite(v) ? Math.max(min, Math.min(max, v)) : pad; };
+    const f = [];
+    const graves = n(c.graves, 0, 300, 80); if (graves > 0) f.push(`highpass=f=${graves}`);
+    const zumbido = Number(c.zumbido) === 50 || Number(c.zumbido) === 60 ? Number(c.zumbido) : 0;
+    if (zumbido) [1, 2, 3, 4].forEach(k => f.push(`bandreject=f=${zumbido * k}:width_type=q:w=12`));
+    const ia = n(c.ia, 0, 1, 0.9); if (ia > 0 && fs.existsSync(MODELO_VOZ)) f.push(`arnndn=m='${MODELO_VOZ.replace(/\\/g, '/').replace(/'/g, '')}':mix=${ia.toFixed(2)}`);
+    const reducao = n(c.reducao, 0, 40, 12); if (reducao > 0) f.push(`afftdn=nr=${reducao}:nf=-45:tn=1`);
+    const chiado = n(c.chiado, 4000, 20000, 20000); if (chiado < 20000) f.push(`lowpass=f=${chiado}`);
+    const realce = n(c.realce, 0, 10, 2); if (realce > 0) f.push(`equalizer=f=3000:t=q:w=1.2:g=${realce}`, `equalizer=f=250:t=q:w=1:g=${(-realce / 2).toFixed(1)}`);
+    if (c.silencio !== false && c.silencio !== 0) f.push('agate=threshold=0.012:ratio=3:attack=5:release=250');
+    if (c.nivelar !== false && c.nivelar !== 0) f.push('speechnorm=e=6:r=0.0005:l=1');
+    const ganho = n(c.ganho, -12, 12, 0); if (ganho) f.push(`volume=${ganho}dB`);
+    f.push('alimiter=limit=0.95');
+    return f.join(',');
+}
+const JOBS_AUDIO = new Map();
+app.post('/api/admin/estudio/limpar-audio', requireRole('admin'), async (req, res) => {
+    const b = req.body || {}, nome = path.basename(String(b.url || '')), arq = path.join(PASTA_UPLOADS, nome);
+    if (!nome || !fs.existsSync(arq)) { const r = await restaurarUploadDoBanco(nome).catch(() => null); if (!r) return res.status(404).json({ error: 'Vídeo não encontrado no servidor. Espere terminar de subir ou envie de novo.' }); }
+    if (!(await ffmpegDisponivel())) return res.status(400).json({ error: 'sem-ffmpeg', semFfmpeg: true });
+    const af = filtroLimpezaAudio(b.config);
+    // amostra (ouvir antes/depois): 12 s a partir do ponto escolhido, em MP3 leve
+    if (b.amostra) {
+        const ini = Math.max(0, Number(b.amostra.ini) || 0), dur = Math.max(3, Math.min(20, Number(b.amostra.dur) || 12)), id = Date.now() + '-' + Math.round(Math.random() * 1e6);
+        const antes = `amostra-${id}-antes.mp3`, depois = `amostra-${id}-depois.mp3`;
+        try {
+            await rodarFfmpegJa(['-y', '-hide_banner', '-loglevel', 'error', '-ss', String(ini), '-t', String(dur), '-i', arq, '-vn', '-ac', '2', '-b:a', '128k', path.join(PASTA_UPLOADS, antes)], 120000);
+            await rodarFfmpegJa(['-y', '-hide_banner', '-loglevel', 'error', '-ss', String(ini), '-t', String(dur), '-i', arq, '-vn', '-af', af, '-ac', '2', '-b:a', '128k', path.join(PASTA_UPLOADS, depois)], 120000);
+        } catch (e) { return res.status(500).json({ error: 'Não consegui processar o áudio: ' + String(e.stderr || e.message).slice(0, 160) }); }
+        setTimeout(() => [antes, depois].forEach(n => fs.unlink(path.join(PASTA_UPLOADS, n), () => {})), 30 * 60 * 1000);
+        return res.json({ antes: '/uploads/' + antes, depois: '/uploads/' + depois });
+    }
+    // vídeo inteiro: a imagem é copiada sem mexer; só o áudio é refeito
+    const id = require('crypto').randomBytes(6).toString('hex'), job = { status: 'processando', t: Date.now() }; JOBS_AUDIO.set(id, job); res.json({ id });
+    setTimeout(() => JOBS_AUDIO.delete(id), 6 * 3600 * 1000);
+    const webm = /\.webm$/i.test(nome), novoNome = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + (webm ? '.webm' : '.mp4'), novo = path.join(PASTA_UPLOADS, novoNome), tmp = novo + '.tmp' + (webm ? '.webm' : '.mp4');
+    try {
+        await rodarFfmpeg(['-y', '-hide_banner', '-loglevel', 'error', '-i', arq, '-map', '0:v:0?', '-map', '0:a:0', '-c:v', 'copy', '-af', af, ...(webm ? ['-c:a', 'libopus', '-b:a', '160k'] : ['-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart']), tmp], 3 * 3600 * 1000);
+        await fs.promises.rename(tmp, novo);
+        const st = fs.statSync(novo); copiarUploadParaBanco({ filename: novoNome, path: novo, size: st.size, mimetype: webm ? 'video/webm' : 'video/mp4' });
+        Object.assign(job, { status: 'pronto', url: '/uploads/' + novoNome });
+    } catch (e) { fs.unlink(tmp, () => {}); Object.assign(job, { status: 'erro', error: /matches no streams|Stream map '0:a:0'/.test(String(e.stderr)) ? 'Este vídeo não tem som.' : 'Não consegui limpar o áudio: ' + String(e.stderr || e.message).slice(0, 160) }); }
+});
+app.get('/api/admin/estudio/limpar-audio/:id', requireRole('admin'), (req, res) => {
+    const j = JOBS_AUDIO.get(req.params.id); if (!j) return res.status(404).json({ error: 'Processamento não encontrado (o servidor reiniciou).' });
+    res.json(Object.assign({ segundos: Math.round((Date.now() - j.t) / 1000) }, j));
+});
 app.get('/api/admin/estudio/preparo/:id', requireRole('admin'), (req, res) => {
     const j = JOBS_PREPARO.get(req.params.id); if (!j) return res.status(404).json({ error: 'Preparo não encontrado (o servidor reiniciou).' });
     res.json(Object.assign({ segundos: Math.round((Date.now() - j.t) / 1000) }, j));
@@ -13070,7 +13157,7 @@ app.post('/api/admin/estudio/projetos/:id/exportado-url', requireRole('admin'), 
                 url = '/uploads/' + path.basename(destino); mime = 'video/mp4'; fs.unlink(arq, () => {});
             }
         } else if (mime !== 'video/mp4') aviso = 'O vídeo ficou em WebM (o servidor está sem ffmpeg). Use o Chrome ou Edge atualizado, que exporta direto em MP4.';
-        else aviso = 'Atenção: o servidor está sem ffmpeg, então o MP4 não foi finalizado — em alguns celulares a galeria mostra só alguns segundos. Ative o ffmpeg no servidor (variável RAILPACK_DEPLOY_APT_PACKAGES=ffmpeg no Railway).';
+        else await garantirMp4Completo(arq); // sem ffmpeg: completa o MP4 em JavaScript (vídeo inteiro na galeria e no Instagram)
         job.duracao = await duracaoFfmpeg(path.join(PASTA_UPLOADS, path.basename(url))).catch(() => 0);
         db.run(`UPDATE estudio_projetos SET video_url = ?, video_mime = ?, status = CASE WHEN status IN ('rascunho','erro') THEN 'pronto' ELSE status END, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [url, mime, req.params.id]);
         Object.assign(job, { status: 'pronto', url, mime, aviso });
@@ -13091,6 +13178,7 @@ app.get('/api/public/baixar/:nome', async (req, res) => {
     const nome = path.basename(String(req.params.nome || '')), arq = path.join(PASTA_UPLOADS, nome);
     if (/^[\w.\-]+\.(mp4|webm|mov|m4v)$/i.test(nome) && !fs.existsSync(arq)) await restaurarUploadDoBanco(nome).catch(() => null);
     if (!/^[\w.\-]+\.(mp4|webm|mov|m4v)$/i.test(nome) || !fs.existsSync(arq)) return res.status(404).type('html').send(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vídeo indisponível</title></head><body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1329;color:#e6eaf2;font-family:system-ui,Arial;text-align:center;padding:24px"><div style="max-width:440px"><div style="font-size:54px">🎬</div><h2>Este vídeo precisa ser exportado de novo</h2><p style="color:#cbd5e1;line-height:1.6">O arquivo não está mais no servidor (provavelmente foi apagado numa atualização do sistema). Volte ao Estúdio, abra o projeto e clique em <b>⬇️ Exportar vídeo</b> — em seguida use <b>Baixar vídeo completo</b>.</p><button onclick="history.length>1?history.back():location.href='/'" style="background:#dc4c4c;color:#fff;border:none;border-radius:12px;padding:12px 20px;font-size:15px;font-weight:700;cursor:pointer">← Voltar ao Estúdio</button></div></body></html>`);
+    await garantirMp4Completo(arq).catch(() => {});
     const titulo = String(req.query.titulo || 'video').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w\-]+/g, '-').slice(0, 60) || 'video';
     res.download(arq, titulo + path.extname(nome).toLowerCase());
 });

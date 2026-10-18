@@ -1400,6 +1400,7 @@
   .eh-acao.eh-radar { grid-column:1 / -1; background:linear-gradient(135deg,#1e1b4b,#3b0d1c); border-color:#4c1d95; }
   @media (max-width: 600px) { .evr-dupla { grid-template-columns:1fr; } .evr-ideias, .evr-tend { grid-template-columns:1fr; } }
   .ev-so-pequeno, .ev-sheet-x, .ev-so-cel { display:none !important; }
+  .ev-comparar { display:grid; gap:8px; margin-top:8px; } .ev-comparar b { display:block; font-size:12px; margin-bottom:3px; } .ev-comparar audio { width:100%; height:36px; }
   .ev-envio { font-size:12px; font-weight:700; color:#fff; background:#2563eb; border-radius:14px; padding:5px 10px; white-space:nowrap; } .ev-envio.prep { background:#7c3aed; }
   #ev-canvas { touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
   .ev-txtbar { position:absolute; left:50%; top:8px; transform:translateX(-50%); display:flex; gap:6px; z-index:8; background:rgba(11,19,41,.92); border:1px solid rgba(255,255,255,.18); border-radius:22px; padding:5px; box-shadow:0 8px 24px rgba(0,0,0,.5); max-width:calc(100% - 16px); overflow-x:auto; }
@@ -1542,6 +1543,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="/mp4-completo.js?v=1"></script>
 <script>
 /* ==========================================================
    ESTADO E HELPERS DE API
@@ -21247,7 +21249,10 @@ async function evConcluirExport() {
   const tx = document.getElementById('ev-export-txt');
   if (ex.cancelado) { document.getElementById('ev-export-ov').hidden = true; return mostrarToast('Exportação cancelada.'); }
   const ext = /mp4/.test(ex.mime) ? 'mp4' : 'webm';
-  const blob = new Blob(ex.partes, { type: ex.mime || 'video/webm' });
+  let blob = new Blob(ex.partes, { type: ex.mime || 'video/webm' });
+  // o MP4 gravado pelo navegador vem "em pedaços" (sem a duração no índice): a galeria e o Instagram liam só
+  // os primeiros segundos. Aqui ele vira um MP4 normal e completo, sem perder qualidade.
+  if (ext === 'mp4' && window.Mp4Completo) { if (tx) tx.textContent = 'Finalizando o MP4 completo…'; try { blob = await Mp4Completo.mp4CompletoBlob(blob); } catch (e) { console.warn('MP4 completo:', e); } }
   const nome = (ES.p.titulo || 'video').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').slice(0, 50) + '.' + ext;
   ES.ultimoExport = { url: URL.createObjectURL(blob), nome, blob };
   if (tx) tx.textContent = 'Enviando o vídeo para o servidor...';
@@ -21318,7 +21323,7 @@ async function evAbrirEditor(id) {
     </div>
     <section class="ev-linha">
       <div class="ev-linha-barra">
-        <button class="ev-tl-ia ev-so-cel" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button><button class="ev-so-cel" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="ev-so-cel" onclick="document.getElementById('ev-galeria').click()" title="Adicionar fotos e vídeos da galeria"><i>🖼️</i><span>Galeria</span></button><span class="ev-sep ev-so-cel"></span><button class="ev-so-pc" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)"><i>↶</i><span>Desfazer</span></button><button class="ev-so-pc" onclick="evRefazer()" title="Refazer (Ctrl+Y)"><i>↷</i><span>Refazer</span></button><span class="ev-sep ev-so-pc"></span><button class="" onclick="evDividir()" title="Dividir no cursor (S)"><i>✂️</i><span>Dividir</span></button><button class="" onclick="evExcluirSel()" title="Excluir (Delete)"><i>🗑️</i><span>Excluir</span></button><button class="" onclick="evDuplicarSel()" title="Duplicar (Ctrl+D)"><i>⧉</i><span>Duplicar</span></button><span class="ev-sep"></span><button class="" onclick="evPopBarra('velocidade', this)" title="Velocidade"><i>⏩</i><span>Velocidade</span></button><button class="" onclick="evPopBarra('volume', this)" title="Volume"><i>🔊</i><span>Volume</span></button><button class="" onclick="evPopBarra('zoom', this)" title="Zoom"><i>🔍</i><span>Zoom</span></button><button class="" onclick="evPopBarra('enquadrar', this)" title="Enquadrar, espelhar e posicionar"><i>🎯</i><span>Enquadrar</span></button><button class="" onclick="evPopBarra('transicao', this)" title="Transição"><i>🔀</i><span>Transição</span></button><span class="ev-sep"></span><button class="ev-so-pc" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="" onclick="evPopBarra('texto', this)" title="Adicionar texto"><i>🔤</i><span>Texto</span></button><button class="" onclick="evLegendasDaFala()" title="Legendas automáticas do que é falado"><i>💬</i><span>Legendas</span></button><button class="" onclick="evPopBarra('musica', this)" title="Música de fundo"><i>🎵</i><span>Música</span></button><button class="ev-so-cel" onclick="evPainel('filtros'); evSheet('painel')" title="Filtros e imagem inteligente"><i>🎨</i><span>Filtros</span></button><button class="ev-so-cel" onclick="evPainel('elementos'); evSheet('painel')" title="Logo, emojis e encerramento"><i>🏷️</i><span>Marca</span></button><button class="ev-so-cel" onclick="evPainel('midia'); evSheet('painel')" title="Mídias do projeto"><i>🎞️</i><span>Mídias</span></button><button class="ev-so-cel" onclick="evPainel('ia'); evSheet('painel')" title="Agente IA"><i>🤖</i><span>Agente</span></button><button class="ev-so-cel" onclick="evSheet('props')" title="Ajustes do item selecionado"><i>⚙️</i><span>Ajustes</span></button><button class="" onclick="evPopBarra('mais', this)" title="Mais ferramentas"><i>⋯</i><span>Mais</span></button><span class="ev-sep ev-so-pc"></span><button class="ev-tl-ia ev-so-pc" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button>
+        <button class="ev-tl-ia ev-so-cel" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button><button class="ev-so-cel" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="ev-so-cel" onclick="document.getElementById('ev-galeria').click()" title="Adicionar fotos e vídeos da galeria"><i>🖼️</i><span>Galeria</span></button><span class="ev-sep ev-so-cel"></span><button class="ev-so-pc" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)"><i>↶</i><span>Desfazer</span></button><button class="ev-so-pc" onclick="evRefazer()" title="Refazer (Ctrl+Y)"><i>↷</i><span>Refazer</span></button><span class="ev-sep ev-so-pc"></span><button class="" onclick="evDividir()" title="Dividir no cursor (S)"><i>✂️</i><span>Dividir</span></button><button class="" onclick="evExcluirSel()" title="Excluir (Delete)"><i>🗑️</i><span>Excluir</span></button><button class="" onclick="evDuplicarSel()" title="Duplicar (Ctrl+D)"><i>⧉</i><span>Duplicar</span></button><span class="ev-sep"></span><button class="" onclick="evPopBarra('velocidade', this)" title="Velocidade"><i>⏩</i><span>Velocidade</span></button><button class="" onclick="evPopBarra('volume', this)" title="Volume"><i>🔊</i><span>Volume</span></button><button class="" onclick="evPopBarra('zoom', this)" title="Zoom"><i>🔍</i><span>Zoom</span></button><button class="" onclick="evPopBarra('enquadrar', this)" title="Enquadrar, espelhar e posicionar"><i>🎯</i><span>Enquadrar</span></button><button class="" onclick="evPopBarra('transicao', this)" title="Transição"><i>🔀</i><span>Transição</span></button><span class="ev-sep"></span><button class="ev-so-pc" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="" onclick="evPopBarra('texto', this)" title="Adicionar texto"><i>🔤</i><span>Texto</span></button><button class="" onclick="evLegendasDaFala()" title="Legendas automáticas do que é falado"><i>💬</i><span>Legendas</span></button><button class="" onclick="evPopBarra('musica', this)" title="Música de fundo"><i>🎵</i><span>Música</span></button><button class="" onclick="evPainel('audio'); evSheet('painel'); setTimeout(()=>{const e=document.getElementById('ev-limpeza'); if(e) e.scrollIntoView({block:'start'});},80)" title="Tirar ruído do áudio com IA"><i>🎧</i><span>Limpar áudio</span></button><button class="ev-so-cel" onclick="evPainel('filtros'); evSheet('painel')" title="Filtros e imagem inteligente"><i>🎨</i><span>Filtros</span></button><button class="ev-so-cel" onclick="evPainel('elementos'); evSheet('painel')" title="Logo, emojis e encerramento"><i>🏷️</i><span>Marca</span></button><button class="ev-so-cel" onclick="evPainel('midia'); evSheet('painel')" title="Mídias do projeto"><i>🎞️</i><span>Mídias</span></button><button class="ev-so-cel" onclick="evPainel('ia'); evSheet('painel')" title="Agente IA"><i>🤖</i><span>Agente</span></button><button class="ev-so-cel" onclick="evSheet('props')" title="Ajustes do item selecionado"><i>⚙️</i><span>Ajustes</span></button><button class="" onclick="evPopBarra('mais', this)" title="Mais ferramentas"><i>⋯</i><span>Mais</span></button><span class="ev-sep ev-so-pc"></span><button class="ev-tl-ia ev-so-pc" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button>
         <div style="flex:1" class="ev-so-pc"></div>
         <span class="ev-so-pc" style="font-size:12px;opacity:.7;">Zoom</span><input class="ev-so-pc" type="range" min="15" max="200" value="${ES.pxs}" oninput="ES.pxs=Number(this.value); evDesenharLinha()">
         <input type="file" id="ev-galeria" accept="video/*,image/*,audio/*" multiple hidden onchange="evSubir(this.files); this.value=''">
@@ -21671,15 +21676,97 @@ function evPainel(qual) {
       <div class="ev-trilhas">${Object.entries(EV_TRILHAS).map(([k, t]) => `<button onclick="evAdicionarTrilha('${k}')"><span>${t.ico}</span>${t.nome}</button>`).join('')}</div>
       <div class="ev-midias lista">${auds.map(m => `<div class="ev-aud"><span>🎵 ${escapeHtml(m.nome)} <small>${evFmtT(m.duracao)}</small></span><button onclick="evAdicionarAudio('${m.id}')" title="Adicionar">＋</button><button class="x" onclick="evRemoverMidia('${m.id}')">×</button></div>`).join('') || '<div class="ev-vazio">Nenhum áudio ainda.</div>'}</div>
       <div class="ev-dica-fixa">🔥 Áudios em alta aumentam o alcance. Use aqui uma trilha sua ou sem direitos autorais; para músicas em alta do Instagram, poste o vídeo sem música e escolha o áudio no próprio app (as músicas comerciais não podem ser embutidas no arquivo).</div>
-      <h4>🎙️ Voz limpa</h4>
-      <label class="ev-chk2"><input type="checkbox" ${(ES.p.dados.extras || {}).vozLimpa ? 'checked' : ''} onchange="ES.p.dados.extras.vozLimpa=this.checked; evMudou(false)"> Reduzir ruído grave/agudo, igualar volume e realçar a voz</label>
-      <div class="ev-sub">Aplicado no vídeo exportado (a prévia toca o som original).</div>
+      <div id="ev-limpeza">${evHtmlLimpeza()}</div>
+      <details style="margin-top:8px;"><summary class="ev-sub" style="cursor:pointer;">Modo rápido (sem servidor)</summary>
+      <label class="ev-chk2"><input type="checkbox" ${(ES.p.dados.extras || {}).vozLimpa ? 'checked' : ''} onchange="ES.p.dados.extras.vozLimpa=this.checked; evMudou(false)"> Filtro simples de voz no vídeo exportado (use só se a limpeza com IA não estiver disponível)</label></details>
       <h4>Volume do som original</h4>
       <div class="ev-sub">Ajuste por clipe (selecione o clipe na linha do tempo) ou para todos:</div>
       <div class="ev-linha-btn"><button class="ev-btn" onclick="evVolumeTodos(1)">🔊 100%</button><button class="ev-btn" onclick="evVolumeTodos(0.3)">🔉 30%</button><button class="ev-btn" onclick="evVolumeTodos(0)">🔇 Mudo</button></div>`;
   } else if (qual === 'filtros') evPainelFiltros();
   else if (qual === 'elementos') evPainelElementos();
   else if (qual === 'ia') evPainelIa();
+}
+
+// ---------- Tirar ruído do áudio (IA + manual) ----------
+const EV_LIMPEZA_PADRAO = { ia: 0.9, reducao: 12, graves: 80, zumbido: 0, chiado: 20000, realce: 2, silencio: true, nivelar: true, ganho: 0 };
+const EV_LIMPEZA_NIVEIS = {
+  leve: { rot: '🌿 Leve', d: 'Só o barulho de fundo', c: { ia: 0.6, reducao: 6, realce: 1, silencio: false } },
+  recomendado: { rot: '✨ Recomendado', d: 'Voz limpa e natural', c: {} },
+  forte: { rot: '💪 Forte', d: 'Ambiente muito barulhento', c: { ia: 1, reducao: 22, graves: 110, realce: 3, chiado: 14000 } }
+};
+function evCfgLimpeza() { const ex = ES.p.dados.extras; ex.limpeza = ex.limpeza || Object.assign({ nivel: 'recomendado' }, EV_LIMPEZA_PADRAO); return ex.limpeza; }
+function evVideosComSom() { const d = ES.p.dados, ids = [...new Set(d.clips.map(c => c.midia).concat((d.sobreposicoes || []).map(o => o.midia)))]; return ids.map(evMidia).filter(m => m && m.tipo === 'video'); }
+function evHtmlLimpeza() {
+  if (!ES) return '';
+  const c = evCfgLimpeza(), vids = evVideosComSom(), limpos = vids.filter(m => m.audioLimpo);
+  const sl = (k, rot, min, max, passo, fmt) => `<label class="ev-campo"><span>${rot} <b id="ev-la-${k}">${fmt(c[k])}</b></span><input type="range" min="${min}" max="${max}" step="${passo}" value="${c[k]}" oninput="evSetLimpeza('${k}', Number(this.value)); document.getElementById('ev-la-${k}').textContent=(${fmt.toString()})(Number(this.value))"></label>`;
+  return `<h4>🎧 Tirar ruído do áudio</h4>
+    <div class="ev-sub">A IA tira o barulho de fundo (ar-condicionado, vento, trânsito, chiado, eco da sala, zumbido) e deixa a voz clara e no mesmo volume.</div>
+    <div class="ev-chips">${Object.entries(EV_LIMPEZA_NIVEIS).map(([k, n]) => `<button class="${c.nivel === k ? 'on' : ''}" title="${n.d}" onclick="evNivelLimpeza('${k}')">${n.rot}</button>`).join('')}${c.nivel === 'manual' ? '<button class="on">🎛️ Manual</button>' : ''}</div>
+    <details ${c.nivel === 'manual' ? 'open' : ''} style="margin:8px 0;"><summary style="cursor:pointer;font-weight:700;font-size:13px;">🎛️ Ajuste manual</summary>
+      ${sl('ia', '🤖 Força da IA (ruído de fundo)', 0, 1, 0.05, v => v ? Math.round(v * 100) + '%' : 'desligada')}
+      ${sl('reducao', '🔇 Redução de chiado constante', 0, 40, 1, v => v ? v + ' dB' : 'desligada')}
+      ${sl('graves', '🌬️ Cortar graves (vento, batidas, ronco)', 0, 300, 10, v => v ? 'até ' + v + ' Hz' : 'desligado')}
+      ${sl('chiado', '🐍 Cortar agudos (chiado, sibilo)', 4000, 20000, 500, v => v >= 20000 ? 'desligado' : 'acima de ' + (v / 1000).toFixed(1) + ' kHz')}
+      ${sl('realce', '🗣️ Realce da voz (clareza)', 0, 10, 0.5, v => v ? '+' + v + ' dB' : 'desligado')}
+      ${sl('ganho', '🔊 Volume final', -12, 12, 1, v => (v > 0 ? '+' : '') + v + ' dB')}
+      <label class="ev-campo"><span>⚡ Zumbido da rede elétrica</span><div class="ev-chips">${[[0, 'Não tem'], [60, '60 Hz (Brasil)'], [50, '50 Hz']].map(([v, r]) => `<button class="${Number(c.zumbido) === v ? 'on' : ''}" onclick="evSetLimpeza('zumbido', ${v}); evAtualizarLimpeza()">${r}</button>`).join('')}</div></label>
+      <label class="ev-chk2"><input type="checkbox" ${c.silencio ? 'checked' : ''} onchange="evSetLimpeza('silencio', this.checked)"> 🤫 Silenciar o fundo nas pausas da fala</label>
+      <label class="ev-chk2"><input type="checkbox" ${c.nivelar ? 'checked' : ''} onchange="evSetLimpeza('nivelar', this.checked)"> 📏 Nivelar o volume da voz (sem altos e baixos)</label>
+      <button class="ev-mini" onclick="evNivelLimpeza('recomendado')">↺ Voltar ao recomendado</button>
+    </details>
+    <div class="ev-linha-btn"><button class="ev-btn" onclick="evOuvirLimpeza()">🎧 Ouvir antes / depois</button><button class="ev-btn ia" onclick="evAplicarLimpeza()">✨ Limpar o áudio</button></div>
+    <div id="ev-la-amostra"></div>
+    ${limpos.length ? `<div class="ev-dica-fixa">✅ Áudio limpo em ${limpos.length} de ${vids.length} vídeo(s). <button class="ev-mini" onclick="evDesfazerLimpeza()">↶ Voltar ao som original</button></div>` : ''}`;
+}
+function evAtualizarLimpeza() { const el = document.getElementById('ev-limpeza'); if (el) el.innerHTML = evHtmlLimpeza(); }
+function evSetLimpeza(k, v) { const c = evCfgLimpeza(); c[k] = v; c.nivel = 'manual'; evMudou(false); const ch = document.querySelector('#ev-limpeza .ev-chips'); if (ch && !ch.querySelector('button.on:last-child')?.textContent.includes('Manual')) { ch.querySelectorAll('button').forEach(b => b.classList.remove('on')); if (!/Manual/.test(ch.lastElementChild.textContent)) ch.insertAdjacentHTML('beforeend', '<button class="on">🎛️ Manual</button>'); } }
+function evNivelLimpeza(k) { ES.p.dados.extras.limpeza = Object.assign({ nivel: k }, EV_LIMPEZA_PADRAO, EV_LIMPEZA_NIVEIS[k].c); evMudou(false); evAtualizarLimpeza(); }
+function evCfgLimpezaEnvio() { const c = Object.assign({}, evCfgLimpeza()); delete c.nivel; return c; }
+// trecho para ouvir: o vídeo e o momento onde está o cursor da linha do tempo
+function evTrechoAtual() {
+  const d = ES.p.dados, ini = evInicios(); let i = d.clips.findIndex((c, k) => ES.t >= ini[k] && ES.t < ini[k] + evClipDur(c) && (evMidia(c.midia) || {}).tipo === 'video');
+  if (i < 0) i = d.clips.findIndex(c => (evMidia(c.midia) || {}).tipo === 'video'); if (i < 0) return null;
+  const c = d.clips[i], m = evMidia(c.midia); return { m, ini: Math.max(0, (c.ini || 0) + Math.max(0, ES.t - ini[i]) * (c.vel || 1)) };
+}
+async function evOuvirLimpeza() {
+  const tr = evTrechoAtual(); if (!tr) return mostrarToast('Coloque um vídeo com som na linha do tempo.', true);
+  const box = document.getElementById('ev-la-amostra'); if (box) box.innerHTML = '<div class="ev-sub">⏳ Preparando 12 segundos para você comparar…</div>';
+  try {
+    await evAguardarEnvio(tr.m);
+    const r = await api('/api/admin/estudio/limpar-audio', { method: 'POST', body: JSON.stringify({ url: tr.m.urlOriginal || tr.m.url, config: evCfgLimpezaEnvio(), amostra: { ini: tr.ini, dur: 12 } }) });
+    if (box) box.innerHTML = `<div class="ev-comparar"><div><b>Antes</b><audio controls src="${r.antes}"></audio></div><div><b>Depois ✨</b><audio controls autoplay src="${r.depois}"></audio></div><div class="ev-sub">Trecho a partir de ${evFmtT(tr.ini).slice(0, 5)}. Mude o nível ou o ajuste manual e ouça de novo.</div></div>`;
+  } catch (e) { if (box) box.innerHTML = ''; evErroLimpeza(e); }
+}
+function evErroLimpeza(e) {
+  if (/sem-ffmpeg/.test(e.message)) { ES.p.dados.extras.vozLimpa = true; evMudou(false); mostrarToast('O servidor ainda está sem o ffmpeg, então a limpeza com IA não roda. Liguei o filtro simples de voz no vídeo exportado. Para a IA: no Railway, variável RAILPACK_DEPLOY_APT_PACKAGES=ffmpeg.', true); }
+  else mostrarToast(e.message, true);
+}
+async function evAplicarLimpeza() {
+  const vids = evVideosComSom(); if (!vids.length) return mostrarToast('Coloque um vídeo com som na linha do tempo.', true);
+  evPausar(); const cfg = evCfgLimpezaEnvio(); let feitos = 0;
+  try {
+    for (let i = 0; i < vids.length; i++) {
+      const m = vids[i], rot = vids.length > 1 ? ` (${i + 1}/${vids.length})` : '';
+      await evAguardarEnvio(m);
+      evCarregando(`🎧 Limpando o áudio${rot}…`);
+      const job = await api('/api/admin/estudio/limpar-audio', { method: 'POST', body: JSON.stringify({ url: m.urlOriginal || m.url, config: cfg }) });
+      let st = null;
+      for (let k = 0; k < 4000; k++) { await new Promise(z => setTimeout(z, 2000)); st = await api('/api/admin/estudio/limpar-audio/' + job.id).catch(() => null); if (st && st.status !== 'processando') break; const e = document.querySelector('#ev-carregando b'); if (e && st) e.textContent = `🎧 Limpando o áudio${rot}… ${st.segundos} s`; }
+      if (!st || st.status === 'erro') { mostrarToast(`"${m.nome || 'vídeo'}": ${(st && st.error) || 'não terminou'}`, true); continue; }
+      if (!m.urlOriginal) m.urlOriginal = m.url;
+      m.url = st.url; m.audioLimpo = Object.assign({}, cfg); delete m.__audio; delete m.transcricaoAudio;
+      if (ES.locais) delete ES.locais[m.id]; // passa a tocar a versão limpa
+      feitos++;
+    }
+    ES.p.dados.extras.vozLimpa = false; // a limpeza já está no arquivo: não aplica de novo na exportação
+    evCarregando(null); evMudou(); await evSalvar(true).catch(() => {}); evSincronizar(ES.t, false); evDesenhar(); evAtualizarLimpeza();
+    if (feitos) mostrarToast(`✨ Áudio limpo em ${feitos} vídeo(s). Dê o play para ouvir.`);
+  } catch (e) { evCarregando(null); evErroLimpeza(e); }
+}
+function evDesfazerLimpeza() {
+  evVideosComSom().forEach(m => { if (m.urlOriginal) { m.url = m.urlOriginal; delete m.urlOriginal; delete m.audioLimpo; } });
+  evMudou(); evSincronizar(ES.t, false); evAtualizarLimpeza(); mostrarToast('Som original de volta.');
 }
 
 // ---------- Mídia ----------
