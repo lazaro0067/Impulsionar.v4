@@ -13420,7 +13420,18 @@ async function falarEdgeEst(texto, voz, velocidade) {
     if (!partes.length) throw new Error('O serviço de voz não devolveu áudio.');
     return { mp3: Buffer.concat(partes), palavras };
 }
-async function lerVozConfigEst() { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_voz'`).catch(() => null); try { return JSON.parse((r && r.value) || '{}'); } catch (e) { return {}; } }
+// Chaves de voz: as salvas no sistema (⚙️ Vozes premium) ou as variáveis do servidor (ELEVENLABS_API_KEY / OPENAI_TTS_KEY no Railway)
+let CACHE_VOZES_ELEVEN = { t: 0, l: [] };
+async function lerVozConfigEst() {
+    const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_voz'`).catch(() => null); let c = {}; try { c = JSON.parse((r && r.value) || '{}'); } catch (e) {}
+    if (!c.elevenlabs && process.env.ELEVENLABS_API_KEY) c.elevenlabs = process.env.ELEVENLABS_API_KEY.trim();
+    if (!c.openai && process.env.OPENAI_TTS_KEY) c.openai = process.env.OPENAI_TTS_KEY.trim();
+    if (c.elevenlabs && !(c.elevenVozes || []).length) {
+        if (Date.now() - CACHE_VOZES_ELEVEN.t > 3600000) { CACHE_VOZES_ELEVEN.t = Date.now(); try { const rr = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': c.elevenlabs }, signal: AbortSignal.timeout(10000) }); const j = await rr.json(); if (rr.ok) CACHE_VOZES_ELEVEN.l = (j.voices || []).slice(0, 40).map(v => ({ id: v.voice_id, nome: v.name })); } catch (e) {} }
+        c.elevenVozes = CACHE_VOZES_ELEVEN.l;
+    }
+    return c;
+}
 async function falarEst(texto, voz, velocidade) {
     const cfg = await lerVozConfigEst();
     if (/^eleven:/.test(voz || '') && cfg.elevenlabs) {
@@ -13549,7 +13560,7 @@ app.get('/api/admin/estudio/vozes', requireRole('admin', 'estudio'), async (req,
     res.json({ vozes, master: req.user.role === 'admin', openai: !!cfg.openai, elevenlabs: !!cfg.elevenlabs });
 });
 app.put('/api/admin/estudio-voz', requireRole('admin'), async (req, res) => {
-    const b = req.body || {}, cfg = await lerVozConfigEst();
+    const b = req.body || {}, bruto = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_voz'`).catch(() => null); let cfg = {}; try { cfg = JSON.parse((bruto && bruto.value) || '{}'); } catch (e) {}
     if (b.openai !== undefined) cfg.openai = String(b.openai || '').trim();
     if (b.elevenlabs !== undefined) {
         cfg.elevenlabs = String(b.elevenlabs || '').trim(); cfg.elevenVozes = [];
