@@ -12808,13 +12808,13 @@ function ganchosLocaisEst(tema) {
 }
 
 app.get('/api/admin/estudio/projetos', requireRole('admin'), async (req, res) => {
-    try { res.json((await dbAll(`SELECT id, titulo, formato, tipo, status, capa_url, video_url, agendado_para, publicado_em, ig_permalink, erro_publicacao, viral_score, legenda, updated_at, created_at, dados FROM estudio_projetos ORDER BY updated_at DESC`)).map(p => { const o = linhaProjetoEst(p); const d = o.dados || {}; o.duracao = (d.clips || []).reduce((s, c) => s + Math.max(0, ((c.fim || 0) - (c.ini || 0)) / (c.vel || 1)), 0); o.qtdClips = (d.clips || []).length; o.thumb = (d.midias || []).find(m => m.tipo === 'imagem') ? (d.midias || []).find(m => m.tipo === 'imagem').url : ''; delete o.dados; return o; })); }
+    try { res.json((await dbAll(`SELECT id, titulo, formato, tipo, status, capa_url, video_url, agendado_para, publicado_em, ig_permalink, erro_publicacao, viral_score, legenda, updated_at, created_at, dados FROM estudio_projetos ORDER BY updated_at DESC`)).map(p => { const o = linhaProjetoEst(p); const d = o.dados || {}; o.duracao = (d.clips || []).reduce((s, c) => s + Math.max(0, ((c.fim || 0) - (c.ini || 0)) / (c.vel || 1)), 0); o.qtdClips = (d.clips || []).length; o.video_existe = o.video_url ? videoExisteEst(o.video_url) : false; o.thumb = (d.midias || []).find(m => m.tipo === 'imagem') ? (d.midias || []).find(m => m.tipo === 'imagem').url : ''; delete o.dados; return o; })); }
     catch (e) { res.status(500).json({ error: 'Erro ao carregar os projetos.' }); }
 });
 app.get('/api/admin/estudio/projetos/:id', requireRole('admin'), async (req, res) => {
     const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
     if (!p) return res.status(404).json({ error: 'Projeto não encontrado.' });
-    res.json({ ...linhaProjetoEst(p), iaAtiva: iaDisponivelMt(), igConfigurado: !!(await lerIgEst()).token });
+    res.json({ ...linhaProjetoEst(p), video_existe: p.video_url ? videoExisteEst(p.video_url) : false, iaAtiva: iaDisponivelMt(), igConfigurado: !!(await lerIgEst()).token });
 });
 app.post('/api/admin/estudio/projetos', requireRole('admin'), async (req, res) => {
     const b = req.body || {};
@@ -13021,9 +13021,15 @@ app.get('/api/admin/estudio/exportado/:id', requireRole('admin'), (req, res) => 
     res.json(j);
 });
 // Download do vídeo com nome certo (baixa completo, como arquivo).
-app.get('/api/public/baixar/:nome', (req, res) => {
+function videoExisteEst(url) { const nome = path.basename(String(url || '')); return !!nome && fs.existsSync(path.join(PASTA_UPLOADS, nome)); }
+app.get('/api/admin/estudio/video-existe', requireRole('admin'), (req, res) => {
+    const nome = path.basename(String(req.query.url || '')), arq = path.join(PASTA_UPLOADS, nome);
+    try { const st = fs.statSync(arq); res.json({ existe: st.isFile() && st.size > 0, tamanho: st.size }); } catch (e) { res.json({ existe: false }); }
+});
+app.get('/api/public/baixar/:nome', async (req, res) => {
     const nome = path.basename(String(req.params.nome || '')), arq = path.join(PASTA_UPLOADS, nome);
-    if (!/^[\w.\-]+\.(mp4|webm|mov|m4v)$/i.test(nome) || !fs.existsSync(arq)) return res.status(404).send('Vídeo não encontrado.');
+    if (/^[\w.\-]+\.(mp4|webm|mov|m4v)$/i.test(nome) && !fs.existsSync(arq)) await restaurarUploadDoBanco(nome).catch(() => null);
+    if (!/^[\w.\-]+\.(mp4|webm|mov|m4v)$/i.test(nome) || !fs.existsSync(arq)) return res.status(404).type('html').send(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vídeo indisponível</title></head><body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1329;color:#e6eaf2;font-family:system-ui,Arial;text-align:center;padding:24px"><div style="max-width:440px"><div style="font-size:54px">🎬</div><h2>Este vídeo precisa ser exportado de novo</h2><p style="color:#cbd5e1;line-height:1.6">O arquivo não está mais no servidor (provavelmente foi apagado numa atualização do sistema). Volte ao Estúdio, abra o projeto e clique em <b>⬇️ Exportar vídeo</b> — em seguida use <b>Baixar vídeo completo</b>.</p><button onclick="history.length>1?history.back():location.href='/'" style="background:#dc4c4c;color:#fff;border:none;border-radius:12px;padding:12px 20px;font-size:15px;font-weight:700;cursor:pointer">← Voltar ao Estúdio</button></div></body></html>`);
     const titulo = String(req.query.titulo || 'video').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w\-]+/g, '-').slice(0, 60) || 'video';
     res.download(arq, titulo + path.extname(nome).toLowerCase());
 });

@@ -21098,7 +21098,10 @@ async function evBaixarCompleto(galeria) {
   const p = ES.p, ex = ES.ultimoExport;
   const doServidor = p.video_url && /mp4/.test(p.video_mime || p.video_url);
   const ext = doServidor ? 'mp4' : ex ? (/mp4/.test(ex.blob.type) ? 'mp4' : 'webm') : 'mp4', nome = evNomeArquivo(ext);
-  if (!doServidor && !ex && !p.video_url) return mostrarToast('Exporte o vídeo primeiro (⬇️ Exportar vídeo).', true);
+  if (!doServidor && !ex && !p.video_url) return evPrecisaExportar();
+  // confere se o arquivo ainda está no servidor (sem isso, abria uma tela branca de "não encontrado")
+  if (p.video_url && !ex) { let ok = false; try { ok = (await api('/api/admin/estudio/video-existe?url=' + encodeURIComponent(p.video_url))).existe; } catch (e) {} if (!ok) { ES.p.video_existe = false; return evPrecisaExportar(); } }
+  if (doServidor && ex) { let ok = false; try { ok = (await api('/api/admin/estudio/video-existe?url=' + encodeURIComponent(p.video_url))).existe; } catch (e) {} if (!ok) return evBaixarBlobLocal(ex, galeria); }
   // computador: baixa pelo servidor como arquivo (o navegador mostra o progresso e baixa inteiro)
   if (!galeria && doServidor) { const a = document.createElement('a'); a.href = '/api/public/baixar/' + encodeURIComponent(p.video_url.split('/').pop()) + '?titulo=' + encodeURIComponent(p.titulo || 'video'); a.download = nome; document.body.appendChild(a); a.click(); a.remove(); mostrarToast('⬇️ Baixando o vídeo completo em MP4…'); return; }
   let blob = !doServidor && ex ? ex.blob : null;
@@ -21121,6 +21124,19 @@ async function evBaixarCompleto(galeria) {
     setTimeout(() => URL.revokeObjectURL(url), 60000);
     mostrarToast(galeria ? '⬇️ Vídeo baixado. Ele fica em Downloads/Arquivos — abra e toque em "Salvar na galeria".' : '⬇️ Vídeo completo baixado.');
   } catch (e) { evCarregando(null); mostrarToast('Não consegui baixar: ' + e.message, true); }
+}
+function evPrecisaExportar() {
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal" style="max-width:460px;text-align:center;">
+    <div style="font-size:48px;">🎬</div><h3 style="margin:6px 0;">Vamos gerar o vídeo de novo</h3>
+    <div class="ev-sub">O arquivo do vídeo não está mais no servidor (ele é apagado quando o sistema é atualizado sem disco permanente). O seu projeto e a edição estão salvos — é só exportar de novo e depois baixar.</div>
+    <button class="ev-btn primario grande" onclick="document.getElementById('ev-modal').innerHTML=''; evExportar()">⬇️ Exportar vídeo agora</button>
+    <button class="ev-btn" style="width:100%;" onclick="document.getElementById('ev-modal').innerHTML=''">Fechar</button></div></div>`;
+}
+async function evBaixarBlobLocal(ex, galeria) {
+  const arquivo = new File([ex.blob], evNomeArquivo(/mp4/.test(ex.blob.type) ? 'mp4' : 'webm'), { type: ex.blob.type || 'video/mp4' });
+  if (galeria && navigator.canShare && navigator.canShare({ files: [arquivo] })) { try { await navigator.share({ files: [arquivo] }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  const url = URL.createObjectURL(arquivo), a = document.createElement('a'); a.href = url; a.download = arquivo.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+  mostrarToast('⬇️ Vídeo completo baixado.');
 }
 function evProgressoExport(p) {
   const b = document.getElementById('ev-export-barra'), tx = document.getElementById('ev-export-txt');
@@ -21147,7 +21163,7 @@ async function evConcluirExport() {
     let r = null;
     for (let i = 0; i < 2400 && !r; i++) { await new Promise(z => setTimeout(z, 2500)); const st = await api('/api/admin/estudio/exportado/' + job.id).catch(() => null); if (st && st.status === 'pronto') r = st; else if (tx) tx.textContent = `Finalizando o vídeo em MP4 completo… ${Math.round(i * 2.5)} s`; }
     if (!r) throw new Error('O servidor demorou para finalizar.');
-    ES.p.video_url = r.url; ES.p.video_mime = r.mime; ES.p.video_duracao = r.duracao; if (ES.p.status === 'rascunho') ES.p.status = 'pronto';
+    ES.p.video_url = r.url; ES.p.video_mime = r.mime; ES.p.video_duracao = r.duracao; ES.p.video_existe = true; if (ES.p.status === 'rascunho') ES.p.status = 'pronto';
     if (r.aviso) mostrarToast(r.aviso, true);
   } catch (e) { mostrarToast('O vídeo foi gerado, mas não subiu para o servidor: ' + e.message + ' — você ainda pode baixar direto daqui.', true); }
   document.getElementById('ev-export-ov').hidden = true;
@@ -22161,7 +22177,7 @@ async function evAnaliseIa() {
 async function evAbrirPublicar(acabouDeExportar) {
   if (ES.sujo) await evSalvar(true).catch(() => {});
   let ig = { configurado: false }; try { ig = await api('/api/admin/estudio/instagram'); } catch (e) {}
-  const p = ES.p, ex = ES.ultimoExport, temVideo = !!p.video_url, mp4 = /mp4|quicktime/.test(p.video_mime || '') || /\.mp4$/i.test(p.video_url || '');
+  const p = ES.p, ex = ES.ultimoExport, temVideo = !!p.video_url && p.video_existe !== false, mp4 = /mp4|quicktime/.test(p.video_mime || '') || /\.mp4$/i.test(p.video_url || '');
   const legendaFinal = [p.legenda || '', p.hashtags || ''].filter(Boolean).join('\n\n');
   const amanha = new Date(Date.now() + 864e5); amanha.setHours(18, 0, 0, 0);
   const iso = new Date(amanha - amanha.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
@@ -23445,7 +23461,7 @@ function evDesenharHomeCelular(corpo) {
       <div class="eh-capa f${(p.formato || '9:16').replace(':', '-')}">${p.thumb ? `<img src="${escapeHtml(p.thumb)}" alt="">` : `<span>${p.tipo === 'aula' ? '🎓' : '🎬'}</span>`}${p.viral_score ? `<em>🔥${p.viral_score}</em>` : ''}</div>
       <div class="eh-info"><b>${escapeHtml(p.titulo)}</b><small>${escapeHtml(p.formato || '')} · ${evFmtT(p.duracao || 0).slice(0, 5)} · ${p.qtdClips || 0} clipes</small>
         <span class="eh-st" style="background:${st(p)[1]}">${st(p)[0]}</span></div>
-      ${p.video_url ? `<a class="eh-mais" title="Baixar vídeo completo" onclick="event.stopPropagation()" href="/api/public/baixar/${encodeURIComponent(String(p.video_url).split('/').pop())}?titulo=${encodeURIComponent(p.titulo || 'video')}">⬇️</a>` : ''}<button class="eh-mais" onclick="event.stopPropagation(); evExcluirProjeto(${p.id})">🗑️</button></div>`).join('')}</div>`
+      ${p.video_url && p.video_existe ? `<a class="eh-mais" title="Baixar vídeo completo" onclick="event.stopPropagation()" href="/api/public/baixar/${encodeURIComponent(String(p.video_url).split('/').pop())}?titulo=${encodeURIComponent(p.titulo || 'video')}">⬇️</a>` : ''}<button class="eh-mais" onclick="event.stopPropagation(); evExcluirProjeto(${p.id})">🗑️</button></div>`).join('')}</div>`
       : `<div class="eh-vazio"><div>🎬</div><b>Nenhum vídeo ainda</b><p>Toque em <b>Gravar agora</b> ou escolha vídeos da <b>galeria</b> para começar.</p></div>`}
   </div>`;
 }
