@@ -12761,12 +12761,42 @@ db.run(`CREATE TABLE IF NOT EXISTS estudio_planos (id INTEGER PRIMARY KEY AUTOIN
             .forEach(([n, d, pr, l], i) => db.run(`INSERT INTO estudio_planos (nome, descricao, preco, limites, ordem) VALUES (?, ?, ?, ?, ?)`, [n, d, pr, JSON.stringify(l), i]));
     });
 });
+// Funcionalidades vendidas separadamente (o principal é a Gravadora + o Editor)
+const FUNC_EST = {
+    gravadora: { nome: '📷 Gravadora', desc: 'Câmera profissional, gravação de tela e teleprompter (aulas de até 2 h)', preco: 29.9, principal: true },
+    editor: { nome: '✂️ Editor de vídeo', desc: 'Cortes, textos, legendas, filtros, músicas, marca e exportar em MP4', preco: 39.9, principal: true },
+    ia: { nome: '🤖 IA de criação', desc: 'Roteiros, edição viral, criar vídeo com IA, legenda e hashtags do post', preco: 29.9 },
+    legendas_auto: { nome: '💬 Legendas automáticas', desc: 'Transcreve a fala e cria as legendas no tempo certo', preco: 14.9 },
+    voz_ia: { nome: '🎙️ Voz da IA + minha voz', desc: 'Narração com voz natural e a voz da própria pessoa clonada', preco: 29.9 },
+    imagens_ia: { nome: '🖼️ Imagens com IA', desc: 'Ilustrações automáticas conforme a fala', preco: 19.9 },
+    limpeza_audio: { nome: '🎧 Áudio limpo', desc: 'Tira ruídos e deixa só a voz', preco: 14.9 },
+    radar: { nome: '📡 Radar Viral', desc: 'Pesquisa o que está viralizando e gera roteiros', preco: 19.9 },
+    instagram: { nome: '📸 Instagram', desc: 'Publica e agenda direto no Instagram', preco: 14.9 },
+    avatar: { nome: '🧑 Avatar falante', desc: 'Vídeo com a foto de uma pessoa falando (D-ID)', preco: 39.9 }
+};
+async function funcionalidadesEst() { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_precos_func'`).catch(() => null); let pr = {}; try { pr = JSON.parse((r && r.value) || '{}'); } catch (e) {} const o = {}; Object.entries(FUNC_EST).forEach(([k, f]) => { o[k] = Object.assign({}, f, pr[k] !== undefined ? { preco: Number(pr[k]) } : {}); }); return o; }
+const recursosValidosEst = l => Array.isArray(l) ? [...new Set(l.filter(k => FUNC_EST[k]))] : null;
+// Qual funcionalidade cada rota usa (o que não está no plano é bloqueado no servidor)
+const ROTAS_FUNC_EST = [[/^POST \/ia\/imagens-fala$/, 'imagens_ia'], [/^POST \/ia\/[\w-]+$/, 'ia'], [/^POST \/transcrever(-url)?$/, 'legendas_auto'], [/^POST \/(narrar|minha-voz)$/, 'voz_ia'], [/^POST \/limpar-audio$/, 'limpeza_audio'], [/^POST \/radar$/, 'radar'], [/^(POST \/projetos\/\d+\/publicar|PUT \/instagram)$/, 'instagram'], [/^POST \/avatar-video$/, 'avatar'], [/^POST \/projetos\/\d+\/gravador$/, 'gravadora']];
+db.run(`ALTER TABLE estudio_planos ADD COLUMN recursos TEXT`, () => {});
+setTimeout(() => {
+    ['estudio_recursos TEXT', 'estudio_preco REAL'].forEach(c => db.run(`ALTER TABLE users ADD COLUMN ${c}`, () => {}));
+    // planos antigos sem lista de funcionalidades: preenche com um padrão
+    const pad = { Start: ['gravadora', 'editor', 'ia', 'legendas_auto', 'limpeza_audio', 'instagram'], Pro: ['gravadora', 'editor', 'ia', 'legendas_auto', 'limpeza_audio', 'instagram', 'voz_ia', 'imagens_ia', 'radar'] };
+    db.all(`SELECT id, nome FROM estudio_planos WHERE recursos IS NULL`, (e, l) => (l || []).forEach(p => db.run(`UPDATE estudio_planos SET recursos = ? WHERE id = ?`, [JSON.stringify(pad[p.nome] || Object.keys(FUNC_EST)), p.id])));
+}, 2500);
 const CACHE_USR_EST = new Map();
 async function usuarioEstudio(id, semCache) {
     const c = CACHE_USR_EST.get(id); if (!semCache && c && c.t > Date.now() - 20000) return c.u;
-    const u = await dbGet(`SELECT u.id, u.name, u.email, u.role, u.estudio_plano_id, u.estudio_validade, u.estudio_status, p.nome AS plano_nome, p.preco AS plano_preco, p.limites AS plano_limites
+    let u = await dbGet(`SELECT u.id, u.name, u.email, u.role, u.estudio_plano_id, u.estudio_validade, u.estudio_status, u.estudio_recursos, u.estudio_preco, p.nome AS plano_nome, p.preco AS plano_preco, p.limites AS plano_limites, p.recursos AS plano_recursos
         FROM users u LEFT JOIN estudio_planos p ON p.id = u.estudio_plano_id WHERE u.id = ?`, [id]).catch(() => null);
-    if (u) { try { u.limites = JSON.parse(u.plano_limites || '{}'); } catch (e) { u.limites = {}; } }
+    if (!u) u = await dbGet(`SELECT u.id, u.name, u.email, u.role, u.estudio_plano_id, u.estudio_validade, u.estudio_status, p.nome AS plano_nome, p.preco AS plano_preco, p.limites AS plano_limites FROM users u LEFT JOIN estudio_planos p ON p.id = u.estudio_plano_id WHERE u.id = ?`, [id]).catch(() => null);
+    if (u) {
+        try { u.limites = JSON.parse(u.plano_limites || '{}'); } catch (e) { u.limites = {}; }
+        let rec = null; try { rec = JSON.parse(u.estudio_recursos || 'null') || JSON.parse(u.plano_recursos || 'null'); } catch (e) {}
+        u.recursos = Array.isArray(rec) ? rec : Object.keys(FUNC_EST);
+        u.preco_mensal = u.estudio_preco !== null && u.estudio_preco !== undefined ? Number(u.estudio_preco) : Number(u.plano_preco || 0);
+    }
     CACHE_USR_EST.set(id, { t: Date.now(), u }); return u;
 }
 function estudioAtivo(u) { return !!u && u.estudio_status === 'ativo' && (!u.estudio_validade || new Date(u.estudio_validade).getTime() > Date.now()); }
@@ -12795,30 +12825,36 @@ app.use('/api/admin/estudio', async (req, res, next) => {
     if (SO_MASTER_EST.some(r => r.test(req.method + ' ' + req.path))) return res.status(403).json({ error: 'Esta configuração é feita pela Impulsionar.' });
     const u = await usuarioEstudio(req.user.userId);
     if (!estudioAtivo(u)) return res.status(402).json({ error: u && u.estudio_status === 'ativo' ? 'O seu plano do Estúdio venceu. Renove para continuar criando.' : 'O seu acesso ao Estúdio está inativo. Fale com a Impulsionar ou renove o plano.', planoInativo: true });
+    const fn = (ROTAS_FUNC_EST.find(([r]) => r.test(req.method + ' ' + req.path)) || [])[1];
+    if (fn && !(u.recursos || []).includes(fn) && !(fn === 'voz_ia' && req.body && req.body.amostra === undefined && false)) { const f = FUNC_EST[fn]; return res.status(402).json({ error: `${f.nome} não está no seu plano. Fale com a Impulsionar para liberar.`, limitePlano: true, recurso: fn }); }
     // projeto de outra conta: não existe para este cliente
     const mId = req.path.match(/^\/projetos\/(\d+)/);
     if (mId) { const pr = await dbGet(`SELECT created_by FROM estudio_projetos WHERE id = ?`, [mId[1]]).catch(() => null); if (pr && Number(pr.created_by) !== Number(u.id)) return res.status(404).json({ error: 'Projeto não encontrado.' }); }
     ALS_EST.run({ dono: u.id }, next);
 });
 // ----- Master: acessos do Estúdio e planos -----
-function linhaPlanoEst(p) { let l = {}; try { l = JSON.parse(p.limites || '{}'); } catch (e) {} return { ...p, limites: l }; }
+function linhaPlanoEst(p) { let l = {}, r = null; try { l = JSON.parse(p.limites || '{}'); } catch (e) {} try { r = JSON.parse(p.recursos || 'null'); } catch (e) {} return { ...p, limites: l, recursos: Array.isArray(r) ? r : Object.keys(FUNC_EST) }; }
 function limitesValidosEst(l) { const o = {}; Object.keys(LIMITES_EST).forEach(k => { const v = l && l[k]; if (v !== undefined && v !== null && v !== '') o[k] = Math.max(0, Math.round(Number(v) || 0)); }); return o; }
 app.get('/api/admin/estudio-acessos', requireRole('admin'), async (req, res) => {
     try {
         const planos = (await dbAll(`SELECT * FROM estudio_planos ORDER BY ordem, id`)).map(linhaPlanoEst);
-        const acessos = await dbAll(`SELECT u.id, u.name, u.email, u.estudio_plano_id, u.estudio_validade, u.estudio_status, u.estudio_obs, u.estudio_telefone, u.ultimo_login,
+        const acessos = await dbAll(`SELECT u.id, u.name, u.email, u.estudio_plano_id, u.estudio_validade, u.estudio_status, u.estudio_obs, u.estudio_telefone, u.ultimo_login, u.estudio_recursos, u.estudio_preco,
             (SELECT COUNT(*) FROM estudio_projetos p WHERE p.created_by = u.id) AS projetos FROM users u WHERE u.role = 'estudio' ORDER BY u.id DESC`);
         const usos = await dbAll(`SELECT user_id, tipo, qtd FROM estudio_uso WHERE mes = ?`, [mesAtualEst()]);
-        acessos.forEach(a => { a.uso = {}; usos.filter(u => u.user_id === a.id).forEach(u => { a.uso[u.tipo] = u.qtd; }); a.ativo = estudioAtivo(a); });
+        acessos.forEach(a => { a.uso = {}; usos.filter(u => u.user_id === a.id).forEach(u => { a.uso[u.tipo] = u.qtd; }); a.ativo = estudioAtivo(a); try { a.recursos = JSON.parse(a.estudio_recursos || 'null'); } catch (e) { a.recursos = null; } });
         const pagamentos = await dbAll(`SELECT * FROM estudio_pagamentos ORDER BY id DESC LIMIT 100`);
-        res.json({ planos, acessos, pagamentos, limites: LIMITES_EST, mercadoPago: !!mpPreference });
+        res.json({ planos, acessos, pagamentos, limites: LIMITES_EST, funcionalidades: await funcionalidadesEst(), mercadoPago: !!mpPreference });
     } catch (e) { res.status(500).json({ error: 'Erro ao carregar os acessos: ' + e.message }); }
+});
+app.put('/api/admin/estudio-funcionalidades', requireRole('admin'), (req, res) => {
+    const pr = {}; Object.keys(FUNC_EST).forEach(k => { const v = (req.body || {}).precos && req.body.precos[k]; if (v !== undefined && v !== '') pr[k] = Math.max(0, Number(v) || 0); });
+    db.run(`INSERT INTO integration_settings (key, value) VALUES ('estudio_precos_func', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [JSON.stringify(pr)], () => res.json({ ok: true, message: 'Preços das funcionalidades salvos! ✅' }));
 });
 app.post('/api/admin/estudio-planos', requireRole('admin'), (req, res) => {
     const b = req.body || {}, nome = String(b.nome || '').trim().slice(0, 60); if (!nome) return res.status(400).json({ error: 'Dê um nome ao plano.' });
-    const campos = [nome, String(b.descricao || '').slice(0, 300), Math.max(0, Number(b.preco) || 0), JSON.stringify(limitesValidosEst(b.limites)), b.ativo === false ? 0 : 1, Number(b.ordem) || 0];
-    if (b.id) db.run(`UPDATE estudio_planos SET nome = ?, descricao = ?, preco = ?, limites = ?, ativo = ?, ordem = ? WHERE id = ?`, [...campos, b.id], err => { CACHE_USR_EST.clear(); err ? res.status(500).json({ error: 'Erro ao salvar o plano.' }) : res.json({ ok: true, message: 'Plano salvo! ✅' }); });
-    else db.run(`INSERT INTO estudio_planos (nome, descricao, preco, limites, ativo, ordem) VALUES (?, ?, ?, ?, ?, ?)`, campos, function (err) { err ? res.status(500).json({ error: 'Erro ao criar o plano.' }) : res.json({ ok: true, id: this.lastID, message: 'Plano criado! ✅' }); });
+    const campos = [nome, String(b.descricao || '').slice(0, 300), Math.max(0, Number(b.preco) || 0), JSON.stringify(limitesValidosEst(b.limites)), b.ativo === false ? 0 : 1, Number(b.ordem) || 0, JSON.stringify(recursosValidosEst(b.recursos) || Object.keys(FUNC_EST))];
+    if (b.id) db.run(`UPDATE estudio_planos SET nome = ?, descricao = ?, preco = ?, limites = ?, ativo = ?, ordem = ?, recursos = ? WHERE id = ?`, [...campos, b.id], err => { CACHE_USR_EST.clear(); err ? res.status(500).json({ error: 'Erro ao salvar o plano.' }) : res.json({ ok: true, message: 'Plano salvo! ✅' }); });
+    else db.run(`INSERT INTO estudio_planos (nome, descricao, preco, limites, ativo, ordem, recursos) VALUES (?, ?, ?, ?, ?, ?, ?)`, campos, function (err) { err ? res.status(500).json({ error: 'Erro ao criar o plano.' }) : res.json({ ok: true, id: this.lastID, message: 'Plano criado! ✅' }); });
 });
 function validadeMaisDiasEst(atual, dias) { const base = atual && new Date(atual).getTime() > Date.now() ? new Date(atual).getTime() : Date.now(); return new Date(base + dias * 86400000).toISOString(); }
 app.post('/api/admin/estudio-acessos', requireRole('admin'), async (req, res) => {
@@ -12831,8 +12867,9 @@ app.post('/api/admin/estudio-acessos', requireRole('admin'), async (req, res) =>
     if (senha.length < 6) return res.status(400).json({ error: 'A senha precisa ter pelo menos 6 caracteres.' });
     const dias = Math.max(0, Math.min(3650, Number(b.dias) || 0)), status = b.status === 'pendente' ? 'pendente' : 'ativo';
     const hash = await bcrypt.hash(senha, 10);
-    db.run(`INSERT INTO users (name, email, password, role, estudio_plano_id, estudio_validade, estudio_status, estudio_obs, estudio_telefone) VALUES (?, ?, ?, 'estudio', ?, ?, ?, ?, ?)`,
-        [nome, email, hash, plano.id, dias ? validadeMaisDiasEst(null, dias) : null, status, String(b.obs || '').slice(0, 500), String(b.telefone || '').replace(/[^\d+]/g, '').slice(0, 20)],
+    const rec = recursosValidosEst(b.recursos), preco = b.preco !== undefined && b.preco !== null && b.preco !== '' ? Math.max(0, Number(b.preco) || 0) : null;
+    db.run(`INSERT INTO users (name, email, password, role, estudio_plano_id, estudio_validade, estudio_status, estudio_obs, estudio_telefone, estudio_recursos, estudio_preco) VALUES (?, ?, ?, 'estudio', ?, ?, ?, ?, ?, ?, ?)`,
+        [nome, email, hash, plano.id, dias ? validadeMaisDiasEst(null, dias) : null, status, String(b.obs || '').slice(0, 500), String(b.telefone || '').replace(/[^\d+]/g, '').slice(0, 20), rec ? JSON.stringify(rec) : null, preco],
         function (err) { if (err) return res.status(500).json({ error: 'Erro ao criar o acesso: ' + err.message }); res.json({ ok: true, id: this.lastID, email, senha, message: 'Acesso criado! ✅' }); });
 });
 app.put('/api/admin/estudio-acessos/:id', requireRole('admin'), async (req, res) => {
@@ -12845,6 +12882,8 @@ app.put('/api/admin/estudio-acessos/:id', requireRole('admin'), async (req, res)
     if (b.renovarDias) { sets.push('estudio_validade = ?'); vals.push(validadeMaisDiasEst(u.estudio_validade, Number(b.renovarDias))); if (!b.status && u.estudio_status !== 'ativo') { sets.push('estudio_status = ?'); vals.push('ativo'); } }
     if (b.validade !== undefined) { sets.push('estudio_validade = ?'); vals.push(b.validade ? new Date(b.validade + 'T23:59:59-03:00').toISOString() : null); }
     if (b.obs !== undefined) { sets.push('estudio_obs = ?'); vals.push(String(b.obs).slice(0, 500)); }
+    if (b.recursos !== undefined) { const rec = recursosValidosEst(b.recursos); sets.push('estudio_recursos = ?'); vals.push(rec ? JSON.stringify(rec) : null); }
+    if (b.preco !== undefined) { sets.push('estudio_preco = ?'); vals.push(b.preco === null || b.preco === '' ? null : Math.max(0, Number(b.preco) || 0)); }
     if (b.telefone !== undefined) { sets.push('estudio_telefone = ?'); vals.push(String(b.telefone).replace(/[^\d+]/g, '').slice(0, 20)); }
     let senha = null; if (b.novaSenha) { senha = b.novaSenha === true ? 'Est' + require('crypto').randomBytes(4).toString('hex') + '!' : String(b.novaSenha); sets.push('password = ?'); vals.push(await bcrypt.hash(senha, 10)); }
     if (b.zerarUso) db.run(`DELETE FROM estudio_uso WHERE user_id = ? AND mes = ?`, [u.id, mesAtualEst()]);
@@ -12859,7 +12898,9 @@ async function criarCobrancaEst(userId, planoId, meses) {
     if (!mpPreference) throw new Error('Configure o Mercado Pago (token) em Meu Perfil para gerar cobranças.');
     const u = await dbGet(`SELECT id, name, email FROM users WHERE id = ? AND role = 'estudio'`, [userId]); if (!u) throw new Error('Acesso não encontrado.');
     const p = await dbGet(`SELECT * FROM estudio_planos WHERE id = ?`, [planoId]); if (!p) throw new Error('Plano não encontrado.');
-    meses = Math.max(1, Math.min(12, Number(meses) || 1)); const valor = Math.round(Number(p.preco) * meses * 100) / 100;
+    const uc = await dbGet(`SELECT estudio_plano_id, estudio_preco FROM users WHERE id = ?`, [userId]).catch(() => null);
+    const precoMes = uc && Number(uc.estudio_plano_id) === Number(p.id) && uc.estudio_preco !== null && uc.estudio_preco !== undefined ? Number(uc.estudio_preco) : Number(p.preco);
+    meses = Math.max(1, Math.min(12, Number(meses) || 1)); const valor = Math.round(precoMes * meses * 100) / 100;
     if (!(valor > 0)) throw new Error('Este plano está sem preço. Defina o valor do plano.');
     const pg = await new Promise((ok, ko) => db.run(`INSERT INTO estudio_pagamentos (user_id, plano_id, valor, meses) VALUES (?, ?, ?, ?)`, [u.id, p.id, valor, meses], function (e) { e ? ko(e) : ok(this.lastID); }));
     const pref = await mpPreference.create({ body: { items: [{ title: `Estúdio de Vídeo — Plano ${p.nome} (${meses} ${meses > 1 ? 'meses' : 'mês'})`, quantity: 1, unit_price: valor, currency_id: 'BRL' }], payer: { email: u.email, name: u.name }, external_reference: `estudio:${pg}`, ...montarRetornoMercadoPago() } });
@@ -12883,7 +12924,7 @@ app.get('/api/estudio/minha-conta', requireRole('estudio', 'admin'), async (req,
     if (req.user.role === 'admin') return res.json({ master: true });
     const u = await usuarioEstudio(req.user.userId, true); if (!u) return res.status(404).json({ error: 'Acesso não encontrado.' });
     const planos = (await dbAll(`SELECT id, nome, descricao, preco, limites FROM estudio_planos WHERE ativo = 1 ORDER BY ordem, id`)).map(linhaPlanoEst);
-    res.json({ nome: u.name, email: u.email, plano: { id: u.estudio_plano_id, nome: u.plano_nome, preco: u.plano_preco, limites: u.limites }, status: u.estudio_status, validade: u.estudio_validade, ativo: estudioAtivo(u), uso: await usoMesEst(u.id), rotulos: LIMITES_EST, planos, pagamentoOnline: !!mpPreference });
+    res.json({ nome: u.name, email: u.email, recursos: u.recursos, funcionalidades: await funcionalidadesEst(), plano: { id: u.estudio_plano_id, nome: u.plano_nome, preco: u.preco_mensal, limites: u.limites }, status: u.estudio_status, validade: u.estudio_validade, ativo: estudioAtivo(u), uso: await usoMesEst(u.id), rotulos: LIMITES_EST, planos, pagamentoOnline: !!mpPreference });
 });
 app.post('/api/estudio/pagar', requireRole('estudio'), async (req, res) => {
     try { const u = await usuarioEstudio(req.user.userId, true); res.json(await criarCobrancaEst(req.user.userId, (req.body || {}).plano_id || (u && u.estudio_plano_id), (req.body || {}).meses)); }

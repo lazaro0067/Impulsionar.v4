@@ -1415,6 +1415,11 @@
   .ea-fundo { position:fixed; inset:0; background:rgba(2,6,23,.6); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; } .ea-caixa { background:#fff; color:#0b1329; border-radius:18px; width:min(520px,100%); max-height:90vh; overflow-y:auto; padding:20px; box-shadow:0 20px 60px rgba(0,0,0,.4); }
   .ea-caixa h3 { margin:0 0 6px; } .ea-caixa label { display:flex; flex-direction:column; gap:4px; font-size:12.5px; font-weight:700; color:#475569; margin:10px 0; } .ea-caixa input, .ea-caixa select { border:1px solid #cbd5e1; border-radius:10px; padding:10px; font-size:14px; font-weight:400; color:#0b1329; background:#fff; }
   .ea-caixa .ea-chk { flex-direction:row; align-items:center; } .ea-linha { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; flex-wrap:wrap; } .ea-linha .ea-bt { flex:1; } .ea-sub { color:#64748b; font-size:12.5px; }
+  .ea-sec { font-weight:800; font-size:13px; margin:14px 0 6px; color:#0b1329; } .ea-recursos { display:grid; gap:6px; } .ea-rec { flex-direction:row !important; align-items:center; gap:10px !important; border:1px solid #e2e8f0; border-radius:12px; padding:9px 10px; margin:0 !important; cursor:pointer; } .ea-rec.principal { border-color:#fecaca; background:#fff7f7; }
+  .ea-rec input { width:auto; } .ea-rec span { flex:1; display:flex; flex-direction:column; } .ea-rec b { color:#0b1329; font-size:13.5px; } .ea-rec em { font-style:normal; font-size:10px; background:#dc4c4c; color:#fff; border-radius:8px; padding:1px 6px; margin-left:4px; } .ea-rec small { font-weight:400; color:#64748b; } .ea-rec i { font-style:normal; font-weight:800; color:#dc4c4c; white-space:nowrap; }
+  .ea-soma { margin-top:8px; font-size:13px; color:#475569; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .ea-tags { display:flex; flex-wrap:wrap; gap:5px; } .ea-tags span { font-size:11.5px; border-radius:12px; padding:3px 8px; } .ea-tags span.on { background:#dcfce7; color:#166534; } .ea-tags span.off { background:#f1f5f9; color:#94a3b8; text-decoration:line-through; } .ea-tags.grande span { font-size:13px; padding:6px 10px; } .ea-plano details summary { cursor:pointer; font-size:12.5px; color:#64748b; }
+  body.modo-estudio .ea-tags span.on { background:#14532d; color:#bbf7d0; } body.modo-estudio .ea-tags span.off { background:#1c2747; color:#64748b; }
   .ea-cred { white-space:pre-wrap; background:#f1f5f9; border-radius:12px; padding:12px; font-size:13px; font-family:inherit; } .ea-lims { display:grid; grid-template-columns:1fr 1fr; gap:0 10px; } .ea-uso { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:#475569; background:#f8fafc; border-radius:10px; padding:10px; margin-top:8px; } .ea-uso > b { width:100%; }
   .ea-conta { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; background:linear-gradient(135deg,#0b1329,#3b0d1c); color:#fff; border-radius:18px; padding:18px; } .ea-conta small { color:#cbd5e1; } .ea-conta h2 { color:#fff; }
   .ea-barras { display:grid; gap:10px; } .ea-barra { display:grid; grid-template-columns:1fr auto; gap:4px 10px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; font-size:13px; } .ea-barra i { grid-column:1 / -1; height:7px; background:#e2e8f0; border-radius:6px; overflow:hidden; } .ea-barra em { display:block; height:100%; } .ea-barra.off { opacity:.6; }
@@ -1472,7 +1477,11 @@
   .evc-tempo { top:calc(env(safe-area-inset-top) + 70px) !important; right:auto !important; left:50% !important; transform:translateX(-50%); font-size:15px !important; }
   .evc-topo { position:absolute; top:0; left:0; right:0; z-index:3; display:flex; align-items:center; gap:8px; padding:calc(env(safe-area-inset-top) + 10px) 12px 14px; background:linear-gradient(rgba(0,0,0,.6), transparent); }
   .evc-ic { width:42px; height:42px; flex:0 0 42px; border-radius:50%; border:none; background:rgba(0,0,0,.45); color:#fff; font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
-  .evc-ic.on { background:#facc15; color:#000; } .evc [hidden] { display:none !important; }
+  .evc-ic.on { background:#facc15; color:#000; }
+  .evc-rev { position:absolute; inset:0; z-index:8; background:rgba(2,6,23,.96); display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 16px); gap:12px; }
+  .evc-rev-video { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; } .evc-rev-video video { max-width:100%; max-height:100%; border-radius:14px; background:#000; } .evc-rev-sem { color:#cbd5e1; text-align:center; padding:20px; }
+  .evc-rev-info { display:flex; flex-direction:column; gap:4px; text-align:center; } .evc-rev-info b { font-size:16px; } .evc-rev-info span { font-size:13px; color:#cbd5e1; }
+  .evc-rev-bts { display:grid; grid-template-columns:1fr 1fr; gap:10px; } .evc-rev-bt { border:none; border-radius:14px; padding:14px 10px; font-size:15px; font-weight:800; background:rgba(255,255,255,.14); color:#fff; cursor:pointer; } .evc-rev-bt.pri { grid-column:1 / -1; background:#16a34a; font-size:17px; } .evc-rev-bt:disabled { opacity:.4; } .evc [hidden] { display:none !important; }
   .evc-modos { flex:1; display:flex; justify-content:center; gap:6px; } .evc-modos button { border:none; border-radius:18px; padding:7px 12px; background:rgba(0,0,0,.45); color:#fff; font-weight:700; font-size:12.5px; cursor:pointer; } .evc-modos button.on { background:#fff; color:#000; }
   .evc-base { position:absolute; left:0; right:0; bottom:0; z-index:3; padding:14px 16px calc(env(safe-area-inset-bottom) + 20px); background:linear-gradient(transparent, rgba(0,0,0,.65)); }
   .evc-msg { text-align:center; font-size:12.5px; color:#e2e8f0; margin-bottom:12px; text-shadow:0 1px 3px #000; }
@@ -2022,7 +2031,7 @@ function iniciarApp() {
   });
   const primeiraChave = achatarMenu(itensMenu)[0][0];
   // Acesso pelo celular só ao Estúdio de Vídeo (endereço /estudio)
-  if ((window.MODO_ESTUDIO && u.role === 'admin') || u.role === 'estudio') { document.body.classList.add('modo-estudio'); irPara('estudioVideo'); }
+  if ((window.MODO_ESTUDIO && u.role === 'admin') || u.role === 'estudio') { document.body.classList.add('modo-estudio'); if (u.role === 'estudio') evCarregarRecursos().then(() => irPara('estudioVideo')); else irPara('estudioVideo'); }
   else { if (window.MODO_ESTUDIO) mostrarToast('O Estúdio de Vídeo é para o Master e os clientes do Estúdio. Abrindo o sistema normal.', true); document.body.classList.remove('modo-estudio'); irPara(primeiraChave); }
   iniciarPollinhaNotificacoes();
   tratarVagaPendenteAposLogin();
@@ -21749,6 +21758,7 @@ const EV_ESTILOS_IMG = {
   corporativo: ['💼 Corporativo', 'ilustração corporativa profissional, pessoas estilizadas, gráficos, ícones de negócios, cores sóbrias']
 };
 function evAbrirImagensIa() {
+  if (!evPrecisa('imagens_ia')) return;
   const d = ES.p.dados; if (!d.clips.some(c => (evMidia(c.midia) || {}).tipo === 'video')) return mostrarToast('Coloque na linha do tempo o vídeo em que você fala.', true);
   const tot = evTotal(), sug = Math.max(2, Math.round(tot / 7)), cfg = ES.imgIa = ES.imgIa || { qtd: Math.min(sug, 20), estilo: 'flat', layout: (ES.p.formato || '9:16') === '9:16' ? 'cima' : 'cheio', texto: false };
   const chip = (k, v, r) => `<button class="${cfg[k] === v ? 'on' : ''}" onclick="ES.imgIa.${k}=${typeof v === 'string' ? `'${v}'` : v}; evAbrirImagensIa()">${r}</button>`;
@@ -21909,6 +21919,7 @@ function evTrechoAtual() {
   const c = d.clips[i], m = evMidia(c.midia); return { m, ini: Math.max(0, (c.ini || 0) + Math.max(0, ES.t - ini[i]) * (c.vel || 1)) };
 }
 async function evOuvirLimpeza() {
+  if (!evPrecisa('limpeza_audio')) return;
   const tr = evTrechoAtual(); if (!tr) return mostrarToast('Coloque um vídeo com som na linha do tempo.', true);
   const box = document.getElementById('ev-la-amostra'); if (box) box.innerHTML = '<div class="ev-sub">⏳ Preparando 12 segundos para você comparar…</div>';
   try {
@@ -21922,6 +21933,7 @@ function evErroLimpeza(e) {
   else mostrarToast(e.message, true);
 }
 async function evAplicarLimpeza() {
+  if (!evPrecisa('limpeza_audio')) return;
   const vids = evVideosComSom(); if (!vids.length) return mostrarToast('Coloque um vídeo com som na linha do tempo.', true);
   evPausar(); const cfg = evCfgLimpezaEnvio(); let feitos = 0;
   try {
@@ -22108,6 +22120,7 @@ window.addEventListener('beforeunload', e => { if (EVENV.ativos > 0) { e.prevent
 // ---------- Gravar direto no editor: câmera, tela ou tela + câmera, com teleprompter ----------
 const EVCAM = { stream: null, tela: null, rec: null, partes: [], raf: null, modo: 'camera', rolando: false, pos: 0, ppm: 140 };
 async function evAbrirCamera() {
+  if (!evPrecisa('gravadora')) return;
   evPausar();
   const temTela = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) && !evCelularAqui();
   const temRoteiro = !!(ES.p.dados.roteiro || '').trim();
@@ -22230,14 +22243,16 @@ async function evCamGravar() {
     dest.stream.getAudioTracks().forEach(t => fluxo.addTrack(t));
   } catch (e) { EVCAM.stream.getAudioTracks().forEach(t => fluxo.addTrack(t)); }
   const mime = ['video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
-  EVCAM.partes = []; EVCAM.tamLocal = 0; EVCAM.rec = new MediaRecorder(fluxo, mime ? { mimeType: mime, videoBitsPerSecond: EVCAM.modo === 'camera' ? 10000000 : 6000000, audioBitsPerSecond: 160000 } : undefined);
+  EVCAM.partes = []; EVCAM.tamLocal = 0; EVCAM.rec = new MediaRecorder(fluxo, mime ? { mimeType: mime, videoBitsPerSecond: EVCAM.modo === 'camera' ? (evCelularAqui() ? 6000000 : 8000000) : 5000000, audioBitsPerSecond: 160000 } : undefined);
   // envio contínuo: a gravação vai subindo para o servidor enquanto você grava (aulas de até 2 h sem estourar a memória)
   EVCAM.mime = EVCAM.rec.mimeType || mime || 'video/webm';
-  EVCAM.envio = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), i: 0, fila: [], enviando: false, enviado: 0, resposta: null };
+  EVCAM.envio = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), i: 0, fila: [], enviando: false, enviado: 0, total: 0, resposta: null, todas: [] };
   EVCAM.envio.pronto = new Promise(ok => { EVCAM.envio.concluir = ok; });
-  EVCAM.rec.ondataavailable = e => { if (!e.data.size) return; if (EVCAM.tamLocal < 300 * 1048576) { EVCAM.partes.push(e.data); EVCAM.tamLocal += e.data.size; } EVCAM.envio.fila.push({ blob: e.data }); evCamEnviarFila(); };
-  EVCAM.rec.onstop = () => { EVCAM.envio.fila.push({ blob: new Blob([]), fim: true }); evCamEnviarFila(); evCamTerminou(); };
-  EVCAM.rec.start(4000); EVCAM.inicio = Date.now(); EVCAM.pausado = 0;
+  const E0 = EVCAM.envio;
+  EVCAM.rec.ondataavailable = e => { if (!e.data.size) return; if (EVCAM.tamLocal < 300 * 1048576) { EVCAM.partes.push(e.data); EVCAM.tamLocal += e.data.size; } E0.total += e.data.size; evCamEnfileirar(E0, e.data); evCamEnviarFila(E0); };
+  EVCAM.rec.onstop = () => { E0.fila.push({ blob: new Blob([]), fim: true }); E0.todas.push({ blob: new Blob([]), fim: true }); evCamEnviarFila(E0); evCamTerminou(); };
+  EVCAM.rec.start(2000);
+  { const b = document.getElementById('ev-cam-pausa'); if (b) b.textContent = '⏸'; } EVCAM.inicio = Date.now(); EVCAM.pausado = 0;
   if ((document.getElementById('ev-cam-usatp') || {}).checked) { EVCAM.pos = 0; EVCAM.ult = 0; EVCAM.rolando = true; }
   document.getElementById('ev-cam-bt').classList.add('gravando'); { const m = document.getElementById('ev-cam-msg'); if (m) m.textContent = 'Gravando… toque no quadrado para parar e usar no vídeo'; } document.getElementById('ev-cam-pausa').disabled = false;
   const rc = document.getElementById('ev-cam-rec'); rc.hidden = false;
@@ -22248,54 +22263,113 @@ function evCamPausar() {
   if (r.state === 'recording') { r.pause(); EVCAM.pausaEm = Date.now(); EVCAM.rolando = false; b.textContent = '▶'; }
   else if (r.state === 'paused') { EVCAM.pausado += Date.now() - EVCAM.pausaEm; r.resume(); EVCAM.ult = 0; EVCAM.rolando = (document.getElementById('ev-cam-usatp') || {}).checked; b.textContent = '⏸'; }
 }
-async function evCamEnviarFila() {
-  const E = EVCAM.envio; if (!E || E.enviando) return; E.enviando = true;
-  const ext = /mp4/.test(EVCAM.mime) ? 'mp4' : 'webm';
-  while (E.fila.length) {
+// pedaços grandes (sinal fraco acumula) vão em partes de até 6 MB
+function evCamEnfileirar(E, blob) { const T = 6 * 1048576; for (let p = 0; p < blob.size; p += T) { const it = { blob: blob.slice(p, Math.min(blob.size, p + T)) }; E.fila.push(it); E.todas.push(it); } }
+// Envio contínuo da gravação: o vídeo fica guardado no aparelho e vai subindo; se a internet cair, continua sozinho de onde parou.
+async function evCamEnviarFila(E) {
+  E = E || EVCAM.envio; if (!E || E.enviando || E.cancelado) return; E.enviando = true;
+  const ext = /mp4/.test(EVCAM.mime) ? 'mp4' : 'webm', aviso = t => { const m = document.getElementById('ev-cam-msg'); if (m) m.textContent = t; const st = document.getElementById('evc-rev-st'); if (st && E === (EVCAM.ultima || {}).envio) st.textContent = t; };
+  while (E.fila.length && !E.cancelado) {
     const item = E.fila[0]; let tent = 0;
-    while (true) {
+    while (!E.cancelado) {
       try {
-        const r = await fetch('/api/admin/estudio/upload-parte', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token, 'Content-Type': 'application/octet-stream', 'x-upload-id': E.id, 'x-parte': String(E.i), 'x-total': '0', 'x-fim': item.fim ? '1' : '0', 'x-nome': encodeURIComponent('gravacao.' + ext), 'x-mime': EVCAM.mime }, body: item.blob });
+        const r = await fetch('/api/admin/estudio/upload-parte', { method: 'POST', signal: AbortSignal.timeout(120000), headers: { Authorization: 'Bearer ' + ESTADO.token, 'Content-Type': 'application/octet-stream', 'x-upload-id': E.id, 'x-parte': String(E.i), 'x-total': '0', 'x-fim': item.fim ? '1' : '0', 'x-nome': encodeURIComponent('gravacao.' + ext), 'x-mime': EVCAM.mime }, body: item.blob });
         const j = await r.json().catch(() => ({}));
-        if (r.status === 409 && Number.isInteger(j.prox) && j.prox > E.i) { E.i = j.prox; break; }
-        if (!r.ok) throw new Error(j.error || 'Falha no envio.');
+        if (r.status === 409 && Number.isInteger(j.prox)) {
+          if (j.prox > E.i) { E.i = j.prox; break; }
+          // o servidor perdeu o envio (reiniciou): recomeça do zero com o que está guardado no aparelho
+          if (j.prox === 0 && E.i > 0 && EVCAM.tamLocal < 300 * 1048576) { E.id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); E.i = 0; E.enviado = 0; E.fila = E.todas.slice(); aviso('☁️ Reenviando a gravação…'); E.enviando = false; return evCamEnviarFila(E); }
+        }
+        if (!r.ok) { const e = new Error(j.error || ('Falha no envio (HTTP ' + r.status + ')')); e.status = r.status; throw e; }
         if (item.fim || j.completo) E.resposta = j;
         E.i++; E.enviado += item.blob.size; break;
-      } catch (e) { tent++; const m = document.getElementById('ev-cam-msg'); if (m) m.textContent = `⚠️ Internet oscilou — tentando enviar de novo (${tent})… não feche esta tela.`; await new Promise(z => setTimeout(z, Math.min(15000, 1500 * tent))); }
+      } catch (e) {
+        tent++;
+        if (e.status === 401 || e.status === 402 || e.status === 403) { aviso('⚠️ ' + e.message + ' — use "Salvar no aparelho" para não perder a gravação.'); E.erro = e.message; E.enviando = false; return; }
+        aviso(`📶 Sinal fraco — a gravação está guardada no aparelho e continua subindo sozinha (tentativa ${tent})…`);
+        await new Promise(z => setTimeout(z, Math.min(20000, 2000 * tent)));
+      }
     }
     E.fila.shift();
-    const m = document.getElementById('ev-cam-msg'); if (m && EVCAM.rec) m.textContent = `☁️ Já salvo no servidor: ${(E.enviado / 1048576).toFixed(0)} MB (a gravação sobe enquanto você grava).`;
+    if (EVCAM.rec) aviso(`☁️ Salvo no servidor: ${(E.enviado / 1048576).toFixed(0)} MB (sobe enquanto você grava)`);
+    else if (EVCAM.ultima && EVCAM.ultima.envio === E && !E.resposta) aviso(`☁️ Enviando… ${Math.min(99, Math.round(E.enviado / Math.max(1, E.total) * 100))}%`);
     if (E.resposta) { E.concluir(E.resposta); break; }
   }
   E.enviando = false;
 }
+// Fim da gravação: tela de revisão com Usar no vídeo / Salvar no aparelho / Gravar de novo / Sair
 async function evCamTerminou() {
   clearInterval(EVCAM.timer); EVCAM.rolando = false;
   const tipo = EVCAM.mime || 'video/webm', dur = (Date.now() - EVCAM.inicio - EVCAM.pausado) / 1000; EVCAM.rec = null;
-  const blob = EVCAM.tamLocal < 300 * 1048576 ? new Blob(EVCAM.partes, { type: tipo }) : null, nome = 'gravacao-' + new Date().toLocaleTimeString('pt-BR').replace(/:/g, '') + (/mp4/.test(tipo) ? '.mp4' : '.webm');
-  const msg = document.getElementById('ev-cam-msg'), melhorar = (document.getElementById('ev-cam-luz') || {}).checked;
-  if (msg) msg.textContent = 'Finalizando o envio da gravação…';
-  try {
-    const r = await EVCAM.envio.pronto;
-    const info = await evInfoUrl(r.url);
-    const F = EV_FORMATOS[ES.p.formato] || EV_FORMATOS['9:16'];
-    const m = { id: evUid(), url: r.url, nome: EVCAM.modo === 'camera' ? 'Gravação da câmera' : 'Gravação da tela', tipo: 'video', duracao: info.duracao || dur, w: info.w || F.w, h: info.h || F.h, thumb: info.thumb };
-    ES.p.dados.midias.push(m); evAdicionarClipe(m.id, true); evMudou(); evPainel('midia');
-    evFecharCamera();
-    mostrarToast('🎥 Gravação na linha do tempo! Use ✨ Editar com IA para legendar e deixar viral.');
-    if (melhorar && EVCAM.modo === 'camera') evImagemInteligente({ silencioso: false });
-  } catch (e) {
-    if (msg) msg.innerHTML = '⚠️ ' + escapeHtml(e.message) + (blob ? ` — <a href="${URL.createObjectURL(blob)}" download="${nome}" style="color:#93c5fd;">baixar a gravação</a>` : '');
+  const blob = EVCAM.tamLocal < 300 * 1048576 ? new Blob(EVCAM.partes, { type: tipo }) : null, nome = 'gravacao-' + new Date().toLocaleString('pt-BR').replace(/[/:, ]+/g, '-') + (/mp4/.test(tipo) ? '.mp4' : '.webm');
+  EVCAM.ultima = { blob, tipo, dur, nome, envio: EVCAM.envio, modo: EVCAM.modo, url: blob ? URL.createObjectURL(blob) : '' };
+  const rc = document.getElementById('ev-cam-rec'); if (rc) rc.hidden = true;
+  const bt = document.getElementById('ev-cam-bt'); if (bt) bt.classList.remove('gravando');
+  const pa = document.getElementById('ev-cam-pausa'); if (pa) { pa.disabled = true; pa.textContent = '⏸'; }
+  evCamRevisar();
+}
+function evCamRevisar() {
+  const g = EVCAM.ultima, evc = document.getElementById('evc'); if (!g || !evc) return;
+  const E = g.envio, pct = E.resposta ? 100 : Math.min(99, Math.round(E.enviado / Math.max(1, E.total) * 100));
+  let rv = document.getElementById('evc-rev'); if (!rv) { rv = document.createElement('div'); rv.id = 'evc-rev'; rv.className = 'evc-rev'; evc.appendChild(rv); }
+  rv.innerHTML = `<div class="evc-rev-video">${g.url ? `<video src="${g.url}" controls playsinline autoplay></video>` : '<div class="evc-rev-sem">🎬 Gravação longa demais para pré-visualizar aqui — ela já está sendo salva no servidor.</div>'}</div>
+    <div class="evc-rev-info"><b>✅ Gravação de ${evFmtT(g.dur).slice(0, 5)}</b><span id="evc-rev-st">${E.erro ? '⚠️ ' + escapeHtml(E.erro) : E.resposta ? '☁️ Já está salva no servidor' : `☁️ Enviando… ${pct}% (pode usar agora, termina sozinho)`}</span></div>
+    <div class="evc-rev-bts">
+      <button class="evc-rev-bt pri" onclick="evCamUsar()">✅ Usar no vídeo</button>
+      <button class="evc-rev-bt" onclick="evCamSalvarAparelho()" ${g.blob ? '' : 'disabled'}>💾 Salvar no aparelho</button>
+      <button class="evc-rev-bt" onclick="evCamGravarDeNovo()">🔁 Gravar de novo</button>
+      <button class="evc-rev-bt" onclick="evFecharCamera()">✕ Sair</button>
+    </div>`;
+  clearInterval(EVCAM.revTimer); EVCAM.revTimer = setInterval(() => { const st = document.getElementById('evc-rev-st'); if (!st || !EVCAM.ultima) return clearInterval(EVCAM.revTimer); const E2 = EVCAM.ultima.envio; st.textContent = E2.erro ? '⚠️ ' + E2.erro : E2.resposta ? '☁️ Já está salva no servidor' : `☁️ Enviando… ${Math.min(99, Math.round(E2.enviado / Math.max(1, E2.total) * 100))}% (pode usar agora, termina sozinho)`; }, 1000);
+}
+async function evCamSalvarAparelho() {
+  const g = EVCAM.ultima; if (!g || !g.blob) return;
+  let blob = g.blob; if (/mp4/.test(g.tipo) && window.Mp4Completo) { try { blob = await Mp4Completo.mp4CompletoBlob(blob); } catch (e) {} }
+  const arq = new File([blob], g.nome, { type: g.tipo });
+  if (evCelularAqui() && navigator.canShare && navigator.canShare({ files: [arq] })) { try { await navigator.share({ files: [arq] }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(arq); a.download = g.nome; document.body.appendChild(a); a.click(); a.remove();
+  mostrarToast('💾 Gravação salva no aparelho.');
+}
+function evCamGravarDeNovo() {
+  const g = EVCAM.ultima; if (g && !g.usada && g.envio) g.envio.cancelado = true;
+  EVCAM.ultima = null; clearInterval(EVCAM.revTimer); const rv = document.getElementById('evc-rev'); if (rv) rv.remove();
+  EVCAM.partes = []; EVCAM.tamLocal = 0; EVCAM.pos = 0; const t = document.getElementById('ev-cam-tp-txt'); if (t) t.style.transform = '';
+  const m = document.getElementById('ev-cam-msg'); if (m) m.textContent = 'Pronto para gravar de novo · toque no botão vermelho';
+  evCamDesenharLoop();
+}
+// Usa a gravação: entra na linha do tempo na hora (tocando do aparelho) e termina de subir em segundo plano
+async function evCamUsar() {
+  const g = EVCAM.ultima; if (!g) return; g.usada = true; clearInterval(EVCAM.revTimer);
+  const F = EV_FORMATOS[ES.p.formato] || EV_FORMATOS['9:16'], E = g.envio, melhorar = (document.getElementById('ev-cam-luz') || {}).checked;
+  const m = { id: evUid(), url: '', nome: g.modo === 'camera' ? 'Gravação da câmera' : 'Gravação da tela', tipo: 'video', duracao: g.dur, w: F.w, h: F.h, enviando: true };
+  if (g.url) { ES.locais = ES.locais || {}; ES.locais[m.id] = g.url; } 
+  if (!g.url) { // sem cópia no aparelho: espera o envio terminar
+    evCarregando('☁️ Terminando de enviar a gravação…'); try { const r = await E.pronto; m.url = r.url; delete m.enviando; } finally { evCarregando(null); }
+  }
+  ES.p.dados.midias.push(m); evAdicionarClipe(m.id, true); evMudou(); evPainel('midia');
+  evFecharCamera(true);
+  mostrarToast('🎥 Gravação na linha do tempo! Ela termina de subir sozinha em segundo plano.');
+  if (melhorar && g.modo === 'camera') setTimeout(() => evImagemInteligente({ silencioso: false }), 600);
+  if (m.enviando) {
+    const pid = ES.p.id; EVENV.ativos++; EVENV.atual = m; evStatusEnvio();
+    const tick = setInterval(() => { m.__prog = E.enviado / Math.max(1, E.total); evStatusEnvio(); }, 1000);
+    try {
+      const r = await E.pronto; m.url = r.url; delete m.enviando;
+      try { const info = await evInfoUrl(r.url); if (info.duracao) m.duracao = info.duracao; if (info.thumb) m.thumb = info.thumb; } catch (e) {}
+      if (ES && ES.p.id === pid) { evMudou(false); await evSalvar(true).catch(() => {}); } else await evAtualizarMidiaRemota(pid, m);
+    } finally { clearInterval(tick); EVENV.ativos--; EVENV.atual = null; evStatusEnvio(); }
   }
 }
-function evFecharCamera() {
-  if (EVCAM.rec && !confirm('Parar e descartar a gravação em andamento?')) return;
-  if (!EVCAM.rec && EVCAM.envio && EVCAM.envio.fila.length && !confirm('A gravação ainda está sendo enviada. Fechar agora pode perder o final. Fechar mesmo assim?')) return;
+function evFecharCamera(forcar) {
+  if (!forcar && EVCAM.rec && !confirm('Parar e descartar a gravação em andamento?')) return;
+  if (!forcar && !EVCAM.rec && EVCAM.ultima && !EVCAM.ultima.usada && !confirm('Sair sem usar a gravação? Ela será descartada.')) return;
+  if (EVCAM.ultima && !EVCAM.ultima.usada && EVCAM.ultima.envio) EVCAM.ultima.envio.cancelado = true;
   if (EVCAM.rec) { EVCAM.rec.onstop = null; try { EVCAM.rec.stop(); } catch (e) {} EVCAM.rec = null; }
   cancelAnimationFrame(EVCAM.raf); clearInterval(EVCAM.timer); EVCAM.rolando = false;
   [EVCAM.stream, EVCAM.tela].forEach(s => s && s.getTracks().forEach(t => t.stop())); EVCAM.stream = null; EVCAM.tela = null; EVCAM.an = null;
   if (EVCAM.vid) EVCAM.vid.srcObject = null; if (EVCAM.vTela) EVCAM.vTela.srcObject = null;
-  const md = document.getElementById('ev-modal'); if (md && md.querySelector('.ev-cam')) md.innerHTML = '';
+  const md = document.getElementById('ev-modal'); if (md && md.querySelector('.evc, .ev-cam')) md.innerHTML = '';
+  EVCAM.ultima = null;
 }
 function evAdicionarClipe(mid, semRedesenhar) {
   const m = evMidia(mid); if (!m) return;
@@ -23158,9 +23232,10 @@ async function evSalvarAvatar(file, nome, voz) {
 }
 let EVIA = { modo: 'avatar', avatar: null, voz: 'pt-BR-AntonioNeural' };
 async function evAbrirCriarVideoIa() {
+  if (!evPrecisa('ia')) return;
   let av = [], prov = {}; try { [av, prov] = await Promise.all([api('/api/admin/estudio/avatares'), api('/api/admin/estudio/provedor-video')]); } catch (e) {}
   if (!EVIA.vozes) { try { EVIA.vozesInfo = await api('/api/admin/estudio/vozes'); EVIA.vozes = EVIA.vozesInfo.vozes; } catch (e) { EVIA.vozes = [{ id: 'pt-BR-AntonioNeural', nome: 'Antônio — masculina' }, { id: 'pt-BR-FranciscaNeural', nome: 'Francisca — feminina' }]; } }
-  if (EVIA.narrar === undefined) EVIA.narrar = true; { const minha = EVIA.vozes.find(v => v.minha); if (!EVIA.vozNarr || (minha && !EVIA.escolheuVoz)) EVIA.vozNarr = (minha || EVIA.vozes[0] || {}).id; } if (EVIA.velNarr === undefined) EVIA.velNarr = 8; if (EVIA.trilha === undefined) EVIA.trilha = true;
+  if (EVIA.narrar === undefined) EVIA.narrar = evTem('voz_ia'); { const minha = EVIA.vozes.find(v => v.minha); if (!EVIA.vozNarr || (minha && !EVIA.escolheuVoz)) EVIA.vozNarr = (minha || EVIA.vozes[0] || {}).id; } if (EVIA.velNarr === undefined) EVIA.velNarr = 8; if (EVIA.trilha === undefined) EVIA.trilha = true;
   EVIA.avatares = av; EVIA.prov = prov; if (!EVIA.avatar && av[0]) EVIA.avatar = av[0].id;
   if (!prov.configurado) EVIA.modo = EVIA.modo === 'avatar' && av.length ? 'avatar' : EVIA.modo;
   const alvo = document.getElementById('ev-modal') || (() => { let ma = document.getElementById('modal-area'); if (!ma) { document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>'); ma = document.getElementById('modal-area'); } return ma; })();
@@ -23186,7 +23261,7 @@ async function evAbrirCriarVideoIa() {
       <label class="ev-campo"><span>Voz</span><select onchange="EVIA.voz=this.value">${[['pt-BR-AntonioNeural', 'Antônio (masculina)'], ['pt-BR-FranciscaNeural', 'Francisca (feminina)'], ['pt-BR-ThalitaNeural', 'Thalita (feminina jovem)'], ['pt-BR-DonatoNeural', 'Donato (masculina madura)']].map(([v, r]) => `<option value="${v}" ${EVIA.voz === v ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
       ${prov.configurado ? `<div class="ev-ig-ok">✅ D-ID conectado${prov.creditos !== undefined ? ' · ' + prov.creditos + ' créditos' : ''}</div>` : `<div class="ev-aviso">Para a pessoa da foto <b>falar</b>, conecte o D-ID (gerador de avatar falante): crie a conta em <a href="https://studio.d-id.com" target="_blank" rel="noopener">studio.d-id.com</a>, copie a API Key e cole aqui.<div class="ev-dupla" style="margin-top:6px;"><input id="evia-did" type="password" placeholder="API Key do D-ID"><button class="ev-btn" onclick="evConectarDid()">Conectar</button></div>Sem o D-ID, o vídeo é montado com a foto animada + textos e legendas (sem voz).</div>`}` : ''}
     ${EVIA.modo === 'avatar' && prov.configurado ? '' : `<div class="ev-narr">
-      <label class="ev-narr-op"><input type="checkbox" ${EVIA.narrar ? 'checked' : ''} onchange="EVIA.narrar=this.checked; evAbrirCriarVideoIa()"> <b>🎙️ Com voz narrando o vídeo</b> — locução profissional da IA lendo o roteiro, com a legenda sincronizada palavra por palavra</label>
+      <label class="ev-narr-op"><input type="checkbox" ${EVIA.narrar ? 'checked' : ''} onchange="if(this.checked && !evPrecisa('voz_ia')) { this.checked=false; return; } EVIA.narrar=this.checked; evAbrirCriarVideoIa()"> <b>🎙️ Com voz narrando o vídeo</b> — locução profissional da IA lendo o roteiro, com a legenda sincronizada palavra por palavra</label>
       ${EVIA.narrar ? `<div class="ev-dupla" style="align-items:flex-end;">
         <label class="ev-campo" style="flex:2;margin:0;"><span>Voz</span><select onchange="EVIA.vozNarr=this.value; EVIA.escolheuVoz=true">${EVIA.vozes.map(v => `<option value="${escapeHtml(v.id)}" ${EVIA.vozNarr === v.id ? 'selected' : ''}>${escapeHtml(v.nome)}${v.provedor && !/grátis/.test(v.provedor) ? ' · ' + escapeHtml(v.provedor) : ''}</option>`).join('')}</select></label>
         <label class="ev-campo" style="flex:1;margin:0;"><span>Ritmo</span><select onchange="EVIA.velNarr=Number(this.value)">${[[-8, 'Calmo'], [0, 'Natural'], [8, 'Dinâmico'], [18, 'Rápido (Reels)']].map(([v, r]) => `<option value="${v}" ${EVIA.velNarr === v ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
@@ -23206,6 +23281,7 @@ Agora me conta: quantas vezes você já começou um projeto animado e parou no m
 Números ajudam: um por cento melhor por dia, em um ano, vira um resultado gigante. Então bora? Se esse conteúdo fez sentido, salva, compartilha com quem precisa ouvir e me segue para mais.`;
 const EVVOZ = { takes: [], rec: null, stream: null, ini: 0, timer: null };
 async function evTreinarMinhaVoz() {
+  if (!evPrecisa('voz_ia')) return;
   let info = {}; try { info = await api('/api/admin/estudio/minha-voz'); } catch (e) { return mostrarToast(e.message, true); }
   EVVOZ.info = info;
   if (!info.elevenlabs) return eaModal(`<h3>🎙️ A IA aprender a sua voz</h3>
@@ -23519,6 +23595,7 @@ function evCadeiaVoz(ac, entrada, saida) {
 // ---------- Teleprompter: roteiro na tela e gravação pelo celular ----------
 function evRoteiroComoTexto(r) { return (r && r.cenas || []).map(c => String(c.fala || '').trim()).filter(Boolean).join('\n\n') + (r && r.cta ? '\n\n' + r.cta : ''); }
 async function evAbrirTeleprompter() {
+  if (!evPrecisa('gravadora')) return;
   const aula = ES.p.tipo === 'aula', d = ES.p.dados;
   ES.roteiroTp = d.roteiro || ES.roteiroTp || (ES.ultimoRoteiro ? evRoteiroComoTexto(ES.ultimoRoteiro) : '');
   const ritmo = aula ? 135 : 150;
@@ -23692,6 +23769,7 @@ function evBlocosLegenda(pal) {
   return blocos;
 }
 async function evLegendasDaFala(silencioso) {
+  if (!evPrecisa('legendas_auto')) return;
   const d = ES.p.dados;
   const medias = [...new Set(d.clips.map(c => c.midia))].map(evMidia).filter(m => m && m.tipo === 'video');
   if (!medias.length) { if (!silencioso) mostrarToast('Coloque na linha do tempo o vídeo em que você fala.', true); return false; }
@@ -23725,6 +23803,7 @@ function evFrasesDaFala(pal) {
   fechar(); return frases;
 }
 async function evAbrirEdicaoCompleta() {
+  if (!evPrecisa('ia')) return;
   const d = ES.p.dados, videos = d.midias.filter(m => m.tipo === 'video');
   if (!d.midias.some(m => m.tipo !== 'audio')) return mostrarToast('Suba seus vídeos e fotos em 🎞️ Mídia primeiro.', true);
   let tr = false, ia = false; tr = await evTranscricaoConfigurada(); ia = ES.p.iaAtiva !== undefined ? !!ES.p.iaAtiva : false; if (!ia && ESTADO.usuario.role === 'admin') { try { ia = !!(await api('/api/admin/treinamentos-mt-config')).iaAtiva; } catch (e) {} }
@@ -24043,7 +24122,7 @@ function eaLimTxt(v) { return v === undefined || v === null || v === '' ? 'ilimi
 async function evDesenharAcessos(corpo) {
   if (ESTADO.usuario.role !== 'admin') return evDesenharMinhaConta(corpo);
   const d = EA.dados = await api('/api/admin/estudio-acessos'), planoNome = id => (d.planos.find(p => p.id === id) || {}).nome || '—';
-  const ativos = d.acessos.filter(a => a.ativo), receita = ativos.reduce((t, a) => t + Number((d.planos.find(p => p.id === a.estudio_plano_id) || {}).preco || 0), 0);
+  const ativos = d.acessos.filter(a => a.ativo), receita = ativos.reduce((t, a) => t + Number(a.estudio_preco !== null && a.estudio_preco !== undefined ? a.estudio_preco : (d.planos.find(p => p.id === a.estudio_plano_id) || {}).preco || 0), 0);
   const vencendo = ativos.filter(a => a.estudio_validade && new Date(a.estudio_validade) - Date.now() < 7 * 86400000).length;
   const kpi = (n, r, c) => `<div class="ea-kpi"><b style="color:${c}">${n}</b><span>${r}</span></div>`;
   corpo.innerHTML = `<div class="ea">
@@ -24055,32 +24134,60 @@ async function evDesenharAcessos(corpo) {
     ${d.acessos.length ? `<div class="ea-lista">${d.acessos.map(a => { const st = eaStatus(a); return `<div class="ea-item">
       <div class="ea-av">${escapeHtml((a.name || '?').trim()[0] || '?').toUpperCase()}</div>
       <div class="ea-info"><b>${escapeHtml(a.name)}</b><small>${escapeHtml(a.email)}${a.estudio_telefone ? ' · ' + escapeHtml(a.estudio_telefone) : ''}</small>
-        <small>Plano <b>${escapeHtml(planoNome(a.estudio_plano_id))}</b> · até ${fmtDataEA(a.estudio_validade)} · ${a.projetos} projetos · este mês: ${a.uso.exportacoes || 0} vídeos, ${a.uso.ia || 0} IA, ${a.uso.imagens_ia || 0} imagens</small></div>
+        <small>Plano <b>${escapeHtml(planoNome(a.estudio_plano_id))}</b>${a.recursos ? ' (sob medida)' : ''}${a.estudio_preco !== null && a.estudio_preco !== undefined ? ' · ' + fmtReal(a.estudio_preco) + '/mês' : ''} · até ${fmtDataEA(a.estudio_validade)} · ${a.projetos} projetos · este mês: ${a.uso.exportacoes || 0} vídeos, ${a.uso.ia || 0} IA, ${a.uso.imagens_ia || 0} imagens</small></div>
       <span class="ea-st" style="background:${st[1]}">${st[0]}</span>
       <div class="ea-acoes"><button onclick="eaEditar(${a.id})" title="Editar">✏️</button><button onclick="eaRenovar(${a.id}, 30)" title="Liberar +30 dias">+30d</button><button onclick="eaCobrar(${a.id})" title="Gerar link de pagamento">💳</button></div></div>`; }).join('')}</div>` : '<div class="ea-vazio">Nenhum acesso ainda. Clique em <b>＋ Novo acesso</b> para criar o primeiro cliente do Estúdio.</div>'}
-    <div class="ea-titulo2"><h3>Planos</h3><button class="ea-bt" onclick="eaEditarPlano()">＋ Novo plano</button></div>
+    <div class="ea-titulo2"><h3>Planos</h3><div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="ea-bt" onclick="eaPrecosFunc()">💲 Preço por funcionalidade</button><button class="ea-bt" onclick="eaEditarPlano()">＋ Novo plano</button></div></div>
     <div class="ea-planos">${d.planos.map(p => `<div class="ea-plano ${p.ativo ? '' : 'off'}"><div class="ea-plano-cab"><b>${escapeHtml(p.nome)}</b><span>${fmtReal(p.preco)}<small>/mês</small></span></div>
-      <p>${escapeHtml(p.descricao || '')}</p><ul>${Object.entries(d.limites).map(([k, r]) => `<li><span>${r}</span><b>${eaLimTxt(p.limites[k])}</b></li>`).join('')}</ul>
+      <p>${escapeHtml(p.descricao || '')}</p><div class="ea-tags">${Object.entries(d.funcionalidades).map(([k, f]) => `<span class="${p.recursos.includes(k) ? 'on' : 'off'}">${p.recursos.includes(k) ? '✓' : '✕'} ${f.nome}</span>`).join('')}</div>
+      <details><summary>Limites por mês</summary><ul>${Object.entries(d.limites).map(([k, r]) => `<li><span>${r}</span><b>${eaLimTxt(p.limites[k])}</b></li>`).join('')}</ul></details>
       <button class="ea-bt" onclick="eaEditarPlano(${p.id})">✏️ Editar plano</button>${p.ativo ? '' : '<em>desativado</em>'}</div>`).join('')}</div>
     ${d.pagamentos.length ? `<h3>Pagamentos</h3><div class="ea-pags">${d.pagamentos.slice(0, 30).map(g => { const a = d.acessos.find(x => x.id === g.user_id) || {}; return `<div class="ea-pag"><span>${new Date(g.created_at + 'Z').toLocaleDateString('pt-BR')}</span><b>${escapeHtml(a.name || 'Acesso ' + g.user_id)}</b><span>${escapeHtml(planoNome(g.plano_id))} · ${g.meses} ${g.meses > 1 ? 'meses' : 'mês'}</span><b>${fmtReal(g.valor)}</b><span class="ea-st" style="background:${g.status === 'pago' ? '#16a34a' : '#7c3aed'}">${g.status === 'pago' ? 'Pago' : 'Pendente'}</span>${g.status === 'pago' ? '' : `<button class="ea-bt mini" onclick="eaConfirmarPag(${g.id})">Confirmar recebido</button>${g.link ? `<button class="ea-bt mini" onclick="navigator.clipboard.writeText('${escapeHtml(g.link)}').then(()=>mostrarToast('Link copiado!'))">Copiar link</button>` : ''}`}</div>`; }).join('')}</div>` : ''}
   </div>`;
 }
+function eaHtmlRecursos(sel, idPreco) {
+  const F = EA.dados.funcionalidades;
+  return `<div class="ea-recursos">${Object.entries(F).map(([k, f]) => `<label class="ea-rec ${f.principal ? 'principal' : ''}"><input type="checkbox" data-rec="${k}" ${sel.includes(k) ? 'checked' : ''} onchange="eaSomarRecursos('${idPreco || ''}')"><span><b>${f.nome}${f.principal ? ' <em>principal</em>' : ''}</b><small>${escapeHtml(f.desc)}</small></span><i>${fmtReal(f.preco)}</i></label>`).join('')}</div>
+    <div class="ea-soma">Soma das funcionalidades: <b id="ea-soma">${fmtReal(eaSoma(sel))}</b>/mês ${idPreco ? `<button class="ea-bt mini" onclick="document.getElementById('${idPreco}').value=eaSoma(eaRecursosMarcados()).toFixed(2)">usar este valor</button>` : ''}</div>`;
+}
+function eaSoma(l) { const F = EA.dados.funcionalidades; return (l || []).reduce((t, k) => t + Number((F[k] || {}).preco || 0), 0); }
+function eaRecursosMarcados() { return Array.from(document.querySelectorAll('[data-rec]')).filter(i => i.checked).map(i => i.dataset.rec); }
+function eaSomarRecursos(idPreco) { const e = document.getElementById('ea-soma'); if (e) e.textContent = fmtReal(eaSoma(eaRecursosMarcados())); if (idPreco && EA.precoAuto) { const i = document.getElementById(idPreco); if (i) i.value = eaSoma(eaRecursosMarcados()).toFixed(2); } }
+function eaPlanoEscolhido(sel) { const p = EA.dados.planos.find(x => x.id === Number(sel.value)); if (!p) return; document.querySelectorAll('[data-rec]').forEach(i => { i.checked = p.recursos.includes(i.dataset.rec); }); const pr = document.getElementById('ea-preco'); if (pr) pr.value = Number(p.preco).toFixed(2); eaSomarRecursos(); }
+async function eaPrecosFunc() {
+  const F = EA.dados.funcionalidades;
+  eaModal(`<h3>💲 Preço de cada funcionalidade</h3><p class="ea-sub">Esses valores servem para montar planos e pacotes sob medida (a soma aparece na hora de criar o plano ou o acesso).</p>
+    ${Object.entries(F).map(([k, f]) => `<label>${f.nome}<input type="number" step="0.01" min="0" data-preco="${k}" value="${Number(f.preco).toFixed(2)}"></label>`).join('')}
+    <div class="ea-linha"><button class="ea-bt" onclick="eaModal('')">Cancelar</button><button class="ea-bt pri" onclick="eaSalvarPrecosFunc()">Salvar preços</button></div>`);
+}
+async function eaSalvarPrecosFunc() { const precos = {}; document.querySelectorAll('[data-preco]').forEach(i => { precos[i.dataset.preco] = Number(i.value); }); try { const r = await api('/api/admin/estudio-funcionalidades', { method: 'PUT', body: JSON.stringify({ precos }) }); eaModal(''); mostrarToast(r.message); evDesenharAcessos(document.getElementById('ev-pag-corpo')); } catch (e) { mostrarToast(e.message, true); } }
 function eaOpcoesPlano(sel) { return EA.dados.planos.filter(p => p.ativo || p.id === sel).map(p => `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${escapeHtml(p.nome)} — ${fmtReal(p.preco)}/mês</option>`).join(''); }
 function eaNovoAcesso() {
+  const p0 = EA.dados.planos.find(p => p.ativo) || EA.dados.planos[0] || { recursos: [], preco: 0 };
   eaModal(`<h3>＋ Novo acesso ao Estúdio</h3>
     <label>Nome do cliente<input id="ea-nome" placeholder="Nome ou empresa"></label>
     <label>E-mail (será o login)<input id="ea-email" type="email" placeholder="cliente@email.com"></label>
     <label>WhatsApp (opcional)<input id="ea-tel" placeholder="(11) 99999-9999"></label>
-    <label>Plano<select id="ea-plano">${eaOpcoesPlano((EA.dados.planos.find(p => p.ativo) || {}).id)}</select></label>
+    <label>Plano base<select id="ea-plano" onchange="eaPlanoEscolhido(this)">${eaOpcoesPlano(p0.id)}</select></label>
+    <div class="ea-sec">O que será liberado para este cliente</div>
+    ${eaHtmlRecursos(p0.recursos, 'ea-preco')}
+    <label>Valor mensal deste cliente (R$)<input id="ea-preco" type="number" step="0.01" min="0" value="${Number(p0.preco || 0).toFixed(2)}"></label>
     <label>Liberar agora por<select id="ea-dias"><option value="30">30 dias (já pago)</option><option value="7">7 dias (teste grátis)</option><option value="90">90 dias</option><option value="365">1 ano</option><option value="0">Sem vencimento</option><option value="pendente">Não liberar — aguardar pagamento</option></select></label>
     <label>Senha (deixe vazio para gerar uma)<input id="ea-senha" placeholder="gerar automaticamente"></label>
     <label>Observações<input id="ea-obs" placeholder="Ex.: indicação, combinado especial…"></label>
     <div class="ea-linha"><button class="ea-bt" onclick="eaModal('')">Cancelar</button><button class="ea-bt pri" onclick="eaCriar()">Criar acesso</button></div>`);
 }
+function eaPacoteDoForm() {
+  const p = EA.dados.planos.find(x => x.id === Number(document.getElementById('ea-plano').value)) || { recursos: [], preco: 0 };
+  const rec = eaRecursosMarcados(), preco = Number(document.getElementById('ea-preco').value);
+  const igual = rec.length === p.recursos.length && rec.every(k => p.recursos.includes(k));
+  return { recursos: igual ? null : rec, preco: Math.abs(preco - Number(p.preco)) < 0.005 ? null : preco };
+}
 async function eaCriar() {
   const v = id => document.getElementById(id).value.trim(), dias = v('ea-dias');
   try {
-    const r = await api('/api/admin/estudio-acessos', { method: 'POST', body: JSON.stringify({ nome: v('ea-nome'), email: v('ea-email'), telefone: v('ea-tel'), plano_id: Number(v('ea-plano')), dias: dias === 'pendente' ? 0 : Number(dias), status: dias === 'pendente' ? 'pendente' : 'ativo', senha: v('ea-senha'), obs: v('ea-obs') }) });
+    const pac = eaPacoteDoForm(); if (!eaRecursosMarcados().length) return mostrarToast('Marque pelo menos uma funcionalidade.', true);
+    const r = await api('/api/admin/estudio-acessos', { method: 'POST', body: JSON.stringify(Object.assign({ nome: v('ea-nome'), email: v('ea-email'), telefone: v('ea-tel'), plano_id: Number(v('ea-plano')), dias: dias === 'pendente' ? 0 : Number(dias), status: dias === 'pendente' ? 'pendente' : 'ativo', senha: v('ea-senha'), obs: v('ea-obs') }, pac)) });
     eaCredenciais(v('ea-nome'), r.email, r.senha, v('ea-tel'), dias === 'pendente' ? r.id : null);
     evDesenharAcessos(document.getElementById('ev-pag-corpo'));
   } catch (e) { mostrarToast(e.message, true); }
@@ -24097,7 +24204,10 @@ function eaEditar(id) {
   eaModal(`<h3>✏️ ${escapeHtml(a.name)}</h3><small>${escapeHtml(a.email)}</small>
     <label>Nome<input id="ea-nome" value="${escapeHtml(a.name)}"></label>
     <label>WhatsApp<input id="ea-tel" value="${escapeHtml(a.estudio_telefone || '')}"></label>
-    <label>Plano<select id="ea-plano">${eaOpcoesPlano(a.estudio_plano_id)}</select></label>
+    <label>Plano base<select id="ea-plano" onchange="eaPlanoEscolhido(this)">${eaOpcoesPlano(a.estudio_plano_id)}</select></label>
+    <div class="ea-sec">O que está liberado</div>
+    ${eaHtmlRecursos(a.recursos || (EA.dados.planos.find(p => p.id === a.estudio_plano_id) || { recursos: [] }).recursos, 'ea-preco')}
+    <label>Valor mensal deste cliente (R$)<input id="ea-preco" type="number" step="0.01" min="0" value="${Number(a.estudio_preco !== null && a.estudio_preco !== undefined ? a.estudio_preco : (EA.dados.planos.find(p => p.id === a.estudio_plano_id) || {}).preco || 0).toFixed(2)}"></label>
     <label>Situação<select id="ea-status">${[['ativo', 'Ativo'], ['pendente', 'Aguardando pagamento'], ['bloqueado', 'Bloqueado'], ['cancelado', 'Cancelado']].map(([k, r]) => `<option value="${k}" ${a.estudio_status === k ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
     <label>Acesso válido até<input id="ea-val" type="date" value="${a.estudio_validade ? new Date(a.estudio_validade).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }) : ''}"></label>
     <label>Observações<input id="ea-obs" value="${escapeHtml(a.estudio_obs || '')}"></label>
@@ -24107,7 +24217,7 @@ function eaEditar(id) {
 }
 async function eaSalvar(id, extra) {
   const v = k => (document.getElementById(k) || {}).value;
-  const corpo = extra || { nome: v('ea-nome'), telefone: v('ea-tel'), plano_id: Number(v('ea-plano')), status: v('ea-status'), validade: v('ea-val') || '', obs: v('ea-obs') };
+  const corpo = extra || Object.assign({ nome: v('ea-nome'), telefone: v('ea-tel'), plano_id: Number(v('ea-plano')), status: v('ea-status'), validade: v('ea-val') || '', obs: v('ea-obs') }, eaPacoteDoForm());
   try {
     const r = await api('/api/admin/estudio-acessos/' + id, { method: 'PUT', body: JSON.stringify(corpo) });
     const a = EA.dados.acessos.find(x => x.id === id);
@@ -24135,10 +24245,12 @@ async function eaGerarCobranca(id) {
 }
 async function eaConfirmarPag(id) { if (!confirm('Confirmar que este pagamento foi recebido? O acesso será liberado.')) return; try { const r = await api('/api/admin/estudio-pagamentos/' + id + '/confirmar', { method: 'POST' }); mostrarToast(r.message); evDesenharAcessos(document.getElementById('ev-pag-corpo')); } catch (e) { mostrarToast(e.message, true); } }
 function eaEditarPlano(id) {
-  const p = id ? EA.dados.planos.find(x => x.id === id) : { nome: '', descricao: '', preco: 0, limites: {}, ativo: 1, ordem: EA.dados.planos.length };
+  const p = id ? EA.dados.planos.find(x => x.id === id) : { nome: '', descricao: '', preco: 69.8, limites: {}, ativo: 1, ordem: EA.dados.planos.length, recursos: ['gravadora', 'editor'] };
   eaModal(`<h3>${id ? '✏️ Editar plano' : '＋ Novo plano'}</h3>
     <label>Nome<input id="ep-nome" value="${escapeHtml(p.nome)}"></label>
     <label>Descrição<input id="ep-desc" value="${escapeHtml(p.descricao || '')}"></label>
+    <div class="ea-sec">O que este plano libera</div>
+    ${eaHtmlRecursos(p.recursos || Object.keys(EA.dados.funcionalidades), 'ep-preco')}
     <label>Preço por mês (R$)<input id="ep-preco" type="number" step="0.01" min="0" value="${p.preco}"></label>
     <p class="ea-sub">Limites por mês — deixe <b>vazio</b> para ilimitado e coloque <b>0</b> para não incluir no plano.</p>
     <div class="ea-lims">${Object.entries(EA.dados.limites).map(([k, r]) => `<label>${r}<input type="number" min="0" data-lim="${k}" value="${p.limites[k] !== undefined ? p.limites[k] : ''}" placeholder="ilimitado"></label>`).join('')}</div>
@@ -24148,7 +24260,7 @@ function eaEditarPlano(id) {
 async function eaSalvarPlano(id) {
   const limites = {}; document.querySelectorAll('[data-lim]').forEach(i => { if (i.value !== '') limites[i.dataset.lim] = Number(i.value); });
   try {
-    const r = await api('/api/admin/estudio-planos', { method: 'POST', body: JSON.stringify({ id: id || undefined, nome: document.getElementById('ep-nome').value, descricao: document.getElementById('ep-desc').value, preco: Number(document.getElementById('ep-preco').value), limites, ativo: document.getElementById('ep-ativo').checked }) });
+    const r = await api('/api/admin/estudio-planos', { method: 'POST', body: JSON.stringify({ id: id || undefined, nome: document.getElementById('ep-nome').value, descricao: document.getElementById('ep-desc').value, preco: Number(document.getElementById('ep-preco').value), limites, recursos: eaRecursosMarcados(), ativo: document.getElementById('ep-ativo').checked }) });
     eaModal(''); mostrarToast(r.message); evDesenharAcessos(document.getElementById('ev-pag-corpo'));
   } catch (e) { mostrarToast(e.message, true); }
 }
@@ -24159,6 +24271,8 @@ async function evDesenharMinhaConta(corpo) {
   corpo.innerHTML = `<div class="ea">
     <div class="ea-conta"><div><small>Seu plano</small><h2>${escapeHtml(c.plano.nome || '—')}</h2><span class="ea-st" style="background:${st[1]}">${st[0]}</span> <small>${c.validade ? 'válido até ' + fmtDataEA(c.validade) : ''}</small></div>
       ${c.pagamentoOnline ? `<button class="ea-bt pri" onclick="eaPagarCliente()">💳 ${c.ativo ? 'Renovar / mudar de plano' : 'Pagar e liberar acesso'}</button>` : ''}</div>
+    <h3>O que está liberado para você</h3>
+    <div class="ea-tags grande">${Object.entries(c.funcionalidades || {}).map(([k, f]) => `<span class="${(c.recursos || []).includes(k) ? 'on' : 'off'}" title="${escapeHtml(f.desc)}">${(c.recursos || []).includes(k) ? '✓' : '🔒'} ${f.nome}</span>`).join('')}</div>
     <h3>Uso deste mês</h3>
     <div class="ea-barras">${Object.entries(c.rotulos).map(([k, r]) => { const lim = c.plano.limites[k], uso = c.uso[k] || 0; if (lim === 0) return `<div class="ea-barra off"><span>${r}</span><b>não incluso no plano</b></div>`; const pct = lim === undefined || lim === null ? 0 : Math.min(100, uso / lim * 100); return `<div class="ea-barra"><span>${r}</span><b>${uso}${lim === undefined || lim === null ? ' · ilimitado' : ' de ' + lim}</b>${lim === undefined || lim === null ? '' : `<i><em style="width:${pct}%;background:${pct > 85 ? '#dc2626' : '#16a34a'}"></em></i>`}</div>`; }).join('')}</div>
     <h3>Planos</h3><div class="ea-planos">${c.planos.map(p => `<div class="ea-plano ${p.id === c.plano.id ? 'atual' : ''}"><div class="ea-plano-cab"><b>${escapeHtml(p.nome)}</b><span>${fmtReal(p.preco)}<small>/mês</small></span></div><p>${escapeHtml(p.descricao || '')}</p>
@@ -24172,6 +24286,10 @@ async function eaPagarCliente(planoId) {
   try { const r = await api('/api/estudio/pagar', { method: 'POST', body: JSON.stringify({ plano_id: planoId, meses }) }); mostrarToast('Abrindo o pagamento… depois de aprovado, o acesso é liberado sozinho.'); location.href = r.link; }
   catch (e) { mostrarToast(e.message, true); }
 }
+// O que o cliente tem liberado (o Master tem tudo)
+async function evCarregarRecursos() { if (!ESTADO.usuario || ESTADO.usuario.role !== 'estudio') { EVL.recursos = null; return; } try { const c = await api('/api/estudio/minha-conta'); EVL.recursos = c.recursos || []; EVL.funcs = c.funcionalidades || {}; } catch (e) { EVL.recursos = EVL.recursos || null; } }
+function evTem(k) { return !ESTADO.usuario || ESTADO.usuario.role !== 'estudio' || !Array.isArray(EVL.recursos) || EVL.recursos.includes(k); }
+function evPrecisa(k) { if (evTem(k)) return true; const f = (EVL.funcs || {})[k] || { nome: k }; evAvisoPlano({ limitePlano: true, error: `${f.nome} não está no seu plano${f.preco ? ' (' + fmtReal(f.preco) + '/mês)' : ''}. Fale com a Impulsionar para liberar.` }); return false; }
 // Aviso quando o plano está vencido ou um limite acabou
 function evAvisoPlano(d) {
   if (EA.avisando && Date.now() - EA.avisando < 4000) return; EA.avisando = Date.now();
@@ -24255,8 +24373,7 @@ async function renderEstudioVideo(aba) {
       if (EVL.aba === 'projetos' || EVL.aba === 'agenda') EVL.lista = await api('/api/admin/estudio/projetos');
       if (EVL.aba === 'projetos') evDesenharHomeCelular(corpo);
       else if (EVL.aba === 'agenda') evDesenharAgenda(corpo);
-      else if (EVL.aba === 'radar') await evDesenharRadar(corpo);
-      else if (EVL.aba === 'radar') await evDesenharRadar(corpo);
+      else if (EVL.aba === 'radar') { if (!evTem('radar')) { corpo.innerHTML = '<div class="msg-vazio">📡 O Radar Viral não está no seu plano. Veja em 💳 Meu plano.</div>'; evPrecisa('radar'); } else await evDesenharRadar(corpo); }
     else if (EVL.aba === 'agente') await evDesenharAgente(corpo);
       else if (EVL.aba === 'instagram') await evDesenharInstagram(corpo);
       else if (EVL.aba === 'acessos') await evDesenharAcessos(corpo);
