@@ -1400,6 +1400,10 @@
   .eh-acao.eh-radar { grid-column:1 / -1; background:linear-gradient(135deg,#1e1b4b,#3b0d1c); border-color:#4c1d95; }
   @media (max-width: 600px) { .evr-dupla { grid-template-columns:1fr; } .evr-ideias, .evr-tend { grid-template-columns:1fr; } }
   .ev-so-pequeno, .ev-sheet-x, .ev-so-cel { display:none !important; }
+  #ev-canvas { touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  .ev-txtbar { position:absolute; left:50%; top:8px; transform:translateX(-50%); display:flex; gap:6px; z-index:8; background:rgba(11,19,41,.92); border:1px solid rgba(255,255,255,.18); border-radius:22px; padding:5px; box-shadow:0 8px 24px rgba(0,0,0,.5); max-width:calc(100% - 16px); overflow-x:auto; }
+  .ev-txtbar button { flex:0 0 auto; background:rgba(255,255,255,.08); color:#fff; border:none; border-radius:16px; padding:8px 11px; font-size:13px; font-weight:700; white-space:nowrap; }
+  .ev-txtbar button.pri { background:#dc4c4c; } .ev-txtbar button.on { background:#2563eb; }
   .ev-linha-barra button { display:inline-flex; align-items:center; gap:5px; } .ev-linha-barra button i { font-style:normal; }
   .ev-play-acao { background:var(--e-sup2) !important; border:1px solid var(--e-bd) !important; border-radius:18px !important; padding:6px 10px !important; font-size:12.5px !important; font-weight:700; color:var(--e-tx) !important; } .ev-play-acao.grava { background:#dc2626 !important; border-color:#dc2626 !important; color:#fff !important; }
   @media (max-width: 1100px) { .ev-corpo { grid-template-columns:280px minmax(0,1fr); } .ev-dir { display:none; }
@@ -1416,7 +1420,8 @@
     .ev-abas button { flex:1 0 auto; padding:6px 10px; border-left:none; border-top:3px solid transparent; font-size:10px; } .ev-abas button.on { border-top-color:var(--e-vm); } .ev-abas button span { font-size:17px; }
     .ev-painel { display:none; position:fixed; left:0; right:0; bottom:0; height:64vh; z-index:40; background:var(--e-sup); border-radius:16px 16px 0 0; box-shadow:0 -10px 40px rgba(0,0,0,.6); padding:44px 14px 20px; }
     #ev-editor.sheet-painel .ev-painel { display:block; } #ev-editor.sheet-painel .ev-sheet-x.painel { display:flex !important; }
-    #ev-editor.sheet-props .ev-dir { top:auto; left:0; width:100%; height:64vh; border-radius:16px 16px 0 0; }
+    #ev-editor.sheet-props .ev-dir { top:auto; left:0; width:100%; height:48vh; border-radius:16px 16px 0 0; }
+    #ev-editor.sheet-props .ev-sheet-x.props { top:auto !important; bottom:calc(48vh - 40px) !important; }
     .ev-sheet-x.painel { top:auto; bottom:calc(64vh - 40px); }
     .ev-palco { padding:6px; } .ev-play { gap:6px; padding:4px 6px; } .ev-chk { margin-left:4px; }
     .ev-so-cel { display:inline-flex !important; } .ev-so-pc { display:none !important; }
@@ -21022,7 +21027,7 @@ function evTocar() {
   evAudioCtx();
   if (ES.t >= evTotal() - 0.05) ES.t = 0;
   ES.tocando = true; ES.t0 = performance.now() - ES.t * 1000;
-  evAtualizarBotaoPlay();
+  evAtualizarBotaoPlay(); evBarraTexto();
   const loop = () => {
     if (!ES || !ES.tocando) return;
     const t = (performance.now() - ES.t0) / 1000, tot = evTotal();
@@ -21055,7 +21060,7 @@ function evPausar() {
   ES.tocando = false; cancelAnimationFrame(ES.raf);
   Object.values(ES.els || {}).forEach(el => { if (el.pause) el.pause(); });
   Object.values(ES.aud || {}).forEach(el => el.pause());
-  evAtualizarBotaoPlay();
+  evAtualizarBotaoPlay(); evBarraTexto();
   if (ES.leve && !ES.exportando) setTimeout(() => { if (ES && !ES.tocando) evDesenhar(); }, 30); // parado: volta para a qualidade completa
 }
 function evIrPara(t) {
@@ -21288,7 +21293,7 @@ async function evAbrirEditor(id) {
           <button class="ev-play-btn" id="ev-play" onclick="evTocar()" title="Reproduzir (espaço)">▶</button>
           <span class="ev-tempo"><b id="ev-t">00:00.0</b> / <span id="ev-tt">00:00.0</span></span>
           <label class="ev-chk"><input type="checkbox" ${ES.zonaSegura ? 'checked' : ''} onchange="ES.zonaSegura=this.checked; evDesenhar()"> Área segura</label>
-"          <button onclick="evTelaCheia()" title="Ver em tela cheia (F)" style="font-size:15px;">⛶</button>
+          <button onclick="evTelaCheia()" title="Ver em tela cheia (F)" style="font-size:15px;">⛶</button>
           <button class="ev-previa ev-so-pc" id="ev-previa" onclick="evAlternarPrevia()" title="Prévia leve: roda liso em qualquer computador (o vídeo exportado sai sempre em qualidade máxima)">${ES.leve ? '⚡ Prévia leve' : '🎞️ Prévia máxima'}</button>
           <button class="ev-so-cel ev-play-acao" onclick="document.getElementById('ev-galeria').click()" title="Galeria">＋🖼️</button>
           <button class="ev-so-cel ev-play-acao grava" onclick="evAbrirCamera()" title="Gravar">● Gravar</button>
@@ -21395,6 +21400,29 @@ function evMudarFormato(f) {
   ES.ctx = ES.canvas.getContext('2d'); evAjustarPalco(); evMudou();
 }
 
+// ---------- Celular: barra flutuante para editar a legenda/texto selecionado sem sair do vídeo ----------
+function evCelularTela() { return window.matchMedia('(max-width: 1100px)').matches || evCelularAqui(); }
+function evBarraTexto() {
+  const pal = document.getElementById('ev-palco'); if (!pal || !ES) return;
+  let bar = document.getElementById('ev-txtbar');
+  const x = ES.sel && ES.sel.tipo === 'texto' ? evItemSel() : null;
+  if (!x || !evCelularTela() || ES.tocando || ES.telaCheia) { if (bar) bar.remove(); return; }
+  if (!bar) { bar = document.createElement('div'); bar.id = 'ev-txtbar'; bar.className = 'ev-txtbar'; bar.addEventListener('pointerdown', e => e.stopPropagation()); pal.appendChild(bar); }
+  const leg = x.estilo === 'legenda', juntas = leg && evLegendasJuntasAtivo();
+  bar.innerHTML = `<button class="pri" onclick="evEditarTextoCel()">✏️ Editar</button>
+    <button onclick="evMoverTexto(-0.03)" title="Subir">⬆️</button><button onclick="evMoverTexto(0.03)" title="Descer">⬇️</button>
+    <button onclick="evTamTexto(-6)" title="Diminuir">A−</button><button onclick="evTamTexto(6)" title="Aumentar">A+</button>
+    ${leg ? `<button class="${juntas ? 'on' : ''}" onclick="evJuntasCel()" title="Ajustar todas as legendas juntas">🔗 ${juntas ? 'Todas' : 'Só esta'}</button>` : ''}
+    <button onclick="evSelecionar(null)" title="Pronto">✓</button>`;
+}
+function evMoverTexto(d) { const x = evItemSel(); if (!x) return; const e = Object.assign({}, EV_ESTILOS[x.estilo] || {}, x); evSet('y', Math.max(0.04, Math.min(0.96, (e.y !== undefined ? e.y : 0.7) + d))); evMudou(false); }
+function evTamTexto(d) { const x = evItemSel(); if (!x) return; const e = Object.assign({}, EV_ESTILOS[x.estilo] || {}, x); evSet('tam', Math.max(24, Math.min(220, (e.tam || 60) + d))); evMudou(false); }
+function evJuntasCel() {
+  const t = evItemSel(); if (!t) return; const ex = ES.p.dados.extras; ex.legendasJuntas = !evLegendasJuntasAtivo();
+  if (ex.legendasJuntas) { ex.estiloLegenda = Object.fromEntries(EV_CHAVES_LEGENDA.filter(k => t[k] !== undefined).map(k => [k, t[k]])); evAplicarEstiloLegendas(); }
+  evMudou(); evDesenharProps(); evBarraTexto(); mostrarToast(ex.legendasJuntas ? '🔗 Agora todas as legendas acompanham esta.' : 'Só esta legenda será ajustada.');
+}
+function evEditarTextoCel() { evSheet('props'); setTimeout(() => { const t = document.getElementById('ev-prop-texto'); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } }, 120); }
 // ---------- Interação no canvas: selecionar e arrastar textos ----------
 function evLigarCanvas() {
   const cv = ES.canvas; let arr = null;
@@ -21406,14 +21434,17 @@ function evLigarCanvas() {
       evSelecionar('ovl', ovl.id); const r = evRetSobreposicao(ovl);
       arr = { ovl, dx: p.x - r.x, dy: p.y - r.y, mexeu: false }; cv.setPointerCapture(e.pointerId); return;
     }
-    const alvo = Object.entries(ES.caixas).reverse().find(([, b]) => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h);
+    const folga = e.pointerType === 'touch' ? ES.H * 0.035 : ES.H * 0.008; // no dedo, a área de toque da legenda é maior
+    const alvo = Object.entries(ES.caixas).reverse().find(([, b]) => p.x >= b.x - folga && p.x <= b.x + b.w + folga && p.y >= b.y - folga && p.y <= b.y + b.h + folga);
     if (alvo) {
       const x = ES.p.dados.textos.find(t => t.id === alvo[0]); if (!x) return;
       evSelecionar('texto', x.id);
       const est = Object.assign({}, EV_ESTILOS[x.estilo] || {}, x);
       arr = { x, dx: p.x - (est.x !== undefined ? est.x : 0.5) * ES.W, dy: p.y - (est.y !== undefined ? est.y : 0.5) * ES.H, mexeu: false };
-      cv.setPointerCapture(e.pointerId);
-    } else if (!ES.tocando) evTocar(); else evPausar();
+      if (ES.tocando) evPausar();
+      try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+    } else if (ES.sel && ES.sel.tipo === 'texto' && evCelularTela()) evSelecionar(null); // toque fora: solta a legenda
+    else if (!ES.tocando) evTocar(); else evPausar();
   });
   cv.addEventListener('pointermove', e => {
     if (!arr) return; const p = pos(e);
@@ -21423,7 +21454,8 @@ function evLigarCanvas() {
     evLegendasJuntas(arr.x, 'x', arr.x.x); evLegendasJuntas(arr.x, 'y', arr.x.y); // todas as legendas acompanham
     arr.mexeu = true; evDesenhar();
   });
-  cv.addEventListener('pointerup', () => { if (arr && arr.mexeu) { evMudou(false); evDesenharProps(); } arr = null; });
+  const soltar = () => { if (arr && arr.mexeu) { evMudou(false); evDesenharProps(); } arr = null; evBarraTexto(); };
+  cv.addEventListener('pointerup', soltar); cv.addEventListener('pointercancel', soltar);
 }
 function evTeclas(e) {
   if (!ES || ES.exportando) return;
@@ -21564,7 +21596,8 @@ function evPegarBloco(e, tipo, id) {
 function evSelecionar(tipo, id, semLinha) {
   ES.sel = tipo ? { tipo, id } : null;
   if (!semLinha) evDesenharLinha(); else document.querySelectorAll('.ev-bl').forEach(b => b.classList.toggle('sel', b.dataset.tipo === tipo && b.dataset.id === id));
-  evDesenharProps(); evDesenhar();
+  if (tipo === 'texto' && !ES.tocando) { const x = evItemSel(); if (x && (ES.t < x.ini || ES.t >= x.ini + x.dur)) { ES.t = x.ini + Math.min(0.15, x.dur / 2); evSincronizar(ES.t, false); evAtualizarCabeca(); } } // leva o vídeo até a legenda para ela aparecer na tela
+  evDesenharProps(); evDesenhar(); evBarraTexto();
 }
 const EV_CHAVES = { clip: 'clips', texto: 'textos', audio: 'audios', ovl: 'sobreposicoes' };
 function evLista(tipo) { const d = ES.p.dados, k = EV_CHAVES[tipo] || 'textos'; if (!Array.isArray(d[k])) d[k] = []; return d[k]; }
