@@ -1425,6 +1425,9 @@
   .ev-narr { margin-top:12px; padding:12px; border:1px solid var(--e-bd, #25325c); border-radius:12px; background:rgba(124,58,237,.08); } .ev-narr-op { display:flex !important; gap:8px; align-items:flex-start; margin:6px 0; font-size:13.5px; line-height:1.4; color:inherit; cursor:pointer; } .ev-narr-op input { margin-top:3px; flex-shrink:0; width:auto; } .ev-narr-op b { white-space:nowrap; }
   .ev-mus-lista { display:grid; gap:6px; margin-top:8px; max-height:340px; overflow-y:auto; } .ev-mus { display:flex; align-items:center; gap:8px; padding:7px; border:1px solid var(--e-bd, #25325c); border-radius:10px; }
   .ev-mus-play { width:34px; height:34px; border-radius:50%; border:none; background:#7c3aed; color:#fff; flex-shrink:0; cursor:pointer; } .ev-mus-info { flex:1; min-width:0; } .ev-mus-info b { display:block; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .ev-mus-info small { font-size:11px; opacity:.75; } .ev-mus .ev-btn { padding:6px 9px; font-size:12px; }
+  .ev-voz-texto { max-height:200px; overflow-y:auto; background:#0b1329; color:#fff; border-radius:12px; padding:14px; font-size:16px; line-height:1.5; margin:10px 0; }
+  .ev-voz-rec { display:flex; align-items:center; gap:10px; position:relative; padding-bottom:8px; } .ev-voz-rec i { position:absolute; left:0; bottom:0; height:4px; background:#16a34a; border-radius:3px; width:0; transition:width .1s; }
+  .ev-voz-takes { display:grid; gap:6px; margin-top:8px; } .ev-voz-takes > div { display:flex; align-items:center; gap:8px; } .ev-voz-takes audio { flex:1; height:34px; } .ev-voz-takes small { color:#64748b; }
   .ev-envio { font-size:12px; font-weight:700; color:#fff; background:#2563eb; border-radius:14px; padding:5px 10px; white-space:nowrap; } .ev-envio.prep { background:#7c3aed; }
   #ev-canvas { touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
   .ev-txtbar { position:absolute; left:50%; top:8px; transform:translateX(-50%); display:flex; gap:6px; z-index:8; background:rgba(11,19,41,.92); border:1px solid rgba(255,255,255,.18); border-radius:22px; padding:5px; box-shadow:0 8px 24px rgba(0,0,0,.5); max-width:calc(100% - 16px); overflow-x:auto; }
@@ -21719,6 +21722,7 @@ function evPainel(qual) {
     el.innerHTML = `<h4>Música e narração</h4>
       <label class="ev-up"><input type="file" multiple accept="audio/*" hidden onchange="evSubir(this.files)"><b>🎵 Subir música / áudio</b><small>MP3, WAV, M4A…</small></label>
       <button class="ev-btn" id="ev-btn-narrar" onclick="evNarrar()">🎙️ Gravar narração</button>
+      <button class="ev-btn ia" style="width:100%;margin-top:6px;" onclick="evTreinarMinhaVoz()">🧠 A IA aprender a minha voz</button>
       <h4 id="ev-mus-titulo">🌐 Músicas da internet</h4><div class="ev-sub">Músicas reais, livres para usar (Creative Commons). O crédito entra sozinho na legenda do post.</div>
       <div id="ev-musicas">${evHtmlMusicas()}</div>
       <h4>🎼 Trilhas geradas na hora</h4><div class="ev-sub">Simples, no tamanho exato do vídeo:</div>
@@ -23156,7 +23160,7 @@ let EVIA = { modo: 'avatar', avatar: null, voz: 'pt-BR-AntonioNeural' };
 async function evAbrirCriarVideoIa() {
   let av = [], prov = {}; try { [av, prov] = await Promise.all([api('/api/admin/estudio/avatares'), api('/api/admin/estudio/provedor-video')]); } catch (e) {}
   if (!EVIA.vozes) { try { EVIA.vozesInfo = await api('/api/admin/estudio/vozes'); EVIA.vozes = EVIA.vozesInfo.vozes; } catch (e) { EVIA.vozes = [{ id: 'pt-BR-AntonioNeural', nome: 'Antônio — masculina' }, { id: 'pt-BR-FranciscaNeural', nome: 'Francisca — feminina' }]; } }
-  if (EVIA.narrar === undefined) EVIA.narrar = true; if (!EVIA.vozNarr) EVIA.vozNarr = (EVIA.vozes[0] || {}).id; if (EVIA.velNarr === undefined) EVIA.velNarr = 8; if (EVIA.trilha === undefined) EVIA.trilha = true;
+  if (EVIA.narrar === undefined) EVIA.narrar = true; { const minha = EVIA.vozes.find(v => v.minha); if (!EVIA.vozNarr || (minha && !EVIA.escolheuVoz)) EVIA.vozNarr = (minha || EVIA.vozes[0] || {}).id; } if (EVIA.velNarr === undefined) EVIA.velNarr = 8; if (EVIA.trilha === undefined) EVIA.trilha = true;
   EVIA.avatares = av; EVIA.prov = prov; if (!EVIA.avatar && av[0]) EVIA.avatar = av[0].id;
   if (!prov.configurado) EVIA.modo = EVIA.modo === 'avatar' && av.length ? 'avatar' : EVIA.modo;
   const alvo = document.getElementById('ev-modal') || (() => { let ma = document.getElementById('modal-area'); if (!ma) { document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>'); ma = document.getElementById('modal-area'); } return ma; })();
@@ -23184,15 +23188,82 @@ async function evAbrirCriarVideoIa() {
     ${EVIA.modo === 'avatar' && prov.configurado ? '' : `<div class="ev-narr">
       <label class="ev-narr-op"><input type="checkbox" ${EVIA.narrar ? 'checked' : ''} onchange="EVIA.narrar=this.checked; evAbrirCriarVideoIa()"> <b>🎙️ Com voz narrando o vídeo</b> — locução profissional da IA lendo o roteiro, com a legenda sincronizada palavra por palavra</label>
       ${EVIA.narrar ? `<div class="ev-dupla" style="align-items:flex-end;">
-        <label class="ev-campo" style="flex:2;margin:0;"><span>Voz</span><select onchange="EVIA.vozNarr=this.value">${EVIA.vozes.map(v => `<option value="${escapeHtml(v.id)}" ${EVIA.vozNarr === v.id ? 'selected' : ''}>${escapeHtml(v.nome)}${v.provedor && !/grátis/.test(v.provedor) ? ' · ' + escapeHtml(v.provedor) : ''}</option>`).join('')}</select></label>
+        <label class="ev-campo" style="flex:2;margin:0;"><span>Voz</span><select onchange="EVIA.vozNarr=this.value; EVIA.escolheuVoz=true">${EVIA.vozes.map(v => `<option value="${escapeHtml(v.id)}" ${EVIA.vozNarr === v.id ? 'selected' : ''}>${escapeHtml(v.nome)}${v.provedor && !/grátis/.test(v.provedor) ? ' · ' + escapeHtml(v.provedor) : ''}</option>`).join('')}</select></label>
         <label class="ev-campo" style="flex:1;margin:0;"><span>Ritmo</span><select onchange="EVIA.velNarr=Number(this.value)">${[[-8, 'Calmo'], [0, 'Natural'], [8, 'Dinâmico'], [18, 'Rápido (Reels)']].map(([v, r]) => `<option value="${v}" ${EVIA.velNarr === v ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
         <button class="ev-btn" id="evia-ouvir" onclick="evOuvirVoz()">▶ Ouvir</button></div>
+        <button class="ev-btn ia" style="width:100%;margin:8px 0 2px;" onclick="evTreinarMinhaVoz()">🎙️ ${EVIA.vozes.some(v => v.minha) ? 'Treinar mais a minha voz (fica cada vez mais parecida)' : 'Usar a MINHA voz — a IA aprende com gravações suas'}</button>
         <label class="ev-narr-op"><input type="checkbox" ${EVIA.trilha ? 'checked' : ''} onchange="EVIA.trilha=this.checked"> 🎵 Música de fundo da internet, livre para usar (abaixa sozinha quando a voz fala)</label>
         ${EVIA.vozesInfo && EVIA.vozesInfo.master ? `<button class="ev-mini" onclick="evConfigVozes()">⚙️ Vozes premium (OpenAI / ElevenLabs)</button> <button class="ev-mini" onclick="evDiagnosticoVoz()">🩺 Testar serviço de voz</button>` : ''}` : `<label class="ev-narr-op"><input type="checkbox" ${EVIA.trilha ? 'checked' : ''} onchange="EVIA.trilha=this.checked"> 🎵 Música de fundo da internet, livre para usar</label>`}
     </div>`}
     <div class="acoes-form" style="margin-top:12px;"><button class="ev-btn ia grande" onclick="evCriarVideoIa()">🚀 Criar vídeo</button></div>
   </div></div>`;
 }
+// ---------- Minha voz: a IA aprende a sua voz para narrar os vídeos ----------
+const EV_TEXTO_VOZ = `Oi! Eu sou a voz deste canal e estou gravando este texto para a inteligência artificial aprender exatamente como eu falo.
+Hoje o assunto é liderança, gestão e resultado. Você já percebeu que as equipes mais fortes não são as que trabalham mais, e sim as que sabem para onde estão indo?
+Três coisas mudam tudo: clareza, constância e confiança. Clareza para saber a meta. Constância para repetir o que funciona todos os dias. E confiança para dar autonomia ao time.
+Agora me conta: quantas vezes você já começou um projeto animado e parou no meio do caminho? Isso acontece com todo mundo! O segredo é transformar o grande objetivo em pequenas vitórias.
+Números ajudam: um por cento melhor por dia, em um ano, vira um resultado gigante. Então bora? Se esse conteúdo fez sentido, salva, compartilha com quem precisa ouvir e me segue para mais.`;
+const EVVOZ = { takes: [], rec: null, stream: null, ini: 0, timer: null };
+async function evTreinarMinhaVoz() {
+  let info = {}; try { info = await api('/api/admin/estudio/minha-voz'); } catch (e) { return mostrarToast(e.message, true); }
+  EVVOZ.info = info;
+  if (!info.elevenlabs) return eaModal(`<h3>🎙️ A IA aprender a sua voz</h3>
+    <p>Para a narração ficar com a <b>sua voz</b>, natural e sem robô, o sistema usa a clonagem de voz da <b>ElevenLabs</b> (a mais realista do mercado). Você grava 1 a 3 minutos lendo um texto e a IA aprende o seu jeito de falar.</p>
+    ${info.master ? `<p class="ea-sub">1) Crie a conta em elevenlabs.io (plano <b>Starter</b> ou acima — a clonagem não está no plano grátis). 2) Em <b>Profile › API Keys</b>, crie uma chave. 3) Cole aqui:</p>
+      <label>Chave da ElevenLabs<input id="vz-eleven" placeholder="sk_..." autocomplete="off"></label>
+      <div class="ea-linha"><button class="ea-bt" onclick="eaModal('')">Agora não</button><button class="ea-bt pri" onclick="evSalvarChaveEleven()">Conectar</button></div>`
+      : `<p class="ea-sub">Este recurso precisa ser ativado pela Impulsionar. Fale com o seu consultor.</p><div class="ea-linha"><button class="ea-bt pri" onclick="eaModal('')">OK</button></div>`}`);
+  evDesenharTreinoVoz();
+}
+async function evSalvarChaveEleven() {
+  const k = document.getElementById('vz-eleven').value.trim(); if (!k) return;
+  try { await api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify({ elevenlabs: k }) }); EVIA.vozes = null; mostrarToast('ElevenLabs conectada! ✅'); evTreinarMinhaVoz(); } catch (e) { mostrarToast(e.message, true); }
+}
+function evDesenharTreinoVoz() {
+  const v = (EVVOZ.info || {}).voz, tot = EVVOZ.takes.reduce((a, t) => a + t.seg, 0);
+  const vids = ES ? ES.p.dados.midias.filter(m => m.tipo === 'video' && m.url && !m.enviando) : [];
+  eaModal(`<h3>🎙️ ${v ? 'Treinar mais a minha voz' : 'A IA aprender a minha voz'}</h3>
+    ${v ? `<div class="ea-aviso" style="background:#ecfdf5;border-color:#a7f3d0;color:#065f46;">✅ Sua voz já está pronta (${v.amostras} amostra(s)${v.segundos ? ', ~' + Math.round(v.segundos / 60) + ' min' : ''}). Gravar mais deixa ainda mais parecida.</div>` : ''}
+    <p class="ea-sub">Grave num lugar silencioso, com o celular a um palmo da boca, falando do seu jeito natural (como se estivesse gravando um Reels). <b>Quanto mais você grava, mais parecida fica</b> — o ideal é de 1 a 3 minutos no total.</p>
+    <div class="ev-voz-texto">${escapeHtml(EV_TEXTO_VOZ).replace(/\n/g, '<br><br>')}</div>
+    <div class="ev-voz-rec"><button class="ea-bt pri" id="evvoz-bt" onclick="evVozGravar()">${EVVOZ.rec ? '⏹ Parar' : '⏺ Gravar lendo o texto'}</button><b id="evvoz-t">${EVVOZ.rec ? '● gravando…' : ''}</b><i id="evvoz-nivel"></i></div>
+    ${EVVOZ.takes.length ? `<div class="ev-voz-takes">${EVVOZ.takes.map((t, i) => `<div><audio controls src="${t.url}"></audio><span>${Math.round(t.seg)} s</span><button class="ea-bt mini" onclick="EVVOZ.takes.splice(${i},1); evDesenharTreinoVoz()">🗑️</button></div>`).join('')}<small>Total gravado: <b>${Math.round(tot)} s</b>${tot < 45 ? ' — grave pelo menos 45 s' : ' ✅'}</small></div>` : ''}
+    ${vids.length ? `<label class="ea-chk"><input type="checkbox" id="evvoz-vids" ${EVVOZ.usarVideos ? 'checked' : ''} onchange="EVVOZ.usarVideos=this.checked"> Usar também a minha fala dos ${vids.length} vídeo(s) deste projeto</label>` : ''}
+    <div class="ea-linha"><button class="ea-bt" onclick="evVozFechar()">Fechar</button>${v ? `<button class="ea-bt" onclick="evApagarMinhaVoz()">Apagar minha voz</button>` : ''}<button class="ea-bt pri" id="evvoz-enviar" onclick="evVozEnviar()" ${EVVOZ.takes.length || EVVOZ.usarVideos ? '' : 'disabled'}>🧠 Treinar a voz</button></div>`);
+}
+async function evVozGravar() {
+  if (EVVOZ.rec) { EVVOZ.rec.stop(); return; }
+  try { EVVOZ.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false, channelCount: 1 } }); }
+  catch (e) { return mostrarToast('Libere o microfone para gravar.', true); }
+  const mime = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+  const partes = []; EVVOZ.rec = new MediaRecorder(EVVOZ.stream, mime ? { mimeType: mime, audioBitsPerSecond: 128000 } : undefined);
+  EVVOZ.rec.ondataavailable = e => e.data.size && partes.push(e.data);
+  EVVOZ.rec.onstop = () => {
+    clearInterval(EVVOZ.timer); EVVOZ.stream.getTracks().forEach(t => t.stop());
+    const tipo = EVVOZ.rec.mimeType || 'audio/webm', blob = new Blob(partes, { type: tipo }), seg = (Date.now() - EVVOZ.ini) / 1000;
+    if (seg > 4) EVVOZ.takes.push({ blob, url: URL.createObjectURL(blob), seg, ext: /mp4/.test(tipo) ? 'm4a' : 'webm' });
+    EVVOZ.rec = null; evDesenharTreinoVoz();
+  };
+  EVVOZ.rec.start(1000); EVVOZ.ini = Date.now(); evDesenharTreinoVoz();
+  let an = null; try { const ac = evAudioCtxSimples(); an = ac.createAnalyser(); ac.createMediaStreamSource(EVVOZ.stream).connect(an); } catch (e) {}
+  EVVOZ.timer = setInterval(() => { const t = document.getElementById('evvoz-t'); if (t) t.textContent = '● ' + Math.round((Date.now() - EVVOZ.ini) / 1000) + ' s'; if (an) { const b = new Uint8Array(256); an.getByteTimeDomainData(b); let m = 0; b.forEach(x => { m = Math.max(m, Math.abs(x - 128)); }); const n = document.getElementById('evvoz-nivel'); if (n) n.style.width = Math.min(100, m / 128 * 250) + '%'; } }, 150);
+}
+function evAudioCtxSimples() { EVVOZ.ac = EVVOZ.ac || new (window.AudioContext || window.webkitAudioContext)(); if (EVVOZ.ac.state === 'suspended') EVVOZ.ac.resume(); return EVVOZ.ac; }
+function evVozFechar() { if (EVVOZ.rec) { EVVOZ.rec.onstop = null; EVVOZ.rec.stop(); EVVOZ.stream.getTracks().forEach(t => t.stop()); EVVOZ.rec = null; clearInterval(EVVOZ.timer); } eaModal(''); }
+async function evVozEnviar() {
+  const b = document.getElementById('evvoz-enviar'); if (b) { b.disabled = true; b.textContent = '⏳ Enviando…'; }
+  try {
+    const urls = [];
+    for (const [i, t] of EVVOZ.takes.entries()) { if (b) b.textContent = `⏳ Enviando gravação ${i + 1}…`; const up = await evEnviarArquivo(new File([t.blob], `minha-voz-${i + 1}.${t.ext}`, { type: t.blob.type })); if (up && up.url) urls.push(up.url); }
+    if (EVVOZ.usarVideos && ES) ES.p.dados.midias.filter(m => m.tipo === 'video' && m.url && !m.enviando).slice(0, 4).forEach(m => urls.push(m.urlOriginal || m.url));
+    if (b) b.textContent = '🧠 A IA está aprendendo a sua voz…';
+    const r = await api('/api/admin/estudio/minha-voz', { method: 'POST', body: JSON.stringify({ urls }) });
+    EVVOZ.takes = []; EVIA.vozes = null; EVIA.escolheuVoz = false; eaModal(''); mostrarToast(r.message);
+    if (document.querySelector('.ev-criar')) evAbrirCriarVideoIa();
+  } catch (e) { mostrarToast(e.message, true); if (b) { b.disabled = false; b.textContent = '🧠 Treinar a voz'; } }
+}
+async function evApagarMinhaVoz() { if (!confirm('Apagar a sua voz clonada? Os vídeos já feitos continuam iguais.')) return; try { const r = await api('/api/admin/estudio/minha-voz', { method: 'DELETE' }); EVIA.vozes = null; eaModal(''); mostrarToast(r.message); } catch (e) { mostrarToast(e.message, true); } }
 async function evDiagnosticoVoz() {
   mostrarToast('Testando os serviços de voz…');
   try { const r = await api('/api/admin/estudio/voz-diagnostico'); eaModal(`<h3>🩺 Serviço de voz</h3><p><b>Microsoft (vozes neurais):</b> ${escapeHtml(r.microsoft)}</p><p><b>Google (reserva):</b> ${escapeHtml(r.google)}</p><p class="ea-sub">Se os dois derem erro, o servidor está sem acesso a esses serviços — conecte uma chave da OpenAI ou ElevenLabs em ⚙️ Vozes premium.</p><div class="ea-linha"><button class="ea-bt pri" onclick="eaModal('')">OK</button></div>`); }
@@ -23202,7 +23273,7 @@ async function evOuvirVoz() {
   const b = document.getElementById('evia-ouvir'); if (b) { b.disabled = true; b.textContent = '⏳'; }
   try {
     const r = await api('/api/admin/estudio/narrar', { method: 'POST', body: JSON.stringify({ amostra: true, texto: 'Olá! Esta é a voz que vai narrar o seu vídeo. Bora criar um conteúdo que prende do começo ao fim?', voz: EVIA.vozNarr, velocidade: EVIA.velNarr }) });
-    if (EVIA.audioTeste) EVIA.audioTeste.pause(); EVIA.audioTeste = new Audio(r.url); EVIA.audioTeste.play().catch(() => {});
+    if (EVIA.audioTeste) EVIA.audioTeste.pause(); EVIA.audioTeste = new Audio(r.url); EVIA.audioTeste.play().catch(() => {}); if (r.aviso) mostrarToast(r.aviso, true);
   } catch (e) { mostrarToast(e.message, true); }
   if (b) { b.disabled = false; b.textContent = '▶ Ouvir'; }
 }
@@ -23271,6 +23342,7 @@ async function evCriarVideoIa() {
       narr = await api('/api/admin/estudio/narrar', { method: 'POST', body: JSON.stringify({ falas: cenas.map(c => c.fala || c.texto_tela || ''), voz: EVIA.vozNarr, velocidade: EVIA.velNarr }) });
       if (narr.cenas && narr.cenas.length === cenas.length) { durs = narr.cenas.map((c, i) => Math.max(1.2, c.fim - c.ini) + (i === cenas.length - 1 ? 0.6 : 0)); soma = durs.reduce((s2, v) => s2 + v, 0); }
       dados.midias.push({ id: 'narr', url: narr.url, nome: 'Narração da IA', tipo: 'audio', duracao: narr.duracao, transcricao: narr.palavras || [] });
+      if (narr.aviso) mostrarToast(narr.aviso, true);
       dados.audios.push({ id: evUid(), midia: 'narr', ini: 0, corte: 0, dur: narr.duracao, vol: 1, narracao: true });
     } catch (e) { narr = null; alert('A voz não pôde ser gerada: ' + e.message + '\n\nO vídeo vai ser criado com legendas e música. Você pode tentar a voz de novo depois, ou conectar uma voz premium (OpenAI/ElevenLabs).'); }
   }

@@ -13383,9 +13383,14 @@ async function lerVozConfigEst() { const r = await dbGet(`SELECT value FROM inte
 async function falarEst(texto, voz, velocidade) {
     const cfg = await lerVozConfigEst();
     if (/^eleven:/.test(voz || '') && cfg.elevenlabs) {
-        const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voz.slice(7))}?output_format=mp3_44100_128`, { method: 'POST', headers: { 'xi-api-key': cfg.elevenlabs, 'Content-Type': 'application/json' }, body: JSON.stringify({ text: texto, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.45, similarity_boost: 0.8, style: 0.3, speed: Math.max(0.7, Math.min(1.2, 1 + (velocidade || 0) / 100)) } }) });
-        if (!r.ok) throw new Error('ElevenLabs: ' + ((await r.text()).slice(0, 160)));
-        return { mp3: Buffer.from(await r.arrayBuffer()), palavras: [] };
+        // com o tempo de cada letra: a legenda fica perfeitamente sincronizada com a voz
+        const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voz.slice(7))}/with-timestamps?output_format=mp3_44100_128`, { method: 'POST', headers: { 'xi-api-key': cfg.elevenlabs, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: texto, model_id: 'eleven_multilingual_v2', language_code: 'pt', voice_settings: { stability: 0.5, similarity_boost: 0.88, style: 0.22, use_speaker_boost: true, speed: Math.max(0.7, Math.min(1.2, 1 + (velocidade || 0) / 100)) } }), signal: AbortSignal.timeout(120000) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.audio_base64) throw new Error('ElevenLabs: ' + ((j.detail && (j.detail.message || j.detail.status)) || JSON.stringify(j).slice(0, 160)));
+        const palavras = [], al = j.alignment || j.normalized_alignment || {};
+        if (Array.isArray(al.characters)) { let w = '', ini = 0, fim = 0; al.characters.forEach((ch, i) => { if (/\s/.test(ch)) { if (w) palavras.push({ w, ini, fim }); w = ''; } else { if (!w) ini = al.character_start_times_seconds[i]; w += ch; fim = al.character_end_times_seconds[i]; } }); if (w) palavras.push({ w, ini, fim }); }
+        return { mp3: Buffer.from(j.audio_base64, 'base64'), palavras, provedor: 'elevenlabs' };
     }
     if (/^openai:/.test(voz || '') && cfg.openai) {
         const r = await fetch('https://api.openai.com/v1/audio/speech', { method: 'POST', headers: { Authorization: 'Bearer ' + cfg.openai, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice: voz.slice(7), input: texto, instructions: 'Fale em português do Brasil, com energia de criador de conteúdo profissional, natural e confiante.', speed: Math.max(0.7, Math.min(1.5, 1 + (velocidade || 0) / 100)), response_format: 'mp3' }) });
@@ -13471,7 +13476,7 @@ app.post('/api/admin/estudio/narrar', requireRole('admin', 'estudio'), async (re
         // texto grande vai em pedaços (o serviço aceita ~3000 caracteres por vez)
         const blocos = []; let atual = '';
         texto.split(/(?<=[.!?])\s+/).forEach(fr => { if ((atual + ' ' + fr).length > 2500 && atual) { blocos.push(atual); atual = fr; } else atual = (atual ? atual + ' ' : '') + fr; }); if (atual) blocos.push(atual);
-        const vel = Math.max(-30, Math.min(40, Number(b.velocidade) || 0)), mp3s = [], palavras = []; let deslocamento = 0;
+        const vel = Math.max(-30, Math.min(40, Number(b.velocidade) || 0)), mp3s = [], palavras = []; let deslocamento = 0; let provedor = 'microsoft';
         for (const bl of blocos) {
             const r = await falarEst(bl, String(b.voz || 'pt-BR-AntonioNeural').slice(0, 80), vel);
             const arqTmp = path.join(PASTA_UPLOADS, 'tmp-voz-' + Date.now() + '.mp3'); fs.writeFileSync(arqTmp, r.mp3);
@@ -13482,12 +13487,12 @@ app.post('/api/admin/estudio/narrar', requireRole('admin', 'estudio'), async (re
                 let t = 0.1; ws.forEach(w => { const d = util * peso(w) / tot; r.palavras.push({ w, ini: t, fim: t + d * 0.85 }); t += d; });
             }
             r.palavras.forEach(p => palavras.push({ w: p.w, ini: +(p.ini + deslocamento).toFixed(3), fim: +(p.fim + deslocamento).toFixed(3) }));
-            mp3s.push(r.mp3); deslocamento += dur;
+            mp3s.push(r.mp3); deslocamento += dur; if (r.provedor) provedor = r.provedor;
         }
         const nome = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + '.mp3', arq = path.join(PASTA_UPLOADS, nome);
         fs.writeFileSync(arq, Buffer.concat(mp3s));
         copiarUploadParaBanco({ filename: nome, path: arq, size: fs.statSync(arq).size, mimetype: 'audio/mpeg' });
-        res.json({ url: '/uploads/' + nome, duracao: +deslocamento.toFixed(2), palavras, cenas: tempoDasCenasEst(falas, palavras, deslocamento) });
+        res.json({ url: '/uploads/' + nome, duracao: +deslocamento.toFixed(2), palavras, provedor, aviso: provedor === 'google' ? 'A voz natural da Microsoft não respondeu e foi usada a voz de reserva (mais robótica). Para uma voz natural, use a sua voz treinada ou uma voz premium.' : '', cenas: tempoDasCenasEst(falas, palavras, deslocamento) });
     } catch (e) { console.warn('Narração:', e.message); res.status(502).json({ error: 'Não consegui gerar a voz agora: ' + e.message }); }
 });
 app.get('/api/admin/estudio/vozes', requireRole('admin', 'estudio'), async (req, res) => {
@@ -13496,6 +13501,10 @@ app.get('/api/admin/estudio/vozes', requireRole('admin', 'estudio'), async (req,
         .map(([id, nome]) => ({ id, nome, provedor: 'Microsoft (grátis)' }));
     if (cfg.openai) [['openai:ash', 'Ash — masculina, natural'], ['openai:coral', 'Coral — feminina, natural'], ['openai:sage', 'Sage — feminina, suave'], ['openai:ballad', 'Ballad — masculina, grave']].forEach(([id, nome]) => vozes.push({ id, nome, provedor: 'OpenAI' }));
     if (cfg.elevenlabs) (cfg.elevenVozes || []).forEach(v => vozes.push({ id: 'eleven:' + v.id, nome: v.nome, provedor: 'ElevenLabs' }));
+    const minha = await lerMinhaVozEst(donoAtualEst());
+    if (minha && minha.voice_id && cfg.elevenlabs) vozes.unshift({ id: 'eleven:' + minha.voice_id, nome: '🎙️ Minha voz (clonada)', provedor: 'ElevenLabs', minha: true });
+    // quem é cliente não vê as outras vozes clonadas da conta
+    if (donoAtualEst()) for (let i = vozes.length - 1; i >= 0; i--) if (vozes[i].provedor === 'ElevenLabs' && !vozes[i].minha && /clon/i.test(vozes[i].nome)) vozes.splice(i, 1);
     res.json({ vozes, master: req.user.role === 'admin', openai: !!cfg.openai, elevenlabs: !!cfg.elevenlabs });
 });
 app.put('/api/admin/estudio-voz', requireRole('admin'), async (req, res) => {
@@ -13537,6 +13546,52 @@ app.post('/api/admin/estudio/musicas/usar', requireRole('admin', 'estudio'), asy
         const lic = ((x.license || '') + ' ' + (x.license_version || '')).toUpperCase().trim();
         res.json({ url: '/uploads/' + nome, titulo: x.title || 'Música', artista: x.creator || '', duracao: x.duration ? x.duration / 1000 : (ext === '.mp3' ? duracaoMp3(buf) : 0), licenca: lic, credito: `🎵 Música: "${x.title || ''}"${x.creator ? ' — ' + x.creator : ''} (${lic || 'CC'})` });
     } catch (e) { res.status(502).json({ error: 'Não consegui baixar esta música: ' + e.message + '. Tente outra.' }); }
+});
+// ===== Minha voz: a IA aprende a sua voz (clonagem da ElevenLabs) com gravações suas =====
+const chaveMinhaVozEst = dono => 'estudio_minha_voz' + (dono ? ':' + dono : '');
+async function lerMinhaVozEst(dono) { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = ?`, [chaveMinhaVozEst(dono)]).catch(() => null); try { return JSON.parse((r && r.value) || 'null'); } catch (e) { return null; } }
+function salvarMinhaVozEst(dono, v) { return new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [chaveMinhaVozEst(dono), JSON.stringify(v)], ok)); }
+app.get('/api/admin/estudio/minha-voz', requireRole('admin', 'estudio'), async (req, res) => {
+    const cfg = await lerVozConfigEst(), v = await lerMinhaVozEst(donoAtualEst());
+    res.json({ elevenlabs: !!cfg.elevenlabs, master: req.user.role === 'admin', voz: v, ffmpeg: await ffmpegDisponivel() });
+});
+// Recebe gravações (ou vídeos) já enviados, limpa o áudio e treina/atualiza a voz
+app.post('/api/admin/estudio/minha-voz', requireRole('admin', 'estudio'), async (req, res) => {
+    const cfg = await lerVozConfigEst(); if (!cfg.elevenlabs) return res.status(400).json({ error: 'Para a IA aprender a sua voz é preciso conectar a ElevenLabs (em ⚙️ Vozes premium).' });
+    const urls = (Array.isArray((req.body || {}).urls) ? req.body.urls : []).map(u => path.basename(String(u || ''))).filter(n => /^[\w.\-]+$/.test(n)).slice(0, 12);
+    if (!urls.length) return res.status(400).json({ error: 'Grave pelo menos uma amostra da sua voz.' });
+    const dono = donoAtualEst(), atual = await lerMinhaVozEst(dono), temFf = await ffmpegDisponivel();
+    try {
+        const fd = new FormData(); let seg = 0, n = 0;
+        for (const nome of urls) {
+            let arq = path.join(PASTA_UPLOADS, nome); if (!fs.existsSync(arq)) { await restaurarUploadDoBanco(nome).catch(() => null); if (!fs.existsSync(arq)) continue; }
+            let dados = fs.readFileSync(arq), tipo = 'audio/mpeg', ext = path.extname(nome).toLowerCase();
+            if (temFf) { // só a voz: tira ruído e silêncios longos, até 3 min por amostra
+                const sai = path.join(PASTA_UPLOADS, 'tmp-voz-' + Date.now() + '-' + n + '.mp3');
+                try { await rodarFfmpeg(['-y', '-hide_banner', '-loglevel', 'error', '-i', arq, '-vn', '-t', '180', '-ac', '1', '-ar', '44100', '-af', 'highpass=f=70,afftdn=nr=12:nf=-45,silenceremove=stop_periods=-1:stop_duration=0.8:stop_threshold=-45dB,loudnorm=I=-16:TP=-1.5', '-b:a', '160k', sai], 300000); dados = fs.readFileSync(sai); seg += duracaoMp3(dados); fs.unlink(sai, () => {}); }
+                catch (e) { if (/\.(mp4|mov|webm|m4v)$/.test(ext) && !/\.webm$/.test(ext)) continue; tipo = ext === '.webm' ? 'audio/webm' : ext === '.wav' ? 'audio/wav' : ext === '.m4a' ? 'audio/mp4' : 'audio/mpeg'; }
+            } else tipo = ext === '.webm' ? 'audio/webm' : ext === '.wav' ? 'audio/wav' : ext === '.m4a' ? 'audio/mp4' : ext === '.mp4' ? 'video/mp4' : 'audio/mpeg';
+            if (dados.length > 10 * 1048576) dados = dados.slice(0, 10 * 1048576);
+            fd.append('files', new Blob([dados], { type: tipo }), 'amostra-' + (n + 1) + (tipo === 'audio/mpeg' ? '.mp3' : ext)); n++;
+        }
+        if (!n) return res.status(400).json({ error: 'Não consegui ler as gravações. Grave de novo.' });
+        const u = await usuarioEstudio(req.user.userId).catch(() => null), nomeVoz = 'Impulsionar · ' + ((u && u.name) || 'Minha voz') + (dono ? ' #' + dono : '');
+        fd.append('remove_background_noise', 'true'); fd.append('description', 'Voz clonada pelo Estúdio de Vídeo Impulsionar (pt-BR).');
+        let url = 'https://api.elevenlabs.io/v1/voices/add';
+        if (atual && atual.voice_id) url = `https://api.elevenlabs.io/v1/voices/${atual.voice_id}/edit`; // treinar mais: soma as novas amostras
+        fd.append('name', (atual && atual.nome) || nomeVoz);
+        const r = await fetch(url, { method: 'POST', headers: { 'xi-api-key': cfg.elevenlabs }, body: fd, signal: AbortSignal.timeout(180000) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) { const msg = (j.detail && (j.detail.message || j.detail.status)) || JSON.stringify(j).slice(0, 200); throw new Error(/can_not_use_instant_voice_cloning|subscription|tier/i.test(msg) ? 'o plano da ElevenLabs não inclui clonagem de voz (precisa do plano Starter ou acima).' : /voice_limit/i.test(msg) ? 'a conta da ElevenLabs chegou no limite de vozes clonadas.' : msg); }
+        const v = { voice_id: (atual && atual.voice_id) || j.voice_id, nome: (atual && atual.nome) || nomeVoz, amostras: ((atual && atual.amostras) || 0) + n, segundos: Math.round(((atual && atual.segundos) || 0) + seg), atualizado: new Date().toISOString() };
+        await salvarMinhaVozEst(dono, v);
+        res.json({ ok: true, voz: v, message: atual ? `Voz treinada com mais ${n} amostra(s)! Fica cada vez mais parecida. ✅` : 'Pronto! A IA aprendeu a sua voz. ✅ Escolha "🎙️ Minha voz" na narração.' });
+    } catch (e) { res.status(400).json({ error: 'Não consegui treinar a voz: ' + e.message }); }
+});
+app.delete('/api/admin/estudio/minha-voz', requireRole('admin', 'estudio'), async (req, res) => {
+    const cfg = await lerVozConfigEst(), dono = donoAtualEst(), v = await lerMinhaVozEst(dono);
+    if (v && v.voice_id && cfg.elevenlabs) await fetch(`https://api.elevenlabs.io/v1/voices/${v.voice_id}`, { method: 'DELETE', headers: { 'xi-api-key': cfg.elevenlabs } }).catch(() => {});
+    db.run(`DELETE FROM integration_settings WHERE key = ?`, [chaveMinhaVozEst(dono)], () => res.json({ ok: true, message: 'Sua voz foi apagada.' }));
 });
 app.get('/api/admin/estudio/preparo/:id', requireRole('admin', 'estudio'), (req, res) => {
     const j = JOBS_PREPARO.get(req.params.id); if (!j) return res.status(404).json({ error: 'Preparo não encontrado (o servidor reiniciou).' });
