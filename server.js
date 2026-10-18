@@ -12992,6 +12992,42 @@ app.post('/api/admin/estudio/projetos/:id/exportado', requireRole('admin'), (req
     });
 });
 
+// Vídeo exportado que já subiu em partes: o servidor finaliza em MP4 completo (com duração e índice certos,
+// abre em qualquer celular/computador e no Instagram). Roda em segundo plano; o editor acompanha.
+const JOBS_EXPORT = new Map();
+app.post('/api/admin/estudio/projetos/:id/exportado-url', requireRole('admin'), async (req, res) => {
+    const nome = path.basename(String((req.body || {}).url || '')), arq = path.join(PASTA_UPLOADS, nome);
+    if (!nome || !fs.existsSync(arq)) return res.status(404).json({ error: 'Vídeo exportado não encontrado no servidor.' });
+    const id = require('crypto').randomBytes(5).toString('hex'), job = { status: 'processando' };
+    JOBS_EXPORT.set(id, job); res.json({ id });
+    let url = '/uploads/' + nome, mime = /\.mp4$/i.test(nome) ? 'video/mp4' : 'video/webm', aviso = '';
+    try {
+        if (await ffmpegDisponivel()) {
+            if (mime === 'video/mp4') await reempacotarVideo(arq); // MP4 do navegador vem "em pedaços": deixa completo e navegável
+            else {
+                const destino = arq.replace(/\.[^.]+$/, '') + '-final.mp4';
+                await rodarFfmpeg(['-y', '-hide_banner', '-loglevel', 'error', '-i', arq, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', destino], 2 * 60 * 60 * 1000);
+                url = '/uploads/' + path.basename(destino); mime = 'video/mp4'; fs.unlink(arq, () => {});
+            }
+        } else if (mime !== 'video/mp4') aviso = 'O vídeo ficou em WebM (o servidor está sem ffmpeg). Use o Chrome ou Edge atualizado, que exporta direto em MP4.';
+        job.duracao = await duracaoFfmpeg(path.join(PASTA_UPLOADS, path.basename(url))).catch(() => 0);
+        db.run(`UPDATE estudio_projetos SET video_url = ?, video_mime = ?, status = CASE WHEN status IN ('rascunho','erro') THEN 'pronto' ELSE status END, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [url, mime, req.params.id]);
+        Object.assign(job, { status: 'pronto', url, mime, aviso });
+    } catch (e) { Object.assign(job, { status: 'pronto', url: '/uploads/' + nome, mime, aviso: 'Não consegui converter para MP4: o vídeo ficou no formato original.' }); db.run(`UPDATE estudio_projetos SET video_url = ?, video_mime = ? WHERE id = ?`, ['/uploads/' + nome, mime, req.params.id]); }
+    setTimeout(() => JOBS_EXPORT.delete(id), 3 * 3600 * 1000);
+});
+app.get('/api/admin/estudio/exportado/:id', requireRole('admin'), (req, res) => {
+    const j = JOBS_EXPORT.get(req.params.id); if (!j) return res.status(404).json({ error: 'Processamento não encontrado (o servidor reiniciou).' });
+    res.json(j);
+});
+// Download do vídeo com nome certo (baixa completo, como arquivo).
+app.get('/api/public/baixar/:nome', (req, res) => {
+    const nome = path.basename(String(req.params.nome || '')), arq = path.join(PASTA_UPLOADS, nome);
+    if (!/^[\w.\-]+\.(mp4|webm|mov|m4v)$/i.test(nome) || !fs.existsSync(arq)) return res.status(404).send('Vídeo não encontrado.');
+    const titulo = String(req.query.titulo || 'video').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w\-]+/g, '-').slice(0, 60) || 'video';
+    res.download(arq, titulo + path.extname(nome).toLowerCase());
+});
+
 // ----- Agente treinável -----
 app.get('/api/admin/estudio/agente', requireRole('admin'), async (req, res) => {
     try { res.json(await dbAll(`SELECT * FROM estudio_agente ORDER BY tipo, id DESC`)); } catch (e) { res.status(500).json({ error: 'Erro ao carregar o agente.' }); }
