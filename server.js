@@ -2028,6 +2028,8 @@ function restaurarUploadDoBanco(nome) {
 app.get('/uploads/:nome', async (req, res, next) => {
     const nome = path.basename(req.params.nome || '');
     if (!nome || fs.existsSync(path.join(PASTA_UPLOADS, nome))) return next();
+    const sub = await new Promise(ok => db.get(`SELECT novo FROM estudio_substitutos WHERE antigo = ?`, [nome], (e, r) => ok(e ? null : r))).catch(() => null);
+    if (sub && sub.novo) return res.redirect(301, '/uploads/' + encodeURIComponent(sub.novo)); // vídeo que foi preparado para edição: o endereço antigo leva ao novo
     const r = await restaurarUploadDoBanco(nome);
     if (!r) return next();
     if (r.mime) res.type(r.mime);
@@ -12863,7 +12865,8 @@ app.post('/api/admin/estudio/upload', requireRole('admin'), (req, res) => {
         if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo recebido.' });
         copiarUploadParaBanco(req.file);
         const nome = typeof consertarAcentoMt === 'function' ? consertarAcentoMt(req.file.originalname) : req.file.originalname;
-        res.json({ url: '/uploads/' + req.file.filename, nome, mime: req.file.mimetype, tamanho: req.file.size });
+        const ehVideo = /^video\//.test(req.file.mimetype || '') || /\.(mp4|mov|m4v|webm|mkv|avi|3gp)$/i.test(req.file.filename);
+        res.json({ url: '/uploads/' + req.file.filename, nome, mime: req.file.mimetype, tamanho: req.file.size, preparo: ehVideo && req.query.preparar === '1' ? iniciarPreparoEst(req.file.path || path.join(PASTA_UPLOADS, req.file.filename)) : undefined });
     });
 });
 // ffmpeg: usa o binário do pacote ffmpeg-static (vem junto no deploy) ou o do sistema.
@@ -12917,6 +12920,22 @@ async function receberParteEst(req, res, aoFinal) {
     if (!id || !Number.isInteger(i) || !Number.isInteger(total) || i < 0 || (!fluxo && (total < 1 || i >= total || total > 500)) || (fluxo && i > 20000)) return res.status(400).json({ error: 'Parte inválida.' });
     if (!/^\.(mp4|mov|m4v|webm|mkv|avi|3gp|m4a|mp3|wav|aac|ogg|png|jpe?g|gif|webp|heic)$/.test(ext)) return res.status(400).json({ error: 'Tipo de arquivo não permitido.' });
     if (!Buffer.isBuffer(req.body)) { if (fluxo && fimFluxo) req.body = Buffer.alloc(0); else return res.status(400).json({ error: 'Parte vazia.' }); }
+    const tamParte = Number(req.headers['x-tamparte']) || 0, preparar = !!(aoFinal && aoFinal.preparar);
+    if (typeof aoFinal !== 'function') aoFinal = null;
+    // envio em PARALELO (várias partes ao mesmo tempo, cada uma gravada na sua posição): sobe bem mais rápido
+    if (!fluxo && tamParte >= 1024 * 1024 && tamParte <= 12 * 1024 * 1024) {
+        let e = ENVIOS_EM_PARTES.get(id);
+        if (!e) { e = { paralelo: true, recebidas: new Set(), tam: 0, tmp: path.join(PASTA_PARTES, id + '.part'), t: Date.now(), mime: String(req.headers['x-mime'] || '') }; ENVIOS_EM_PARTES.set(id, e); try { fs.closeSync(fs.openSync(e.tmp, 'w')); } catch (x) { return res.status(500).json({ error: 'Erro ao iniciar o envio.' }); } }
+        if (e.recebidas.has(i) || e.finalizando) return res.json({ ok: true });
+        try { const fh = await fs.promises.open(e.tmp, 'r+'); try { await fh.write(req.body, 0, req.body.length, i * tamParte); } finally { await fh.close(); } }
+        catch (x) { return res.status(500).json({ error: 'Erro ao gravar a parte no servidor.' }); }
+        if (e.recebidas.has(i)) return res.json({ ok: true });
+        e.recebidas.add(i); e.tam += req.body.length; e.t = Date.now();
+        if (e.tam > 8 * 1024 * 1024 * 1024) { fs.unlink(e.tmp, () => {}); ENVIOS_EM_PARTES.delete(id); return res.status(413).json({ error: 'Arquivo grande demais (máximo 8 GB).' }); }
+        if (e.recebidas.size < total || e.finalizando) return res.json({ ok: true, recebidas: e.recebidas.size });
+        e.finalizando = true; ENVIOS_EM_PARTES.delete(id);
+        return finalizarEnvioEst(e, id, nomeOrig, ext, res, aoFinal, preparar);
+    }
     let e = ENVIOS_EM_PARTES.get(id);
     if (!e) { if (i !== 0) return res.status(409).json({ error: 'Envio não encontrado — recomece.', prox: 0 }); e = { prox: 0, tam: 0, tmp: path.join(PASTA_PARTES, id + '.part'), t: Date.now(), mime: String(req.headers['x-mime'] || '') }; ENVIOS_EM_PARTES.set(id, e); try { fs.unlinkSync(e.tmp); } catch (x) {} }
     if (i < e.prox) return res.json({ ok: true, prox: e.prox }); // parte repetida (nova tentativa após falha de rede)
@@ -12926,17 +12945,58 @@ async function receberParteEst(req, res, aoFinal) {
     if (e.tam > 8 * 1024 * 1024 * 1024) { fs.unlink(e.tmp, () => {}); ENVIOS_EM_PARTES.delete(id); return res.status(413).json({ error: 'Arquivo grande demais (máximo 8 GB).' }); }
     if (fluxo ? !fimFluxo : e.prox < total) return res.json({ ok: true, prox: e.prox });
     ENVIOS_EM_PARTES.delete(id);
+    return finalizarEnvioEst(e, id, nomeOrig, ext, res, aoFinal, preparar);
+}
+async function finalizarEnvioEst(e, id, nomeOrig, ext, res, aoFinal, preparar) {
     const final = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + ext, destino = path.join(PASTA_UPLOADS, final);
     try { await fs.promises.rename(e.tmp, destino); } catch (x) { try { await fs.promises.copyFile(e.tmp, destino); await fs.promises.unlink(e.tmp); } catch (y) { return res.status(500).json({ error: 'Erro ao finalizar o envio.' }); } }
     const mime = e.mime || ({ '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm', '.m4v': 'video/mp4', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.wav': 'audio/wav' }[ext] || 'application/octet-stream');
     copiarUploadParaBanco({ filename: final, path: destino, size: e.tam, mimetype: mime });
     const dados = { url: '/uploads/' + final, nome: nomeOrig, mime, tamanho: e.tam, completo: true };
     FINALIZADOS_PARTES.set(id, dados); setTimeout(() => FINALIZADOS_PARTES.delete(id), 3 * 3600 * 1000);
-    if (/^video\//.test(mime) || /\.(webm|mp4|mov|m4v)$/.test(ext)) reempacotarVideo(destino).catch(() => {}); // deixa o vídeo "navegável" (avançar/voltar)
+    const ehVideo = /^video\//.test(mime) || /\.(webm|mp4|mov|m4v|mkv|avi|3gp)$/.test(ext);
+    if (ehVideo && preparar) dados.preparo = iniciarPreparoEst(destino); // editor: prepara uma cópia limpa (sem mexer no arquivo que o navegador está lendo)
+    else if (ehVideo) reempacotarVideo(destino).catch(() => {}); // deixa o vídeo "navegável" (avançar/voltar)
     if (aoFinal) return aoFinal(dados);
     res.json(dados);
 }
-app.post('/api/admin/estudio/upload-parte', requireRole('admin'), express.raw({ type: () => true, limit: '12mb' }), (req, res) => receberParteEst(req, res));
+app.post('/api/admin/estudio/upload-parte', requireRole('admin'), express.raw({ type: () => true, limit: '12mb' }), (req, res) => receberParteEst(req, res, String(req.headers['x-preparar'] || '') === '1' ? { preparar: true } : undefined));
+// "Vídeo pronto para edição": o servidor deixa o vídeo num formato que qualquer navegador abre na hora
+// (H.264 + AAC, com índice no começo). Vídeo HEVC do iPhone / MOV / AVI é convertido; os demais só são
+// reorganizados (rápido, sem perder qualidade). O resultado vai para um arquivo NOVO e o endereço antigo
+// passa a apontar para ele — nunca altera o arquivo enquanto ele está sendo lido (era isso que deixava tela preta).
+const JOBS_PREPARO = new Map();
+db.run(`CREATE TABLE IF NOT EXISTS estudio_substitutos (antigo TEXT PRIMARY KEY, novo TEXT NOT NULL, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+function iniciarPreparoEst(arq) {
+    const id = require('crypto').randomBytes(6).toString('hex'), job = { status: 'processando', url: '/uploads/' + path.basename(arq), t: Date.now() };
+    JOBS_PREPARO.set(id, job); setTimeout(() => JOBS_PREPARO.delete(id), 6 * 3600 * 1000);
+    prepararVideoEst(arq).then(r => Object.assign(job, { status: 'pronto' }, r || {})).catch(e => Object.assign(job, { status: 'pronto', aviso: 'Não consegui preparar o vídeo: ' + String(e.message || e).slice(0, 120) }));
+    return id;
+}
+async function prepararVideoEst(arq) {
+    if (!(await ffmpegDisponivel())) return { semFfmpeg: true };
+    let info = ''; try { await rodarFfmpegJa(['-hide_banner', '-i', arq], 30000); } catch (e) { info = String(e.stderr || ''); }
+    const vcod = ((info.match(/Stream #[^\n]*Video: (\w+)/) || [])[1] || '').toLowerCase(), acod = ((info.match(/Stream #[^\n]*Audio: (\w+)/) || [])[1] || '').toLowerCase();
+    if (!vcod) return { aviso: 'Não reconheci o vídeo.' };
+    const ext = path.extname(arq).toLowerCase(), webm = vcod === 'vp8' || vcod === 'vp9' || vcod === 'av1';
+    const novoNome = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + (webm && ext === '.webm' ? '.webm' : '.mp4'), novo = path.join(PASTA_UPLOADS, novoNome), tmp = novo + '.tmp' + path.extname(novoNome);
+    let args, convertido = false;
+    if (vcod === 'h264' && !/^\.(avi|3gp)$/.test(ext)) args = ['-c:v', 'copy', ...(acod && !['aac', 'mp3'].includes(acod) ? ['-c:a', 'aac', '-b:a', '160k'] : ['-c:a', 'copy']), '-movflags', '+faststart'];
+    else if (webm && ext === '.webm') args = ['-c', 'copy'];
+    else { convertido = true; args = ['-vf', "scale='if(gt(iw,ih),min(1920,iw),-2)':'if(gt(iw,ih),-2,min(1920,ih))'", '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart']; }
+    try { await rodarFfmpeg(['-y', '-hide_banner', '-loglevel', 'error', '-fflags', '+genpts', '-i', arq, '-map', '0:v:0', '-map', '0:a:0?', ...args, tmp], 3 * 3600 * 1000); }
+    catch (e) { fs.unlink(tmp, () => {}); throw new Error(String(e.stderr || e.message).slice(0, 160)); }
+    await fs.promises.rename(tmp, novo);
+    const st = fs.statSync(novo); copiarUploadParaBanco({ filename: novoNome, path: novo, size: st.size, mimetype: novoNome.endsWith('.webm') ? 'video/webm' : 'video/mp4' });
+    const antigo = path.basename(arq);
+    db.run(`INSERT OR REPLACE INTO estudio_substitutos (antigo, novo) VALUES (?, ?)`, [antigo, novoNome]);
+    setTimeout(() => { fs.unlink(arq, () => {}); db.run(`DELETE FROM arquivos_persistidos WHERE nome = ?`, [antigo], () => {}); }, 15 * 60 * 1000); // o original sai depois (quem ainda estiver lendo termina)
+    return { url: '/uploads/' + novoNome, mime: novoNome.endsWith('.webm') ? 'video/webm' : 'video/mp4', convertido, duracao: await duracaoFfmpeg(novo).catch(() => 0) };
+}
+app.get('/api/admin/estudio/preparo/:id', requireRole('admin'), (req, res) => {
+    const j = JOBS_PREPARO.get(req.params.id); if (!j) return res.status(404).json({ error: 'Preparo não encontrado (o servidor reiniciou).' });
+    res.json(Object.assign({ segundos: Math.round((Date.now() - j.t) / 1000) }, j));
+});
 // Teleprompter (celular/computador sem login): a gravação sobe em pedaços ENQUANTO é feita (aulas de até 2 h).
 // Ao terminar, a pessoa revisa: "Enviar para o projeto" registra a gravação; "Gravar de novo" descarta o arquivo.
 app.post('/api/public/gravador/:codigo/video-parte', express.raw({ type: () => true, limit: '12mb' }), async (req, res) => {
