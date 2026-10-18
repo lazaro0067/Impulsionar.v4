@@ -13560,13 +13560,20 @@ app.get('/api/admin/estudio/vozes', requireRole('admin', 'estudio'), async (req,
     res.json({ vozes, master: req.user.role === 'admin', openai: !!cfg.openai, elevenlabs: !!cfg.elevenlabs });
 });
 app.put('/api/admin/estudio-voz', requireRole('admin'), async (req, res) => {
-    const b = req.body || {}, bruto = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_voz'`).catch(() => null); let cfg = {}; try { cfg = JSON.parse((bruto && bruto.value) || '{}'); } catch (e) {}
+    const b = req.body || {}, bruto = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_voz'`).catch(() => null); let cfg = {}; try { cfg = JSON.parse((bruto && bruto.value) || '{}'); } catch (e) {} let avisoVoz = '';
     if (b.openai !== undefined) cfg.openai = String(b.openai || '').trim();
     if (b.elevenlabs !== undefined) {
         cfg.elevenlabs = String(b.elevenlabs || '').trim(); cfg.elevenVozes = [];
-        if (cfg.elevenlabs) { try { const r = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': cfg.elevenlabs } }); const j = await r.json(); if (!r.ok) throw new Error((j.detail && j.detail.message) || 'chave recusada'); cfg.elevenVozes = (j.voices || []).slice(0, 40).map(v => ({ id: v.voice_id, nome: v.name })); } catch (e) { return res.status(400).json({ error: 'ElevenLabs: ' + e.message }); } }
+        if (cfg.elevenlabs) {
+            try { const r = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': cfg.elevenlabs } }); const j = await r.json(); if (!r.ok) throw Object.assign(new Error((j.detail && j.detail.message) || 'chave recusada'), { status: r.status, permissao: j.detail && /permission/i.test(j.detail.status + ' ' + j.detail.message) }); cfg.elevenVozes = (j.voices || []).slice(0, 40).map(v => ({ id: v.voice_id, nome: v.name })); }
+            catch (e) {
+                // chave com permissões limitadas: salva assim mesmo (a narração funciona) e avisa o que liberar
+                if (e.permissao || /permission/i.test(e.message)) { avisoVoz = 'Chave salva ✅, mas ela está com permissões limitadas. Na ElevenLabs, edite a chave e libere: Text to Speech (Access) e Voices (Write) — sem isso a lista de vozes e o "Usar a minha voz" não funcionam.'; }
+                else return res.status(400).json({ error: 'ElevenLabs: ' + e.message });
+            }
+        }
     }
-    db.run(`INSERT INTO integration_settings (key, value) VALUES ('estudio_voz', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [JSON.stringify(cfg)], () => res.json({ ok: true, message: 'Vozes atualizadas! ✅' }));
+    db.run(`INSERT INTO integration_settings (key, value) VALUES ('estudio_voz', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [JSON.stringify(cfg)], () => res.json({ ok: true, message: avisoVoz || 'Vozes atualizadas! ✅', aviso: !!avisoVoz }));
 });
 // ===== Músicas da internet livres para usar (Openverse: Jamendo, ccMixter, Wikimedia — licenças Creative Commons) =====
 const CACHE_MUSICAS = new Map();
@@ -13634,7 +13641,7 @@ app.post('/api/admin/estudio/minha-voz', requireRole('admin', 'estudio'), async 
         fd.append('name', (atual && atual.nome) || nomeVoz);
         const r = await fetch(url, { method: 'POST', headers: { 'xi-api-key': cfg.elevenlabs }, body: fd, signal: AbortSignal.timeout(180000) });
         const j = await r.json().catch(() => ({}));
-        if (!r.ok) { const msg = (j.detail && (j.detail.message || j.detail.status)) || JSON.stringify(j).slice(0, 200); throw new Error(/can_not_use_instant_voice_cloning|subscription|tier/i.test(msg) ? 'o plano da ElevenLabs não inclui clonagem de voz (precisa do plano Starter ou acima).' : /voice_limit/i.test(msg) ? 'a conta da ElevenLabs chegou no limite de vozes clonadas.' : msg); }
+        if (!r.ok) { const msg = (j.detail && (j.detail.message || j.detail.status)) || JSON.stringify(j).slice(0, 200); throw new Error(/can_not_use_instant_voice_cloning|subscription|tier/i.test(msg) ? 'o plano da ElevenLabs não inclui clonagem de voz (precisa do plano Starter ou acima).' : /voice_limit/i.test(msg) ? 'a conta da ElevenLabs chegou no limite de vozes clonadas.' : /permission/i.test(msg) ? 'a chave da ElevenLabs não tem permissão para criar vozes. Na ElevenLabs, edite a chave e libere "Voices: Write" e "Text to Speech".' : msg); }
         const v = { voice_id: (atual && atual.voice_id) || j.voice_id, nome: (atual && atual.nome) || nomeVoz, amostras: ((atual && atual.amostras) || 0) + n, segundos: Math.round(((atual && atual.segundos) || 0) + seg), atualizado: new Date().toISOString() };
         await salvarMinhaVozEst(dono, v);
         res.json({ ok: true, voz: v, message: atual ? `Voz treinada com mais ${n} amostra(s)! Fica cada vez mais parecida. ✅` : 'Pronto! A IA aprendeu a sua voz. ✅ Escolha "🎙️ Minha voz" na narração.' });

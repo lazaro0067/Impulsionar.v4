@@ -23448,7 +23448,7 @@ function evConfigVozes() {
 async function evSalvarVozes() {
   const o = document.getElementById('vz-openai').value.trim(), e = document.getElementById('vz-eleven').value.trim(), corpo = {};
   if (o) corpo.openai = o; if (e) corpo.elevenlabs = e; if (!o && !e) return eaModal('');
-  try { const r = await api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify(corpo) }); mostrarToast(r.message); eaModal(''); EVIA.vozes = null; evAbrirCriarVideoIa(); } catch (er) { mostrarToast(er.message, true); }
+  try { const r = await api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify(corpo) }); mostrarToast(r.message, !!r.aviso); eaModal(''); EVIA.vozes = null; evAbrirCriarVideoIa(); } catch (er) { mostrarToast(er.message, true); }
 }
 async function evNovoAvatar(files) {
   const f = files && files[0]; if (!f) return;
@@ -24250,7 +24250,7 @@ async function eaStatusChaves() {
 }
 async function eaSalvarChave(qual) {
   const i = document.getElementById(qual === 'openai' ? 'ea-k-openai' : 'ea-k-eleven'), v = i.value.trim(); if (!v) return mostrarToast('Cole a chave no campo.', true);
-  try { const r = await api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify({ [qual]: v }) }); i.value = ''; mostrarToast(qual === 'openai' ? 'OpenAI conectada! ✅' : 'ElevenLabs conectada! ✅ As vozes da sua conta já aparecem na narração.'); if (typeof EVIA !== 'undefined') EVIA.vozes = null; eaStatusChaves(); }
+  try { const r = await api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify({ [qual]: v }) }); i.value = ''; mostrarToast(r.aviso ? r.message : qual === 'openai' ? 'OpenAI conectada! ✅' : 'ElevenLabs conectada! ✅ As vozes da sua conta já aparecem na narração.', !!r.aviso); if (typeof EVIA !== 'undefined') EVIA.vozes = null; eaStatusChaves(); }
   catch (e) { mostrarToast(e.message, true); }
 }
 async function eaPrecosFunc() {
