@@ -12738,6 +12738,193 @@ app.get('/estudio.webmanifest', (req, res) => {
 // treinável, IA de edição/roteiro/legenda/hashtags e publicação no Instagram.
 // ============================================================
 // ============================================================
+// PROGRAMA TRAINEE (padrão Impulsionar): do cadastro/seleção até a efetivação como gerente.
+// Trilha de job rotation, competências (régua 1–5), checkpoints, indicadores, diário de
+// acompanhamento e índice de prontidão para a liderança.
+// ============================================================
+db.run(`CREATE TABLE IF NOT EXISTS trainee_programas (id INTEGER PRIMARY KEY AUTOINCREMENT, company_id INTEGER, nome TEXT NOT NULL, objetivo TEXT, cargo_alvo TEXT, duracao_meses INTEGER DEFAULT 12, inicio TEXT, status TEXT DEFAULT 'planejamento', trilha TEXT, competencias TEXT, checkpoints TEXT, criterios TEXT, guia TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+db.run(`CREATE TABLE IF NOT EXISTS trainees (id INTEGER PRIMARY KEY AUTOINCREMENT, programa_id INTEGER NOT NULL, company_id INTEGER, nome TEXT NOT NULL, email TEXT, telefone TEXT, formacao TEXT, cidade TEXT, origem TEXT, foto_url TEXT, data_admissao TEXT, status TEXT DEFAULT 'selecao', etapa_selecao TEXT DEFAULT 'inscrito', gestor TEXT, mentor TEXT, padrinho TEXT, notas TEXT, cargo_efetivado TEXT, data_efetivacao TEXT, motivo_saida TEXT, data_saida TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+db.run(`CREATE TABLE IF NOT EXISTS trainee_rotacoes (id INTEGER PRIMARY KEY AUTOINCREMENT, trainee_id INTEGER NOT NULL, fase_id TEXT, fase_nome TEXT, area TEXT, funcao TEXT, responsavel TEXT, inicio TEXT, fim TEXT, meses_previstos REAL, nota INTEGER, entregas TEXT, aprendizados TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+db.run(`CREATE TABLE IF NOT EXISTS trainee_avaliacoes (id INTEGER PRIMARY KEY AUTOINCREMENT, trainee_id INTEGER NOT NULL, tipo TEXT, data TEXT, avaliador TEXT, notas TEXT, prontidao INTEGER, fortes TEXT, desenvolver TEXT, decisao TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+db.run(`CREATE TABLE IF NOT EXISTS trainee_registros (id INTEGER PRIMARY KEY AUTOINCREMENT, trainee_id INTEGER NOT NULL, tipo TEXT, data TEXT, titulo TEXT, texto TEXT, autor TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+db.run(`CREATE TABLE IF NOT EXISTS trainee_kpis (id INTEGER PRIMARY KEY AUTOINCREMENT, trainee_id INTEGER NOT NULL, nome TEXT, unidade TEXT, meta REAL, sentido TEXT DEFAULT 'maior', valores TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+
+// Modelo padrão Impulsionar: trainee a gerente em 12 meses (comece pelo cargo-alvo e construa a trilha de trás para frente)
+const MODELO_TRAINEE = {
+    objetivo: 'Formar, em 12 meses, um líder pronto para assumir uma gerência, conhecendo a operação de ponta a ponta, dominando os indicadores e liderando pessoas com resultado.',
+    cargo_alvo: 'Gerente',
+    duracao_meses: 12,
+    trilha: [
+        { id: 'f1', nome: 'Integração & Cultura', area: 'RH / Diretoria', funcao: 'Imersão', meses: 1, objetivos: 'Conhecer a empresa, cultura, segurança, clientes e a estratégia. Montar o PDI com o gestor e o mentor.', entregas: 'Diagnóstico de primeiras impressões (o que melhoraria) · PDI assinado · Mapa de processos da empresa' },
+        { id: 'f2', nome: 'Operação na base', area: 'Operação / Logística', funcao: 'Assistente de operação', meses: 2, objetivos: 'Viver a rotina da operação: turnos, segurança, qualidade e produtividade. Aprender com quem executa.', entregas: 'Rotina operacional documentada · Painel de indicadores do turno · 1 melhoria rápida implantada' },
+        { id: 'f3', nome: 'Comercial & Mercado', area: 'Vendas / Trade', funcao: 'Assistente comercial', meses: 2, objetivos: 'Entender o cliente e o mercado: rota com vendedores, carteira, preço, mix e execução no PDV.', entregas: 'Análise de carteira e oportunidades · Plano de ação para 1 indicador comercial' },
+        { id: 'f4', nome: 'Gestão & Indicadores', area: 'Planejamento / Financeiro', funcao: 'Analista de gestão', meses: 2, objetivos: 'Dominar orçamento, custos, DRE da área, metas e a rotina de gestão (PDCA, reuniões de resultado).', entregas: 'Leitura da DRE da área · Desdobramento de metas · Condução de 1 reunião de resultado' },
+        { id: 'f5', nome: 'Gente & Liderança', area: 'Gente & Gestão', funcao: 'Business partner', meses: 1, objetivos: 'Gestão de pessoas na prática: recrutamento, feedback, avaliação, clima, desligamento e legislação básica.', entregas: 'Plano de engajamento de uma equipe · 3 feedbacks estruturados aplicados' },
+        { id: 'f6', nome: 'Liderança assistida', area: 'Área de destino', funcao: 'Coordenador / Gerente assistente', meses: 3, objetivos: 'Liderar uma equipe real com apoio do gestor. Conduzir o projeto aplicativo com ganho mensurável.', entregas: 'Projeto aplicativo com resultado medido (R$, %, tempo) · Rotina de gestão da equipe · Indicadores da área na meta' },
+        { id: 'f7', nome: 'Banca & Efetivação', area: 'Diretoria', funcao: 'Apresentação final', meses: 1, objetivos: 'Apresentar o projeto e a evolução para a banca, receber a decisão e o plano de carreira dos próximos 24 meses.', entregas: 'Apresentação para a banca · Plano de carreira pós-programa' }
+    ],
+    competencias: [
+        { id: 'c1', nome: 'Liderança de pessoas', grupo: 'Liderança', alvo: 4 }, { id: 'c2', nome: 'Comunicação e influência', grupo: 'Liderança', alvo: 4 },
+        { id: 'c3', nome: 'Visão de negócio e resultado', grupo: 'Negócio', alvo: 4 }, { id: 'c4', nome: 'Gestão por indicadores (dados)', grupo: 'Negócio', alvo: 4 },
+        { id: 'c5', nome: 'Resolução de problemas (PDCA)', grupo: 'Execução', alvo: 4 }, { id: 'c6', nome: 'Planejamento e organização', grupo: 'Execução', alvo: 4 },
+        { id: 'c7', nome: 'Foco no cliente', grupo: 'Negócio', alvo: 3 }, { id: 'c8', nome: 'Inteligência emocional', grupo: 'Comportamento', alvo: 4 },
+        { id: 'c9', nome: 'Aprendizado ágil', grupo: 'Comportamento', alvo: 4 }, { id: 'c10', nome: 'Atitude de dono e cultura', grupo: 'Comportamento', alvo: 4 }
+    ],
+    checkpoints: [1, 3, 6, 9, 12],
+    criterios: 'Para ser efetivado como gerente: prontidão ≥ 75% · média das competências ≥ 3,5 (nenhuma abaixo de 3) · trilha concluída · projeto aplicativo com ganho comprovado · aprovação da banca.'
+};
+const jsonTr = (v, pad) => { try { const o = JSON.parse(v || 'null'); return o === null ? pad : o; } catch (e) { return pad; } };
+function linhaProgTr(p) { return p && { ...p, trilha: jsonTr(p.trilha, []), competencias: jsonTr(p.competencias, []), checkpoints: jsonTr(p.checkpoints, [1, 3, 6, 9, 12]), guia: jsonTr(p.guia, {}) }; }
+async function programaTr(req, id) {
+    const p = await dbGet(`SELECT * FROM trainee_programas WHERE id = ?`, [id]).catch(() => null);
+    if (!p) return null;
+    if (req.user.role !== 'admin' && Number(p.company_id) !== Number(req.user.companyId)) return null;
+    return linhaProgTr(p);
+}
+async function traineeTr(req, id) { const t = await dbGet(`SELECT * FROM trainees WHERE id = ?`, [id]).catch(() => null); if (!t) return null; const p = await programaTr(req, t.programa_id); return p ? { t, p } : null; }
+const diasEntre = (a, b) => Math.max(0, Math.round(((b ? new Date(b) : new Date()) - new Date(a)) / 86400000));
+// Índice de prontidão para a liderança e alertas de cada trainee
+function metricasTr(p, t, rot, aval, kpis, regs) {
+    const fases = p.trilha || [], comps = p.competencias || [];
+    const feitas = fases.filter(f => rot.some(r => r.fase_id === f.id && r.fim)).length, trilhaPct = fases.length ? Math.round(feitas / fases.length * 100) : 0;
+    const atual = rot.filter(r => r.inicio && !r.fim).sort((a, b) => String(b.inicio).localeCompare(a.inicio))[0] || null;
+    const ultimas = {}; aval.slice().sort((a, b) => String(a.data).localeCompare(b.data)).forEach(a => { const n = jsonTr(a.notas, {}); Object.entries(n).forEach(([k, v]) => { if (Number(v)) ultimas[k] = Number(v); }); });
+    const notas = comps.map(c => ({ id: c.id, nome: c.nome, alvo: Number(c.alvo) || 4, nota: ultimas[c.id] || 0 }));
+    const avaliadas = notas.filter(n => n.nota), media = avaliadas.length ? avaliadas.reduce((s, n) => s + n.nota, 0) / avaliadas.length : 0;
+    const aderencia = avaliadas.length ? avaliadas.reduce((s, n) => s + Math.min(1, n.nota / n.alvo), 0) / avaliadas.length : 0;
+    const ultAval = aval.filter(a => a.prontidao !== null && a.prontidao !== undefined && a.prontidao !== '').sort((a, b) => String(b.data).localeCompare(a.data))[0];
+    const kpiOk = kpis.length ? kpis.filter(k => { const v = jsonTr(k.valores, []); const u = v.length ? Number(v[v.length - 1].valor) : null; return u !== null && (k.sentido === 'menor' ? u <= Number(k.meta) : u >= Number(k.meta)); }).length / kpis.length : null;
+    const partes = [[aderencia, 40], [trilhaPct / 100, 25], ultAval ? [Number(ultAval.prontidao) / 100, 20] : null, kpiOk !== null ? [kpiOk, 15] : null].filter(Boolean);
+    const pesos = partes.reduce((s, x) => s + x[1], 0), prontidao = pesos ? Math.round(partes.reduce((s, x) => s + x[0] * x[1], 0) / pesos * 100) : 0;
+    const alertas = [];
+    if (t.status === 'ativo') {
+        if (atual) { const prev = (Number(atual.meses_previstos) || 1) * 30; const d = diasEntre(atual.inicio); if (d > prev + 15) alertas.push(`Há ${d} dias em "${atual.fase_nome || atual.funcao}" (previsto ${Math.round(prev)} dias)`); }
+        else if (feitas < fases.length) alertas.push('Sem fase em andamento na trilha');
+        const ult1a1 = regs.filter(r => ['1:1', 'feedback'].includes(r.tipo)).sort((a, b) => String(b.data).localeCompare(a.data))[0];
+        if (!ult1a1 || diasEntre(ult1a1.data) > 30) alertas.push(ult1a1 ? `Sem 1:1 / feedback há ${diasEntre(ult1a1.data)} dias` : 'Nenhum 1:1 registrado ainda');
+        const mesesPrograma = t.data_admissao ? diasEntre(t.data_admissao) / 30 : 0;
+        if (mesesPrograma >= 6 && avaliadas.some(n => n.nota < 3)) alertas.push('Competência abaixo de 3 após o 6º mês: ' + avaliadas.filter(n => n.nota < 3).map(n => n.nome).join(', '));
+        const proxCk = (p.checkpoints || []).find(m => m > mesesPrograma - 0.5); if (proxCk && t.data_admissao) { const dataCk = new Date(new Date(t.data_admissao).getTime() + proxCk * 30 * 86400000); const falta = Math.round((dataCk - Date.now()) / 86400000); if (falta <= 10 && falta >= -20 && !aval.some(a => Math.abs(new Date(a.data) - dataCk) < 25 * 86400000)) alertas.push(`Checkpoint do ${proxCk}º mês ${falta >= 0 ? 'em ' + falta + ' dias' : 'atrasado'}`); }
+    }
+    return { trilhaPct, fasesFeitas: feitas, fasesTotal: fases.length, faseAtual: atual, mediaComp: +media.toFixed(2), notas, prontidao, kpiOk, alertas, diasPrograma: t.data_admissao ? diasEntre(t.data_admissao, t.data_saida || t.data_efetivacao) : 0, ultimoRegistro: regs.length ? regs.slice().sort((a, b) => String(b.data).localeCompare(a.data))[0].data : null };
+}
+async function dadosTraineeTr(t, p) {
+    const [rot, aval, regs, kpis] = await Promise.all([dbAll(`SELECT * FROM trainee_rotacoes WHERE trainee_id = ? ORDER BY inicio`, [t.id]), dbAll(`SELECT * FROM trainee_avaliacoes WHERE trainee_id = ? ORDER BY data`, [t.id]), dbAll(`SELECT * FROM trainee_registros WHERE trainee_id = ? ORDER BY data DESC, id DESC`, [t.id]), dbAll(`SELECT * FROM trainee_kpis WHERE trainee_id = ? ORDER BY id`, [t.id])]);
+    return { rot, aval, regs, kpis, metricas: metricasTr(p, t, rot, aval, kpis, regs) };
+}
+const TR_ROLES = requireRole('admin', 'client_admin');
+app.get('/api/trainee/modelo', TR_ROLES, (req, res) => res.json(MODELO_TRAINEE));
+app.get('/api/trainee/programas', TR_ROLES, async (req, res) => {
+    const cid = req.user.role === 'admin' ? (req.query.company_id || null) : req.user.companyId;
+    const l = await dbAll(`SELECT p.*, c.name AS empresa, (SELECT COUNT(*) FROM trainees t WHERE t.programa_id = p.id AND t.status = 'ativo') AS ativos, (SELECT COUNT(*) FROM trainees t WHERE t.programa_id = p.id) AS total FROM trainee_programas p LEFT JOIN companies c ON c.id = p.company_id ${cid ? 'WHERE p.company_id = ?' : ''} ORDER BY p.id DESC`, cid ? [cid] : []).catch(() => []);
+    res.json(l.map(linhaProgTr));
+});
+app.post('/api/trainee/programas', TR_ROLES, async (req, res) => {
+    const b = req.body || {}, cid = req.user.role === 'admin' ? (Number(b.company_id) || null) : req.user.companyId;
+    const base = b.modelo === 'branco' ? { objetivo: '', cargo_alvo: b.cargo_alvo || 'Gerente', duracao_meses: 12, trilha: [], competencias: [], checkpoints: [1, 3, 6, 9, 12], criterios: '' } : MODELO_TRAINEE;
+    const nome = String(b.nome || 'Programa Trainee ' + new Date().getFullYear()).slice(0, 120);
+    db.run(`INSERT INTO trainee_programas (company_id, nome, objetivo, cargo_alvo, duracao_meses, inicio, status, trilha, competencias, checkpoints, criterios, guia) VALUES (?, ?, ?, ?, ?, ?, 'planejamento', ?, ?, ?, ?, '{}')`,
+        [cid, nome, b.objetivo || base.objetivo, b.cargo_alvo || base.cargo_alvo, Number(b.duracao_meses) || base.duracao_meses, b.inicio || null, JSON.stringify(base.trilha), JSON.stringify(base.competencias), JSON.stringify(base.checkpoints), base.criterios],
+        function (err) { if (err) return res.status(500).json({ error: 'Erro ao criar o programa.' }); res.json({ id: this.lastID, message: 'Programa criado! ✅' }); });
+});
+app.put('/api/trainee/programas/:id', TR_ROLES, async (req, res) => {
+    const p = await programaTr(req, req.params.id); if (!p) return res.status(404).json({ error: 'Programa não encontrado.' });
+    const b = req.body || {}, sets = [], vals = [];
+    ['nome', 'objetivo', 'cargo_alvo', 'inicio', 'status', 'criterios'].forEach(k => { if (b[k] !== undefined) { sets.push(k + ' = ?'); vals.push(String(b[k] || '').slice(0, 4000)); } });
+    if (b.duracao_meses !== undefined) { sets.push('duracao_meses = ?'); vals.push(Number(b.duracao_meses) || 12); }
+    ['trilha', 'competencias', 'checkpoints', 'guia'].forEach(k => { if (b[k] !== undefined) { sets.push(k + ' = ?'); vals.push(JSON.stringify(b[k])); } });
+    if (!sets.length) return res.json({ ok: true });
+    db.run(`UPDATE trainee_programas SET ${sets.join(', ')} WHERE id = ?`, [...vals, p.id], err => err ? res.status(500).json({ error: 'Erro ao salvar.' }) : res.json({ ok: true, message: 'Salvo! ✅' }));
+});
+app.delete('/api/trainee/programas/:id', TR_ROLES, async (req, res) => {
+    const p = await programaTr(req, req.params.id); if (!p) return res.status(404).json({ error: 'Programa não encontrado.' });
+    const ids = (await dbAll(`SELECT id FROM trainees WHERE programa_id = ?`, [p.id])).map(x => x.id);
+    for (const tb of ['trainee_rotacoes', 'trainee_avaliacoes', 'trainee_registros', 'trainee_kpis']) if (ids.length) db.run(`DELETE FROM ${tb} WHERE trainee_id IN (${ids.map(() => '?').join(',')})`, ids);
+    db.run(`DELETE FROM trainees WHERE programa_id = ?`, [p.id]); db.run(`DELETE FROM trainee_programas WHERE id = ?`, [p.id], () => res.json({ ok: true }));
+});
+// Painel do programa: trainees com prontidão, fase atual, alertas + indicadores do programa
+app.get('/api/trainee/programas/:id/painel', TR_ROLES, async (req, res) => {
+    const p = await programaTr(req, req.params.id); if (!p) return res.status(404).json({ error: 'Programa não encontrado.' });
+    const ts = await dbAll(`SELECT * FROM trainees WHERE programa_id = ? ORDER BY CASE status WHEN 'ativo' THEN 0 WHEN 'selecao' THEN 1 WHEN 'efetivado' THEN 2 ELSE 3 END, nome`, [p.id]);
+    const lista = []; for (const t of ts) { const d = await dadosTraineeTr(t, p); lista.push({ ...t, metricas: d.metricas }); }
+    const contratados = ts.filter(t => ['ativo', 'efetivado', 'desligado'].includes(t.status)), efet = ts.filter(t => t.status === 'efetivado'), desl = ts.filter(t => t.status === 'desligado'), ativos = lista.filter(t => t.status === 'ativo');
+    const fechados = efet.length + desl.length;
+    const programa = {
+        selecao: ts.filter(t => t.status === 'selecao').length, ativos: ativos.length, efetivados: efet.length, desligados: desl.length,
+        retencao: contratados.length ? Math.round((contratados.length - desl.length) / contratados.length * 100) : null,
+        conversao: fechados ? Math.round(efet.length / fechados * 100) : null,
+        prontidaoMedia: ativos.length ? Math.round(ativos.reduce((s, t) => s + t.metricas.prontidao, 0) / ativos.length) : null,
+        prontos: ativos.filter(t => t.metricas.prontidao >= 75).length, emRisco: ativos.filter(t => t.metricas.alertas.length >= 2).length,
+        mesesAteEfetivar: efet.length ? +(efet.reduce((s, t) => s + diasEntre(t.data_admissao || t.created_at, t.data_efetivacao) / 30, 0) / efet.length).toFixed(1) : null
+    };
+    res.json({ programa: p, trainees: lista, indicadores: programa });
+});
+// Trainees
+app.post('/api/trainee/trainees', TR_ROLES, async (req, res) => {
+    const b = req.body || {}, p = await programaTr(req, b.programa_id); if (!p) return res.status(404).json({ error: 'Programa não encontrado.' });
+    const nome = String(b.nome || '').trim(); if (!nome) return res.status(400).json({ error: 'Informe o nome.' });
+    const campos = ['email', 'telefone', 'formacao', 'cidade', 'origem', 'foto_url', 'data_admissao', 'gestor', 'mentor', 'padrinho', 'notas'];
+    const status = ['selecao', 'ativo'].includes(b.status) ? b.status : 'selecao';
+    db.run(`INSERT INTO trainees (programa_id, company_id, nome, status, etapa_selecao, ${campos.join(', ')}) VALUES (?, ?, ?, ?, ?, ${campos.map(() => '?').join(', ')})`,
+        [p.id, p.company_id, nome.slice(0, 120), status, String(b.etapa_selecao || 'inscrito'), ...campos.map(k => String(b[k] || '').slice(0, 2000) || null)],
+        function (err) { if (err) return res.status(500).json({ error: 'Erro ao cadastrar.' }); res.json({ id: this.lastID, message: 'Trainee cadastrado! ✅' }); });
+});
+app.get('/api/trainee/trainees/:id', TR_ROLES, async (req, res) => {
+    const x = await traineeTr(req, req.params.id); if (!x) return res.status(404).json({ error: 'Trainee não encontrado.' });
+    res.json({ trainee: x.t, programa: x.p, ...(await dadosTraineeTr(x.t, x.p)) });
+});
+app.put('/api/trainee/trainees/:id', TR_ROLES, async (req, res) => {
+    const x = await traineeTr(req, req.params.id); if (!x) return res.status(404).json({ error: 'Trainee não encontrado.' });
+    const b = req.body || {}, sets = [], vals = [];
+    ['nome', 'email', 'telefone', 'formacao', 'cidade', 'origem', 'foto_url', 'data_admissao', 'gestor', 'mentor', 'padrinho', 'notas', 'etapa_selecao', 'cargo_efetivado', 'data_efetivacao', 'motivo_saida', 'data_saida'].forEach(k => { if (b[k] !== undefined) { sets.push(k + ' = ?'); vals.push(b[k] === null ? null : String(b[k]).slice(0, 4000)); } });
+    if (b.status !== undefined && ['selecao', 'ativo', 'efetivado', 'desligado', 'reprovado'].includes(b.status)) { sets.push('status = ?'); vals.push(b.status); }
+    // contratou: começa a 1ª fase da trilha automaticamente
+    if (b.status === 'ativo' && x.t.status !== 'ativo') {
+        const adm = b.data_admissao || x.t.data_admissao || new Date().toISOString().slice(0, 10); if (!b.data_admissao && !x.t.data_admissao) { sets.push('data_admissao = ?'); vals.push(adm); }
+        const tem = await dbGet(`SELECT id FROM trainee_rotacoes WHERE trainee_id = ?`, [x.t.id]).catch(() => null);
+        const f = (x.p.trilha || [])[0]; if (!tem && f) db.run(`INSERT INTO trainee_rotacoes (trainee_id, fase_id, fase_nome, area, funcao, inicio, meses_previstos) VALUES (?, ?, ?, ?, ?, ?, ?)`, [x.t.id, f.id, f.nome, f.area, f.funcao, adm, f.meses]);
+    }
+    if (!sets.length) return res.json({ ok: true });
+    db.run(`UPDATE trainees SET ${sets.join(', ')} WHERE id = ?`, [...vals, x.t.id], err => err ? res.status(500).json({ error: 'Erro ao salvar.' }) : res.json({ ok: true, message: 'Salvo! ✅' }));
+});
+app.delete('/api/trainee/trainees/:id', TR_ROLES, async (req, res) => {
+    const x = await traineeTr(req, req.params.id); if (!x) return res.status(404).json({ error: 'Trainee não encontrado.' });
+    for (const tb of ['trainee_rotacoes', 'trainee_avaliacoes', 'trainee_registros', 'trainee_kpis']) db.run(`DELETE FROM ${tb} WHERE trainee_id = ?`, [x.t.id]);
+    db.run(`DELETE FROM trainees WHERE id = ?`, [x.t.id], () => res.json({ ok: true }));
+});
+// Itens do trainee (rotação na trilha, avaliação, registro do diário, indicador)
+const TAB_TR = { rotacoes: ['trainee_rotacoes', ['fase_id', 'fase_nome', 'area', 'funcao', 'responsavel', 'inicio', 'fim', 'meses_previstos', 'nota', 'entregas', 'aprendizados']], avaliacoes: ['trainee_avaliacoes', ['tipo', 'data', 'avaliador', 'notas', 'prontidao', 'fortes', 'desenvolver', 'decisao']], registros: ['trainee_registros', ['tipo', 'data', 'titulo', 'texto', 'autor']], kpis: ['trainee_kpis', ['nome', 'unidade', 'meta', 'sentido', 'valores']] };
+const valTr = v => v === undefined ? undefined : v === null || v === '' ? null : typeof v === 'object' ? JSON.stringify(v) : String(v).slice(0, 8000);
+app.post('/api/trainee/:tipo(rotacoes|avaliacoes|registros|kpis)', TR_ROLES, async (req, res) => {
+    const [tab, campos] = TAB_TR[req.params.tipo], b = req.body || {}, x = await traineeTr(req, b.trainee_id); if (!x) return res.status(404).json({ error: 'Trainee não encontrado.' });
+    if (req.params.tipo === 'registros' && !b.autor) b.autor = (await dbGet(`SELECT name FROM users WHERE id = ?`, [req.user.userId]).catch(() => null) || {}).name || '';
+    db.run(`INSERT INTO ${tab} (trainee_id, ${campos.join(', ')}) VALUES (?, ${campos.map(() => '?').join(', ')})`, [x.t.id, ...campos.map(k => valTr(b[k]) === undefined ? null : valTr(b[k]))],
+        function (err) { if (err) return res.status(500).json({ error: 'Erro ao salvar: ' + err.message }); res.json({ id: this.lastID, message: 'Salvo! ✅' }); });
+});
+app.put('/api/trainee/:tipo(rotacoes|avaliacoes|registros|kpis)/:id', TR_ROLES, async (req, res) => {
+    const [tab, campos] = TAB_TR[req.params.tipo], it = await dbGet(`SELECT trainee_id FROM ${tab} WHERE id = ?`, [req.params.id]).catch(() => null);
+    if (!it || !(await traineeTr(req, it.trainee_id))) return res.status(404).json({ error: 'Item não encontrado.' });
+    const b = req.body || {}, sets = [], vals = []; campos.forEach(k => { const v = valTr(b[k]); if (v !== undefined) { sets.push(k + ' = ?'); vals.push(v); } });
+    if (!sets.length) return res.json({ ok: true });
+    db.run(`UPDATE ${tab} SET ${sets.join(', ')} WHERE id = ?`, [...vals, req.params.id], err => err ? res.status(500).json({ error: 'Erro ao salvar.' }) : res.json({ ok: true, message: 'Salvo! ✅' }));
+});
+app.delete('/api/trainee/:tipo(rotacoes|avaliacoes|registros|kpis)/:id', TR_ROLES, async (req, res) => {
+    const [tab] = TAB_TR[req.params.tipo], it = await dbGet(`SELECT trainee_id FROM ${tab} WHERE id = ?`, [req.params.id]).catch(() => null);
+    if (!it || !(await traineeTr(req, it.trainee_id))) return res.status(404).json({ error: 'Item não encontrado.' });
+    db.run(`DELETE FROM ${tab} WHERE id = ?`, [req.params.id], () => res.json({ ok: true }));
+});
+// Avança para a próxima fase da trilha (fecha a atual com nota/entregas e abre a seguinte)
+app.post('/api/trainee/trainees/:id/proxima-fase', TR_ROLES, async (req, res) => {
+    const x = await traineeTr(req, req.params.id); if (!x) return res.status(404).json({ error: 'Trainee não encontrado.' });
+    const b = req.body || {}, hoje = b.data || new Date().toISOString().slice(0, 10);
+    const rot = await dbAll(`SELECT * FROM trainee_rotacoes WHERE trainee_id = ? ORDER BY inicio`, [x.t.id]), atual = rot.find(r => r.inicio && !r.fim);
+    if (atual) await new Promise(ok => db.run(`UPDATE trainee_rotacoes SET fim = ?, nota = COALESCE(?, nota), entregas = COALESCE(?, entregas), aprendizados = COALESCE(?, aprendizados) WHERE id = ?`, [hoje, b.nota || null, b.entregas || null, b.aprendizados || null, atual.id], ok));
+    const feitas = new Set(rot.filter(r => r.fim || (atual && r.id === atual.id)).map(r => r.fase_id)), prox = (x.p.trilha || []).find(f => !feitas.has(f.id));
+    if (prox) db.run(`INSERT INTO trainee_rotacoes (trainee_id, fase_id, fase_nome, area, funcao, inicio, meses_previstos) VALUES (?, ?, ?, ?, ?, ?, ?)`, [x.t.id, prox.id, prox.nome, prox.area, prox.funcao, hoje, prox.meses]);
+    res.json({ ok: true, message: prox ? `Fase concluída! Agora: ${prox.nome} ✅` : 'Trilha concluída! 🎉 Hora da banca de efetivação.' });
+});
+
+// ============================================================
 // ESTÚDIO PARA TERCEIROS (acessos com planos pagos)
 // O Master cria acessos de perfil "estudio": cada cliente vê só os próprios projetos,
 // agente, marca, radar, avatares e Instagram. O uso do mês é contado por plano.

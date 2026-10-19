@@ -1432,6 +1432,45 @@
   .ea-integ { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px; margin:12px 0; } .ea-integ-cab { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:8px; font-size:13px; } .ea-integ-cab b.ok { color:#16a34a; } .ea-integ-cab b.nao { color:#94a3b8; }
   .ea-integ-lin { display:flex; gap:8px; align-items:flex-end; margin-bottom:8px; } .ea-integ-lin label { flex:1; display:flex; flex-direction:column; gap:4px; font-size:12.5px; font-weight:700; color:#475569; } .ea-integ-lin input { border:1px solid #cbd5e1; border-radius:10px; padding:10px; font-size:14px; }
   body.modo-estudio .ea-integ { background:#0f172e; border-color:#1c2747; } body.modo-estudio .ea-integ-lin label { color:#cbd5e1; } body.modo-estudio .ea-integ-lin input { background:#0b1329; color:#fff; border-color:#25325c; }
+
+  /* ---------- Programa Trainee ---------- */
+  .tr { max-width:1280px; } .tr h1 { margin:0; font-size:26px; } .tr h3 { margin:18px 0 10px; } .tr-topo { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:14px; } .tr-topo p { margin:4px 0 0; color:#64748b; max-width:720px; }
+  .tr-sel { display:flex; gap:8px; flex-wrap:wrap; align-items:center; } .tr-sel .tr-bt { margin:0; } .tr .tr-sel select { border:1px solid #cbd5e1; border-radius:10px; padding:9px 10px; font-size:14px; background:#fff; width:auto; max-width:280px; }
+  .tr-bt { border:1px solid #cbd5e1; background:#fff; color:#0b1329; border-radius:10px; padding:9px 14px; font-weight:700; cursor:pointer; font-size:13.5px; } .tr-bt.pri { background:#2563eb; border-color:#2563eb; color:#fff; } .tr-bt.perigo { color:#dc2626; border-color:#fecaca; } .tr-bt.mini { padding:5px 9px; font-size:12px; margin:6px 6px 0 0; } .tr-bt.grande { padding:13px 22px; font-size:15px; }
+  .tr-vazio { background:#fff; border:2px dashed #cbd5e1; border-radius:18px; padding:34px; text-align:center; color:#475569; } .tr-vazio p { max-width:640px; margin:10px auto 18px; } .tr-vazio.pequeno { padding:18px; }
+  .tr-abas { display:flex; gap:4px; border-bottom:2px solid #e2e8f0; margin-bottom:14px; overflow-x:auto; } .tr-abas button { background:none; border:none; padding:10px 14px; font-weight:700; color:#64748b; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap; } .tr-abas button.on { color:#0b1329; border-bottom-color:#2563eb; } .tr-abas.peq button { padding:8px 10px; font-size:13px; }
+  .tr-prog-info { font-size:13.5px; color:#475569; margin-bottom:10px; } .tr-st { display:inline-block; color:#fff; font-size:11px; font-weight:700; border-radius:12px; padding:3px 9px; vertical-align:middle; }
+  .tr-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:8px; } .tr-kpi { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; display:flex; flex-direction:column; gap:2px; } .tr-kpi span { font-size:20px; } .tr-kpi b { font-size:24px; color:#0b1329; } .tr-kpi small { color:#64748b; font-size:12px; } .tr-kpi em { font-style:normal; font-size:11px; color:#94a3b8; } .tr-kpis.peq .tr-kpi b { font-size:20px; }
+  .tr-titulo { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; } .tr-sub { color:#64748b; font-size:13px; }
+  .tr-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; } .tr-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:14px; cursor:pointer; display:flex; flex-direction:column; gap:8px; transition:box-shadow .15s; } .tr-card:hover { box-shadow:0 8px 24px rgba(15,23,42,.08); }
+  .tr-card-cab { display:flex; align-items:center; gap:10px; } .tr-card-cab > div:nth-child(2) { flex:1; min-width:0; display:flex; flex-direction:column; } .tr-card-cab small { color:#64748b; font-size:12px; }
+  .tr-av { width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,#2563eb,#16a34a); color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; } .tr-av img { width:100%; height:100%; object-fit:cover; } .tr-av.grande { width:64px; height:64px; font-size:26px; }
+  .tr-fase { font-size:13px; color:#334155; } .tr-barra { height:7px; background:#e2e8f0; border-radius:6px; overflow:hidden; } .tr-barra i { display:block; height:100%; border-radius:6px; }
+  .tr-mini { display:flex; justify-content:space-between; gap:6px; font-size:12px; color:#64748b; flex-wrap:wrap; } .tr-alertas { display:flex; flex-direction:column; gap:3px; } .tr-alertas span { background:#fef2f2; color:#b91c1c; font-size:12px; border-radius:8px; padding:4px 8px; } .tr-ok { background:#f0fdf4; color:#15803d; font-size:12px; border-radius:8px; padding:4px 8px; }
+  .tr-funil { display:grid; grid-template-columns:repeat(6,minmax(150px,1fr)); gap:8px; overflow-x:auto; padding-bottom:6px; } .tr-col { background:#f1f5f9; border-radius:14px; padding:8px; min-height:120px; } .tr-col-cab { display:flex; justify-content:space-between; font-size:12.5px; font-weight:800; color:#334155; margin-bottom:6px; } .tr-col-vazio { color:#94a3b8; text-align:center; padding:10px; }
+  .tr-cand { background:#fff; border-radius:10px; padding:8px; margin-bottom:6px; box-shadow:0 1px 2px rgba(0,0,0,.06); } .tr-cand b { cursor:pointer; display:block; font-size:13px; } .tr-cand small { color:#64748b; font-size:11.5px; } .tr-cand div { display:flex; gap:4px; margin-top:6px; } .tr-cand button { border:1px solid #e2e8f0; background:#f8fafc; border-radius:7px; padding:3px 7px; cursor:pointer; font-size:12px; } .tr-cand button.pri { background:#16a34a; color:#fff; border-color:#16a34a; flex:1; }
+  .tr-tab { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; font-size:13px; } .tr-tab th { background:#f8fafc; text-align:left; padding:9px; color:#475569; font-size:12px; } .tr-tab th small, .tr-tab td small { display:block; color:#94a3b8; font-weight:400; font-size:11px; } .tr-tab td { padding:9px; border-top:1px solid #f1f5f9; } .tr-tab tbody tr { cursor:pointer; } .tr-tab tbody tr:hover { background:#f8fafc; }
+  .tr-tab.comp td { text-align:center; } .tr-tab.comp td:first-child { text-align:left; } .tr-tab td.n1, .tr-tab td.n2 { color:#dc2626; font-weight:700; } .tr-tab td.n4, .tr-tab td.n5 { color:#16a34a; font-weight:700; } .tr-scroll { overflow-x:auto; }
+  .tr-fundo { position:fixed; inset:0; background:rgba(2,6,23,.6); z-index:20000; display:flex; align-items:center; justify-content:center; padding:14px; } .tr-caixa { background:#fff; border-radius:18px; width:min(560px,100%); max-height:92vh; overflow-y:auto; padding:20px; box-shadow:0 24px 70px rgba(0,0,0,.35); color:#0b1329; } .tr-caixa.largo { width:min(1100px,100%); }
+  .tr-caixa h3 { margin:0 0 8px; } .tr-caixa label { display:flex; flex-direction:column; gap:4px; font-size:12.5px; font-weight:700; color:#475569; margin:8px 0; } .tr-caixa input, .tr-caixa select, .tr-caixa textarea, .tr input, .tr textarea, .tr select { border:1px solid #cbd5e1; border-radius:10px; padding:9px; font-size:14px; font-weight:400; color:#0b1329; font-family:inherit; width:100%; box-sizing:border-box; }
+  .tr-2 { display:grid; grid-template-columns:1fr 1fr; gap:0 10px; } .tr-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0 10px; } .tr-linha { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; flex-wrap:wrap; align-items:center; }
+  .tr-perfil-cab { display:flex; align-items:center; gap:14px; } .tr-perfil-nome { flex:1; min-width:0; } .tr-perfil-nome h2 { margin:0; } .tr-perfil-nome small { color:#64748b; } .tr-x { border:none; background:#f1f5f9; width:38px; height:38px; border-radius:50%; cursor:pointer; font-size:16px; }
+  .tr-perfil-corpo { min-height:300px; } .tr-2col { display:grid; grid-template-columns:1.2fr 1fr; gap:14px; } .tr-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; margin:8px 0; } .tr-box p { margin:6px 0 0; font-size:13.5px; color:#334155; } .tr-box.alerta { background:#fef2f2; border-color:#fecaca; } .tr-box.ok { background:#f0fdf4; border-color:#bbf7d0; }
+  .tr-radar { width:100%; max-width:400px; display:block; margin:6px auto 0; } .tr-leg { display:flex; gap:12px; justify-content:center; font-size:12px; } .tr-leg .az { color:#2563eb; } .tr-leg .vd { color:#16a34a; }
+  .tr-trilha { display:flex; flex-direction:column; gap:0; } .tr-etapa { display:flex; gap:12px; position:relative; padding-bottom:14px; } .tr-etapa::before { content:''; position:absolute; left:17px; top:36px; bottom:0; width:2px; background:#e2e8f0; } .tr-etapa:last-child::before { display:none; }
+  .tr-etapa-n { width:36px; height:36px; border-radius:50%; background:#e2e8f0; color:#475569; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0; z-index:1; } .tr-etapa.feito .tr-etapa-n { background:#16a34a; color:#fff; } .tr-etapa.agora .tr-etapa-n { background:#2563eb; color:#fff; box-shadow:0 0 0 5px rgba(37,99,235,.2); }
+  .tr-etapa-c { flex:1; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; } .tr-etapa.agora .tr-etapa-c { border-color:#93c5fd; } .tr-etapa-c > small { display:block; color:#64748b; font-size:12px; } .tr-etapa-tempo { font-size:12.5px; margin:6px 0 4px; } .tr-etapa-det { display:flex; flex-direction:column; gap:3px; font-size:12.5px; color:#475569; margin-top:6px; }
+  .tr-notas { display:grid; gap:6px; margin:8px 0; } .tr-nota { display:flex; justify-content:space-between; align-items:center; gap:8px; border:1px solid #e2e8f0; border-radius:10px; padding:6px 8px; } .tr-nota span { font-size:13px; font-weight:600; } .tr-nota small { color:#94a3b8; font-weight:400; } .tr-nota div { display:flex; gap:4px; } .tr-caixa .tr-nota label { margin:0; flex-direction:row; }
+  .tr-nota input { display:none; } .tr-nota i { font-style:normal; width:30px; height:30px; border-radius:8px; border:1px solid #cbd5e1; display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:800; color:#475569; } .tr-nota input:checked + i { background:#2563eb; color:#fff; border-color:#2563eb; }
+  .tr-kpi-lista { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:10px; } .tr-spark { position:relative; display:flex; align-items:flex-end; gap:3px; height:70px; margin:8px 0; border-bottom:1px solid #e2e8f0; } .tr-spark i { flex:1; border-radius:3px 3px 0 0; } .tr-spark em { position:absolute; left:0; right:0; border-top:2px dashed #16a34a; }
+  .tr-diario-novo { display:grid; grid-template-columns:160px 150px 1fr; gap:8px; background:#f8fafc; border-radius:12px; padding:10px; } .tr-diario-novo textarea { grid-column:1 / -1; } .tr-diario-novo button { grid-column:1 / -1; justify-self:end; }
+  .tr-timeline { display:flex; flex-direction:column; gap:8px; margin-top:12px; } .tr-reg { display:flex; gap:10px; align-items:flex-start; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px; } .tr-reg > div { flex:1; } .tr-reg small { display:block; color:#64748b; font-size:12px; } .tr-reg p { margin:4px 0 0; font-size:13.5px; white-space:pre-wrap; } .tr-reg-ic { font-size:20px; }
+  .tr-mini-x { border:none; background:none; color:#94a3b8; cursor:pointer; font-size:14px; } .tr-mini-x:hover { color:#dc2626; }
+  .tr-ed-fase { display:flex; gap:8px; align-items:flex-start; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:8px; margin-bottom:8px; } .tr-ed-ord { display:flex; flex-direction:column; align-items:center; gap:2px; } .tr-ed-ord button { border:none; background:#f1f5f9; border-radius:6px; cursor:pointer; font-size:10px; padding:2px 6px; } .tr-ed-campos { flex:1; display:flex; flex-direction:column; gap:6px; } .tr-ed-l2 { display:grid; grid-template-columns:90px 1fr; gap:6px; }
+  .tr-ed-comps { display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:6px; } .tr-ed-comp { display:grid; grid-template-columns:1fr 130px 70px 24px; gap:6px; align-items:center; }
+  .tr-guia { display:flex; flex-direction:column; gap:8px; } .tr-passo { display:flex; gap:12px; align-items:flex-start; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; cursor:pointer; } .tr-passo input { width:20px; height:20px; margin-top:2px; flex-shrink:0; } .tr-passo p { margin:4px 0 0; color:#475569; font-size:13.5px; } .tr-passo.feito { background:#f0fdf4; border-color:#bbf7d0; } .tr-passo.feito b { text-decoration:line-through; color:#15803d; }
+  .tr-modelos { display:grid; gap:8px; margin:8px 0; } .tr-modelo { flex-direction:row !important; align-items:flex-start; gap:10px !important; border:1px solid #e2e8f0; border-radius:12px; padding:10px; cursor:pointer; } .tr-modelo input { width:auto; margin-top:3px; } .tr-modelo span { display:flex; flex-direction:column; } .tr-modelo b { color:#0b1329; } .tr-modelo small { font-weight:400; color:#64748b; }
+  @media (max-width: 800px) { .tr-2col, .tr-2, .tr-3, .tr-diario-novo { grid-template-columns:1fr; } .tr-funil { grid-template-columns:repeat(6,200px); } .tr-perfil-cab .tr-anel { display:none; } }
   .ea-cred { white-space:pre-wrap; background:#f1f5f9; border-radius:12px; padding:12px; font-size:13px; font-family:inherit; } .ea-lims { display:grid; grid-template-columns:1fr 1fr; gap:0 10px; } .ea-uso { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:#475569; background:#f8fafc; border-radius:10px; padding:10px; margin-top:8px; } .ea-uso > b { width:100%; }
   .ea-conta { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; background:linear-gradient(135deg,#0b1329,#3b0d1c); color:#fff; border-radius:18px; padding:18px; } .ea-conta small { color:#cbd5e1; } .ea-conta h2 { color:#fff; }
   .ea-barras { display:grid; gap:10px; } .ea-barra { display:grid; grid-template-columns:1fr auto; gap:4px 10px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; font-size:13px; } .ea-barra i { grid-column:1 / -1; height:7px; background:#e2e8f0; border-radius:6px; overflow:hidden; } .ea-barra em { display:block; height:100%; } .ea-barra.off { opacity:.6; }
@@ -1859,7 +1898,7 @@ const MENU_POR_PERFIL = {
         ['consulting', 'Consultoria'], ['companies', 'Empresas']
     ]},
     { group: 'Executivos & Talentos', items: [
-        ['employees', 'Banco de Talentos'], ['pdi', 'PDIs'], ['talentPool', 'Banco de Currículos']
+        ['employees', 'Banco de Talentos'], ['pdi', 'PDIs'], ['talentPool', 'Banco de Currículos'], ['traineePrograma', '🎯 Programa Trainee']
     ]},
     { group: 'Academy & Desenvolvimento', items: [
         ['videos', 'Academy Digital'], ['tracks', 'Trilhas de Curso'], ['assessments', 'Competence Check']
@@ -1904,6 +1943,9 @@ const MENU_POR_PERFIL = {
     ]},
     { group: 'PDI', moduleKey: 'pdi', items: [
         ['pdi', 'Planos de Desenvolvimento (PDI)']
+    ]},
+    { group: 'Programa Trainee', moduleKey: 'trainee', items: [
+        ['traineePrograma', 'Programa Trainee']
     ]},
     { group: 'Treinamentos', moduleKey: 'academy', items: [
         ['videos', 'Academy Digital'], ['tracks', 'Trilhas de Curso'], ['assessments', 'Competence Check']
@@ -2229,7 +2271,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento, estudioVideo: () => renderEstudioVideo('projetos'), estudioAcessos: () => renderEstudioVideo('acessos'), estudioAgente: () => renderEstudioVideo('agente'), estudioAgenda: () => renderEstudioVideo('agenda'),
+    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento, traineePrograma: renderTrainee, estudioVideo: () => renderEstudioVideo('projetos'), estudioAcessos: () => renderEstudioVideo('acessos'), estudioAgente: () => renderEstudioVideo('agente'), estudioAgenda: () => renderEstudioVideo('agenda'),
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster, acessosCandidatos: renderAcessosCandidatos, creditosVagas: renderCreditosVagas
   };
   NAV.profundidade++;
@@ -3204,6 +3246,7 @@ const MODULOS_EMPRESA = [
   { key: 'consultoria', icone: '👥', label: 'Meu Time', desc: 'Funcionários e Consultoria' },
   { key: 'pipeline', icone: '📊', label: 'Pipeline de Desenvolvimento', desc: 'Visão por fase de cada funcionário' },
   { key: 'pdi', icone: '🎯', label: 'PDI', desc: 'Planos de Desenvolvimento Individual' },
+  { key: 'trainee', icone: '🚀', label: 'Programa Trainee', desc: 'Do cadastro à efetivação como gerente' },
   { key: 'academy', icone: '🎓', label: 'Treinamentos', desc: 'Academy Digital, Trilhas, Competence Check' },
   { key: 'mentoria', icone: '🤝', label: 'Mentorias', desc: 'Mentorias, Comunidade, Eventos, Ranking' },
   { key: 'vagas', icone: '💼', label: 'Recrutamento', desc: 'Banco de Currículos, Vagas' },
@@ -24205,6 +24248,269 @@ async function evRadarUsar(i, modo) {
     else evAbrirTeleprompter();
   } catch (e) { mostrarToast(e.message, true); }
 }
+// ============================================================
+// PROGRAMA TRAINEE — do cadastro e seleção até a efetivação como gerente
+// ============================================================
+const TR = { progId: null, aba: 'painel', empresa: '', progs: [], painel: null, empresas: null, tr: null, trAba: 'visao' };
+const TR_ETAPAS = [['inscrito', 'Inscritos'], ['testes', 'Testes on-line'], ['dinamica', 'Dinâmica / Case'], ['entrevista', 'Entrevistas'], ['painel', 'Painel com a diretoria'], ['aprovado', 'Aprovados']];
+const TR_REGUA = { 1: 'Iniciante', 2: 'Em desenvolvimento', 3: 'Proficiente', 4: 'Avançado (pronto)', 5: 'Referência' };
+const TR_STATUS = { selecao: ['Em seleção', '#7c3aed'], ativo: ['No programa', '#2563eb'], efetivado: ['Efetivado', '#16a34a'], desligado: ['Desligado', '#64748b'], reprovado: ['Não aprovado', '#94a3b8'] };
+const TR_GUIA = [
+  ['cargo', '1. Comece pelo fim: o cargo-alvo', 'Defina qual gerência o trainee vai assumir e o perfil desse gerente (entregas, indicadores, competências). A trilha é construída de trás para frente a partir desse cargo.'],
+  ['patrocinio', '2. Patrocínio e orçamento', 'Diretoria patrocinadora, número de vagas, salário de trainee, benefícios, verba de treinamentos e o cargo/salário de efetivação. Sem patrocínio o programa vira estágio caro.'],
+  ['trilha', '3. Desenhe a trilha (job rotation)', 'De 3 a 6 rotações que construam o que o cargo-alvo exige, cada uma com objetivo, responsável e entregas. Modelo Impulsionar: integração → operação → comercial → gestão → gente → liderança assistida → banca.'],
+  ['competencias', '4. Competências e critérios de efetivação', 'Régua de 1 a 5 para cada competência, nível-alvo para virar gerente e critérios claros e comunicados desde o 1º dia (ex.: prontidão ≥ 75%, média ≥ 3,5, projeto com ganho).'],
+  ['pessoas', '5. Gestor, mentor e padrinho', 'Gestor responde pela performance e pela decisão final; mentor (líder sênior de outra área) orienta a carreira; padrinho (buddy) ajuda no dia a dia. Só escale quem tem tempo na agenda.'],
+  ['selecao', '6. Atração e seleção', 'Inscrição → testes on-line (raciocínio, perfil) → dinâmica/case de negócio → entrevistas com gestores → painel com a diretoria. Avalie potencial de liderança e aderência à cultura.'],
+  ['contratacao', '7. Contratação e integração (mês 1)', 'Contrato CLT com cargo, salário e duração claros; integração com cultura, segurança e processos; PDI montado com gestor e mentor; apresentação para as lideranças.'],
+  ['rotina', '8. Rotina de acompanhamento', '1:1 quinzenal com o gestor, mentoria mensal, feedback no fim de cada fase e checkpoints formais nos meses 1, 3, 6, 9 e 12 (aqui no sistema: Diário, Trilha e Competências).'],
+  ['projeto', '9. Projeto aplicativo', 'Um desafio real do negócio, com meta e ganho mensurável (R$, %, tempo), conduzido pelo trainee e apresentado na banca. É a principal prova de que ele está pronto para gerir.'],
+  ['banca', '10. Banca, efetivação e plano de carreira', 'Banca com diretoria e RH avalia projeto, evolução e prontidão. Efetivado, o trainee recebe o cargo e o plano dos próximos 24 meses — sem isso ele sai para buscar o próximo passo fora.'],
+  ['medir', '11. Meça o programa e melhore o próximo ciclo', 'Taxa de conclusão, retenção em 12 e 24 meses, % efetivados em liderança, tempo até gerente, custo por efetivado e prontidão média. Ouça os trainees e ajuste a próxima turma.']
+];
+const fmtDTr = d => d ? new Date(String(d).length <= 10 ? d + 'T12:00:00' : d).toLocaleDateString('pt-BR') : '—';
+const hojeTr = () => new Date().toISOString().slice(0, 10);
+function trModal(html, largo) { let m = document.getElementById('tr-modal'); if (!m) { m = document.createElement('div'); m.id = 'tr-modal'; document.body.appendChild(m); } m.innerHTML = html ? `<div class="tr-fundo" onclick="if(event.target===this) trModal('')"><div class="tr-caixa ${largo ? 'largo' : ''}">${html}</div></div>` : ''; }
+async function renderTrainee() {
+  const c = document.getElementById('conteudo'); const admin = ESTADO.usuario.role === 'admin';
+  c.innerHTML = '<div class="tr"><p>Carregando…</p></div>';
+  try {
+    if (admin && !TR.empresas) { try { TR.empresas = await api('/api/companies'); } catch (e) { TR.empresas = []; } }
+    TR.progs = await api('/api/trainee/programas' + (admin && TR.empresa ? '?company_id=' + TR.empresa : ''));
+    if (!TR.progs.find(p => p.id === TR.progId)) TR.progId = (TR.progs[0] || {}).id || null;
+    if (TR.progId) TR.painel = await api(`/api/trainee/programas/${TR.progId}/painel`);
+  } catch (e) { c.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
+  const p = TR.painel && TR.painel.programa;
+  c.innerHTML = `<div class="tr">
+    <div class="tr-topo"><div><h1>🎯 Programa Trainee</h1><p>Do cadastro e da seleção até a efetivação como gerente: trilha de job rotation, competências, indicadores, tempo em cada função e prontidão para liderar.</p></div>
+      <div class="tr-sel">${admin ? `<select onchange="TR.empresa=this.value; TR.progId=null; renderTrainee()"><option value="">Todas as empresas</option>${(TR.empresas || []).map(e => `<option value="${e.id}" ${String(TR.empresa) === String(e.id) ? 'selected' : ''}>${escapeHtml(e.name)}</option>`).join('')}</select>` : ''}
+        ${TR.progs.length ? `<select onchange="TR.progId=Number(this.value); renderTrainee()">${TR.progs.map(x => `<option value="${x.id}" ${x.id === TR.progId ? 'selected' : ''}>${escapeHtml(x.nome)}${admin && x.empresa ? ' · ' + escapeHtml(x.empresa) : ''}</option>`).join('')}</select>` : ''}
+        <button class="tr-bt pri" onclick="trNovoPrograma()">＋ Novo programa</button></div></div>
+    ${!p ? `<div class="tr-vazio"><div style="font-size:54px;">🎯</div><h2>Monte o programa trainee da empresa</h2><p>Comece pelo <b>padrão Impulsionar</b>: trainee a gerente em 12 meses, com 7 fases de job rotation, 10 competências de liderança, checkpoints nos meses 1, 3, 6, 9 e 12 e critérios de efetivação. Depois é só ajustar à realidade da empresa.</p><button class="tr-bt pri grande" onclick="trNovoPrograma()">🚀 Criar com o padrão Impulsionar</button></div>` : `
+    <div class="tr-abas">${[['painel', '📊 Painel'], ['trainees', '👥 Trainees & seleção'], ['trilha', '🧭 Trilha & competências'], ['guia', '📋 Como implantar'], ['indicadores', '📈 Indicadores']].map(([k, r]) => `<button class="${TR.aba === k ? 'on' : ''}" onclick="TR.aba='${k}'; trDesenhar()">${r}</button>`).join('')}</div>
+    <div id="tr-corpo"></div>`}</div>`;
+  if (p) trDesenhar();
+}
+function trDesenhar() {
+  document.querySelectorAll('.tr-abas button').forEach(b => b.classList.toggle('on', b.getAttribute('onclick').includes(`'${TR.aba}'`)));
+  const el = document.getElementById('tr-corpo'); if (!el) return;
+  ({ painel: trPainel, trainees: trListaTrainees, trilha: trEditorTrilha, guia: trGuia, indicadores: trIndicadores })[TR.aba](el);
+}
+function trAnel(v, cor, tam) { tam = tam || 64; const r = tam / 2 - 6, c = 2 * Math.PI * r, pct = Math.max(0, Math.min(100, v || 0)); cor = cor || (pct >= 75 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626');
+  return `<svg width="${tam}" height="${tam}" class="tr-anel"><circle cx="${tam / 2}" cy="${tam / 2}" r="${r}" stroke="#e2e8f0" stroke-width="6" fill="none"/><circle cx="${tam / 2}" cy="${tam / 2}" r="${r}" stroke="${cor}" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - pct / 100)}" transform="rotate(-90 ${tam / 2} ${tam / 2})"/><text x="50%" y="54%" text-anchor="middle" font-size="${tam / 4.2}" font-weight="800" fill="#0b1329">${pct}%</text></svg>`; }
+function trBarra(v, cor) { return `<div class="tr-barra"><i style="width:${Math.max(0, Math.min(100, v || 0))}%;background:${cor || '#2563eb'}"></i></div>`; }
+function trPainel(el) {
+  const d = TR.painel, I = d.indicadores, p = d.programa, ativos = d.trainees.filter(t => t.status === 'ativo');
+  const kpi = (v, r, cor, ic) => `<div class="tr-kpi"><span>${ic}</span><b style="color:${cor}">${v === null || v === undefined ? '—' : v}</b><small>${r}</small></div>`;
+  el.innerHTML = `<div class="tr-prog-info"><b>${escapeHtml(p.nome)}</b> · cargo-alvo: <b>${escapeHtml(p.cargo_alvo || '—')}</b> · ${p.duracao_meses} meses · ${p.trilha.length} fases · ${p.competencias.length} competências <span class="tr-st" style="background:${{ planejamento: '#7c3aed', selecao: '#d97706', andamento: '#2563eb', encerrado: '#64748b' }[p.status] || '#64748b'}">${{ planejamento: 'Em planejamento', selecao: 'Em seleção', andamento: 'Em andamento', encerrado: 'Encerrado' }[p.status] || p.status}</span></div>
+    <div class="tr-kpis">${kpi(I.ativos, 'trainees no programa', '#2563eb', '👥')}${kpi(I.selecao, 'candidatos em seleção', '#7c3aed', '🔎')}${kpi(I.prontidaoMedia === null ? null : I.prontidaoMedia + '%', 'prontidão média para gerente', '#0b1329', '🎯')}${kpi(I.prontos, 'prontos para gerente (≥75%)', '#16a34a', '🏆')}${kpi(I.emRisco, 'precisam de atenção', '#dc2626', '⚠️')}${kpi(I.efetivados, 'efetivados', '#16a34a', '✅')}</div>
+    <div class="tr-titulo"><h3>Trainees no programa</h3><button class="tr-bt" onclick="trNovoTrainee('ativo')">＋ Cadastrar trainee</button></div>
+    ${ativos.length ? `<div class="tr-cards">${ativos.map(t => { const m = t.metricas, f = m.faseAtual, dias = f ? Math.round((Date.now() - new Date(f.inicio + 'T12:00:00')) / 86400000) : 0, prev = f ? Math.round((Number(f.meses_previstos) || 1) * 30) : 0;
+      return `<div class="tr-card" onclick="trAbrir(${t.id})"><div class="tr-card-cab"><div class="tr-av">${t.foto_url ? `<img src="${escapeHtml(t.foto_url)}">` : escapeHtml((t.nome || '?')[0].toUpperCase())}</div><div><b>${escapeHtml(t.nome)}</b><small>${Math.floor(m.diasPrograma / 30) + 1}º mês · gestor ${escapeHtml(t.gestor || '—')}</small></div>${trAnel(m.prontidao, null, 58)}</div>
+        <div class="tr-fase">${f ? `📍 <b>${escapeHtml(f.fase_nome || f.funcao)}</b> · ${dias} de ${prev} dias` : m.fasesFeitas === m.fasesTotal ? '🏁 Trilha concluída — pronto para a banca' : '📍 Sem fase em andamento'}</div>${f ? trBarra(prev ? dias / prev * 100 : 0, dias > prev ? '#dc2626' : '#2563eb') : ''}
+        <div class="tr-mini"><span>Trilha <b>${m.trilhaPct}%</b></span><span>Competências <b>${m.mediaComp ? m.mediaComp.toFixed(1) : '—'}</b>/5</span><span>${m.ultimoRegistro ? 'Último 1:1 ' + fmtDTr(m.ultimoRegistro) : 'Sem 1:1'}</span></div>
+        ${m.alertas.length ? `<div class="tr-alertas">${m.alertas.map(a => `<span>⚠️ ${escapeHtml(a)}</span>`).join('')}</div>` : '<div class="tr-ok">✅ Tudo em dia</div>'}</div>`; }).join('')}</div>`
+      : `<div class="tr-vazio pequeno">Nenhum trainee no programa ainda. Cadastre os candidatos em <b>👥 Trainees & seleção</b> e, ao contratar, a trilha começa sozinha.</div>`}`;
+}
+function trListaTrainees(el) {
+  const ts = TR.painel.trainees, sel = ts.filter(t => t.status === 'selecao');
+  const linha = t => { const st = TR_STATUS[t.status] || ['', '#64748b']; return `<tr onclick="trAbrir(${t.id})"><td><b>${escapeHtml(t.nome)}</b><small>${escapeHtml(t.email || '')}</small></td><td><span class="tr-st" style="background:${st[1]}">${st[0]}</span></td><td>${fmtDTr(t.data_admissao)}</td><td>${t.status === 'ativo' || t.status === 'efetivado' ? t.metricas.prontidao + '%' : '—'}</td><td>${t.status === 'efetivado' ? escapeHtml(t.cargo_efetivado || '') + ' · ' + fmtDTr(t.data_efetivacao) : t.status === 'desligado' ? escapeHtml(t.motivo_saida || '') : escapeHtml((t.metricas.faseAtual || {}).fase_nome || '')}</td></tr>`; };
+  el.innerHTML = `<div class="tr-titulo"><h3>🔎 Funil de seleção</h3><button class="tr-bt pri" onclick="trNovoTrainee('selecao')">＋ Cadastrar candidato</button></div>
+    <div class="tr-funil">${TR_ETAPAS.map(([k, r], i) => { const l = sel.filter(t => (t.etapa_selecao || 'inscrito') === k); return `<div class="tr-col"><div class="tr-col-cab">${r}<b>${l.length}</b></div>${l.map(t => `<div class="tr-cand"><b onclick="trAbrir(${t.id})">${escapeHtml(t.nome)}</b><small>${escapeHtml(t.formacao || t.cidade || '')}</small><div>${i > 0 ? `<button title="Voltar etapa" onclick="trEtapa(${t.id},'${TR_ETAPAS[i - 1][0]}')">◀</button>` : ''}${i < TR_ETAPAS.length - 1 ? `<button title="Avançar etapa" onclick="trEtapa(${t.id},'${TR_ETAPAS[i + 1][0]}')">▶</button>` : `<button class="pri" onclick="trContratar(${t.id})">Contratar</button>`}<button title="Não aprovado" onclick="trReprovar(${t.id})">✕</button></div></div>`).join('') || '<div class="tr-col-vazio">—</div>'}</div>`; }).join('')}</div>
+    <div class="tr-titulo"><h3>👥 Todos</h3><button class="tr-bt" onclick="trNovoTrainee('ativo')">＋ Cadastrar trainee já contratado</button></div>
+    ${ts.filter(t => t.status !== 'selecao').length ? `<table class="tr-tab"><thead><tr><th>Nome</th><th>Situação</th><th>Admissão</th><th>Prontidão</th><th>Fase / resultado</th></tr></thead><tbody>${ts.filter(t => t.status !== 'selecao').map(linha).join('')}</tbody></table>` : '<div class="tr-vazio pequeno">Ninguém contratado ainda.</div>'}`;
+}
+async function trEtapa(id, etapa) { try { await api('/api/trainee/trainees/' + id, { method: 'PUT', body: JSON.stringify({ etapa_selecao: etapa }) }); await trRecarregar(); } catch (e) { mostrarToast(e.message, true); } }
+async function trReprovar(id) { if (!confirm('Marcar como não aprovado na seleção?')) return; try { await api('/api/trainee/trainees/' + id, { method: 'PUT', body: JSON.stringify({ status: 'reprovado' }) }); await trRecarregar(); } catch (e) { mostrarToast(e.message, true); } }
+function trContratar(id) {
+  trModal(`<h3>🤝 Contratar como trainee</h3><p class="tr-sub">Ao contratar, a 1ª fase da trilha começa automaticamente na data de admissão.</p>
+    <label>Data de admissão<input type="date" id="trc-adm" value="${hojeTr()}"></label><label>Gestor responsável<input id="trc-gestor"></label><label>Mentor<input id="trc-mentor"></label><label>Padrinho (buddy)<input id="trc-padrinho"></label>
+    <div class="tr-linha"><button class="tr-bt" onclick="trModal('')">Cancelar</button><button class="tr-bt pri" onclick="trConfirmarContratacao(${id})">Contratar</button></div>`);
+}
+async function trConfirmarContratacao(id) {
+  const v = k => document.getElementById(k).value.trim();
+  try { await api('/api/trainee/trainees/' + id, { method: 'PUT', body: JSON.stringify({ status: 'ativo', data_admissao: v('trc-adm'), gestor: v('trc-gestor'), mentor: v('trc-mentor'), padrinho: v('trc-padrinho') }) }); trModal(''); mostrarToast('🎉 Trainee contratado! A trilha começou.'); await trRecarregar(); } catch (e) { mostrarToast(e.message, true); }
+}
+async function trRecarregar() { TR.painel = await api(`/api/trainee/programas/${TR.progId}/painel`); trDesenhar(); }
+function trNovoTrainee(status) {
+  trModal(`<h3>＋ ${status === 'ativo' ? 'Cadastrar trainee' : 'Cadastrar candidato'}</h3>
+    <label>Nome completo<input id="trn-nome"></label><div class="tr-2"><label>E-mail<input id="trn-email" type="email"></label><label>WhatsApp<input id="trn-tel"></label></div>
+    <div class="tr-2"><label>Formação<input id="trn-form" placeholder="Ex.: Administração — 2025"></label><label>Cidade<input id="trn-cid"></label></div>
+    <label>Origem<select id="trn-orig"><option>Processo seletivo</option><option>Indicação</option><option>Talento interno</option><option>Universidade / parceria</option><option>LinkedIn</option></select></label>
+    ${status === 'ativo' ? `<div class="tr-2"><label>Data de admissão<input type="date" id="trn-adm" value="${hojeTr()}"></label><label>Gestor<input id="trn-gestor"></label></div><div class="tr-2"><label>Mentor<input id="trn-mentor"></label><label>Padrinho<input id="trn-padrinho"></label></div>` : ''}
+    <label>Observações<textarea id="trn-notas" rows="2"></textarea></label>
+    <div class="tr-linha"><button class="tr-bt" onclick="trModal('')">Cancelar</button><button class="tr-bt pri" onclick="trSalvarNovo('${status}')">Salvar</button></div>`);
+}
+async function trSalvarNovo(status) {
+  const v = k => (document.getElementById(k) || {}).value || '';
+  try {
+    const r = await api('/api/trainee/trainees', { method: 'POST', body: JSON.stringify({ programa_id: TR.progId, nome: v('trn-nome'), email: v('trn-email'), telefone: v('trn-tel'), formacao: v('trn-form'), cidade: v('trn-cid'), origem: v('trn-orig'), notas: v('trn-notas'), status: 'selecao' }) });
+    if (status === 'ativo') await api('/api/trainee/trainees/' + r.id, { method: 'PUT', body: JSON.stringify({ status: 'ativo', data_admissao: v('trn-adm'), gestor: v('trn-gestor'), mentor: v('trn-mentor'), padrinho: v('trn-padrinho') }) });
+    trModal(''); mostrarToast(r.message); await trRecarregar();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+// ---------- Perfil completo do trainee ----------
+async function trAbrir(id) { try { TR.tr = await api('/api/trainee/trainees/' + id); } catch (e) { return mostrarToast(e.message, true); } trDesenharPerfil(); }
+function trRadar(notas) {
+  const n = notas.length; if (n < 3) return ''; const R = 110, cx = 150, cy = 140, pt = (i, v) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + Math.cos(a) * R * v / 5, cy + Math.sin(a) * R * v / 5]; };
+  const poli = vals => vals.map((v, i) => pt(i, v).map(x => x.toFixed(1)).join(',')).join(' ');
+  return `<svg viewBox="-45 -5 390 300" class="tr-radar">${[1, 2, 3, 4, 5].map(k => `<polygon points="${poli(notas.map(() => k))}" fill="none" stroke="#e2e8f0"/>`).join('')}
+    <polygon points="${poli(notas.map(x => x.alvo))}" fill="rgba(22,163,74,.08)" stroke="#16a34a" stroke-dasharray="4 3"/><polygon points="${poli(notas.map(x => x.nota))}" fill="rgba(37,99,235,.25)" stroke="#2563eb" stroke-width="2"/>
+    ${notas.map((x, i) => { const [lx, ly] = pt(i, 6.1); return `<text x="${lx}" y="${ly}" font-size="9" text-anchor="middle" fill="#475569">${escapeHtml(x.nome.length > 18 ? x.nome.slice(0, 17) + '…' : x.nome)}</text>`; }).join('')}</svg>`;
+}
+function trDesenharPerfil() {
+  const D = TR.tr, t = D.trainee, p = D.programa, m = D.metricas, st = TR_STATUS[t.status] || ['', '#64748b'];
+  const abas = [['visao', '👤 Visão geral'], ['trilha', '🧭 Trilha'], ['comp', '🎯 Competências'], ['kpis', '📈 Indicadores'], ['diario', '📝 Diário'], ['dados', '⚙️ Dados & efetivação']];
+  trModal(`<div class="tr-perfil-cab"><div class="tr-av grande">${t.foto_url ? `<img src="${escapeHtml(t.foto_url)}">` : escapeHtml((t.nome || '?')[0].toUpperCase())}</div>
+      <div class="tr-perfil-nome"><h2>${escapeHtml(t.nome)}</h2><small><span class="tr-st" style="background:${st[1]}">${st[0]}</span> ${t.data_admissao ? '· admissão ' + fmtDTr(t.data_admissao) + ' · ' + (Math.floor(m.diasPrograma / 30) + 1) + 'º mês' : ''} · gestor ${escapeHtml(t.gestor || '—')} · mentor ${escapeHtml(t.mentor || '—')}</small></div>
+      ${trAnel(m.prontidao, null, 78)}<button class="tr-x" onclick="trModal(''); trRecarregar()">✕</button></div>
+    <div class="tr-abas peq">${abas.map(([k, r]) => `<button class="${TR.trAba === k ? 'on' : ''}" onclick="TR.trAba='${k}'; trDesenharPerfil()">${r}</button>`).join('')}</div>
+    <div class="tr-perfil-corpo">${({ visao: trPerfilVisao, trilha: trPerfilTrilha, comp: trPerfilComp, kpis: trPerfilKpis, diario: trPerfilDiario, dados: trPerfilDados })[TR.trAba](D)}</div>`, true);
+}
+function trPerfilVisao(D) {
+  const m = D.metricas, f = m.faseAtual;
+  return `<div class="tr-2col"><div>
+      <div class="tr-kpis peq"><div class="tr-kpi"><b>${m.prontidao}%</b><small>prontidão para ${escapeHtml(D.programa.cargo_alvo || 'gerente')}</small></div><div class="tr-kpi"><b>${m.trilhaPct}%</b><small>trilha (${m.fasesFeitas}/${m.fasesTotal} fases)</small></div><div class="tr-kpi"><b>${m.mediaComp ? m.mediaComp.toFixed(1) : '—'}</b><small>média das competências</small></div><div class="tr-kpi"><b>${m.kpiOk === null ? '—' : Math.round(m.kpiOk * 100) + '%'}</b><small>indicadores na meta</small></div></div>
+      <div class="tr-box"><b>📍 Agora</b><p>${f ? `${escapeHtml(f.fase_nome || '')} — ${escapeHtml(f.funcao || '')} (${escapeHtml(f.area || '')}) desde ${fmtDTr(f.inicio)}` : m.fasesFeitas === m.fasesTotal && m.fasesTotal ? '🏁 Trilha concluída — marque a banca de efetivação.' : 'Nenhuma fase em andamento.'}</p></div>
+      ${m.alertas.length ? `<div class="tr-box alerta"><b>⚠️ Atenção</b>${m.alertas.map(a => `<p>• ${escapeHtml(a)}</p>`).join('')}</div>` : '<div class="tr-box ok"><b>✅ Acompanhamento em dia</b></div>'}
+      <div class="tr-box"><b>🏆 Critérios de efetivação</b><p>${escapeHtml(D.programa.criterios || 'Defina em Trilha & competências.')}</p></div>
+    </div><div><div class="tr-box"><b>Competências — atual × alvo</b>${m.notas.some(n => n.nota) ? trRadar(m.notas) : '<p class="tr-sub">Faça a primeira avaliação em 🎯 Competências.</p>'}<div class="tr-leg"><span class="az">■ atual</span><span class="vd">▢ alvo para ${escapeHtml(D.programa.cargo_alvo || 'gerente')}</span></div></div></div></div>`;
+}
+function trPerfilTrilha(D) {
+  const fases = D.programa.trilha || [];
+  return `<p class="tr-sub">Tempo real em cada função comparado ao previsto. Ao terminar uma fase, registre a nota e as entregas e a próxima começa sozinha.</p>
+    <div class="tr-trilha">${fases.map((f, i) => { const r = D.rot.filter(x => x.fase_id === f.id).slice(-1)[0], feito = r && r.fim, agora = r && !r.fim, dias = r ? Math.round(((r.fim ? new Date(r.fim + 'T12:00:00') : new Date()) - new Date(r.inicio + 'T12:00:00')) / 86400000) : 0, prev = Math.round((Number(f.meses) || 1) * 30);
+      return `<div class="tr-etapa ${feito ? 'feito' : agora ? 'agora' : ''}"><div class="tr-etapa-n">${feito ? '✓' : i + 1}</div><div class="tr-etapa-c"><b>${escapeHtml(f.nome)}</b><small>${escapeHtml(f.funcao || '')} · ${escapeHtml(f.area || '')} · previsto ${f.meses} ${Number(f.meses) === 1 ? 'mês' : 'meses'}</small>
+        ${r ? `<div class="tr-etapa-tempo">${fmtDTr(r.inicio)} → ${r.fim ? fmtDTr(r.fim) : 'hoje'} · <b style="color:${dias > prev + 15 ? '#dc2626' : '#16a34a'}">${dias} dias</b> de ${prev}${r.nota ? ` · nota <b>${r.nota}/5</b>` : ''}</div>${trBarra(dias / prev * 100, dias > prev ? '#dc2626' : '#2563eb')}` : ''}
+        <div class="tr-etapa-det"><span>🎯 ${escapeHtml(f.objetivos || '')}</span><span>📦 Entregas: ${escapeHtml(f.entregas || '—')}</span>${r && r.entregas ? `<span>✅ Entregou: ${escapeHtml(r.entregas)}</span>` : ''}${r && r.aprendizados ? `<span>💡 ${escapeHtml(r.aprendizados)}</span>` : ''}</div>
+        ${agora ? `<button class="tr-bt pri mini" onclick="trConcluirFase()">✅ Concluir fase e ir para a próxima</button>` : ''}${r ? `<button class="tr-bt mini" onclick="trEditarRot(${r.id})">✏️ Datas e notas</button>` : ''}</div></div>`; }).join('') || '<p>A trilha do programa está vazia. Monte em 🧭 Trilha & competências.</p>'}</div>
+    ${D.trainee.status === 'ativo' && !D.rot.some(r => !r.fim) && D.rot.length < fases.length ? `<button class="tr-bt pri" onclick="trConcluirFase()">▶ Começar a próxima fase</button>` : ''}`;
+}
+function trConcluirFase() {
+  trModal2(`<h3>✅ Concluir a fase</h3><label>Nota da fase (1 a 5)<select id="trf-nota">${[5, 4, 3, 2, 1].map(n => `<option value="${n}" ${n === 4 ? 'selected' : ''}>${n} — ${TR_REGUA[n]}</option>`).join('')}</select></label>
+    <label>Data de término<input type="date" id="trf-data" value="${hojeTr()}"></label><label>O que entregou<textarea id="trf-ent" rows="2"></textarea></label><label>Principais aprendizados<textarea id="trf-apr" rows="2"></textarea></label>
+    <div class="tr-linha"><button class="tr-bt" onclick="trModal2('')">Cancelar</button><button class="tr-bt pri" onclick="trSalvarFase()">Concluir</button></div>`);
+}
+async function trSalvarFase() { const v = k => document.getElementById(k).value; try { const r = await api(`/api/trainee/trainees/${TR.tr.trainee.id}/proxima-fase`, { method: 'POST', body: JSON.stringify({ nota: Number(v('trf-nota')), data: v('trf-data'), entregas: v('trf-ent'), aprendizados: v('trf-apr') }) }); trModal2(''); mostrarToast(r.message); trAbrir(TR.tr.trainee.id); } catch (e) { mostrarToast(e.message, true); } }
+function trEditarRot(id) {
+  const r = TR.tr.rot.find(x => x.id === id); if (!r) return;
+  trModal2(`<h3>✏️ ${escapeHtml(r.fase_nome || '')}</h3><div class="tr-2"><label>Início<input type="date" id="tre-ini" value="${r.inicio || ''}"></label><label>Término<input type="date" id="tre-fim" value="${r.fim || ''}"></label></div>
+    <div class="tr-2"><label>Função exercida<input id="tre-fun" value="${escapeHtml(r.funcao || '')}"></label><label>Responsável na área<input id="tre-resp" value="${escapeHtml(r.responsavel || '')}"></label></div>
+    <label>Nota (1 a 5)<input type="number" min="1" max="5" id="tre-nota" value="${r.nota || ''}"></label><label>Entregas<textarea id="tre-ent" rows="2">${escapeHtml(r.entregas || '')}</textarea></label><label>Aprendizados<textarea id="tre-apr" rows="2">${escapeHtml(r.aprendizados || '')}</textarea></label>
+    <div class="tr-linha"><button class="tr-bt perigo" onclick="trExcluirItem('rotacoes', ${id})">Excluir</button><button class="tr-bt" onclick="trModal2('')">Cancelar</button><button class="tr-bt pri" onclick="trSalvarRot(${id})">Salvar</button></div>`);
+}
+async function trSalvarRot(id) { const v = k => document.getElementById(k).value; try { await api('/api/trainee/rotacoes/' + id, { method: 'PUT', body: JSON.stringify({ inicio: v('tre-ini'), fim: v('tre-fim'), funcao: v('tre-fun'), responsavel: v('tre-resp'), nota: v('tre-nota'), entregas: v('tre-ent'), aprendizados: v('tre-apr') }) }); trModal2(''); trAbrir(TR.tr.trainee.id); } catch (e) { mostrarToast(e.message, true); } }
+async function trExcluirItem(tipo, id) { if (!confirm('Excluir este registro?')) return; try { await api(`/api/trainee/${tipo}/${id}`, { method: 'DELETE' }); trModal2(''); trAbrir(TR.tr.trainee.id); } catch (e) { mostrarToast(e.message, true); } }
+function trModal2(html) { let m = document.getElementById('tr-modal2'); if (!m) { m = document.createElement('div'); m.id = 'tr-modal2'; document.body.appendChild(m); } m.innerHTML = html ? `<div class="tr-fundo" style="z-index:20100" onclick="if(event.target===this) trModal2('')"><div class="tr-caixa">${html}</div></div>` : ''; }
+function trPerfilComp(D) {
+  const comps = D.programa.competencias || [], av = D.aval.slice().sort((a, b) => String(a.data).localeCompare(b.data));
+  return `<div class="tr-titulo"><p class="tr-sub" style="margin:0;">Régua: 1 Iniciante · 2 Em desenvolvimento · 3 Proficiente · 4 Avançado (pronto) · 5 Referência</p><button class="tr-bt pri" onclick="trNovaAvaliacao()">＋ Nova avaliação</button></div>
+    <div class="tr-scroll"><table class="tr-tab comp"><thead><tr><th>Competência</th><th>Alvo</th>${av.map(a => `<th title="${escapeHtml(a.avaliador || '')}">${escapeHtml(a.tipo || '')}<small>${fmtDTr(a.data)}</small></th>`).join('')}<th>Atual</th></tr></thead><tbody>
+    ${comps.map(c => { const n = (D.metricas.notas.find(x => x.id === c.id) || {}).nota || 0; return `<tr><td>${escapeHtml(c.nome)}<small>${escapeHtml(c.grupo || '')}</small></td><td>${c.alvo}</td>${av.map(a => { const v = (jsonParseSeguro(a.notas) || {})[c.id]; return `<td class="n${v || 0}">${v || '—'}</td>`; }).join('')}<td><b style="color:${n >= c.alvo ? '#16a34a' : n >= c.alvo - 1 ? '#d97706' : '#dc2626'}">${n || '—'}</b></td></tr>`; }).join('')}
+    <tr><td><b>Prontidão (avaliador)</b></td><td>75%</td>${av.map(a => `<td>${a.prontidao !== null && a.prontidao !== undefined && a.prontidao !== '' ? a.prontidao + '%' : '—'}</td>`).join('')}<td></td></tr></tbody></table></div>
+    ${av.slice().reverse().map(a => `<div class="tr-box"><b>${escapeHtml(a.tipo || 'Avaliação')} · ${fmtDTr(a.data)}${a.avaliador ? ' · ' + escapeHtml(a.avaliador) : ''}</b>${a.fortes ? `<p>💪 ${escapeHtml(a.fortes)}</p>` : ''}${a.desenvolver ? `<p>🎯 Desenvolver: ${escapeHtml(a.desenvolver)}</p>` : ''}${a.decisao ? `<p>📌 ${escapeHtml(a.decisao)}</p>` : ''}<button class="tr-bt mini" onclick="TR.tr && trExcluirItem('avaliacoes', ${a.id})">Excluir</button></div>`).join('')}`;
+}
+function jsonParseSeguro(v) { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }
+function trNovaAvaliacao() {
+  const D = TR.tr, comps = D.programa.competencias || [], mes = Math.round(D.metricas.diasPrograma / 30), ck = (D.programa.checkpoints || []).reduce((a, b) => Math.abs(b - mes) < Math.abs(a - mes) ? b : a, (D.programa.checkpoints || [3])[0]);
+  trModal2(`<h3>🎯 Nova avaliação</h3><div class="tr-2"><label>Tipo<select id="tra-tipo">${[`Checkpoint ${ck}º mês`, 'Avaliação do gestor', 'Avaliação do mentor', 'Autoavaliação', 'Fim de fase', 'Banca final'].map(x => `<option>${x}</option>`).join('')}</select></label><label>Data<input type="date" id="tra-data" value="${hojeTr()}"></label></div>
+    <label>Avaliador<input id="tra-aval" value="${escapeHtml(D.trainee.gestor || '')}"></label>
+    <div class="tr-notas">${comps.map(c => `<div class="tr-nota"><span>${escapeHtml(c.nome)} <small>alvo ${c.alvo}</small></span><div>${[1, 2, 3, 4, 5].map(n => `<label title="${TR_REGUA[n]}"><input type="radio" name="trn-${c.id}" value="${n}"><i>${n}</i></label>`).join('')}</div></div>`).join('')}</div>
+    <label>Prontidão para ${escapeHtml(D.programa.cargo_alvo || 'gerente')} na visão do avaliador: <b id="tra-pv">60%</b><input type="range" id="tra-pront" min="0" max="100" step="5" value="60" oninput="document.getElementById('tra-pv').textContent=this.value+'%'"></label>
+    <label>Pontos fortes<textarea id="tra-fortes" rows="2"></textarea></label><label>O que desenvolver (vira ação no PDI)<textarea id="tra-desenv" rows="2"></textarea></label><label>Decisão / próximos passos<input id="tra-dec" placeholder="Ex.: segue no programa · acelerar · plano de recuperação · aprovado para efetivar"></label>
+    <div class="tr-linha"><button class="tr-bt" onclick="trModal2('')">Cancelar</button><button class="tr-bt pri" onclick="trSalvarAvaliacao()">Salvar avaliação</button></div>`);
+}
+async function trSalvarAvaliacao() {
+  const D = TR.tr, notas = {}; (D.programa.competencias || []).forEach(c => { const r = document.querySelector(`input[name="trn-${c.id}"]:checked`); if (r) notas[c.id] = Number(r.value); });
+  if (!Object.keys(notas).length) return mostrarToast('Dê a nota de pelo menos uma competência.', true);
+  const v = k => document.getElementById(k).value;
+  try { await api('/api/trainee/avaliacoes', { method: 'POST', body: JSON.stringify({ trainee_id: D.trainee.id, tipo: v('tra-tipo'), data: v('tra-data'), avaliador: v('tra-aval'), notas, prontidao: Number(v('tra-pront')), fortes: v('tra-fortes'), desenvolver: v('tra-desenv'), decisao: v('tra-dec') }) }); trModal2(''); mostrarToast('Avaliação salva! ✅'); trAbrir(D.trainee.id); } catch (e) { mostrarToast(e.message, true); }
+}
+function trPerfilKpis(D) {
+  return `<div class="tr-titulo"><p class="tr-sub" style="margin:0;">Indicadores da área sob responsabilidade do trainee (produtividade, custo, vendas, qualidade, turnover da equipe…).</p><button class="tr-bt pri" onclick="trNovoKpi()">＋ Indicador</button></div>
+    ${D.kpis.length ? `<div class="tr-kpi-lista">${D.kpis.map(k => { const vals = jsonParseSeguro(k.valores) || [], u = vals.length ? Number(vals[vals.length - 1].valor) : null, ok = u !== null && (k.sentido === 'menor' ? u <= Number(k.meta) : u >= Number(k.meta)); const max = Math.max(Number(k.meta) || 1, ...vals.map(x => Number(x.valor) || 0)) * 1.15;
+      return `<div class="tr-box"><div class="tr-titulo"><b>${escapeHtml(k.nome)}</b><span class="tr-st" style="background:${u === null ? '#94a3b8' : ok ? '#16a34a' : '#dc2626'}">${u === null ? 'sem dado' : ok ? 'na meta' : 'fora da meta'}</span></div>
+        <small>Meta: ${k.sentido === 'menor' ? '≤' : '≥'} ${k.meta}${escapeHtml(k.unidade || '')} · último: <b>${u === null ? '—' : u + (k.unidade || '')}</b></small>
+        <div class="tr-spark">${vals.slice(-12).map(x => `<i title="${fmtDTr(x.data)}: ${x.valor}" style="height:${Math.max(4, Number(x.valor) / max * 100)}%;background:${(k.sentido === 'menor' ? Number(x.valor) <= Number(k.meta) : Number(x.valor) >= Number(k.meta)) ? '#16a34a' : '#f59e0b'}"></i>`).join('')}<em style="bottom:${Number(k.meta) / max * 100}%"></em></div>
+        <div class="tr-linha" style="justify-content:flex-start;"><input type="date" id="trk-d-${k.id}" value="${hojeTr()}" style="width:auto;"><input type="number" step="any" id="trk-v-${k.id}" placeholder="valor" style="width:110px;"><button class="tr-bt mini pri" onclick="trAddValorKpi(${k.id})">＋ lançar</button><button class="tr-bt mini" onclick="trExcluirItem('kpis', ${k.id})">Excluir</button></div></div>`; }).join('')}</div>` : '<div class="tr-vazio pequeno">Nenhum indicador ainda. Dica: use os mesmos indicadores do gerente da área — o trainee aprende a ser cobrado pelo que vai gerir.</div>'}`;
+}
+function trNovoKpi() { trModal2(`<h3>📈 Novo indicador</h3><label>Nome<input id="trk-nome" placeholder="Ex.: Produtividade da equipe"></label><div class="tr-2"><label>Meta<input type="number" step="any" id="trk-meta"></label><label>Unidade<input id="trk-un" placeholder="%, R$, h, un"></label></div><label>Melhor quando<select id="trk-sent"><option value="maior">maior (≥ meta)</option><option value="menor">menor (≤ meta)</option></select></label><div class="tr-linha"><button class="tr-bt" onclick="trModal2('')">Cancelar</button><button class="tr-bt pri" onclick="trSalvarKpi()">Salvar</button></div>`); }
+async function trSalvarKpi() { const v = k => document.getElementById(k).value; try { await api('/api/trainee/kpis', { method: 'POST', body: JSON.stringify({ trainee_id: TR.tr.trainee.id, nome: v('trk-nome'), meta: Number(v('trk-meta')), unidade: v('trk-un'), sentido: v('trk-sent'), valores: [] }) }); trModal2(''); trAbrir(TR.tr.trainee.id); } catch (e) { mostrarToast(e.message, true); } }
+async function trAddValorKpi(id) { const k = TR.tr.kpis.find(x => x.id === id), d = document.getElementById('trk-d-' + id).value, val = document.getElementById('trk-v-' + id).value; if (val === '') return; const vals = (jsonParseSeguro(k.valores) || []).concat([{ data: d, valor: Number(val) }]).sort((a, b) => String(a.data).localeCompare(b.data)); try { await api('/api/trainee/kpis/' + id, { method: 'PUT', body: JSON.stringify({ valores: vals }) }); trAbrir(TR.tr.trainee.id); } catch (e) { mostrarToast(e.message, true); } }
+function trPerfilDiario(D) {
+  const ic = { '1:1': '🗣️', Feedback: '💬', Treinamento: '🎓', Projeto: '🚀', Reconhecimento: '🏆', 'Ponto de atenção': '⚠️', Mentoria: '🧭' };
+  return `<div class="tr-diario-novo"><select id="trd-tipo">${Object.keys(ic).map(x => `<option>${x}</option>`).join('')}</select><input type="date" id="trd-data" value="${hojeTr()}"><input id="trd-tit" placeholder="Título (ex.: 1:1 quinzenal, curso de liderança…)"><textarea id="trd-txt" rows="2" placeholder="O que foi conversado, combinado, aprendido ou entregue"></textarea><button class="tr-bt pri" onclick="trSalvarRegistro()">＋ Registrar</button></div>
+    <div class="tr-timeline">${D.regs.map(r => `<div class="tr-reg"><span class="tr-reg-ic">${ic[r.tipo] || '📌'}</span><div><b>${escapeHtml(r.titulo || r.tipo)}</b><small>${escapeHtml(r.tipo)} · ${fmtDTr(r.data)}${r.autor ? ' · ' + escapeHtml(r.autor) : ''}</small>${r.texto ? `<p>${escapeHtml(r.texto)}</p>` : ''}</div><button class="tr-mini-x" onclick="trExcluirItem('registros', ${r.id})">✕</button></div>`).join('') || '<p class="tr-sub">Nada registrado ainda. Registre os 1:1 quinzenais, feedbacks, treinamentos e marcos do projeto.</p>'}</div>`;
+}
+async function trSalvarRegistro() { const v = k => document.getElementById(k).value; if (!v('trd-tit').trim() && !v('trd-txt').trim()) return mostrarToast('Escreva o título ou o texto.', true); try { await api('/api/trainee/registros', { method: 'POST', body: JSON.stringify({ trainee_id: TR.tr.trainee.id, tipo: v('trd-tipo'), data: v('trd-data'), titulo: v('trd-tit'), texto: v('trd-txt') }) }); trAbrir(TR.tr.trainee.id); } catch (e) { mostrarToast(e.message, true); } }
+function trPerfilDados(D) {
+  const t = D.trainee, campo = (k, r, tipo) => `<label>${r}<input id="trp-${k}" type="${tipo || 'text'}" value="${escapeHtml(t[k] || '')}"></label>`;
+  return `<div class="tr-2col"><div>${campo('nome', 'Nome')}<div class="tr-2">${campo('email', 'E-mail', 'email')}${campo('telefone', 'WhatsApp')}</div><div class="tr-2">${campo('formacao', 'Formação')}${campo('cidade', 'Cidade')}</div>
+      <div class="tr-2">${campo('data_admissao', 'Admissão', 'date')}${campo('origem', 'Origem')}</div><div class="tr-2">${campo('gestor', 'Gestor')}${campo('mentor', 'Mentor')}</div>${campo('padrinho', 'Padrinho (buddy)')}${campo('foto_url', 'Link da foto (opcional)')}
+      <label>Observações<textarea id="trp-notas" rows="3">${escapeHtml(t.notas || '')}</textarea></label><div class="tr-linha"><button class="tr-bt perigo" onclick="trExcluirTrainee()">Excluir cadastro</button><button class="tr-bt pri" onclick="trSalvarDados()">Salvar dados</button></div></div>
+    <div><div class="tr-box ok"><b>🏆 Efetivação</b><p class="tr-sub">Aprovado na banca? Registre o cargo e a data — o trainee sai da trilha e entra nos indicadores de sucesso do programa.</p>${t.status === 'efetivado' ? `<p>Efetivado como <b>${escapeHtml(t.cargo_efetivado || '')}</b> em ${fmtDTr(t.data_efetivacao)}.</p>` : ''}
+      <div class="tr-2"><label>Cargo<input id="trp-cargo" value="${escapeHtml(t.cargo_efetivado || D.programa.cargo_alvo || '')}"></label><label>Data<input type="date" id="trp-dtef" value="${t.data_efetivacao || hojeTr()}"></label></div><button class="tr-bt pri" onclick="trEfetivar()">✅ Efetivar</button></div>
+      <div class="tr-box alerta"><b>Desligamento</b><div class="tr-2"><label>Motivo<select id="trp-mot"><option>Pedido de desligamento</option><option>Não atingiu os critérios</option><option>Recebeu outra proposta</option><option>Comportamento / cultura</option><option>Outro</option></select></label><label>Data<input type="date" id="trp-dtsai" value="${hojeTr()}"></label></div><button class="tr-bt perigo" onclick="trDesligar()">Registrar desligamento</button></div>
+      ${t.status !== 'ativo' && t.status !== 'selecao' ? `<button class="tr-bt" onclick="trReativar()">↺ Voltar para "no programa"</button>` : ''}</div></div>`;
+}
+async function trPutTrainee(corpo, msg) { try { await api('/api/trainee/trainees/' + TR.tr.trainee.id, { method: 'PUT', body: JSON.stringify(corpo) }); mostrarToast(msg || 'Salvo! ✅'); trAbrir(TR.tr.trainee.id); } catch (e) { mostrarToast(e.message, true); } }
+function trSalvarDados() { const c = {}; ['nome', 'email', 'telefone', 'formacao', 'cidade', 'data_admissao', 'origem', 'gestor', 'mentor', 'padrinho', 'foto_url', 'notas'].forEach(k => { c[k] = document.getElementById('trp-' + k).value; }); trPutTrainee(c); }
+function trEfetivar() { if (!confirm('Confirmar a efetivação?')) return; trPutTrainee({ status: 'efetivado', cargo_efetivado: document.getElementById('trp-cargo').value, data_efetivacao: document.getElementById('trp-dtef').value }, '🎉 Trainee efetivado!'); }
+function trDesligar() { if (!confirm('Registrar o desligamento?')) return; trPutTrainee({ status: 'desligado', motivo_saida: document.getElementById('trp-mot').value, data_saida: document.getElementById('trp-dtsai').value }, 'Desligamento registrado.'); }
+function trReativar() { trPutTrainee({ status: 'ativo', data_saida: null, data_efetivacao: null }); }
+async function trExcluirTrainee() { if (!confirm('Excluir o cadastro e todo o histórico deste trainee?')) return; try { await api('/api/trainee/trainees/' + TR.tr.trainee.id, { method: 'DELETE' }); trModal(''); trRecarregar(); } catch (e) { mostrarToast(e.message, true); } }
+// ---------- Trilha, competências e dados do programa ----------
+function trEditorTrilha(el) {
+  const p = TR.painel.programa; TR.ed = JSON.parse(JSON.stringify({ trilha: p.trilha, competencias: p.competencias }));
+  el.innerHTML = `<div class="tr-box"><b>Programa</b><div class="tr-2"><label>Nome<input id="tre-nome" value="${escapeHtml(p.nome)}"></label><label>Cargo-alvo<input id="tre-cargo" value="${escapeHtml(p.cargo_alvo || '')}"></label></div>
+      <div class="tr-3"><label>Duração (meses)<input type="number" id="tre-dur" value="${p.duracao_meses}"></label><label>Início da turma<input type="date" id="tre-ini" value="${p.inicio || ''}"></label><label>Situação<select id="tre-st">${[['planejamento', 'Em planejamento'], ['selecao', 'Em seleção'], ['andamento', 'Em andamento'], ['encerrado', 'Encerrado']].map(([k, r]) => `<option value="${k}" ${p.status === k ? 'selected' : ''}>${r}</option>`).join('')}</select></label></div>
+      <label>Objetivo<textarea id="tre-obj" rows="2">${escapeHtml(p.objetivo || '')}</textarea></label><label>Critérios de efetivação<textarea id="tre-crit" rows="2">${escapeHtml(p.criterios || '')}</textarea></label>
+      <label>Checkpoints formais (meses, separados por vírgula)<input id="tre-ck" value="${(p.checkpoints || []).join(', ')}"></label></div>
+    <div class="tr-titulo"><h3>🧭 Trilha (job rotation)</h3><button class="tr-bt" onclick="trEdAdd('trilha')">＋ Fase</button></div><div id="tre-trilha"></div>
+    <div class="tr-titulo"><h3>🎯 Competências (alvo de 1 a 5)</h3><button class="tr-bt" onclick="trEdAdd('competencias')">＋ Competência</button></div><div id="tre-comps"></div>
+    <div class="tr-linha"><button class="tr-bt perigo" onclick="trExcluirPrograma()">Excluir programa</button><button class="tr-bt pri grande" onclick="trSalvarPrograma()">💾 Salvar programa</button></div>`;
+  trEdDesenhar();
+}
+function trEdDesenhar() {
+  const T = TR.ed; const inp = (lista, i, k, ph, tipo) => `<input ${tipo ? `type="${tipo}"` : ''} value="${escapeHtml(String(T[lista][i][k] ?? ''))}" placeholder="${ph}" oninput="TR.ed.${lista}[${i}].${k}=${tipo === 'number' ? 'Number(this.value)' : 'this.value'}">`;
+  document.getElementById('tre-trilha').innerHTML = T.trilha.map((f, i) => `<div class="tr-ed-fase"><div class="tr-ed-ord"><b>${i + 1}</b><button onclick="trEdMover('trilha',${i},-1)">▲</button><button onclick="trEdMover('trilha',${i},1)">▼</button></div><div class="tr-ed-campos"><div class="tr-3">${inp('trilha', i, 'nome', 'Nome da fase')}${inp('trilha', i, 'area', 'Área')}${inp('trilha', i, 'funcao', 'Função exercida')}</div><div class="tr-ed-l2">${inp('trilha', i, 'meses', 'meses', 'number')}${inp('trilha', i, 'objetivos', 'Objetivos da fase')}</div>${inp('trilha', i, 'entregas', 'Entregas esperadas')}</div><button class="tr-mini-x" onclick="trEdRem('trilha',${i})">✕</button></div>`).join('') || '<p class="tr-sub">Nenhuma fase.</p>';
+  document.getElementById('tre-comps').innerHTML = `<div class="tr-ed-comps">${T.competencias.map((c, i) => `<div class="tr-ed-comp">${inp('competencias', i, 'nome', 'Competência')}${inp('competencias', i, 'grupo', 'Grupo')}${inp('competencias', i, 'alvo', 'alvo', 'number')}<button class="tr-mini-x" onclick="trEdRem('competencias',${i})">✕</button></div>`).join('')}</div>`;
+}
+function trEdAdd(l) { TR.ed[l].push(l === 'trilha' ? { id: 'f' + Date.now().toString(36), nome: '', area: '', funcao: '', meses: 1, objetivos: '', entregas: '' } : { id: 'c' + Date.now().toString(36), nome: '', grupo: '', alvo: 4 }); trEdDesenhar(); }
+function trEdRem(l, i) { TR.ed[l].splice(i, 1); trEdDesenhar(); }
+function trEdMover(l, i, d) { const a = TR.ed[l], j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; trEdDesenhar(); }
+async function trSalvarPrograma() {
+  const v = k => document.getElementById(k).value;
+  try { await api('/api/trainee/programas/' + TR.progId, { method: 'PUT', body: JSON.stringify({ nome: v('tre-nome'), cargo_alvo: v('tre-cargo'), duracao_meses: Number(v('tre-dur')), inicio: v('tre-ini'), status: v('tre-st'), objetivo: v('tre-obj'), criterios: v('tre-crit'), checkpoints: v('tre-ck').split(',').map(x => Number(x.trim())).filter(Boolean), trilha: TR.ed.trilha.filter(f => f.nome), competencias: TR.ed.competencias.filter(c => c.nome) }) }); mostrarToast('Programa salvo! ✅'); renderTrainee(); } catch (e) { mostrarToast(e.message, true); }
+}
+async function trExcluirPrograma() { if (!confirm('Excluir o programa inteiro, com todos os trainees e históricos? Não dá para desfazer.')) return; try { await api('/api/trainee/programas/' + TR.progId, { method: 'DELETE' }); TR.progId = null; renderTrainee(); } catch (e) { mostrarToast(e.message, true); } }
+function trNovoPrograma() {
+  const admin = ESTADO.usuario.role === 'admin';
+  trModal(`<h3>＋ Novo programa trainee</h3>${admin ? `<label>Empresa<select id="trp-emp">${(TR.empresas || []).map(e => `<option value="${e.id}" ${String(TR.empresa) === String(e.id) ? 'selected' : ''}>${escapeHtml(e.name)}</option>`).join('')}</select></label>` : ''}
+    <label>Nome<input id="trp-nome" value="Programa Trainee ${new Date().getFullYear() + 1}"></label><label>Cargo-alvo<input id="trp-cargo" value="Gerente" placeholder="Ex.: Gerente de Operações"></label><label>Início da turma<input type="date" id="trp-ini"></label>
+    <div class="tr-modelos"><label class="tr-modelo"><input type="radio" name="trp-mod" value="padrao" checked><span><b>⭐ Padrão Impulsionar</b><small>Trainee a gerente em 12 meses: 7 fases de job rotation, 10 competências, checkpoints e critérios de efetivação prontos.</small></span></label><label class="tr-modelo"><input type="radio" name="trp-mod" value="branco"><span><b>Em branco</b><small>Montar a trilha e as competências do zero.</small></span></label></div>
+    <div class="tr-linha"><button class="tr-bt" onclick="trModal('')">Cancelar</button><button class="tr-bt pri" onclick="trCriarPrograma()">Criar programa</button></div>`);
+}
+async function trCriarPrograma() {
+  const v = k => (document.getElementById(k) || {}).value;
+  try { const r = await api('/api/trainee/programas', { method: 'POST', body: JSON.stringify({ company_id: v('trp-emp'), nome: v('trp-nome'), cargo_alvo: v('trp-cargo'), inicio: v('trp-ini'), modelo: (document.querySelector('input[name="trp-mod"]:checked') || {}).value }) }); trModal(''); TR.progId = r.id; TR.aba = 'guia'; mostrarToast('Programa criado! Siga o passo a passo de implantação. ✅'); renderTrainee(); } catch (e) { mostrarToast(e.message, true); }
+}
+// ---------- Guia de implantação (passo a passo com checklist) ----------
+function trGuia(el) {
+  const g = TR.painel.programa.guia || {}, feitos = TR_GUIA.filter(([k]) => g[k]).length;
+  el.innerHTML = `<div class="tr-box"><b>📋 Como implantar o programa — padrão Impulsionar</b><p class="tr-sub">Baseado nos programas de trainee mais estruturados do mercado (12 a 24 meses, job rotation, mentoria, avaliações periódicas, projeto e efetivação com plano de carreira). Marque cada etapa conforme for implantando.</p>${trBarra(feitos / TR_GUIA.length * 100, '#16a34a')}<small>${feitos} de ${TR_GUIA.length} etapas concluídas</small></div>
+    <div class="tr-guia">${TR_GUIA.map(([k, t, d]) => `<label class="tr-passo ${g[k] ? 'feito' : ''}"><input type="checkbox" ${g[k] ? 'checked' : ''} onchange="trMarcarGuia('${k}', this.checked)"><div><b>${t}</b><p>${d}</p></div></label>`).join('')}</div>`;
+}
+async function trMarcarGuia(k, v) { const g = Object.assign({}, TR.painel.programa.guia || {}, { [k]: v }); TR.painel.programa.guia = g; try { await api('/api/trainee/programas/' + TR.progId, { method: 'PUT', body: JSON.stringify({ guia: g }) }); trDesenhar(); } catch (e) { mostrarToast(e.message, true); } }
+// ---------- Indicadores do programa ----------
+function trIndicadores(el) {
+  const d = TR.painel, I = d.indicadores, ts = d.trainees.filter(t => t.status !== 'selecao' && t.status !== 'reprovado');
+  const card = (v, r, dica) => `<div class="tr-kpi"><b>${v === null || v === undefined ? '—' : v}</b><small>${r}</small><em>${dica}</em></div>`;
+  el.innerHTML = `<div class="tr-kpis">${card(I.retencao === null ? null : I.retencao + '%', 'retenção dos contratados', 'meta de mercado: ≥ 80% em 12 meses')}${card(I.conversao === null ? null : I.conversao + '%', 'efetivados entre os que concluíram', 'quanto do investimento virou líder')}${card(I.mesesAteEfetivar === null ? null : I.mesesAteEfetivar + ' meses', 'tempo médio até a efetivação', 'compare com a duração planejada')}${card(I.prontidaoMedia === null ? null : I.prontidaoMedia + '%', 'prontidão média da turma', '≥ 75% = pronto para gerente')}${card(I.efetivados, 'efetivados', '')}${card(I.desligados, 'desligados', 'entenda os motivos para ajustar o programa')}</div>
+    <h3>Comparativo da turma</h3>${ts.length ? `<div class="tr-scroll"><table class="tr-tab"><thead><tr><th>Trainee</th><th>Situação</th><th>Mês</th><th>Trilha</th><th>Competências</th><th>Indicadores na meta</th><th>Prontidão</th></tr></thead><tbody>${ts.map(t => { const m = t.metricas, st = TR_STATUS[t.status]; return `<tr onclick="trAbrir(${t.id})"><td><b>${escapeHtml(t.nome)}</b></td><td><span class="tr-st" style="background:${st[1]}">${st[0]}</span></td><td>${Math.floor(m.diasPrograma / 30) + 1}º</td><td>${trBarra(m.trilhaPct, '#2563eb')}<small>${m.trilhaPct}%</small></td><td>${m.mediaComp ? m.mediaComp.toFixed(1) : '—'}</td><td>${m.kpiOk === null ? '—' : Math.round(m.kpiOk * 100) + '%'}</td><td><b style="color:${m.prontidao >= 75 ? '#16a34a' : m.prontidao >= 50 ? '#d97706' : '#dc2626'}">${m.prontidao}%</b></td></tr>`; }).join('')}</tbody></table></div>` : '<div class="tr-vazio pequeno">Sem trainees contratados ainda.</div>'}
+    <div class="tr-box"><b>Como o índice de prontidão é calculado</b><p class="tr-sub">40% aderência das competências ao alvo · 25% trilha concluída · 20% prontidão dada na última avaliação · 15% indicadores na meta. Acima de 75% o trainee está pronto para assumir a gerência.</p></div>`;
+}
+
 // ---------- Estúdio para clientes: acessos, planos pagos e "Meu plano" ----------
 const EA = { dados: null };
 const fmtReal = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
