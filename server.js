@@ -12738,6 +12738,432 @@ app.get('/estudio.webmanifest', (req, res) => {
 // treinável, IA de edição/roteiro/legenda/hashtags e publicação no Instagram.
 // ============================================================
 // ============================================================
+// AGENTE DE RELATÓRIOS — anexa o relatório, pede a análise e recebe pronto
+// (resposta em texto + arquivo em PDF, Word ou Excel quando pedir)
+// ============================================================
+const PASTA_AGENTE_REL = path.join(PASTA_UPLOADS, 'agente-relatorios');
+try { fs.mkdirSync(PASTA_AGENTE_REL, { recursive: true }); } catch (e) {}
+db.serialize(() => {
+    db.run(`CREATE TABLE IF NOT EXISTS agente_rel_conversas (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, company_id INTEGER, titulo TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP, atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+    db.run(`CREATE TABLE IF NOT EXISTS agente_rel_mensagens (id INTEGER PRIMARY KEY AUTOINCREMENT, conversa_id INTEGER, papel TEXT, texto TEXT, anexos TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+    db.run(`CREATE TABLE IF NOT EXISTS agente_rel_arquivos (id INTEGER PRIMARY KEY AUTOINCREMENT, conversa_id INTEGER, user_id INTEGER, nome TEXT, caminho TEXT, mime TEXT, tamanho INTEGER, origem TEXT, texto TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+});
+const AG_ROLES = requireRole('admin', 'client_admin');
+const uploadAgenteRel = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024, files: 10 } });
+
+// ---------- leitura de arquivos ----------
+// .docx / .xlsx / .pptx são ZIP: leitor mínimo (diretório central + inflate)
+function lerZipAg(buf) {
+    const zlib = require('zlib'); const ent = {};
+    let eocd = -1; for (let i = buf.length - 22; i >= Math.max(0, buf.length - 70000); i--) if (buf.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
+    if (eocd < 0) throw new Error('Arquivo compactado inválido.');
+    const n = buf.readUInt16LE(eocd + 10); let p = buf.readUInt32LE(eocd + 16);
+    for (let k = 0; k < n && p + 46 <= buf.length; k++) {
+        if (buf.readUInt32LE(p) !== 0x02014b50) break;
+        const metodo = buf.readUInt16LE(p + 10), tamC = buf.readUInt32LE(p + 20), lenN = buf.readUInt16LE(p + 28), lenX = buf.readUInt16LE(p + 30), lenC = buf.readUInt16LE(p + 32), off = buf.readUInt32LE(p + 42);
+        const nome = buf.slice(p + 46, p + 46 + lenN).toString('utf8');
+        ent[nome] = () => { const ini = off + 30 + buf.readUInt16LE(off + 26) + buf.readUInt16LE(off + 28), dado = buf.slice(ini, ini + tamC); return metodo === 8 ? zlib.inflateRawSync(dado) : dado; };
+        p += 46 + lenN + lenX + lenC;
+    }
+    return ent;
+}
+const xmlTextoAg = s => s.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+function docxTextoAg(buf) {
+    const z = lerZipAg(buf); if (!z['word/document.xml']) throw new Error('Word sem conteúdo.');
+    const xml = z['word/document.xml']().toString('utf8');
+    return xml.replace(/<w:tab\/>/g, '\t').replace(/<\/w:tc>/g, ' | ').replace(/<\/w:p>/g, '\n').replace(/<w:br[^>]*\/>/g, '\n').split('\n').map(l => xmlTextoAg(l).trim()).filter(Boolean).join('\n');
+}
+function pptxTextoAg(buf) {
+    const z = lerZipAg(buf), slides = Object.keys(z).filter(k => /^ppt\/slides\/slide\d+\.xml$/.test(k)).sort((a, b) => Number(a.match(/\d+/)[0]) - Number(b.match(/\d+/)[0]));
+    return slides.map((k, i) => `--- Slide ${i + 1} ---\n` + (z[k]().toString('utf8').match(/<a:t>[^<]*<\/a:t>|<\/a:p>/g) || []).map(t => t === '</a:p>' ? '\n' : xmlTextoAg(t)).join('').replace(/\n{2,}/g, '\n').trim()).join('\n\n');
+}
+function csvLinhasAg(txt) {
+    const prim = txt.split(/\r?\n/, 1)[0] || '', sep = [';', '\t', ','].sort((a, b) => prim.split(b).length - prim.split(a).length)[0];
+    const linhas = []; let campo = '', linha = [], aspas = false;
+    for (let i = 0; i < txt.length; i++) {
+        const c = txt[i];
+        if (aspas) { if (c === '"') { if (txt[i + 1] === '"') { campo += '"'; i++; } else aspas = false; } else campo += c; }
+        else if (c === '"') aspas = true; else if (c === sep) { linha.push(campo); campo = ''; }
+        else if (c === '\n' || c === '\r') { if (c === '\r' && txt[i + 1] === '\n') i++; linha.push(campo); campo = ''; if (linha.some(x => x !== '')) linhas.push(linha); linha = []; }
+        else campo += c;
+    }
+    linha.push(campo); if (linha.some(x => x !== '')) linhas.push(linha);
+    return linhas;
+}
+const numeroAg = v => { if (typeof v === 'number') return v; if (v instanceof Date) return null; let s = String(v == null ? '' : v).trim().replace(/^R\$\s*/, '').replace(/%$/, ''); if (!s || !/^-?[\d.,\s]+$/.test(s)) return null; if (/,\d{1,}$/.test(s) && (s.match(/,/g) || []).length === 1) s = s.replace(/[.\s]/g, '').replace(',', '.'); else s = s.replace(/[,\s]/g, ''); const n = Number(s); return isFinite(n) ? n : null; };
+// tabela → texto para a IA + estatísticas calculadas sobre TODAS as linhas (a IA não precisa somar à mão)
+function tabelaTextoAg(nome, linhas) {
+    linhas = linhas.filter(l => l.some(c => String(c ?? '').trim() !== ''));
+    if (!linhas.length) return `### Aba "${nome}": vazia\n`;
+    const cab = linhas[0].map((c, i) => String(c ?? '').trim() || 'Coluna ' + (i + 1)), corpo = linhas.slice(1);
+    const fmt = v => v instanceof Date ? v.toISOString().slice(0, 10) : String(v ?? '').replace(/[\t\n\r]+/g, ' ').trim();
+    const stats = cab.map((c, i) => {
+        const nums = corpo.map(l => numeroAg(l[i])).filter(x => x !== null), preenchidos = corpo.filter(l => fmt(l[i]) !== '').length;
+        if (nums.length >= Math.max(1, preenchidos * 0.8) && nums.length) {
+            const soma = nums.reduce((a, b) => a + b, 0); const r = x => Math.round(x * 100) / 100;
+            return `- ${c}: numérica · ${nums.length} valores · soma ${r(soma)} · média ${r(soma / nums.length)} · mín ${r(Math.min(...nums))} · máx ${r(Math.max(...nums))}`;
+        }
+        const cont = {}; corpo.forEach(l => { const v = fmt(l[i]); if (v) cont[v] = (cont[v] || 0) + 1; });
+        const dist = Object.keys(cont).length; const top = Object.entries(cont).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, n]) => `${k.slice(0, 40)} (${n})`).join(', ');
+        return `- ${c}: texto · ${preenchidos} preenchidos · ${dist} valores diferentes${dist <= 60 ? ' · mais frequentes: ' + top : ''}`;
+    }).join('\n');
+    const LIM = 3000, mostrar = corpo.slice(0, LIM);
+    return `### Aba "${nome}" — ${corpo.length} linhas × ${cab.length} colunas\nResumo calculado pelo sistema (todas as linhas):\n${stats}\n\nDados${corpo.length > LIM ? ` (primeiras ${LIM} de ${corpo.length} linhas — use o resumo acima para totais)` : ''} (separados por TAB):\n${cab.join('\t')}\n${mostrar.map(l => cab.map((_, i) => fmt(l[i])).join('\t')).join('\n')}\n`;
+}
+async function planilhaTextoAg(buf, ext) {
+    if (ext === 'csv') return tabelaTextoAg('CSV', csvLinhasAg(buf.toString('utf8').replace(/^﻿/, '')));
+    const ExcelJS = require('exceljs'); const wb = new ExcelJS.Workbook(); await wb.xlsx.load(buf);
+    const partes = [];
+    wb.eachSheet(ws => {
+        const linhas = []; ws.eachRow({ includeEmpty: false }, row => { const l = []; row.eachCell({ includeEmpty: true }, (cell, col) => { let v = cell.value; if (v && typeof v === 'object' && !(v instanceof Date)) v = v.result !== undefined ? v.result : v.text !== undefined ? v.text : v.richText ? v.richText.map(t => t.text).join('') : v.hyperlink || ''; l[col - 1] = v; }); linhas.push(l); });
+        partes.push(tabelaTextoAg(ws.name, linhas));
+    });
+    return partes.join('\n');
+}
+const MIME_AG = { pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', csv: 'text/csv', txt: 'text/plain', md: 'text/markdown', json: 'application/json', html: 'text/html', xml: 'text/xml' };
+async function extrairAg(buf, nome) {
+    const ext = (String(nome).toLowerCase().match(/\.([a-z0-9]+)$/) || [])[1] || '';
+    if (ext === 'pdf' || ['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext)) return { tipo: ext === 'pdf' ? 'pdf' : 'imagem', texto: null, mime: MIME_AG[ext] };
+    if (ext === 'xlsx' || ext === 'xlsm' || ext === 'csv') return { tipo: 'planilha', texto: await planilhaTextoAg(buf, ext === 'csv' ? 'csv' : 'xlsx'), mime: MIME_AG[ext] || MIME_AG.xlsx };
+    if (ext === 'docx') return { tipo: 'texto', texto: docxTextoAg(buf), mime: MIME_AG.docx };
+    if (ext === 'pptx') return { tipo: 'texto', texto: pptxTextoAg(buf), mime: MIME_AG.pptx };
+    if (['txt', 'md', 'json', 'html', 'htm', 'xml', 'log'].includes(ext)) { let t = buf.toString('utf8'); if (/^htm/.test(ext)) t = t.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/[ \t]+/g, ' '); return { tipo: 'texto', texto: t, mime: MIME_AG[ext] || 'text/plain' }; }
+    if (['xls', 'doc', 'ppt'].includes(ext)) throw new Error(`Formato antigo (.${ext}) não é lido. Salve como .${ext}x (ou PDF) e anexe de novo.`);
+    throw new Error('Formato não suportado. Envie PDF, Excel (.xlsx/.csv), Word (.docx), PowerPoint (.pptx), imagem ou texto.');
+}
+
+// ---------- geração dos arquivos de entrega ----------
+const limparMdAg = s => String(s ?? '').replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1').replace(/`([^`]*)`/g, '$1');
+// as fontes padrão do PDF só têm o alfabeto latino: troca setas/símbolos e tira emojis
+const WINANSI_AG = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
+const pdfTxtAg = s => String(s ?? '').replace(/[→⇒➜➔]/g, '->').replace(/[←⇐]/g, '<-').replace(/[↑⬆]/g, '^').replace(/[↓⬇]/g, 'v').replace(/[✓✔✅]/g, 'OK').replace(/[✗✘❌]/g, 'X').replace(/[≥]/g, '>=').replace(/[≤]/g, '<=').replace(/[≈]/g, '~').replace(/[−]/g, '-').replace(/[\u00A0\u202F]/g, ' ')
+    .replace(/[\s\S]/gu, ch => (ch.codePointAt(0) < 256 || WINANSI_AG.includes(ch)) ? ch : '').replace(/[\uFE0F\u200D]/g, '');
+function linhasTextoAg(t) { return String(t || '').split('\n').map(l => l.replace(/\s+$/, '')).reduce((acc, l) => { if (!l.trim() && (!acc.length || !acc[acc.length - 1].trim())) return acc; acc.push(l); return acc; }, []); }
+function nomeArquivoAg(nome, ext) { const base = String(nome || 'Analise').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 70) || 'Analise'; return base + '.' + ext; }
+function pdfAg(doc) {
+    const T = x => pdfTxtAg(limparMdAg(x));
+    return new Promise((ok, falha) => {
+        const PDFDocument = require('pdfkit'); const pdf = new PDFDocument({ size: 'A4', margin: 46, bufferPages: true, info: { Title: doc.titulo || 'Análise', Author: 'Impulsionar V4 — Agente de Relatórios' } });
+        const partes = []; pdf.on('data', d => partes.push(d)); pdf.on('end', () => ok(Buffer.concat(partes))); pdf.on('error', falha);
+        const AZUL = '#0b1329', VERDE = '#16a34a', CINZA = '#64748b', L = pdf.page.width - 92;
+        const garantir = h => { if (pdf.y + h > pdf.page.height - 60) pdf.addPage(); };
+        // capa / cabeçalho
+        pdf.rect(0, 0, pdf.page.width, 110).fill(AZUL);
+        pdf.fillColor('#22c55e').font('Helvetica-Bold').fontSize(9).text('IMPULSIONAR V4 · AGENTE DE RELATÓRIOS', 46, 30, { characterSpacing: 1.5 });
+        pdf.fillColor('#fff').fontSize(20).text(T(doc.titulo || 'Análise do relatório'), 46, 48, { width: L });
+        if (doc.subtitulo) pdf.font('Helvetica').fontSize(10).fillColor('#cbd5e1').text(T(doc.subtitulo), { width: L });
+        pdf.y = 128; pdf.fillColor(CINZA).font('Helvetica').fontSize(8.5).text('Gerado em ' + new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }), 46, pdf.y); pdf.moveDown(0.8);
+        const destaques = (doc.destaques || []).slice(0, 8);
+        if (destaques.length) {
+            const por = Math.min(4, destaques.length), w = (L - (por - 1) * 8) / por;
+            for (let i = 0; i < destaques.length; i += por) {
+                garantir(62); const y = pdf.y;
+                destaques.slice(i, i + por).forEach((d, k) => { const x = 46 + k * (w + 8); pdf.roundedRect(x, y, w, 54, 6).fill('#f1f5f9'); pdf.fillColor(AZUL).font('Helvetica-Bold').fontSize(15).text(T(d.valor), x + 8, y + 9, { width: w - 16, lineBreak: false, ellipsis: true }); pdf.fillColor(CINZA).font('Helvetica').fontSize(8).text(T(d.rotulo), x + 8, y + 31, { width: w - 16, height: 20, ellipsis: true }); });
+                pdf.y = y + 62;
+            }
+            pdf.moveDown(0.4);
+        }
+        (doc.secoes || []).forEach(s => {
+            garantir(60);
+            if (s.titulo) { pdf.x = 46; pdf.fillColor(AZUL).font('Helvetica-Bold').fontSize(13.5).text(T(s.titulo), { width: L }); const yy = pdf.y + 2; pdf.moveTo(46, yy).lineTo(86, yy).lineWidth(2).strokeColor(VERDE).stroke(); pdf.moveDown(0.6); }
+            linhasTextoAg(s.texto).forEach(l => {
+                const m = l.match(/^\s*(?:[-•*]|\d+[.)])\s+(.*)$/), sub = /^#{1,4}\s/.test(l);
+                garantir(16); pdf.x = 46;
+                if (!l.trim()) return pdf.moveDown(0.35);
+                if (sub) return pdf.fillColor(AZUL).font('Helvetica-Bold').fontSize(11).text(T(l.replace(/^#+\s*/, '')), { width: L });
+                pdf.fillColor('#1e293b').fontSize(10.2);
+                const txt = m ? m[1] : l, pedacos = txt.split(/(\*\*[^*]+\*\*)/).filter(Boolean), y = pdf.y, x0 = m ? 62 : 46;
+                if (m) pdf.font('Helvetica-Bold').fillColor('#16a34a').text('•', 50, y, { lineBreak: false });
+                pdf.fillColor('#1e293b');
+                pedacos.forEach((p, i) => { const neg = /^\*\*.*\*\*$/.test(p), t = pdfTxtAg(neg ? p.slice(2, -2) : limparMdAg(p)), op = { width: L - (x0 - 46), continued: i < pedacos.length - 1, lineGap: 2 }; pdf.font(neg ? 'Helvetica-Bold' : 'Helvetica'); if (i === 0) pdf.text(t, x0, y, op); else pdf.text(t, op); });
+                pdf.x = 46;
+            });
+            if (s.grafico && Array.isArray(s.grafico.valores) && s.grafico.valores.length) {
+                const g = s.grafico, vals = g.valores.slice(0, 15).map(v => Number(v) || 0), rot = (g.rotulos || []).slice(0, 15), max = Math.max(...vals.map(Math.abs), 1);
+                const alt = vals.length * 20 + 30; garantir(alt + 10); pdf.moveDown(0.4); pdf.x = 46;
+                if (g.titulo) pdf.fillColor(AZUL).font('Helvetica-Bold').fontSize(10).text(T(g.titulo), { width: L });
+                const y0 = pdf.y + 4, wRot = 130, wBar = L - wRot - 70;
+                vals.forEach((v, i) => { const y = y0 + i * 20; pdf.fillColor('#334155').font('Helvetica').fontSize(8.5).text(T(rot[i] || ''), 46, y + 3, { width: wRot - 6, lineBreak: false, ellipsis: true }); const w = Math.max(2, Math.abs(v) / max * wBar); pdf.roundedRect(46 + wRot, y + 1, w, 14, 3).fill(v < 0 ? '#dc2626' : i === vals.indexOf(Math.max(...vals)) ? VERDE : '#2563eb'); pdf.fillColor('#0f172a').fontSize(8.5).text((v.toLocaleString('pt-BR', { maximumFractionDigits: 2 })) + (g.unidade ? ' ' + g.unidade : ''), 46 + wRot + w + 5, y + 3, { width: 80, lineBreak: false }); });
+                pdf.y = y0 + vals.length * 20 + 8; pdf.x = 46;
+            }
+            if (s.tabela && Array.isArray(s.tabela.colunas) && s.tabela.colunas.length) {
+                const cols = s.tabela.colunas.slice(0, 8).map(c => T(c)), linhas = (s.tabela.linhas || []).slice(0, 400), n = cols.length, fs = n > 5 ? 7.5 : 8.5;
+                const pesos = cols.map((c, i) => Math.min(40, Math.max(6, c.length, ...linhas.slice(0, 50).map(l => String(l[i] ?? '').length)))), tot = pesos.reduce((a, b) => a + b, 0), larg = pesos.map(p => p / tot * L);
+                const cab = () => { garantir(24); const y = pdf.y; pdf.rect(46, y, L, 18).fill(AZUL); let x = 46; cols.forEach((c, i) => { pdf.fillColor('#fff').font('Helvetica-Bold').fontSize(fs).text(c, x + 4, y + 5, { width: larg[i] - 8, lineBreak: false, ellipsis: true }); x += larg[i]; }); pdf.y = y + 18; };
+                pdf.moveDown(0.4); cab();
+                linhas.forEach((l, k) => {
+                    const alturas = cols.map((_, i) => pdf.font('Helvetica').fontSize(fs).heightOfString(T(l[i] ?? ''), { width: larg[i] - 8 })), h = Math.min(60, Math.max(16, Math.max(...alturas) + 7));
+                    if (pdf.y + h > pdf.page.height - 60) { pdf.addPage(); cab(); }
+                    const y = pdf.y; if (k % 2) pdf.rect(46, y, L, h).fill('#f8fafc'); let x = 46;
+                    cols.forEach((_, i) => { pdf.fillColor('#1e293b').font('Helvetica').fontSize(fs).text(T(l[i] ?? ''), x + 4, y + 4, { width: larg[i] - 8, height: h - 6, ellipsis: true }); x += larg[i]; });
+                    pdf.y = y + h;
+                });
+                pdf.x = 46; pdf.moveDown(0.6);
+            }
+            pdf.moveDown(0.7);
+        });
+        const r = pdf.bufferedPageRange();
+        for (let i = r.start; i < r.start + r.count; i++) { pdf.switchToPage(i); pdf.page.margins.bottom = 0; pdf.fillColor('#94a3b8').font('Helvetica').fontSize(7.5).text(`Impulsionar V4 · Agente de Relatórios · página ${i + 1} de ${r.count}`, 46, pdf.page.height - 36, { width: L, align: 'center', lineBreak: false }); }
+        pdf.end();
+    });
+}
+async function xlsxAg(doc) {
+    const ExcelJS = require('exceljs'); const wb = new ExcelJS.Workbook(); wb.creator = 'Impulsionar V4 — Agente de Relatórios';
+    const ws = wb.addWorksheet('Resumo'); ws.columns = [{ width: 34 }, { width: 70 }];
+    ws.addRow([doc.titulo || 'Análise']).font = { bold: true, size: 16, color: { argb: 'FF0B1329' } };
+    if (doc.subtitulo) ws.addRow([doc.subtitulo]).font = { italic: true, color: { argb: 'FF64748B' } };
+    ws.addRow(['Gerado em ' + new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })]).font = { size: 9, color: { argb: 'FF94A3B8' } }; ws.addRow([]);
+    if ((doc.destaques || []).length) { const h = ws.addRow(['Indicador', 'Valor']); h.eachCell(c => { c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0B1329' } }; }); doc.destaques.forEach(d => ws.addRow([limparMdAg(d.rotulo), limparMdAg(d.valor)])); ws.addRow([]); }
+    const usados = new Set(['Resumo']);
+    (doc.secoes || []).forEach((s, i) => {
+        if (s.titulo) { const r = ws.addRow([limparMdAg(s.titulo)]); r.font = { bold: true, size: 12, color: { argb: 'FF16A34A' } }; }
+        linhasTextoAg(s.texto).forEach(l => { const r = ws.addRow([limparMdAg(l)]); ws.mergeCells(r.number, 1, r.number, 2); r.alignment = { wrapText: true, vertical: 'top' }; r.height = Math.min(120, 15 * Math.ceil((l.length || 1) / 100)); });
+        const tabelas = [];
+        if (s.tabela && (s.tabela.colunas || []).length) tabelas.push({ nome: s.tabela.nome || s.titulo || 'Tabela ' + (i + 1), colunas: s.tabela.colunas, linhas: s.tabela.linhas || [] });
+        if (s.grafico && (s.grafico.valores || []).length) tabelas.push({ nome: (s.grafico.titulo || s.titulo || 'Gráfico') + ' (dados)', colunas: ['Item', s.grafico.unidade ? 'Valor (' + s.grafico.unidade + ')' : 'Valor'], linhas: s.grafico.valores.map((v, k) => [(s.grafico.rotulos || [])[k] || '', v]) });
+        tabelas.forEach(t => {
+            let nome = String(t.nome).replace(/[\\/?*[\]:]/g, ' ').slice(0, 28).trim() || 'Tabela'; let k = 2; while (usados.has(nome)) nome = nome.slice(0, 25) + ' ' + k++; usados.add(nome);
+            const tw = wb.addWorksheet(nome); const cab = tw.addRow(t.colunas.map(limparMdAg));
+            cab.eachCell(c => { c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0B1329' } }; c.alignment = { vertical: 'middle', wrapText: true }; });
+            t.linhas.forEach(l => tw.addRow(t.colunas.map((_, j) => { const v = l[j]; const n = numeroAg(v); return n !== null && String(v).trim() !== '' ? n : limparMdAg(v ?? ''); })));
+            t.colunas.forEach((col, j) => { tw.getColumn(j + 1).width = Math.min(50, Math.max(10, ...[col, ...t.linhas.slice(0, 100).map(l => l[j])].map(v => String(v ?? '').length + 2))); });
+            tw.views = [{ state: 'frozen', ySplit: 1 }]; tw.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: t.colunas.length } };
+            ws.addRow(['→ Tabela completa na aba "' + nome + '"']).font = { italic: true, color: { argb: 'FF2563EB' } };
+        });
+        ws.addRow([]);
+    });
+    return Buffer.from(await wb.xlsx.writeBuffer());
+}
+// Word (.docx) montado direto em OOXML + ZIP
+function zipAg(arquivos) {
+    const zlib = require('zlib'); const tabela = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; tabela[n] = c >>> 0; }
+    const crc = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = tabela[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+    const locais = [], centrais = []; let off = 0;
+    arquivos.forEach(([nome, conteudo]) => {
+        const dado = Buffer.from(conteudo, 'utf8'), comp = zlib.deflateRawSync(dado), nm = Buffer.from(nome, 'utf8'), c = crc(dado);
+        const lh = Buffer.alloc(30); lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(20, 4); lh.writeUInt16LE(0x0800, 6); lh.writeUInt16LE(8, 8); lh.writeUInt32LE(0, 10); lh.writeUInt32LE(c, 14); lh.writeUInt32LE(comp.length, 18); lh.writeUInt32LE(dado.length, 22); lh.writeUInt16LE(nm.length, 26); lh.writeUInt16LE(0, 28);
+        const ch = Buffer.alloc(46); ch.writeUInt32LE(0x02014b50, 0); ch.writeUInt16LE(20, 4); ch.writeUInt16LE(20, 6); ch.writeUInt16LE(0x0800, 8); ch.writeUInt16LE(8, 10); ch.writeUInt32LE(0, 12); ch.writeUInt32LE(c, 16); ch.writeUInt32LE(comp.length, 20); ch.writeUInt32LE(dado.length, 24); ch.writeUInt16LE(nm.length, 28); ch.writeUInt32LE(off, 42);
+        locais.push(lh, nm, comp); centrais.push(ch, nm); off += 30 + nm.length + comp.length;
+    });
+    const cd = Buffer.concat(centrais), fim = Buffer.alloc(22); fim.writeUInt32LE(0x06054b50, 0); fim.writeUInt16LE(arquivos.length, 8); fim.writeUInt16LE(arquivos.length, 10); fim.writeUInt32LE(cd.length, 12); fim.writeUInt32LE(off, 16);
+    return Buffer.concat([...locais, cd, fim]);
+}
+function docxAg(doc) {
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+    const runs = (t, extra) => String(t || '').split(/(\*\*[^*]+\*\*)/).filter(Boolean).map(p => { const neg = /^\*\*.*\*\*$/.test(p); return `<w:r><w:rPr>${neg ? '<w:b/>' : ''}${extra || ''}</w:rPr><w:t xml:space="preserve">${esc(neg ? p.slice(2, -2) : limparMdAg(p))}</w:t></w:r>`; }).join('');
+    const par = (t, estilo, extra) => `<w:p>${estilo ? `<w:pPr><w:pStyle w:val="${estilo}"/></w:pPr>` : ''}${runs(t, extra)}</w:p>`;
+    const corpo = [];
+    corpo.push(par('IMPULSIONAR V4 · AGENTE DE RELATÓRIOS', null, '<w:color w:val="16A34A"/><w:sz w:val="16"/><w:b/>'));
+    corpo.push(par(doc.titulo || 'Análise do relatório', 'Title'));
+    if (doc.subtitulo) corpo.push(par(doc.subtitulo, 'Subtitle'));
+    corpo.push(par('Gerado em ' + new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }), null, '<w:color w:val="94A3B8"/><w:sz w:val="16"/>'));
+    const tabelaXml = (cols, linhas) => {
+        const cel = (t, cab) => `<w:tc><w:tcPr>${cab ? '<w:shd w:val="clear" w:color="auto" w:fill="0B1329"/>' : ''}</w:tcPr><w:p><w:pPr><w:spacing w:before="40" w:after="40"/></w:pPr>${runs(t, cab ? '<w:b/><w:color w:val="FFFFFF"/><w:sz w:val="18"/>' : /^█+$/.test(String(t)) ? '<w:color w:val="16A34A"/><w:sz w:val="16"/>' : '<w:sz w:val="18"/>')}</w:p></w:tc>`;
+        return `<w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/><w:tblW w:w="5000" w:type="pct"/><w:tblBorders><w:top w:val="single" w:sz="4" w:color="CBD5E1"/><w:left w:val="single" w:sz="4" w:color="CBD5E1"/><w:bottom w:val="single" w:sz="4" w:color="CBD5E1"/><w:right w:val="single" w:sz="4" w:color="CBD5E1"/><w:insideH w:val="single" w:sz="4" w:color="CBD5E1"/><w:insideV w:val="single" w:sz="4" w:color="CBD5E1"/></w:tblBorders></w:tblPr>`
+            + `<w:tr><w:trPr><w:tblHeader/></w:trPr>${cols.map(c => cel(c, true)).join('')}</w:tr>` + linhas.map(l => `<w:tr>${cols.map((_, i) => cel(l[i] ?? '')).join('')}</w:tr>`).join('') + `</w:tbl><w:p/>`;
+    };
+    if ((doc.destaques || []).length) corpo.push(tabelaXml(['Indicador', 'Valor'], doc.destaques.map(d => [d.rotulo, '**' + limparMdAg(d.valor) + '**'])));
+    (doc.secoes || []).forEach(s => {
+        if (s.titulo) corpo.push(par(s.titulo, 'Heading1'));
+        linhasTextoAg(s.texto).forEach(l => { if (!l.trim()) return; const m = l.match(/^\s*(?:[-•*]|\d+[.)])\s+(.*)$/); if (/^#{1,4}\s/.test(l)) corpo.push(par(l.replace(/^#+\s*/, ''), 'Heading2')); else if (m) corpo.push(`<w:p><w:pPr><w:pStyle w:val="ListParagraph"/><w:ind w:left="360" w:hanging="240"/></w:pPr><w:r><w:rPr><w:color w:val="16A34A"/><w:b/></w:rPr><w:t xml:space="preserve">•  </w:t></w:r>${runs(m[1])}</w:p>`); else corpo.push(par(l)); });
+        if (s.grafico && (s.grafico.valores || []).length) {
+            const g = s.grafico, vals = g.valores.map(v => Number(v) || 0), max = Math.max(...vals.map(Math.abs), 1);
+            if (g.titulo) corpo.push(par('**' + limparMdAg(g.titulo) + '**'));
+            corpo.push(tabelaXml(['Item', 'Valor', ''], vals.map((v, i) => [(g.rotulos || [])[i] || '', v.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + (g.unidade ? ' ' + g.unidade : ''), '█'.repeat(Math.max(1, Math.round(Math.abs(v) / max * 16)))])));
+        }
+        if (s.tabela && (s.tabela.colunas || []).length) corpo.push(tabelaXml(s.tabela.colunas, (s.tabela.linhas || []).slice(0, 1000)));
+    });
+    const documento = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${corpo.join('')}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+    const estilos = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/><w:sz w:val="21"/><w:lang w:val="pt-BR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="100" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>`
+        + `<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>`
+        + `<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="60"/></w:pPr><w:rPr><w:b/><w:color w:val="0B1329"/><w:sz w:val="44"/></w:rPr></w:style>`
+        + `<w:style w:type="paragraph" w:styleId="Subtitle"><w:name w:val="Subtitle"/><w:basedOn w:val="Normal"/><w:rPr><w:i/><w:color w:val="64748B"/><w:sz w:val="24"/></w:rPr></w:style>`
+        + `<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="320" w:after="120"/><w:pBdr><w:bottom w:val="single" w:sz="8" w:space="2" w:color="16A34A"/></w:pBdr><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="0B1329"/><w:sz w:val="30"/></w:rPr></w:style>`
+        + `<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="200" w:after="80"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:color w:val="1E293B"/><w:sz w:val="24"/></w:rPr></w:style>`
+        + `<w:style w:type="paragraph" w:styleId="ListParagraph"><w:name w:val="List Paragraph"/><w:basedOn w:val="Normal"/></w:style>`
+        + `<w:style w:type="table" w:styleId="TableGrid"><w:name w:val="Table Grid"/><w:tblPr><w:tblCellMar><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr></w:style></w:styles>`;
+    return zipAg([
+        ['[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`],
+        ['_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`],
+        ['word/_rels/document.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+        ['word/document.xml', documento], ['word/styles.xml', estilos]
+    ]);
+}
+
+// ---------- a IA ----------
+const FERRAMENTA_AG = {
+    name: 'entregar_analise',
+    description: 'Entrega a análise ao usuário: a resposta em texto para o chat e, quando for o caso, o conteúdo do arquivo (PDF, Word ou Excel) que o sistema vai montar.',
+    input_schema: { type: 'object', properties: {
+        resposta: { type: 'string', description: 'Resposta para o chat em Markdown simples (títulos ###, listas -, **negrito**, tabelas Markdown pequenas). É o resumo/análise que a pessoa lê na hora.' },
+        titulo_conversa: { type: 'string', description: 'Título curto (até 6 palavras) que descreve o assunto da conversa.' },
+        arquivo: { type: 'object', description: 'Preencha SÓ quando a entrega pedir arquivo (anexo, relatório, PDF, Word, Excel, planilha, documento) ou a instrução de entrega mandar.', properties: {
+            formato: { type: 'string', enum: ['pdf', 'docx', 'xlsx'] },
+            nome_arquivo: { type: 'string' }, titulo: { type: 'string' }, subtitulo: { type: 'string' },
+            destaques: { type: 'array', description: 'Até 8 números-chave (KPIs) do relatório.', items: { type: 'object', properties: { rotulo: { type: 'string' }, valor: { type: 'string' } }, required: ['rotulo', 'valor'] } },
+            secoes: { type: 'array', items: { type: 'object', properties: {
+                titulo: { type: 'string' }, texto: { type: 'string', description: 'Parágrafos e listas (- item). Pode usar **negrito** e ### subtítulos.' },
+                tabela: { type: 'object', properties: { nome: { type: 'string' }, colunas: { type: 'array', items: { type: 'string' } }, linhas: { type: 'array', description: 'Cada linha é uma lista de valores (texto ou número), na ordem das colunas.', items: { type: 'array', items: {} } } }, required: ['colunas', 'linhas'] },
+                grafico: { type: 'object', description: 'Gráfico de barras horizontais.', properties: { titulo: { type: 'string' }, rotulos: { type: 'array', items: { type: 'string' } }, valores: { type: 'array', items: { type: 'number' } }, unidade: { type: 'string' } }, required: ['rotulos', 'valores'] }
+            }, required: ['titulo'] } }
+        }, required: ['formato', 'titulo', 'secoes'] }
+    }, required: ['resposta'] }
+};
+const SISTEMA_AG = `Você é o Agente de Relatórios da Impulsionar V4 (consultoria de gestão de processos e desenvolvimento de pessoas). A pessoa anexa relatórios (PDF, planilhas, Word, apresentações, imagens) e pede análises. Você entrega o trabalho PRONTO, como um analista sênior de negócios.
+
+Como trabalhar:
+- Leia todos os anexos com atenção. Use SOMENTE os dados que estão neles (e o que a pessoa disser). Nunca invente números. Se algo não estiver no material, diga que não consta.
+- Para planilhas, o sistema já calculou soma, média, mínimo e máximo de cada coluna sobre TODAS as linhas: use esses valores para totais. Ao calcular algo novo, faça a conta com cuidado e mostre a base (ex.: "R$ 120 mil de R$ 480 mil = 25%").
+- Estrutura padrão de uma análise (adapte ao pedido): 1) Resumo executivo (3 a 5 linhas com a conclusão principal); 2) Principais números; 3) Destaques positivos; 4) Pontos de atenção / riscos; 5) Causas prováveis (quando os dados permitirem); 6) Recomendações e próximos passos práticos (o quê, quem, até quando); 7) Observações sobre a qualidade dos dados, se houver problema.
+- Linguagem: português do Brasil, direta, sem enrolação, como se fala com um gestor. Números no padrão brasileiro (1.234,56; R$; %).
+- Se a pessoa pedir só um resumo, um número ou uma resposta rápida, responda curto e direto.
+- Quando houver arquivo: o arquivo é a entrega completa (seções, tabelas com os dados que importam, gráfico quando ajudar a ver a comparação). A "resposta" do chat traz o resumo executivo e diz o que tem no arquivo.
+- Excel: coloque os dados em tabelas (uma por seção), com números como números. Word/PDF: texto bem escrito + tabelas e gráficos.
+- Sempre responda chamando a ferramenta entregar_analise.`;
+function instrucaoEntregaAg(entrega) {
+    return ({ texto: 'ENTREGA: responda só em texto no chat (não gere arquivo).', pdf: 'ENTREGA: gere o arquivo em PDF (arquivo.formato = "pdf") e um resumo no chat.', docx: 'ENTREGA: gere o arquivo em Word (arquivo.formato = "docx") e um resumo no chat.', xlsx: 'ENTREGA: gere o arquivo em Excel (arquivo.formato = "xlsx") com as tabelas, e um resumo no chat.' })[entrega]
+        || 'ENTREGA: decida pelo pedido — se a pessoa pedir relatório, anexo, documento, PDF, Word, Excel ou planilha, gere o arquivo no formato pedido (PDF se não disser qual); se pedir resumo, explicação ou pergunta direta, responda só em texto.';
+}
+async function chamarIaAgente(corpo) {
+    if (!ANTHROPIC_API_KEY) { const e = new Error('A IA ainda não está configurada no sistema. Cadastre a chave da Anthropic em ⚙️ Configurações.'); e.status = 503; throw e; }
+    const tentar = async modelo => {
+        const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: cabecalhosIA(), body: JSON.stringify(Object.assign({}, corpo, { model: modelo })), signal: AbortSignal.timeout(280000) });
+        const j = await r.json().catch(() => ({})); return { r, j };
+    };
+    let { r, j } = await tentar(ANTHROPIC_MODEL_AVANCADO);
+    if (!r.ok && (r.status === 404 || (r.status === 400 && /model/i.test((j.error || {}).message || ''))) && ANTHROPIC_MODEL !== ANTHROPIC_MODEL_AVANCADO) ({ r, j } = await tentar(ANTHROPIC_MODEL));
+    if (!r.ok) {
+        const msg = (j.error && j.error.message) || ('erro ' + r.status);
+        if (r.status === 401 || r.status === 403) throw new Error('A chave da IA cadastrada não é válida. Cadastre uma chave nova em ⚙️ Configurações.');
+        if (/too long|prompt is too long|maximum/i.test(msg)) throw new Error('Os anexos desta conversa passaram do limite que a IA consegue ler de uma vez. Comece uma conversa nova só com o relatório principal (ou divida o PDF).');
+        if (r.status === 529 || r.status === 429) throw new Error('A IA está sobrecarregada agora. Tente de novo em 1 minuto.');
+        throw new Error('IA: ' + msg);
+    }
+    return j;
+}
+async function blocosArquivoAg(a) {
+    if (a.texto !== null && a.texto !== undefined && a.texto !== '') return [{ type: 'text', text: `📎 ANEXO "${a.nome}":\n${String(a.texto).slice(0, 180000)}${String(a.texto).length > 180000 ? '\n[… conteúdo cortado: arquivo muito grande]' : ''}` }];
+    let buf; try { buf = fs.readFileSync(a.caminho); } catch (e) { return [{ type: 'text', text: `📎 ANEXO "${a.nome}": (arquivo não está mais disponível no servidor)` }]; }
+    if (a.mime === 'application/pdf') return [{ type: 'text', text: `📎 ANEXO "${a.nome}" (PDF):` }, { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: buf.toString('base64') }, title: a.nome }];
+    if (/^image\//.test(a.mime)) return [{ type: 'text', text: `📎 ANEXO "${a.nome}" (imagem):` }, { type: 'image', source: { type: 'base64', media_type: a.mime, data: buf.toString('base64') } }];
+    return [{ type: 'text', text: `📎 ANEXO "${a.nome}": (formato não lido)` }];
+}
+async function conversaAgDoUsuario(req, id) {
+    const c = await dbGet('SELECT * FROM agente_rel_conversas WHERE id = ?', [Number(id)]).catch(() => null);
+    if (!c || c.user_id !== req.user.userId) return null; return c;
+}
+const jsonAg = (v, p) => { try { return v ? JSON.parse(v) : p; } catch (e) { return p; } };
+
+// ---------- rotas ----------
+app.get('/api/agente-relatorios/conversas', AG_ROLES, async (req, res) => {
+    res.json(await dbAll(`SELECT c.id, c.titulo, c.criado_em, c.atualizado_em, (SELECT COUNT(*) FROM agente_rel_mensagens m WHERE m.conversa_id = c.id) AS mensagens FROM agente_rel_conversas c WHERE c.user_id = ? ORDER BY c.atualizado_em DESC LIMIT 200`, [req.user.userId]).catch(() => []));
+});
+app.post('/api/agente-relatorios/conversas', AG_ROLES, (req, res) => {
+    db.run(`INSERT INTO agente_rel_conversas (user_id, company_id, titulo) VALUES (?, ?, ?)`, [req.user.userId, req.user.companyId || null, String((req.body || {}).titulo || 'Nova análise').slice(0, 120)],
+        function (e) { if (e) return res.status(500).json({ error: 'Erro ao criar a conversa.' }); res.json({ id: this.lastID }); });
+});
+app.get('/api/agente-relatorios/conversas/:id', AG_ROLES, async (req, res) => {
+    const c = await conversaAgDoUsuario(req, req.params.id); if (!c) return res.status(404).json({ error: 'Conversa não encontrada.' });
+    const msgs = await dbAll('SELECT * FROM agente_rel_mensagens WHERE conversa_id = ? ORDER BY id', [c.id]).catch(() => []);
+    const arqs = await dbAll('SELECT id, nome, mime, tamanho, origem, criado_em FROM agente_rel_arquivos WHERE conversa_id = ?', [c.id]).catch(() => []);
+    const porId = {}; arqs.forEach(a => { porId[a.id] = a; });
+    res.json({ conversa: c, mensagens: msgs.map(m => ({ id: m.id, papel: m.papel, texto: m.texto, criado_em: m.criado_em, anexos: jsonAg(m.anexos, []).map(id => porId[id]).filter(Boolean) })) });
+});
+app.put('/api/agente-relatorios/conversas/:id', AG_ROLES, async (req, res) => {
+    const c = await conversaAgDoUsuario(req, req.params.id); if (!c) return res.status(404).json({ error: 'Conversa não encontrada.' });
+    db.run('UPDATE agente_rel_conversas SET titulo = ? WHERE id = ?', [String((req.body || {}).titulo || c.titulo).slice(0, 120), c.id], () => res.json({ ok: true }));
+});
+app.delete('/api/agente-relatorios/conversas/:id', AG_ROLES, async (req, res) => {
+    const c = await conversaAgDoUsuario(req, req.params.id); if (!c) return res.status(404).json({ error: 'Conversa não encontrada.' });
+    const arqs = await dbAll('SELECT caminho FROM agente_rel_arquivos WHERE conversa_id = ?', [c.id]).catch(() => []);
+    arqs.forEach(a => fs.unlink(a.caminho, () => {}));
+    db.run('DELETE FROM agente_rel_arquivos WHERE conversa_id = ?', [c.id]); db.run('DELETE FROM agente_rel_mensagens WHERE conversa_id = ?', [c.id]);
+    db.run('DELETE FROM agente_rel_conversas WHERE id = ?', [c.id], () => res.json({ ok: true, message: 'Conversa excluída.' }));
+});
+// anexar: guarda o arquivo e já extrai o conteúdo (planilha/Word/PowerPoint/texto)
+app.post('/api/agente-relatorios/conversas/:id/anexos', AG_ROLES, (req, res, next) => uploadAgenteRel.array('arquivos', 10)(req, res, e => { if (e) return res.status(400).json({ error: e.code === 'LIMIT_FILE_SIZE' ? 'Arquivo grande demais (máximo 30 MB). Para PDF, envie só as páginas necessárias.' : 'Falha ao receber o arquivo.' }); next(); }), async (req, res) => {
+    const c = await conversaAgDoUsuario(req, req.params.id); if (!c) return res.status(404).json({ error: 'Conversa não encontrada.' });
+    const saida = [], erros = [];
+    for (const f of req.files || []) {
+        const nome = Buffer.from(f.originalname, 'latin1').toString('utf8').replace(/[\\/]/g, '_').slice(0, 150);
+        try {
+            const x = await extrairAg(f.buffer, nome);
+            if (x.tipo === 'pdf' && f.size > 30 * 1024 * 1024) throw new Error('PDF grande demais.');
+            const caminho = path.join(PASTA_AGENTE_REL, crypto.randomBytes(16).toString('hex') + path.extname(nome).toLowerCase());
+            fs.writeFileSync(caminho, f.buffer);
+            const id = await new Promise((ok, falha) => db.run(`INSERT INTO agente_rel_arquivos (conversa_id, user_id, nome, caminho, mime, tamanho, origem, texto) VALUES (?, ?, ?, ?, ?, ?, 'enviado', ?)`, [c.id, req.user.userId, nome, caminho, x.mime, f.size, x.texto], function (e) { e ? falha(e) : ok(this.lastID); }));
+            saida.push({ id, nome, mime: x.mime, tamanho: f.size, tipo: x.tipo, resumo: x.tipo === 'planilha' ? (x.texto.match(/— \d+ linhas × \d+ colunas/g) || []).join(' · ').replace(/— /g, '') : '' });
+        } catch (e) { erros.push(nome + ': ' + e.message); }
+    }
+    if (!saida.length) return res.status(400).json({ error: erros.join(' | ') || 'Nenhum arquivo recebido.' });
+    res.json({ arquivos: saida, avisos: erros });
+});
+app.delete('/api/agente-relatorios/anexos/:id', AG_ROLES, async (req, res) => {
+    const a = await dbGet('SELECT * FROM agente_rel_arquivos WHERE id = ? AND user_id = ?', [Number(req.params.id), req.user.userId]).catch(() => null);
+    if (!a) return res.status(404).json({ error: 'Arquivo não encontrado.' });
+    const usado = await dbGet(`SELECT id FROM agente_rel_mensagens WHERE conversa_id = ? AND anexos LIKE ?`, [a.conversa_id, '%' + a.id + '%']).catch(() => null);
+    if (usado && jsonAg(usado.anexos, []).includes(a.id)) return res.status(400).json({ error: 'Este arquivo já faz parte da conversa.' });
+    fs.unlink(a.caminho, () => {}); db.run('DELETE FROM agente_rel_arquivos WHERE id = ?', [a.id], () => res.json({ ok: true }));
+});
+app.get('/api/agente-relatorios/arquivos/:id', AG_ROLES, async (req, res) => {
+    const a = await dbGet('SELECT * FROM agente_rel_arquivos WHERE id = ? AND user_id = ?', [Number(req.params.id), req.user.userId]).catch(() => null);
+    if (!a || !fs.existsSync(a.caminho)) return res.status(404).json({ error: 'Arquivo não encontrado.' });
+    res.setHeader('Content-Type', a.mime || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `${req.query.ver ? 'inline' : 'attachment'}; filename="${nomeArquivoAg(a.nome.replace(/\.[^.]+$/, ''), (a.nome.match(/\.([a-z0-9]+)$/i) || [, 'bin'])[1])}"; filename*=UTF-8''${encodeURIComponent(a.nome)}`);
+    fs.createReadStream(a.caminho).pipe(res);
+});
+// pedir a análise
+app.post('/api/agente-relatorios/conversas/:id/mensagens', AG_ROLES, async (req, res) => {
+    const c = await conversaAgDoUsuario(req, req.params.id); if (!c) return res.status(404).json({ error: 'Conversa não encontrada.' });
+    const b = req.body || {}, texto = String(b.texto || '').trim().slice(0, 20000), entrega = ['auto', 'texto', 'pdf', 'docx', 'xlsx'].includes(b.entrega) ? b.entrega : 'auto';
+    const novos = (Array.isArray(b.anexos) ? b.anexos : []).map(Number).filter(Boolean).slice(0, 10);
+    if (!texto && !novos.length) return res.status(400).json({ error: 'Escreva o que você quer ou anexe um relatório.' });
+    try {
+        const todos = await dbAll(`SELECT * FROM agente_rel_arquivos WHERE conversa_id = ? AND origem = 'enviado'`, [c.id]);
+        const porId = {}; todos.forEach(a => { porId[a.id] = a; });
+        if (novos.some(id => !porId[id])) return res.status(400).json({ error: 'Anexo não encontrado nesta conversa.' });
+        const hist = await dbAll('SELECT * FROM agente_rel_mensagens WHERE conversa_id = ? ORDER BY id', [c.id]);
+        // monta a conversa para a IA: cada pedido com os anexos daquele momento (com cache para não pagar a leitura de novo)
+        const msgs = []; let bytes = 0;
+        const blocosDe = async ids => { const out = []; for (const id of ids) { const a = porId[id]; if (!a) continue; if (!a.texto) { bytes += a.tamanho || 0; if (bytes > 28 * 1024 * 1024) { out.push({ type: 'text', text: `📎 ANEXO "${a.nome}": (não reenviado — limite de tamanho da conversa)` }); continue; } } out.push(...await blocosArquivoAg(a)); } return out; };
+        for (const m of hist) {
+            if (m.papel === 'user') msgs.push({ role: 'user', content: [...await blocosDe(jsonAg(m.anexos, [])), { type: 'text', text: m.texto || '(analise o anexo)' }] });
+            else { const ger = jsonAg(m.anexos, []).map(id => (todos.find(x => x.id === id) || {}).nome).filter(Boolean); msgs.push({ role: 'assistant', content: [{ type: 'text', text: (m.texto || '') + (ger.length ? `\n\n[Arquivo entregue: ${ger.join(', ')}]` : '') }] }); }
+        }
+        const atual = [...await blocosDe(novos)];
+        const ultimoAnexo = [...msgs.flatMap(m => m.role === 'user' ? m.content : []), ...atual].filter(x => x.type === 'document' || x.type === 'image' || (x.type === 'text' && x.text.startsWith('📎') && x.text.length > 2000)).pop();
+        if (ultimoAnexo) ultimoAnexo.cache_control = { type: 'ephemeral' };
+        atual.push({ type: 'text', text: `${texto || 'Analise o(s) relatório(s) anexado(s) e me entregue a análise completa.'}\n\n${instrucaoEntregaAg(entrega)}\nData de hoje: ${new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}.` });
+        msgs.push({ role: 'user', content: atual });
+        for (let k = msgs.length - 1; k > 0; k--) if (msgs[k].role === msgs[k - 1].role) { msgs[k - 1].content = msgs[k - 1].content.concat(msgs[k].content); msgs.splice(k, 1); } // pedido anterior sem resposta (falhou): junta
+        if (!todos.length && !hist.length && !novos.length) atual[atual.length - 1].text += '\n(Não há relatório anexado ainda: se precisar dele, peça para a pessoa anexar.)';
+        // grava o pedido antes de chamar a IA (se cair, o pedido não se perde)
+        await new Promise(ok => db.run(`INSERT INTO agente_rel_mensagens (conversa_id, papel, texto, anexos) VALUES (?, 'user', ?, ?)`, [c.id, texto, JSON.stringify(novos)], ok));
+        const j = await chamarIaAgente({ max_tokens: 16000, system: SISTEMA_AG, tools: [FERRAMENTA_AG], tool_choice: { type: 'tool', name: 'entregar_analise' }, messages: msgs });
+        const uso = (j.content || []).find(x => x.type === 'tool_use'), saida = (uso && uso.input) || { resposta: (j.content || []).map(x => x.text || '').join('\n') };
+        if (j.stop_reason === 'max_tokens' && !uso) saida.resposta = (saida.resposta || '') + '\n\n⚠️ A análise ficou longa demais e foi cortada. Peça por partes (ex.: "só a seção de custos").';
+        let gerado = null;
+        const arq = saida.arquivo && entrega !== 'texto' ? saida.arquivo : null;
+        if (arq && (arq.secoes || []).length) {
+            const fmt = ['pdf', 'docx', 'xlsx'].includes(entrega) ? entrega : (['pdf', 'docx', 'xlsx'].includes(arq.formato) ? arq.formato : 'pdf');
+            const buf = fmt === 'pdf' ? await pdfAg(arq) : fmt === 'docx' ? docxAg(arq) : await xlsxAg(arq);
+            const nome = nomeArquivoAg(arq.nome_arquivo ? String(arq.nome_arquivo).replace(/\.(pdf|docx|xlsx)$/i, '') : arq.titulo, fmt), caminho = path.join(PASTA_AGENTE_REL, crypto.randomBytes(16).toString('hex') + '.' + fmt);
+            fs.writeFileSync(caminho, buf);
+            const id = await new Promise((ok, falha) => db.run(`INSERT INTO agente_rel_arquivos (conversa_id, user_id, nome, caminho, mime, tamanho, origem) VALUES (?, ?, ?, ?, ?, ?, 'gerado')`, [c.id, req.user.userId, nome, caminho, MIME_AG[fmt], buf.length], function (e) { e ? falha(e) : ok(this.lastID); }));
+            gerado = { id, nome, mime: MIME_AG[fmt], tamanho: buf.length, origem: 'gerado' };
+        } else if (['pdf', 'docx', 'xlsx'].includes(entrega)) saida.resposta = (saida.resposta || '') + '\n\n⚠️ Não consegui montar o arquivo desta vez. Peça de novo: "gere o arquivo".';
+        const respTexto = String(saida.resposta || '').trim() || (gerado ? 'Pronto! O arquivo está anexado abaixo.' : 'Não consegui gerar a análise. Tente reformular o pedido.');
+        const idResp = await new Promise(ok => db.run(`INSERT INTO agente_rel_mensagens (conversa_id, papel, texto, anexos) VALUES (?, 'assistant', ?, ?)`, [c.id, respTexto, JSON.stringify(gerado ? [gerado.id] : [])], function () { ok(this.lastID); }));
+        const novoTitulo = (c.titulo === 'Nova análise' || !c.titulo) && saida.titulo_conversa ? String(saida.titulo_conversa).slice(0, 80) : c.titulo;
+        db.run(`UPDATE agente_rel_conversas SET atualizado_em = CURRENT_TIMESTAMP, titulo = ? WHERE id = ?`, [novoTitulo, c.id]);
+        res.json({ mensagem: { id: idResp, papel: 'assistant', texto: respTexto, anexos: gerado ? [gerado] : [] }, titulo: novoTitulo, uso: j.usage || null });
+    } catch (e) {
+        console.error('Agente de relatórios:', e.message);
+        res.status(e.status || 500).json({ error: e.message || 'Erro ao analisar.' });
+    }
+});
+
+// ============================================================
 // PROGRAMA TRAINEE (padrão Impulsionar): do cadastro/seleção até a efetivação como gerente.
 // Trilha de job rotation, competências (régua 1–5), checkpoints, indicadores, diário de
 // acompanhamento e índice de prontidão para a liderança.

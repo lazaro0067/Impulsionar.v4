@@ -272,6 +272,7 @@
     opacity: 0; transform: translateY(10px); transition: all .25s; z-index: 999;
   }
   .toast.mostrar { opacity: 1; transform: translateY(0); }
+  .toast { pointer-events: none; } /* aviso nunca bloqueia o toque nos botões embaixo dele */
   .toast.erro { background: var(--vermelho); }
 
   /* ---------- KPIs "estilo Power BI" ---------- */
@@ -1433,6 +1434,57 @@
   .ea-integ-lin { display:flex; gap:8px; align-items:flex-end; margin-bottom:8px; } .ea-integ-lin label { flex:1; display:flex; flex-direction:column; gap:4px; font-size:12.5px; font-weight:700; color:#475569; } .ea-integ-lin input { border:1px solid #cbd5e1; border-radius:10px; padding:10px; font-size:14px; }
   body.modo-estudio .ea-integ { background:#0f172e; border-color:#1c2747; } body.modo-estudio .ea-integ-lin label { color:#cbd5e1; } body.modo-estudio .ea-integ-lin input { background:#0b1329; color:#fff; border-color:#25325c; }
 
+
+
+  /* ---------- Celular: menu lateral vira gaveta (☰) ---------- */
+  .btn-menu-cel, .menu-cel-fundo { display:none; }
+  @media (max-width: 800px) {
+    #app.ativo .btn-menu-cel { display:flex; align-items:center; justify-content:center; position:fixed; top:12px; left:12px; z-index:9400; width:42px; height:42px; border-radius:12px; border:none; background:var(--azul-corp); color:#fff; font-size:20px; box-shadow:0 4px 14px rgba(0,0,0,.2); cursor:pointer; }
+    #app .sidebar { position:fixed; left:0; top:0; bottom:0; height:100dvh; z-index:9500; transform:translateX(-105%); transition:transform .22s ease; box-shadow:6px 0 30px rgba(0,0,0,.35); width:260px; }
+    body.menu-cel #app .sidebar { transform:none; }
+    body.menu-cel .menu-cel-fundo { display:block; position:fixed; inset:0; background:rgba(2,6,23,.5); z-index:9450; }
+    #app .conteudo { padding:64px 12px 18px; max-height:none; min-width:0; width:100%; }
+    #app .btn-voltar-flutuante { left:62px !important; top:12px !important; }
+    #app .notif-wrapper { top:12px; right:12px; }
+    body.modo-estudio .btn-menu-cel { display:none !important; }
+  }
+  /* ---------- Agente de Relatórios ---------- */
+  .agr { display:grid; grid-template-columns:260px 1fr; height:calc(100vh - 64px); min-height:520px; background:#fff; border:1px solid #e2e8f0; border-radius:18px; overflow:hidden; position:relative; }
+  .agr-lado { background:#f8fafc; border-right:1px solid #e2e8f0; display:flex; flex-direction:column; min-height:0; }
+  .agr-novo { margin:12px; border:none; background:linear-gradient(135deg,#2563eb,#16a34a); color:#fff; font-weight:800; border-radius:12px; padding:12px; cursor:pointer; font-size:14px; }
+  .agr-lista { overflow-y:auto; padding:0 8px 12px; flex:1; } .agr-item { padding:10px 12px; border-radius:10px; cursor:pointer; margin-bottom:2px; } .agr-item:hover { background:#eef2f7; } .agr-item.on { background:#dbeafe; }
+  .agr-item b { display:block; font-size:13.5px; color:#0b1329; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .agr-item small { color:#64748b; font-size:11.5px; } .agr-sub { color:#94a3b8; font-size:13px; padding:8px; }
+  .agr-chat { display:flex; flex-direction:column; min-height:0; min-width:0; }
+  .agr-cab { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid #e2e8f0; } .agr-cab-tit { flex:1; min-width:0; } .agr-cab-tit b { display:block; font-size:16px; color:#0b1329; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .agr-cab-tit small { color:#64748b; font-size:12.5px; }
+  .agr-ic { border:none; background:#f1f5f9; width:38px; height:38px; border-radius:50%; cursor:pointer; font-size:16px; flex-shrink:0; } .agr-so-cel { display:none; }
+  .agr-msgs { flex:1; overflow-y:auto; padding:18px 18px 8px; background:linear-gradient(#fbfdff,#f6f8fb); }
+  .agr-boas { max-width:640px; margin:24px auto; text-align:center; color:#334155; } .agr-boas-ic { font-size:52px; } .agr-boas h2 { margin:6px 0; color:#0b1329; } .agr-boas p { line-height:1.55; }
+  .agr-anexar-grande { border:2px dashed #93c5fd; background:#eff6ff; color:#1d4ed8; font-weight:800; font-size:15px; border-radius:14px; padding:16px 26px; cursor:pointer; margin:8px 0 18px; }
+  .agr-sugs { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; text-align:left; } .agr-sugs button { border:1px solid #e2e8f0; background:#fff; border-radius:12px; padding:11px 12px; cursor:pointer; font-size:13.5px; font-weight:600; color:#0b1329; display:flex; gap:8px; align-items:center; } .agr-sugs button:hover { border-color:#93c5fd; background:#f8fbff; }
+  .agr-sugs.peq { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 6px 46px; } .agr-sugs.peq button { padding:6px 11px; font-size:12.5px; border-radius:16px; font-weight:600; color:#2563eb; }
+  .agr-m { display:flex; gap:10px; margin-bottom:14px; } .agr-m.eu { justify-content:flex-end; } .agr-av { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#2563eb,#16a34a); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:18px; }
+  .agr-bolha { max-width:min(780px,86%); border-radius:16px; padding:12px 15px; font-size:14.5px; line-height:1.55; color:#0f172a; } .agr-m.eu .agr-bolha { background:#2563eb; color:#fff; border-bottom-right-radius:4px; } .agr-m.ia .agr-bolha { background:#fff; border:1px solid #e2e8f0; border-top-left-radius:4px; box-shadow:0 1px 3px rgba(15,23,42,.05); }
+  .agr-md h3, .agr-md h4 { margin:14px 0 6px; color:#0b1329; font-size:15.5px; } .agr-md h3:first-child, .agr-md p:first-child { margin-top:0; } .agr-md p { margin:6px 0; } .agr-md ul, .agr-md ol { margin:6px 0; padding-left:22px; } .agr-md li { margin:3px 0; } .agr-md blockquote { border-left:3px solid #16a34a; margin:8px 0; padding:4px 12px; background:#f0fdf4; border-radius:0 8px 8px 0; } .agr-md code { background:#f1f5f9; padding:1px 5px; border-radius:4px; font-size:13px; } .agr-md hr { border:none; border-top:1px solid #e2e8f0; margin:12px 0; }
+  .agr-tab-w { overflow-x:auto; margin:8px 0; } .agr-tab { border-collapse:collapse; font-size:13px; min-width:100%; } .agr-tab th { background:#0b1329; color:#fff; text-align:left; padding:7px 9px; white-space:nowrap; } .agr-tab td { padding:6px 9px; border-bottom:1px solid #e2e8f0; } .agr-tab tr:nth-child(even) td { background:#f8fafc; }
+  .agr-anexos { display:flex; flex-direction:column; gap:6px; margin-bottom:6px; }
+  .agr-arq { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.14); border-radius:10px; padding:7px 9px; } .agr-arq-ic { font-size:22px; } .agr-arq div { flex:1; min-width:0; } .agr-arq b { display:block; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .agr-arq small { font-size:11.5px; opacity:.8; }
+  .agr-arq button { border:none; background:rgba(255,255,255,.2); color:inherit; border-radius:8px; padding:6px 9px; cursor:pointer; font-weight:700; font-size:12.5px; }
+  .agr-arq.gerado { background:#f0fdf4; border:1px solid #bbf7d0; margin-top:10px; padding:10px 12px; } .agr-arq.gerado button { background:#fff; border:1px solid #cbd5e1; color:#0b1329; } .agr-arq.gerado button.pri { background:#16a34a; border-color:#16a34a; color:#fff; } .agr-arq.gerado .agr-arq-ic { font-size:28px; }
+  .agr-acoes-m { margin-top:8px; } .agr-acoes-m button { border:none; background:none; color:#64748b; font-size:12px; cursor:pointer; padding:2px 0; }
+  .agr-pensando { display:flex; align-items:center; gap:10px; color:#475569; font-size:13.5px; } .agr-pontos { display:flex; gap:4px; } .agr-pontos i { width:7px; height:7px; border-radius:50%; background:#2563eb; animation:agrPula 1.2s infinite; } .agr-pontos i:nth-child(2) { animation-delay:.15s; } .agr-pontos i:nth-child(3) { animation-delay:.3s; } @keyframes agrPula { 0%,60%,100% { opacity:.3; transform:translateY(0); } 30% { opacity:1; transform:translateY(-4px); } }
+  .agr-entrada { border-top:1px solid #e2e8f0; padding:10px 14px 8px; background:#fff; } .agr-entrada.arrastando { background:#eff6ff; outline:2px dashed #60a5fa; outline-offset:-6px; }
+  .agr-pend { display:flex; flex-wrap:wrap; gap:6px; } .agr-pend:not(:empty) { margin-bottom:8px; }
+  .agr-chip { display:flex; align-items:center; gap:8px; background:#f1f5f9; border-radius:10px; padding:6px 8px; max-width:320px; position:relative; overflow:hidden; } .agr-chip > span { font-size:20px; } .agr-chip div { min-width:0; } .agr-chip b { display:block; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .agr-chip small { font-size:11px; color:#64748b; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .agr-chip i { position:absolute; left:0; bottom:0; height:3px; background:#2563eb; }
+  .agr-chip.erro { background:#fef2f2; } .agr-chip.erro small { color:#b91c1c; white-space:normal; } .agr-chip button { border:none; background:none; cursor:pointer; color:#94a3b8; }
+  .agr-entregas { display:flex; gap:5px; align-items:center; flex-wrap:wrap; margin-bottom:8px; font-size:12px; color:#64748b; } .agr-entregas button { border:1px solid #e2e8f0; background:#fff; border-radius:14px; padding:4px 10px; font-size:12px; cursor:pointer; color:#334155; } .agr-entregas button.on { background:#0b1329; color:#fff; border-color:#0b1329; }
+  .agr-linha { display:flex; gap:8px; align-items:flex-end; } .agr-linha textarea { flex:1; resize:none; border:1px solid #cbd5e1; border-radius:14px; padding:11px 13px; font-size:15px; font-family:inherit; max-height:180px; line-height:1.4; }
+  .agr-clip, .agr-enviar { width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; font-size:19px; flex-shrink:0; } .agr-clip { background:#f1f5f9; } .agr-enviar { background:#2563eb; color:#fff; } .agr-enviar:disabled { opacity:.5; }
+  .agr-dica { font-size:11px; color:#94a3b8; text-align:center; margin-top:6px; }
+  @media (max-width: 800px) {
+    .agr { grid-template-columns:1fr; border-radius:14px 14px 0 0; margin:-6px -12px -18px; height:calc(100dvh - 58px); min-height:0; }
+    .agr-lado { position:absolute; inset:0 30% 0 0; z-index:5; transform:translateX(-102%); transition:transform .2s; box-shadow:4px 0 20px rgba(0,0,0,.15); } .agr.lista-aberta .agr-lado { transform:none; }
+    .agr-so-cel { display:block; } .agr-msgs { padding:12px 10px 6px; } .agr-bolha { max-width:92%; font-size:14px; } .agr-sugs.peq { margin-left:0; } .agr-dica { display:none; } .agr-av { display:none; }
+  }
   /* ---------- Programa Trainee ---------- */
   .tr { max-width:1280px; } .tr h1 { margin:0; font-size:26px; } .tr h3 { margin:18px 0 10px; } .tr-topo { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:14px; } .tr-topo p { margin:4px 0 0; color:#64748b; max-width:720px; }
   .tr-sel { display:flex; gap:8px; flex-wrap:wrap; align-items:center; } .tr-sel .tr-bt { margin:0; } .tr .tr-sel select { border:1px solid #cbd5e1; border-radius:10px; padding:9px 10px; font-size:14px; background:#fff; width:auto; max-width:280px; }
@@ -1627,6 +1679,8 @@
 
 <!-- ===================== APP ===================== -->
 <div id="app">
+  <button class="btn-menu-cel" id="btn-menu-cel" onclick="document.body.classList.toggle('menu-cel')" title="Menu">☰</button>
+  <div class="menu-cel-fundo" onclick="document.body.classList.remove('menu-cel')"></div>
   <aside class="sidebar">
     <img src="/assets/logo-impulsionar.jpg" alt="Impulsionar V4" class="logo-sidebar" id="logo-sidebar-img" onerror="this.outerHTML='&lt;div class=&quot;logo-fallback-sidebar&quot;&gt;IMPULSIONAR V4&lt;/div&gt;'">
     <div class="usuario" id="info-usuario"></div>
@@ -1894,7 +1948,7 @@ function sair(silencioso) {
 // { group: 'Rótulo do Grupo', items: [['chave','Rótulo'], ...] } (pasta que expande/recolhe).
 const MENU_POR_PERFIL = {
   admin: [
-    ['dashboard', 'Dashboard'], ['meuPerfilImpulsionar', 'Meu Perfil'],
+    ['dashboard', 'Dashboard'], ['meuPerfilImpulsionar', 'Meu Perfil'], ['agenteRelatorios', '🤖 Agente de Relatórios'],
     { group: 'Empresas & Consultoria', items: [
         ['consulting', 'Consultoria'], ['companies', 'Empresas']
     ]},
@@ -1936,6 +1990,9 @@ const MENU_POR_PERFIL = {
   ],
   client_admin: [
     ['dashboard', 'Painel da Empresa'],
+    { group: 'Agente de Relatórios', moduleKey: 'agenteRelatorios', items: [
+        ['agenteRelatorios', '🤖 Analisar relatórios']
+    ]},
     { group: 'Meu Time', moduleKey: 'consultoria', items: [
         ['employees', 'Funcionários'], ['consulting', 'Consultoria'], ['metasConsolidado', 'Consolidado de Metas']
     ]},
@@ -2250,6 +2307,7 @@ function navInstalar() {
 }
 
 function irPara(aba, semHistorico) {
+  document.body.classList.remove('menu-cel'); // celular: fecha a gaveta do menu ao escolher uma tela
   if (!semHistorico) navRegistrar('irPara', [aba]);
   ESTADO.abaAtual = aba;
   atualizarBotaoVoltarGlobal();
@@ -2275,7 +2333,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento, traineePrograma: renderTrainee, estudioVideo: () => renderEstudioVideo('projetos'), estudioAcessos: () => renderEstudioVideo('acessos'), estudioAgente: () => renderEstudioVideo('agente'), estudioAgenda: () => renderEstudioVideo('agenda'),
+    dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento, traineePrograma: renderTrainee, agenteRelatorios: renderAgenteRelatorios, estudioVideo: () => renderEstudioVideo('projetos'), estudioAcessos: () => renderEstudioVideo('acessos'), estudioAgente: () => renderEstudioVideo('agente'), estudioAgenda: () => renderEstudioVideo('agenda'),
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster, acessosCandidatos: renderAcessosCandidatos, creditosVagas: renderCreditosVagas
   };
   NAV.profundidade++;
@@ -3250,6 +3308,7 @@ const MODULOS_EMPRESA = [
   { key: 'consultoria', icone: '👥', label: 'Meu Time', desc: 'Funcionários e Consultoria' },
   { key: 'pipeline', icone: '📊', label: 'Pipeline de Desenvolvimento', desc: 'Visão por fase de cada funcionário' },
   { key: 'pdi', icone: '🎯', label: 'PDI', desc: 'Planos de Desenvolvimento Individual' },
+  { key: 'agenteRelatorios', icone: '🤖', label: 'Agente de Relatórios', desc: 'Anexa o relatório e recebe a análise pronta (texto, PDF, Word ou Excel)' },
   { key: 'trainee', icone: '🚀', label: 'Programa Trainee', desc: 'Do cadastro à efetivação como gerente' },
   { key: 'academy', icone: '🎓', label: 'Treinamentos', desc: 'Academy Digital, Trilhas, Competence Check' },
   { key: 'mentoria', icone: '🤝', label: 'Mentorias', desc: 'Mentorias, Comunidade, Eventos, Ranking' },
@@ -24287,6 +24346,172 @@ async function evRadarUsar(i, modo) {
     else evAbrirTeleprompter();
   } catch (e) { mostrarToast(e.message, true); }
 }
+// ============================================================
+// AGENTE DE RELATÓRIOS — anexa, pede e recebe pronto (texto ou arquivo)
+// ============================================================
+const AGR = { lista: [], id: null, msgs: [], pendentes: [], entrega: 'auto', enviando: false, verLista: false };
+const AGR_SUGESTOES = [
+  ['📋', 'Resumo executivo', 'Faça um resumo executivo deste relatório: conclusão principal, números que importam e o que precisa de atenção.', 'texto'],
+  ['📄', 'Análise completa em PDF', 'Faça a análise completa deste relatório (resumo executivo, principais números, destaques, pontos de atenção, causas prováveis e plano de ação) e me entregue em PDF.', 'pdf'],
+  ['⚠️', 'Pontos de atenção', 'Quais são os principais problemas, riscos e desvios neste relatório? Explique o impacto de cada um e o que fazer.', 'texto'],
+  ['📊', 'Números em Excel', 'Organize os principais números deste relatório em tabelas (totais, comparativos, rankings) e me entregue em Excel.', 'xlsx'],
+  ['📝', 'Relatório em Word', 'Escreva um relatório profissional em Word com a análise deste material, pronto para enviar à diretoria.', 'docx'],
+  ['🎯', 'Plano de ação', 'Com base neste relatório, monte um plano de ação: o quê, por quê, quem, até quando e qual indicador acompanhar.', 'texto']
+];
+const AGR_ENTREGAS = [['auto', '✨ Automático'], ['texto', '💬 Só texto'], ['pdf', '📄 PDF'], ['docx', '📝 Word'], ['xlsx', '📊 Excel']];
+function agrIcone(nome, mime) { const e = (String(nome).match(/\.([a-z0-9]+)$/i) || [, ''])[1].toLowerCase(); return e === 'pdf' ? '📕' : /xlsx|xlsm|csv/.test(e) ? '📗' : e === 'docx' ? '📘' : e === 'pptx' ? '📙' : /png|jpe?g|webp|gif/.test(e) ? '🖼️' : '📄'; }
+function agrTam(b) { return b > 1048576 ? (b / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB'; }
+// Markdown simples → HTML (títulos, negrito, listas, tabelas, citações)
+function agrMd(md) {
+  const linhas = String(md || '').replace(/\r/g, '').split('\n'); let html = '', lista = null, i = 0;
+  const inl = t => escapeHtml(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<i>$2</i>').replace(/`([^`]+)`/g, '<code>$1</code>');
+  const fecha = () => { if (lista) { html += `</${lista}>`; lista = null; } };
+  while (i < linhas.length) {
+    const l = linhas[i];
+    if (/^\s*\|.*\|\s*$/.test(l) && i + 1 < linhas.length && /^\s*\|?\s*:?-{2,}/.test(linhas[i + 1])) {
+      fecha(); const cel = x => x.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+      const cab = cel(l); i += 2; const corpo = []; while (i < linhas.length && /^\s*\|.*\|\s*$/.test(linhas[i])) corpo.push(cel(linhas[i++]));
+      html += `<div class="agr-tab-w"><table class="agr-tab"><thead><tr>${cab.map(c => `<th>${inl(c)}</th>`).join('')}</tr></thead><tbody>${corpo.map(r => `<tr>${r.map(c => `<td>${inl(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`; continue;
+    }
+    let m;
+    if ((m = l.match(/^(#{1,4})\s+(.*)$/))) { fecha(); const n = Math.min(4, m[1].length + 2); html += `<h${n}>${inl(m[2])}</h${n}>`; }
+    else if ((m = l.match(/^\s*[-*•]\s+(.*)$/))) { if (lista !== 'ul') { fecha(); html += '<ul>'; lista = 'ul'; } html += `<li>${inl(m[1])}</li>`; }
+    else if ((m = l.match(/^\s*\d+[.)]\s+(.*)$/))) { if (lista !== 'ol') { fecha(); html += '<ol>'; lista = 'ol'; } html += `<li>${inl(m[1])}</li>`; }
+    else if ((m = l.match(/^>\s?(.*)$/))) { fecha(); html += `<blockquote>${inl(m[1])}</blockquote>`; }
+    else if (/^\s*(---|\*\*\*)\s*$/.test(l)) { fecha(); html += '<hr>'; }
+    else if (!l.trim()) fecha();
+    else { fecha(); html += `<p>${inl(l)}</p>`; }
+    i++;
+  }
+  fecha(); return html;
+}
+async function renderAgenteRelatorios() {
+  const c = document.getElementById('conteudo');
+  c.innerHTML = `<div class="agr" id="agr">
+    <aside class="agr-lado" id="agr-lado"><button class="agr-novo" onclick="agrNova()">＋ Nova análise</button><div class="agr-lista" id="agr-lista"><p class="agr-sub">Carregando…</p></div></aside>
+    <section class="agr-chat">
+      <header class="agr-cab"><button class="agr-ic agr-so-cel" onclick="agrAlternarLista()" title="Minhas análises">🗂️</button><div class="agr-cab-tit"><b id="agr-titulo">🤖 Agente de Relatórios</b><small>Anexe o relatório, peça o que precisa e receba pronto — em texto ou como arquivo.</small></div><button class="agr-ic" id="agr-excluir" onclick="agrExcluir()" title="Excluir conversa" hidden>🗑️</button></header>
+      <div class="agr-msgs" id="agr-msgs"></div>
+      <div class="agr-entrada" id="agr-entrada" ondragover="event.preventDefault(); this.classList.add('arrastando')" ondragleave="this.classList.remove('arrastando')" ondrop="event.preventDefault(); this.classList.remove('arrastando'); agrAnexar(event.dataTransfer.files)">
+        <div class="agr-pend" id="agr-pend"></div>
+        <div class="agr-entregas" id="agr-entregas"></div>
+        <div class="agr-linha">
+          <button class="agr-clip" onclick="document.getElementById('agr-arq').click()" title="Anexar relatório">📎</button>
+          <textarea id="agr-txt" rows="1" placeholder="Peça a análise… ex.: “Analise as vendas por região e me mande em PDF”" oninput="agrAutoAltura(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !('ontouchstart' in window)){event.preventDefault(); agrEnviar();}"></textarea>
+          <button class="agr-enviar" id="agr-bt" onclick="agrEnviar()" title="Enviar">➤</button>
+        </div>
+        <input type="file" id="agr-arq" multiple hidden accept=".pdf,.xlsx,.xlsm,.csv,.docx,.pptx,.txt,.md,.json,.html,.png,.jpg,.jpeg,.webp,.gif" onchange="agrAnexar(this.files); this.value=''">
+        <div class="agr-dica">PDF, Excel, CSV, Word, PowerPoint ou imagem · até 30 MB cada · arraste os arquivos para cá</div>
+      </div>
+    </section></div>`;
+  agrDesenharEntregas();
+  await agrCarregarLista();
+  if (AGR.id && AGR.lista.some(x => x.id === AGR.id)) await agrAbrir(AGR.id); else { AGR.id = null; AGR.msgs = []; agrDesenharMsgs(); }
+}
+function agrAutoAltura(t) { t.style.height = 'auto'; t.style.height = Math.min(180, t.scrollHeight) + 'px'; }
+function agrAlternarLista() { const l = document.getElementById('agr'); if (l) l.classList.toggle('lista-aberta'); }
+function agrDesenharEntregas() { const el = document.getElementById('agr-entregas'); if (el) el.innerHTML = '<span>Entregar como:</span>' + AGR_ENTREGAS.map(([k, r]) => `<button class="${AGR.entrega === k ? 'on' : ''}" onclick="AGR.entrega='${k}'; agrDesenharEntregas()">${r}</button>`).join(''); }
+async function agrCarregarLista() {
+  try { AGR.lista = await api('/api/agente-relatorios/conversas'); } catch (e) { AGR.lista = []; }
+  const el = document.getElementById('agr-lista'); if (!el) return;
+  el.innerHTML = AGR.lista.length ? AGR.lista.map(x => `<div class="agr-item ${x.id === AGR.id ? 'on' : ''}" onclick="agrAbrir(${x.id})"><b>${escapeHtml(x.titulo || 'Análise')}</b><small>${new Date(String(x.atualizado_em).replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</small></div>`).join('') : '<p class="agr-sub">Suas análises aparecem aqui.</p>';
+}
+async function agrAbrir(id) {
+  try { const d = await api('/api/agente-relatorios/conversas/' + id); AGR.id = id; AGR.msgs = d.mensagens; document.getElementById('agr-titulo').textContent = '🤖 ' + (d.conversa.titulo || 'Análise'); }
+  catch (e) { return mostrarToast(e.message, true); }
+  AGR.pendentes = []; agrDesenharPend(); document.getElementById('agr').classList.remove('lista-aberta');
+  document.querySelectorAll('.agr-item').forEach(x => x.classList.toggle('on', x.getAttribute('onclick') === `agrAbrir(${id})`));
+  agrDesenharMsgs();
+}
+function agrNova() { AGR.id = null; AGR.msgs = []; AGR.pendentes = []; document.getElementById('agr-titulo').textContent = '🤖 Agente de Relatórios'; document.querySelectorAll('.agr-item').forEach(x => x.classList.remove('on')); document.getElementById('agr').classList.remove('lista-aberta'); agrDesenharPend(); agrDesenharMsgs(); document.getElementById('agr-txt').focus(); }
+function agrCartaoArquivo(a, gerado) {
+  return `<div class="agr-arq ${gerado ? 'gerado' : ''}"><span class="agr-arq-ic">${agrIcone(a.nome, a.mime)}</span><div><b>${escapeHtml(a.nome)}</b><small>${agrTam(a.tamanho || 0)}${gerado ? ' · pronto para baixar' : ''}</small></div>${gerado ? `${/pdf/.test(a.mime) ? `<button onclick="agrBaixar(${a.id}, true)">👁️ Abrir</button>` : ''}<button class="pri" onclick="agrBaixar(${a.id})">⬇️ Baixar</button>` : `<button onclick="agrBaixar(${a.id})" title="Baixar">⬇️</button>`}</div>`;
+}
+function agrDesenharMsgs() {
+  const el = document.getElementById('agr-msgs'); if (!el) return;
+  document.getElementById('agr-excluir').hidden = !AGR.id;
+  if (!AGR.msgs.length && !AGR.enviando) {
+    el.innerHTML = `<div class="agr-boas"><div class="agr-boas-ic">🤖</div><h2>Seu analista de relatórios</h2><p>Anexe um relatório (vendas, financeiro, indicadores, pesquisa, auditoria…) e diga o que precisa. Eu leio tudo, faço as contas e devolvo a análise pronta — no chat ou como <b>PDF</b>, <b>Word</b> ou <b>Excel</b>.</p>
+      <button class="agr-anexar-grande" onclick="document.getElementById('agr-arq').click()">📎 Anexar relatório</button>
+      <div class="agr-sugs">${AGR_SUGESTOES.map(([ic, t, , ent], i) => `<button onclick="agrSugestao(${i})"><span>${ic}</span>${t}</button>`).join('')}</div></div>`;
+    return;
+  }
+  el.innerHTML = AGR.msgs.map(m => m.papel === 'user'
+    ? `<div class="agr-m eu"><div class="agr-bolha">${(m.anexos || []).length ? `<div class="agr-anexos">${m.anexos.map(a => agrCartaoArquivo(a)).join('')}</div>` : ''}${m.texto ? `<div>${escapeHtml(m.texto).replace(/\n/g, '<br>')}</div>` : ''}</div></div>`
+    : `<div class="agr-m ia"><div class="agr-av">🤖</div><div class="agr-bolha"><div class="agr-md">${agrMd(m.texto)}</div>${(m.anexos || []).map(a => agrCartaoArquivo(a, true)).join('')}<div class="agr-acoes-m"><button onclick="agrCopiar(${m.id})">📋 Copiar texto</button></div></div></div>`).join('')
+    + (AGR.enviando ? `<div class="agr-m ia"><div class="agr-av">🤖</div><div class="agr-bolha agr-pensando"><span class="agr-pontos"><i></i><i></i><i></i></span><span id="agr-etapa">Lendo o relatório…</span></div></div>` : '')
+    + (!AGR.enviando && AGR.msgs.length ? `<div class="agr-sugs peq">${['Resumir em 5 linhas', 'Gerar PDF desta análise', 'Exportar os números em Excel', 'O que fazer primeiro?'].map(t => `<button onclick="agrRapido('${t}')">${t}</button>`).join('')}</div>` : '');
+  el.scrollTop = el.scrollHeight;
+}
+function agrRapido(t) { const ent = /PDF/.test(t) ? 'pdf' : /Excel/.test(t) ? 'xlsx' : 'auto'; const txt = document.getElementById('agr-txt'); txt.value = t; AGR.entrega = ent; agrDesenharEntregas(); agrEnviar(); }
+function agrSugestao(i) {
+  const [, , pedido, ent] = AGR_SUGESTOES[i]; const t = document.getElementById('agr-txt'); t.value = pedido; agrAutoAltura(t); AGR.entrega = ent; agrDesenharEntregas();
+  if (!AGR.pendentes.length) { mostrarToast('Agora anexe o relatório 📎 e toque em enviar.'); document.getElementById('agr-arq').click(); } else t.focus();
+}
+function agrCopiar(id) { const m = AGR.msgs.find(x => x.id === id); if (!m) return; navigator.clipboard.writeText(m.texto || '').then(() => mostrarToast('Texto copiado! ✅')).catch(() => mostrarToast('Não consegui copiar.', true)); }
+async function agrGarantirConversa() { if (AGR.id) return AGR.id; const r = await api('/api/agente-relatorios/conversas', { method: 'POST', body: JSON.stringify({ titulo: 'Nova análise' }) }); AGR.id = r.id; return r.id; }
+function agrDesenharPend() {
+  const el = document.getElementById('agr-pend'); if (!el) return;
+  el.innerHTML = AGR.pendentes.map((p, i) => `<div class="agr-chip ${p.erro ? 'erro' : ''}"><span>${agrIcone(p.nome)}</span><div><b>${escapeHtml(p.nome)}</b><small>${p.erro ? escapeHtml(p.erro) : p.id ? (p.resumo ? escapeHtml(p.resumo) : agrTam(p.tamanho)) + ' · pronto' : 'Enviando… ' + (p.pct || 0) + '%'}</small>${!p.id && !p.erro ? `<i style="width:${p.pct || 0}%"></i>` : ''}</div><button onclick="agrTirar(${i})">✕</button></div>`).join('');
+}
+function agrTirar(i) { const p = AGR.pendentes[i]; AGR.pendentes.splice(i, 1); agrDesenharPend(); if (p && p.id) api('/api/agente-relatorios/anexos/' + p.id, { method: 'DELETE' }).catch(() => {}); }
+async function agrAnexar(files) {
+  files = Array.from(files || []); if (!files.length) return;
+  const grandes = files.filter(f => f.size > 30 * 1048576); if (grandes.length) mostrarToast('Arquivo acima de 30 MB não entra: ' + grandes.map(f => f.name).join(', '), true);
+  files = files.filter(f => f.size <= 30 * 1048576); if (!files.length) return;
+  let id; try { id = await agrGarantirConversa(); } catch (e) { return mostrarToast(e.message, true); }
+  for (const f of files) {
+    const p = { nome: f.name, tamanho: f.size, pct: 0 }; AGR.pendentes.push(p); agrDesenharPend();
+    await new Promise(ok => {
+      const fd = new FormData(); fd.append('arquivos', f, f.name);
+      const x = new XMLHttpRequest(); x.open('POST', `/api/agente-relatorios/conversas/${id}/anexos`); x.setRequestHeader('Authorization', 'Bearer ' + ESTADO.token);
+      x.upload.onprogress = e => { if (e.lengthComputable) { p.pct = Math.round(e.loaded / e.total * 100); agrDesenharPend(); } };
+      x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch (e) {} if (x.status >= 200 && x.status < 300 && j.arquivos && j.arquivos[0]) Object.assign(p, j.arquivos[0]); else p.erro = j.error || 'Falha no envio'; agrDesenharPend(); ok(); };
+      x.onerror = () => { p.erro = 'Sem conexão'; agrDesenharPend(); ok(); };
+      x.send(fd);
+    });
+  }
+  document.getElementById('agr-txt').focus();
+}
+async function agrEnviar() {
+  if (AGR.enviando) return;
+  const t = document.getElementById('agr-txt'), texto = t.value.trim();
+  if (AGR.pendentes.some(p => !p.id && !p.erro)) return mostrarToast('Espere o anexo terminar de subir.', true);
+  const anexos = AGR.pendentes.filter(p => p.id);
+  if (!texto && !anexos.length) return mostrarToast('Anexe um relatório ou escreva o que você precisa.', true);
+  let id; try { id = await agrGarantirConversa(); } catch (e) { return mostrarToast(e.message, true); }
+  AGR.msgs.push({ id: 'tmp', papel: 'user', texto, anexos: anexos.map(a => ({ id: a.id, nome: a.nome, tamanho: a.tamanho, mime: a.mime })) });
+  AGR.pendentes = []; agrDesenharPend(); t.value = ''; agrAutoAltura(t);
+  AGR.enviando = true; agrDesenharMsgs(); document.getElementById('agr-bt').disabled = true;
+  const etapas = ['Lendo o relatório…', 'Conferindo os números…', 'Encontrando os destaques e os pontos de atenção…', 'Montando as recomendações…', AGR.entrega === 'texto' ? 'Escrevendo a resposta…' : 'Preparando a entrega…', 'Quase pronto…'];
+  let k = 0; const tm = setInterval(() => { const e = document.getElementById('agr-etapa'); if (e && k < etapas.length - 1) e.textContent = etapas[++k]; }, 9000);
+  try {
+    const r = await api(`/api/agente-relatorios/conversas/${id}/mensagens`, { method: 'POST', body: JSON.stringify({ texto, anexos: anexos.map(a => a.id), entrega: AGR.entrega }) });
+    AGR.msgs.push(r.mensagem); if (r.titulo) document.getElementById('agr-titulo').textContent = '🤖 ' + r.titulo;
+    if ((r.mensagem.anexos || []).length) mostrarToast('📎 Arquivo pronto: ' + r.mensagem.anexos[0].nome);
+  } catch (e) {
+    AGR.msgs.push({ id: 'erro', papel: 'assistant', texto: '⚠️ ' + e.message + '\n\nSeu pedido ficou salvo — toque em enviar de novo quando quiser.', anexos: [] });
+  } finally {
+    clearInterval(tm); AGR.enviando = false; const bt = document.getElementById('agr-bt'); if (bt) bt.disabled = false;
+    if (AGR.entrega !== 'auto') { AGR.entrega = 'auto'; agrDesenharEntregas(); }
+    agrDesenharMsgs(); agrCarregarLista();
+  }
+}
+async function agrBaixar(id, ver) {
+  try {
+    const r = await fetch(`/api/agente-relatorios/arquivos/${id}${ver ? '?ver=1' : ''}`, { headers: { Authorization: 'Bearer ' + ESTADO.token } });
+    if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'Não consegui baixar.'); }
+    const blob = await r.blob(), url = URL.createObjectURL(blob);
+    const nome = decodeURIComponent(((r.headers.get('Content-Disposition') || '').match(/filename\*=UTF-8''([^;]+)/) || [, 'arquivo'])[1]);
+    if (ver) { window.open(url, '_blank'); return; }
+    const a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function agrExcluir() {
+  if (!AGR.id || !confirm('Excluir esta conversa e os arquivos dela?')) return;
+  try { await api('/api/agente-relatorios/conversas/' + AGR.id, { method: 'DELETE' }); agrNova(); agrCarregarLista(); } catch (e) { mostrarToast(e.message, true); }
+}
+
 // ============================================================
 // PROGRAMA TRAINEE — do cadastro e seleção até a efetivação como gerente
 // ============================================================
