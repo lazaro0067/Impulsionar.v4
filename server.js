@@ -13857,10 +13857,10 @@ app.post('/api/public/gravador/:codigo/registrar', async (req, res) => {
     const b = req.body || {}, nome = arquivoGravacaoValido(b.url);
     if (!nome) return res.status(400).json({ error: 'Gravação não encontrada no servidor.' });
     const ja = await dbGet(`SELECT id FROM estudio_gravacoes WHERE url = ?`, ['/uploads/' + nome]).catch(() => null);
-    if (ja) return res.json({ ok: true, message: 'Vídeo já está no projeto! ✅' });
+    if (ja) return res.json({ ok: true, projeto: g.projeto_id, message: 'Vídeo já está no projeto! ✅' });
     const parte = Number(b.parte) || 0, rot = (/aula/.test(String(b.tipo || '')) ? 'Gravação da aula ' : 'Gravação ') + (parte ? 'parte ' + parte + ' · ' : '') + new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
     db.run(`INSERT INTO estudio_gravacoes (projeto_id, url, nome, duracao, mime) VALUES (?, ?, ?, ?, ?)`, [g.projeto_id, '/uploads/' + nome, rot, Number(b.duracao) || 0, /\.mp4$/.test(nome) ? 'video/mp4' : 'video/webm'],
-        function (e2) { if (e2) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ ok: true, message: 'Vídeo enviado para o projeto! ✅ Ele aparece no Estúdio de Vídeo em instantes.' }); });
+        function (e2) { if (e2) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ ok: true, projeto: g.projeto_id, message: 'Vídeo enviado para o projeto! ✅ Já está na linha do tempo para editar.' }); });
 });
 app.post('/api/public/gravador/:codigo/descartar', async (req, res) => {
     const g = await gravadorValidoEst(req.params.codigo); if (!g) return res.status(404).json({ error: 'Link inválido.' });

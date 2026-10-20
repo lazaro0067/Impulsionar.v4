@@ -1542,7 +1542,7 @@
   .evc-rec i { display:block; width:60px; height:60px; border-radius:50%; background:#ef4444; transition:all .2s; } .evc-rec.gravando i { width:30px; height:30px; border-radius:8px; }
   .evc-lat { width:50px; height:50px; border-radius:50%; border:none; background:rgba(255,255,255,.2); color:#fff; font-size:20px; cursor:pointer; } .evc-lat:disabled { opacity:.35; } .evc-lat.on { background:#fff; color:#000; }
   .evc-zoom { position:absolute; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom) + 150px); z-index:3; display:flex; align-items:center; gap:8px; background:rgba(0,0,0,.45); padding:6px 10px; border-radius:22px; }
-  .evc-zoom input { width:150px; } .evc-zoom b { font-size:13px; min-width:38px; text-align:center; } .evc-zoom button { width:28px; height:28px; border-radius:50%; border:none; background:rgba(255,255,255,.2); color:#fff; font-weight:800; }
+  .evc-zchips { display:flex; gap:4px; } .evc-zchips button { width:auto !important; min-width:34px; height:30px !important; padding:0 9px; border-radius:16px !important; font-size:12px; } .evc-zchips button.on { background:#facc15 !important; color:#111 !important; } .evc-zoom input { width:110px; } @media (pointer:coarse) { .evc-zoom input { display:none; } } .evc-zoom b { font-size:13px; min-width:38px; text-align:center; } .evc-zoom button { width:28px; height:28px; border-radius:50%; border:none; background:rgba(255,255,255,.2); color:#fff; font-weight:800; }
   .evc-ajustes { position:absolute; top:0; right:0; bottom:0; width:min(360px,100%); z-index:5; background:rgba(15,23,42,.97); padding:calc(env(safe-area-inset-top) + 12px) 16px 24px; overflow-y:auto; color:#e2e8f0; }
   .evc-aj-cab { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; } .evc .ev-chk2 { color:#e2e8f0; }
   .ev-cam .ev-chk2 { color:var(--e-tx); } .ev-cam-corpo { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:16px; } @media (max-width: 760px) { .ev-cam-corpo { grid-template-columns:1fr; } }
@@ -1651,6 +1651,7 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/mp4-completo.js?v=1"></script>
+<script src="/camera-certa.js?v=1"></script>
 <script>
 /* ==========================================================
    ESTADO E HELPERS DE API
@@ -2090,6 +2091,9 @@ function iniciarApp() {
   else { if (window.MODO_ESTUDIO) mostrarToast('O Estúdio de Vídeo é para o Master e os clientes do Estúdio. Abrindo o sistema normal.', true); document.body.classList.remove('modo-estudio'); irPara(primeiraChave); }
   iniciarPollinhaNotificacoes();
   tratarVagaPendenteAposLogin();
+  // link "Editar no Estúdio" (vem da tela de gravação): abre o projeto direto no editor
+  const mEst = (location.hash || '').match(/^#estudio=(\d+)/);
+  if (mEst) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} setTimeout(() => { if (typeof evAbrirEditor === 'function') evAbrirEditor(Number(mEst[1])); }, 700); }
 }
 
 // Se a pessoa veio de um link de vaga compartilhada e acabou de logar como
@@ -20913,8 +20917,8 @@ function evDesenharMidia(ctx, c, el, prog, alpha, dx, escalaExtra, R, forma) {
   if (c.espelhar) { ctx.translate(2 * (R.x + R.w / 2), 0); ctx.scale(-1, 1); }
   if (c.ajuste === 'conter') {
     // fundo desfocado (padrão profissional para vídeos horizontais em 9:16)
-    ctx.filter = ES.leveAgora ? 'brightness(0.55)' : evFiltroCss(c, semGrade) + ' blur(40px) brightness(0.7)';
-    const s0 = cobrir * (ES.leveAgora ? 1.25 : 1.1); ctx.drawImage(fonte, R.x + R.w / 2 - mw * s0 / 2 + dx, R.y + R.h / 2 - mh * s0 / 2, mw * s0, mh * s0);
+    if (ES.leveAgora || EV_SEM_FILTRO) { ctx.filter = 'none'; CameraCerta.fundo(ctx, fonte, R.x, R.y, R.w, R.h); } // celular/iPhone: desfoque leve que funciona em todo aparelho
+    else { ctx.filter = evFiltroCss(c, semGrade) + ' blur(40px) brightness(0.7)'; const s0 = cobrir * 1.1; ctx.drawImage(fonte, R.x + R.w / 2 - mw * s0 / 2 + dx, R.y + R.h / 2 - mh * s0 / 2, mw * s0, mh * s0); }
     ctx.filter = ES.leveAgora ? 'none' : evFiltroCss(c, semGrade);
     const s1 = conter * z; ctx.drawImage(fonte, cx - mw * s1 / 2, cy - mh * s1 / 2, mw * s1, mh * s1);
   } else {
@@ -20923,6 +20927,7 @@ function evDesenharMidia(ctx, c, el, prog, alpha, dx, escalaExtra, R, forma) {
   ctx.restore();
 }
 // Retângulos da tela dividida / janelinha.
+const EV_SEM_FILTRO = (() => { try { return !('filter' in document.createElement('canvas').getContext('2d')); } catch (e) { return true; } })(); // Safari: canvas sem filtro (sem desfoque)
 const EV_LAYOUTS = { cima: 'Tela dividida — em cima', baixo: 'Tela dividida — embaixo', esq: 'Lado a lado — esquerda', dir: 'Lado a lado — direita', pip: 'Janelinha (PiP)', circulo: 'Janelinha redonda', cheio: 'Tela cheia (cobertura / B-roll)' };
 function evRetSobreposicao(o) {
   const W = ES.W, H = ES.H, L = o.layout || 'baixo';
@@ -22199,7 +22204,7 @@ async function evAbrirCamera() {
       <button class="evc-ic" onclick="evCamVirar()" title="Trocar câmera (frontal / traseira)">🔄</button>
       <button class="evc-ic" onclick="evCamAjustes()" title="Ajustes da câmera">⚙️</button>
     </div>
-    <div class="evc-zoom" id="evc-zoom" hidden><button onclick="evCamZoomPasso(-1)">−</button><b id="evc-zoom-v">1x</b><input type="range" id="ev-cam-zoom" oninput="evCamZoom(this.value)"><button onclick="evCamZoomPasso(1)">+</button></div>
+    <div class="evc-zoom" id="evc-zoom" hidden><div class="evc-zchips" id="evc-zchips"></div><input type="range" id="ev-cam-zoom" step="0.01" oninput="EVCAM.zoom && EVCAM.zoom.setar(this.value)"><b id="evc-zoom-v">1x</b></div>
     <div class="evc-base">
       <div class="evc-msg" id="ev-cam-msg">Toque no botão vermelho para gravar · a gravação entra direto no vídeo</div>
       <div class="evc-botoes">
@@ -22223,19 +22228,31 @@ async function evAbrirCamera() {
   </div>`;
   await evCamLigar(true); evCamTp();
 }
+window.addEventListener('resize', () => { clearTimeout(EVCAM.tGiro); EVCAM.tGiro = setTimeout(() => { if (document.getElementById('ev-cam-cv') && EVCAM.stream && !EVCAM.rec && !EVCAM.ultima && evCelularAqui() && EVCAM.orientou !== (window.innerHeight >= window.innerWidth)) evCamLigar(); }, 450); });
 function evCamAjustes() { const a = document.getElementById('evc-ajustes'); if (a) a.hidden = !a.hidden; }
 function evCamVirar() { if (EVCAM.rec) return mostrarToast('Pare a gravação para trocar de câmera.', true); EVCAM.traseira = !EVCAM.traseira; EVCAM.virou = true; evCamLigar(); }
 // Recursos da própria câmera (quando o aparelho oferece): zoom óptico/digital e lanterna.
 function evCamRecursos() {
   const tr = EVCAM.stream && EVCAM.stream.getVideoTracks()[0]; if (!tr) return;
   const cap = tr.getCapabilities ? tr.getCapabilities() : {}, st = tr.getSettings ? tr.getSettings() : {};
-  const z = document.getElementById('evc-zoom'), zi = document.getElementById('ev-cam-zoom');
-  if (z && cap.zoom && cap.zoom.max > cap.zoom.min) { z.hidden = false; zi.min = cap.zoom.min; zi.max = cap.zoom.max; zi.step = cap.zoom.step || 0.1; zi.value = st.zoom || cap.zoom.min; document.getElementById('evc-zoom-v').textContent = Number(zi.value).toFixed(1) + 'x'; } else if (z) z.hidden = true;
+  // zoom como na câmera do celular: ⤢ Tudo · 1x · 2x, barra e pinça com dois dedos na imagem
+  const F = EV_FORMATOS[ES.p.formato] || EV_FORMATOS['9:16'], d = EVCAM.dims || {};
+  if (!EVCAM.zoom) EVCAM.zoom = CameraCerta.criarZoom(evCamZoomUI);
+  const vw = d.w || st.width || 16, vh = d.h || st.height || 9, deitadoNoEmPe = (vw > vh) !== (F.w > F.h);
+  EVCAM.zoom.config(tr, vw, vh, F.w, F.h, deitadoNoEmPe && evCelularAqui());
+  if (deitadoNoEmPe && evCelularAqui()) { const msg = document.getElementById('ev-cam-msg'); if (msg && !EVCAM.rec) msg.textContent = '📐 Mostrando a imagem inteira · toque em 1x ou use dois dedos para aproximar'; }
+  const z = document.getElementById('evc-zoom'); if (z) z.hidden = false;
+  CameraCerta.criarZoom && EVCAM.zoom.ligarPinca(document.getElementById('ev-cam-palco'));
   const fl = document.getElementById('evc-flash'); if (fl) { fl.hidden = !cap.torch; fl.classList.toggle('on', !!EVCAM.flash); }
   const info = document.getElementById('evc-info'); if (info && st.width) info.textContent = `Câmera em ${st.width}×${st.height}${st.frameRate ? ' · ' + Math.round(st.frameRate) + ' fps' : ''}`;
 }
-function evCamZoom(v) { const tr = EVCAM.stream && EVCAM.stream.getVideoTracks()[0]; if (!tr) return; tr.applyConstraints({ advanced: [{ zoom: Number(v) }] }).catch(() => {}); const b = document.getElementById('evc-zoom-v'); if (b) b.textContent = Number(v).toFixed(1) + 'x'; }
-function evCamZoomPasso(d) { const zi = document.getElementById('ev-cam-zoom'); if (!zi) return; zi.value = Math.max(Number(zi.min), Math.min(Number(zi.max), Number(zi.value) + d * Math.max(0.5, (zi.max - zi.min) / 8))); evCamZoom(zi.value); }
+function evCamZoom(v) { if (EVCAM.zoom) EVCAM.zoom.setar(v); }
+function evCamZoomPasso(d) { if (EVCAM.zoom) EVCAM.zoom.setar(EVCAM.zoom.z * (d > 0 ? 1.25 : 0.8)); }
+function evCamZoomUI(Z) {
+  const zi = document.getElementById('ev-cam-zoom'), b = document.getElementById('evc-zoom-v'), ch = document.getElementById('evc-zchips'); if (!zi) return;
+  zi.min = Z.min; zi.max = Z.max; zi.value = Z.z; if (b) { b.textContent = Z.rotulo(); b.style.display = Z.chips().some(([v]) => Math.abs(Z.z - v) < 0.03) ? 'none' : ''; }
+  if (ch) ch.innerHTML = Z.chips().map(([v, r]) => `<button class="${Math.abs(Z.z - v) < 0.03 ? 'on' : ''}" onclick="EVCAM.zoom.setar(${v})">${r}</button>`).join('');
+}
 function evCamFlash() { const tr = EVCAM.stream && EVCAM.stream.getVideoTracks()[0]; if (!tr) return; EVCAM.flash = !EVCAM.flash; tr.applyConstraints({ advanced: [{ torch: EVCAM.flash }] }).catch(() => { EVCAM.flash = false; }); const fl = document.getElementById('evc-flash'); if (fl) fl.classList.toggle('on', EVCAM.flash); }
 async function evCamModo(m) { EVCAM.modo = m; document.querySelectorAll('#ev-cam-modos button').forEach(b => b.classList.toggle('on', b.getAttribute('onclick').includes(`'${m}'`))); if (m !== 'camera' && !EVCAM.tela) { try { EVCAM.tela = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true }); EVCAM.tela.getVideoTracks()[0].onended = () => { EVCAM.tela = null; if (!EVCAM.rec) evCamModo('camera'); }; } catch (e) { EVCAM.modo = 'camera'; evCamModo('camera'); return mostrarToast('Compartilhamento de tela cancelado.', true); } } if (m === 'camera' && EVCAM.tela && !EVCAM.rec) { EVCAM.tela.getTracks().forEach(t => t.stop()); EVCAM.tela = null; } evCamDesenharLoop(); }
 async function evCamLigar(primeira) {
@@ -22244,13 +22261,16 @@ async function evCamLigar(primeira) {
   const v = id => (document.getElementById(id) || {}).value || '', alt = Number(v('ev-cam-res')) || 1080;
   const camSel = EVCAM.virou ? null : v('ev-cam-sel');
   // câmera "normal": pede a resolução cheia do sensor (16:9) e deixa o aparelho girar sozinho; o recorte para o formato é feito no desenho
-  const video = Object.assign({ width: { ideal: Math.round(alt * 16 / 9) }, height: { ideal: alt }, frameRate: { ideal: 30, max: 60 } }, camSel ? { deviceId: { exact: camSel } } : { facingMode: { ideal: EVCAM.traseira ? 'environment' : 'user' } });
+  // câmera igual à do celular: em pé no aparelho = imagem em pé, campo de visão inteiro (sem aquele corte "de perto")
+  const base = camSel ? { deviceId: { exact: camSel } } : { facingMode: { ideal: EVCAM.traseira ? 'environment' : 'user' } };
   const audio = Object.assign({ echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 }, v('ev-mic-sel') ? { deviceId: { exact: v('ev-mic-sel') } } : {});
-  try { EVCAM.stream = await navigator.mediaDevices.getUserMedia({ video, audio }); }
+  const cel = evCelularAqui(), retrato = cel && window.innerHeight >= window.innerWidth;
+  try { const r = await CameraCerta.abrir({ base, audio, retrato, alt }); EVCAM.stream = r.stream; EVCAM.dims = { w: r.w, h: r.h }; }
   catch (e) {
-    try { EVCAM.stream = await navigator.mediaDevices.getUserMedia({ video: camSel ? { deviceId: { exact: camSel } } : { facingMode: EVCAM.traseira ? 'environment' : 'user' }, audio: true }); } // aparelho que não aceita a resolução pedida
+    try { EVCAM.stream = await navigator.mediaDevices.getUserMedia({ video: camSel ? { deviceId: { exact: camSel } } : { facingMode: EVCAM.traseira ? 'environment' : 'user' }, audio: true }); EVCAM.dims = await CameraCerta.dims(EVCAM.stream); }
     catch (e2) { document.getElementById('ev-cam-msg').textContent = '⚠️ ' + (typeof traduzirErroMidia === 'function' ? traduzirErroMidia(e2) : e2.message); return; }
   }
+  EVCAM.orientou = window.innerHeight >= window.innerWidth;
   EVCAM.flash = false;
   EVCAM.virou = false;
   if (primeira || true) {
@@ -22280,6 +22300,7 @@ function evCamDesenharLoop() {
   const passo = () => {
     const esp = (document.getElementById('ev-cam-espelho') || {}).checked && !EVCAM.rec && !EVCAM.traseira; // na gravação nunca sai espelhado (texto da camisa fica certo)
     g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+    if ((EVCAM.div || (EVCAM.modo !== 'camera' && EVCAM.tela)) && cv.__esp) { cv.__esp = false; cv.style.transform = ''; }
     if (EVCAM.div) {
       // gravação: só a câmera, em tela cheia (no projeto ela é encaixada na parte escolhida)
       if (EVCAM.vid) { gR.fillStyle = '#000'; gR.fillRect(0, 0, W, H); cobrirEm(gR, EVCAM.vid, { x: 0, y: 0, w: W, h: H }, false); }
@@ -22291,7 +22312,11 @@ function evCamDesenharLoop() {
       if (['cima', 'baixo'].includes(EVCAM.div.layout)) g.fillRect(0, H / 2 - 4 * k, W, 8 * k); else if (['esq', 'dir'].includes(EVCAM.div.layout)) g.fillRect(W / 2 - 4 * k, 0, 8 * k, H);
       else { g.save(); g.strokeStyle = '#fff'; g.lineWidth = 8 * k; g.beginPath(); if (r.cam.forma === 'circulo') g.arc(r.cam.x + r.cam.w / 2, r.cam.y + r.cam.h / 2, r.cam.w / 2, 0, 7); else evRetArred(g, r.cam.x, r.cam.y, r.cam.w, r.cam.h, r.cam.w * 0.08); g.stroke(); g.restore(); }
     }
-    else if (EVCAM.modo === 'camera' || !EVCAM.tela) { if (EVCAM.vid) cobrir(EVCAM.vid, 0, 0, W, H, esp); }
+    else if (EVCAM.modo === 'camera' || !EVCAM.tela) {
+      // a imagem é gravada sem espelho; o espelho é só visual (na tela), então a prévia não "pula" ao começar a gravar
+      const espVis = (document.getElementById('ev-cam-espelho') || {}).checked && !EVCAM.traseira; if (cv.__esp !== espVis) { cv.__esp = espVis; cv.style.transform = espVis ? 'scaleX(-1)' : ''; }
+      if (EVCAM.vid) CameraCerta.desenhar(g, EVCAM.vid, W, H, EVCAM.zoom ? EVCAM.zoom.dig : 1);
+    }
     else {
       conter(EVCAM.vTela);
       if (EVCAM.modo === 'telacam' && EVCAM.vid) { const r = Math.round(Math.min(W, H) * 0.32), x = W - r - W * 0.04, y = H - r - H * 0.04; g.save(); g.beginPath(); g.arc(x + r / 2, y + r / 2, r / 2, 0, 7); g.clip(); cobrir(EVCAM.vid, x, y, r, r, esp); g.restore(); g.strokeStyle = '#fff'; g.lineWidth = 6; g.beginPath(); g.arc(x + r / 2, y + r / 2, r / 2, 0, 7); g.stroke(); }
@@ -23748,7 +23773,7 @@ async function evAbrirTeleprompter() {
     <button class="ev-btn ia" style="width:100%;" onclick="evTpGerarRoteiro()">🤖 Criar roteiro ${aula ? 'da aula ' : ''}com IA</button>
     <label class="ev-campo"><span>Roteiro (o que você vai falar — linha em branco entre as partes; [TÍTULOS] aparecem só como guia)</span><textarea id="tp-roteiro" rows="10" placeholder="Escreva aqui ou clique em Criar roteiro com IA">${escapeHtml(ES.roteiroTp || '')}</textarea></label>
     <div class="ev-sub" id="tp-estimativa"></div>
-    <div class="ev-linha-btn"><button class="ev-btn primario grande" onclick="evTpGerarLink()">🎬 Abrir a gravação (celular ou computador)</button></div>
+    <div class="ev-linha-btn"><button class="ev-btn primario grande" onclick="evTpGravarAqui()">🎥 Gravar agora aqui (roteiro na tela)</button><button class="ev-btn grande" onclick="evTpGerarLink()">📱 Gravar em outro aparelho (QR / link)</button></div>
     <div id="tp-link"></div>
   </div></div>`;
   const ta = document.getElementById('tp-roteiro');
@@ -23773,6 +23798,11 @@ async function evTpGerarRoteiro() {
     const ta = document.getElementById('tp-roteiro'); if (ta) { ta.value = ES.roteiroTp; ta.dispatchEvent(new Event('input')); }
     mostrarToast('Roteiro pronto! Ajuste se quiser e abra a gravação.');
   } catch (e) { mostrarToast(/conectada/.test(e.message) ? 'A IA não está conectada — escreva o roteiro no campo (ou conecte a IA em Agente Viral).' : e.message, true); }
+}
+// grava aqui mesmo, com o roteiro passando na tela: ao terminar, o vídeo já cai na linha do tempo para editar
+function evTpGravarAqui() {
+  const ta = document.getElementById('tp-roteiro'); if (ta) { ES.roteiroTp = ta.value; ES.p.dados.roteiro = ta.value; evMudou(false); }
+  document.getElementById('ev-modal').innerHTML = ''; evAbrirCamera();
 }
 async function evTpGerarLink(semPerguntar) {
   ES.roteiroTp = document.getElementById('tp-roteiro').value; ES.p.dados.roteiro = ES.roteiroTp; evMudou(false);
@@ -23804,7 +23834,16 @@ function evInfoUrl(url) {
 }
 function evTpVigiar(ligar) {
   if (!ES) return; if (ES.tpTimer) return;
-  ES.tpTimer = setInterval(async () => {
+  const checar = async () => {
+    if (!ES || ES.tpChecando) return; ES.tpChecando = true;
+    try { await evTpImportar(); } finally { if (ES) ES.tpChecando = false; }
+  };
+  ES.tpTimer = setInterval(checar, 5000); setTimeout(checar, 300);
+  if (!window.__evTpVis) { window.__evTpVis = true; document.addEventListener('visibilitychange', () => { if (!document.hidden && typeof ES !== 'undefined' && ES && ES.tpTimer) setTimeout(() => { if (ES && !ES.tpChecando) { ES.tpChecando = true; evTpImportar().finally(() => { if (ES) ES.tpChecando = false; }); } }, 200); }); }
+}
+// traz para a linha do tempo as gravações feitas pelo link (outro aparelho ou outra aba)
+async function evTpImportar() {
+  {
     if (!ES) return;
     let l = []; try { l = await api(`/api/admin/estudio/projetos/${ES.p.id}/gravacoes-novas`); } catch (e) { return; }
     if (!Array.isArray(l)) return;
@@ -23817,7 +23856,7 @@ function evTpVigiar(ligar) {
       mostrarToast('🎥 A gravação chegou e já está na linha do tempo! Use ✨ Editar com IA para legendar e deixar profissional.');
       const tp = document.getElementById('tp-link'); if (tp) document.getElementById('ev-modal').innerHTML = '';
     }
-  }, 5000);
+  }
 }
 
 

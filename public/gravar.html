@@ -12,6 +12,15 @@
   #camera { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
   #camera.espelho { transform: scaleX(-1); }
   body.horizontal #camera { object-fit: contain; }
+  /* celular: o que aparece na tela é exatamente o que é gravado (formato do projeto, imagem inteira, com zoom) */
+  #tela { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; display: none; touch-action: none; }
+  #tela.espelho { transform: scaleX(-1); }
+  body.cv #tela { display: block; }
+  body.cv #camera { width: 2px; height: 2px; opacity: 0; pointer-events: none; inset: auto; left: 0; top: 0; }
+  .zoom { display: none; justify-content: center; gap: 6px; margin-bottom: 10px; } body.cv .zoom { display: flex; }
+  .zoom button { min-width: 44px; height: 34px; border-radius: 17px; border: none; background: rgba(0,0,0,.55); color: #fff; font-weight: 800; font-size: 13px; padding: 0 10px; cursor: pointer; }
+  .zoom button.on { background: #facc15; color: #111; }
+  .zoom span { align-self: center; font-size: 12px; opacity: .85; min-width: 46px; text-align: center; }
 
   /* teleprompter: perto da lente (topo), para o olhar parecer na câmera */
   .prompter { position: fixed; left: 0; right: 0; top: 0; height: 46%; background: linear-gradient(rgba(0,0,0,.8), rgba(0,0,0,.62) 82%, rgba(0,0,0,0)); z-index: 2; touch-action: none; }
@@ -80,6 +89,7 @@
 </head>
 <body>
   <video id="camera" autoplay muted playsinline class="espelho"></video>
+  <canvas id="tela" class="espelho"></canvas>
   <div class="prompter" id="prompter"><div class="janela" id="janela"><div class="texto" id="texto"></div><div class="linha-leitura"></div></div></div>
   <div class="topo">
     <span class="tit" id="titulo">Impulsionar V4</span>
@@ -91,6 +101,7 @@
   <div class="contagem" id="contagem"><span id="contagem-n">3</span><small>o texto começa a passar sozinho</small></div>
   <div class="atalhos"><b>Enter</b> começar / parar · <b>Espaço</b> pausar texto<br><b>↑ ↓</b> velocidade · <b>+ −</b> tamanho · <b>P</b> pausar gravação</div>
   <div class="base">
+    <div class="zoom" id="zoom"></div>
     <div class="ajustes">
       <div class="ajuste"><button onclick="velocidade(-10)" title="Mais devagar">−</button><span id="v-vel">🚶 140 ppm</span><button onclick="velocidade(10)" title="Mais rápido">+</button></div>
       <div class="ajuste"><button onclick="tamanho(-3)">A−</button><span id="v-tam">Texto 30</span><button onclick="tamanho(3)">A+</button></div>
@@ -134,11 +145,13 @@
     <div class="barra" id="barra"><i id="barra-i"></i></div>
     <div class="msg" id="msg"></div>
     <button class="bt" id="b-enviar" onclick="enviar()">📤 Enviar para o projeto</button>
+    <button class="bt" id="b-editar" style="display:none;background:linear-gradient(135deg,#4f46e5,#7c3aed);" onclick="editarNoEstudio()">✂️ Editar agora no Estúdio</button>
     <button class="bt sec" id="b-proxima" style="display:none;" onclick="proximaParte()">➡️ Gravar a próxima parte (continua o texto de onde parou)</button>
     <button class="bt sec" onclick="gravarDeNovo()">🔁 Gravar esta parte de novo</button>
     <a class="bt sec" id="b-baixar" style="display:block;text-align:center;text-decoration:none;color:#fff;" download="gravacao.mp4">⬇️ Salvar no aparelho</a>
   </div></div>
 
+<script src="/camera-certa.js?v=1"></script>
 <script>
 const codigo = new URLSearchParams(location.search).get('c') || '';
 const ehPc = !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
@@ -190,16 +203,50 @@ function abrirInicio() {
 function fecharInicio() { $('tela-inicio').classList.remove('on'); }
 async function ligarCamera() {
   if (stream) stream.getTracks().forEach(t => t.stop());
-  const horiz = formato === '16:9';
-  // no celular a câmera segue a orientação do aparelho; no computador a webcam já é horizontal
-  const video = ehPc ? { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } } : { facingMode: frente ? 'user' : 'environment', width: { ideal: horiz ? 1920 : 1080 }, height: { ideal: horiz ? 1080 : 1920 }, frameRate: { ideal: 30 } };
+  const horiz = formato === '16:9', audio = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video, audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-    $('camera').srcObject = stream; $('camera').classList.toggle('espelho', frente);
+    if (ehPc) stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }, audio }); // webcam do computador já é horizontal
+    else {
+      // celular: abre a câmera na posição em que o aparelho está (em pé = imagem em pé, sem o corte "de perto")
+      const r = await CameraCerta.abrir({ base: { facingMode: frente ? 'user' : 'environment' }, audio, retrato: window.innerHeight >= window.innerWidth, alt: 1080 });
+      stream = r.stream; dimsCam = { w: r.w, h: r.h }; emPe = window.innerHeight >= window.innerWidth;
+    }
+    $('camera').srcObject = stream; $('camera').classList.toggle('espelho', frente); $('tela').classList.toggle('espelho', frente);
+    await $('camera').play().catch(() => {});
+    if (!ehPc) iniciarTela();
   } catch (e) { erro('Não consegui abrir a câmera/microfone. Permita o acesso nas configurações do navegador e recarregue a página.'); }
 }
+// ===== Celular: desenha a câmera no formato do projeto (o que você vê é o que é gravado) com zoom =====
+let dimsCam = null, emPe = true, zoom = null, rafTela = null;
+function tamanhoGravacao() { return formato === '16:9' ? { w: 1920, h: 1080 } : formato === '1:1' ? { w: 1080, h: 1080 } : formato === '4:5' ? { w: 1080, h: 1350 } : { w: 1080, h: 1920 }; }
+function iniciarTela() {
+  document.body.classList.add('cv');
+  const cv = $('tela'), T = tamanhoGravacao(); cv.width = T.w; cv.height = T.h;
+  if (!zoom) { zoom = CameraCerta.criarZoom(desenharZoom); zoom.ligarPinca(cv); }
+  const v = $('camera'), d = dimsCam || { w: v.videoWidth, h: v.videoHeight };
+  zoom.config(stream.getVideoTracks()[0], d.w || 9, d.h || 16, T.w, T.h, (d.w > d.h) !== (T.w > T.h));
+  const g = cv.getContext('2d');
+  cancelAnimationFrame(rafTela);
+  const passoTela = () => { g.fillStyle = '#000'; g.fillRect(0, 0, cv.width, cv.height); if (v.videoWidth) CameraCerta.desenhar(g, v, cv.width, cv.height, zoom.dig); rafTela = requestAnimationFrame(passoTela); };
+  passoTela();
+}
+function desenharZoom(Z) {
+  const el = $('zoom'); if (!el) return;
+  el.innerHTML = Z.chips().map(([v, r]) => `<button class="${Math.abs(Z.z - v) < 0.03 ? 'on' : ''}" onclick="zoom.setar(${v})">${r}</button>`).join('') + (Z.chips().some(([v]) => Math.abs(Z.z - v) < 0.03) ? '' : `<span>${Z.rotulo()}</span>`);
+}
+// fluxo que vai para o gravador: no celular é a tela desenhada (formato certo) + o som do microfone
+function fluxoGravacao() {
+  if (ehPc) return stream;
+  const f = $('tela').captureStream(30);
+  stream.getAudioTracks().forEach(t => f.addTrack(t));
+  return f;
+}
 function virarCamera() { if (rec) return; frente = !frente; ligarCamera(); }
-function checarOrientacao() { const vertical = window.innerHeight > window.innerWidth; $('aviso-girar').classList.toggle('on', !ehPc && formato === '16:9' && vertical && !girarIgnorado && !rec); aplicarPos(); }
+function checarOrientacao() {
+  const vertical = window.innerHeight > window.innerWidth; $('aviso-girar').classList.toggle('on', !ehPc && formato === '16:9' && vertical && !girarIgnorado && !rec); aplicarPos();
+  // girou o celular: reabre a câmera na nova posição (nunca durante a gravação)
+  clearTimeout(window.__tGiro); window.__tGiro = setTimeout(() => { if (!ehPc && stream && !rec && !contando && emPe !== (window.innerHeight >= window.innerWidth)) ligarCamera(); }, 450);
+}
 window.addEventListener('resize', checarOrientacao);
 function aplicarAjustes() {
   document.documentElement.style.setProperty('--tam', tam + 'px');
@@ -304,7 +351,7 @@ async function alternarGravacao() {
   $('contagem').classList.remove('on'); contando = false;
   const tipoMime = tipoGravacao(); partes = []; tempoPausado = 0; let tamLocal = 0;
   const bits = tipo === 'aula' ? 2500000 : 6000000; // aula longa: arquivo leve (2 h ≈ 2,3 GB), boa nitidez para quem fala
-  rec = new MediaRecorder(stream, tipoMime ? { mimeType: tipoMime, videoBitsPerSecond: bits } : undefined);
+  rec = new MediaRecorder(fluxoGravacao(), tipoMime ? { mimeType: tipoMime, videoBitsPerSecond: bits } : undefined);
   envio = novoEnvio(rec.mimeType || tipoMime || 'video/webm');
   const E = envio;
   rec.ondataavailable = e => { if (!e.data.size) return; if (tamLocal < 250 * 1048576) { partes.push(e.data); tamLocal += e.data.size; } else partes = null; E.fila.push({ blob: e.data }); enviarFila(E); };
@@ -317,7 +364,7 @@ async function alternarGravacao() {
     if (blobFinal) { const url = URL.createObjectURL(blobFinal); $('revisao').src = url; $('b-baixar').href = url; $('b-baixar').download = (tipo === 'aula' ? 'aula-parte-' + parte : 'gravacao') + '.' + (/mp4/.test(E.mime) ? 'mp4' : 'webm'); }
     else { $('revisao').removeAttribute('src'); E.pronto.then(j => { if (envio === E && j && j.url) $('revisao').src = j.url; }); }
     $('rev-tit').textContent = tipo === 'aula' ? `🎬 Parte ${parte} — ficou boa?` : '🎬 Ficou bom?';
-    $('msg').textContent = E.fila.length > 1 ? 'Terminando de salvar no servidor…' : ''; $('barra').style.display = 'none'; $('b-enviar').disabled = false; $('b-enviar').style.display = ''; $('b-proxima').style.display = 'none'; enviado = false;
+    $('msg').textContent = E.fila.length > 1 ? 'Terminando de salvar no servidor…' : ''; $('barra').style.display = 'none'; $('b-enviar').disabled = false; $('b-enviar').style.display = ''; $('b-proxima').style.display = 'none'; $('b-editar').style.display = 'none'; enviado = false;
     $('tela-revisao').classList.add('on');
     if (wake) { wake.release().catch(() => {}); wake = null; }
   };
@@ -333,15 +380,24 @@ function pausarGravacao() {
   else if (rec.state === 'paused') { tempoPausado += Date.now() - pausadoEm; rec.resume(); alternarRolagem(true); $('b-pausa').textContent = '⏸'; $('r-pausa').textContent = 'Pausar'; $('tempo').classList.remove('pausado'); }
 }
 function gravarDeNovo() {
+  $('b-editar').style.display = 'none';
   $('tela-revisao').classList.remove('on'); $('revisao').pause(); pos = posInicioParte; aplicarPos();
   if (envio && !enviado) { const E = envio; E.descartar = true; if (E.resposta) descartarServidor(E.resposta.url); } // essa tomada não vai para o projeto
+}
+let projetoId = null;
+// abre o editor do Estúdio direto neste projeto, com a gravação já na linha do tempo
+function editarNoEstudio() {
+  if (rec) return; if (stream) stream.getTracks().forEach(t => t.stop()); cancelAnimationFrame(rafTela);
+  location.href = '/estudio#estudio=' + encodeURIComponent(projetoId);
 }
 function proximaParte() { $('tela-revisao').classList.remove('on'); $('revisao').pause(); parte++; atualizarBotoes(); }
 function concluirEnvio(j) {
   enviado = true; $('b-enviar').style.display = 'none';
   const resta = pos < $('texto').scrollHeight - tam * 1.42 * 5;
-  $('msg').innerHTML = '✅ ' + (j.message || 'Enviado!') + (resta ? '<br>Ainda tem texto pela frente — grave a próxima parte quando quiser.' : '<br>Roteiro concluído! Volte ao Estúdio para editar.');
+  if (j.projeto) projetoId = j.projeto;
+  $('msg').innerHTML = '✅ ' + (j.message || 'Enviado!') + (resta ? '<br>Ainda tem texto pela frente — grave a próxima parte ou já vá editar.' : '<br>Roteiro concluído! Toque em <b>Editar agora no Estúdio</b>.');
   $('b-proxima').style.display = resta ? '' : 'none';
+  $('b-editar').style.display = projetoId ? '' : 'none';
 }
 // "Enviar para o projeto": o vídeo já está no servidor; aqui só espera terminar e coloca no projeto.
 async function enviar() {
