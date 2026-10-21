@@ -14840,19 +14840,184 @@ async function igEst(metodo, caminho, params, token) {
 }
 app.get('/api/admin/estudio/instagram', requireRole('admin', 'estudio'), async (req, res) => {
     const c = await lerIgEst();
-    res.json({ configurado: !!(c.userId && c.token), userId: c.userId, username: c.username, tokenPreview: c.token ? '••••' + c.token.slice(-6) : '' });
+    const appc = await appIgCfg();
+    res.json({ configurado: !!(c.userId && c.token), userId: c.userId, username: c.username, tokenPreview: c.token ? '••••' + c.token.slice(-6) : '', loginDisponivel: !!(appc.id && appc.secret) });
 });
 app.put('/api/admin/estudio/instagram', requireRole('admin', 'estudio'), async (req, res) => {
     const salvar = (k, v) => new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => ok()));
-    if (req.body.remover) { await salvar('ig_user_id', ''); await salvar('ig_access_token', ''); await salvar('ig_username', ''); return res.json({ message: 'Instagram desconectado.' }); }
+    if (req.body.remover) { await salvarIgEst(donoAtualEst(), { ig_user_id: '', ig_access_token: '', ig_username: '' }); return res.json({ message: 'Instagram desconectado.' }); }
     const userId = String(req.body.userId || '').trim(), token = String(req.body.token || '').trim();
     if (!/^\d{5,}$/.test(userId) || token.length < 20) return res.status(400).json({ error: 'Informe o ID da conta do Instagram (só números) e o token de acesso.' });
     try {
         const info = await igEst('GET', '/' + userId, { fields: 'username' }, token);
-        await salvar('ig_user_id', userId); await salvar('ig_access_token', token); await salvar('ig_username', info.username || '');
+        await salvarIgEst(donoAtualEst(), { ig_user_id: userId, ig_access_token: token, ig_username: info.username || '', ig_token_em: new Date().toISOString() });
         res.json({ message: `Instagram @${info.username || userId} conectado! ✅`, username: info.username || '' });
     } catch (e) { res.status(400).json({ error: 'Não consegui conectar: ' + e.message }); }
 });
+// ----- Instagram: "Entrar com Instagram" (login oficial), leitura do perfil e plano de crescimento de 10 dias -----
+db.run(`CREATE TABLE IF NOT EXISTS ig_planos (id INTEGER PRIMARY KEY AUTOINCREMENT, dono INTEGER DEFAULT 0, status TEXT, erro TEXT, perfil TEXT, plano TEXT, seguidores_inicio INTEGER, objetivo TEXT, feitos TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP, atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+const ESTADOS_IG = new Map(); // state do login → { dono, ate, volta }
+async function appIgCfg() {
+    const l = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN ('ig_app_id', 'ig_app_secret')`).catch(() => []);
+    const c = {}; l.forEach(r => { c[r.key] = r.value; });
+    return { id: c.ig_app_id || process.env.INSTAGRAM_APP_ID || '', secret: c.ig_app_secret || process.env.INSTAGRAM_APP_SECRET || '' };
+}
+const redirectIg = base => String(base || '').replace(/\/$/, '') + '/api/public/instagram/retorno';
+async function salvarIgEst(dono, campos) {
+    for (const [k, v] of Object.entries(campos)) await new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [chaveIgEst(k, dono), String(v ?? '')], () => ok()));
+}
+// Master: dados do app da Meta (Instagram App ID e App Secret)
+app.get('/api/admin/instagram-app', requireRole('admin'), async (req, res) => {
+    const c = await appIgCfg(); res.json({ appId: c.id, temSecret: !!c.secret, redirect: redirectIg(baseUrlPublicaDpo(req)) });
+});
+app.put('/api/admin/instagram-app', requireRole('admin'), async (req, res) => {
+    const id = String((req.body || {}).appId || '').trim(), sec = String((req.body || {}).appSecret || '').trim();
+    if (!/^\d{6,}$/.test(id)) return res.status(400).json({ error: 'O ID do app do Instagram tem só números (veja em Instagram › Configuração da API com login do Instagram).' });
+    const salvar = (k, v) => new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => ok()));
+    await salvar('ig_app_id', id); if (sec) await salvar('ig_app_secret', sec);
+    res.json({ message: 'App do Instagram salvo! ✅ Agora o botão "Entrar com Instagram" funciona.' });
+});
+// 1) começa o login: devolve o endereço oficial do Instagram
+app.get('/api/admin/estudio/instagram/login', requireRole('admin', 'estudio'), async (req, res) => {
+    const c = await appIgCfg(); if (!c.id || !c.secret) return res.status(400).json({ error: 'O app do Instagram ainda não foi configurado pela Impulsionar (ID e chave secreta do app).', semApp: true });
+    const state = crypto.randomBytes(18).toString('hex'), base = baseUrlPublicaDpo(req);
+    ESTADOS_IG.set(state, { dono: donoAtualEst(), ate: Date.now() + 15 * 60000, base, volta: String(req.query.volta || '') === 'estudio' ? '/estudio' : '/' });
+    for (const [k, v] of ESTADOS_IG) if (v.ate < Date.now()) ESTADOS_IG.delete(k);
+    const u = new URL('https://www.instagram.com/oauth/authorize');
+    u.searchParams.set('client_id', c.id); u.searchParams.set('redirect_uri', redirectIg(base)); u.searchParams.set('response_type', 'code');
+    u.searchParams.set('scope', 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights,instagram_business_manage_comments');
+    u.searchParams.set('state', state); u.searchParams.set('enable_fb_login', 'false');
+    res.json({ url: u.toString() });
+});
+// 2) o Instagram devolve aqui: troca o código pelo token de 60 dias, lê o perfil e já começa o plano de 10 dias
+app.get('/api/public/instagram/retorno', async (req, res) => {
+    const st = ESTADOS_IG.get(String(req.query.state || '')); ESTADOS_IG.delete(String(req.query.state || ''));
+    const voltar = (dest, msg, ok) => res.redirect(`${dest || '/'}#instagram=${ok ? 'ok' : 'erro'}&msg=${encodeURIComponent(msg)}`);
+    if (!st || st.ate < Date.now()) return voltar('/estudio', 'O login demorou demais ou o link expirou. Tente de novo.');
+    if (req.query.error) return voltar(st.volta, req.query.error_reason === 'user_denied' ? 'Você cancelou o login no Instagram.' : 'O Instagram recusou: ' + (req.query.error_description || req.query.error));
+    try {
+        const c = await appIgCfg(), code = String(req.query.code || '').replace(/#_$/, '');
+        const r1 = await fetch('https://api.instagram.com/oauth/access_token', { method: 'POST', body: new URLSearchParams({ client_id: c.id, client_secret: c.secret, grant_type: 'authorization_code', redirect_uri: redirectIg(st.base), code }) });
+        const j1 = await r1.json().catch(() => ({})); const curto = j1.access_token || (j1.data && j1.data[0] && j1.data[0].access_token);
+        if (!curto) throw new Error((j1.error_message || (j1.error && (j1.error.message || j1.error)) || 'não recebi o token') + '');
+        const r2 = await fetch(`https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${encodeURIComponent(c.secret)}&access_token=${encodeURIComponent(curto)}`);
+        const j2 = await r2.json().catch(() => ({})); const token = j2.access_token || curto;
+        const eu = await igEst('GET', '/me', { fields: 'user_id,username,account_type' }, token);
+        await salvarIgEst(st.dono, { ig_user_id: eu.user_id || eu.id, ig_access_token: token, ig_username: eu.username || '', ig_token_em: new Date().toISOString(), ig_token_expira: new Date(Date.now() + (Number(j2.expires_in) || 5184000) * 1000).toISOString() });
+        gerarPlanoIg(st.dono, {}).catch(e => console.warn('Plano IG:', e.message)); // já prepara o plano em segundo plano
+        voltar(st.volta, `Instagram @${eu.username || ''} conectado! Estou lendo o seu perfil e montando o plano de 10 dias.`, true);
+    } catch (e) { console.warn('Login IG:', e.message); voltar(st.volta, 'Não consegui conectar: ' + e.message); }
+});
+// renova os tokens antes de vencer (60 dias): uma vez por dia
+setInterval(async () => {
+    try {
+        const l = await dbAll(`SELECT key, value FROM integration_settings WHERE key LIKE 'ig_access_token%' AND value LIKE 'IG%'`);
+        for (const t of l) {
+            const dono = Number(t.key.split(':')[1] || 0), em = await dbGet(`SELECT value FROM integration_settings WHERE key = ?`, [chaveIgEst('ig_token_em', dono)]).catch(() => null);
+            if (em && Date.now() - new Date(em.value) < 7 * 86400000) continue;
+            const r = await fetch(`https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(t.value)}`); const j = await r.json().catch(() => ({}));
+            if (j.access_token) await salvarIgEst(dono, { ig_access_token: j.access_token, ig_token_em: new Date().toISOString(), ig_token_expira: new Date(Date.now() + (Number(j.expires_in) || 5184000) * 1000).toISOString() });
+        }
+    } catch (e) {}
+}, 24 * 3600 * 1000);
+
+// lê o perfil, os últimos posts e (quando a conta permite) as métricas
+async function lerPerfilIg(dono) {
+    const ig = await lerIgEst(dono); if (!ig.userId || !ig.token) throw new Error('Conecte o Instagram primeiro.');
+    const host = hostIgEst(ig.token), eu = /graph\.instagram/.test(host) ? 'me' : ig.userId;
+    const p = await igEst('GET', '/' + eu, { fields: 'username,name,biography,website,followers_count,follows_count,media_count,profile_picture_url,account_type' }, ig.token).catch(async () => igEst('GET', '/' + eu, { fields: 'username,followers_count,media_count' }, ig.token));
+    let posts = [];
+    try { posts = ((await igEst('GET', `/${eu}/media`, { fields: 'id,caption,media_type,media_product_type,timestamp,like_count,comments_count,permalink', limit: '24' }, ig.token)).data || []); } catch (e) {}
+    // métricas por post (alcance, views, salvos, compartilhamentos) — cada uma separada: a Meta muda nomes e algumas não existem para contas pequenas
+    const metr = async (id, m) => { try { const j = await igEst('GET', `/${id}/insights`, { metric: m }, ig.token); const d = (j.data || [])[0]; return d ? (d.values && d.values[0] ? d.values[0].value : (d.total_value || {}).value) : null; } catch (e) { return null; } };
+    await Promise.all(posts.slice(0, 12).map(async x => { for (const m of ['reach', 'views', 'saved', 'shares']) { const v = await metr(x.id, m); if (v !== null && v !== undefined) x[m] = v; } }));
+    const conta = {};
+    for (const m of ['reach', 'views', 'profile_views', 'accounts_engaged', 'total_interactions', 'follower_count']) {
+        try {
+            const prm = { metric: m, period: 'day', since: String(Math.floor(Date.now() / 1000) - 28 * 86400), until: String(Math.floor(Date.now() / 1000)) }; if (m !== 'follower_count' && m !== 'reach') prm.metric_type = 'total_value';
+            const j = await igEst('GET', `/${eu}/insights`, prm, ig.token);
+            const d = (j.data || [])[0]; if (!d) continue;
+            conta[m] = d.total_value ? d.total_value.value : (d.values || []).reduce((s, v) => s + (Number(v.value) || 0), 0);
+        } catch (e) {}
+    }
+    return { perfil: p, posts: posts.map(x => ({ tipo: x.media_product_type === 'REELS' ? 'Reels' : x.media_type === 'CAROUSEL_ALBUM' ? 'Carrossel' : x.media_type === 'VIDEO' ? 'Vídeo' : 'Foto', data: x.timestamp, legenda: String(x.caption || '').slice(0, 300), curtidas: x.like_count, comentarios: x.comments_count, alcance: x.reach, views: x.views, salvos: x.saved, compartilhamentos: x.shares, link: x.permalink })), conta28dias: conta };
+}
+function resumoPerfilIgTexto(d) {
+    const p = d.perfil || {}, posts = d.posts || [];
+    const media = k => { const v = posts.map(x => Number(x[k])).filter(n => isFinite(n)); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
+    const porTipo = {}; posts.forEach(x => { const t = porTipo[x.tipo] = porTipo[x.tipo] || { n: 0, eng: 0, alc: 0 }; t.n++; t.eng += (Number(x.curtidas) || 0) + (Number(x.comentarios) || 0) * 2 + (Number(x.salvos) || 0) * 3 + (Number(x.compartilhamentos) || 0) * 3; t.alc += Number(x.alcance || x.views) || 0; });
+    const datas = posts.map(x => new Date(x.data)).filter(x => !isNaN(x)); const dias = datas.length > 1 ? Math.max(1, (datas[0] - datas[datas.length - 1]) / 86400000) : 0;
+    return `PERFIL: @${p.username || ''} (${p.name || ''}) · conta ${p.account_type || 'profissional'}
+Bio: ${p.biography || '(vazia)'}${p.website ? '\nLink: ' + p.website : ''}
+Seguidores: ${p.followers_count ?? '?'} · seguindo: ${p.follows_count ?? '?'} · posts: ${p.media_count ?? '?'}
+Frequência recente: ${datas.length ? `${datas.length} posts em ${Math.round(dias)} dias (≈ ${(datas.length / Math.max(1, dias) * 7).toFixed(1)} por semana); último post em ${datas[0].toLocaleDateString('pt-BR')}` : 'sem posts recentes'}
+Médias por post: curtidas ${media('curtidas') ?? '?'} · comentários ${media('comentarios') ?? '?'} · alcance ${media('alcance') ?? 'sem dado'} · views ${media('views') ?? 'sem dado'} · salvos ${media('salvos') ?? 'sem dado'} · compartilhamentos ${media('compartilhamentos') ?? 'sem dado'}
+Por formato: ${Object.entries(porTipo).map(([t, v]) => `${t}: ${v.n} posts, engajamento médio ${Math.round(v.eng / v.n)}, alcance médio ${Math.round(v.alc / v.n) || 'sem dado'}`).join(' · ') || '—'}
+Conta (últimos 28 dias): ${Object.entries(d.conta28dias || {}).map(([k, v]) => ({ reach: 'contas alcançadas', views: 'visualizações', profile_views: 'visitas ao perfil', accounts_engaged: 'contas que interagiram', total_interactions: 'interações', follower_count: 'novos seguidores' }[k] || k) + ' ' + v).join(' · ') || 'métricas da conta indisponíveis'}
+
+ÚLTIMOS POSTS (do mais novo ao mais antigo):
+${posts.map((x, i) => `${i + 1}. [${x.tipo}] ${String(x.data || '').slice(0, 10)} · ❤ ${x.curtidas ?? '?'} · 💬 ${x.comentarios ?? '?'}${x.alcance != null ? ' · alcance ' + x.alcance : ''}${x.views != null ? ' · views ' + x.views : ''}${x.salvos != null ? ' · salvos ' + x.salvos : ''}${x.compartilhamentos != null ? ' · compart. ' + x.compartilhamentos : ''} — "${x.legenda.replace(/\s+/g, ' ').slice(0, 160)}"`).join('\n') || '(nenhum)'}`;
+}
+async function gerarPlanoIg(dono, { objetivo } = {}) {
+    const id = await new Promise((ok, falha) => db.run(`INSERT INTO ig_planos (dono, status, objetivo) VALUES (?, 'gerando', ?)`, [dono, String(objetivo || '').slice(0, 500)], function (e) { e ? falha(e) : ok(this.lastID); }));
+    try {
+        const dados = await lerPerfilIg(dono);
+        const hoje = new Date(); const inicio = new Date(hoje.getTime() + 86400000);
+        const pedido = `Você é estrategista de crescimento no Instagram. Leia o perfil REAL abaixo (dados da API oficial) e monte um PLANO DE CRESCIMENTO DE 10 DIAS, prático, para executar de ${inicio.toLocaleDateString('pt-BR')} em diante.
+${objetivo ? '\nOBJETIVO QUE A PESSOA DEFINIU: ' + objetivo + '\n' : ''}
+${resumoPerfilIgTexto(dados)}
+
+Regras:
+- Baseie o diagnóstico nos números acima (o que funciona melhor, frequência, formato, bio, CTA). Não invente métricas que não estão aqui; se um dado faltar, diga.
+- Metas realistas para 10 dias (seguidores, alcance, engajamento), proporcionais ao tamanho atual da conta.
+- Priorize Reels com gancho forte nos 2 primeiros segundos, carrosséis salváveis e stories de relacionamento; inclua ações de engajamento diárias (responder comentários, comentar em perfis do nicho, collabs).
+- Cada dia com conteúdo PRONTO: roteiro falado curto (para gravar no teleprompter), legenda completa e hashtags.
+- Português do Brasil, linguagem do público do perfil.
+
+Responda APENAS com JSON:
+{"diagnostico":{"resumo":"3-5 linhas","pontos_fortes":[""],"pontos_fracos":[""],"melhor_formato":"","melhor_horario":"","bio_sugerida":"bio reescrita (até 150 caracteres)"},
+ "metas":{"seguidores":"+N (de X para Y)","alcance":"","engajamento":"","outras":[""]},
+ "rotina_diaria":["ação diária de 10-20 min"],
+ "dias":[{"dia":1,"tema":"","objetivo_do_dia":"","formato":"Reels|Carrossel|Foto|Stories|Live","horario":"HH:MM","gancho":"frase dos 2 primeiros segundos","roteiro":"texto falado completo (30-60s), frases curtas","legenda":"legenda pronta com CTA","hashtags":"#a #b ... (8-15)","stories":["ideia de story do dia"],"engajamento":["ação de engajamento do dia"],"meta_do_dia":""}],
+ "o_que_medir":["métrica e como olhar"],
+ "dicas_finais":[""]}
+O array "dias" deve ter EXATAMENTE 10 itens.`;
+        const plano = await ALS_EST.run({ dono }, () => iaEstudio(pedido, { json: true, avancado: true, max: 16000 }));
+        delete plano.__fontes;
+        if (!Array.isArray(plano.dias) || !plano.dias.length) throw new Error('A IA não montou os 10 dias. Tente gerar de novo.');
+        db.run(`UPDATE ig_planos SET status = 'pronto', perfil = ?, plano = ?, seguidores_inicio = ?, atualizado_em = CURRENT_TIMESTAMP WHERE id = ?`, [JSON.stringify(dados), JSON.stringify(plano), Number((dados.perfil || {}).followers_count) || null, id]);
+    } catch (e) {
+        db.run(`UPDATE ig_planos SET status = 'erro', erro = ?, atualizado_em = CURRENT_TIMESTAMP WHERE id = ?`, [e.message, id]);
+        throw e;
+    }
+    return id;
+}
+app.get('/api/admin/estudio/instagram/plano', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), p = await dbGet(`SELECT * FROM ig_planos WHERE dono = ? ORDER BY id DESC LIMIT 1`, [dono]).catch(() => null);
+    if (!p) return res.json({ plano: null });
+    const js = (v, d) => { try { return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+    let agora = null;
+    if (p.status === 'pronto' && req.query.atual) { try { const ig = await lerIgEst(dono); agora = (await igEst('GET', /graph\.instagram/.test(hostIgEst(ig.token)) ? '/me' : '/' + ig.userId, { fields: 'followers_count,media_count' }, ig.token)); } catch (e) {} }
+    res.json({ plano: { id: p.id, status: p.status, erro: p.erro, criado_em: p.criado_em, objetivo: p.objetivo, seguidores_inicio: p.seguidores_inicio, perfil: js(p.perfil, null), conteudo: js(p.plano, null), feitos: js(p.feitos, {}) }, agora });
+});
+app.post('/api/admin/estudio/instagram/plano', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), ig = await lerIgEst(dono);
+    if (!ig.userId || !ig.token) return res.status(400).json({ error: 'Conecte o Instagram primeiro.' });
+    const ger = await dbGet(`SELECT id FROM ig_planos WHERE dono = ? AND status = 'gerando' AND criado_em > datetime('now', '-6 minutes')`, [dono]).catch(() => null);
+    if (ger) return res.json({ message: 'O plano já está sendo montado…' });
+    try { await consumirEst('ia', 1); } catch (e) { return erroLimiteEst(res, e); }
+    gerarPlanoIg(dono, { objetivo: (req.body || {}).objetivo }).catch(() => {});
+    res.json({ message: 'Lendo o seu perfil e montando o plano de 10 dias… leva cerca de 1 minuto.' });
+});
+app.put('/api/admin/estudio/instagram/plano/:id/feito', requireRole('admin', 'estudio'), async (req, res) => {
+    const p = await dbGet(`SELECT id, feitos FROM ig_planos WHERE id = ? AND dono = ?`, [Number(req.params.id), donoAtualEst()]).catch(() => null);
+    if (!p) return res.status(404).json({ error: 'Plano não encontrado.' });
+    let f = {}; try { f = JSON.parse(p.feitos || '{}'); } catch (e) {}
+    const dia = String(Number((req.body || {}).dia) || 0); if (!dia || dia === '0') return res.status(400).json({ error: 'Dia inválido.' });
+    if ((req.body || {}).feito) f[dia] = new Date().toISOString(); else delete f[dia];
+    db.run(`UPDATE ig_planos SET feitos = ? WHERE id = ?`, [JSON.stringify(f), p.id], () => res.json({ ok: true, feitos: f }));
+});
+
 async function publicarProjetoEst(id, base) {
     const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [id]);
     if (!p) throw new Error('Projeto não encontrado.');
