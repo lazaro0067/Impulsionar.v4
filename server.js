@@ -1893,11 +1893,11 @@ function authenticateToken(req, res, next) {
     jwt.verify(token, JWT_SECRET, async (err, payload) => {
         if (err) {
             // Sessão "deslizante": se o token só venceu por tempo (aba aberta a noite
-            // toda, por exemplo) e foi emitido há menos de 7 dias, renova sozinho em
+            // toda, por exemplo) e foi emitido há menos de 30 dias (app instalado no celular), renova sozinho em
             // vez de deixar a tela vazia com "token expirado".
             if (err.name !== 'TokenExpiredError') return res.status(401).json({ error: 'Sessão inválida. Faça login novamente.', sessaoExpirada: true });
             let velho; try { velho = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true }); } catch (e) { velho = null; }
-            if (!velho || !velho.iat || Date.now() / 1000 - velho.iat > 7 * 24 * 3600) return res.status(401).json({ error: 'Sua sessão expirou. Faça login novamente.', sessaoExpirada: true });
+            if (!velho || !velho.iat || Date.now() / 1000 - velho.iat > 30 * 24 * 3600) return res.status(401).json({ error: 'Sua sessão expirou. Faça login novamente.', sessaoExpirada: true });
             try {
                 const u = await dbGet(`SELECT id, aprovacao_pendente FROM users WHERE id = ?`, [velho.userId]);
                 if (!u || Number(u.aprovacao_pendente) === 1) return res.status(401).json({ error: 'Sua sessão expirou. Faça login novamente.', sessaoExpirada: true });
@@ -12725,8 +12725,14 @@ app.get(['/estudio', '/estudio/'], (req, res) => {
     fs.readFile(path.join(__dirname, 'public', 'index.html'), 'utf8', (err, html) => {
         if (err) return res.status(500).send('Erro ao abrir o Estúdio.');
         const cab = '<link rel="manifest" href="/estudio.webmanifest?v=2"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Estúdio V4"><link rel="apple-touch-icon" sizes="180x180" href="/assets/estudio-icone-180.png?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/assets/estudio-icone-192.png?v=2"><link rel="icon" type="image/png" sizes="32x32" href="/assets/estudio-icone-32.png?v=2"><meta name="theme-color" content="#070b18"><script>window.MODO_ESTUDIO = true; document.documentElement.classList.add(\'estudio\');</script>';
-        res.set('Cache-Control', 'no-cache').type('html').send(html.replace('</head>', cab + '</head>'));
+        res.set('Cache-Control', 'no-cache').type('html').send(html.replace(/<!--app-sistema-->[\s\S]*?<!--\/app-sistema-->/, '').replace('</head>', cab + '</head>'));
     });
+});
+// App do sistema (Impulsionar V4) para instalar no celular/computador
+app.get('/manifest.webmanifest', (req, res) => {
+    res.set('Cache-Control', 'no-cache').type('application/manifest+json').send(JSON.stringify({ id: '/', name: 'Impulsionar V4 — Gestão & Pessoas', short_name: 'Impulsionar', description: 'Gestão de processos e desenvolvimento de pessoas', start_url: '/?app=1', scope: '/', display: 'standalone', orientation: 'any', background_color: '#0b1329', theme_color: '#0b1329', lang: 'pt-BR',
+        icons: [192, 512].map(t => ({ src: `/assets/app-icone-${t}.png?v=1`, sizes: `${t}x${t}`, type: 'image/png', purpose: 'any' })).concat([{ src: '/assets/app-icone-maskable-512.png?v=1', sizes: '512x512', type: 'image/png', purpose: 'maskable' }]),
+        shortcuts: [{ name: 'Agente de Relatórios', url: '/?app=1#ir=agenteRelatorios', icons: [{ src: '/assets/app-icone-192.png?v=1', sizes: '192x192' }] }, { name: 'Estúdio de Vídeo', url: '/estudio', icons: [{ src: '/assets/estudio-icone-192.png?v=2', sizes: '192x192' }] }] }));
 });
 app.get('/estudio.webmanifest', (req, res) => {
     res.set('Cache-Control', 'no-cache').type('application/manifest+json').send(JSON.stringify({ id: '/estudio', name: 'Impulsionar Estúdio de Vídeo', short_name: 'Estúdio V4', start_url: '/estudio', scope: '/', display: 'standalone', orientation: 'portrait', background_color: '#070b18', theme_color: '#070b18',

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Impulsionar V4</title>
+<!--app-sistema--><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0b1329"><link rel="icon" type="image/png" sizes="32x32" href="/assets/app-icone-32.png?v=1"><link rel="apple-touch-icon" href="/assets/app-icone-180.png?v=1"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Impulsionar"><!--/app-sistema-->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
   :root {
@@ -1494,6 +1495,15 @@
   @media (max-width: 760px) { .ig-modos { grid-template-columns:1fr; } .ig-inter-cab { flex-direction:column; } .ig-linha { flex-wrap:wrap; } }
   body.modo-estudio .ig-abas button { background:#111a33; border-color:#1f2a48; color:#cbd5e1; } body.modo-estudio .ig-abas button.on { background:linear-gradient(45deg,#dd2a7b,#8134af); color:#fff; }
   body.modo-estudio .ig-evol, body.modo-estudio .ig-com { background:#111a33; border-color:#1f2a48; color:#e2e8f0; } body.modo-estudio .ig-modos label { border-color:#1f2a48; } body.modo-estudio .ig-modos label.on { background:#21143a; border-color:#8134af; } body.modo-estudio .ig-inter-num, body.modo-estudio .ig-mini { color:#cbd5e1; } body.modo-estudio .ig-resp { background:#0f2a1b; color:#86efac; } body.modo-estudio .ig-com textarea { background:#0b1329; color:#e2e8f0; border-color:#334155; }
+
+  /* ---------- App instalável ---------- */
+  .btn-instalar-app { margin:12px 24px 0; border:1px solid rgba(74,222,128,.5); background:rgba(34,197,94,.12); color:#4ade80; border-radius:10px; padding:10px; font-weight:800; font-size:13px; cursor:pointer; }
+  .app-banner { position:fixed; left:10px; right:10px; bottom:calc(env(safe-area-inset-bottom) + 10px); z-index:19000; display:flex; align-items:center; gap:10px; background:#0b1329; color:#fff; border-radius:16px; padding:10px 12px; box-shadow:0 12px 36px rgba(0,0,0,.35); border:1px solid rgba(74,222,128,.35); }
+  .app-banner img { width:44px; height:44px; border-radius:11px; } .app-banner div { flex:1; min-width:0; } .app-banner b { display:block; font-size:14px; } .app-banner small { color:#cbd5e1; font-size:12px; }
+  .app-banner button { border:none; cursor:pointer; } .app-banner .pri { background:#22c55e; color:#0b1329; font-weight:800; border-radius:10px; padding:9px 14px; } .app-banner .x { background:none; color:#94a3b8; font-size:16px; }
+  .app-modal { position:fixed; inset:0; z-index:20500; background:rgba(2,6,23,.6); display:flex; align-items:flex-end; justify-content:center; padding:12px; }
+  .app-caixa { background:#fff; color:#0b1329; border-radius:20px; padding:20px; width:min(420px,100%); text-align:center; } .app-caixa img { width:72px; height:72px; border-radius:18px; } .app-caixa h3 { margin:8px 0; } .app-caixa ol { text-align:left; padding-left:22px; line-height:1.7; font-size:14.5px; } .app-caixa p { color:#475569; font-size:13.5px; }
+  .app-caixa button { border:none; background:#0b1329; color:#fff; border-radius:12px; padding:12px 26px; font-weight:800; cursor:pointer; width:100%; } .app-ic { display:inline-block; background:#eef2ff; border-radius:6px; padding:0 4px; }
   /* ---------- Agente de Relatórios ---------- */
   .agr { display:grid; grid-template-columns:260px 1fr; height:calc(100vh - 64px); min-height:520px; background:#fff; border:1px solid #e2e8f0; border-radius:18px; overflow:hidden; position:relative; }
   .agr-lado { background:#f8fafc; border-right:1px solid #e2e8f0; display:flex; flex-direction:column; min-height:0; }
@@ -1732,6 +1742,7 @@
     <div class="usuario" id="info-usuario"></div>
     <nav id="nav-menu"></nav>
     <div class="marca-rodape-sidebar">🚀 Powered by <strong>Impulsionar V4</strong></div>
+    <button class="btn-instalar-app" id="btn-instalar-app" onclick="appInstalar()" hidden>📲 Instalar app no celular</button>
     <button class="sair btn-secundario" onclick="sair()">Sair</button>
   </aside>
   <main class="conteudo" id="conteudo"></main>
@@ -2195,7 +2206,8 @@ function iniciarApp() {
   iniciarPollinhaNotificacoes();
   tratarVagaPendenteAposLogin();
   // link "Editar no Estúdio" (vem da tela de gravação): abre o projeto direto no editor
-  igRetornoLogin();
+  igRetornoLogin(); appConvidar();
+  const mIr = (location.hash || '').match(/^#ir=(\w+)/); if (mIr) { try { history.replaceState(null, '', location.pathname); } catch (e) {} setTimeout(() => irPara(mIr[1]), 600); }
   const mEst = (location.hash || '').match(/^#estudio=(\d+)/);
   if (mEst) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} setTimeout(() => { if (typeof evAbrirEditor === 'function') evAbrirEditor(Number(mEst[1])); }, 700); }
 }
@@ -25484,6 +25496,40 @@ async function evAgConversar() {
   chat.scrollTop = chat.scrollHeight;
 }
 
+
+/* ==========================================================
+   APP NO CELULAR: instalar (Android/Chrome/Edge) ou adicionar à tela de início (iPhone)
+   ========================================================== */
+const APP = { prompt: null };
+const appInstalado = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const appEhIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); APP.prompt = e; appAtualizarBotao(); });
+window.addEventListener('appinstalled', () => { APP.prompt = null; appAtualizarBotao(); const b = document.getElementById('app-banner'); if (b) b.remove(); mostrarToast('📲 Impulsionar instalado! Abra pelo ícone na tela do celular.'); });
+function appAtualizarBotao() { const b = document.getElementById('btn-instalar-app'); if (b) b.hidden = appInstalado() || !(APP.prompt || appEhIos() || evCelularAquiApp()); }
+function evCelularAquiApp() { return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent); }
+async function appInstalar() {
+  if (APP.prompt) { APP.prompt.prompt(); const r = await APP.prompt.userChoice.catch(() => ({})); if (r.outcome === 'accepted') APP.prompt = null; appAtualizarBotao(); return; }
+  const ios = appEhIos();
+  const m = document.createElement('div'); m.className = 'app-modal'; m.onclick = e => { if (e.target === m) m.remove(); };
+  m.innerHTML = `<div class="app-caixa"><img src="/assets/app-icone-192.png?v=1" alt=""><h3>Instalar o Impulsionar no celular</h3>
+    ${ios ? `<ol><li>Abra este link no <b>Safari</b>.</li><li>Toque em <b>Compartilhar</b> <span class="app-ic">⬆️</span> (barra de baixo).</li><li>Role e toque em <b>“Adicionar à Tela de Início”</b>.</li><li>Toque em <b>Adicionar</b> — o ícone do Impulsionar aparece na tela do celular.</li></ol>`
+      : `<ol><li>Abra este link no <b>Chrome</b> (ou Edge/Samsung Internet).</li><li>Toque no menu <b>⋮</b> (canto de cima).</li><li>Toque em <b>“Instalar app”</b> ou <b>“Adicionar à tela inicial”</b>.</li><li>Confirme — o ícone do Impulsionar aparece na tela do celular.</li></ol>`}
+    <p>Depois é só tocar no ícone: abre direto, em tela cheia, já logado.</p><button onclick="this.closest('.app-modal').remove()">Entendi</button></div>`;
+  document.body.appendChild(m);
+}
+// convite discreto no celular (uma vez a cada 15 dias, até instalar)
+function appConvidar() {
+  appAtualizarBotao();
+  if (appInstalado() || !evCelularAquiApp() || document.body.classList.contains('modo-estudio')) return;
+  try { if (Date.now() - Number(localStorage.getItem('app_convite') || 0) < 15 * 86400000) return; } catch (e) {}
+  setTimeout(() => {
+    if (document.getElementById('app-banner') || appInstalado()) return;
+    const b = document.createElement('div'); b.id = 'app-banner'; b.className = 'app-banner';
+    b.innerHTML = `<img src="/assets/app-icone-192.png?v=1" alt=""><div><b>Instale o Impulsionar</b><small>Abre direto da tela do celular, em tela cheia e já logado.</small></div><button class="pri" onclick="appInstalar()">Instalar</button><button class="x" onclick="try{localStorage.setItem('app_convite', Date.now())}catch(e){}; this.parentElement.remove()">✕</button>`;
+    document.body.appendChild(b);
+  }, 2500);
+}
 /* ==========================================================
    BOOT
    ========================================================== */
