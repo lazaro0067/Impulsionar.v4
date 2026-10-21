@@ -12363,7 +12363,7 @@ const BLOCOS_ACOMP_DPO = {
     inspecoes: /inspe[çc]|auditoria|checklist|check-list|ronda|gemba|blitz|observa[çc][ãa]o comportamental|sinaliza[çc]/i
 };
 const ORDEM_BLOCOS_ACOMP_DPO = Object.keys(BLOCOS_ACOMP_DPO);
-const ACOMP_ESPECIAIS_DPO = { 'entrega:3.1': 'visibilidade', 'planejamento:2.1': 'riscos', 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop', 'gestao:3.1': 'cinco_s', 'gestao:1.2': 'sonho', 'planejamento:2.2': 'manutencao', 'planejamento:2.3': 'p3a', 'planejamento:2.4': 'capex', 'planejamento:3.2': 'ans' };
+const ACOMP_ESPECIAIS_DPO = { 'entrega:3.1': 'visibilidade', 'planejamento:2.1': 'riscos', 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop', 'gestao:3.1': 'cinco_s', 'gestao:1.2': 'sonho', 'planejamento:2.2': 'manutencao', 'planejamento:2.3': 'p3a', 'planejamento:2.4': 'capex', 'planejamento:3.2': 'ans', 'gestao:2.1': 'descnegocio', 'gestao:2.3': 'gerot' };
 const KPIS_CONHECIDOS_DPO = ['TML', 'TMA', 'NPS', 'eNPS', 'OTIF', 'LTI', 'MDI', 'MTI', 'SIF', 'TRI', 'TRIFR', 'PNP', 'FNP', 'VMI', 'EFC', 'OEE', 'DPMO', 'IRL', 'GPS'];
 
 function sugestoesAcompDpo(texto) {
