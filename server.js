@@ -13652,7 +13652,7 @@ db.run(`CREATE TABLE IF NOT EXISTS estudio_agente (
     id INTEGER PRIMARY KEY AUTOINCREMENT, tipo TEXT NOT NULL, titulo TEXT, conteudo TEXT, metricas TEXT, ativo INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`, () => db.run(`ALTER TABLE estudio_agente ADD COLUMN dono INTEGER`, () => {}));
 
-const TIPOS_AGENTE_EST = ['perfil', 'regra', 'exemplo', 'proibido', 'feedback', 'referencia', 'tendencia', 'estilo'];
+const TIPOS_AGENTE_EST = ['perfil', 'regra', 'exemplo', 'proibido', 'feedback', 'referencia', 'tendencia', 'estilo', 'licao'];
 const FORMATOS_EST = ['9:16', '4:5', '1:1', '16:9'];
 const uploadEstudio = multer({ storage: armazenamentoUpload, limits: { fileSize: 1024 * 1024 * 1024 },
     fileFilter: (req, file, cb) => (/^(video|image|audio)\//.test(file.mimetype) || /\.(mp4|mov|webm|m4a|mp3|wav|aac|ogg|png|jpe?g|gif|webp)$/i.test(file.originalname)) ? cb(null, true) : cb(new Error('Envie vídeo, imagem ou áudio.')) });
@@ -13674,9 +13674,20 @@ async function contextoAgenteEst() {
     if (por('referencia').length) partes.push('REFERÊNCIAS E PERFIS QUE ADMIRAMOS:\n' + por('referencia').slice(0, 15).map(x => '- ' + (x.titulo || '') + ' ' + x.conteudo).join('\n'));
     if (por('estilo').length) partes.push('ESTILO DE EDIÇÃO DOS VÍDEOS DE REFERÊNCIA DO NICHO (edite IGUAL: mesmo ritmo de cortes, legendas, zooms, textos, cor e energia da música):\n' + por('estilo').slice(0, 3).map(x => '- ' + (x.titulo || 'Referência') + ':\n' + x.conteudo).join('\n'));
     if (por('tendencia').length) partes.push('O QUE ESTÁ VIRALIZANDO AGORA NO NICHO (pesquisado no mercado pelo Radar Viral — use estes padrões como base de tudo que criar):\n' + por('tendencia').slice(0, 2).map(x => '- ' + (x.titulo || '') + ':\n' + String(x.conteudo || '').slice(0, 3500)).join('\n'));
+    if (por('licao').length) partes.push('LIÇÕES QUE OS NÚMEROS DO PERFIL ENSINARAM (o que viralizou e o que flopou aqui — siga SEMPRE):\n' + por('licao').slice(0, 40).map(x => '- ' + x.conteudo).join('\n'));
     if (por('feedback').length) partes.push('CORREÇÕES QUE O USUÁRIO JÁ TE DEU (não repita os erros):\n' + por('feedback').slice(0, 25).map(x => '- ' + x.conteudo).join('\n'));
     return partes.join('\n\n');
 }
+const SINAIS_ALGORITMO_IG = `SINAIS QUE O ALGORITMO DO INSTAGRAM USA PARA ENTREGAR UM REELS PARA MUITAS PESSOAS (inclusive quem não segue):
+1. Tempo assistido e retenção: % de quem passa dos 3 primeiros segundos e quanto do vídeo a pessoa assiste (vídeo curto assistido inteiro e revisto = sinal forte). É o sinal nº 1.
+2. Envios por alcance (compartilhamentos por DM/stories): o sinal mais forte para chegar em quem NÃO segue — conteúdo que a pessoa manda para um amigo ("marca quem precisa ver").
+3. Curtidas por alcance e salvamentos por alcance: interesse de quem já segue; salvamento = conteúdo útil de consulta.
+4. Comentários e respostas rápidas nos primeiros 30–60 minutos (conversa ativa empurra a distribuição).
+5. Originalidade: vídeo próprio, sem marca d'água de outro app (TikTok/CapCut), sem repost — conteúdo reaproveitado é rebaixado.
+6. Qualidade técnica: vertical 9:16, boa resolução, legenda na tela (maioria assiste sem som), som em alta quando faz sentido.
+7. Palavras-chave: o Instagram lê texto da legenda, texto na tela e fala para entender o assunto e mostrar para quem busca/se interessa — use as palavras que o público pesquisa (SEO), hashtags poucas e específicas (3–5).
+8. Constância e horário: postar quando o público está online e manter frequência; Reels de teste (Trial Reels) mostram primeiro para não seguidores.
+9. Sinais negativos: pular rápido, "não tenho interesse", ocultar, CTA pedindo engajamento de forma vazia (engagement bait), links/promo agressiva no início.`;
 const SISTEMA_AGENTE_EST = `Você é o Agente Viral da Impulsionar V4: estrategista de conteúdo e editor de vídeo sênior para Instagram (Reels, Stories e Feed), especialista em retenção, algoritmo e copywriting em português do Brasil. A Impulsionar é uma consultoria de gestão de processos e desenvolvimento de pessoas (liderança, RH, logística, operação, revendas Ambev).
 Princípios de viralização que você domina e aplica:
 - Gancho nos primeiros 1–3 segundos (texto na tela + fala): curiosidade, dor, contradição, número, promessa clara. O público decide em 1,5 s.
@@ -13689,7 +13700,7 @@ Princípios de viralização que você domina e aplica:
 - Nunca invente números, depoimentos ou resultados. Nada de promessas enganosas ou clickbait que não se cumpre.`;
 async function iaEstudio(pedido, { web = false, json = true, max = 6000, avancado = false, maxBuscas } = {}) {
     const ctx = await contextoAgenteEst();
-    const sistema = (donoAtualEst() ? SISTEMA_AGENTE_EST.replace(/ da Impulsionar V4/g, '') : SISTEMA_AGENTE_EST) + (ctx ? '\n\n' + ctx : '') + (json ? '\nResponda APENAS com JSON válido no final da resposta.' : '');
+    const sistema = (donoAtualEst() ? SISTEMA_AGENTE_EST.replace(/ da Impulsionar V4/g, '') : SISTEMA_AGENTE_EST) + '\n\n' + SINAIS_ALGORITMO_IG + (ctx ? '\n\n' + ctx : '') + (json ? '\nResponda APENAS com JSON válido no final da resposta.' : '');
     const r = await iaPesquisarMt(sistema, pedido, max, web, { modelo: avancado ? ANTHROPIC_MODEL_AVANCADO : null, maxBuscas });
     if (!json) return { texto: r.texto, fontes: r.fontes };
     const fim = r.texto.lastIndexOf('}');
@@ -15118,7 +15129,7 @@ async function lerPerfilIg(dono) {
     const host = hostIgEst(ig.token), eu = /graph\.instagram/.test(host) ? 'me' : ig.userId;
     const p = await igEst('GET', '/' + eu, { fields: 'username,name,biography,website,followers_count,follows_count,media_count,profile_picture_url,account_type' }, ig.token).catch(async () => igEst('GET', '/' + eu, { fields: 'username,followers_count,media_count' }, ig.token));
     let posts = [];
-    try { posts = ((await igEst('GET', `/${eu}/media`, { fields: 'id,caption,media_type,media_product_type,timestamp,like_count,comments_count,permalink', limit: '24' }, ig.token)).data || []); } catch (e) {}
+    try { posts = ((await igEst('GET', `/${eu}/media`, { fields: 'id,caption,media_type,media_product_type,timestamp,like_count,comments_count,permalink,thumbnail_url,media_url', limit: '24' }, ig.token)).data || []); } catch (e) {}
     // métricas por post (alcance, views, salvos, compartilhamentos) — cada uma separada: a Meta muda nomes e algumas não existem para contas pequenas
     const metr = async (id, m) => { try { const j = await igEst('GET', `/${id}/insights`, { metric: m }, ig.token); const d = (j.data || [])[0]; return d ? (d.values && d.values[0] ? d.values[0].value : (d.total_value || {}).value) : null; } catch (e) { return null; } };
     await Promise.all(posts.slice(0, 12).map(async x => { for (const m of ['reach', 'views', 'saved', 'shares']) { const v = await metr(x.id, m); if (v !== null && v !== undefined) x[m] = v; } }));
@@ -15131,7 +15142,7 @@ async function lerPerfilIg(dono) {
             conta[m] = d.total_value ? d.total_value.value : (d.values || []).reduce((s, v) => s + (Number(v.value) || 0), 0);
         } catch (e) {}
     }
-    return { perfil: p, posts: posts.map(x => ({ tipo: x.media_product_type === 'REELS' ? 'Reels' : x.media_type === 'CAROUSEL_ALBUM' ? 'Carrossel' : x.media_type === 'VIDEO' ? 'Vídeo' : 'Foto', data: x.timestamp, legenda: String(x.caption || '').slice(0, 300), curtidas: x.like_count, comentarios: x.comments_count, alcance: x.reach, views: x.views, salvos: x.saved, compartilhamentos: x.shares, link: x.permalink })), conta28dias: conta };
+    return { perfil: p, posts: posts.map(x => ({ id: x.id, capa: x.thumbnail_url || (x.media_type === 'IMAGE' || x.media_type === 'CAROUSEL_ALBUM' ? x.media_url : '') || '', tipo: x.media_product_type === 'REELS' ? 'Reels' : x.media_type === 'CAROUSEL_ALBUM' ? 'Carrossel' : x.media_type === 'VIDEO' ? 'Vídeo' : 'Foto', data: x.timestamp, legenda: String(x.caption || '').slice(0, 300), curtidas: x.like_count, comentarios: x.comments_count, alcance: x.reach, views: x.views, salvos: x.saved, compartilhamentos: x.shares, link: x.permalink })), conta28dias: conta };
 }
 function resumoPerfilIgTexto(d) {
     const p = d.perfil || {}, posts = d.posts || [];
@@ -15352,6 +15363,8 @@ ${resumoPerfilIgTexto(dados)}
 POSTS QUE MAIS ENGAJARAM (copie o padrão, não o texto): ${top.slice(0, 5).map(x => `[${x.tipo}] "${x.legenda.replace(/\s+/g, ' ').slice(0, 140)}" (❤ ${x.curtidas ?? '?'} · 💬 ${x.comentarios ?? '?'}${x.salvos != null ? ' · salvos ' + x.salvos : ''}${x.compartilhamentos != null ? ' · compart. ' + x.compartilhamentos : ''})`).join(' | ') || '—'}
 O QUE OS SEGUIDORES COMENTAM/PERGUNTAM: ${perguntas.map(x => '"' + String(x.texto).replace(/\s+/g, ' ').slice(0, 120) + '"').join(' · ') || '(sem comentários lidos ainda)'}
 
+${SINAIS_ALGORITMO_IG}
+
 Regras de viralização: gancho que para o dedo em até 2 s (curiosidade, erro comum, número, contraste, "ninguém te conta"); 1 ideia por vídeo; 20 a 45 s; virada/payoff antes do fim; legenda que puxa conversa; CTA de COMENTÁRIO específico (palavra-chave, escolha entre A ou B, "conta aqui") — os comentários serão respondidos pelo agente para multiplicar a interação; texto na tela curto; sugira áudio/tendência quando fizer sentido. Varie os formatos (lista, mito x verdade, bastidor, história, erro comum, antes/depois, polêmica saudável).
 
 Responda APENAS com JSON: {"roteiros":[{"titulo":"","formato":"Reels","duracao":"30s","gancho":"","texto_na_tela":"","roteiro":"texto falado completo, frases curtas, linha em branco entre partes","cenas":["o que mostrar"],"legenda":"","cta_comentario":"","hashtags":"#a #b (5-10)","melhor_horario":"","por_que_viraliza":"","nota_viral":0}]}`;
@@ -15360,6 +15373,133 @@ Responda APENAS com JSON: {"roteiros":[{"titulo":"","formato":"Reels","duracao":
         const id = await new Promise((ok, falha) => db.run(`INSERT INTO ig_roteiros (dono, tema, conteudo) VALUES (?, ?, ?)`, [dono, String(b.tema || '').slice(0, 300), JSON.stringify(out)], function (e) { e ? falha(e) : ok(this.lastID); }));
         res.json({ id, conteudo: out });
     } catch (e) { if (e.limite) return erroLimiteEst(res, e); res.status(400).json({ error: e.message }); }
+});
+
+// ===== Agente de Insights do Instagram: por que o post flopou ou viralizou, o que viraliza no perfil e o que o agente aprende =====
+db.run(`CREATE TABLE IF NOT EXISTS ig_diagnosticos (id INTEGER PRIMARY KEY AUTOINCREMENT, dono INTEGER DEFAULT 0, media_id TEXT, tipo TEXT DEFAULT 'post', conteudo TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+const METRICAS_POST_IG = ['reach', 'views', 'likes', 'comments', 'saved', 'shares', 'total_interactions', 'follows', 'profile_visits', 'ig_reels_avg_watch_time', 'ig_reels_video_view_total_time'];
+async function insightsPostIg(ig, id) {
+    const out = {};
+    await Promise.all(METRICAS_POST_IG.map(async m => {
+        try { const j = await igEst('GET', `/${id}/insights`, { metric: m }, ig.token); const d = (j.data || [])[0]; if (!d) return; const v = d.values && d.values[0] ? d.values[0].value : (d.total_value || {}).value; if (v !== null && v !== undefined) out[m] = v; } catch (e) {}
+    }));
+    return out;
+}
+const engPostIg = x => (Number(x.curtidas) || 0) + (Number(x.comentarios) || 0) * 2 + (Number(x.salvos) || 0) * 3 + (Number(x.compartilhamentos) || 0) * 4;
+function medianaIg(v) { const l = v.filter(n => isFinite(n)).sort((a, b) => a - b); if (!l.length) return null; const m = Math.floor(l.length / 2); return l.length % 2 ? l[m] : (l[m - 1] + l[m]) / 2; }
+// marca cada post como viralizou / na média / flopou comparando com a mediana do próprio perfil
+function classificarPostsIg(posts) {
+    const usaViews = posts.filter(x => Number(x.views) > 0).length >= Math.max(3, posts.length / 2);
+    const valor = x => usaViews ? Number(x.views) || 0 : engPostIg(x);
+    const med = medianaIg(posts.map(valor)) || 0;
+    return { base: usaViews ? 'visualizações' : 'engajamento', mediana: med, posts: posts.map(x => { const v = valor(x), k = med ? v / med : 1; return { ...x, eng: engPostIg(x), indice: Math.round(k * 100) / 100, rotulo: k >= 1.8 ? 'viralizou' : k >= 1.2 ? 'acima' : k <= 0.5 ? 'flopou' : k <= 0.8 ? 'abaixo' : 'media' }; }) };
+}
+// o que foi feito no Estúdio para este post (roteiro, duração, textos, música, horário) — quando foi publicado pelo sistema
+async function projetoDoPostIg(mediaId) {
+    const p = await dbGet(`SELECT id, titulo, dados, legenda, hashtags, publicado_em, agendado_para, ig_formato, viral_score FROM estudio_projetos WHERE ig_media_id = ?`, [String(mediaId)]).catch(() => null);
+    if (!p) return null;
+    let d = {}; try { d = JSON.parse(p.dados || '{}'); } catch (e) {}
+    const num = v => isFinite(Number(v)) ? Number(v) : null;
+    const clips = Array.isArray(d.clips) ? d.clips : [];
+    const dur = clips.reduce((s, c) => { const i = num(c.inicio ?? c.ini ?? c.de), f = num(c.fim ?? c.ate), du = num(c.duracao ?? c.dur); return s + (f !== null && i !== null ? Math.max(0, f - i) : du || 0); }, 0);
+    const textos = (Array.isArray(d.textos) ? d.textos : []).map(t => String(t.texto || t.t || '').trim()).filter(Boolean).slice(0, 6);
+    const audios = (Array.isArray(d.audios) ? d.audios : []).map(a => String(a.nome || a.titulo || a.name || '').trim()).filter(Boolean).slice(0, 3);
+    const ex = d.extras || {};
+    return { projetoId: p.id, titulo: p.titulo, roteiro: String(d.roteiro || '').slice(0, 2500), legenda: String(p.legenda || '').slice(0, 1500), hashtags: p.hashtags || '', formato: p.ig_formato || 'reels', publicadoEm: p.publicado_em, notaViralPrevista: p.viral_score,
+        cortes: clips.length, duracaoSeg: dur ? Math.round(dur) : null, textosNaTela: textos, musica: audios, legendaNaTela: ex.estiloLegenda ? 'sim' : 'não informado', encerramento: ex.encerramento ? 'sim' : 'não' };
+}
+app.get('/api/admin/estudio/instagram/insights', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst();
+    try {
+        const dados = await lerPerfilIg(dono), c = classificarPostsIg(dados.posts || []);
+        const diags = await dbAll(`SELECT id, media_id, tipo, conteudo, criado_em FROM ig_diagnosticos WHERE dono = ? ORDER BY id DESC LIMIT 40`, [dono]).catch(() => []);
+        const js = v => { try { return JSON.parse(v || '{}'); } catch (e) { return {}; } };
+        const porPost = {}; diags.filter(x => x.tipo === 'post').forEach(x => { if (!porPost[x.media_id]) porPost[x.media_id] = { id: x.id, criado_em: x.criado_em, ...js(x.conteudo) }; });
+        const pad = diags.find(x => x.tipo === 'padroes');
+        const doSistema = new Set((await dbAll(`SELECT ig_media_id FROM estudio_projetos WHERE ig_media_id IS NOT NULL`).catch(() => [])).map(x => String(x.ig_media_id)));
+        const licoes = await dbAll(`SELECT id, titulo, conteudo, ativo, created_at FROM estudio_agente WHERE tipo = 'licao' AND COALESCE(dono, 0) = ? ORDER BY id DESC`, [dono]).catch(() => []);
+        res.json({ perfil: dados.perfil, conta28dias: dados.conta28dias, base: c.base, mediana: c.mediana, posts: c.posts.map(x => ({ ...x, doSistema: doSistema.has(String(x.id)), diagnostico: porPost[x.id] || null })), padroes: pad ? { id: pad.id, criado_em: pad.criado_em, ...js(pad.conteudo) } : null, licoes });
+    } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.post('/api/admin/estudio/instagram/diagnostico', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), b = req.body || {};
+    try {
+        const ig = await lerIgEst(dono); if (!ig.userId || !ig.token) throw new Error('Conecte o Instagram primeiro.');
+        const dados = await lerPerfilIg(dono), c = classificarPostsIg(dados.posts || []);
+        let alvo = b.media_id ? c.posts.find(x => String(x.id) === String(b.media_id)) : null;
+        if (!alvo && !b.media_id) { // sem post escolhido: o último publicado pelo sistema, senão o último do perfil
+            const ult = await dbGet(`SELECT ig_media_id FROM estudio_projetos WHERE ig_media_id IS NOT NULL ORDER BY publicado_em DESC LIMIT 1`).catch(() => null);
+            alvo = (ult && c.posts.find(x => String(x.id) === String(ult.ig_media_id))) || c.posts[0];
+        }
+        if (!alvo) throw new Error('Não achei esse post entre os últimos do perfil.');
+        await consumirEst('ia', 1);
+        const met = await insightsPostIg(ig, alvo.id), proj = await projetoDoPostIg(alvo.id);
+        const horas = (Date.now() - new Date(alvo.data)) / 3600000;
+        const pct = (a, b2) => Number(a) > 0 && Number(b2) > 0 ? (Number(a) / Number(b2) * 100).toFixed(1) + '%' : 'sem dado';
+        const media = k => { const v = c.posts.filter(x => x.id !== alvo.id).map(x => Number(x[k])).filter(n => isFinite(n) && n > 0); return v.length ? Math.round(v.reduce((s, n) => s + n, 0) / v.length) : null; };
+        const assist = met.ig_reels_avg_watch_time ? met.ig_reels_avg_watch_time / 1000 : null;
+        const top = c.posts.filter(x => x.id !== alvo.id).sort((a, b2) => b2.indice - a.indice).slice(0, 3);
+        const licoes = await dbAll(`SELECT conteudo FROM estudio_agente WHERE tipo = 'licao' AND ativo = 1 AND COALESCE(dono, 0) = ? ORDER BY id DESC LIMIT 30`, [dono]).catch(() => []);
+        const pedido = `Faça o DIAGNÓSTICO deste post do Instagram: explique com números POR QUE ele ${['flopou', 'abaixo'].includes(alvo.rotulo) ? 'FLOPOU (ficou abaixo do normal do perfil)' : ['viralizou', 'acima'].includes(alvo.rotulo) ? 'foi MELHOR que o normal' : 'ficou na média'} e o que fazer para o próximo viralizar.
+
+POST: [${alvo.tipo}] publicado em ${new Date(alvo.data).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })} (${new Date(alvo.data).toLocaleDateString('pt-BR', { weekday: 'long', timeZone: 'America/Sao_Paulo' })}) · há ${horas < 48 ? Math.round(horas) + ' horas' : Math.round(horas / 24) + ' dias'}${horas < 24 ? ' (ATENÇÃO: menos de 24 h, os números ainda vão subir)' : ''}${proj ? ' · publicado AUTOMATICAMENTE pelo sistema' : ''}
+Legenda: "${String(alvo.legenda || '').replace(/\s+/g, ' ')}"
+Números: curtidas ${met.likes ?? alvo.curtidas ?? '?'} · comentários ${met.comments ?? alvo.comentarios ?? '?'} · alcance ${met.reach ?? '?'} · visualizações ${met.views ?? '?'} · salvos ${met.saved ?? '?'} · compartilhamentos ${met.shares ?? '?'} · seguidores ganhos ${met.follows ?? '?'} · visitas ao perfil ${met.profile_visits ?? '?'}${assist ? ` · tempo médio assistido ${assist.toFixed(1)} s` : ''}${proj && proj.duracaoSeg ? ` de ${proj.duracaoSeg} s de vídeo (retenção média ≈ ${assist ? Math.round(assist / proj.duracaoSeg * 100) + '%' : '?'})` : ''}
+Taxas: alcance/seguidores ${pct(met.reach, (dados.perfil || {}).followers_count)} · salvos/alcance ${pct(met.saved, met.reach)} · compartilhamentos/alcance ${pct(met.shares, met.reach)} · comentários/alcance ${pct(met.comments, met.reach)}
+Comparação: este post rendeu ${Math.round(alvo.indice * 100)}% da mediana do perfil (base: ${c.base}). Médias dos outros posts: alcance ${media('alcance') ?? '?'} · views ${media('views') ?? '?'} · curtidas ${media('curtidas') ?? '?'} · comentários ${media('comentarios') ?? '?'} · salvos ${media('salvos') ?? '?'} · compartilhamentos ${media('compartilhamentos') ?? '?'}
+${proj ? `\nO QUE FOI FEITO NO ESTÚDIO (post automático):\nTítulo: ${proj.titulo}\nRoteiro falado: ${proj.roteiro || '(sem roteiro salvo)'}\nDuração: ${proj.duracaoSeg ?? '?'} s · ${proj.cortes} trecho(s) de vídeo · textos na tela: ${proj.textosNaTela.join(' | ') || 'nenhum'} · música: ${proj.musica.join(', ') || 'nenhuma'} · nota viral prevista pelo sistema: ${proj.notaViralPrevista ?? '?'}\nHashtags: ${proj.hashtags}\n` : ''}
+POSTS QUE MAIS RENDERAM NO PERFIL (para comparar): ${top.map(x => `[${x.tipo}] ${String(x.data).slice(0, 10)} ${Math.round(x.indice * 100)}% da mediana — "${String(x.legenda || '').replace(/\s+/g, ' ').slice(0, 140)}"`).join(' · ') || '—'}
+
+${resumoPerfilIgTexto(dados)}
+${licoes.length ? '\nLIÇÕES QUE O AGENTE JÁ APRENDEU (confira se o post seguiu):\n' + licoes.map(x => '- ' + x.conteudo).join('\n') : ''}
+
+${SINAIS_ALGORITMO_IG}
+
+Regras: use os números (não invente dados que não estão aqui; se faltar, diga qual dado falta). Avalie o post SINAL POR SINAL do algoritmo acima. Pense como o algoritmo: os 2 primeiros segundos decidem; retenção, compartilhamentos e salvos pesam mais que curtidas; alcance de não seguidores vem de Reels com retenção alta. Avalie gancho, retenção/duração, tema/dor do público, formato, legenda/CTA, horário, áudio e capa. Seja direto, sem enrolação.
+Responda APENAS com JSON:
+{"veredito":"flopou|abaixo da média|na média|acima da média|viralizou","nota":0,"resumo":"2-3 frases com o motivo principal","por_que":[{"fator":"Gancho|Retenção|Duração|Tema|Formato|Legenda/CTA|Horário|Áudio|Capa|Distribuição","impacto":"alto|médio|baixo","explicacao":"com os números"}],"o_que_funcionou":[""],"metricas_chave":[{"nome":"","valor":"","referencia":"o normal do perfil ou do mercado","leitura":"bom|ruim|ok"}],"sinais_algoritmo":[{"sinal":"Retenção|Envios/compartilhamentos|Curtidas e salvos|Comentários|Originalidade|Qualidade técnica|Palavras-chave|Constância e horário","status":"forte|fraco|sem dado","valor":"número que mostra isso","como_melhorar":"ação concreta"}],"refazer":{"gancho":"frase dos 2 primeiros segundos","texto_na_tela":"","roteiro":"roteiro falado refeito, frases curtas","legenda":"legenda refeita com CTA","cta":"","melhor_horario":"HH:MM","duracao":"Xs"},"licoes":["regra curta e acionável para o agente seguir em TODO post daqui pra frente"]}`;
+        const out = await iaEstudio(pedido, { json: true, avancado: true, max: 6000 }); delete out.__fontes;
+        out.metricas = met; out.post = { id: alvo.id, tipo: alvo.tipo, data: alvo.data, legenda: alvo.legenda, link: alvo.link, indice: alvo.indice, rotulo: alvo.rotulo }; out.projeto = proj ? { id: proj.projetoId, titulo: proj.titulo } : null;
+        const id = await new Promise((ok, falha) => db.run(`INSERT INTO ig_diagnosticos (dono, media_id, tipo, conteudo) VALUES (?, ?, 'post', ?)`, [dono, String(alvo.id), JSON.stringify(out)], function (e) { e ? falha(e) : ok(this.lastID); }));
+        res.json({ id, diagnostico: out });
+    } catch (e) { if (e.limite) return erroLimiteEst(res, e); res.status(400).json({ error: e.message }); }
+});
+// o que viraliza (e o que derruba) neste perfil, olhando todos os posts recentes
+app.post('/api/admin/estudio/instagram/padroes', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst();
+    try {
+        await consumirEst('ia', 1);
+        const dados = await lerPerfilIg(dono), c = classificarPostsIg(dados.posts || []);
+        if (c.posts.length < 3) throw new Error('Preciso de pelo menos 3 posts no perfil para achar padrões.');
+        const projs = {}; for (const x of c.posts) { const p = await projetoDoPostIg(x.id); if (p) projs[x.id] = p; }
+        const diags = await dbAll(`SELECT conteudo FROM ig_diagnosticos WHERE dono = ? AND tipo = 'post' ORDER BY id DESC LIMIT 6`, [dono]).catch(() => []);
+        const pedido = `Descubra O QUE VIRALIZA e O QUE DERRUBA neste perfil, comparando os posts que renderam acima e abaixo da mediana. Gere insights práticos para os próximos posts.
+
+${resumoPerfilIgTexto(dados)}
+
+POSTS CLASSIFICADOS (rendimento vs. mediana de ${c.base}):
+${c.posts.map((x, i) => `${i + 1}. ${x.rotulo.toUpperCase()} (${Math.round(x.indice * 100)}%) [${x.tipo}] ${new Date(x.data).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })} · ❤ ${x.curtidas ?? '?'} · 💬 ${x.comentarios ?? '?'}${x.views != null ? ' · views ' + x.views : ''}${x.salvos != null ? ' · salvos ' + x.salvos : ''}${x.compartilhamentos != null ? ' · compart. ' + x.compartilhamentos : ''} — "${String(x.legenda || '').replace(/\s+/g, ' ').slice(0, 160)}"${projs[x.id] ? ` [feito no Estúdio: ${projs[x.id].duracaoSeg ?? '?'}s, ${projs[x.id].cortes} trechos, música: ${projs[x.id].musica.join(', ') || 'nenhuma'}, gancho falado: "${String(projs[x.id].roteiro).split('\n')[0].slice(0, 120)}"]` : ''}`).join('\n')}
+${diags.length ? '\nDIAGNÓSTICOS JÁ FEITOS: ' + diags.map(d => { try { const o = JSON.parse(d.conteudo); return `${o.veredito}: ${o.resumo}`; } catch (e) { return ''; } }).filter(Boolean).join(' · ') : ''}
+
+${SINAIS_ALGORITMO_IG}
+
+Regras: baseie cada padrão em posts reais da lista (cite datas/números) e ligue cada padrão ao sinal do algoritmo que ele ativa. Não invente métricas. Se houver poucos dados, diga o que testar.
+Responda APENAS com JSON:
+{"resumo":"3-4 frases","o_que_viraliza":[{"padrao":"","evidencia":"posts e números"}],"o_que_derruba":[{"padrao":"","evidencia":""}],"melhor_formato":"","melhor_duracao":"","melhores_horarios":[""],"ganchos_que_funcionam":["modelo de gancho"],"temas_quentes":[""],"plano_algoritmo":[{"sinal":"","acao":"o que fazer em todo post para ativar este sinal"}],"palavras_chave":["termos que o público pesquisa para usar na legenda, fala e texto na tela"],"testes_para_fazer":[""],"ideias":[{"titulo":"","gancho":"","formato":"","por_que":""}],"licoes":["regra curta e acionável para o agente seguir sempre"]}`;
+        const out = await iaEstudio(pedido, { json: true, avancado: true, max: 7000 }); delete out.__fontes;
+        const id = await new Promise((ok, falha) => db.run(`INSERT INTO ig_diagnosticos (dono, media_id, tipo, conteudo) VALUES (?, NULL, 'padroes', ?)`, [dono, JSON.stringify(out)], function (e) { e ? falha(e) : ok(this.lastID); }));
+        res.json({ id, padroes: out });
+    } catch (e) { if (e.limite) return erroLimiteEst(res, e); res.status(400).json({ error: e.message }); }
+});
+// ensinar ao agente: as lições entram em TUDO que ele cria (roteiros, plano, legendas, edição)
+app.post('/api/admin/estudio/instagram/licoes', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), b = req.body || {};
+    const l = (Array.isArray(b.licoes) ? b.licoes : [b.licao]).map(x => String(x || '').trim().slice(0, 600)).filter(Boolean).slice(0, 20);
+    if (!l.length) return res.status(400).json({ error: 'Escreva a lição.' });
+    const ja = new Set((await dbAll(`SELECT conteudo FROM estudio_agente WHERE tipo = 'licao' AND COALESCE(dono, 0) = ?`, [dono]).catch(() => [])).map(x => String(x.conteudo).toLowerCase()));
+    let n = 0;
+    for (const t of l) { if (ja.has(t.toLowerCase())) continue; ja.add(t.toLowerCase()); await new Promise(ok => db.run(`INSERT INTO estudio_agente (tipo, titulo, conteudo, ativo, dono) VALUES ('licao', ?, ?, 1, ?)`, [String(b.origem || 'Você ensinou').slice(0, 200), t, dono || null], ok)); n++; }
+    res.json({ ok: true, n, message: n ? `🧠 ${n} lição(ões) ensinada(s) ao agente — ela entra em todos os próximos roteiros, planos e legendas.` : 'O agente já sabia essas lições.' });
 });
 
 // ----- Publicação: Reels / Story / os dois, base pública salva (posta com o computador desligado) e novas tentativas -----

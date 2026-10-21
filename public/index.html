@@ -1537,6 +1537,21 @@
   .gr-inp { width:58px; border:1px solid #e2e8f0; border-radius:6px; padding:3px 4px; font-size:12px; margin:0; text-align:right; } td.ok .gr-inp { background:#dcfce7; border-color:#86efac; } td.nok .gr-inp { background:#fee2e2; border-color:#fca5a5; }
   .gr-arvore, .gr-arvore ul { list-style:none; padding-left:18px; } .gr-arvore > li { margin-bottom:8px; } .gr-arvore ul { border-left:2px dashed #c7d2fe; margin:4px 0 4px 8px; } .gr-no { display:inline-flex; gap:6px; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:5px 10px; margin:3px 0; font-size:13px; } .gr-no small { color:#64748b; } .gr-no i { font-style:normal; }
   @media (max-width: 800px) { .gr-cards { grid-template-columns:1fr 1fr; } }
+  /* ---------- Instagram: Insights & Treino ---------- */
+  .ig-sec { background:#fff !important; color:#8134af !important; border:2px solid #8134af !important; }
+  .ig-ins-cab { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:16px 2px 8px; } .ig-ins-cab span { color:#64748b; font-size:12.5px; }
+  .ig-posts { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px; }
+  .ig-post { background:#fff; border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; display:flex; flex-direction:column; }
+  .ig-post-capa { height:150px; background:#f1f5f9 center/cover no-repeat; position:relative; } .ig-post-rot { position:absolute; left:8px; top:8px; color:#fff; font-size:11px; font-weight:800; border-radius:8px; padding:3px 8px; } .ig-post-sis { position:absolute; right:8px; bottom:8px; background:rgba(15,23,42,.8); color:#fff; font-size:10.5px; border-radius:8px; padding:2px 7px; }
+  .ig-post-corpo { padding:8px 10px; display:flex; flex-direction:column; gap:4px; flex:1; } .ig-post-corpo small { color:#64748b; } .ig-post-corpo p { margin:0; font-size:12.5px; color:#334155; }
+  .ig-post-num { display:flex; flex-wrap:wrap; gap:6px; font-size:11.5px; color:#475569; } .ig-post .ig-acoes { margin-top:auto; display:flex; gap:6px; flex-wrap:wrap; }
+  .ig-diag { background:#fff; border:2px solid #e9d5ff; border-radius:16px; padding:14px 16px; margin-top:12px; } .ig-diag h4 { margin:14px 0 6px; } .ig-diag ul { margin:4px 0; padding-left:20px; font-size:13.5px; } .ig-diag summary { cursor:pointer; }
+  .ig-diag-cab { display:flex; gap:12px; align-items:flex-start; } .ig-diag-cab p { margin:6px 0 0; font-size:14px; color:#334155; } .ig-diag-nota { color:#fff; font-size:26px; font-weight:900; border-radius:14px; padding:8px 12px; min-width:52px; text-align:center; } .ig-diag-nota small { font-size:12px; opacity:.8; }
+  .ig-diag-met { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; } .ig-diag-met div { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:6px 10px; } .ig-diag-met small { display:block; color:#64748b; font-size:11px; } .ig-diag-met b { font-size:15px; }
+  .ig-sinais { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:8px; } .ig-sinal { border:1px solid #e2e8f0; border-radius:10px; padding:8px 10px; } .ig-sinal span { font-size:12px; font-weight:800; border-radius:8px; padding:2px 8px; } .ig-sinal small { display:block; color:#64748b; margin-top:4px; } .ig-sinal p { margin:4px 0 0; font-size:12.5px; }
+  .ig-pad-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; } .ig-pad { border-radius:12px; padding:8px 12px; } .ig-pad.ok { background:#f0fdf4; } .ig-pad.nok { background:#fef2f2; } .ig-pad h4 { margin:4px 0; }
+  .ig-licoes { display:flex; flex-direction:column; gap:6px; margin-top:10px; } .ig-licao { display:flex; gap:8px; align-items:center; background:#faf5ff; border:1px solid #e9d5ff; border-radius:10px; padding:7px 10px; font-size:13px; } .ig-licao label { flex:1; display:flex; gap:8px; align-items:center; margin:0; font-weight:600; color:#334155; } .ig-licao input { width:auto !important; margin:0 !important; flex:none; } .ig-licao small { color:#7c3aed; font-size:11px; } .ig-licao button { border:none; background:none; color:#dc2626; cursor:pointer; } .ig-licao.off { opacity:.5; }
+  @media (max-width: 700px) { .ig-pad-grid { grid-template-columns:1fr; } }
   /* ---------- App instalável ---------- */
   .btn-instalar-app { margin:12px 24px 0; border:1px solid rgba(74,222,128,.5); background:rgba(34,197,94,.12); color:#4ade80; border-radius:10px; padding:10px; font-weight:800; font-size:13px; cursor:pointer; }
   .app-banner { position:fixed; left:10px; right:10px; bottom:calc(env(safe-area-inset-bottom) + 10px); z-index:19000; display:flex; align-items:center; gap:10px; background:#0b1329; color:#fff; border-radius:16px; padding:10px 12px; box-shadow:0 12px 36px rgba(0,0,0,.35); border:1px solid rgba(74,222,128,.35); }
@@ -25774,15 +25789,15 @@ function evHtmlReferencias(l) {
   </div>`;
 }
 // ---------- Instagram conectado: abas Plano · Roteiros virais · Interação ----------
-let IGABA = 'plano';
+let IGABA = 'insights';
 function igAbas() {
-  return `<div class="ig-abas">${[['plano', '📈 Plano 10 dias'], ['roteiros', '🔥 Roteiros virais'], ['interacao', '💬 Interação automática']].map(([k, r]) => `<button class="${IGABA === k ? 'on' : ''}" onclick="IGABA='${k}'; igMostrarAba()">${r}</button>`).join('')}</div><div id="ig-aba"></div>`;
+  return `<div class="ig-abas">${[['insights', '🧠 Insights & Treino'], ['plano', '📈 Plano 10 dias'], ['roteiros', '🔥 Roteiros virais'], ['interacao', '💬 Interação automática']].map(([k, r]) => `<button class="${IGABA === k ? 'on' : ''}" onclick="IGABA='${k}'; igMostrarAba()">${r}</button>`).join('')}</div><div id="ig-aba"></div>`;
 }
 function igMostrarAba() {
   document.querySelectorAll('.ig-abas button').forEach(b => b.classList.toggle('on', b.getAttribute('onclick').includes(`'${IGABA}'`)));
   const el = document.getElementById('ig-aba'); if (!el) return;
   if (IGABA === 'plano') { el.innerHTML = '<div id="ig-plano"><p class="plano-meta">Carregando o plano…</p></div>'; igCarregarPlano(); }
-  else if (IGABA === 'roteiros') igRoteiros(el); else igInteracao(el);
+  else if (IGABA === 'insights') igInsights(el); else if (IGABA === 'roteiros') igRoteiros(el); else igInteracao(el);
 }
 // evolução de seguidores (gráfico simples)
 async function igEvolucao() {
@@ -25795,6 +25810,75 @@ async function igEvolucao() {
     <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#dd2a7b" stroke-width="3" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>
     <div class="ig-evol-eixo"><span>${new Date(l[0].dia + 'T12:00:00').toLocaleDateString('pt-BR')} · ${v[0].toLocaleString('pt-BR')}</span><span>${new Date(l[l.length - 1].dia + 'T12:00:00').toLocaleDateString('pt-BR')} · ${v[v.length - 1].toLocaleString('pt-BR')}</span></div></div>`;
 }
+// ----- Insights & Treino: por que flopou / viralizou, sinais do algoritmo e lições que o agente aprende -----
+let IGINS = null, IGDIAG = null;
+const IG_ROT = { viralizou: ['🔥', 'Viralizou', '#16a34a'], acima: ['📈', 'Acima', '#22c55e'], media: ['➖', 'Na média', '#64748b'], abaixo: ['📉', 'Abaixo', '#d97706'], flopou: ['🥶', 'Flopou', '#dc2626'] };
+const fmtIg = v => v === null || v === undefined || v === '' ? '—' : Number(v).toLocaleString('pt-BR');
+async function igInsights(el) {
+  el.innerHTML = '<p class="plano-meta">🧠 Lendo os números do seu perfil…</p>';
+  try { IGINS = await api('/api/admin/estudio/instagram/insights'); } catch (e) { el.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
+  const d = IGINS, posts = d.posts || [], pad = d.padroes;
+  const ultSis = posts.find(x => x.doSistema);
+  el.innerHTML = `<div class="ig-novo"><h3>🧠 Agente de Insights</h3><p>Ele compara cada post com o <b>normal do seu perfil</b> (mediana de ${escapeHtml(d.base || 'engajamento')}), lê os números de cada um (alcance, retenção, envios, salvos), confere os <b>sinais que o algoritmo usa para mandar o vídeo para muita gente</b> e explica <b>por que flopou ou viralizou</b>. O que ele descobre vira <b>lição</b> e entra em todos os próximos roteiros, planos e legendas.</p>
+      <div class="ig-linha"><button class="ig-gravar" id="ig-diag-bt" onclick="igDiagnosticar('${ultSis ? escapeHtml(String(ultSis.id)) : ''}')">🔍 Por que meu último post ${ultSis ? 'automático ' : ''}flopou?</button><button class="ig-gravar ig-sec" id="ig-pad-bt" onclick="igPadroes()">💡 O que viraliza no meu perfil</button></div></div>
+    <div id="ig-diag-res">${IGDIAG ? igHtmlDiagnostico(IGDIAG) : ''}</div>
+    ${pad ? igHtmlPadroes(pad) : ''}
+    <div class="ig-ins-cab"><b>📊 Seus últimos posts</b><span>${posts.length} posts · 🔥 ${posts.filter(x => x.rotulo === 'viralizou').length} viralizaram · 🥶 ${posts.filter(x => x.rotulo === 'flopou').length} floparam</span></div>
+    <div class="ig-posts">${posts.map(x => { const r = IG_ROT[x.rotulo] || IG_ROT.media; return `<div class="ig-post"><div class="ig-post-capa" style="${x.capa ? `background-image:url('${escapeHtml(x.capa)}')` : ''}"><span class="ig-post-rot" style="background:${r[2]}">${r[0]} ${r[1]} · ${Math.round(x.indice * 100)}%</span>${x.doSistema ? '<span class="ig-post-sis">🤖 automático</span>' : ''}</div>
+        <div class="ig-post-corpo"><small>${escapeHtml(x.tipo)} · ${new Date(x.data).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</small><p>${escapeHtml(String(x.legenda || '(sem legenda)').slice(0, 90))}</p>
+        <div class="ig-post-num">${x.views != null ? `<span title="visualizações">▶ ${fmtIg(x.views)}</span>` : ''}${x.alcance != null ? `<span title="alcance">👁 ${fmtIg(x.alcance)}</span>` : ''}<span title="curtidas">❤ ${fmtIg(x.curtidas)}</span><span title="comentários">💬 ${fmtIg(x.comentarios)}</span>${x.compartilhamentos != null ? `<span title="envios/compartilhamentos">📤 ${fmtIg(x.compartilhamentos)}</span>` : ''}${x.salvos != null ? `<span title="salvos">🔖 ${fmtIg(x.salvos)}</span>` : ''}</div>
+        ${x.diagnostico ? `<div class="plano-meta">🧠 ${escapeHtml(x.diagnostico.veredito || '')}: ${escapeHtml(String(x.diagnostico.resumo || '').slice(0, 110))}…</div>` : ''}
+        <div class="ig-acoes"><button class="ig-cp" onclick="${x.diagnostico ? `IGDIAG=IGINS.posts.find(p=>p.id==='${escapeHtml(String(x.id))}').diagnostico; document.getElementById('ig-diag-res').innerHTML=igHtmlDiagnostico(IGDIAG); document.getElementById('ig-diag-res').scrollIntoView({behavior:'smooth'})` : `igDiagnosticar('${escapeHtml(String(x.id))}')`}">🔍 ${x.diagnostico ? 'Ver diagnóstico' : 'Por que ' + (['flopou', 'abaixo'].includes(x.rotulo) ? 'flopou?' : ['viralizou', 'acima'].includes(x.rotulo) ? 'deu certo?' : 'ficou na média?')}</button>${x.diagnostico ? `<button class="ig-cp" onclick="igDiagnosticar('${escapeHtml(String(x.id))}')">🔄</button>` : ''}${x.link ? `<a class="ig-cp" href="${escapeHtml(x.link)}" target="_blank" rel="noopener">↗</a>` : ''}</div></div></div>`; }).join('') || '<div class="msg-vazio">Nenhum post encontrado no perfil.</div>'}</div>
+    <div class="ig-novo" style="margin-top:14px;"><h3>🎓 Treinar o agente</h3><p>Escreva o que ele deve sempre fazer ou evitar (ex.: <i>"sempre começar com um número"</i>, <i>"nunca passar de 35 s"</i>, <i>"falar de supervisor de rota e motorista"</i>). Junto com as lições dos diagnósticos, isso entra em tudo que ele cria.</p>
+      <div class="ig-linha"><input id="ig-lic-nova" placeholder="Ensine uma regra ao agente…" onkeydown="if(event.key==='Enter') igEnsinar([this.value], 'Você ensinou')"><button class="ig-gravar" onclick="igEnsinar([document.getElementById('ig-lic-nova').value], 'Você ensinou')">🧠 Ensinar</button></div>
+      <div class="ig-licoes">${(d.licoes || []).map(l => `<div class="ig-licao ${l.ativo ? '' : 'off'}"><label><input type="checkbox" ${l.ativo ? 'checked' : ''} onchange="igLicaoAtiva(${l.id}, this.checked)"> ${escapeHtml(l.conteudo)}</label><small>${escapeHtml(l.titulo || '')}</small><button onclick="igLicaoApagar(${l.id})" title="Apagar">✕</button></div>`).join('') || '<div class="plano-meta">O agente ainda não aprendeu nenhuma lição. Faça um diagnóstico e clique em “Ensinar ao agente”.</div>'}</div></div>`;
+}
+function igHtmlDiagnostico(x) {
+  const p = x.post || {}, r = IG_ROT[p.rotulo] || IG_ROT.media, m = x.metricas || {}, rf = x.refazer || {};
+  const cor = v => /alto|ruim|fraco/.test(v) ? '#dc2626' : /m[ée]dio|ok|sem dado/.test(v) ? '#d97706' : '#16a34a';
+  const licoes = (x.licoes || []).filter(Boolean);
+  window.__igLic = licoes;
+  return `<div class="ig-diag"><div class="ig-diag-cab"><span class="ig-diag-nota" style="background:${r[2]}">${x.nota ?? '?'}<small>/10</small></span><div><b>${r[0]} ${escapeHtml(x.veredito || r[1])}</b> · ${escapeHtml(p.tipo || '')} de ${p.data ? new Date(p.data).toLocaleDateString('pt-BR') : ''} · ${Math.round((p.indice || 1) * 100)}% do normal do perfil${x.projeto ? ' · 🤖 publicado pelo sistema' : ''}<p>${escapeHtml(x.resumo || '')}</p></div></div>
+    <div class="ig-diag-met">${[['▶ Views', m.views], ['👁 Alcance', m.reach], ['⏱ Assistido', m.ig_reels_avg_watch_time ? (m.ig_reels_avg_watch_time / 1000).toFixed(1) + ' s' : null], ['📤 Envios', m.shares], ['🔖 Salvos', m.saved], ['💬 Coment.', m.comments], ['❤ Curtidas', m.likes], ['➕ Seguidores', m.follows]].filter(([, v]) => v !== null && v !== undefined).map(([k, v]) => `<div><small>${k}</small><b>${typeof v === 'number' ? fmtIg(v) : escapeHtml(String(v))}</b></div>`).join('')}</div>
+    ${(x.sinais_algoritmo || []).length ? `<h4>📡 Sinais que o algoritmo usa para mandar para muita gente</h4><div class="ig-sinais">${x.sinais_algoritmo.map(s => `<div class="ig-sinal"><span style="background:${s.status === 'forte' ? '#dcfce7' : s.status === 'fraco' ? '#fee2e2' : '#f1f5f9'};color:${s.status === 'forte' ? '#166534' : s.status === 'fraco' ? '#991b1b' : '#475569'}">${s.status === 'forte' ? '✅' : s.status === 'fraco' ? '❌' : '❔'} ${escapeHtml(s.sinal)}</span><small>${escapeHtml(s.valor || '')}</small><p>➜ ${escapeHtml(s.como_melhorar || '')}</p></div>`).join('')}</div>` : ''}
+    ${(x.por_que || []).length ? `<h4>🔎 Por quê</h4><ul class="ig-porque">${x.por_que.map(f => `<li><b style="color:${cor(f.impacto || '')}">${escapeHtml(f.fator)}</b> <small>(impacto ${escapeHtml(f.impacto || '')})</small> — ${escapeHtml(f.explicacao || '')}</li>`).join('')}</ul>` : ''}
+    ${(x.o_que_funcionou || []).filter(Boolean).length ? `<h4>👍 O que funcionou</h4><ul>${x.o_que_funcionou.filter(Boolean).map(t => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
+    ${rf.gancho || rf.roteiro ? `<h4>🔁 Como refazer para viralizar</h4>${rf.gancho ? `<div class="ig-gancho">🪝 <b>Gancho:</b> “${escapeHtml(rf.gancho)}”</div>` : ''}${rf.texto_na_tela ? `<div class="plano-meta">📝 Texto na tela: <b>${escapeHtml(rf.texto_na_tela)}</b> · ⏱ ${escapeHtml(rf.duracao || '')} · ⏰ ${escapeHtml(rf.melhor_horario || '')}</div>` : ''}${rf.roteiro ? `<div class="ig-bloco"><div class="ig-bloco-cab"><b>🎙️ Roteiro refeito</b></div><p>${escapeHtml(rf.roteiro).replace(/\n/g, '<br>')}</p></div>` : ''}${rf.legenda ? `<div class="ig-bloco"><div class="ig-bloco-cab"><b>✍️ Legenda</b></div><p>${escapeHtml(rf.legenda).replace(/\n/g, '<br>')}</p></div>` : ''}` : ''}
+    ${licoes.length ? `<h4>🧠 Lições para o agente</h4><ul>${licoes.map(t => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
+    <div class="ig-acoes">${licoes.length ? `<button class="ig-gravar" onclick="igEnsinar(window.__igLic, 'Diagnóstico de ${p.data ? new Date(p.data).toLocaleDateString('pt-BR') : 'post'}')">🧠 Ensinar ao agente</button>` : ''}${rf.roteiro ? `<button class="ig-gravar ig-sec" onclick='igAbrirGravacao(${escapeHtml(JSON.stringify('Refeito: ' + String(p.legenda || 'post').slice(0, 40)))}, ${escapeHtml(JSON.stringify([rf.gancho, rf.roteiro].filter(Boolean).join("\n\n")))}, ${escapeHtml(JSON.stringify([rf.legenda, rf.cta].filter(Boolean).join("\n\n")))}, "")'>🎬 Gravar a versão refeita</button>` : ''}${p.link ? `<a class="ig-cp" href="${escapeHtml(p.link)}" target="_blank" rel="noopener">Ver no Instagram ↗</a>` : ''}</div></div>`;
+}
+function igHtmlPadroes(x) {
+  const lista = (l, f) => (l || []).filter(Boolean).map(f).join('');
+  window.__igLicPad = (x.licoes || []).filter(Boolean);
+  return `<details class="ig-diag" open><summary><b>💡 O que viraliza no seu perfil</b> <small>· ${x.criado_em ? new Date(String(x.criado_em).replace(' ', 'T') + 'Z').toLocaleString('pt-BR') : 'agora'}</small></summary>
+    <p>${escapeHtml(x.resumo || '')}</p>
+    <div class="ig-pad-grid"><div class="ig-pad ok"><h4>🔥 Viraliza</h4><ul>${lista(x.o_que_viraliza, p => `<li><b>${escapeHtml(p.padrao)}</b><br><small>${escapeHtml(p.evidencia || '')}</small></li>`)}</ul></div><div class="ig-pad nok"><h4>🥶 Derruba</h4><ul>${lista(x.o_que_derruba, p => `<li><b>${escapeHtml(p.padrao)}</b><br><small>${escapeHtml(p.evidencia || '')}</small></li>`)}</ul></div></div>
+    <div class="ig-diag-met">${[['Formato', x.melhor_formato], ['Duração', x.melhor_duracao], ['Horários', (x.melhores_horarios || []).join(', ')]].filter(([, v]) => v).map(([k, v]) => `<div><small>${k}</small><b>${escapeHtml(v)}</b></div>`).join('')}</div>
+    ${(x.plano_algoritmo || []).length ? `<h4>📡 Em todo post, para o algoritmo mandar para mais gente</h4><ul>${lista(x.plano_algoritmo, p => `<li><b>${escapeHtml(p.sinal)}:</b> ${escapeHtml(p.acao)}</li>`)}</ul>` : ''}
+    ${(x.ganchos_que_funcionam || []).length ? `<h4>🪝 Ganchos que funcionam aqui</h4><ul>${lista(x.ganchos_que_funcionam, t => `<li>${escapeHtml(t)}</li>`)}</ul>` : ''}
+    ${(x.palavras_chave || []).length ? `<h4>🔑 Palavras-chave para legenda, fala e texto na tela</h4><p class="ig-hash">${x.palavras_chave.map(escapeHtml).join(' · ')}</p>` : ''}
+    ${(x.temas_quentes || []).length ? `<h4>🌶️ Temas quentes</h4><p>${x.temas_quentes.map(escapeHtml).join(' · ')}</p>` : ''}
+    ${(x.ideias || []).length ? `<h4>🎬 Próximos vídeos</h4><ul>${lista(x.ideias, i => `<li><b>${escapeHtml(i.titulo)}</b> (${escapeHtml(i.formato || 'Reels')}) — 🪝 “${escapeHtml(i.gancho || '')}”<br><small>${escapeHtml(i.por_que || '')}</small></li>`)}</ul>` : ''}
+    ${(x.testes_para_fazer || []).length ? `<h4>🧪 Testes para fazer</h4><ul>${lista(x.testes_para_fazer, t => `<li>${escapeHtml(t)}</li>`)}</ul>` : ''}
+    ${window.__igLicPad.length ? `<h4>🧠 Lições</h4><ul>${window.__igLicPad.map(t => `<li>${escapeHtml(t)}</li>`).join('')}</ul><div class="ig-acoes"><button class="ig-gravar" onclick="igEnsinar(window.__igLicPad, 'O que viraliza no perfil')">🧠 Ensinar ao agente</button></div>` : ''}</details>`;
+}
+async function igDiagnosticar(mediaId) {
+  const b = document.getElementById('ig-diag-bt'); if (b) { b.disabled = true; b.textContent = '⏳ Analisando os números… (até 1 min)'; }
+  mostrarToast('🔍 O agente está lendo os números do post…');
+  try { const r = await api('/api/admin/estudio/instagram/diagnostico', { method: 'POST', body: JSON.stringify(mediaId ? { media_id: mediaId } : {}) }); IGDIAG = { ...r.diagnostico, id: r.id }; await igInsights(document.getElementById('ig-aba')); document.getElementById('ig-diag-res').scrollIntoView({ behavior: 'smooth' }); }
+  catch (e) { mostrarToast(e.message, true); if (b) { b.disabled = false; b.textContent = '🔍 Tentar de novo'; } }
+}
+async function igPadroes() {
+  const b = document.getElementById('ig-pad-bt'); if (b) { b.disabled = true; b.textContent = '⏳ Comparando todos os posts… (até 1 min)'; }
+  try { await api('/api/admin/estudio/instagram/padroes', { method: 'POST', body: '{}' }); mostrarToast('💡 Insights prontos!'); await igInsights(document.getElementById('ig-aba')); }
+  catch (e) { mostrarToast(e.message, true); if (b) { b.disabled = false; b.textContent = '💡 O que viraliza no meu perfil'; } }
+}
+async function igEnsinar(licoes, origem) {
+  licoes = (licoes || []).map(x => String(x || '').trim()).filter(Boolean); if (!licoes.length) return mostrarToast('Escreva a lição.', true);
+  try { const r = await api('/api/admin/estudio/instagram/licoes', { method: 'POST', body: JSON.stringify({ licoes, origem }) }); mostrarToast(r.message); await igInsights(document.getElementById('ig-aba')); } catch (e) { mostrarToast(e.message, true); }
+}
+async function igLicaoAtiva(id, ativo) { try { await api('/api/admin/estudio/agente/' + id, { method: 'PUT', body: JSON.stringify({ ativo }) }); } catch (e) { mostrarToast(e.message, true); } }
+async function igLicaoApagar(id) { if (!confirm('Apagar esta lição do agente?')) return; try { await api('/api/admin/estudio/agente/' + id, { method: 'DELETE' }); igInsights(document.getElementById('ig-aba')); } catch (e) { mostrarToast(e.message, true); } }
 // ----- Roteiros virais -----
 let IGROT = null;
 async function igRoteiros(el) {
