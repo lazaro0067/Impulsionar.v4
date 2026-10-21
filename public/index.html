@@ -1503,6 +1503,40 @@
   .ev-mus-jm { background:rgba(34,197,94,.08); border:1px solid rgba(34,197,94,.35); border-radius:10px; padding:8px 10px; font-size:12.5px; margin:6px 0; } .ev-mus-jm input { flex:1; }
   .ev-ref { border:1px solid rgba(124,58,237,.45) !important; } .ev-ref-lista { display:flex; flex-direction:column; gap:8px; margin-top:10px; } .ev-ref-item { display:flex; gap:10px; justify-content:space-between; background:rgba(124,58,237,.08); border-radius:12px; padding:10px 12px; } .ev-ref-item.inativo { opacity:.5; } .ev-ref-item small { display:block; opacity:.75; } .ev-ref-item p { margin:4px 0; font-size:13px; }
   .ev-ref-leg { display:inline-block; background:#111; padding:4px 10px; border-radius:6px; font-weight:900; font-size:15px; margin-top:4px; } .ev-ref-leg em { font-style:normal; }
+
+  /* ---------- DPO: análise de padrões, Descrição de Negócio e GEROT ---------- */
+  .pd-doc { display:flex; flex-direction:column; gap:3px; font-size:11.5px; } .pd-doc a { color:#2563eb; white-space:nowrap; } .pd-up { cursor:pointer; color:#2563eb; font-weight:700; font-size:11.5px; white-space:nowrap; }
+  .pd-ia-bt { border:none; border-radius:8px; padding:6px 9px; background:linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff; font-weight:700; font-size:11.5px; cursor:pointer; white-space:nowrap; } .pd-ia { border:none; border-radius:8px; padding:5px 9px; color:#fff; font-weight:800; font-size:11.5px; cursor:pointer; white-space:nowrap; } .pd-ia.carregando { background:#64748b; }
+  .pd-dica { margin-top:12px; background:#eef2ff; border:1px dashed #a5b4fc; border-radius:12px; padding:12px 14px; font-size:13px; color:#3730a3; }
+  .pd-res { margin-top:12px; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; } .pd-res summary { cursor:pointer; display:flex; gap:10px; align-items:center; flex-wrap:wrap; } .pd-nota { color:#fff; font-weight:900; border-radius:10px; padding:3px 10px; } .pd-sub { font-size:12px; color:#64748b; }
+  .pd-resumo { font-size:13.5px; color:#334155; } .pd-itens td { font-size:12.5px; vertical-align:top; } .pd-estr { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; } .pd-estr span { font-size:12px; border-radius:12px; padding:3px 9px; } .pd-estr .ok { background:#dcfce7; color:#166534; } .pd-estr .nok { background:#fee2e2; color:#991b1b; }
+  .pd-aj { background:#fffbeb; border-radius:10px; padding:10px 12px; font-size:13px; } .pd-aj ol { margin:6px 0 0; padding-left:20px; } .pd-acoes { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .dn-topo { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-bottom:12px; } .dn-topo > div { flex:1; min-width:240px; } .dn-topo label { font-size:12px; font-weight:700; color:#475569; display:flex; flex-direction:column; } .dn-topo input { margin:0; }
+  .dn-pilar { background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 4px 18px rgba(30,64,175,.08); margin-bottom:16px; border:1px solid #c7d2fe; }
+  .dn-pilar-cab { background:linear-gradient(90deg,#3b5bdb,#4c6ef5); color:#fff; padding:10px 14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; } .dn-pilar-cab span { font-size:12px; opacity:.9; }
+  .dn-pilar-nome { background:transparent !important; border:none !important; color:#fff !important; font-weight:900; font-size:15px; text-transform:uppercase; letter-spacing:.5px; width:auto; min-width:160px; margin:0 !important; }
+  .dn-pilar-acoes { margin-left:auto; display:flex; gap:6px; } .dn-pilar-acoes button { border:1px solid rgba(255,255,255,.5); background:rgba(255,255,255,.15); color:#fff; border-radius:8px; padding:5px 9px; cursor:pointer; font-size:12px; font-weight:700; }
+  .dn-tab { width:100%; border-collapse:collapse; min-width:1100px; } .dn-tab th { background:#eef2ff; color:#3730a3; font-size:11px; letter-spacing:.5px; text-transform:uppercase; padding:8px 6px; text-align:left; } .dn-tab td { border-top:1px solid #eef2f7; vertical-align:top; padding:4px; }
+  .dn-n { text-align:center; color:#94a3b8; font-weight:700; width:44px; } .dn-ans { display:block; margin:6px auto 0; border:1px solid #cbd5e1; background:#fff; color:#94a3b8; font-size:9.5px; font-weight:800; border-radius:5px; padding:1px 4px; cursor:pointer; } .dn-ans.on { background:#16a34a; color:#fff; border-color:#16a34a; }
+  .dn-cel { width:100%; box-sizing:border-box; border:1px solid transparent; background:transparent; resize:vertical; font-size:12.5px; line-height:1.45; padding:5px; border-radius:6px; font-family:inherit; min-width:110px; } .dn-cel:hover, .dn-cel:focus { border-color:#c7d2fe; background:#f8faff; }
+  .dn-cel.produto { font-weight:800; text-transform:uppercase; background:#f1f5f9; border:1px solid #cbd5e1; } .dn-cel.ic, .dn-cel.iv { background:#f8fafc; }
+  .gr-hero { background:linear-gradient(120deg,#3b5bdb,#5c7cfa); color:#fff; border-radius:16px; padding:16px 18px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:12px; } .gr-hero small { opacity:.8; letter-spacing:1px; font-size:11px; } .gr-hero h2 { margin:2px 0; font-size:26px; } .gr-hero span { font-size:12.5px; opacity:.9; }
+  .gr-hero-bt { display:flex; gap:6px; flex-wrap:wrap; } .gr-hero-bt button { border:1px solid rgba(255,255,255,.55); background:rgba(255,255,255,.15); color:#fff; border-radius:10px; padding:8px 12px; font-weight:700; cursor:pointer; font-size:12.5px; }
+  .gr-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; } .gr-cards > div { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; } .gr-cards small { color:#64748b; font-size:11px; font-weight:700; letter-spacing:.5px; display:block; } .gr-cards b { font-size:26px; display:block; } .gr-cards span { color:#94a3b8; font-size:12px; }
+  .gr-cards .alvo { background:#f0fdf4; border-color:#bbf7d0; } .gr-cards .atencao { background:#fffbeb; border-color:#fde68a; } .gr-cards .critico { background:#fef2f2; border-color:#fecaca; }
+  .gr-filtros { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:10px 12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px; } .gr-filtros input { flex:1; min-width:180px; margin:0; } .gr-filtros select { width:auto; margin:0; }
+  .gr-chips { display:flex; gap:4px; flex-wrap:wrap; align-items:center; } .gr-chips button { border:1px solid #e2e8f0; background:#fff; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; } .gr-chips button.on { background:#3b5bdb; color:#fff; border-color:#3b5bdb; } .gr-sep { width:10px; }
+  .gr-leg { font-size:11.5px; color:#64748b; margin:4px 2px 8px; } .gr-leg i { font-style:normal; }
+  .t { display:inline-block; font-size:10px; font-weight:800; border-radius:6px; padding:1px 6px; color:#fff; } .t.kpi { background:#3b5bdb; } .t.ic { background:#0ea5e9; } .t.iv { background:#64748b; }
+  .gr-wrap { overflow:auto; max-height:70vh; border:1px solid #e2e8f0; border-radius:14px; background:#fff; } .gr-tab { border-collapse:separate; border-spacing:0; font-size:12px; min-width:100%; }
+  .gr-tab th { background:#3b5bdb; color:#fff; padding:6px 6px; font-size:11px; position:sticky; top:0; z-index:2; white-space:nowrap; } .gr-tab thead tr:nth-child(2) th { top:27px; background:#4c6ef5; font-weight:600; } .gr-tab th.gr-grp { text-align:center; border-left:1px solid rgba(255,255,255,.3); }
+  .gr-tab td { border-bottom:1px solid #f1f5f9; padding:4px 6px; white-space:nowrap; } .gr-tab .gr-nome { min-width:220px; position:sticky; left:0; background:#fff; z-index:1; } .gr-tab th.gr-nome { background:#3b5bdb; z-index:3; } .gr-tab tr.kpi td { font-weight:700; } .gr-tab tr.kpi .gr-nome { background:#f8faff; }
+  .gr-area td { background:#eef2ff !important; font-weight:800; color:#3730a3; cursor:pointer; } .gr-area small { font-weight:400; color:#64748b; margin-left:6px; }
+  .gr-ano { background:#fffbeb; font-weight:700; } .gr-gap { color:#64748b; font-size:11px; } .gr-dir { color:#94a3b8; } .gr-ramo { color:#cbd5e1; margin-right:4px; }
+  .gr-resp { display:inline-flex; width:24px; height:24px; border-radius:50%; background:#e0e7ff; color:#3730a3; font-size:9.5px; font-weight:800; align-items:center; justify-content:center; }
+  .gr-inp { width:58px; border:1px solid #e2e8f0; border-radius:6px; padding:3px 4px; font-size:12px; margin:0; text-align:right; } td.ok .gr-inp { background:#dcfce7; border-color:#86efac; } td.nok .gr-inp { background:#fee2e2; border-color:#fca5a5; }
+  .gr-arvore, .gr-arvore ul { list-style:none; padding-left:18px; } .gr-arvore > li { margin-bottom:8px; } .gr-arvore ul { border-left:2px dashed #c7d2fe; margin:4px 0 4px 8px; } .gr-no { display:inline-flex; gap:6px; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:5px 10px; margin:3px 0; font-size:13px; } .gr-no small { color:#64748b; } .gr-no i { font-style:normal; }
+  @media (max-width: 800px) { .gr-cards { grid-template-columns:1fr 1fr; } }
   /* ---------- App instalável ---------- */
   .btn-instalar-app { margin:12px 24px 0; border:1px solid rgba(74,222,128,.5); background:rgba(34,197,94,.12); color:#4ade80; border-radius:10px; padding:10px; font-weight:800; font-size:13px; cursor:pointer; }
   .app-banner { position:fixed; left:10px; right:10px; bottom:calc(env(safe-area-inset-bottom) + 10px); z-index:19000; display:flex; align-items:center; gap:10px; background:#0b1329; color:#fff; border-radius:16px; padding:10px 12px; box-shadow:0 12px 36px rgba(0,0,0,.35); border:1px solid rgba(74,222,128,.35); }
@@ -12288,7 +12322,7 @@ async function excluirFerramentaDpo(id) {
 // ======================================================================
 let FD = null; // pasta aberta: { chave, ano, companyId, dados, validacao, arquivos, aba, meta }
 let DIM = null; // visão das pastas do Simulador de Dimensionamento num ano
-const FD_PERGUNTAS = { 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop', 'gestao:3.1': 'cinco_s', 'entrega:3.1': 'visibilidade', 'planejamento:2.1': 'riscos', 'gestao:1.2': 'sonho', 'planejamento:2.2': 'manutencao', 'planejamento:2.3': 'p3a', 'planejamento:2.4': 'capex', 'planejamento:3.2': 'ans' };
+const FD_PERGUNTAS = { 'gestao:2.1': 'descnegocio', 'gestao:2.3': 'gerot', 'gestao:1.3': 'swot', 'planejamento:1.1': 'dimensionamento', 'gestao:4.6': 'gop', 'gestao:3.1': 'cinco_s', 'entrega:3.1': 'visibilidade', 'planejamento:2.1': 'riscos', 'gestao:1.2': 'sonho', 'planejamento:2.2': 'manutencao', 'planejamento:2.3': 'p3a', 'planejamento:2.4': 'capex', 'planejamento:3.2': 'ans' };
 const FD_DESCRICOES = {
   swot: ['Análise SWOT digital por área (Armazém, Distribuição, Frota, Gente): fatores, matriz, cruzamentos, objetivos e planos — com validação dos itens V.1 a V.3.', '🧭 Abrir Análise SWOT'],
   dimensionamento: ['Simulador de Dimensionamento em pastas por ano: Armazém, Entrega e Puxada (orçamento calculado × realizado), RACI, KPIs e PDCA — com validação dos itens V.1 a V.5.', '📐 Abrir Simulador de Dimensionamento'],
@@ -12300,13 +12334,15 @@ const FD_DESCRICOES = {
   p3a: ['P1A / P3A: volume e marketplace, projetos de pessoas, frota e instalações, PA/estacionamento, impactos financeiros e playbook passo a passo.', '🧭 Abrir P1A / P3A'],
   capex: ['Gestão de CAPEX: solicitações com propostas, priorização GUT, aprovação, execução, nota fiscal na conclusão, check trimestral e painel.', '🏗️ Abrir Gestão de CAPEX'],
   ans: ['ANS de Volume: acompanhamento diário negociado × real, dispersão acima de ±10% gera ação automaticamente, acordo e rotina com vendas.', '🤝 Abrir ANS de Volume'],
+  descnegocio: ['Descrição de Negócio por área (Armazém, Distribuição, Frota…): fornecedores → insumos → processos → produtos → clientes, com IC, IV e ferramenta de gestão; Matriz de Produtos Críticos, ANS, comunicação e entrevistas — validação V.1 a V.6.', '🗺️ Abrir Descrição de Negócio'],
+  gerot: ['GEROT — Gerenciamento da Rotina por área: KPIs, ICs e IVs com gatilho, período e responsável, Meta × Real mês a mês, árvore KPI → IC → IV, carta de controle e exportação para Excel — validação V.1 a V.7.', '📊 Abrir GEROT'],
   gop: ['Gerenciador GOP: Inventário, Obsolescence, TQI Armazém, Rating, TQI Distribuição e OTIF — SIM/NÃO por mês, plano de ação obrigatório em todo mês NOK e importação da planilha Gerenciador GOP.', '📋 Abrir Gerenciador GOP']
 };
 
 // Ferramenta digital da pergunta: só aparece liberada quando o Master autorizou
 // (Acompanhamentos Impulsionar). Para a empresa sem liberação aparece uma prévia
 // bloqueada com o botão para abrir chamado pedindo a autorização.
-const FD_ICONES = { swot: '🧭', dimensionamento: '📐', cinco_s: '🧹', visibilidade: '📲', riscos: '🛡️', sonho: '🌟', manutencao: '🛠️', p3a: '🧭', capex: '🏗️', ans: '🤝', gop: '📋' };
+const FD_ICONES = { descnegocio: '🗺️', gerot: '📊', swot: '🧭', dimensionamento: '📐', cinco_s: '🧹', visibilidade: '📲', riscos: '🛡️', sonho: '🌟', manutencao: '🛠️', p3a: '🧭', capex: '🏗️', ans: '🤝', gop: '📋' };
 function fdLiberadaPergunta(questionKey) {
   if (ESTADO.usuario.role === 'admin') return true;
   return ((ESTADO_DPO_VIEW && ESTADO_DPO_VIEW.acomps) || []).includes(questionKey);
@@ -13718,6 +13754,267 @@ function dimAbrirAno(ano) { abrirDimensionamentoDpo(DIM.companyIdParam, ano); }
 function dimNovoAno() { fdCriarAno('dimensionamento', DIM.companyIdParam, dimAnosTodos(), ano => abrirDimensionamentoDpo(DIM.companyIdParam, ano)); }
 
 
+// ======================= PADRÕES: subir o documento e a IA conferir contra os itens da pergunta =======================
+const ST_PADRAO_IA = { atende: ['✅', 'atende', '#16a34a', '#dcfce7'], parcial: ['🟡', 'parcial', '#b45309', '#fef3c7'], nao_atende: ['❌', 'não atende', '#dc2626', '#fee2e2'], nao_se_aplica: ['➖', 'não se aplica ao padrão', '#64748b', '#f1f5f9'] };
+function padraoColDoc(l, i) {
+  const a = l.arquivo;
+  return `<div class="pd-doc">${a ? `<a href="${escapeHtml(a.url)}" target="_blank" rel="noopener" title="${escapeHtml(a.nome || '')}">📄 ${escapeHtml(String(a.nome || 'documento').slice(0, 22))}</a>` : ''}<label class="pd-up">${a ? '🔄' : '📎 Subir padrão'}<input type="file" hidden accept=".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg" onchange="padraoSubir(${i}, this.files)"></label></div>`;
+}
+function padraoColIa(l, i) {
+  const an = l.analise;
+  if (l.__analisando) return '<span class="pd-ia carregando">🤖 lendo…</span>';
+  if (!l.arquivo) return '<span style="color:#94a3b8;font-size:11.5px;">suba o padrão</span>';
+  if (!an) return `<button class="pd-ia-bt" onclick="padraoAnalisar(${i})">🤖 Analisar com IA</button>`;
+  const cor = an.conforme ? '#16a34a' : an.nota >= 60 ? '#d97706' : '#dc2626';
+  return `<button class="pd-ia" style="background:${cor};" onclick="FD.padraoAberto=${i}; fdCorpoRender(); setTimeout(()=>{const e=document.getElementById('pd-res-${i}'); if(e) e.scrollIntoView({behavior:'smooth'});},50)">🤖 ${an.nota}/100 · ${an.conforme ? 'ok' : 'ajustar'}</button>`;
+}
+async function padraoSubir(i, files) {
+  const f = (files || [])[0], l = fdLista('padroes')[i]; if (!f || !l) return;
+  const fd = new FormData(); fd.append('file', f);
+  try {
+    l.__analisando = true; fdCorpoRender();
+    const r = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd }); const up = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(up.error || 'Erro ao enviar o arquivo.');
+    l.arquivo = { url: up.url, nome: up.originalName || f.name }; delete l.analise; if (!String(l.nome || '').trim()) l.nome = (up.originalName || f.name).replace(/\.[^.]+$/, '');
+    fdAgendarSalvar(); l.__analisando = false; await padraoAnalisar(i);
+  } catch (e) { l.__analisando = false; fdCorpoRender(); mostrarToast(e.message, true); }
+}
+async function padraoAnalisar(i) {
+  const l = fdLista('padroes')[i]; if (!l || !l.arquivo) return;
+  l.__analisando = true; fdCorpoRender();
+  try {
+    const r = await api('/api/dpo/padroes/analisar', { method: 'POST', body: JSON.stringify({ chave: FD.chave, company_id: FD.companyId || undefined, url: l.arquivo.url, nomeArquivo: l.arquivo.nome, nomePadrao: l.nome || '' }) });
+    l.analise = r.analise; if (r.analise.revisao && !l.versao) l.versao = r.analise.revisao.slice(0, 30);
+    FD.padraoAberto = i; fdAgendarSalvar(); mostrarToast(`🤖 Padrão analisado: ${r.analise.nota}/100 ${r.analise.conforme ? '— pronto para a auditoria ✅' : '— veja os ajustes'}`);
+  } catch (e) { mostrarToast(e.message, true); }
+  finally { delete l.__analisando; acompRecarregar(); }
+}
+// leva o resultado da IA para os itens da verificação (só onde ainda não há confirmação manual)
+function padraoAplicarItens(i) {
+  const l = fdLista('padroes')[i]; if (!l || !l.analise) return;
+  FD.dados.itens = FD.dados.itens || {}; let n = 0;
+  l.analise.itens.forEach(it => {
+    if (!['atende', 'parcial'].includes(it.status)) return;
+    const atual = FD.dados.itens[it.numero] || {}; if (atual.status) return;
+    FD.dados.itens[it.numero] = { ...atual, status: it.status === 'atende' ? 'atende' : 'parcial', evidencia: `Padrão "${l.nome || l.arquivo.nome}"${it.evidencia ? ': ' + it.evidencia : ''}`.slice(0, 400) }; n++;
+  });
+  fdAgendarSalvar(); acompRecarregar(); mostrarToast(n ? `✅ ${n} item(ns) da verificação confirmado(s) com a evidência do padrão.` : 'Nenhum item novo para confirmar (os itens já têm confirmação manual ou o padrão não atende).');
+}
+function padraoHtmlResultados() {
+  const ls = fdLista('padroes').map((l, i) => [l, i]).filter(([l]) => l.analise);
+  if (!ls.length) return `<div class="pd-dica">💡 Suba o arquivo de cada padrão (PDF, Word, PowerPoint ou foto). A IA lê o documento e confere, item a item (V.1, V.2…), se ele sustenta a pergunta, se tem a estrutura de um bom padrão e o que precisa ajustar.</div>`;
+  return ls.map(([l, i]) => { const a = l.analise, aberto = FD.padraoAberto === i || ls.length === 1; return `<details class="pd-res" id="pd-res-${i}" ${aberto ? 'open' : ''}><summary><b>🤖 ${escapeHtml(l.nome || a.arquivo)}</b><span class="pd-nota" style="background:${a.conforme ? '#16a34a' : a.nota >= 60 ? '#d97706' : '#dc2626'}">${a.nota}/100</span><span class="pd-sub">${a.conforme ? '✅ pronto para a auditoria' : '⚠️ precisa de ajustes'} · analisado em ${new Date(a.data).toLocaleString('pt-BR')}</span></summary>
+    <p class="pd-resumo">${escapeHtml(a.resumo)}</p>
+    <table class="fd-tabela pd-itens"><thead><tr><th>Item</th><th>Situação no padrão</th><th>Onde aparece</th><th>O que ajustar</th></tr></thead><tbody>${a.itens.map(it => { const s = ST_PADRAO_IA[it.status] || ST_PADRAO_IA.nao_atende; const tx = ((FD.meta.template.itens || []).find(x => x.numero === it.numero) || {}).texto || ''; return `<tr><td title="${escapeHtml(tx)}"><b>${escapeHtml(it.numero)}</b></td><td><span class="dpo-chip-nivel" style="background:${s[3]};color:${s[2]};">${s[0]} ${s[1]}</span></td><td>${escapeHtml(it.evidencia || '—')}</td><td>${escapeHtml(it.falta || '—')}</td></tr>`; }).join('')}</tbody></table>
+    ${(a.estrutura || []).length ? `<div class="pd-estr">${a.estrutura.map(e => `<span class="${e.ok ? 'ok' : 'nok'}" title="${escapeHtml(e.obs || '')}">${e.ok ? '✔' : '✖'} ${escapeHtml(e.elemento)}</span>`).join('')}</div>` : ''}
+    ${(a.ajustes || []).length ? `<div class="pd-aj"><b>🛠️ Ajustes no documento (por prioridade)</b><ol>${a.ajustes.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ol></div>` : ''}
+    <div class="pd-acoes"><button class="btn-primario btn-sm" style="width:auto;" onclick="padraoAplicarItens(${i})">✅ Usar como evidência nos itens da verificação</button><button class="btn-secundario btn-sm" style="width:auto;" onclick="padraoAnalisar(${i})">🔄 Analisar de novo</button></div>
+  </details>`; }).join('');
+}
+
+// ======================= DESCRIÇÃO DE NEGÓCIO (Gestão 2.1) — no formato fornecedores → insumos → processo → produto → clientes · IC · IV =======================
+const DN_COLS = [['fornecedores', 'Fornecedores'], ['insumos', 'Insumos'], ['processo', 'Processos'], ['produto', 'Produtos'], ['clientes', 'Clientes'], ['ic', 'IC'], ['iv', 'IV'], ['ferramenta', 'Ferramenta de gestão']];
+const DN_MODELO = {
+  'Armazém': [['Cervejaria\nAmbevTech\nFrota\nGente', 'Produtos\nEmpilhadeira\nEquipe disponível e treinada', 'Recebimento de produtos', 'Disponibilidade de produto', 'Vendas', 'Furo de puxada', 'Stock out'],
+    ['Cervejaria\nAmbevTech\nFrota\nGente\nFinanceiro', 'WMS\nEmpilhadeira\nPaleteira\nEstrutura física\nEmbalagens\nEquipe disponível e treinada', 'Armazenagem', 'Produto em conformidade', 'Distribuição', 'FEFO', 'Refugo fábrica'],
+    ['Roteirização\nFrota\nGente', 'WMS\nEmpilhadeira\nPaleteira\nCaminhão\nEquipe disponível e treinada', 'Carregamento', 'Caminhão carregado', 'Distribuição', 'EFC', 'Blitz de carregamento', '', true],
+    ['Distribuição\nFrota\nAmbevTech\nGente', 'Devolução\nAG\nWMS\nEmpilhadeira\nPaleteira\nEquipe disponível e treinada', 'Retorno de rota', 'Caminhões descarregados', 'Frota\nDistribuição', 'Tempo interno\nEFD', 'TI'],
+    ['Financeiro\nCSC\nGente', 'Smartphone\nSistema de inventário eletrônico\nEquipe disponível e treinada', 'Inventário', 'Acuracidade de estoque', 'Financeiro', 'Diferença de AG\nDiferença de PA', "VBZ's", '', true]],
+  'Distribuição': [['Vendas\nArmazém\nFrota', 'Pedidos\nRoteirizador\nFrota disponível', 'Roteirização', 'Rotas otimizadas', 'Distribuição\nArmazém', 'Ocupação de veículo', 'Pedidos roteirizados no horário'],
+    ['Armazém\nFrota\nGente', 'Caminhão carregado\nMapa de entrega\nEquipe disponível e treinada', 'Entrega no PDV', 'Pedido entregue (OTIF)', 'PDV\nVendas', 'Devolução PDV\nRating', 'TML'],
+    ['Distribuição\nFinanceiro', 'Canhotos\nNotas fiscais\nRecebimentos', 'Prestação de contas', 'Acerto financeiro', 'Financeiro', 'Diferença de acerto', 'Prestações no prazo']],
+  'Frota': [['Oficina\nFornecedor de peças\nGente', 'Veículos\nPlano de manutenção\nPeças', 'Manutenção preventiva', 'Veículo disponível', 'Distribuição\nPuxada', 'Disponibilidade de frota', 'Preventivas no prazo'],
+    ['Posto / distribuidora\nFinanceiro', 'Veículos\nCombustível\nCartão', 'Abastecimento', 'Veículo abastecido', 'Distribuição\nPuxada', 'Consumo (km/l)', 'Abastecimentos registrados']]
+};
+function dnLinha(r) { return { id: fdId(), fornecedores: r[0], insumos: r[1], processo: r[2], produto: r[3], clientes: r[4], ic: r[5], iv: r[6], ferramenta: r[7] || '', ans: !!r[8] }; }
+function dnPreparar(d) {
+  if (!Array.isArray(d.pilares) || !d.pilares.length) d.pilares = Object.keys(DN_MODELO).map(nome => ({ id: fdId(), nome, linhas: [dnLinha(['', '', '', '', '', '', ''])] }));
+  ['criticos', 'ans', 'comunicacoes', 'entrevistas'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
+  d.revisao = d.revisao || {};
+}
+const dnTem = v => String(v || '').trim().length > 0;
+function dnLinhaCompleta(l) { return ['fornecedores', 'insumos', 'processo', 'produto', 'clientes'].every(k => dnTem(l[k])); }
+function dnPctPilar(p) { const ls = p.linhas || []; if (!ls.length) return 0; const tot = ls.length * DN_COLS.length, ok = ls.reduce((s, l) => s + DN_COLS.filter(([k]) => dnTem(l[k])).length, 0); return Math.round(ok / tot * 100); }
+function dnValidar(d) {
+  const st = exSt, ano = FD.ano, rev = d.revisao.data || '', revCiclo = rev && rev.startsWith(String(ano)) && Number(rev.slice(5, 7)) <= 3, revAno = rev && (Date.now() - new Date(rev + 'T12:00:00')) / 864e5 <= 365;
+  const completos = d.pilares.filter(p => (p.linhas || []).some(dnLinhaCompleta));
+  const areas = ['Armazém', 'Distribuição', 'Frota'], temArea = a => d.pilares.some(p => new RegExp(a.slice(0, 5), 'i').test(p.nome) && (p.linhas || []).some(dnLinhaCompleta));
+  const ansMarc = d.pilares.flatMap(p => (p.linhas || []).filter(l => l.ans)), ansOk = d.ans.filter(a => dnTem(a.fornecedor) && dnTem(a.cliente) && dnTem(a.donoF) && dnTem(a.donoC) && dnTem(a.acordo));
+  const crit = d.criticos.filter(c => dnTem(c.produto)), critOk = crit.filter(c => dnTem(c.kpi) && Number(c.impacto) && Number(c.risco));
+  const entr = d.entrevistas.filter(e => dnTem(e.nome)), conhece = entr.filter(e => e.dn === 'Sim' && e.kpis !== 'Não').length;
+  return [
+    { v: 'V.1', titulo: 'Descrição de Negócio atualizada pelo padrão Revendas e revisada no ciclo (jan–mar)', st: st(revCiclo && completos.length === d.pilares.length && completos.length > 0, revAno || completos.length > 0), txt: `Revisão: ${rev ? new Date(rev + 'T12:00:00').toLocaleDateString('pt-BR') : 'não informada'}${revCiclo ? ' (dentro do ciclo jan–mar)' : ''} · ${completos.length}/${d.pilares.length} área(s) com processo completo.`, ir: 'dn' },
+    { v: 'V.2', titulo: 'ANSs definidos com fornecedores e clara propriedade de cliente e fornecedor', st: st(ansOk.length > 0 && ansOk.length === d.ans.length && ansOk.length >= Math.min(1, ansMarc.length), d.ans.length > 0 || ansMarc.length > 0), txt: `${ansOk.length}/${d.ans.length} ANS com fornecedor, cliente, donos e acordo · ${ansMarc.length} processo(s) marcado(s) com ANS na DN.`, ir: 'ans' },
+    { v: 'V.3', titulo: 'Existe uma descrição de negócio por área (Armazém, Distribuição, Frota)', st: st(areas.every(temArea), areas.some(temArea)), txt: areas.map(a => `${a}: ${temArea(a) ? '✔' : '✖'}`).join(' · '), ir: 'dn' },
+    { v: 'V.4', titulo: 'Matriz de Produtos Críticos elaborada e KPIs correlacionados', st: st(crit.length > 0 && critOk.length === crit.length, crit.length > 0), txt: `${critOk.length}/${crit.length} produto(s) crítico(s) com impacto, risco e KPI/IC ligado.`, ir: 'criticos' },
+    { v: 'V.5', titulo: 'Comunicação da Descrição do Negócio e sua importância', st: st(d.comunicacoes.filter(c => dnTem(c.meio) && c.data).length >= 1, d.comunicacoes.length > 0), txt: `${d.comunicacoes.length} registro(s) de comunicação (e-mail, painel, reunião).`, ir: 'comunica' },
+    { v: 'V.6', titulo: 'Funcionários conhecem a DN, os KPIs e a importância para a operação', st: st(entr.length >= 3 && conhece / entr.length >= 0.7, entr.length > 0), txt: `${conhece}/${entr.length} entrevistado(s) conhecem a DN e os KPIs${entr.length < 3 ? ' (registre pelo menos 3 entrevistas)' : ''}.`, ir: 'comunica' }
+  ];
+}
+function dnCelula(pi, li, k, v) { return `<textarea class="dn-cel ${k}" rows="${Math.max(2, String(v || '').split('\n').length)}" onchange="dnEditar(${pi}, ${li}, '${k}', this.value)" oninput="this.rows=Math.max(2,this.value.split('\\n').length)" placeholder="${k === 'processo' ? 'Processo' : '+ item (Enter = nova linha)'}">${escapeHtml(v || '')}</textarea>`; }
+function dnEditar(pi, li, k, v) { const l = ((FD.dados.pilares[pi] || {}).linhas || [])[li]; if (!l) return; l[k] = v; fdAgendarSalvar(); exValidar(); const pc = document.getElementById('dn-pct-' + pi); if (pc) pc.textContent = dnPctPilar(FD.dados.pilares[pi]) + '% preenchido'; }
+function dnHtmlDn() {
+  const d = FD.dados, rv = d.revisao;
+  return `<div class="painel dn-topo"><div><b>Revisão anual da Descrição de Negócio</b><div class="plano-meta">Fazer entre janeiro e março (ciclo de gestão) ou quando mudarem os requisitos do cliente, surgirem novos desafios ou o negócio mudar.</div></div>
+      <label>Data da revisão<input type="date" value="${escapeHtml(rv.data || '')}" onchange="FD.dados.revisao.data=this.value; fdAgendarSalvar(); exValidar();"></label><label>Responsável<input value="${escapeHtml(rv.responsavel || '')}" onchange="FD.dados.revisao.responsavel=this.value; fdAgendarSalvar();"></label>
+      <button class="btn-secundario btn-sm" style="width:auto;" onclick="dnImprimir()">🖨️ PDF / imprimir</button><button class="btn-primario btn-sm" style="width:auto;" onclick="dnNovoPilar()">+ Nova área</button></div>
+    ${d.pilares.map((p, pi) => `<div class="dn-pilar"><div class="dn-pilar-cab"><input class="dn-pilar-nome" value="${escapeHtml(p.nome || '')}" onchange="FD.dados.pilares[${pi}].nome=this.value; fdAgendarSalvar(); exValidar();"><span>${(p.linhas || []).length} processo(s) · <b id="dn-pct-${pi}">${dnPctPilar(p)}% preenchido</b></span>
+        <span class="dn-pilar-acoes">${DN_MODELO[p.nome] ? `<button onclick="dnModelo(${pi})" title="Preenche com o modelo padrão Revendas (ajuste à sua operação)">📋 Usar modelo</button>` : ''}<button onclick="dnAddLinha(${pi})">+ Linha</button><button onclick="dnRemoverPilar(${pi})" title="Excluir a área">🗑️</button></span></div>
+      <div class="fd-tabela-wrap"><table class="dn-tab"><thead><tr><th>#</th>${DN_COLS.map(([, r]) => `<th>${r}</th>`).join('')}<th></th></tr></thead><tbody>
+        ${(p.linhas || []).map((l, li) => `<tr><td class="dn-n">${li + 1}<button class="dn-ans ${l.ans ? 'on' : ''}" title="Processo com ANS (acordo de nível de serviço)" onclick="FD.dados.pilares[${pi}].linhas[${li}].ans=!FD.dados.pilares[${pi}].linhas[${li}].ans; fdAgendarSalvar(); exRedesenhar();">ANS</button></td>${DN_COLS.map(([k]) => `<td>${dnCelula(pi, li, k, l[k])}</td>`).join('')}<td><button class="fd-remover" onclick="dnRemoverLinha(${pi}, ${li})">✕</button></td></tr>`).join('')}
+      </tbody></table></div></div>`).join('')}
+    <div class="plano-meta">💡 <b>Processo</b> é o meio que transforma insumos em produtos para os clientes — deixe claro onde começa e termina. Marque <b>ANS</b> quando o produto do processo tem acordo com o cliente (cadastre o acordo na aba 🤝 ANS). <b>IC</b> = indicador de controle (resultado do produto) · <b>IV</b> = indicador de verificação (do processo).</div>`;
+}
+function dnNovoPilar() { const n = prompt('Nome da área (ex.: Puxada, Gente, Segurança):'); if (!n) return; FD.dados.pilares.push({ id: fdId(), nome: n.trim(), linhas: [dnLinha(['', '', '', '', '', '', ''])] }); fdAgendarSalvar(); exRedesenhar(); }
+function dnRemoverPilar(pi) { if (!confirm('Excluir esta área inteira da Descrição de Negócio?')) return; FD.dados.pilares.splice(pi, 1); fdAgendarSalvar(); exRedesenhar(); }
+function dnAddLinha(pi) { FD.dados.pilares[pi].linhas.push(dnLinha(['', '', '', '', '', '', ''])); fdAgendarSalvar(); exRedesenhar(); }
+function dnRemoverLinha(pi, li) { if (!confirm('Remover este processo?')) return; FD.dados.pilares[pi].linhas.splice(li, 1); fdAgendarSalvar(); exRedesenhar(); }
+function dnModelo(pi) {
+  const p = FD.dados.pilares[pi]; if (!DN_MODELO[p.nome]) return;
+  const temAlgo = (p.linhas || []).some(l => DN_COLS.some(([k]) => dnTem(l[k])));
+  if (temAlgo && !confirm('Substituir o que já está preenchido nesta área pelo modelo padrão?')) return;
+  p.linhas = DN_MODELO[p.nome].map(dnLinha); fdAgendarSalvar(); exRedesenhar(); mostrarToast('📋 Modelo aplicado — ajuste à realidade da sua operação.');
+}
+function dnImprimir() {
+  const d = FD.dados, w = window.open('', '_blank'); if (!w) return mostrarToast('Libere as janelas pop-up para imprimir.', true);
+  const li = v => String(v || '').split('\n').filter(x => x.trim()).map(x => `<li>${escapeHtml(x)}</li>`).join('');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Descrição de Negócio ${FD.ano}</title><style>body{font-family:Arial,sans-serif;margin:18px;color:#0f172a}h1{font-size:18px}h2{background:#3b5bdb;color:#fff;padding:8px 12px;border-radius:8px 8px 0 0;margin:18px 0 0;font-size:14px}table{width:100%;border-collapse:collapse;font-size:10.5px}th{background:#e0e7ff;text-align:left;padding:6px}td{border-bottom:1px solid #e2e8f0;padding:6px;vertical-align:top}ul{margin:0;padding-left:14px}.ans{background:#16a34a;color:#fff;border-radius:4px;padding:1px 4px;font-size:9px;font-weight:700}.prod{border:1px solid #cbd5e1;border-radius:4px;padding:3px 6px;font-weight:700;text-transform:uppercase}@page{size:A4 landscape;margin:10mm}</style></head><body>
+    <h1>Descrição de Negócio — ${FD.ano}</h1><div style="font-size:11px;color:#64748b">Revisão: ${d.revisao.data ? new Date(d.revisao.data + 'T12:00:00').toLocaleDateString('pt-BR') : '—'} · Responsável: ${escapeHtml(d.revisao.responsavel || '—')}</div>
+    ${d.pilares.map(p => `<h2>DESCRIÇÃO DE NEGÓCIOS — PILAR ${escapeHtml(String(p.nome || '').toUpperCase())}</h2><table><thead><tr><th>#</th>${DN_COLS.map(([, r]) => `<th>${r.toUpperCase()}</th>`).join('')}</tr></thead><tbody>${(p.linhas || []).map((l, i) => `<tr><td>${i + 1}${l.ans ? '<br><span class="ans">ANS</span>' : ''}</td><td><ul>${li(l.fornecedores)}</ul></td><td><ul>${li(l.insumos)}</ul></td><td><ul>${li(l.processo)}</ul></td><td>${l.produto ? `<span class="prod">${escapeHtml(l.produto)}</span>` : ''}</td><td><ul>${li(l.clientes)}</ul></td><td><ul>${li(l.ic)}</ul></td><td><ul>${li(l.iv)}</ul></td><td>${escapeHtml(l.ferramenta || '')}</td></tr>`).join('')}</tbody></table>`).join('')}
+    <script>setTimeout(()=>print(),300)<\/script></body></html>`);
+  w.document.close();
+}
+function dnProdutos() { return [...new Set(FD.dados.pilares.flatMap(p => (p.linhas || []).map(l => String(l.produto || '').trim())).filter(Boolean))]; }
+function dnIcs() { return [...new Set(FD.dados.pilares.flatMap(p => (p.linhas || []).flatMap(l => String(l.ic || '').split('\n').map(x => x.trim()))).filter(Boolean))]; }
+function dnHtmlCriticos() {
+  const d = FD.dados; FD_PADRAO_LINHA.criticos = { impacto: '', risco: '' };
+  const ordem = d.criticos.map((c, i) => [c, i, (Number(c.impacto) || 0) * (Number(c.risco) || 0)]).sort((a, b) => b[2] - a[2]);
+  return `<div class="painel"><h3 style="margin-top:0;">⭐ Matriz de Produtos Críticos</h3><div class="plano-meta">A criticidade é medida pelo <b>impacto nos resultados do ano anterior</b> e pela <b>possibilidade de comprometer a estratégia de longo prazo</b> (1 a 5 cada). Ligue cada produto crítico ao IC/KPI que o mede — eles alimentam o GEROT.</div>
+    ${fdTabela('criticos', [{ campo: 'produto', rotulo: 'Produto (da DN)', tipo: 'select', opcoes: () => dnProdutos(), largura: 200 }, { campo: 'area', rotulo: 'Área', tipo: 'select', opcoes: () => d.pilares.map(p => p.nome).filter(Boolean), largura: 110 }, { campo: 'impacto', rotulo: 'Impacto no resultado (1-5)', tipo: 'select', opcoes: ['1', '2', '3', '4', '5'], largura: 90, recarregar: true }, { campo: 'risco', rotulo: 'Risco à estratégia (1-5)', tipo: 'select', opcoes: ['1', '2', '3', '4', '5'], largura: 90, recarregar: true }, { campo: 'crit', rotulo: 'Criticidade', tipo: 'calc', valor: l => { const n = (Number(l.impacto) || 0) * (Number(l.risco) || 0); return n ? `<span class="dpo-chip-nivel" style="background:${n >= 15 ? '#fee2e2' : n >= 8 ? '#fef3c7' : '#dcfce7'};color:${n >= 15 ? '#991b1b' : n >= 8 ? '#854d0e' : '#166534'};">${n} ${n >= 15 ? 'crítico' : n >= 8 ? 'atenção' : 'baixo'}</span>` : '—'; } }, { campo: 'kpi', rotulo: 'IC / KPI ligado', tipo: 'select', opcoes: () => dnIcs(), largura: 160, recarregar: true }, { campo: 'obs', rotulo: 'Observação', largura: 180 }], { numerar: true, botao: 'Adicionar produto' })}
+    ${ordem.length ? `<div class="plano-meta" style="margin-top:8px;">Ranking: ${ordem.filter(x => x[2]).map(([c, , n]) => `<b>${escapeHtml(c.produto || '?')}</b> (${n})`).join(' · ')}</div>` : ''}</div>`;
+}
+function dnHtmlAns() {
+  const d = FD.dados, areas = () => d.pilares.map(p => p.nome).filter(Boolean).concat(['Vendas', 'Financeiro', 'Gente', 'Cervejaria', 'CSC']);
+  const marc = d.pilares.flatMap(p => (p.linhas || []).filter(l => l.ans).map(l => `${p.nome}: ${l.processo} → ${l.produto}`));
+  return `<div class="painel"><h3 style="margin-top:0;">🤝 ANS — Acordos de Nível de Serviço</h3><div class="plano-meta">Para cada produto entregue entre áreas, defina o acordo (indicador e meta) e quem é o <b>dono no fornecedor</b> e o <b>dono no cliente</b>.${marc.length ? ' Processos marcados com ANS na DN: <b>' + marc.map(escapeHtml).join(' · ') + '</b>' : ''}</div>
+    ${fdTabela('ans', [{ campo: 'fornecedor', rotulo: 'Fornecedor (área)', tipo: 'select', opcoes: areas, largura: 130, recarregar: true }, { campo: 'cliente', rotulo: 'Cliente (área)', tipo: 'select', opcoes: areas, largura: 130, recarregar: true }, { campo: 'produto', rotulo: 'Produto / serviço', tipo: 'select', opcoes: () => dnProdutos(), largura: 170 }, { campo: 'acordo', rotulo: 'Acordo (indicador e meta)', largura: 220, recarregar: true }, { campo: 'donoF', rotulo: 'Dono fornecedor', largura: 130, recarregar: true }, { campo: 'donoC', rotulo: 'Dono cliente', largura: 130, recarregar: true }, { campo: 'assinado', rotulo: 'Assinado', tipo: 'select', opcoes: OP_SIMNAO, largura: 80 }, { campo: 'revisao', rotulo: 'Revisão', tipo: 'date', largura: 130 }], { numerar: true, botao: 'Adicionar ANS' })}</div>`;
+}
+function dnHtmlComunica() {
+  return `<div class="painel"><h3 style="margin-top:0;">📣 Comunicação da Descrição de Negócio</h3><div class="plano-meta">Como a DN e a importância dela foram comunicadas (e-mail, painel visual, reunião, DDS…).</div>
+    ${fdTabela('comunicacoes', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130, recarregar: true }, { campo: 'meio', rotulo: 'Meio', tipo: 'select', opcoes: ['E-mail', 'Painel visual / quadro', 'Reunião', 'DDS', 'Treinamento', 'WhatsApp / comunicado'], largura: 150, recarregar: true }, { campo: 'publico', rotulo: 'Público', largura: 180 }, { campo: 'evidencia', rotulo: 'Evidência (onde está)', largura: 240 }], { numerar: true, botao: 'Adicionar comunicação' })}</div>
+    <div class="painel" style="margin-top:12px;"><h3 style="margin-top:0;">🎙️ Entrevistas com o time</h3><div class="plano-meta">Pergunte a operadores e líderes: o que a sua área entrega (produto), para quem (cliente), quais os KPIs e por que importam. Meta: pelo menos 3 entrevistas, 70% conhecendo.</div>
+    ${fdTabela('entrevistas', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'nome', rotulo: 'Colaborador', largura: 160, recarregar: true }, { campo: 'funcao', rotulo: 'Função', largura: 130 }, { campo: 'dn', rotulo: 'Conhece a DN', tipo: 'select', opcoes: ['Sim', 'Parcial', 'Não'], largura: 100, recarregar: true }, { campo: 'kpis', rotulo: 'Conhece os KPIs', tipo: 'select', opcoes: ['Sim', 'Parcial', 'Não'], largura: 100, recarregar: true }, { campo: 'obs', rotulo: 'Observação', largura: 200 }], { numerar: true, botao: 'Adicionar entrevista' })}</div>`;
+}
+
+// ======================= GEROT — Gerenciamento da Rotina por área (Gestão 2.3 Book KPI) =======================
+const GR_AREAS = ['Armazém', 'Distribuição', 'Frota', 'Puxada', 'Gente', 'Segurança', 'Financeiro'];
+const GR_PERIODOS = ['Diário', 'Semanal', 'Mensal', 'Workstation (turno)'];
+function grPreparar(d) {
+  d.indicadores = Array.isArray(d.indicadores) ? d.indicadores : []; d.indicadores.forEach(i => { if (!i.id) i.id = fdId(); i.metas = Array.isArray(i.metas) ? i.metas : []; i.reais = Array.isArray(i.reais) ? i.reais : []; });
+  d.revisaoIv = d.revisaoIv || {}; d.entendimento = Array.isArray(d.entendimento) ? d.entendimento : [];
+  FD.gr = FD.gr || { busca: '', area: '', tipo: '', resp: '', st: '', per: 'ano', fechadas: {} };
+}
+function grMeta(i, m) { const v = exNum((i.metas || [])[m]); return v === null ? exNum(i.gatilho) : v; }
+function grBate(i, v, meta) { if (v === null || meta === null) return null; return i.sentido === 'menor' ? v <= meta : v >= meta; }
+function grAno(i) {
+  const vs = (i.reais || []).map(exNum).map((v, m) => [v, m]).filter(([v]) => v !== null);
+  if (!vs.length) return { real: null, meta: exNum(i.gatilho) };
+  const real = i.acumula === 'soma' ? vs.reduce((s, [v]) => s + v, 0) : i.acumula === 'ultimo' ? vs[vs.length - 1][0] : vs.reduce((s, [v]) => s + v, 0) / vs.length;
+  const meta = i.acumula === 'soma' ? vs.reduce((s, [, m]) => s + (grMeta(i, m) || 0), 0) : exNum(i.gatilho);
+  return { real, meta };
+}
+function grStatus(i) {
+  const { real, meta } = grAno(i); if (real === null) return 'vazio'; if (meta === null) return 'vazio';
+  if (grBate(i, real, meta)) return 'alvo';
+  const desvio = Math.abs(real - meta) / (Math.abs(meta) || 1); return desvio <= 0.1 ? 'atencao' : 'critico';
+}
+function grFmt(i, v) { if (v === null || v === undefined) return '—'; const s = Math.abs(v) >= 1000 ? Math.round(v).toLocaleString('pt-BR') : (Math.round(v * 100) / 100).toLocaleString('pt-BR'); return s + (i.un === '%' ? '%' : i.un ? ' ' + i.un : ''); }
+function grGap(i, real, meta) { if (real === null || meta === null) return '—'; const g = real - meta; const s = (g > 0 ? '+' : '') + (Math.round(g * 100) / 100).toLocaleString('pt-BR'); return i.un === '%' ? s + 'p.p.' : s; }
+const GR_ST = { alvo: ['No alvo', '#16a34a'], atencao: ['Atenção', '#d97706'], critico: ['Crítico', '#dc2626'], vazio: ['Não preenchido', '#94a3b8'] };
+function grValidar(d) {
+  const st = exSt, l = d.indicadores.filter(i => dnTem(i.nome)), ics = l.filter(i => i.tipo === 'IC'), ivs = l.filter(i => i.tipo === 'IV'), kpis = l.filter(i => i.tipo === 'KPI');
+  const lim = exMesAtual() - 1 < 0 ? 0 : exMesAtual() - 1, naRotina = [...ics, ...ivs].filter(i => i.periodo && dnTem(i.resp) && (i.reais || []).slice(0, lim + 1).some(v => exNum(v) !== null));
+  const comPai = [...ics, ...ivs].filter(i => dnTem(i.pai)), kpiComFilho = kpis.filter(k => l.some(x => x.pai === k.nome));
+  const carta = a => l.some(i => i.cartaControle === 'Sim' && new RegExp(a, 'i').test(i.area || ''));
+  const rv = d.revisaoIv, rvOk = rv.data && (Date.now() - new Date(rv.data + 'T12:00:00')) / 864e5 <= 120 && dnTem(rv.processo);
+  const ent = d.entendimento.filter(e => dnTem(e.nome)), entOk = ent.filter(e => e.conecta === 'Sim').length;
+  return [
+    { v: 'V.1', titulo: 'ICs e IVs críticos definidos e relacionados aos produtos críticos da DN', st: st(ics.length && ivs.length && ics.every(i => dnTem(i.produto)), ics.length || ivs.length), txt: `${ics.length} IC(s) e ${ivs.length} IV(s) · ${ics.filter(i => dnTem(i.produto)).length}/${ics.length} IC(s) ligados a produto crítico.`, ir: 'cadastro' },
+    { v: 'V.2', titulo: 'ICs e IVs na rotina diária, acompanhados e gerenciados pela operação', st: st([...ics, ...ivs].length && naRotina.length === [...ics, ...ivs].length, naRotina.length > 0), txt: `${naRotina.length}/${[...ics, ...ivs].length} IC/IV com período, responsável e resultado lançado até ${MESES_FD[lim]}.`, ir: 'painel' },
+    { v: 'V.3', titulo: 'IVs definidos pelas tarefas críticas dos mapas de processo, com responsáveis', st: st(ivs.length && ivs.every(i => dnTem(i.tarefa) && dnTem(i.resp)), ivs.some(i => dnTem(i.tarefa))), txt: `${ivs.filter(i => dnTem(i.tarefa) && dnTem(i.resp)).length}/${ivs.length} IV(s) com tarefa crítica e responsável.`, ir: 'cadastro' },
+    { v: 'V.4', titulo: 'Árvore de KPIs definida e atualizada (KPI → IC → IV)', st: st(kpis.length && kpiComFilho.length === kpis.length && comPai.length === [...ics, ...ivs].length, comPai.length > 0), txt: `${kpiComFilho.length}/${kpis.length} KPI(s) com desdobramento · ${comPai.length}/${[...ics, ...ivs].length} IC/IV ligados a um indicador pai.`, ir: 'arvore' },
+    { v: 'V.5', titulo: 'Carta de controle ao menos para o KPI crítico (Armazém e Distribuição)', st: st(carta('armaz') && carta('distrib|entrega'), carta('armaz') || carta('distrib|entrega')), txt: `Armazém: ${carta('armaz') ? '✔' : '✖'} · Distribuição: ${carta('distrib|entrega') ? '✔' : '✖'} (marque "Carta de controle = Sim" no indicador).`, ir: 'cadastro' },
+    { v: 'V.6', titulo: 'Processo claro de definição e revisão dos IVs, com ações do time', st: st(rvOk, dnTem(rv.processo) || rv.data), txt: rv.data ? `Última revisão dos IVs em ${new Date(rv.data + 'T12:00:00').toLocaleDateString('pt-BR')}${rv.frequencia ? ' · frequência ' + rv.frequencia : ''}.` : 'Registre como os IVs são definidos e revisados (aba 🌳 Árvore KPI).', ir: 'arvore' },
+    { v: 'V.7', titulo: 'O time entende a conexão KPIs mensais × IVs do team room × workstation', st: st(ent.length >= 3 && entOk / ent.length >= 0.7, ent.length > 0), txt: `${entOk}/${ent.length} pessoa(s) explicaram a conexão${ent.length < 3 ? ' (registre pelo menos 3)' : ''}.`, ir: 'arvore' }
+  ];
+}
+function grFiltrados() {
+  const f = FD.gr, b = f.busca.toLowerCase();
+  return FD.dados.indicadores.map((i, idx) => [i, idx]).filter(([i]) => dnTem(i.nome) && (!b || (i.nome + ' ' + (i.resp || '')).toLowerCase().includes(b)) && (!f.area || i.area === f.area) && (!f.tipo || i.tipo === f.tipo) && (!f.resp || i.resp === f.resp)
+    && (!f.st || (f.st === 'bate' ? grStatus(i) === 'alvo' : f.st === 'nao' ? ['atencao', 'critico'].includes(grStatus(i)) : grStatus(i) === 'vazio')));
+}
+function grHtmlPainel() {
+  const d = FD.dados, todos = d.indicadores.filter(i => dnTem(i.nome)), f = FD.gr;
+  const n = s => todos.filter(i => grStatus(i) === s).length, pct = x => todos.length ? Math.round(x / todos.length * 100) + '% do total' : '—';
+  const meses = f.per === 's1' ? [0, 1, 2, 3, 4, 5] : f.per === 's2' ? [6, 7, 8, 9, 10, 11] : MESES_FD.map((_, m) => m);
+  const lista = grFiltrados(), areas = [...new Set(lista.map(([i]) => i.area || 'Sem área'))].sort((a, b) => (GR_AREAS.indexOf(a) + 1 || 99) - (GR_AREAS.indexOf(b) + 1 || 99));
+  const resps = [...new Set(todos.map(i => i.resp).filter(Boolean))];
+  const sel = (k, ops, rot) => `<select onchange="FD.gr.${k}=this.value; fdCorpoRender();"><option value="">${rot}</option>${ops.map(([v, r]) => `<option value="${escapeHtml(v)}" ${f[k] === v ? 'selected' : ''}>${escapeHtml(r)}</option>`).join('')}</select>`;
+  const inp = (idx, campo, m, v, ph) => `<input class="gr-inp" inputmode="decimal" value="${escapeHtml(fdFmtInput(v))}" placeholder="${escapeHtml(ph || '')}" onchange="grLancar(${idx}, '${campo}', ${m}, this.value)">`;
+  return `<div class="gr-hero"><div><small>⚡ GERENCIAMENTO DA ROTINA</small><h2>GEROT ${FD.ano}</h2><span>Acompanhamento de indicadores · Meta ano × Real ano · aberto por mês</span></div>
+      <div class="gr-hero-bt"><button onclick="grImportarAcomp()">📥 Trazer dos Acompanhamentos</button><button onclick="grImportarDn()">📥 ICs e IVs da Descrição de Negócio</button><button onclick="baixarArquivoDpo('/api/dpo/ferramentas-digitais/gerot/export?ano=${FD.ano}${FD.companyId ? '&company_id=' + FD.companyId : ''}', 'gerot-${FD.ano}.xlsx')">📊 Exportar Excel</button></div></div>
+    <div class="gr-cards"><div><small>INDICADORES</small><b>${todos.length}</b><span>KPI + IC + IV monitorados</span></div><div class="alvo"><small>NO ALVO</small><b>${n('alvo')}</b><span>${pct(n('alvo'))}</span></div><div class="atencao"><small>EM ATENÇÃO</small><b>${n('atencao')}</b><span>${pct(n('atencao'))}</span></div><div class="critico"><small>CRÍTICO</small><b>${n('critico')}</b><span>${pct(n('critico'))}</span></div></div>
+    <div class="gr-filtros"><input placeholder="🔎 Buscar indicador…" value="${escapeHtml(f.busca)}" onchange="FD.gr.busca=this.value; fdCorpoRender();">${sel('area', [...new Set([...GR_AREAS, ...todos.map(i => i.area).filter(Boolean)])].map(a => [a, a]), 'Todas as áreas')}${sel('tipo', [['KPI', 'KPI'], ['IC', 'IC'], ['IV', 'IV']], 'Todos os indicadores')}${sel('resp', resps.map(r => [r, r]), 'Todos responsáveis')}
+      <div class="gr-chips">${[['', 'Todos'], ['bate', '● Batendo'], ['nao', '● Não batendo'], ['vazio', '● Não preenchido']].map(([k, r]) => `<button class="${f.st === k ? 'on' : ''}" onclick="FD.gr.st='${k}'; fdCorpoRender();">${r}</button>`).join('')}<span class="gr-sep"></span>${[['s1', 'Jan–Jun'], ['s2', 'Jul–Dez'], ['ano', 'Ano todo']].map(([k, r]) => `<button class="${f.per === k ? 'on' : ''}" onclick="FD.gr.per='${k}'; fdCorpoRender();">${r}</button>`).join('')}</div>
+      <button class="btn-primario btn-sm" style="width:auto;" onclick="FD.aba='cadastro'; FD.grNovo=true; fdLista('indicadores').push({ id: fdId(), area: FD.gr.area || 'Armazém', tipo: 'KPI', sentido: 'maior', periodo: 'Mensal', metas: [], reais: [] }); fdAgendarSalvar(); fdTrocarAba('cadastro');">+ Indicador</button></div>
+    <div class="gr-leg"><span class="t kpi">KPI</span> Resultado estratégico <span class="t ic">IC</span> Indicador de controle <span class="t iv">IV</span> Indicador de verificação · <i style="color:#16a34a">●</i> No alvo <i style="color:#d97706">●</i> Atenção <i style="color:#dc2626">●</i> Crítico · ↑/↓ direção da meta</div>
+    ${!todos.length ? `<div class="msg-vazio">Nenhum indicador ainda. Cadastre em ⚙️ Indicadores ou traga dos Acompanhamentos / da Descrição de Negócio.</div>` : `
+    <div class="gr-wrap"><table class="gr-tab"><thead><tr><th rowspan="2">Área</th><th rowspan="2">Tipo</th><th rowspan="2" class="gr-nome">Indicador</th><th rowspan="2">UN</th><th rowspan="2">Gatilho</th><th rowspan="2">Período</th><th rowspan="2">Resp.</th><th colspan="3" class="gr-grp">Resumo ano</th>${meses.map(m => `<th colspan="3" class="gr-grp">${MESES_FD[m].toUpperCase()}</th>`).join('')}</tr>
+      <tr><th>Meta</th><th>Real</th><th>Gap</th>${meses.map(() => '<th>Meta</th><th>Real</th><th>Gap</th>').join('')}</tr></thead>
+      <tbody>${areas.map(a => { const ls = lista.filter(([i]) => (i.area || 'Sem área') === a).sort((x, y) => (x[0].tipo === 'KPI' ? 0 : 1) - (y[0].tipo === 'KPI' ? 0 : 1)), fechada = f.fechadas[a]; return `<tr class="gr-area"><td colspan="${10 + meses.length * 3}" onclick="FD.gr.fechadas['${escapeHtml(a)}']=!FD.gr.fechadas['${escapeHtml(a)}']; fdCorpoRender();">${fechada ? '▸' : '▾'} ${escapeHtml(a)} <small>${ls.length} indicador(es)</small></td></tr>` + (fechada ? '' : ls.map(([i, idx]) => { const an = grAno(i), s = grStatus(i); return `<tr class="${i.tipo === 'KPI' ? 'kpi' : ''}"><td></td><td><span class="t ${String(i.tipo || 'KPI').toLowerCase()}">${escapeHtml(i.tipo || 'KPI')}</span></td><td class="gr-nome">${i.tipo !== 'KPI' && i.pai ? '<span class="gr-ramo">└</span>' : ''}${escapeHtml(i.nome)} <span class="gr-dir">${i.sentido === 'menor' ? '↓' : '↑'}</span></td><td>${escapeHtml(i.un || '')}</td><td>${i.sentido === 'menor' ? '≤' : '≥'}${escapeHtml(fdFmtInput(i.gatilho))}${i.un === '%' ? '%' : ''}</td><td>${escapeHtml(i.periodo || '')}</td><td><span class="gr-resp" title="${escapeHtml(i.resp || '')}">${escapeHtml(String(i.resp || '—').split(' ').map(x => x[0]).join('').slice(0, 3).toUpperCase())}</span></td>
+          <td class="gr-ano">${grFmt(i, an.meta)}</td><td class="gr-ano"><i style="color:${GR_ST[s][1]}">●</i> ${grFmt(i, an.real)}</td><td class="gr-ano">${grGap(i, an.real, an.meta)}</td>
+          ${meses.map(m => { const mt = grMeta(i, m), rl = exNum((i.reais || [])[m]), ok = grBate(i, rl, mt); return `<td>${inp(idx, 'metas', m, (i.metas || [])[m], fdFmtInput(i.gatilho))}</td><td class="${ok === null ? '' : ok ? 'ok' : 'nok'}">${inp(idx, 'reais', m, (i.reais || [])[m], '')}</td><td class="gr-gap">${grGap(i, rl, mt)}</td>`; }).join('')}</tr>`; }).join('')); }).join('')}</tbody></table></div>`}`;
+}
+function grLancar(idx, campo, m, v) { const i = FD.dados.indicadores[idx]; if (!i) return; i[campo] = Array.isArray(i[campo]) ? i[campo] : []; const n = fdParse(v); i[campo][m] = n === '' ? '' : n; fdAgendarSalvar(); exValidar(); clearTimeout(FD.grT); FD.grT = setTimeout(fdCorpoRender, 900); }
+function grHtmlCadastro() {
+  const d = FD.dados, nomes = () => d.indicadores.filter(i => i.tipo !== 'IV').map(i => i.nome).filter(Boolean);
+  FD_PADRAO_LINHA.indicadores = { area: 'Armazém', tipo: 'KPI', sentido: 'maior', periodo: 'Mensal', metas: [], reais: [] };
+  return `<div class="painel"><h3 style="margin-top:0;">⚙️ Indicadores do GEROT</h3><div class="plano-meta"><b>KPI</b> = resultado da área (mensal) · <b>IC</b> = indicador de controle, ligado a um <b>produto crítico</b> da Descrição de Negócio · <b>IV</b> = indicador de verificação, ligado a uma <b>tarefa crítica</b> do mapeamento de processo. Indique o <b>pai</b> para montar a árvore KPI → IC → IV.</div>
+    ${fdTabela('indicadores', [{ campo: 'area', rotulo: 'Área', tipo: 'select', opcoes: () => [...new Set([...GR_AREAS, ...d.indicadores.map(i => i.area).filter(Boolean)])], largura: 110, recarregar: true }, { campo: 'tipo', rotulo: 'Tipo', tipo: 'select', opcoes: ['KPI', 'IC', 'IV'], largura: 70, recarregar: true }, { campo: 'nome', rotulo: 'Indicador', largura: 200, recarregar: true }, { campo: 'un', rotulo: 'UN', tipo: 'select', opcoes: ['%', 'PPM', 'R$', 'h', 'min', 'un', 'cx', 'hl', 'nota', 'km/l'], largura: 70 }, { campo: 'sentido', rotulo: 'Direção', tipo: 'select', opcoes: ['maior', 'menor'], largura: 80 }, { campo: 'gatilho', rotulo: 'Gatilho (meta)', tipo: 'decimal', largura: 90, recarregar: true }, { campo: 'acumula', rotulo: 'Real do ano', tipo: 'select', opcoes: ['media', 'soma', 'ultimo'], largura: 80 }, { campo: 'periodo', rotulo: 'Período', tipo: 'select', opcoes: GR_PERIODOS, largura: 110, recarregar: true }, { campo: 'resp', rotulo: 'Responsável', largura: 130, recarregar: true }, { campo: 'pai', rotulo: 'Indicador pai', tipo: 'select', opcoes: () => nomes(), largura: 150, recarregar: true }, { campo: 'produto', rotulo: 'Produto crítico (IC)', largura: 150, recarregar: true }, { campo: 'tarefa', rotulo: 'Tarefa crítica (IV)', largura: 150, recarregar: true }, { campo: 'cartaControle', rotulo: 'Carta de controle', tipo: 'select', opcoes: OP_SIMNAO, largura: 80, recarregar: true }, { campo: 'reuniao', rotulo: 'Reunião / quadro', tipo: 'select', opcoes: ['Team room diária', 'Reunião semanal', 'Reunião mensal (dashboard)', 'Estação de trabalho'], largura: 150 }], { numerar: true, botao: 'Adicionar indicador' })}</div>`;
+}
+function grHtmlArvore() {
+  const d = FD.dados, l = d.indicadores.filter(i => dnTem(i.nome)), filhos = nome => l.filter(i => i.pai === nome);
+  const no = (i, nivel) => { const s = grStatus(i), f = filhos(i.nome); return `<li><span class="gr-no"><span class="t ${String(i.tipo || 'KPI').toLowerCase()}">${escapeHtml(i.tipo || 'KPI')}</span> ${escapeHtml(i.nome)} <i style="color:${GR_ST[s][1]}" title="${GR_ST[s][0]}">●</i> <small>${escapeHtml(i.area || '')}${i.resp ? ' · ' + escapeHtml(i.resp) : ''}${i.periodo ? ' · ' + escapeHtml(i.periodo) : ''}${i.cartaControle === 'Sim' ? ' · 📈 carta de controle' : ''}</small></span>${f.length && nivel < 5 ? `<ul>${f.map(x => no(x, nivel + 1)).join('')}</ul>` : ''}</li>`; };
+  const raizes = l.filter(i => !i.pai || !l.some(x => x.nome === i.pai));
+  const rv = d.revisaoIv;
+  return `<div class="painel"><h3 style="margin-top:0;">🌳 Árvore de KPIs (KPI → IC → IV)</h3><div class="plano-meta">KPIs mensais no dashboard · ICs e IVs nas reuniões diárias (team room) · IVs nas estações de trabalho com carta de controle e plano de reação.</div>
+      ${raizes.length ? `<ul class="gr-arvore">${raizes.map(i => no(i, 0)).join('')}</ul>` : '<div class="msg-vazio">Cadastre os indicadores e o "indicador pai" para montar a árvore.</div>'}</div>
+    <div class="painel" style="margin-top:12px;"><h3 style="margin-top:0;">🔁 Definição e revisão dos IVs</h3>
+      <div class="grid-3"><div><label>Última revisão dos IVs</label><input type="date" value="${escapeHtml(rv.data || '')}" onchange="FD.dados.revisaoIv.data=this.value; fdAgendarSalvar(); exValidar();"></div><div><label>Frequência de revisão</label><select onchange="FD.dados.revisaoIv.frequencia=this.value; fdAgendarSalvar(); exValidar();"><option value=""></option>${['Mensal', 'Trimestral', 'Semestral'].map(x => `<option ${rv.frequencia === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div><div><label>Quem participa</label><input value="${escapeHtml(rv.quem || '')}" onchange="FD.dados.revisaoIv.quem=this.value; fdAgendarSalvar();"></div></div>
+      <label>Como os IVs são definidos e revisados (processo) e quais ações o time definiu</label><textarea rows="3" onchange="FD.dados.revisaoIv.processo=this.value; fdAgendarSalvar(); exValidar();">${escapeHtml(rv.processo || '')}</textarea></div>
+    <div class="painel" style="margin-top:12px;"><h3 style="margin-top:0;">🎙️ O time entende a conexão?</h3><div class="plano-meta">Peça para a pessoa explicar como o IV do quadro dela/da estação de trabalho conecta com o KPI mensal. Meta: 3+ pessoas, 70% explicando.</div>
+      ${fdTabela('entendimento', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'nome', rotulo: 'Pessoa', largura: 160, recarregar: true }, { campo: 'funcao', rotulo: 'Função', largura: 130 }, { campo: 'conecta', rotulo: 'Explicou a conexão', tipo: 'select', opcoes: ['Sim', 'Parcial', 'Não'], largura: 110, recarregar: true }, { campo: 'obs', rotulo: 'Observação', largura: 220 }], { numerar: true, botao: 'Adicionar' })}</div>`;
+}
+async function grImportarAcomp() {
+  try {
+    const l = await api('/api/dpo/gerot/acompanhamentos?ano=' + FD.ano + (FD.companyId ? '&company_id=' + FD.companyId : ''));
+    const ja = new Set(FD.dados.indicadores.map(i => String(i.nome || '').trim().toLowerCase())); let n = 0;
+    l.forEach(x => { if (ja.has(String(x.nome).trim().toLowerCase())) return; ja.add(String(x.nome).trim().toLowerCase()); FD.dados.indicadores.push({ id: fdId(), area: /armaz/i.test(x.pilar) ? 'Armazém' : /entrega|distrib/i.test(x.pilar) ? 'Distribuição' : /frota/i.test(x.pilar) ? 'Frota' : /puxada/i.test(x.pilar) ? 'Puxada' : /gente/i.test(x.pilar) ? 'Gente' : /segur/i.test(x.pilar) ? 'Segurança' : x.pilar, tipo: 'KPI', nome: x.nome, un: x.unidade || '', sentido: x.sentido || 'maior', gatilho: x.meta ?? '', periodo: x.frequencia || 'Mensal', resp: x.responsavel || '', metas: [], reais: (x.valores || []).slice(0, 12), origem: x.origem }); n++; });
+    fdAgendarSalvar(); exRedesenhar(); mostrarToast(n ? `📥 ${n} indicador(es) trazido(s) dos Acompanhamentos.` : 'Nenhum indicador novo nos Acompanhamentos deste ano.');
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function grImportarDn() {
+  try {
+    const g = await api('/api/dpo/ferramentas-digitais/descnegocio?ano=' + FD.ano + (FD.companyId ? '&company_id=' + FD.companyId : ''));
+    const pil = ((g.dados || {}).pilares || []); const ja = new Set(FD.dados.indicadores.map(i => String(i.nome || '').trim().toLowerCase())); let n = 0;
+    pil.forEach(p => (p.linhas || []).forEach(l => {
+      String(l.ic || '').split('\n').map(x => x.trim()).filter(Boolean).forEach(nome => { if (ja.has(nome.toLowerCase())) return; ja.add(nome.toLowerCase()); FD.dados.indicadores.push({ id: fdId(), area: p.nome, tipo: 'IC', nome, produto: l.produto || '', sentido: 'maior', periodo: 'Diário', metas: [], reais: [] }); n++; });
+      String(l.iv || '').split('\n').map(x => x.trim()).filter(Boolean).forEach(nome => { if (ja.has(nome.toLowerCase())) return; ja.add(nome.toLowerCase()); FD.dados.indicadores.push({ id: fdId(), area: p.nome, tipo: 'IV', nome, tarefa: l.processo || '', pai: String(l.ic || '').split('\n')[0].trim(), sentido: 'maior', periodo: 'Diário', metas: [], reais: [] }); n++; });
+    }));
+    fdAgendarSalvar(); exRedesenhar(); mostrarToast(n ? `📥 ${n} IC/IV trazido(s) da Descrição de Negócio. Complete gatilho, unidade e responsável em ⚙️ Indicadores.` : 'Nenhum IC/IV novo na Descrição de Negócio deste ano.');
+  } catch (e) { mostrarToast(/liberad/i.test(e.message) ? 'A Descrição de Negócio ainda não foi liberada para esta empresa.' : e.message, true); }
+}
+
 // ======================= ACOMPANHAMENTOS IMPULSIONAR (um por pergunta) =======================
 const BLOCOS_ACOMP = {
   reunioes: { icone: '🗓️', rotulo: 'Reuniões e rotinas' },
@@ -13996,7 +14293,8 @@ function acompHtmlBloco(b) {
   }
   const defs = {
     padroes: [{ campo: 'nome', rotulo: 'Padrão', largura: 220 }, { campo: 'codigo', rotulo: 'Código', largura: 90 }, { campo: 'versao', rotulo: 'Versão', largura: 70 }, { campo: 'dataRevisao', rotulo: 'Última revisão', tipo: 'date', largura: 130, recarregar: true }, { campo: 'responsavel', rotulo: 'Responsável', largura: 140 }, { campo: 'publicado', rotulo: 'Publicado', tipo: 'select', opcoes: OP_SIMNAO, largura: 90, recarregar: true },
-      { campo: 'st', rotulo: 'Situação', tipo: 'calc', valor: l => { const d = acompDiasDesde(l.dataRevisao); return l.publicado === 'Sim' && d !== null && d <= 365 ? acompChip('ok', 'em dia') : d !== null && d > 365 ? acompChip('parcial', 'revisão vencida') : acompChip('pendente', 'pendente'); } }],
+      { campo: 'st', rotulo: 'Situação', tipo: 'calc', valor: l => { const d = acompDiasDesde(l.dataRevisao); return l.publicado === 'Sim' && d !== null && d <= 365 ? acompChip('ok', 'em dia') : d !== null && d > 365 ? acompChip('parcial', 'revisão vencida') : acompChip('pendente', 'pendente'); } },
+      { campo: 'doc', rotulo: 'Documento do padrão', tipo: 'calc', valor: (l, i) => padraoColDoc(l, i) }, { campo: 'ia', rotulo: 'Análise da IA', tipo: 'calc', valor: (l, i) => padraoColIa(l, i) }],
     treinamentos: [{ campo: 'tema', rotulo: 'Tema / treinamento', largura: 200 }, { campo: 'padrao', rotulo: 'Padrão ligado', tipo: 'select', opcoes: () => fdLista('padroes').map(p => p.nome).filter(Boolean), largura: 160 }, { campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'publico', rotulo: 'Público-alvo', tipo: 'number', largura: 90, recarregar: true }, { campo: 'treinados', rotulo: 'Treinados', tipo: 'number', largura: 90, recarregar: true }, { campo: 'instrutor', rotulo: 'Instrutor', largura: 130 }, { campo: 'lista', rotulo: 'Lista de presença (link)', largura: 160 },
       { campo: 'pct', rotulo: '% treinado', tipo: 'calc', valor: l => { const p = fdNum(l.publico) ? (fdNum(l.treinados) || 0) / fdNum(l.publico) : null; return p === null ? '—' : acompChip(p >= 0.9 ? 'ok' : 'parcial', fdPct(p, 0)); } }],
     processos: [{ campo: 'nome', rotulo: 'Processo / rotina', largura: 220 }, { campo: 'responsavel', rotulo: 'Responsável', largura: 140 }, { campo: 'frequencia', rotulo: 'Frequência', tipo: 'select', opcoes: Object.keys(JANELA_FREQ), largura: 120, recarregar: true }, { campo: 'formalizado', rotulo: 'Formalizado', tipo: 'select', opcoes: OP_SIMNAO, largura: 90, recarregar: true }, { campo: 'ultimaExecucao', rotulo: 'Última execução', tipo: 'date', largura: 130, recarregar: true }, { campo: 'evidencia', rotulo: 'Evidência', largura: 180 }],
@@ -14009,7 +14307,7 @@ function acompHtmlBloco(b) {
     inspecoes: [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130, recarregar: true }, { campo: 'tipo', rotulo: 'Tipo (inspeção, auditoria, blitz...)', largura: 180 }, { campo: 'area', rotulo: 'Área', largura: 120 }, { campo: 'responsavel', rotulo: 'Responsável', largura: 130 }, { campo: 'conformidade', rotulo: '% conformidade', tipo: 'number', largura: 100 }, { campo: 'desvios', rotulo: 'Desvios encontrados', largura: 180 }, { campo: 'acao', rotulo: 'Ação', largura: 160 }]
   };
   const extra = b === 'treinamentos' ? `<div style="font-size:11.5px;color:#64748b;margin-top:6px;">💡 Para o check de retenção do treinamento, use a pasta 📂 Material do Pilar (cria o link para as pessoas responderem).</div>` : '';
-  return `${cab}${fdTabela(b, defs[b], { numerar: true, botao: 'Adicionar' })}${extra}`;
+  return `${cab}${fdTabela(b, defs[b], { numerar: true, botao: 'Adicionar' })}${extra}${b === 'padroes' ? padraoHtmlResultados() : ''}`;
 }
 function acompCorValor(ind, m) {
   const v = fdNum((ind.valores || [])[m]), meta = fdNum(ind.meta);
@@ -14869,7 +15167,13 @@ const EXCL = {
     tipos: [['planilha', 'Planilha CAPEX'], ['proposta', 'Proposta de fornecedor'], ['nf', 'Nota fiscal'], ['ata', 'Ata do check trimestral'], ['outro', 'Outro']] },
   ans: { q: 'planejamento:3.2', icone: '🤝', titulo: 'ANS de Volume com Vendas', sub: 'Planejamento · pergunta <strong>3.2 ANS com Vendas</strong>', req1: ['V.1', 'V.2'],
     abas: [['diario', '📅 Acompanhamento diário'], ['param', '⚙️ Parâmetros (meta e dias)'], ['acordo', '📄 Acordo e rotina'], ['acoes', '🔁 Ações de dispersão'], ['valida', '✅ Validação 3.2'], ['arquivos', '📎 Anexos']],
-    tipos: [['ans', 'ANS assinado'], ['ata', 'Ata de reunião com vendas'], ['relatorio', 'Relatório de volume'], ['outro', 'Outro']] }
+    tipos: [['ans', 'ANS assinado'], ['ata', 'Ata de reunião com vendas'], ['relatorio', 'Relatório de volume'], ['outro', 'Outro']] },
+  descnegocio: { q: 'gestao:2.1', icone: '🗺️', titulo: 'Descrição de Negócio', sub: 'Gestão Revenda · pergunta <strong>2.1 Descrição do Negócio</strong>', req1: ['V.1', 'V.2', 'V.3'],
+    abas: [['dn', '🗺️ Descrição de Negócio'], ['criticos', '⭐ Produtos críticos'], ['ans', '🤝 ANS'], ['comunica', '📣 Comunicação e entrevistas'], ['valida', '✅ Validação 2.1'], ['arquivos', '📎 Evidências']],
+    tipos: [['dn', 'Descrição de Negócio (arquivo)'], ['matriz', 'Matriz de Produtos Críticos'], ['ans', 'ANS assinado'], ['comunicacao', 'Evidência de comunicação'], ['outro', 'Outro']] },
+  gerot: { q: 'gestao:2.3', icone: '📊', titulo: 'GEROT — Gerenciamento da Rotina', sub: 'Gestão Revenda · pergunta <strong>2.3 Book KPI</strong>', req1: ['V.1', 'V.4', 'V.5'],
+    abas: [['painel', '📊 GEROT'], ['cadastro', '⚙️ Indicadores'], ['arvore', '🌳 Árvore KPI'], ['valida', '✅ Validação 2.3'], ['arquivos', '📎 Evidências']],
+    tipos: [['book', 'Book KPI'], ['carta', 'Carta de controle'], ['ata', 'Ata de reunião de rotina'], ['outro', 'Outro']] }
 };
 const EXCL_POR_PERGUNTA = Object.fromEntries(Object.entries(EXCL).map(([k, v]) => [v.q, k]));
 const STATUS_ACAO_EX = ['Não iniciado', 'Em andamento', 'Concluída', 'Atrasado'];
@@ -14887,6 +15191,8 @@ function exPreparar() {
   const d = FD.dados, c = FD.chave;
   d.manual = d.manual || {};
   if (c === 'riscos') rcPreparar(d);
+  if (c === 'descnegocio') dnPreparar(d);
+  if (c === 'gerot') grPreparar(d);
   if (c === 'visibilidade') visPreparar(d);
   if (c === 'sonho') {
     sonhoMigrar(d);
@@ -14927,6 +15233,8 @@ function exLinhas() {
   if (c === 'capex') return capexValidar(d);
   if (c === 'p3a') return p3aValidar(d);
   if (c === 'manutencao') return manValidar(d);
+  if (c === 'descnegocio') return dnValidar(d);
+  if (c === 'gerot') return grValidar(d);
   return [];
 }
 function exValidar() {
@@ -14971,6 +15279,8 @@ function exHtmlAba() {
   if (c === 'capex') return a === 'itens' ? capexHtmlItens() : a === 'gut' ? capexHtmlGut() : a === 'checks' ? capexHtmlChecks() : a === 'plano' ? capexHtmlPlano() : a === 'cad' ? capexHtmlCad() : capexHtmlDash();
   if (c === 'p3a') return p3aHtmlAba(a);
   if (c === 'manutencao') return manHtmlAba(a);
+  if (c === 'descnegocio') return a === 'criticos' ? dnHtmlCriticos() : a === 'ans' ? dnHtmlAns() : a === 'comunica' ? dnHtmlComunica() : dnHtmlDn();
+  if (c === 'gerot') return a === 'cadastro' ? grHtmlCadastro() : a === 'arvore' ? grHtmlArvore() : grHtmlPainel();
   return '';
 }
 function exRedesenhar() {
