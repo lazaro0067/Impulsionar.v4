@@ -1496,6 +1496,13 @@
   body.modo-estudio .ig-abas button { background:#111a33; border-color:#1f2a48; color:#cbd5e1; } body.modo-estudio .ig-abas button.on { background:linear-gradient(45deg,#dd2a7b,#8134af); color:#fff; }
   body.modo-estudio .ig-evol, body.modo-estudio .ig-com { background:#111a33; border-color:#1f2a48; color:#e2e8f0; } body.modo-estudio .ig-modos label { border-color:#1f2a48; } body.modo-estudio .ig-modos label.on { background:#21143a; border-color:#8134af; } body.modo-estudio .ig-inter-num, body.modo-estudio .ig-mini { color:#cbd5e1; } body.modo-estudio .ig-resp { background:#0f2a1b; color:#86efac; } body.modo-estudio .ig-com textarea { background:#0b1329; color:#e2e8f0; border-color:#334155; }
 
+
+  .ev-pub-fmt { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:8px 0; font-size:13.5px; } .ev-pub-fmt label { color:var(--e-tx, #e2e8f0); display:flex; gap:5px; align-items:center; background:rgba(255,255,255,.06); border:1px solid var(--e-bd, #334155); border-radius:10px; padding:6px 10px; cursor:pointer; }
+  .ev-ag-ed-linha { margin:-4px 0 10px 4px; } .ev-ag-editar { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:6px; } .ev-ag-editar input, .ev-ag-editar select { border-radius:8px; padding:7px; }
+  .ev-mus-topo { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0; } .ev-mus-topo small { flex:1; min-width:180px; }
+  .ev-mus-jm { background:rgba(34,197,94,.08); border:1px solid rgba(34,197,94,.35); border-radius:10px; padding:8px 10px; font-size:12.5px; margin:6px 0; } .ev-mus-jm input { flex:1; }
+  .ev-ref { border:1px solid rgba(124,58,237,.45) !important; } .ev-ref-lista { display:flex; flex-direction:column; gap:8px; margin-top:10px; } .ev-ref-item { display:flex; gap:10px; justify-content:space-between; background:rgba(124,58,237,.08); border-radius:12px; padding:10px 12px; } .ev-ref-item.inativo { opacity:.5; } .ev-ref-item small { display:block; opacity:.75; } .ev-ref-item p { margin:4px 0; font-size:13px; }
+  .ev-ref-leg { display:inline-block; background:#111; padding:4px 10px; border-radius:6px; font-weight:900; font-size:15px; margin-top:4px; } .ev-ref-leg em { font-style:normal; }
   /* ---------- App instalável ---------- */
   .btn-instalar-app { margin:12px 24px 0; border:1px solid rgba(74,222,128,.5); background:rgba(34,197,94,.12); color:#4ade80; border-radius:10px; padding:10px; font-weight:800; font-size:13px; cursor:pointer; }
   .app-banner { position:fixed; left:10px; right:10px; bottom:calc(env(safe-area-inset-bottom) + 10px); z-index:19000; display:flex; align-items:center; gap:10px; background:#0b1329; color:#fff; border-radius:16px; padding:10px 12px; box-shadow:0 12px 36px rgba(0,0,0,.35); border:1px solid rgba(74,222,128,.35); }
@@ -22007,18 +22014,20 @@ async function evGerarImagensIa() {
 const EV_HUMORES = [['motivacional', '🚀 Motivacional'], ['corporativo', '💼 Corporativa'], ['inspirador', '✨ Inspiradora'], ['animado', '😄 Animada'], ['lofi', '🎧 Lo-fi'], ['eletronico', '⚡ Eletrônica'], ['emocionante', '🎹 Emocionante'], ['epico', '🎬 Épica'], ['calmo', '🌿 Calma'], ['acustico', '🎸 Acústica'], ['tecnologia', '🤖 Tecnologia'], ['suspense', '🕵️ Suspense']];
 const EVMUS = { humor: 'motivacional', lista: null, carregando: false, tocando: null };
 function evHtmlMusicas() {
-  return `<div class="ev-chips">${EV_HUMORES.map(([k, r]) => `<button class="${EVMUS.humor === k && !EVMUS.q ? 'on' : ''}" onclick="EVMUS.q=''; evBuscarMusicas('${k}')">${r}</button>`).join('')}</div>
+  return `<div class="ev-chips">${[['emalta', '🔥 Em alta'], ['minhas', '⭐ Minhas músicas']].concat(EV_HUMORES).map(([k, r]) => `<button class="${EVMUS.humor === k && !EVMUS.q ? 'on' : ''}" onclick="EVMUS.q=''; evBuscarMusicas('${k}')">${r}</button>`).join('')}</div>
+    <div class="ev-mus-topo"><label class="ev-btn" style="cursor:pointer;">⬆️ Subir minha música<input type="file" accept="audio/*,.mp3,.m4a,.wav,.ogg" hidden onchange="evSubirMinhaMusica(this.files); this.value=''"></label><small class="ev-sub">Use músicas que você tem direito de usar (Biblioteca de Áudio do YouTube, Epidemic Sound, compradas…). As músicas em alta do próprio Instagram só podem ser colocadas pelo app do Instagram.</small></div>
+    ${EVMUS.semJamendo && ESTADO.usuario.role === 'admin' ? `<div class="ev-mus-jm"><b>🎵 Músicas melhores (Master):</b> conecte o Jamendo — milhares de músicas profissionais, as mais tocadas do mês, liberadas para uso comercial com crédito. Crie a chave grátis em <a href="https://devportal.jamendo.com" target="_blank" rel="noopener">devportal.jamendo.com</a> (Client ID) e cole: <div class="ev-dupla"><input id="ev-jm-key" placeholder="Client ID do Jamendo"><button class="ev-btn primario" onclick="evSalvarJamendo()">Conectar</button></div></div>` : ''}
     <div class="ev-dupla" style="margin-top:6px;"><input id="ev-mus-q" placeholder="Ou pesquise: piano, rock, funk, natal…" value="${escapeHtml(EVMUS.q || '')}" onkeydown="if(event.key==='Enter') evBuscarMusicas(null, this.value)" style="flex:1;"><button class="ev-btn" onclick="evBuscarMusicas(null, document.getElementById('ev-mus-q').value)">🔎</button></div>
     <div class="ev-mus-lista">${EVMUS.carregando ? '<div class="ev-sub">⏳ Buscando músicas…</div>' : !EVMUS.lista ? '<div class="ev-sub">Escolha um estilo para ver as músicas.</div>' : EVMUS.lista.length ? EVMUS.lista.map((m, i) => `<div class="ev-mus">
       <button class="ev-mus-play" onclick="evOuvirMusica(${i})">${EVMUS.tocando === i ? '⏸' : '▶'}</button>
-      <div class="ev-mus-info"><b>${escapeHtml(m.titulo)}</b><small>${escapeHtml(m.artista || '')}${m.duracao ? ' · ' + evFmtT(m.duracao).slice(0, 5) : ''}${m.licenca ? ' · ' + escapeHtml(m.licenca) : ''}</small></div>
-      <button class="ev-btn ia" onclick="evUsarMusica(${i})">＋ Usar</button></div>`).join('') : '<div class="ev-sub">Nada encontrado. Tente outro estilo.</div>'}</div>`;
+      <div class="ev-mus-info"><b>${m.minha ? '⭐ ' : ''}${escapeHtml(m.titulo)}</b><small>${escapeHtml(m.artista || '')}${m.duracao ? ' · ' + evFmtT(m.duracao).slice(0, 5) : ''}${m.licenca ? ' · ' + escapeHtml(m.licenca) : ''}${m.fonte ? ' · ' + escapeHtml(m.fonte) : ''}</small></div>
+      ${m.minha ? `<button class="ev-mini" title="Tirar" onclick="evExcluirMinhaMusica(${i})">🗑️</button>` : ''}<button class="ev-btn ia" onclick="evUsarMusica(${i})">＋ Usar</button></div>`).join('') : `<div class="ev-sub">${EVMUS.humor === 'minhas' ? 'Você ainda não subiu músicas. Toque em ⬆️ Subir minha música.' : 'Nada encontrado. Tente outro estilo.'}</div>`}</div>`;
 }
 function evAtualizarMusicas() { const e = document.getElementById('ev-musicas'); if (e) e.innerHTML = evHtmlMusicas(); }
 function evAbrirMusicas() { evPainel('audio'); if (typeof evSheet === 'function') evSheet('painel'); if (!EVMUS.lista) evBuscarMusicas(EVMUS.humor); setTimeout(() => { const t = document.getElementById('ev-mus-titulo'); if (t) t.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 120); }
 async function evBuscarMusicas(humor, q) {
   if (humor) EVMUS.humor = humor; EVMUS.q = (q || '').trim(); EVMUS.carregando = true; evAtualizarMusicas();
-  try { const r = await api('/api/admin/estudio/musicas?' + (EVMUS.q ? 'q=' + encodeURIComponent(EVMUS.q) : 'humor=' + EVMUS.humor)); EVMUS.lista = r.musicas || []; }
+  try { const r = await api('/api/admin/estudio/musicas?' + (EVMUS.q ? 'q=' + encodeURIComponent(EVMUS.q) : 'humor=' + EVMUS.humor)); EVMUS.lista = r.musicas || []; EVMUS.semJamendo = !!r.semJamendo; }
   catch (e) { EVMUS.lista = []; mostrarToast(e.message, true); }
   EVMUS.carregando = false; evAtualizarMusicas();
 }
@@ -22998,13 +23007,15 @@ async function evAbrirPublicar(acabouDeExportar) {
         ${p.tipo === 'aula' ? '<details class="ev-sub"><summary style="cursor:pointer;">📸 Também postar no Instagram</summary>' : ''}
         ${ig.configurado ? `
           <div class="ev-ig-ok">📸 Conectado ao Instagram <b>@${escapeHtml(ig.username || '')}</b></div>
-          ${temVideo && mp4 ? `<button class="ev-btn ig grande" onclick="evPublicarAgora()">🚀 Publicar agora no Instagram</button>
-          <div class="ev-agendar"><input type="datetime-local" id="ev-pub-quando" value="${iso}"><button class="ev-btn" onclick="evAgendar()">🗓️ Agendar</button></div>
+          ${temVideo && mp4 ? `<div class="ev-pub-fmt"><span>Publicar como:</span>${[['reels', '🎬 Reels'], ['stories', '📱 Story'], ['ambos', '🎬+📱 Os dois']].map(([k, r]) => `<label><input type="radio" name="ev-pub-fmt" value="${k}" ${(p.ig_formato || (p.tipo === 'stories' ? 'stories' : 'reels')) === k ? 'checked' : ''}> ${r}</label>`).join('')}</div>
+          ${p.status === 'agendado' ? '' : `<button class="ev-btn ig grande" onclick="evPublicarAgora()">🚀 Publicar agora no Instagram</button>`}
+          <div class="ev-agendar"><input type="datetime-local" id="ev-pub-quando" value="${p.status === 'agendado' && p.agendado_para ? (d0 => new Date(d0 - d0.getTimezoneOffset() * 6e4).toISOString().slice(0, 16))(new Date(p.agendado_para)) : iso}"><button class="ev-btn ${p.status === 'agendado' ? 'primario' : ''}" onclick="evAgendar()">${p.status === 'agendado' ? '💾 Alterar agendamento' : '🗓️ Agendar'}</button></div>
+          <div class="ev-sub">☁️ O vídeo fica guardado no servidor: no horário marcado ele é publicado sozinho, <b>mesmo com o computador e o celular desligados</b>.</div>
           <div class="ev-sub">Horários com mais alcance costumam ser 12h–13h e 18h–21h nos dias úteis — confira os horários do seu público nas estatísticas do Instagram.</div>`
           : `<div class="ev-sub" style="color:#fbbf24;">${temVideo ? 'O vídeo foi exportado em WebM — o Instagram exige MP4. Exporte pelo Chrome ou Edge atualizado.' : 'Exporte o vídeo para publicar direto daqui.'}</div>`}`
           : `<div class="ev-sub">Para postar direto daqui, conecte o Instagram em <b>Estúdio de Vídeo › Instagram</b>. Enquanto isso: baixe o vídeo, copie a legenda e poste pelo app (dá para escolher uma música em alta na hora de postar).</div>`}
         ${p.tipo === 'aula' ? '</details>' : ''}
-        ${p.status === 'agendado' ? `<div class="ev-ig-ok">🗓️ Agendado para ${new Date(p.agendado_para).toLocaleString('pt-BR')} <button class="ev-mini" onclick="evCancelarAgendamento()">cancelar</button></div>` : ''}
+        ${p.status === 'agendado' ? `<div class="ev-ig-ok">🗓️ Agendado para <b>${new Date(p.agendado_para).toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short' })}</b> · ${({ reels: '🎬 Reels', stories: '📱 Story', ambos: '🎬+📱 Reels e Story' })[p.ig_formato || (p.tipo === 'stories' ? 'stories' : 'reels')]} — para mudar, escolha a nova data acima e toque em 💾 Alterar. <button class="ev-mini" onclick="evCancelarAgendamento()">cancelar</button></div>` : ''}
         ${p.status === 'erro' && p.erro_publicacao ? `<div class="ev-sub" style="color:#fca5a5;">Última tentativa: ${escapeHtml(p.erro_publicacao)}</div>` : ''}
       </div>
     </div></div></div>`;
@@ -23036,16 +23047,17 @@ async function evSalvarNaAcademy() {
   } catch (e) { mostrarToast(e.message, true); }
 }
 function evLegendaDoModal() { const v = (document.getElementById('ev-pub-leg') || {}).value || ''; const tags = (v.match(/(#[\wÀ-ú]+\s*)+$/) || [''])[0]; ES.p.legenda = v.slice(0, v.length - tags.length).trim(); ES.p.hashtags = tags.trim(); }
+function evFmtPub() { return (document.querySelector('input[name="ev-pub-fmt"]:checked') || {}).value || 'reels'; }
 async function evPublicarAgora() {
   evLegendaDoModal(); await evSalvar(true).catch(() => {});
   if (!confirm('Publicar este vídeo agora no Instagram?')) return;
-  try { const r = await api(`/api/admin/estudio/projetos/${ES.p.id}/publicar`, { method: 'POST', body: '{}' }); ES.p.status = 'publicando'; mostrarToast(r.message); document.getElementById('ev-modal').innerHTML = ''; }
+  try { const r = await api(`/api/admin/estudio/projetos/${ES.p.id}/publicar`, { method: 'POST', body: JSON.stringify({ formatoIg: evFmtPub() }) }); ES.p.status = 'publicando'; mostrarToast(r.message); document.getElementById('ev-modal').innerHTML = ''; }
   catch (e) { mostrarToast(e.message, true); }
 }
 async function evAgendar() {
   evLegendaDoModal(); await evSalvar(true).catch(() => {});
   const v = document.getElementById('ev-pub-quando').value; if (!v) return;
-  try { const r = await api(`/api/admin/estudio/projetos/${ES.p.id}/publicar`, { method: 'POST', body: JSON.stringify({ agendarPara: new Date(v).toISOString() }) }); ES.p.status = 'agendado'; ES.p.agendado_para = new Date(v).toISOString(); mostrarToast(r.message); evAbrirPublicar(); }
+  try { const f = evFmtPub(); const r = await api(`/api/admin/estudio/projetos/${ES.p.id}/publicar`, { method: 'POST', body: JSON.stringify({ agendarPara: new Date(v).toISOString(), formatoIg: f }) }); ES.p.status = 'agendado'; ES.p.agendado_para = new Date(v).toISOString(); ES.p.ig_formato = f; mostrarToast(r.message); evAbrirPublicar(); }
   catch (e) { mostrarToast(e.message, true); }
 }
 async function evCancelarAgendamento(id) {
@@ -24210,7 +24222,8 @@ async function evEdicaoViral() {
     if (op.marca) { evAplicarKit(await evCarregarKit(), true); }
     if (op.cor) { if (EV_FILTROS[plano.filtro]) d.filtro = plano.filtro; d.ajustes = { brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 }; evCarregando('🎨 Ajustando luz, cor e enquadramento no rosto...'); await evImagemInteligente({ silencioso: true }); d.filtroForca = 0.45; }
     ES.hist.push(antes); ES.ultimoEstado = JSON.stringify(d); evMudou(true, true); evIrPara(0); evDesenharProps(); evCarregando(null);
-    if (op.musica && !d.audios.length && plano.musica !== 'nenhuma') await evAdicionarTrilha(EV_TRILHAS[plano.musica] ? plano.musica : 'corporativo', true);
+    const refEst = await evAplicarEstiloReferencia(true); // estilo aprendido dos vídeos de referência do nicho
+    if (op.musica && !d.audios.length && plano.musica !== 'nenhuma') { evCarregando('🎵 Escolhendo uma música boa para o fundo…'); await evMusicaBoa(((refEst && refEst.estilo && refEst.estilo.musica) || {}).estilo || plano.musica || 'motivacional'); evCarregando(null); }
     if (ES.painel !== 'ia') evPainel('ia');
     evIaSaida(`<div class="ev-ia-card"><b>✅ Vídeo editado para viralizar</b><p>${[op.legendas ? (pal.length ? 'legendas da fala' : '⚠️ sem legendas (a transcrição não respondeu)') : '', zooms ? zooms + ' zooms estratégicos' : '', op.texto ? 'gancho, frases e CTA' : '', op.voz ? 'voz limpa' : '', op.musica && d.audios.length ? 'música de fundo' : '', cortou > 0.5 ? Math.round(cortou) + ' s cortados' : 'sem cortes'].filter(Boolean).join(' · ')}.</p>${plano.estrategia ? `<p><b>Estratégia:</b> ${escapeHtml(plano.estrategia)}</p>` : ''}${(plano.referencias || []).length ? `<p class="ev-sub">Referências: ${plano.referencias.filter(r => r.url).slice(0, 4).map(r => `<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.titulo || r.url)}</a>`).join(' · ')}</p>` : ''}${plano.local ? '<p class="ev-sub">IA desconectada: usei uma estratégia padrão. Conecte a IA em Agente Viral para frases e zooms sob medida.</p>' : evFeedbackHtml('edição viral')}</div>`);
     mostrarToast('✅ Vídeo editado! Dê o play para conferir.');
@@ -25091,6 +25104,7 @@ function evDesenharHomeCelular(corpo) {
     </header>
     <div class="eh-acoes">
       <label class="eh-acao"><input type="file" accept="video/*,image/*" multiple hidden onchange="evCelGaleria(this.files); this.value=''"><span>🖼️</span><b>Da galeria</b><small>Fotos e vídeos do celular</small></label>
+      <button class="eh-acao" onclick="evGravarStory()"><span>📱</span><b>Gravar Story</b><small>Grave, edite e agende o Story</small></button>
       <button class="eh-acao" onclick="evAbrirCriarVideoIa()"><span>🤖</span><b>Criar com IA</b><small>Roteiro, pessoa ou animação</small></button>
       ${ESTADO.usuario.role === 'admin' ? `<button class="eh-acao" onclick="evNovaAula()"><span>🎓</span><b>Gravar aula</b><small>Teleprompter + Academy</small></button>` : `<button class="eh-acao" onclick="renderEstudioVideo('conta')"><span>💳</span><b>Meu plano</b><small>Uso do mês e renovação</small></button>`}
       <button class="eh-acao" onclick="evNovoProjeto()"><span>✂️</span><b>Editar do zero</b><small>Projeto em branco</small></button>
@@ -25254,7 +25268,7 @@ function evDesenharAgenda(corpo) {
   const ag = EVL.lista.filter(p => p.status === 'agendado').sort((a, b) => String(a.agendado_para).localeCompare(String(b.agendado_para)));
   const pub = EVL.lista.filter(p => ['publicado', 'publicando', 'erro'].includes(p.status)).sort((a, b) => String(b.publicado_em || b.updated_at).localeCompare(String(a.publicado_em || a.updated_at)));
   const linha = p => { const st = EV_STATUS[p.status] || EV_STATUS.rascunho; return `<div class="ev-ag-linha"><span class="ev-ag-st" style="background:${st[1]}">${st[0]}</span><b onclick="evAbrirEditor(${p.id})">${escapeHtml(p.titulo)}</b><small>${p.status === 'agendado' ? '🗓️ ' + new Date(p.agendado_para).toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short' }) : p.publicado_em ? '✅ ' + new Date(String(p.publicado_em).replace(' ', 'T') + 'Z').toLocaleString('pt-BR') : ''}${p.erro_publicacao ? ' · ' + escapeHtml(p.erro_publicacao) : ''}</small>${p.ig_permalink ? `<a href="${escapeHtml(p.ig_permalink)}" target="_blank">Ver post ↗</a>` : ''}${p.status === 'agendado' ? `<button class="btn-secundario btn-sm" style="width:auto;" onclick="evCancelarAgendamento(${p.id})">Cancelar</button>` : ''}</div>`; };
-  corpo.innerHTML = `<div class="ev-bloco"><h3>🗓️ Agendados</h3>${ag.map(linha).join('') || '<div class="plano-meta">Nenhum post agendado. Agende pelo botão 📤 Publicar dentro do editor.</div>'}</div>
+  corpo.innerHTML = `<div class="ev-bloco"><h3>🗓️ Agendados</h3><div class="plano-meta" style="margin-bottom:8px;">☁️ Publicados pelo servidor no horário marcado — pode desligar o computador.</div>${ag.map(p => linha(p) + `<div class="ev-ag-ed-linha"><button class="ev-mini" onclick="evAgEditar(${p.id})">✏️ Alterar data, hora ou formato</button>${p.erro_publicacao ? `<small style="color:#f59e0b;">${escapeHtml(p.erro_publicacao)}</small>` : ''}<div id="ev-ag-ed-${p.id}"></div></div>`).join('') || '<div class="plano-meta">Nenhum post agendado. Agende pelo botão 📤 Publicar dentro do editor.</div>'}</div>
     <div class="ev-bloco"><h3>📸 Publicados</h3>${pub.map(linha).join('') || '<div class="plano-meta">Nada publicado ainda.</div>'}</div>`;
 }
 async function evDesenharInstagram(corpo) {
@@ -25352,6 +25366,102 @@ async function igMarcar(dia, feito) { if (!IGP) return; try { const r = await ap
 async function igGravarDia(i) {
   const x = ((IGP || {}).conteudo || {}).dias[i]; if (!x) return;
   return igAbrirGravacao(`Dia ${x.dia || i + 1} · ${x.tema || 'Plano Instagram'}`, [x.gancho, x.roteiro].filter(Boolean).join('\n\n'), x.legenda, x.hashtags);
+}
+// ---------- Story: gravar já como Story (9:16) ----------
+async function evGravarStory() {
+  try { const id = await evCriarProjetoBase(evNomeAgora('Story'), '9:16', 'stories'); await evAbrirEditor(id); if (ES) evAbrirCamera(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+// ---------- Agenda: alterar data/hora e formato de um post agendado ----------
+function evAgEditar(id) {
+  const p = (EVL.lista || []).find(x => x.id === id); if (!p) return;
+  const d = new Date(p.agendado_para), iso = new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+  const el = document.getElementById('ev-ag-ed-' + id); if (!el) return;
+  el.innerHTML = `<div class="ev-ag-editar"><input type="datetime-local" id="ev-ag-q-${id}" value="${iso}"><select id="ev-ag-f-${id}">${[['reels', '🎬 Reels'], ['stories', '📱 Story'], ['ambos', '🎬+📱 Reels e Story']].map(([k, r]) => `<option value="${k}" ${(p.ig_formato || (p.tipo === 'stories' ? 'stories' : 'reels')) === k ? 'selected' : ''}>${r}</option>`).join('')}</select>
+    <button class="ev-btn primario" onclick="evAgSalvarEdicao(${id})">💾 Salvar</button><button class="ev-btn" onclick="evCancelarAgendamento(${id})">Cancelar agendamento</button></div>`;
+}
+async function evAgSalvarEdicao(id) {
+  const v = document.getElementById('ev-ag-q-' + id).value; if (!v) return;
+  try { const r = await api(`/api/admin/estudio/projetos/${id}/publicar`, { method: 'POST', body: JSON.stringify({ agendarPara: new Date(v).toISOString(), formatoIg: document.getElementById('ev-ag-f-' + id).value }) }); mostrarToast(r.message); renderEstudioVideo('agenda'); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+// ---------- Músicas: minhas músicas + Jamendo ----------
+async function evSubirMinhaMusica(files) {
+  const f = (files || [])[0]; if (!f) return;
+  let dur = 0; try { dur = await new Promise(ok => { const a = new Audio(); a.preload = 'metadata'; a.onloadedmetadata = () => ok(isFinite(a.duration) ? a.duration : 0); a.onerror = () => ok(0); a.src = URL.createObjectURL(f); setTimeout(() => ok(0), 6000); }); } catch (e) {}
+  const fd = new FormData(); fd.append('arquivo', f, f.name); fd.append('duracao', String(dur || 0)); fd.append('humor', EVMUS.humor && !['minhas', 'emalta'].includes(EVMUS.humor) ? EVMUS.humor : '');
+  evCarregando('🎵 Subindo a música…');
+  try { const r = await fetch('/api/admin/estudio/minhas-musicas', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Falha ao subir.'); mostrarToast(j.message); evBuscarMusicas('minhas'); }
+  catch (e) { mostrarToast(e.message, true); } finally { evCarregando(null); }
+}
+async function evExcluirMinhaMusica(i) { const m = EVMUS.lista[i]; if (!m || !confirm('Tirar esta música das suas músicas?')) return; try { await api('/api/admin/estudio/minhas-musicas/' + String(m.id).slice(3), { method: 'DELETE' }); evBuscarMusicas(EVMUS.humor); } catch (e) { mostrarToast(e.message, true); } }
+async function evSalvarJamendo() {
+  try { const r = await api('/api/admin/estudio-musica', { method: 'PUT', body: JSON.stringify({ jamendo: document.getElementById('ev-jm-key').value }) }); mostrarToast(r.message); EVMUS.semJamendo = false; evBuscarMusicas(EVMUS.humor); } catch (e) { mostrarToast(e.message, true); }
+}
+// música de verdade (Jamendo / minhas músicas) no lugar da trilha sintetizada
+const EV_MUSICA_HUMOR = { corporativo: 'corporativo', motivacional: 'motivacional', inspirador: 'inspirador', lofi: 'lofi', energia: 'eletronico', tensao: 'suspense', animado: 'animado', epico: 'epico', calmo: 'calmo', eletronico: 'eletronico', acustico: 'acustico', suspense: 'suspense', emalta: 'emalta' };
+async function evMusicaBoa(estilo) {
+  const humor = EV_MUSICA_HUMOR[estilo] || 'motivacional';
+  if (await evMusicaAutomatica(humor)) return true;
+  await evAdicionarTrilha(EV_TRILHAS[estilo] ? estilo : 'corporativo', true); return false;
+}
+// ---------- Estilo das referências: aplica nas legendas, cor e transição ----------
+let EV_ESTILO_PADRAO;
+async function evEstiloPadrao() { if (EV_ESTILO_PADRAO !== undefined) return EV_ESTILO_PADRAO; try { EV_ESTILO_PADRAO = await api('/api/admin/estudio/estilo-padrao'); } catch (e) { EV_ESTILO_PADRAO = null; } return EV_ESTILO_PADRAO; }
+async function evAplicarEstiloReferencia(silencioso) {
+  EV_ESTILO_PADRAO = undefined; const ref = await evEstiloPadrao(); if (!ref || !ES) { if (!silencioso) mostrarToast('Ensine um vídeo de referência no 🤖 Agente Viral primeiro.', true); return null; }
+  const d = ES.p.dados, est = ref.estilo || {};
+  if (ref.preset) { d.extras = d.extras || {}; d.extras.estiloLegenda = Object.assign({}, d.extras.estiloLegenda || {}, ref.preset); d.textos.filter(t => t.estilo === 'legenda').forEach(t => Object.assign(t, ref.preset)); }
+  const f = (est.cor || {}).filtro; if (f && EV_FILTROS[f]) d.filtro = f;
+  const tr = String(est.transicoes || '').match(/corte|fade|zoom|deslizar|flash/); if (tr && EV_TRANS[tr[0]]) d.transicao = tr[0];
+  evMudou(); evDesenhar(); evDesenharProps();
+  if (!silencioso) mostrarToast(`🎯 Estilo de "${ref.titulo}" aplicado (legendas, cor e transições).`);
+  return ref;
+}
+// ---------- Vídeos de referência do nicho: assistir e aprender o estilo ----------
+async function evAnalisarReferencia(files) {
+  const f = (files || [])[0]; if (!f) return;
+  const nome = (document.getElementById('ev-ref-nome') || {}).value || f.name.replace(/\.[^.]+$/, ''), link = (document.getElementById('ev-ref-link') || {}).value || '';
+  const url = URL.createObjectURL(f), v = document.createElement('video'); v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
+  const st = document.getElementById('ev-ref-st'), msg = t => { if (st) st.innerHTML = t; };
+  try {
+    msg('⏳ Abrindo o vídeo…');
+    await new Promise((ok, falha) => { v.onloadedmetadata = ok; v.onerror = () => falha(new Error('Não consegui abrir este vídeo. Envie MP4 ou MOV.')); setTimeout(() => falha(new Error('O vídeo demorou demais para abrir.')), 20000); });
+    const D = Math.min(v.duration || 0, 120); if (!D) throw new Error('Vídeo sem duração.');
+    const ir = t => new Promise(ok => { const fim = () => { v.removeEventListener('seeked', fim); ok(); }; v.addEventListener('seeked', fim); v.currentTime = Math.min(t, D - 0.05); setTimeout(fim, 1500); });
+    const pc = document.createElement('canvas'); pc.width = 64; pc.height = Math.max(36, Math.round(64 * v.videoHeight / v.videoWidth)); const pg = pc.getContext('2d', { willReadFrequently: true });
+    const passo = D <= 60 ? 0.25 : 0.5; let ant = null, cortes = 0, cortes3 = 0, brilho = 0, sat = 0, n = 0, ultimoCorte = -1;
+    for (let t = 0; t < D; t += passo) {
+      await ir(t); pg.drawImage(v, 0, 0, pc.width, pc.height); const px = pg.getImageData(0, 0, pc.width, pc.height).data;
+      let dif = 0, b = 0, s = 0; for (let i = 0; i < px.length; i += 4) { const r = px[i], g = px[i + 1], bl = px[i + 2], l = 0.299 * r + 0.587 * g + 0.114 * bl, mx = Math.max(r, g, bl), mn = Math.min(r, g, bl); b += l; s += mx ? (mx - mn) / mx : 0; if (ant) dif += (Math.abs(r - ant[i]) + Math.abs(g - ant[i + 1]) + Math.abs(bl - ant[i + 2])) / 3; }
+      const npx = px.length / 4, lum = Uint8ClampedArray.from(px); // cor do quadro (para achar o corte de cena mesmo quando só a cor muda)
+      if (ant && dif / npx > 28 && t - ultimoCorte > 0.4) { cortes++; if (t <= 3) cortes3++; ultimoCorte = t; }
+      ant = lum; brilho += b / npx; sat += s / npx; n++;
+      if (n % 8 === 0) msg(`🔎 Assistindo e medindo o ritmo… ${Math.round(t / D * 100)}%`);
+    }
+    msg('🖼️ Separando os quadros principais…');
+    const tempos = [0.3, 1.2, 2.4].concat(Array.from({ length: 5 }, (_, i) => +(3.5 + (D - 4) * (i + 1) / 6).toFixed(1))).filter(t => t < D);
+    const fc = document.createElement('canvas'), esc = 480 / Math.max(v.videoWidth, v.videoHeight); fc.width = Math.round(v.videoWidth * esc); fc.height = Math.round(v.videoHeight * esc); const fg = fc.getContext('2d');
+    const frames = []; for (const t of tempos) { await ir(t); fg.drawImage(v, 0, 0, fc.width, fc.height); frames.push(fc.toDataURL('image/jpeg', 0.72)); }
+    let volume = null, variacaoVolume = null;
+    try { const ac = new (window.AudioContext || window.webkitAudioContext)(), buf = await ac.decodeAudioData(await f.slice(0, 40 * 1048576).arrayBuffer()); const c = buf.getChannelData(0), jan = Math.round(buf.sampleRate * 0.5), rms = []; for (let i = 0; i + jan < c.length; i += jan) { let s2 = 0; for (let k = i; k < i + jan; k += 8) s2 += c[k] * c[k]; rms.push(Math.sqrt(s2 / (jan / 8))); } const m = rms.reduce((a, b2) => a + b2, 0) / (rms.length || 1); volume = +m.toFixed(3); variacaoVolume = +Math.sqrt(rms.reduce((a, b2) => a + (b2 - m) ** 2, 0) / (rms.length || 1)).toFixed(3); ac.close(); } catch (e) {}
+    const stats = { duracao: +D.toFixed(1), cortes, cortes3s: cortes3, mediaCena: cortes ? +(D / (cortes + 1)).toFixed(1) : +D.toFixed(1), brilho: Math.round(brilho / n), saturacao: Math.round(sat / n * 100), w: v.videoWidth, h: v.videoHeight, volume, variacaoVolume, tempos };
+    msg('🤖 A IA está estudando o estilo de edição… (até 1 minuto)');
+    const r = await api('/api/admin/estudio/referencia-estilo', { method: 'POST', body: JSON.stringify({ nome, link, stats, frames }) });
+    EV_ESTILO_PADRAO = undefined; mostrarToast(r.message); renderEstudioVideo('agente');
+  } catch (e) { msg('⚠️ ' + escapeHtml(e.message)); mostrarToast(e.message, true); }
+  finally { URL.revokeObjectURL(url); }
+}
+function evHtmlReferencias(l) {
+  const est = l.filter(x => x.tipo === 'estilo');
+  return `<div class="ev-bloco ev-ref"><h3>🎯 Vídeos de referência do nicho — editar igual</h3>
+    <div class="plano-meta">Suba um vídeo que você admira (baixe ou grave a tela do Reels). O agente assiste, mede o ritmo dos cortes e estuda legendas, zooms, textos, cores e energia da música — e passa a <b>editar os seus vídeos no mesmo estilo</b> no ✨ Editar com IA. A referência mais recente ativa é o estilo padrão.</div>
+    <div class="ev-dupla"><input id="ev-ref-nome" placeholder="Nome (ex.: @perfil-referencia — Reels de liderança)"><input id="ev-ref-link" placeholder="Link do post (opcional)"></div>
+    <label class="ev-btn ia" style="display:inline-flex;margin-top:6px;cursor:pointer;">🎬 Escolher o vídeo de referência<input type="file" accept="video/*" hidden onchange="evAnalisarReferencia(this.files); this.value=''"></label>
+    <div id="ev-ref-st" class="ev-sub"></div>
+    ${est.length ? `<div class="ev-ref-lista">${est.map(x => { let m = {}; try { m = JSON.parse(x.metricas || '{}'); } catch (e) {} const s = m.estilo || {}, st = m.stats || {}, p = m.preset || {}; return `<div class="ev-ref-item ${x.ativo ? '' : 'inativo'}"><div><b>${escapeHtml(x.titulo || 'Referência')}</b><small>${st.duracao || '?'} s · ${st.cortes ?? '?'} cortes (1 a cada ${st.mediaCena || '?'} s) · música ${escapeHtml(((s.musica || {}).energia) || '?')}</small><p>${escapeHtml(s.resumo || '')}</p>${p.cor ? `<span class="ev-ref-leg" style="font-family:${escapeHtml(p.fonte)};color:${escapeHtml(p.cor)};${p.fundo ? 'background:' + escapeHtml(p.fundo) + ';' : ''}-webkit-text-stroke:${p.contorno ? '1px #000' : '0'};">${p.maiusc ? 'LEGENDA' : 'Legenda'} <em style="color:${escapeHtml(p.destaque || '#ffd600')}">${p.maiusc ? 'ASSIM' : 'assim'}</em></span>` : ''}</div>
+      <div class="ev-ag-acoes"><button title="${x.ativo ? 'Desativar' : 'Ativar'}" onclick="evAgAtivo(${x.id}, ${x.ativo ? 0 : 1})">${x.ativo ? '⏸' : '▶'}</button><button title="Excluir" onclick="evAgExcluir(${x.id})">🗑️</button></div></div>`; }).join('')}</div>` : ''}
+  </div>`;
 }
 // ---------- Instagram conectado: abas Plano · Roteiros virais · Interação ----------
 let IGABA = 'plano';
@@ -25459,7 +25569,7 @@ async function evDesenharAgente(corpo) {
   const perfil = l.find(x => x.tipo === 'perfil'), por = t => l.filter(x => x.tipo === t);
   const pontos = (perfil ? 30 : 0) + Math.min(20, por('regra').length * 5) + Math.min(25, por('exemplo').length * 8) + Math.min(10, por('proibido').length * 5) + Math.min(10, por('feedback').length * 2) + Math.min(5, por('referencia').length * 3);
   const item = x => `<div class="ev-ag-item ${x.ativo ? '' : 'inativo'}"><div><b>${escapeHtml(x.titulo || '')}</b>${x.metricas ? `<small>${escapeHtml(Object.entries(JSON.parse(x.metricas || '{}')).filter(([, v]) => v).map(([k, v]) => k + ': ' + v).join(' · '))}</small>` : ''}<p>${escapeHtml(String(x.conteudo || '').slice(0, 400))}</p></div><div class="ev-ag-acoes"><button title="${x.ativo ? 'Desativar' : 'Ativar'}" onclick="evAgAtivo(${x.id}, ${x.ativo ? 0 : 1})">${x.ativo ? '⏸' : '▶'}</button><button title="Excluir" onclick="evAgExcluir(${x.id})">🗑️</button></div></div>`;
-  corpo.innerHTML = `
+  corpo.innerHTML = evHtmlReferencias(l) + `
     <div class="ev-ag-topo"><div class="ev-bloco" style="flex:1;min-width:280px;"><h3>🤖 Nível de treinamento do Agente: ${pontos}%</h3><div class="ev-nivel"><i style="width:${pontos}%"></i></div>
       <div class="plano-meta">Quanto mais você ensina (perfil, regras, exemplos de sucesso e correções 👍/👎 dentro do editor), mais o agente acerta o seu jeito de comunicar.</div><div id="ev-ag-ia" style="margin-top:10px;"></div></div></div>
     <div class="ev-bloco"><h3>🧬 Perfil da marca</h3><div class="plano-meta">Quem é você, para quem fala, tom de voz, objetivos e a chamada padrão. É a base de tudo que o agente cria.</div>

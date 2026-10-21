@@ -13564,7 +13564,7 @@ db.run(`CREATE TABLE IF NOT EXISTS estudio_agente (
     id INTEGER PRIMARY KEY AUTOINCREMENT, tipo TEXT NOT NULL, titulo TEXT, conteudo TEXT, metricas TEXT, ativo INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`, () => db.run(`ALTER TABLE estudio_agente ADD COLUMN dono INTEGER`, () => {}));
 
-const TIPOS_AGENTE_EST = ['perfil', 'regra', 'exemplo', 'proibido', 'feedback', 'referencia', 'tendencia'];
+const TIPOS_AGENTE_EST = ['perfil', 'regra', 'exemplo', 'proibido', 'feedback', 'referencia', 'tendencia', 'estilo'];
 const FORMATOS_EST = ['9:16', '4:5', '1:1', '16:9'];
 const uploadEstudio = multer({ storage: armazenamentoUpload, limits: { fileSize: 1024 * 1024 * 1024 },
     fileFilter: (req, file, cb) => (/^(video|image|audio)\//.test(file.mimetype) || /\.(mp4|mov|webm|m4a|mp3|wav|aac|ogg|png|jpe?g|gif|webp)$/i.test(file.originalname)) ? cb(null, true) : cb(new Error('Envie vídeo, imagem ou áudio.')) });
@@ -13584,6 +13584,7 @@ async function contextoAgenteEst() {
     if (por('proibido').length) partes.push('NUNCA FAÇA / NUNCA USE:\n' + por('proibido').slice(0, 30).map(x => '- ' + x.conteudo).join('\n'));
     if (por('exemplo').length) partes.push('POSTS QUE DERAM CERTO (aprenda o padrão):\n' + por('exemplo').slice(0, 12).map(x => { let m = ''; try { const o = JSON.parse(x.metricas || '{}'); m = Object.entries(o).filter(([, v]) => v).map(([k, v]) => k + ': ' + v).join(', '); } catch (e) {} return `- ${x.titulo || 'Post'}${m ? ' (' + m + ')' : ''}:\n${String(x.conteudo || '').slice(0, 900)}`; }).join('\n'));
     if (por('referencia').length) partes.push('REFERÊNCIAS E PERFIS QUE ADMIRAMOS:\n' + por('referencia').slice(0, 15).map(x => '- ' + (x.titulo || '') + ' ' + x.conteudo).join('\n'));
+    if (por('estilo').length) partes.push('ESTILO DE EDIÇÃO DOS VÍDEOS DE REFERÊNCIA DO NICHO (edite IGUAL: mesmo ritmo de cortes, legendas, zooms, textos, cor e energia da música):\n' + por('estilo').slice(0, 3).map(x => '- ' + (x.titulo || 'Referência') + ':\n' + x.conteudo).join('\n'));
     if (por('tendencia').length) partes.push('O QUE ESTÁ VIRALIZANDO AGORA NO NICHO (pesquisado no mercado pelo Radar Viral — use estes padrões como base de tudo que criar):\n' + por('tendencia').slice(0, 2).map(x => '- ' + (x.titulo || '') + ':\n' + String(x.conteudo || '').slice(0, 3500)).join('\n'));
     if (por('feedback').length) partes.push('CORREÇÕES QUE O USUÁRIO JÁ TE DEU (não repita os erros):\n' + por('feedback').slice(0, 25).map(x => '- ' + x.conteudo).join('\n'));
     return partes.join('\n\n');
@@ -13633,7 +13634,7 @@ function ganchosLocaisEst(tema) {
 
 app.get('/api/admin/estudio/projetos', requireRole('admin', 'estudio'), async (req, res) => {
     const dono = donoAtualEst(), filtro = dono ? `WHERE created_by = ${Number(dono)}` : `WHERE created_by IS NULL OR created_by NOT IN (SELECT id FROM users WHERE role = 'estudio')`;
-    try { res.json((await dbAll(`SELECT id, titulo, formato, tipo, status, capa_url, video_url, agendado_para, publicado_em, ig_permalink, erro_publicacao, viral_score, legenda, updated_at, created_at, dados FROM estudio_projetos ${filtro} ORDER BY updated_at DESC`)).map(p => { const o = linhaProjetoEst(p); const d = o.dados || {}; o.duracao = (d.clips || []).reduce((s, c) => s + Math.max(0, ((c.fim || 0) - (c.ini || 0)) / (c.vel || 1)), 0); o.qtdClips = (d.clips || []).length; o.video_existe = o.video_url ? videoExisteEst(o.video_url) : false; o.thumb = (d.midias || []).find(m => m.tipo === 'imagem') ? (d.midias || []).find(m => m.tipo === 'imagem').url : ''; delete o.dados; return o; })); }
+    try { res.json((await dbAll(`SELECT id, titulo, formato, tipo, status, capa_url, video_url, agendado_para, publicado_em, ig_permalink, erro_publicacao, ig_formato, viral_score, legenda, updated_at, created_at, dados FROM estudio_projetos ${filtro} ORDER BY updated_at DESC`)).map(p => { const o = linhaProjetoEst(p); const d = o.dados || {}; o.duracao = (d.clips || []).reduce((s, c) => s + Math.max(0, ((c.fim || 0) - (c.ini || 0)) / (c.vel || 1)), 0); o.qtdClips = (d.clips || []).length; o.video_existe = o.video_url ? videoExisteEst(o.video_url) : false; o.thumb = (d.midias || []).find(m => m.tipo === 'imagem') ? (d.midias || []).find(m => m.tipo === 'imagem').url : ''; delete o.dados; return o; })); }
     catch (e) { res.status(500).json({ error: 'Erro ao carregar os projetos.' }); }
 });
 app.get('/api/admin/estudio/projetos/:id', requireRole('admin', 'estudio'), async (req, res) => {
@@ -14194,6 +14195,17 @@ app.put('/api/admin/estudio-voz', requireRole('admin'), async (req, res) => {
     }
     db.run(`INSERT INTO integration_settings (key, value) VALUES ('estudio_voz', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [JSON.stringify(cfg)], () => res.json({ ok: true, message: avisoVoz || 'Vozes atualizadas! ✅', aviso: !!avisoVoz }));
 });
+// ===== Músicas boas para o fundo: Jamendo (as mais populares, instrumentais, liberadas para uso comercial) + Minhas músicas =====
+async function cfgMusicaEst() { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_musica_cfg'`).catch(() => null); try { return JSON.parse((r && r.value) || '{}'); } catch (e) { return {}; } }
+const TAGS_JAMENDO = { motivacional: 'motivational inspirational upbeat', corporativo: 'corporate business positive', inspirador: 'inspiring cinematic emotional', animado: 'happy upbeat pop fun', calmo: 'calm relaxing ambient', epico: 'epic cinematic trailer', lofi: 'lofi chillhop chill', eletronico: 'electronic edm dance', emocionante: 'emotional piano cinematic', acustico: 'acoustic guitar folk', tecnologia: 'technology electronic future', suspense: 'suspense dark tension', viral: 'hiphop trap upbeat energetic', funk: 'funk groove dance', energia: 'energetic rock sport', tensao: 'suspense tension dark' };
+db.run(`CREATE TABLE IF NOT EXISTS estudio_musicas (id INTEGER PRIMARY KEY AUTOINCREMENT, dono INTEGER DEFAULT 0, titulo TEXT, artista TEXT, url TEXT, duracao REAL, humor TEXT, credito TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+async function buscarJamendoEst(cfg, { q, humor, emAlta }) {
+    const p = new URLSearchParams({ client_id: cfg.jamendo, format: 'json', limit: '30', order: emAlta ? 'popularity_week' : 'popularity_month', vocalinstrumental: 'instrumental', durationbetween: '25_480', audioformat: 'mp32', include: 'musicinfo licenses', ccnc: 'false', ccnd: 'false' });
+    if (q) p.set('search', q); else p.set('fuzzytags', TAGS_JAMENDO[humor] || TAGS_JAMENDO.motivacional);
+    const r = await fetch('https://api.jamendo.com/v3.0/tracks/?' + p, { signal: AbortSignal.timeout(15000) });
+    const j = await r.json().catch(() => ({})); if (!r.ok || (j.headers && j.headers.status === 'failed')) throw new Error('Jamendo: ' + ((j.headers && j.headers.error_message) || ('HTTP ' + r.status)));
+    return (j.results || []).filter(x => x.audio).map(x => ({ id: 'jm:' + x.id, titulo: x.name, artista: x.artist_name || '', duracao: Number(x.duration) || 0, licenca: /by-sa/.test(x.license_ccurl || '') ? 'CC BY-SA' : /by\//.test(x.license_ccurl || '') ? 'CC BY' : 'CC', ouvir: x.audio, fonte: 'Jamendo', capa: x.image || '' }));
+}
 // ===== Músicas da internet livres para usar (Openverse: Jamendo, ccMixter, Wikimedia — licenças Creative Commons) =====
 const CACHE_MUSICAS = new Map();
 const HUMORES_MUSICA = { motivacional: 'motivational upbeat', corporativo: 'corporate business background', inspirador: 'inspiring cinematic', animado: 'happy energetic pop', calmo: 'calm relaxing ambient', epico: 'epic cinematic trailer', lofi: 'lofi chill hip hop', eletronico: 'electronic dance', acustico: 'acoustic guitar', emocionante: 'emotional piano', tecnologia: 'technology future', suspense: 'suspense tension' };
@@ -14206,11 +14218,56 @@ async function buscarMusicasEst(q) {
     CACHE_MUSICAS.set(chave, { t: Date.now(), l }); return l;
 }
 app.get('/api/admin/estudio/musicas', requireRole('admin', 'estudio'), async (req, res) => {
-    const humor = String(req.query.humor || ''), q = String(req.query.q || '').trim().slice(0, 80) || HUMORES_MUSICA[humor] || 'background music';
-    try { res.json({ musicas: await buscarMusicasEst(q) }); } catch (e) { res.status(502).json({ error: e.message }); }
+    const humor = String(req.query.humor || ''), qLivre = String(req.query.q || '').trim().slice(0, 80), q = qLivre || HUMORES_MUSICA[humor] || 'background music', emAlta = humor === 'emalta';
+    const dono = donoAtualEst();
+    const minhas = (await dbAll(`SELECT * FROM estudio_musicas WHERE dono = ? ${humor && humor !== 'minhas' && humor !== 'emalta' ? 'AND (humor = ? OR humor IS NULL OR humor = \'\')' : ''} ORDER BY id DESC LIMIT 50`, humor && humor !== 'minhas' && humor !== 'emalta' ? [dono, humor] : [dono]).catch(() => []))
+        .filter(m => !qLivre || (m.titulo + ' ' + m.artista).toLowerCase().includes(qLivre.toLowerCase()))
+        .map(m => ({ id: 'my:' + m.id, titulo: m.titulo, artista: m.artista || '', duracao: m.duracao || 0, licenca: 'Sua', ouvir: m.url, fonte: 'Minhas músicas', minha: true }));
+    if (humor === 'minhas') return res.json({ musicas: minhas, fonte: 'minhas' });
+    const cfg = await cfgMusicaEst();
+    if (cfg.jamendo) { try { const l = await buscarJamendoEst(cfg, { q: qLivre, humor: emAlta ? 'viral' : humor, emAlta }); if (l.length) return res.json({ musicas: minhas.concat(l), fonte: 'jamendo' }); } catch (e) { console.warn(e.message); } }
+    try { res.json({ musicas: minhas.concat(await buscarMusicasEst(emAlta ? 'upbeat energetic hip hop' : q)), fonte: 'openverse', semJamendo: !cfg.jamendo }); } catch (e) { if (minhas.length) return res.json({ musicas: minhas }); res.status(502).json({ error: e.message }); }
+});
+// Master: chave do Jamendo (gratuita em devportal.jamendo.com)
+app.get('/api/admin/estudio-musica', requireRole('admin'), async (req, res) => { const c = await cfgMusicaEst(); res.json({ jamendo: c.jamendo ? '••••' + String(c.jamendo).slice(-4) : '' }); });
+app.put('/api/admin/estudio-musica', requireRole('admin'), async (req, res) => {
+    const k = String((req.body || {}).jamendo || '').trim();
+    if (k) { try { await buscarJamendoEst({ jamendo: k }, { humor: 'motivacional' }); } catch (e) { return res.status(400).json({ error: 'O Jamendo recusou a chave: ' + e.message }); } }
+    db.run(`INSERT INTO integration_settings (key, value) VALUES ('estudio_musica_cfg', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [JSON.stringify({ jamendo: k })], () => res.json({ message: k ? '🎵 Jamendo conectado! As músicas agora vêm das mais tocadas.' : 'Chave do Jamendo removida.' }));
+});
+// Minhas músicas: o próprio usuário sobe as músicas que tem direito de usar (biblioteca do YouTube, Epidemic Sound, compradas…)
+const uploadMusicaEst = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
+app.post('/api/admin/estudio/minhas-musicas', requireRole('admin', 'estudio'), (req, res, next) => uploadMusicaEst.single('arquivo')(req, res, e => e ? res.status(400).json({ error: e.code === 'LIMIT_FILE_SIZE' ? 'Música grande demais (máximo 25 MB).' : 'Falha no envio.' }) : next()), async (req, res) => {
+    const f = req.file; if (!f) return res.status(400).json({ error: 'Escolha o arquivo da música (MP3, M4A, WAV ou OGG).' });
+    const nomeOrig = Buffer.from(f.originalname, 'latin1').toString('utf8'), ext = (path.extname(nomeOrig).toLowerCase().match(/^\.(mp3|m4a|aac|wav|ogg)$/) || [])[0];
+    if (!ext) return res.status(400).json({ error: 'Formato não aceito. Use MP3, M4A, WAV ou OGG.' });
+    const nome = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + ext, arq = path.join(PASTA_UPLOADS, nome); fs.writeFileSync(arq, f.buffer);
+    copiarUploadParaBanco({ filename: nome, path: arq, size: f.size, mimetype: ext === '.mp3' ? 'audio/mpeg' : ext === '.m4a' || ext === '.aac' ? 'audio/mp4' : 'audio/' + ext.slice(1) });
+    const b = req.body || {}, titulo = String(b.titulo || nomeOrig.replace(/\.[^.]+$/, '')).slice(0, 120);
+    db.run(`INSERT INTO estudio_musicas (dono, titulo, artista, url, duracao, humor, credito) VALUES (?, ?, ?, ?, ?, ?, ?)`, [donoAtualEst(), titulo, String(b.artista || '').slice(0, 120), '/uploads/' + nome, Number(b.duracao) || (ext === '.mp3' ? duracaoMp3(f.buffer) : 0), String(b.humor || '').slice(0, 30), String(b.credito || '').slice(0, 300)],
+        function (e) { if (e) return res.status(500).json({ error: 'Erro ao salvar.' }); res.json({ id: this.lastID, message: `🎵 "${titulo}" salva nas suas músicas.` }); });
+});
+app.delete('/api/admin/estudio/minhas-musicas/:id', requireRole('admin', 'estudio'), (req, res) => {
+    db.run(`DELETE FROM estudio_musicas WHERE id = ? AND dono = ?`, [Number(req.params.id), donoAtualEst()], function () { res.json({ ok: !!this.changes }); });
 });
 app.post('/api/admin/estudio/musicas/usar', requireRole('admin', 'estudio'), async (req, res) => {
-    const id = String((req.body || {}).id || '').replace(/[^\w-]/g, ''); if (!id) return res.status(400).json({ error: 'Música inválida.' });
+    const idBruto = String((req.body || {}).id || '');
+    if (/^my:\d+$/.test(idBruto)) { const m = await dbGet(`SELECT * FROM estudio_musicas WHERE id = ? AND dono = ?`, [Number(idBruto.slice(3)), donoAtualEst()]).catch(() => null); if (!m) return res.status(404).json({ error: 'Música não encontrada.' }); return res.json({ url: m.url, titulo: m.titulo, artista: m.artista || '', duracao: m.duracao || 0, licenca: 'Sua', credito: m.credito || '' }); }
+    if (/^jm:\d+$/.test(idBruto)) {
+        try {
+            const cfg = await cfgMusicaEst(); if (!cfg.jamendo) throw new Error('Jamendo não configurado');
+            const r = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=${encodeURIComponent(cfg.jamendo)}&format=json&id=${idBruto.slice(3)}&audioformat=mp32&audiodlformat=mp32&include=licenses`, { signal: AbortSignal.timeout(15000) });
+            const x = ((await r.json()).results || [])[0]; if (!x) throw new Error('música não encontrada');
+            const fonte = x.audiodownload_allowed && x.audiodownload ? x.audiodownload : x.audio;
+            const a = await fetch(fonte, { redirect: 'follow', signal: AbortSignal.timeout(60000) }); if (!a.ok) throw new Error('download recusado (HTTP ' + a.status + ')');
+            const buf = Buffer.from(await a.arrayBuffer()); if (buf.length < 20000) throw new Error('arquivo de áudio inválido');
+            const nome = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + '.mp3', arq = path.join(PASTA_UPLOADS, nome); fs.writeFileSync(arq, buf);
+            copiarUploadParaBanco({ filename: nome, path: arq, size: buf.length, mimetype: 'audio/mpeg' });
+            const lic = /by-sa/.test(x.license_ccurl || '') ? 'CC BY-SA' : /by\//.test(x.license_ccurl || '') ? 'CC BY' : 'CC';
+            return res.json({ url: '/uploads/' + nome, titulo: x.name, artista: x.artist_name || '', duracao: Number(x.duration) || duracaoMp3(buf), licenca: lic, credito: `🎵 Música: "${x.name}" — ${x.artist_name || ''} (Jamendo · ${lic})` });
+        } catch (e) { return res.status(502).json({ error: 'Não consegui baixar esta música: ' + e.message + '. Tente outra.' }); }
+    }
+    const id = idBruto.replace(/[^\w-]/g, ''); if (!id) return res.status(400).json({ error: 'Música inválida.' });
     try {
         const r = await fetch(`https://api.openverse.org/v1/audio/${id}/`, { headers: { 'User-Agent': 'ImpulsionarV4/1.0' }, signal: AbortSignal.timeout(15000) });
         const x = await r.json(); if (!r.ok || !x.url) throw new Error('música não encontrada');
@@ -14378,6 +14435,46 @@ app.get('/api/public/baixar/:nome', async (req, res) => {
 // ----- Agente treinável -----
 app.get('/api/admin/estudio/agente', requireRole('admin', 'estudio'), async (req, res) => {
     try { res.json(await dbAll(`SELECT * FROM estudio_agente WHERE COALESCE(dono, 0) = ? ORDER BY tipo, id DESC`, [donoAtualEst()])); } catch (e) { res.status(500).json({ error: 'Erro ao carregar o agente.' }); }
+});
+// ===== Vídeos de referência do nicho: a IA assiste (quadros + números do ritmo) e aprende o ESTILO de edição =====
+const CHAVES_ESTILO_LEG = ['fonte', 'peso', 'tam', 'cor', 'fundo', 'contorno', 'y', 'maiusc', 'anim', 'destaque'];
+async function iaVisaoEst(sistema, conteudo, max) {
+    if (!ANTHROPIC_API_KEY) throw new Error('A IA ainda não está configurada no sistema.');
+    const ir = async modelo => { const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: cabecalhosIA(), body: JSON.stringify({ model: modelo, max_tokens: max || 3000, system: sistema, messages: [{ role: 'user', content: conteudo }] }), signal: AbortSignal.timeout(180000) }); return { r, j: await r.json().catch(() => ({})) }; };
+    let { r, j } = await ir(ANTHROPIC_MODEL_AVANCADO);
+    if (!r.ok && (r.status === 404 || /model/i.test((j.error || {}).message || ''))) ({ r, j } = await ir(ANTHROPIC_MODEL));
+    if (!r.ok) throw new Error('IA: ' + ((j.error && j.error.message) || ('erro ' + r.status)));
+    const txt = (j.content || []).map(b => b.text || '').join(''), ini = txt.indexOf('{'), fim = txt.lastIndexOf('}');
+    try { return JSON.parse(txt.slice(ini, fim + 1)); } catch (e) { throw new Error('A IA respondeu num formato inesperado. Tente de novo.'); }
+}
+app.post('/api/admin/estudio/referencia-estilo', requireRole('admin', 'estudio'), async (req, res) => {
+    const b = req.body || {}, frames = (Array.isArray(b.frames) ? b.frames : []).filter(f => /^data:image\/jpeg;base64,/.test(f)).slice(0, 10), st = b.stats || {};
+    if (frames.length < 3) return res.status(400).json({ error: 'Não consegui ler o vídeo de referência. Envie um MP4 ou MOV.' });
+    try {
+        await consumirEst('ia', 1);
+        const conteudo = [{ type: 'text', text: `Vídeo de referência do nicho: "${String(b.nome || '').slice(0, 120)}"${b.link ? ' (' + String(b.link).slice(0, 200) + ')' : ''}.
+Medições automáticas do vídeo inteiro: duração ${st.duracao}s · ${st.cortes} cortes de cena (1 corte a cada ${st.mediaCena}s em média; nos primeiros 3 s: ${st.cortes3s} cortes) · brilho médio ${st.brilho}/255 · saturação média ${st.saturacao}/100 · formato ${st.w}x${st.h} · volume médio do áudio ${st.volume ?? 'sem dado'} (0–1) · variação do volume ${st.variacaoVolume ?? 'sem dado'}.
+Abaixo, ${frames.length} quadros em ordem (o 1º é o início = gancho).` }];
+        frames.forEach((f, i) => { conteudo.push({ type: 'text', text: `Quadro ${i + 1} (${(st.tempos || [])[i] ?? '?'}s):` }); conteudo.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: f.split(',')[1] } }); });
+        conteudo.push({ type: 'text', text: `Analise como um editor sênior de Reels e descreva o ESTILO DE EDIÇÃO para outro editor copiar. Seja concreto (cores em hex, posição, tamanho).
+Responda APENAS com JSON:
+{"resumo":"2-3 frases do estilo","gancho":"como é o gancho visual/texto nos 2 primeiros segundos","ritmo":{"cortes_por_10s":0,"descricao":""},"legendas":{"tem":true,"palavras_por_vez":"1-2|3-5|frase","maiusculas":true,"fonte_parecida":"Montserrat|Bebas Neue|Poppins|Anton|Arial","peso":900,"cor":"#ffffff","destaque":"#ffd600","contorno":true,"fundo":"cor do fundo da caixa ou vazio","posicao":"topo|meio|baixo","animacao":"pop|fade|subir|digitar|zoom|nenhuma"},"zoom":"uso de zoom/punch-in","texto_na_tela":"como usa títulos e textos de apoio","broll":"uso de imagens de cobertura","transicoes":"corte|fade|zoom|deslizar|flash","cor":{"filtro":"nenhum|vibrante|cinema|quente|frio|suave|contraste","descricao":""},"musica":{"energia":"baixa|media|alta","estilo":"motivacional|corporativo|inspirador|animado|lofi|eletronico|epico|calmo|acustico|suspense|emalta","descricao":""},"enquadramento":"","cta":"","regras_para_copiar":["regra prática 1","..."]}` });
+        const est = await iaVisaoEst('Você é editor de vídeo sênior especialista em Reels virais. Analise estilo de edição a partir de quadros e medições. Não invente o que não dá para ver.', conteudo, 3000);
+        const leg = est.legendas || {};
+        const y = { topo: 0.24, meio: 0.5, baixo: 0.7 }[leg.posicao] || 0.66;
+        const preset = leg.tem === false ? null : { fonte: ['Montserrat', 'Bebas Neue', 'Poppins', 'Anton', 'Arial'].includes(leg.fonte_parecida) ? leg.fonte_parecida : 'Montserrat', peso: Number(leg.peso) || 900, cor: /^#[0-9a-f]{6}$/i.test(leg.cor || '') ? leg.cor : '#ffffff', destaque: /^#[0-9a-f]{6}$/i.test(leg.destaque || '') ? leg.destaque : '#ffd600', contorno: leg.contorno === false ? 0 : 10, fundo: /^#[0-9a-f]{6}$|^rgba?\(/i.test(leg.fundo || '') ? leg.fundo : '', y, maiusc: leg.maiusculas !== false, anim: ['pop', 'fade', 'subir', 'digitar', 'zoom', 'nenhuma'].includes(leg.animacao) ? leg.animacao : 'pop' };
+        const texto = `${est.resumo || ''}\nGancho: ${est.gancho || ''}\nRitmo: ${(est.ritmo || {}).descricao || ''} (${(est.ritmo || {}).cortes_por_10s ?? '?'} cortes a cada 10 s)\nLegendas: ${leg.tem === false ? 'sem legendas' : `${leg.palavras_por_vez || ''} palavras por vez, ${leg.maiusculas ? 'MAIÚSCULAS' : 'normais'}, cor ${leg.cor || ''}, destaque ${leg.destaque || ''}, posição ${leg.posicao || ''}, animação ${leg.animacao || ''}`}\nZoom: ${est.zoom || ''}\nTexto na tela: ${est.texto_na_tela || ''}\nCobertura: ${est.broll || ''}\nTransições: ${est.transicoes || ''}\nCor: ${(est.cor || {}).descricao || ''}\nMúsica: ${(est.musica || {}).descricao || ''}\nCTA: ${est.cta || ''}\nRegras: ${(est.regras_para_copiar || []).join(' · ')}`;
+        const metricas = JSON.stringify({ estilo: est, preset, stats: st });
+        const id = await new Promise((ok, falha) => db.run(`INSERT INTO estudio_agente (tipo, titulo, conteudo, metricas, ativo, dono) VALUES ('estilo', ?, ?, ?, 1, ?)`, [String(b.nome || 'Referência').slice(0, 120), texto.slice(0, 8000), metricas, donoAtualEst()], function (e) { e ? falha(e) : ok(this.lastID); }));
+        res.json({ id, estilo: est, preset, message: '🎯 Estilo aprendido! O agente vai editar seguindo esta referência.' });
+    } catch (e) { if (e.limite) return erroLimiteEst(res, e); res.status(400).json({ error: e.message }); }
+});
+// estilo padrão (a referência ativa mais recente): o editor aplica nas legendas, cortes, zoom, cor e música
+app.get('/api/admin/estudio/estilo-padrao', requireRole('admin', 'estudio'), async (req, res) => {
+    const r = await dbGet(`SELECT id, titulo, metricas FROM estudio_agente WHERE tipo = 'estilo' AND ativo = 1 AND COALESCE(dono, 0) = ? ORDER BY id DESC LIMIT 1`, [donoAtualEst()]).catch(() => null);
+    if (!r) return res.json(null);
+    let m = {}; try { m = JSON.parse(r.metricas || '{}'); } catch (e) {}
+    res.json({ id: r.id, titulo: r.titulo, estilo: m.estilo || {}, preset: m.preset || null });
 });
 app.post('/api/admin/estudio/agente', requireRole('admin', 'estudio'), async (req, res) => {
     const b = req.body || {};
@@ -15177,6 +15274,10 @@ Responda APENAS com JSON: {"roteiros":[{"titulo":"","formato":"Reels","duracao":
     } catch (e) { if (e.limite) return erroLimiteEst(res, e); res.status(400).json({ error: e.message }); }
 });
 
+// ----- Publicação: Reels / Story / os dois, base pública salva (posta com o computador desligado) e novas tentativas -----
+['ig_formato TEXT', 'tentativas INTEGER DEFAULT 0'].forEach(c => { const f = () => db.run(`ALTER TABLE estudio_projetos ADD COLUMN ${c}`, () => {}); f(); setTimeout(f, 2000); setTimeout(f, 9000); });
+async function basePublicaEst() { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_base_publica'`).catch(() => null); return (r && r.value) || ''; }
+function salvarBasePublicaEst(b) { if (!/^https:\/\//.test(b || '') || /localhost|127\.0\.0\.1/.test(b)) return; db.run(`INSERT INTO integration_settings (key, value) VALUES ('estudio_base_publica', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [b]); }
 async function publicarProjetoEst(id, base) {
     const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [id]);
     if (!p) throw new Error('Projeto não encontrado.');
@@ -15187,28 +15288,41 @@ async function publicarProjetoEst(id, base) {
     if (!/^https:\/\//.test(videoUrl) || /localhost|127\.0\.0\.1/.test(videoUrl)) throw new Error('O vídeo precisa estar num endereço público (https) para o Instagram buscar.');
     const caption = [p.legenda || '', p.hashtags || ''].filter(Boolean).join('\n\n').slice(0, 2200);
     db.run(`UPDATE estudio_projetos SET status = 'publicando', erro_publicacao = NULL WHERE id = ?`, [id]);
-    const tipo = p.tipo === 'stories' ? 'STORIES' : 'REELS';
-    const cont = await igEst('POST', `/${ig.userId}/media`, { media_type: tipo, video_url: videoUrl, caption: tipo === 'STORIES' ? '' : caption, share_to_feed: 'true' }, ig.token);
-    for (let i = 0; i < 60; i++) {
-        await new Promise(r => setTimeout(r, 5000));
-        const st = await igEst('GET', '/' + cont.id, { fields: 'status_code,status' }, ig.token);
-        if (st.status_code === 'FINISHED') break;
-        if (st.status_code === 'ERROR' || st.status_code === 'EXPIRED') throw new Error('O Instagram recusou o vídeo: ' + (st.status || st.status_code));
-        if (i === 59) throw new Error('O Instagram demorou demais para processar o vídeo. Tente de novo.');
-    }
-    const pub = await igEst('POST', `/${ig.userId}/media_publish`, { creation_id: cont.id }, ig.token);
-    let link = ''; try { link = (await igEst('GET', '/' + pub.id, { fields: 'permalink' }, ig.token)).permalink || ''; } catch (e) {}
-    db.run(`UPDATE estudio_projetos SET status = 'publicado', publicado_em = CURRENT_TIMESTAMP, ig_media_id = ?, ig_permalink = ?, erro_publicacao = NULL, agendado_para = NULL WHERE id = ?`, [pub.id, link, id]);
-    return { id: pub.id, permalink: link };
+    const formato = ['reels', 'stories', 'ambos'].includes(p.ig_formato) ? p.ig_formato : (p.tipo === 'stories' ? 'stories' : 'reels');
+    const publicarUm = async tipo => {
+        const cont = await igEst('POST', `/${ig.userId}/media`, tipo === 'STORIES' ? { media_type: 'STORIES', video_url: videoUrl } : { media_type: 'REELS', video_url: videoUrl, caption, share_to_feed: 'true' }, ig.token);
+        for (let i = 0; i < 60; i++) {
+            await new Promise(r => setTimeout(r, 5000));
+            const st = await igEst('GET', '/' + cont.id, { fields: 'status_code,status' }, ig.token);
+            if (st.status_code === 'FINISHED') break;
+            if (st.status_code === 'ERROR' || st.status_code === 'EXPIRED') throw Object.assign(new Error('O Instagram recusou o vídeo: ' + (st.status || st.status_code)), { definitivo: true });
+            if (i === 59) throw new Error('O Instagram demorou demais para processar o vídeo.');
+        }
+        const pub = await igEst('POST', `/${ig.userId}/media_publish`, { creation_id: cont.id }, ig.token);
+        let link = ''; try { link = (await igEst('GET', '/' + pub.id, { fields: 'permalink' }, ig.token)).permalink || ''; } catch (e) {}
+        return { id: pub.id, permalink: link };
+    };
+    const principal = await publicarUm(formato === 'stories' ? 'STORIES' : 'REELS');
+    let aviso = null;
+    if (formato === 'ambos') { try { await publicarUm('STORIES'); } catch (e) { aviso = 'Reels publicado, mas o Story falhou: ' + e.message; } }
+    db.run(`UPDATE estudio_projetos SET status = 'publicado', publicado_em = CURRENT_TIMESTAMP, ig_media_id = ?, ig_permalink = ?, erro_publicacao = ?, agendado_para = NULL, tentativas = 0 WHERE id = ?`, [principal.id, principal.permalink, aviso, id]);
+    return principal;
 }
 app.post('/api/admin/estudio/projetos/:id/publicar', requireRole('admin', 'estudio'), async (req, res) => {
-    const base = baseUrlPublicaDpo(req);
+    const base = baseUrlPublicaDpo(req); salvarBasePublicaEst(base);
+    const fmtIg = ['reels', 'stories', 'ambos'].includes((req.body || {}).formatoIg) ? req.body.formatoIg : null;
+    if (fmtIg) db.run(`UPDATE estudio_projetos SET ig_formato = ? WHERE id = ?`, [fmtIg, req.params.id]);
     if (req.body && req.body.agendarPara) {
         const quando = new Date(req.body.agendarPara);
         if (isNaN(quando) || quando < Date.now() - 60000) return res.status(400).json({ error: 'Escolha uma data/hora futura.' });
-        db.run(`UPDATE estudio_projetos SET status = 'agendado', agendado_para = ?, erro_publicacao = NULL WHERE id = ?`, [quando.toISOString(), req.params.id]);
+        const pr0 = await dbGet(`SELECT video_url, status FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
+        if (!pr0) return res.status(404).json({ error: 'Projeto não encontrado.' });
+        if (!pr0.video_url) return res.status(400).json({ error: 'Exporte o vídeo antes de agendar (ele fica guardado no servidor e é publicado mesmo com o computador desligado).' });
+        if (pr0.status === 'publicando') return res.status(400).json({ error: 'Este vídeo está sendo publicado agora.' });
+        db.run(`UPDATE estudio_projetos SET status = 'agendado', agendado_para = ?, erro_publicacao = NULL, tentativas = 0 WHERE id = ?`, [quando.toISOString(), req.params.id]);
         ULTIMA_BASE_ESTUDIO = base;
-        return res.json({ message: `Publicação agendada para ${quando.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}. ✅` });
+        const ja = pr0.status === 'agendado';
+        return res.json({ message: `${ja ? 'Agendamento alterado' : 'Publicação agendada'} para ${quando.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}. ✅ Pode desligar o computador: o servidor publica sozinho.` });
     }
     if (req.body && req.body.cancelarAgendamento) { db.run(`UPDATE estudio_projetos SET status = 'pronto', agendado_para = NULL WHERE id = ?`, [req.params.id]); return res.json({ message: 'Agendamento cancelado.' }); }
     // Checagens rápidas antes de enviar em segundo plano.
@@ -15226,8 +15340,14 @@ setInterval(async () => {
     try {
         const devidos = await dbAll(`SELECT id FROM estudio_projetos WHERE status = 'agendado' AND agendado_para <= ?`, [new Date().toISOString()]);
         for (const p of devidos) {
-            const base = (typeof appBaseUrlAtiva !== 'undefined' && urlPublicaValida(appBaseUrlAtiva) ? appBaseUrlAtiva : '') || ULTIMA_BASE_ESTUDIO || (typeof ULTIMA_BASE_DPO !== 'undefined' ? ULTIMA_BASE_DPO : '');
-            await publicarProjetoEst(p.id, base).catch(e => db.run(`UPDATE estudio_projetos SET status = 'erro', erro_publicacao = ? WHERE id = ?`, ['Agendamento: ' + e.message, p.id]));
+            const base = (typeof appBaseUrlAtiva !== 'undefined' && urlPublicaValida(appBaseUrlAtiva) ? appBaseUrlAtiva : '') || ULTIMA_BASE_ESTUDIO || (await basePublicaEst()) || (typeof ULTIMA_BASE_DPO !== 'undefined' ? ULTIMA_BASE_DPO : '');
+            db.run(`UPDATE estudio_projetos SET status = 'publicando' WHERE id = ? AND status = 'agendado'`, [p.id]);
+            await publicarProjetoEst(p.id, base).catch(async e => {
+                // falha passageira (internet, Instagram fora do ar): tenta de novo em 10 min, até 3 vezes
+                const t = ((await dbGet(`SELECT tentativas FROM estudio_projetos WHERE id = ?`, [p.id]).catch(() => null)) || {}).tentativas || 0;
+                if (!e.definitivo && t < 3) db.run(`UPDATE estudio_projetos SET status = 'agendado', agendado_para = ?, tentativas = ?, erro_publicacao = ? WHERE id = ?`, [new Date(Date.now() + 10 * 60000).toISOString(), t + 1, `Tentativa ${t + 1} falhou (${e.message}) — tentando de novo em 10 min.`, p.id]);
+                else db.run(`UPDATE estudio_projetos SET status = 'erro', erro_publicacao = ? WHERE id = ?`, ['Agendamento: ' + e.message, p.id]);
+            });
         }
     } catch (e) { /* tenta no próximo minuto */ }
 }, 60 * 1000);
