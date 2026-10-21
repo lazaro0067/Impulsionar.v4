@@ -1479,6 +1479,21 @@
   body.modo-estudio .ig-card, body.modo-estudio .ig-dia, body.modo-estudio .ig-prog > div, body.modo-estudio .ig-novo, body.modo-estudio .ig-conta, body.modo-estudio .ig-det { background:#111a33; border-color:#1f2a48; color:#e2e8f0; }
   body.modo-estudio .ig-card p, body.modo-estudio .ig-novo p, body.modo-estudio .ig-bloco p { color:#cbd5e1; } body.modo-estudio .ig-bloco { background:#0b1329; } body.modo-estudio .ig-hero { background:linear-gradient(135deg,#2a1033,#141b3d); border-color:#3b1f4f; } body.modo-estudio .ig-hero p { color:#cbd5e1; }
   body.modo-estudio .ig-chips span { background:#1f2a48; } body.modo-estudio .ig-bio { background:#2a1033; } body.modo-estudio .ig-gancho { background:#2a1d12; } body.modo-estudio .ig-cp { background:#1f2a48; border-color:#334155; color:#e2e8f0; } body.modo-estudio .ig-copia code { background:#0b1329; }
+
+  .ig-abas { display:flex; gap:6px; margin:4px 0 12px; overflow-x:auto; } .ig-abas button { border:1px solid #e2e8f0; background:#fff; border-radius:22px; padding:9px 16px; font-weight:800; font-size:13.5px; cursor:pointer; white-space:nowrap; color:#334155; } .ig-abas button.on { background:linear-gradient(45deg,#dd2a7b,#8134af); color:#fff; border-color:transparent; }
+  .ig-evol { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; margin-bottom:12px; } .ig-evol svg { width:100%; height:90px; display:block; } .ig-evol-cab { display:flex; justify-content:space-between; } .ig-evol-cab .sobe { color:#16a34a; font-weight:800; } .ig-evol-cab .desce { color:#dc2626; font-weight:800; } .ig-evol-eixo { display:flex; justify-content:space-between; font-size:11.5px; color:#64748b; }
+  .ig-linha select { border:1px solid #cbd5e1; border-radius:10px; padding:8px; }
+  .ig-inter-cab { display:flex; gap:14px; align-items:flex-start; justify-content:space-between; } .ig-inter-cab p { margin:4px 0 10px; }
+  .ig-chave { display:flex !important; align-items:center; gap:8px; cursor:pointer; flex-shrink:0; width:auto !important; } .ig-chave input { display:none; } .ig-chave i { width:46px; height:26px; border-radius:13px; background:#cbd5e1; position:relative; transition:.2s; } .ig-chave i::after { content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:.2s; } .ig-chave input:checked + i { background:#16a34a; } .ig-chave input:checked + i::after { left:23px; }
+  .ig-modos { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; } .ig-modos label { border:2px solid #e2e8f0; border-radius:12px; padding:10px 12px; cursor:pointer; display:block !important; width:auto !important; } .ig-modos label.on { border-color:#8134af; background:#faf5ff; } .ig-modos input { margin-right:6px; width:auto !important; } .ig-modos small { display:block; color:#64748b; font-weight:400; margin-top:3px; }
+  .ig-mini { display:flex !important; flex-direction:column; font-size:12px; font-weight:700; color:#475569; width:auto !important; } .ig-mini input { width:140px; margin-top:3px; } .ig-mini[style*="flex:1"] input { width:100%; }
+  .ig-inter-num { display:flex; gap:12px; flex-wrap:wrap; align-items:center; font-size:13px; margin-top:10px; color:#334155; }
+  .ig-coms { display:flex; flex-direction:column; gap:8px; margin-top:12px; } .ig-com { background:#fff; border:1px solid #e2e8f0; border-left:4px solid #cbd5e1; border-radius:12px; padding:10px 12px; } .ig-com.atencao { border-left-color:#dc2626; } .ig-com.sugerido { border-left-color:#d97706; } .ig-com.respondido { border-left-color:#16a34a; }
+  .ig-com-cab { display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .ig-com-cab a { margin-left:auto; font-size:12px; } .ig-st { color:#fff; font-size:11px; font-weight:700; border-radius:10px; padding:2px 8px; } .ig-com-txt { margin:6px 0 2px; font-size:14px; } .ig-com textarea { width:100%; box-sizing:border-box; margin-top:8px; border:1px solid #cbd5e1; border-radius:10px; padding:8px; font-family:inherit; font-size:14px; }
+  .ig-resp { margin-top:6px; background:#f0fdf4; border-radius:10px; padding:7px 10px; font-size:13.5px; color:#166534; }
+  @media (max-width: 760px) { .ig-modos { grid-template-columns:1fr; } .ig-inter-cab { flex-direction:column; } .ig-linha { flex-wrap:wrap; } }
+  body.modo-estudio .ig-abas button { background:#111a33; border-color:#1f2a48; color:#cbd5e1; } body.modo-estudio .ig-abas button.on { background:linear-gradient(45deg,#dd2a7b,#8134af); color:#fff; }
+  body.modo-estudio .ig-evol, body.modo-estudio .ig-com { background:#111a33; border-color:#1f2a48; color:#e2e8f0; } body.modo-estudio .ig-modos label { border-color:#1f2a48; } body.modo-estudio .ig-modos label.on { background:#21143a; border-color:#8134af; } body.modo-estudio .ig-inter-num, body.modo-estudio .ig-mini { color:#cbd5e1; } body.modo-estudio .ig-resp { background:#0f2a1b; color:#86efac; } body.modo-estudio .ig-com textarea { background:#0b1329; color:#e2e8f0; border-color:#334155; }
   /* ---------- Agente de Relatórios ---------- */
   .agr { display:grid; grid-template-columns:260px 1fr; height:calc(100vh - 64px); min-height:520px; background:#fff; border:1px solid #e2e8f0; border-radius:18px; overflow:hidden; position:relative; }
   .agr-lado { background:#f8fafc; border-right:1px solid #e2e8f0; display:flex; flex-direction:column; min-height:0; }
@@ -25254,8 +25269,8 @@ async function evDesenharInstagram(corpo) {
     return;
   }
   corpo.innerHTML = `<div class="ig-pag"><div class="ig-conta"><div class="ig-logo peq">📸</div><div style="flex:1;min-width:0;"><b>@${escapeHtml(c.username || c.userId)}</b><small>Conectado · publica e agenda direto do Estúdio</small></div><button class="btn-secundario btn-sm" style="width:auto;" onclick="igEntrar()" ${c.loginDisponivel ? '' : 'hidden'}>🔄 Reconectar</button><button class="btn-secundario btn-sm" style="width:auto;" onclick="evDesconectarIg()">Desconectar</button></div>
-    <div id="ig-plano"><p class="plano-meta">Carregando o plano…</p></div>${cfgApp}</div>`;
-  igCarregarPlano();
+    ${igAbas()}${cfgApp}</div>`;
+  igMostrarAba();
 }
 async function igSalvarApp() { try { const r = await api('/api/admin/instagram-app', { method: 'PUT', body: JSON.stringify({ appId: document.getElementById('ig-app-id').value, appSecret: document.getElementById('ig-app-sec').value }) }); mostrarToast(r.message); renderEstudioVideo('instagram'); } catch (e) { mostrarToast(e.message, true); } }
 async function igEntrar() {
@@ -25291,6 +25306,7 @@ async function igCarregarPlano() {
       <div><small>Meta de seguidores</small><b class="meta">${escapeHtml(mt.seguidores || '—')}</b></div>
       <div><small>Dias concluídos</small><b>${nFeitos}/10</b><div class="ig-barra"><i style="width:${nFeitos * 10}%"></i></div></div>
     </div>
+    <div id="ig-evol"></div>
     <div class="ig-grade">
       <div class="ig-card"><h3>🔎 Diagnóstico do @${escapeHtml(pf.username || '')}</h3><p>${escapeHtml(dg.resumo || '')}</p>
         <div class="ig-2"><div><b>💪 Pontos fortes</b><ul>${lista(dg.pontos_fortes)}</ul></div><div><b>🎯 Melhorar</b><ul>${lista(dg.pontos_fracos)}</ul></div></div>
@@ -25311,7 +25327,9 @@ async function igCarregarPlano() {
         <div class="ig-acoes">${/reels|v[ií]deo|live/i.test(x.formato || '') || x.roteiro ? `<button class="ig-gravar" onclick="igGravarDia(${i})">🎬 Gravar este vídeo</button>` : ''}<label class="ig-ok"><input type="checkbox" ${ok ? 'checked' : ''} onchange="igMarcar(${n}, this.checked)"> Concluí este dia</label></div>
       </div></details>`; }).join('')}</div>
     <div class="ig-grade">${(P.o_que_medir || []).length ? `<div class="ig-card"><h3>📊 O que medir</h3><ul>${lista(P.o_que_medir)}</ul></div>` : ''}${(P.dicas_finais || []).length ? `<div class="ig-card"><h3>💡 Dicas</h3><ul>${lista(P.dicas_finais)}</ul></div>` : ''}</div>
+    <div class="ig-novo peq"><b>💡 Para acelerar:</b> use <a href="#" onclick="IGABA='roteiros'; igMostrarAba(); return false;">🔥 Roteiros virais</a> para mais vídeos no padrão que já funciona no seu perfil e ligue a <a href="#" onclick="IGABA='interacao'; igMostrarAba(); return false;">💬 Interação automática</a> para responder todos os comentários.</div>
     <div class="ig-novo peq"><label>Gerar um plano novo (lê o perfil de novo, com os números de hoje)</label><div class="ig-linha"><input id="ig-obj" placeholder="Objetivo (opcional)" value="${escapeHtml(p.objetivo || '')}"><button class="btn-secundario" style="width:auto;" onclick="igGerarPlano()">🔄 Novo plano</button></div><small class="plano-meta">Plano criado em ${new Date(String(p.criado_em).replace(' ', 'T') + 'Z').toLocaleString('pt-BR')}</small></div>`;
+  igEvolucao();
 }
 async function igGerarPlano() {
   const o = document.getElementById('ig-obj'); if (IGP && IGP.status === 'pronto' && !confirm('Montar um plano novo? O atual continua salvo no histórico.')) return;
@@ -25321,13 +25339,94 @@ async function igMarcar(dia, feito) { if (!IGP) return; try { const r = await ap
 // cria o projeto com o roteiro e a legenda do dia e abre a gravação com teleprompter
 async function igGravarDia(i) {
   const x = ((IGP || {}).conteudo || {}).dias[i]; if (!x) return;
+  return igAbrirGravacao(`Dia ${x.dia || i + 1} · ${x.tema || 'Plano Instagram'}`, [x.gancho, x.roteiro].filter(Boolean).join('\n\n'), x.legenda, x.hashtags);
+}
+// ---------- Instagram conectado: abas Plano · Roteiros virais · Interação ----------
+let IGABA = 'plano';
+function igAbas() {
+  return `<div class="ig-abas">${[['plano', '📈 Plano 10 dias'], ['roteiros', '🔥 Roteiros virais'], ['interacao', '💬 Interação automática']].map(([k, r]) => `<button class="${IGABA === k ? 'on' : ''}" onclick="IGABA='${k}'; igMostrarAba()">${r}</button>`).join('')}</div><div id="ig-aba"></div>`;
+}
+function igMostrarAba() {
+  document.querySelectorAll('.ig-abas button').forEach(b => b.classList.toggle('on', b.getAttribute('onclick').includes(`'${IGABA}'`)));
+  const el = document.getElementById('ig-aba'); if (!el) return;
+  if (IGABA === 'plano') { el.innerHTML = '<div id="ig-plano"><p class="plano-meta">Carregando o plano…</p></div>'; igCarregarPlano(); }
+  else if (IGABA === 'roteiros') igRoteiros(el); else igInteracao(el);
+}
+// evolução de seguidores (gráfico simples)
+async function igEvolucao() {
+  const el = document.getElementById('ig-evol'); if (!el) return;
+  let l = []; try { l = (await api('/api/admin/estudio/instagram/evolucao')).filter(x => x.seguidores != null).reverse(); } catch (e) {}
+  if (l.length < 2) { el.innerHTML = `<div class="plano-meta">📈 A evolução diária de seguidores aparece aqui a partir de amanhã (o agente tira uma "foto" do perfil todo dia).</div>`; return; }
+  const v = l.map(x => x.seguidores), min = Math.min(...v), max = Math.max(...v), W = 600, H = 90, k = (max - min) || 1;
+  const pts = v.map((y, i) => `${(i / (v.length - 1) * W).toFixed(1)},${(H - 8 - (y - min) / k * (H - 20)).toFixed(1)}`).join(' ');
+  el.innerHTML = `<div class="ig-evol"><div class="ig-evol-cab"><b>📈 Seguidores · últimos ${l.length} dias</b><span class="${v[v.length - 1] - v[0] >= 0 ? 'sobe' : 'desce'}">${v[v.length - 1] - v[0] >= 0 ? '+' : ''}${(v[v.length - 1] - v[0]).toLocaleString('pt-BR')}</span></div>
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#dd2a7b" stroke-width="3" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>
+    <div class="ig-evol-eixo"><span>${new Date(l[0].dia + 'T12:00:00').toLocaleDateString('pt-BR')} · ${v[0].toLocaleString('pt-BR')}</span><span>${new Date(l[l.length - 1].dia + 'T12:00:00').toLocaleDateString('pt-BR')} · ${v[v.length - 1].toLocaleString('pt-BR')}</span></div></div>`;
+}
+// ----- Roteiros virais -----
+let IGROT = null;
+async function igRoteiros(el) {
+  el.innerHTML = '<p class="plano-meta">Carregando…</p>';
+  try { IGROT = await api('/api/admin/estudio/instagram/roteiros'); } catch (e) { IGROT = null; }
+  const l = ((IGROT || {}).conteudo || {}).roteiros || [];
+  const copiar = (t, r) => `<button class="ig-cp" onclick='navigator.clipboard.writeText(${escapeHtml(JSON.stringify(String(t || '')))}).then(()=>mostrarToast("${r} copiado! ✅"))'>📋 Copiar</button>`;
+  el.innerHTML = `<div class="ig-novo"><h3>🔥 Roteiros para viralizar</h3><p>O agente olha os <b>seus posts que mais engajaram</b>, o que os seus seguidores <b>comentam e perguntam</b> e o seu perfil de marca, e cria roteiros prontos com gancho, fala, legenda e um <b>chamado para comentar</b> — que o agente de interação responde para multiplicar o alcance.</p>
+      <div class="ig-linha"><input id="ig-rot-tema" placeholder="Tema (opcional) — ex.: erros do supervisor na rota"><select id="ig-rot-qtd">${[3, 5, 7, 10].map(n => `<option value="${n}" ${n === 5 ? 'selected' : ''}>${n} roteiros</option>`).join('')}</select><button class="ig-gravar" id="ig-rot-bt" onclick="igGerarRoteiros()">✨ Criar roteiros</button></div></div>
+    ${l.length ? `<div class="plano-meta" style="margin:10px 2px;">Criados em ${new Date(String(IGROT.criado_em).replace(' ', 'T') + 'Z').toLocaleString('pt-BR')}${IGROT.tema ? ' · tema: ' + escapeHtml(IGROT.tema) : ''}</div>
+    <div class="ig-dias">${l.map((x, i) => `<details class="ig-dia" ${i === 0 ? 'open' : ''}><summary><span class="ig-n">${x.nota_viral ? escapeHtml(String(x.nota_viral)) : i + 1}</span><div><b>${escapeHtml(x.titulo || 'Roteiro ' + (i + 1))}</b><small>${escapeHtml(x.formato || 'Reels')}${x.duracao ? ' · ' + escapeHtml(x.duracao) : ''}${x.melhor_horario ? ' · ⏰ ' + escapeHtml(x.melhor_horario) : ''}${x.nota_viral ? ' · 🔥 nota viral ' + escapeHtml(String(x.nota_viral)) + '/10' : ''}</small></div></summary>
+      <div class="ig-dia-corpo">
+        ${x.gancho ? `<div class="ig-gancho">🪝 <b>Gancho (0–2 s):</b> “${escapeHtml(x.gancho)}”</div>` : ''}${x.texto_na_tela ? `<div class="plano-meta">📝 Texto na tela: <b>${escapeHtml(x.texto_na_tela)}</b></div>` : ''}
+        ${x.roteiro ? `<div class="ig-bloco"><div class="ig-bloco-cab"><b>🎙️ Roteiro</b>${copiar(x.roteiro, 'Roteiro')}</div><p>${escapeHtml(x.roteiro).replace(/\n/g, '<br>')}</p></div>` : ''}
+        ${(x.cenas || []).length ? `<div><b>🎬 Cenas</b><ul>${x.cenas.map(c => `<li>${escapeHtml(c)}</li>`).join('')}</ul></div>` : ''}
+        ${x.legenda ? `<div class="ig-bloco"><div class="ig-bloco-cab"><b>✍️ Legenda</b>${copiar(x.legenda + (x.hashtags ? '\n\n' + x.hashtags : ''), 'Texto')}</div><p>${escapeHtml(x.legenda).replace(/\n/g, '<br>')}</p>${x.hashtags ? `<p class="ig-hash">${escapeHtml(x.hashtags)}</p>` : ''}</div>` : ''}
+        ${x.cta_comentario ? `<div class="ig-gancho" style="border-color:#8134af;">💬 <b>Chamado para comentar:</b> ${escapeHtml(x.cta_comentario)}</div>` : ''}
+        ${x.por_que_viraliza ? `<p class="plano-meta">🧠 ${escapeHtml(x.por_que_viraliza)}</p>` : ''}
+        <div class="ig-acoes"><button class="ig-gravar" onclick="igGravarRoteiro(${i})">🎬 Gravar este vídeo</button></div>
+      </div></details>`).join('')}</div>` : ''}`;
+}
+async function igGerarRoteiros() {
+  const b = document.getElementById('ig-rot-bt'); b.disabled = true; b.textContent = '⏳ Lendo o perfil e criando… (até 1 min)';
+  try { await api('/api/admin/estudio/instagram/roteiros', { method: 'POST', body: JSON.stringify({ tema: document.getElementById('ig-rot-tema').value, qtd: Number(document.getElementById('ig-rot-qtd').value) }) }); mostrarToast('🔥 Roteiros prontos!'); igRoteiros(document.getElementById('ig-aba')); }
+  catch (e) { mostrarToast(e.message, true); b.disabled = false; b.textContent = '✨ Criar roteiros'; }
+}
+async function igAbrirGravacao(titulo, roteiro, legenda, hashtags) {
   try {
-    const id = await evCriarProjetoBase(`Dia ${x.dia || i + 1} · ${x.tema || 'Plano Instagram'}`.slice(0, 80), /stories/i.test(x.formato || '') ? '9:16' : '9:16', /stories/i.test(x.formato || '') ? 'stories' : 'reels');
+    const id = await evCriarProjetoBase(String(titulo).slice(0, 80), '9:16', 'reels');
     await evAbrirEditor(id); if (!ES) return;
-    ES.p.dados.roteiro = [x.gancho, x.roteiro].filter(Boolean).join('\n\n'); ES.p.legenda = x.legenda || ''; ES.p.hashtags = x.hashtags || ''; evMudou(false); await evSalvar(true).catch(() => {});
+    ES.p.dados.roteiro = roteiro; ES.p.legenda = legenda || ''; ES.p.hashtags = hashtags || ''; evMudou(false); await evSalvar(true).catch(() => {});
     evAbrirCamera();
   } catch (e) { mostrarToast(e.message, true); }
 }
+function igGravarRoteiro(i) { const x = (((IGROT || {}).conteudo || {}).roteiros || [])[i]; if (!x) return; igAbrirGravacao(x.titulo || 'Roteiro viral', [x.gancho, x.roteiro].filter(Boolean).join('\n\n'), [x.legenda, x.cta_comentario && !(x.legenda || '').includes(x.cta_comentario) ? x.cta_comentario : ''].filter(Boolean).join('\n\n'), x.hashtags); }
+// ----- Interação automática (responder comentários) -----
+async function igInteracao(el) {
+  el.innerHTML = '<p class="plano-meta">Carregando…</p>';
+  let d; try { d = await api('/api/admin/estudio/instagram/interacao'); } catch (e) { el.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
+  const c = d.cfg, n = d.contagem || {}, st = { atencao: ['⚠️ Precisa de você', '#dc2626'], sugerido: ['✋ Aguardando aprovação', '#d97706'], novo: ['🆕 Novo', '#2563eb'], respondido: ['✅ Respondido', '#16a34a'], ignorado: ['🚫 Ignorado (spam)', '#64748b'], antigo: ['🕓 Antigo', '#94a3b8'] };
+  el.innerHTML = `<div class="ig-novo">
+      <div class="ig-inter-cab"><div><h3>💬 Responder comentários para gerar interação</h3><p>Quanto mais conversa no post, mais o Instagram entrega. O agente lê os comentários dos seus posts recentes a cada 5 minutos, escreve respostas no seu tom (personalizadas, com pergunta para a pessoa responder de novo) e separa spam e críticas sérias para você decidir.</p></div>
+        <label class="ig-chave"><input type="checkbox" id="ig-in-ativo" ${c.ativo ? 'checked' : ''} onchange="igSalvarInteracao()"><i></i><b>${c.ativo ? 'Ligado' : 'Desligado'}</b></label></div>
+      <div class="ig-modos"><label class="${c.modo === 'aprovar' ? 'on' : ''}"><input type="radio" name="ig-in-modo" value="aprovar" ${c.modo === 'aprovar' ? 'checked' : ''} onchange="igSalvarInteracao()"><b>✋ Eu aprovo cada resposta</b><small>O agente escreve; você publica com um toque (pode editar).</small></label>
+        <label class="${c.modo === 'auto' ? 'on' : ''}"><input type="radio" name="ig-in-modo" value="auto" ${c.modo === 'auto' ? 'checked' : ''} onchange="igSalvarInteracao()"><b>🤖 Autorizo responder sempre</b><small>Responde sozinho os comentários normais. Críticas sérias e assuntos sensíveis ficam para você.</small></label></div>
+      <div class="ig-linha" style="flex-wrap:wrap;"><label class="ig-mini">Máximo por hora<input type="number" id="ig-in-lim" min="1" max="60" value="${c.limiteHora}" onchange="igSalvarInteracao()"></label><label class="ig-mini">Posts dos últimos (dias)<input type="number" id="ig-in-dias" min="1" max="60" value="${c.diasPosts}" onchange="igSalvarInteracao()"></label>
+        <label class="ig-mini" style="flex:1;min-width:220px;">Tom das respostas<input id="ig-in-tom" placeholder="Ex.: próximo, bem-humorado, chama de 'líder'" value="${escapeHtml(c.tom || '')}" onchange="igSalvarInteracao()"></label></div>
+      <div class="ig-inter-num"><span>✅ ${n.respondido || 0} respondidos (30 dias)</span><span>✋ ${n.sugerido || 0} aguardando</span><span>⚠️ ${n.atencao || 0} para você</span><span>🚫 ${n.ignorado || 0} spam</span><span>⏱️ ${d.ultimaHora} na última hora</span><button class="btn-secundario btn-sm" style="width:auto;" onclick="igVerificarAgora(this)">🔄 Verificar agora</button></div>
+    </div>
+    <div class="ig-coms">${(d.lista || []).filter(x => x.status !== 'antigo').map(x => `<div class="ig-com ${x.status}"><div class="ig-com-cab"><b>@${escapeHtml(x.autor || '')}</b><span class="ig-st" style="background:${(st[x.status] || ['', '#64748b'])[1]}">${(st[x.status] || [x.status])[0]}</span>${x.media_link ? `<a href="${escapeHtml(x.media_link)}" target="_blank" rel="noopener">ver post</a>` : ''}</div>
+        <p class="ig-com-txt">“${escapeHtml(x.texto || '')}”</p>${x.media_legenda ? `<small class="plano-meta">no post: ${escapeHtml(String(x.media_legenda).slice(0, 90))}</small>` : ''}
+        ${x.status === 'sugerido' || x.status === 'atencao' ? `<textarea id="ig-r-${escapeHtml(x.id)}" rows="2">${escapeHtml(x.resposta || '')}</textarea>${x.motivo ? `<small class="plano-meta">🧠 ${escapeHtml(x.motivo)}</small>` : ''}<div class="ig-acoes"><button class="ig-gravar" onclick="igResponder('${escapeHtml(x.id)}')">↩️ Publicar resposta</button><button class="btn-secundario btn-sm" style="width:auto;" onclick="igIgnorar('${escapeHtml(x.id)}')">Ignorar</button></div>`
+          : x.resposta ? `<div class="ig-resp">↩️ ${escapeHtml(x.resposta)}</div>` : ''}</div>`).join('') || '<div class="plano-meta" style="padding:12px;">Nenhum comentário lido ainda. Ligue a interação ou toque em 🔄 Verificar agora.</div>'}</div>`;
+}
+async function igSalvarInteracao() {
+  const v = id => (document.getElementById(id) || {}).value, modo = (document.querySelector('input[name="ig-in-modo"]:checked') || {}).value;
+  if (modo === 'auto' && document.getElementById('ig-in-ativo').checked && !(document.querySelector('.ig-modos label.on input[value="auto"]')) && !confirm('Autorizar o agente a responder os comentários sozinho, em seu nome?\n\nEle responde só os comentários normais (elogios, dúvidas, marcações). Críticas sérias, assuntos sensíveis e spam ficam separados para você.')) { igInteracao(document.getElementById('ig-aba')); return; }
+  try { const r = await api('/api/admin/estudio/instagram/interacao', { method: 'PUT', body: JSON.stringify({ ativo: document.getElementById('ig-in-ativo').checked, modo, limiteHora: Number(v('ig-in-lim')), diasPosts: Number(v('ig-in-dias')), tom: v('ig-in-tom') }) }); mostrarToast(r.message); igInteracao(document.getElementById('ig-aba')); }
+  catch (e) { mostrarToast(e.message, true); igInteracao(document.getElementById('ig-aba')); }
+}
+async function igVerificarAgora(b) { b.disabled = true; b.textContent = '⏳ Lendo os comentários…'; try { const r = await api('/api/admin/estudio/instagram/interacao/verificar', { method: 'POST', body: '{}' }); mostrarToast(r.message); } catch (e) { mostrarToast(e.message, true); } igInteracao(document.getElementById('ig-aba')); }
+async function igResponder(id) { const t = document.getElementById('ig-r-' + id); try { const r = await api(`/api/admin/estudio/instagram/interacao/${encodeURIComponent(id)}/responder`, { method: 'POST', body: JSON.stringify({ resposta: t ? t.value : '' }) }); mostrarToast(r.message); igInteracao(document.getElementById('ig-aba')); } catch (e) { mostrarToast(e.message, true); } }
+async function igIgnorar(id) { try { await api(`/api/admin/estudio/instagram/interacao/${encodeURIComponent(id)}/ignorar`, { method: 'POST', body: '{}' }); igInteracao(document.getElementById('ig-aba')); } catch (e) { mostrarToast(e.message, true); } }
+
 // volta do login do Instagram: mostra o resultado e abre a aba do Instagram
 function igRetornoLogin() {
   const h = location.hash || ''; if (!h.startsWith('#instagram=')) return;

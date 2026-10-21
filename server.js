@@ -13390,7 +13390,7 @@ const FUNC_EST = {
 async function funcionalidadesEst() { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_precos_func'`).catch(() => null); let pr = {}; try { pr = JSON.parse((r && r.value) || '{}'); } catch (e) {} const o = {}; Object.entries(FUNC_EST).forEach(([k, f]) => { o[k] = Object.assign({}, f, pr[k] !== undefined ? { preco: Number(pr[k]) } : {}); }); return o; }
 const recursosValidosEst = l => Array.isArray(l) ? [...new Set(l.filter(k => FUNC_EST[k]))] : null;
 // Qual funcionalidade cada rota usa (o que não está no plano é bloqueado no servidor)
-const ROTAS_FUNC_EST = [[/^POST \/ia\/imagens-fala$/, 'imagens_ia'], [/^POST \/ia\/[\w-]+$/, 'ia'], [/^POST \/transcrever(-url)?$/, 'legendas_auto'], [/^POST \/(narrar|minha-voz)$/, 'voz_ia'], [/^POST \/limpar-audio$/, 'limpeza_audio'], [/^POST \/radar$/, 'radar'], [/^(POST \/projetos\/\d+\/publicar|PUT \/instagram)$/, 'instagram'], [/^POST \/avatar-video$/, 'avatar'], [/^POST \/projetos\/\d+\/gravador$/, 'gravadora']];
+const ROTAS_FUNC_EST = [[/^POST \/ia\/imagens-fala$/, 'imagens_ia'], [/^POST \/ia\/[\w-]+$/, 'ia'], [/^POST \/transcrever(-url)?$/, 'legendas_auto'], [/^POST \/(narrar|minha-voz)$/, 'voz_ia'], [/^POST \/limpar-audio$/, 'limpeza_audio'], [/^POST \/radar$/, 'radar'], [/^(POST \/projetos\/\d+\/publicar|PUT \/instagram|(GET|POST|PUT) \/instagram\/.+)$/, 'instagram'], [/^POST \/avatar-video$/, 'avatar'], [/^POST \/projetos\/\d+\/gravador$/, 'gravadora']];
 db.run(`ALTER TABLE estudio_planos ADD COLUMN recursos TEXT`, () => {});
 setTimeout(() => {
     ['estudio_recursos TEXT', 'estudio_preco REAL'].forEach(c => db.run(`ALTER TABLE users ADD COLUMN ${c}`, () => {}));
@@ -15016,6 +15016,159 @@ app.put('/api/admin/estudio/instagram/plano/:id/feito', requireRole('admin', 'es
     const dia = String(Number((req.body || {}).dia) || 0); if (!dia || dia === '0') return res.status(400).json({ error: 'Dia inválido.' });
     if ((req.body || {}).feito) f[dia] = new Date().toISOString(); else delete f[dia];
     db.run(`UPDATE ig_planos SET feitos = ? WHERE id = ?`, [JSON.stringify(f), p.id], () => res.json({ ok: true, feitos: f }));
+});
+
+// ----- Instagram: roteiros virais com base no perfil + respostas automáticas aos comentários + evolução diária -----
+db.serialize(() => {
+    db.run(`CREATE TABLE IF NOT EXISTS ig_comentarios (id TEXT PRIMARY KEY, dono INTEGER DEFAULT 0, media_id TEXT, media_legenda TEXT, media_link TEXT, autor TEXT, texto TEXT, criado_em TEXT, status TEXT DEFAULT 'novo', resposta TEXT, resposta_id TEXT, respondido_em TEXT, motivo TEXT, visto_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+    db.run(`CREATE TABLE IF NOT EXISTS ig_snapshots (dono INTEGER, dia TEXT, seguidores INTEGER, seguindo INTEGER, posts INTEGER, PRIMARY KEY (dono, dia))`);
+    db.run(`CREATE TABLE IF NOT EXISTS ig_roteiros (id INTEGER PRIMARY KEY AUTOINCREMENT, dono INTEGER DEFAULT 0, tema TEXT, conteudo TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+});
+const CFG_INTER_PADRAO = { ativo: false, modo: 'aprovar', limiteHora: 15, diasPosts: 14, tom: '', assinatura: '' };
+async function cfgInteracaoIg(dono) { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = ?`, [chaveIgEst('ig_interacao', dono)]).catch(() => null); try { return Object.assign({}, CFG_INTER_PADRAO, JSON.parse((r && r.value) || '{}')); } catch (e) { return { ...CFG_INTER_PADRAO }; } }
+function salvarCfgInteracaoIg(dono, c) { return new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [chaveIgEst('ig_interacao', dono), JSON.stringify(c)], () => ok())); }
+const euIg = ig => /graph\.instagram/.test(hostIgEst(ig.token)) ? 'me' : ig.userId;
+// busca comentários novos dos posts recentes (sem webhook: o app não precisa estar publicado)
+async function buscarComentariosIg(dono, cfg) {
+    const ig = await lerIgEst(dono); if (!ig.userId || !ig.token) return 0;
+    const desde = Date.now() - (Number(cfg.diasPosts) || 14) * 86400000;
+    const midias = ((await igEst('GET', `/${euIg(ig)}/media`, { fields: 'id,caption,timestamp,comments_count,permalink', limit: '15' }, ig.token)).data || []).filter(m => new Date(m.timestamp) >= desde && m.comments_count > 0);
+    let novos = 0; const eu = String(ig.username || '').toLowerCase();
+    for (const m of midias) {
+        let lista = [];
+        try { lista = (await igEst('GET', `/${m.id}/comments`, { fields: 'id,text,timestamp,username,replies{username,text}', limit: '50' }, ig.token)).data || []; }
+        catch (e) { try { lista = (await igEst('GET', `/${m.id}/comments`, { fields: 'id,text,timestamp,username', limit: '50' }, ig.token)).data || []; } catch (e2) { continue; } }
+        for (const c of lista) {
+            if (!c.id || String(c.username || '').toLowerCase() === eu) continue; // comentário do próprio perfil
+            const jaRespondi = ((c.replies && c.replies.data) || []).some(r => String(r.username || '').toLowerCase() === eu);
+            const ok = await new Promise(res => db.run(`INSERT OR IGNORE INTO ig_comentarios (id, dono, media_id, media_legenda, media_link, autor, texto, criado_em, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [c.id, dono, m.id, String(m.caption || '').slice(0, 400), m.permalink || '', c.username || '', String(c.text || '').slice(0, 1000), c.timestamp || '', jaRespondi ? 'respondido' : (c.timestamp && Date.now() - new Date(c.timestamp) > 7 * 86400000 ? 'antigo' : 'novo')], function () { res(this && this.changes); }));
+            if (ok && !jaRespondi) novos++;
+        }
+    }
+    return novos;
+}
+// a IA escreve as respostas (no tom do perfil): responder, deixar para você (crítica séria/sensível) ou ignorar (spam)
+async function sugerirRespostasIg(dono, cfg, lista) {
+    const pedido = `Você cuida dos comentários do Instagram deste perfil para gerar MAIS interação (o algoritmo entrega mais quando o post tem conversa).
+Para cada comentário, escreva uma resposta curta (1 a 2 frases, máx. 220 caracteres), humana, específica ao que a pessoa disse, no tom do perfil, em português do Brasil.
+Técnicas: chame pelo @ quando fizer sentido; agradeça de forma variada (nunca repita a mesma frase); quando couber, termine com UMA pergunta aberta que faça a pessoa responder de novo; se a pessoa pediu algo (material, preço, contato), convide para o direct sem prometer o que o perfil não oferece; emoji com moderação (0 a 2).
+${cfg.tom ? 'Tom pedido pelo dono do perfil: ' + cfg.tom + '\n' : ''}${cfg.assinatura ? 'Pode usar às vezes a assinatura/expressão: ' + cfg.assinatura + '\n' : ''}Classifique cada um em "acao":
+- "responder": comentário normal, elogio, dúvida, marcação de amigo, emoji.
+- "atencao": reclamação séria, crítica pesada, assunto sensível (saúde, política, religião, dinheiro de cliente), pedido de reembolso, ameaça — NÃO responda sozinho, a pessoa decide.
+- "ignorar": spam, golpe, link suspeito, propaganda de terceiros, ofensa gratuita.
+Nunca invente informação sobre produtos, preços ou resultados.
+
+COMENTÁRIOS:
+${lista.map(c => `[${c.id}] @${c.autor} no post "${String(c.media_legenda || '').replace(/\s+/g, ' ').slice(0, 120)}": ${String(c.texto).replace(/\s+/g, ' ')}`).join('\n')}
+
+Responda APENAS com JSON: {"respostas":[{"id":"...","acao":"responder|atencao|ignorar","resposta":"texto da resposta (vazio se ignorar)","motivo":"por quê, em 5 palavras"}]}`;
+    const r = await ALS_EST.run({ dono }, () => iaEstudio(pedido, { json: true, max: 4000 }));
+    return Array.isArray(r.respostas) ? r.respostas : [];
+}
+async function publicarRespostaIg(dono, cid, texto) {
+    const ig = await lerIgEst(dono);
+    const j = await igEst('POST', `/${cid}/replies`, { message: String(texto).slice(0, 2200) }, ig.token);
+    await new Promise(ok => db.run(`UPDATE ig_comentarios SET status = 'respondido', resposta = ?, resposta_id = ?, respondido_em = ? WHERE id = ? AND dono = ?`, [texto, j.id || '', new Date().toISOString(), cid, dono], ok));
+    return j;
+}
+async function respondidosUltimaHoraIg(dono) { const r = await dbGet(`SELECT COUNT(*) AS n FROM ig_comentarios WHERE dono = ? AND status = 'respondido' AND resposta_id IS NOT NULL AND resposta_id != '' AND respondido_em > ?`, [dono, new Date(Date.now() - 3600000).toISOString()]).catch(() => null); return (r && r.n) || 0; }
+const RODANDO_INTER_IG = new Set();
+async function cicloInteracaoIg(dono, forcar) {
+    if (RODANDO_INTER_IG.has(dono)) return { ocupado: true }; RODANDO_INTER_IG.add(dono);
+    try {
+        const cfg = await cfgInteracaoIg(dono); if (!cfg.ativo && !forcar) return { desligado: true };
+        const novos = await buscarComentariosIg(dono, cfg);
+        const pend = await dbAll(`SELECT * FROM ig_comentarios WHERE dono = ? AND status = 'novo' AND criado_em > ? ORDER BY criado_em LIMIT 25`, [dono, new Date(Date.now() - 7 * 86400000).toISOString()]);
+        let respondidos = 0, sugeridos = 0;
+        if (pend.length) {
+            try { await ALS_EST.run({ dono }, () => consumirEst('ia', 1)); } catch (e) { return { novos, erro: e.message }; }
+            const sug = await sugerirRespostasIg(dono, cfg, pend);
+            for (const s of sug) {
+                const c = pend.find(x => x.id === String(s.id)); if (!c) continue;
+                const acao = ['responder', 'atencao', 'ignorar'].includes(s.acao) ? s.acao : 'atencao', txt = String(s.resposta || '').trim();
+                if (acao === 'ignorar') { db.run(`UPDATE ig_comentarios SET status = 'ignorado', motivo = ? WHERE id = ?`, [s.motivo || 'spam', c.id]); continue; }
+                if (acao === 'atencao' || !txt) { db.run(`UPDATE ig_comentarios SET status = 'atencao', resposta = ?, motivo = ? WHERE id = ?`, [txt, s.motivo || 'revisar', c.id]); continue; }
+                if (cfg.modo === 'auto' && cfg.ativo && (await respondidosUltimaHoraIg(dono)) < (Number(cfg.limiteHora) || 15)) {
+                    try { await publicarRespostaIg(dono, c.id, txt); respondidos++; await new Promise(z => setTimeout(z, 4000 + Math.random() * 8000)); } // pausa natural entre respostas
+                    catch (e) { db.run(`UPDATE ig_comentarios SET status = 'sugerido', resposta = ?, motivo = ? WHERE id = ?`, [txt, 'erro: ' + e.message.slice(0, 120), c.id]); }
+                } else { db.run(`UPDATE ig_comentarios SET status = 'sugerido', resposta = ?, motivo = ? WHERE id = ?`, [txt, s.motivo || '', c.id]); sugeridos++; }
+            }
+        }
+        return { novos, respondidos, sugeridos };
+    } finally { RODANDO_INTER_IG.delete(dono); }
+}
+async function donosIgConectados() { const l = await dbAll(`SELECT key FROM integration_settings WHERE key LIKE 'ig_access_token%' AND value != ''`).catch(() => []); return l.map(r => Number(r.key.split(':')[1] || 0)); }
+// a cada 5 minutos: comentários (só de quem ligou) · 1x por dia: foto dos números do perfil para acompanhar a evolução
+setInterval(async () => { for (const d of await donosIgConectados()) { const c = await cfgInteracaoIg(d); if (c.ativo) await cicloInteracaoIg(d).catch(e => console.warn('Interação IG:', e.message)); } }, 5 * 60 * 1000);
+async function fotografarPerfilIg(dono) {
+    const ig = await lerIgEst(dono); if (!ig.token) return;
+    const p = await igEst('GET', '/' + euIg(ig), { fields: 'followers_count,follows_count,media_count' }, ig.token);
+    const dia = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10);
+    db.run(`INSERT INTO ig_snapshots (dono, dia, seguidores, seguindo, posts) VALUES (?, ?, ?, ?, ?) ON CONFLICT(dono, dia) DO UPDATE SET seguidores = excluded.seguidores, seguindo = excluded.seguindo, posts = excluded.posts`, [dono, dia, p.followers_count ?? null, p.follows_count ?? null, p.media_count ?? null]);
+    return p;
+}
+setInterval(async () => { for (const d of await donosIgConectados()) await fotografarPerfilIg(d).catch(() => {}); }, 6 * 3600 * 1000);
+setTimeout(async () => { for (const d of await donosIgConectados()) await fotografarPerfilIg(d).catch(() => {}); }, 60000);
+
+app.get('/api/admin/estudio/instagram/interacao', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), cfg = await cfgInteracaoIg(dono);
+    const lista = await dbAll(`SELECT * FROM ig_comentarios WHERE dono = ? ORDER BY CASE status WHEN 'atencao' THEN 0 WHEN 'sugerido' THEN 1 WHEN 'novo' THEN 2 ELSE 3 END, COALESCE(respondido_em, criado_em) DESC LIMIT 80`, [dono]).catch(() => []);
+    const tot = await dbAll(`SELECT status, COUNT(*) AS n FROM ig_comentarios WHERE dono = ? AND visto_em > datetime('now', '-30 days') GROUP BY status`, [dono]).catch(() => []);
+    const cont = {}; tot.forEach(r => { cont[r.status] = r.n; });
+    res.json({ cfg, lista, contagem: cont, ultimaHora: await respondidosUltimaHoraIg(dono) });
+});
+app.put('/api/admin/estudio/instagram/interacao', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), b = req.body || {}, atual = await cfgInteracaoIg(dono);
+    const c = { ativo: !!b.ativo, modo: b.modo === 'auto' ? 'auto' : 'aprovar', limiteHora: Math.max(1, Math.min(60, Number(b.limiteHora) || atual.limiteHora)), diasPosts: Math.max(1, Math.min(60, Number(b.diasPosts) || atual.diasPosts)), tom: String(b.tom ?? atual.tom).slice(0, 400), assinatura: String(b.assinatura ?? atual.assinatura).slice(0, 80) };
+    if (c.ativo && !(await lerIgEst(dono)).token) return res.status(400).json({ error: 'Conecte o Instagram primeiro.' });
+    await salvarCfgInteracaoIg(dono, c);
+    if (c.ativo) cicloInteracaoIg(dono).catch(() => {});
+    res.json({ cfg: c, message: !c.ativo ? 'Respostas automáticas desligadas.' : c.modo === 'auto' ? '✅ Autorizado: o agente responde os comentários sozinho (até ' + c.limiteHora + ' por hora).' : '✅ Ligado: o agente prepara as respostas e você aprova com um toque.' });
+});
+app.post('/api/admin/estudio/instagram/interacao/verificar', requireRole('admin', 'estudio'), async (req, res) => {
+    try { const r = await cicloInteracaoIg(donoAtualEst(), true); res.json(r.ocupado ? { message: 'Já estou verificando os comentários…' } : r.erro ? { message: r.erro } : { message: `${r.novos || 0} comentário(s) novo(s) · ${r.respondidos || 0} respondido(s) · ${r.sugeridos || 0} esperando a sua aprovação.` }); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.post('/api/admin/estudio/instagram/interacao/:cid/:acao(responder|ignorar)', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), c = await dbGet(`SELECT * FROM ig_comentarios WHERE id = ? AND dono = ?`, [req.params.cid, dono]).catch(() => null);
+    if (!c) return res.status(404).json({ error: 'Comentário não encontrado.' });
+    if (req.params.acao === 'ignorar') { db.run(`UPDATE ig_comentarios SET status = 'ignorado' WHERE id = ?`, [c.id]); return res.json({ ok: true }); }
+    const txt = String((req.body || {}).resposta || c.resposta || '').trim(); if (!txt) return res.status(400).json({ error: 'Escreva a resposta.' });
+    try { await publicarRespostaIg(dono, c.id, txt); res.json({ ok: true, message: 'Resposta publicada no Instagram! ✅' }); } catch (e) { res.status(400).json({ error: 'O Instagram recusou: ' + e.message }); }
+});
+// evolução diária do perfil (seguidores)
+app.get('/api/admin/estudio/instagram/evolucao', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(); try { await fotografarPerfilIg(dono); } catch (e) {}
+    res.json(await dbAll(`SELECT dia, seguidores, posts FROM ig_snapshots WHERE dono = ? ORDER BY dia DESC LIMIT 30`, [dono]).catch(() => []));
+});
+// roteiros para viralizar: o que já funcionou no perfil + o que os seguidores perguntam nos comentários
+app.get('/api/admin/estudio/instagram/roteiros', requireRole('admin', 'estudio'), async (req, res) => {
+    const r = await dbGet(`SELECT * FROM ig_roteiros WHERE dono = ? ORDER BY id DESC LIMIT 1`, [donoAtualEst()]).catch(() => null);
+    res.json(r ? { id: r.id, tema: r.tema, criado_em: r.criado_em, conteudo: JSON.parse(r.conteudo || '{}') } : null);
+});
+app.post('/api/admin/estudio/instagram/roteiros', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), b = req.body || {}, qtd = Math.max(3, Math.min(10, Number(b.qtd) || 5));
+    try {
+        await consumirEst('ia', 1);
+        const dados = await lerPerfilIg(dono);
+        const top = dados.posts.map(x => ({ ...x, eng: (Number(x.curtidas) || 0) + (Number(x.comentarios) || 0) * 3 + (Number(x.salvos) || 0) * 4 + (Number(x.compartilhamentos) || 0) * 5 })).sort((a, b2) => b2.eng - a.eng);
+        const perguntas = await dbAll(`SELECT texto FROM ig_comentarios WHERE dono = ? AND length(texto) > 12 ORDER BY criado_em DESC LIMIT 40`, [dono]).catch(() => []);
+        const pedido = `Crie ${qtd} roteiros de Reels com ALTO potencial de viralizar e de gerar COMENTÁRIOS para este perfil.${b.tema ? '\nTema/assunto pedido: ' + String(b.tema).slice(0, 300) : ''}
+
+${resumoPerfilIgTexto(dados)}
+
+POSTS QUE MAIS ENGAJARAM (copie o padrão, não o texto): ${top.slice(0, 5).map(x => `[${x.tipo}] "${x.legenda.replace(/\s+/g, ' ').slice(0, 140)}" (❤ ${x.curtidas ?? '?'} · 💬 ${x.comentarios ?? '?'}${x.salvos != null ? ' · salvos ' + x.salvos : ''}${x.compartilhamentos != null ? ' · compart. ' + x.compartilhamentos : ''})`).join(' | ') || '—'}
+O QUE OS SEGUIDORES COMENTAM/PERGUNTAM: ${perguntas.map(x => '"' + String(x.texto).replace(/\s+/g, ' ').slice(0, 120) + '"').join(' · ') || '(sem comentários lidos ainda)'}
+
+Regras de viralização: gancho que para o dedo em até 2 s (curiosidade, erro comum, número, contraste, "ninguém te conta"); 1 ideia por vídeo; 20 a 45 s; virada/payoff antes do fim; legenda que puxa conversa; CTA de COMENTÁRIO específico (palavra-chave, escolha entre A ou B, "conta aqui") — os comentários serão respondidos pelo agente para multiplicar a interação; texto na tela curto; sugira áudio/tendência quando fizer sentido. Varie os formatos (lista, mito x verdade, bastidor, história, erro comum, antes/depois, polêmica saudável).
+
+Responda APENAS com JSON: {"roteiros":[{"titulo":"","formato":"Reels","duracao":"30s","gancho":"","texto_na_tela":"","roteiro":"texto falado completo, frases curtas, linha em branco entre partes","cenas":["o que mostrar"],"legenda":"","cta_comentario":"","hashtags":"#a #b (5-10)","melhor_horario":"","por_que_viraliza":"","nota_viral":0}]}`;
+        const out = await iaEstudio(pedido, { json: true, avancado: true, max: 12000 }); delete out.__fontes;
+        if (!Array.isArray(out.roteiros) || !out.roteiros.length) throw new Error('A IA não montou os roteiros. Tente de novo.');
+        const id = await new Promise((ok, falha) => db.run(`INSERT INTO ig_roteiros (dono, tema, conteudo) VALUES (?, ?, ?)`, [dono, String(b.tema || '').slice(0, 300), JSON.stringify(out)], function (e) { e ? falha(e) : ok(this.lastID); }));
+        res.json({ id, conteudo: out });
+    } catch (e) { if (e.limite) return erroLimiteEst(res, e); res.status(400).json({ error: e.message }); }
 });
 
 async function publicarProjetoEst(id, base) {
