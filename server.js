@@ -14107,6 +14107,32 @@ app.post('/api/admin/estudio/broll/buscar', requireRole('admin', 'estudio'), asy
     try { res.json(await resolverCenasReaisEst(itens, b.vertical !== false)); } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
+// ===== Chaves e integrações: um lugar só para ver e salvar todas as chaves (Master) =====
+app.get('/api/admin/chaves', requireRole('admin'), async (req, res) => {
+    const pv = v => v ? '••••' + String(v).slice(-4) : '';
+    const tr = await cfgTranscricaoEst().catch(() => ({})), voz = await lerVozConfigEst().catch(() => ({})), mus = await cfgMusicaEst().catch(() => ({})), br = await cfgBrollEst().catch(() => ({}));
+    const did = await chaveDidEst().catch(() => ''), igApp = await appIgCfg().catch(() => ({})), cfgMt = await lerConfigMt().catch(() => ({}));
+    res.json({
+        anthropic: { ok: iaDisponivelMt(), tem: !!ANTHROPIC_API_KEY, recusada: !!ANTHROPIC_API_KEY && !iaDisponivelMt(), preview: pv(ANTHROPIC_API_KEY), origem: cfgMt.anthropic_api_key ? 'sistema' : (process.env.ANTHROPIC_API_KEY ? 'servidor (Railway)' : '') },
+        transcricao: { ok: !!tr.chave, preview: pv(tr.chave), provedor: tr.provedor || '' },
+        openai: { ok: !!voz.openai, preview: pv(voz.openai) }, elevenlabs: { ok: !!voz.elevenlabs, preview: pv(voz.elevenlabs) },
+        jamendo: { ok: !!mus.jamendo, preview: pv(mus.jamendo) }, pexels: { ok: !!br.pexels, preview: pv(br.pexels) }, pixabay: { ok: !!br.pixabay, preview: pv(br.pixabay) },
+        did: { ok: !!did, preview: pv(did) }, instagram: { ok: !!(igApp.id && igApp.secret), appId: igApp.id || '', redirect: redirectIg(baseUrlPublicaDpo(req)) }
+    });
+});
+app.put('/api/admin/chaves/anthropic', requireRole('admin'), async (req, res) => {
+    const salvar = v => new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES ('anthropic_api_key', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [v], () => ok()));
+    if ((req.body || {}).remover) { await salvar(''); ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || ''; return res.json({ message: 'Chave da IA removida.' }); }
+    const chave = String((req.body || {}).chave || '').trim(); if (!/^sk-ant-/.test(chave)) return res.status(400).json({ error: 'A chave da Anthropic (Claude) começa com sk-ant-.' });
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: cabecalhosIA(chave, ANTHROPIC_WORKSPACE_ID), body: JSON.stringify({ model: ANTHROPIC_MODEL, max_tokens: 5, messages: [{ role: 'user', content: 'ok' }] }) }).catch(e => ({ ok: false, json: async () => ({ error: { message: e.message } }) }));
+    if (!r.ok) { const j = await r.json().catch(() => ({})); return res.status(400).json({ error: 'A chave não funcionou: ' + ((j.error && j.error.message) || 'erro') }); }
+    await salvar(chave); ANTHROPIC_API_KEY = chave; CHAVE_IA_RECUSADA_MT = ''; res.json({ message: 'IA (Claude) conectada! ✅' });
+});
+app.put('/api/admin/chaves/remover-broll', requireRole('admin'), async (req, res) => {
+    const c = await cfgBrollEst(), q = (req.body || {}).qual; if (q === 'pexels' || q === 'pixabay') c[q] = '';
+    db.run(`INSERT INTO integration_settings (key, value) VALUES ('estudio_broll_cfg', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [JSON.stringify(c)], () => res.json({ message: 'Chave removida.' }));
+});
+
 const JOBS_IMAGENS = new Map();
 function limparSvgIa(txt) {
     let svg = (String(txt || '').match(/<svg[\s\S]*<\/svg>/i) || [])[0]; if (!svg) return null;

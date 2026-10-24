@@ -1544,6 +1544,11 @@
   .ig-perf-lista { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; } .ig-perf { display:inline-flex; gap:6px; align-items:center; background:#faf5ff; border:1px solid #e9d5ff; border-radius:20px; padding:4px 6px 4px 12px; font-size:13px; } .ig-perf small { color:#7c3aed; } .ig-perf button { border:none; background:none; color:#dc2626; cursor:pointer; }
   .ig-looks { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; } .ig-look { border:1px solid #e2e8f0; border-radius:12px; padding:8px; display:flex; flex-direction:column; gap:3px; font-size:12.5px; } .ig-look small { color:#64748b; } .ig-look-cores { display:flex; height:26px; border-radius:8px; overflow:hidden; } .ig-look-cores i { flex:1; }
   .ig-dia-st { font-size:12.5px; font-weight:700; color:#475569; background:#f1f5f9; border-radius:8px; padding:5px 9px; } .ig-dia-badge { font-size:11px; font-weight:700; background:#f3e8ff; color:#7c3aed; border-radius:8px; padding:1px 7px; margin-left:4px; }
+  .ch-grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(380px,1fr)); gap:12px; } .ch-card { background:#fff; border:1px solid #e2e8f0; border-left:5px solid #cbd5e1; border-radius:14px; padding:12px 14px; } .ch-card.ok { border-left-color:#16a34a; }
+  .ch-cab { display:flex; gap:10px; align-items:flex-start; } .ch-cab small { display:block; color:#64748b; font-size:12.5px; margin-top:2px; } .ch-cab > div { flex:1; } .ch-ico { font-size:26px; } .ch-st { font-size:12px; font-weight:700; white-space:nowrap; }
+  .ch-atual { font-size:12.5px; color:#475569; margin:8px 0 0; } .ch-card details { font-size:13px; margin:8px 0; } .ch-card summary { cursor:pointer; color:#2563eb; font-weight:600; } .ch-card ol { margin:6px 0; padding-left:20px; } .ch-card code { background:#f1f5f9; border-radius:6px; padding:1px 5px; font-size:12px; word-break:break-all; }
+  .ch-linha { display:flex; gap:6px; flex-wrap:wrap; } .ch-linha input { flex:1; min-width:160px; margin:0; }
+  @media (max-width: 700px) { .ch-grade { grid-template-columns:1fr; } }
   /* ---------- Instagram: Insights & Treino ---------- */
   .ig-sec { background:#fff !important; color:#8134af !important; border:2px solid #8134af !important; }
   .ig-ins-cab { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:16px 2px 8px; } .ig-ins-cab span { color:#64748b; font-size:12.5px; }
@@ -2105,7 +2110,7 @@ const MENU_POR_PERFIL = {
     ]},
     { group: 'Administração', items: [
         ['plans', 'Planos'], ['engagement', 'Painel de Engajamento'], ['contracts', 'Contratos'],
-        ['automacao', 'Painel de Automação'], ['assistenteIA', 'Assistente IA']
+        ['automacao', 'Painel de Automação'], ['assistenteIA', 'Assistente IA'], ['chavesIntegracoes', '🔑 Chaves e integrações']
     ]}
   ],
   client_admin: [
@@ -2455,6 +2460,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
+    chavesIntegracoes: renderChavesIntegracoes,
     dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento, traineePrograma: renderTrainee, agenteRelatorios: renderAgenteRelatorios, estudioVideo: () => renderEstudioVideo('projetos'), estudioAcessos: () => renderEstudioVideo('acessos'), estudioAgente: () => renderEstudioVideo('agente'), estudioAgenda: () => renderEstudioVideo('agenda'),
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster, acessosCandidatos: renderAcessosCandidatos, creditosVagas: renderCreditosVagas
   };
@@ -14037,6 +14043,38 @@ async function grImportarDn() {
   } catch (e) { mostrarToast(/liberad/i.test(e.message) ? 'A Descrição de Negócio ainda não foi liberada para esta empresa.' : e.message, true); }
 }
 
+// ======================= 🔑 CHAVES E INTEGRAÇÕES (Master): todas as chaves num lugar só =======================
+const CHAVES_SERVICOS = [
+  { k: 'anthropic', ico: '🧠', nome: 'IA — Claude (Anthropic)', para: 'Todos os agentes: roteiros, plano do Instagram, análises, relatórios, DPO.', passos: ['Entre em <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com › API Keys</a>', 'Clique em <b>Create Key</b>, dê um nome e copie (começa com <b>sk-ant-</b>)'], ph: 'sk-ant-...', salvar: v => api('/api/admin/chaves/anthropic', { method: 'PUT', body: JSON.stringify({ chave: v }) }), remover: () => api('/api/admin/chaves/anthropic', { method: 'PUT', body: JSON.stringify({ remover: true }) }) },
+  { k: 'transcricao', ico: '💬', nome: 'Legendas da fala (transcrição)', para: 'Legendas automáticas, cortes de silêncio, Cenas reais e Imagens IA conforme a fala.', passos: ['Grátis: <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com › API Keys</a> › <b>Create API Key</b> (começa com <b>gsk_</b>)', 'Ou OpenAI: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com › API keys</a> (começa com <b>sk-</b>)'], ph: 'gsk_... ou sk-...', salvar: v => api('/api/admin/estudio/transcricao', { method: 'PUT', body: JSON.stringify({ chave: v }) }), remover: () => api('/api/admin/estudio/transcricao', { method: 'PUT', body: JSON.stringify({ remover: true }) }) },
+  { k: 'pixabay', ico: '🎬', nome: 'Vídeos e fotos reais — Pixabay', para: 'Cenas reais conforme a fala e vídeos da IA com filmagens de verdade. Grátis.', passos: ['Faça login em <a href="https://pixabay.com" target="_blank" rel="noopener">pixabay.com</a>', 'Abra <a href="https://pixabay.com/api/docs/" target="_blank" rel="noopener">pixabay.com/api/docs</a> e desça até <b>Parameters</b>: na linha <b>key</b> aparece a sua chave em verde — copie'], ph: 'ex.: 12345678-abc123...', salvar: v => api('/api/admin/estudio-broll', { method: 'PUT', body: JSON.stringify({ pixabay: v }) }), remover: () => api('/api/admin/chaves/remover-broll', { method: 'PUT', body: JSON.stringify({ qual: 'pixabay' }) }) },
+  { k: 'pexels', ico: '🎞️', nome: 'Vídeos e fotos reais — Pexels', para: 'Mais opções de cenas reais (opcional). O Pexels pausou chaves novas; se você já tiver uma, cole aqui.', passos: ['<a href="https://www.pexels.com/api/" target="_blank" rel="noopener">pexels.com/api</a> › <b>Your API Key</b>'], ph: 'chave do Pexels', salvar: v => api('/api/admin/estudio-broll', { method: 'PUT', body: JSON.stringify({ pexels: v }) }), remover: () => api('/api/admin/chaves/remover-broll', { method: 'PUT', body: JSON.stringify({ qual: 'pexels' }) }) },
+  { k: 'jamendo', ico: '🎵', nome: 'Músicas de verdade — Jamendo', para: 'Músicas de fundo boas (as mais tocadas, liberadas para uso comercial). Grátis.', passos: ['Crie a conta em <a href="https://devportal.jamendo.com" target="_blank" rel="noopener">devportal.jamendo.com</a>', 'Em <b>My Applications</b> › <b>Create</b> (nome: Impulsionar, site: www.impulsionarv4.com.br) e copie o <b>Client ID</b>'], ph: 'Client ID', salvar: v => api('/api/admin/estudio-musica', { method: 'PUT', body: JSON.stringify({ jamendo: v }) }), remover: () => api('/api/admin/estudio-musica', { method: 'PUT', body: JSON.stringify({ jamendo: '' }) }) },
+  { k: 'elevenlabs', ico: '🎙️', nome: 'Voz premium — ElevenLabs', para: 'Narração com voz natural e "a IA aprender a minha voz".', passos: ['<a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">elevenlabs.io › API Keys</a> › <b>Create API Key</b>', 'Libere <b>Text to Speech</b> e <b>Voices (Write)</b>'], ph: 'chave da ElevenLabs', salvar: v => api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify({ elevenlabs: v }) }), remover: () => api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify({ elevenlabs: '' }) }) },
+  { k: 'openai', ico: '🗣️', nome: 'Voz — OpenAI', para: 'Vozes naturais da OpenAI para narração (opcional).', passos: ['<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com › API keys</a> › <b>Create new secret key</b>'], ph: 'sk-...', salvar: v => api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify({ openai: v }) }), remover: () => api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify({ openai: '' }) }) },
+  { k: 'did', ico: '🧑', nome: 'Avatar falando — D-ID', para: 'Vídeo com uma pessoa (foto) falando o roteiro.', passos: ['<a href="https://studio.d-id.com/account-settings" target="_blank" rel="noopener">studio.d-id.com › API Keys</a> › <b>Generate</b>'], ph: 'chave do D-ID', salvar: v => api('/api/admin/estudio/provedor-video', { method: 'PUT', body: JSON.stringify({ chave: v }) }), remover: () => api('/api/admin/estudio/provedor-video', { method: 'PUT', body: JSON.stringify({ remover: true }) }) }
+];
+let CHAVES_ST = null;
+async function renderChavesIntegracoes() {
+  const cont = document.getElementById('conteudo'); cont.innerHTML = '<h1>🔑 Chaves e integrações</h1><p>Carregando…</p>';
+  try { CHAVES_ST = await api('/api/admin/chaves'); } catch (e) { cont.innerHTML = `<h1>🔑 Chaves e integrações</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
+  const st = CHAVES_ST, n = CHAVES_SERVICOS.filter(s => (st[s.k] || {}).ok).length + (st.instagram.ok ? 1 : 0);
+  cont.innerHTML = `<h1>🔑 Chaves e integrações</h1><p class="plano-meta">Todas as chaves do sistema num lugar só. Elas ficam guardadas no servidor (ninguém mais vê) e valem para todos os vídeos e agentes. <b>${n} de ${CHAVES_SERVICOS.length + 1}</b> conectadas.</p>
+    <div class="ch-grade">${CHAVES_SERVICOS.map(s => { const x = st[s.k] || {}; return `<div class="ch-card ${x.ok ? 'ok' : ''}"><div class="ch-cab"><span class="ch-ico">${s.ico}</span><div><b>${s.nome}</b><small>${s.para}</small></div><span class="ch-st">${x.ok ? '✅ conectada' : x.recusada ? '⚠️ recusada' : '⚪ não conectada'}</span></div>
+      ${x.ok ? `<div class="ch-atual">Chave atual: <code>${escapeHtml(x.preview || '')}</code>${x.origem ? ` · ${escapeHtml(x.origem)}` : ''}${x.provedor ? ` · ${escapeHtml(x.provedor)}` : ''}</div>` : ''}
+      <details ${x.ok ? '' : 'open'}><summary>Como pegar a chave</summary><ol>${s.passos.map(p => `<li>${p}</li>`).join('')}</ol></details>
+      <div class="ch-linha"><input type="password" id="ch-${s.k}" placeholder="${escapeHtml(s.ph)}" autocomplete="off"><button class="btn-primario btn-sm" style="width:auto;" onclick="chSalvar('${s.k}')">💾 ${x.ok ? 'Trocar' : 'Salvar'}</button>${x.ok ? `<button class="btn-secundario btn-sm" style="width:auto;" onclick="chRemover('${s.k}')">Remover</button>` : ''}</div></div>`; }).join('')}
+      <div class="ch-card ${st.instagram.ok ? 'ok' : ''}"><div class="ch-cab"><span class="ch-ico">📸</span><div><b>App do Instagram (Meta)</b><small>Entrar com Instagram, postar e agendar, ler o perfil e responder comentários.</small></div><span class="ch-st">${st.instagram.ok ? '✅ conectado' : '⚪ não conectado'}</span></div>
+        <details ${st.instagram.ok ? '' : 'open'}><summary>Como pegar</summary><ol><li><a href="https://developers.facebook.com/apps" target="_blank" rel="noopener">developers.facebook.com › Meus apps</a> › app <b>Impulsionar v4</b> › <b>Casos de uso</b> › API do Instagram com login do Instagram</li><li>Em <b>URIs de redirecionamento OAuth</b> cole: <code>${escapeHtml(st.instagram.redirect)}</code></li><li>Copie o <b>ID do app do Instagram</b> e a <b>Chave secreta do app do Instagram</b></li></ol></details>
+        <div class="ch-linha"><input id="ch-ig-id" placeholder="ID do app do Instagram (só números)" value="${escapeHtml(st.instagram.appId || '')}"><input type="password" id="ch-ig-sec" placeholder="Chave secreta do app" autocomplete="off"><button class="btn-primario btn-sm" style="width:auto;" onclick="chSalvarIg()">💾 Salvar</button></div></div>
+    </div>`;
+}
+async function chSalvar(k) {
+  const s = CHAVES_SERVICOS.find(x => x.k === k), i = document.getElementById('ch-' + k), v = (i.value || '').trim(); if (!v) return mostrarToast('Cole a chave no campo.', true);
+  try { const r = await s.salvar(v); mostrarToast((r && r.message) || 'Chave salva! ✅', !!(r && r.aviso)); if (typeof EV_BROLL_CFG !== 'undefined') EV_BROLL_CFG = null; renderChavesIntegracoes(); } catch (e) { mostrarToast(e.message, true); }
+}
+async function chRemover(k) { if (!confirm('Remover esta chave? O recurso que depende dela para de funcionar.')) return; const s = CHAVES_SERVICOS.find(x => x.k === k); try { const r = await s.remover(); mostrarToast((r && r.message) || 'Chave removida.'); renderChavesIntegracoes(); } catch (e) { mostrarToast(e.message, true); } }
+async function chSalvarIg() { try { const r = await api('/api/admin/instagram-app', { method: 'PUT', body: JSON.stringify({ appId: document.getElementById('ch-ig-id').value, appSecret: document.getElementById('ch-ig-sec').value }) }); mostrarToast(r.message); renderChavesIntegracoes(); } catch (e) { mostrarToast(e.message, true); } }
 // ======================= ACOMPANHAMENTOS IMPULSIONAR (um por pergunta) =======================
 const BLOCOS_ACOMP = {
   reunioes: { icone: '🗓️', rotulo: 'Reuniões e rotinas' },
@@ -22291,7 +22329,7 @@ let EV_BROLL_CFG = null;
 async function evBrollCfg(forcar) { if (!EV_BROLL_CFG || forcar) { try { EV_BROLL_CFG = await api('/api/admin/estudio-broll'); } catch (e) { EV_BROLL_CFG = { pexels: false, pixabay: false }; } } return EV_BROLL_CFG; }
 async function evAbrirCenasReais() {
   if (!evPrecisa('imagens_ia')) return;
-  const d = ES.p.dados; if (!d.clips.some(c => (evMidia(c.midia) || {}).tipo === 'video')) return mostrarToast('Coloque na linha do tempo o vídeo em que você fala.', true);
+  const d = ES.p.dados;
   const cfgB = await evBrollCfg(), tot = evTotal(), sug = Math.max(2, Math.round(tot / 6));
   const cfg = ES.reais = ES.reais || { qtd: Math.min(sug, 15), layout: 'auto', impacto: true, legenda: true };
   const chip = (k, v, r) => `<button class="${cfg[k] === v ? 'on' : ''}" onclick="ES.reais.${k}=${typeof v === 'string' ? `'${v}'` : v}; evAbrirCenasReais()">${r}</button>`;
@@ -22299,7 +22337,7 @@ async function evAbrirCenasReais() {
   document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal">
     <div class="ev-modal-cab"><h3>🎬 Cenas reais conforme a fala</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
     <div class="ev-sub">A IA ouve o que você fala e cobre os momentos com <b>filmagens de verdade</b>: “seu negócio está uma bagunça” → um escritório bagunçado; “isso vai pegar fogo” → fogo de verdade. Nos momentos de impacto entra com flash e zoom.</div>
-    ${temVid ? '' : `<div class="ev-dica-fixa">⚠️ Sem banco de vídeos conectado: por enquanto entram <b>fotos reais</b>. ${cfgB.master ? `<button class="ev-mini" onclick="evConfigBroll()">🔑 Conectar vídeos reais (Pexels — grátis)</button>` : 'Peça ao administrador para conectar o Pexels (grátis) e ter vídeos reais.'}</div>`}
+    ${temVid ? '' : `<div class="ev-dica-fixa">⚠️ Sem banco de vídeos conectado: por enquanto entram <b>fotos reais</b>. ${cfgB.master ? `<button class="ev-mini" onclick="evConfigBroll()">🔑 Conectar vídeos reais (Pixabay — grátis)</button>` : 'Peça ao administrador para conectar o Pexels (grátis) e ter vídeos reais.'}</div>`}
     ${evCampo('Como a cena aparece', `<div class="ev-chips">${chip('layout', 'auto', '🎬 A IA escolhe')}${chip('layout', 'cheio', '⛶ Tela cheia (você só na voz)')}${chip('layout', 'cima', '⬒ Cena em cima, você embaixo')}${chip('layout', 'pip', '▣ Janelinha')}</div>`)}
     ${evCampo(`Quantidade <b>${cfg.qtd}</b> <small>(vídeo de ${evFmtT(tot).slice(0, 5)} · sugerido ${sug})</small>`, `<input type="range" min="1" max="${Math.max(3, Math.min(30, Math.round(tot / 2.5)))}" value="${cfg.qtd}" oninput="ES.reais.qtd=Number(this.value); this.parentElement.querySelector('b').textContent=this.value">`)}
     <label class="ev-chk2"><input type="checkbox" ${cfg.impacto ? 'checked' : ''} onchange="ES.reais.impacto=this.checked"><span>⚡ Efeito de impacto (flash + zoom) nas frases fortes</span></label>
@@ -22315,7 +22353,8 @@ function evConfigBroll() {
     <ol class="ev-sub"><li><b>Pexels</b> (recomendado): entre em <a href="https://www.pexels.com/api/" target="_blank" rel="noopener">pexels.com/api</a> › <i>Get Started</i> › copie a <b>API Key</b>.</li><li><b>Pixabay</b> (opcional, mais opções): <a href="https://pixabay.com/api/docs/" target="_blank" rel="noopener">pixabay.com/api/docs</a> › faça login › a chave aparece na página.</li></ol>
     <label class="ev-campo"><span>Chave do Pexels ${EV_BROLL_CFG && EV_BROLL_CFG.pexels ? '✅ conectada' : ''}</span><input id="ev-pexels" placeholder="cole aqui"></label>
     <label class="ev-campo"><span>Chave do Pixabay ${EV_BROLL_CFG && EV_BROLL_CFG.pixabay ? '✅ conectada' : ''}</span><input id="ev-pixabay" placeholder="opcional"></label>
-    <button class="ev-btn primario grande" onclick="evSalvarBroll()">💾 Salvar</button></div></div>`;
+    <button class="ev-btn primario grande" onclick="evSalvarBroll()">💾 Salvar</button>
+    <div class="ev-sub" style="text-align:center;margin-top:8px;"><a href="#" onclick="document.getElementById('ev-modal').innerHTML=''; evFechar && evFechar().then(()=>irPara('chavesIntegracoes')); return false;">🔑 Ver todas as chaves do sistema</a></div></div></div>`;
 }
 async function evSalvarBroll() {
   const px = document.getElementById('ev-pexels').value.trim(), pb = document.getElementById('ev-pixabay').value.trim(), corpo = {};
@@ -22339,7 +22378,9 @@ function evPorCenasReais(d, cenas, cfg) {
   return ok;
 }
 async function evGerarCenasReais() {
-  const cfg = ES.reais, d = ES.p.dados; document.getElementById('ev-modal').innerHTML = ''; evPausar();
+  const cfg = ES.reais, d = ES.p.dados;
+  if (!d.clips.some(c => (evMidia(c.midia) || {}).tipo === 'video')) return mostrarToast('Coloque na linha do tempo o vídeo em que você fala.', true);
+  document.getElementById('ev-modal').innerHTML = ''; evPausar();
   if (!(await evTranscricaoConfigurada())) return evPedirTranscricao(() => evGerarCenasReais());
   try {
     const medias = [...new Set(d.clips.map(c => c.midia))].map(evMidia).filter(m => m && m.tipo === 'video');
