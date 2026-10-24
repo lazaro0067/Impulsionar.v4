@@ -21674,6 +21674,17 @@ function evSincronizar(t, tocando) {
     else if (!el.paused) el.pause();
   });
 }
+function evQuadroAindaCarregando(t) {
+  const d = ES.p.dados, ini = evInicios(); let i = -1; for (let k = 0; k < d.clips.length; k++) if (t >= ini[k] && t < ini[k] + evClipDur(d.clips[k])) { i = k; break; }
+  if (i < 0) return false; const m = evMidia(d.clips[i].midia); if (!m || m.tipo !== 'video') return false;
+  const el = (ES.els || {})[evChaveClip(d.clips[i])]; return !!(el && el.readyState < 2 && !el.error);
+}
+// tela preta / vídeo travado: recria todos os players e volta a usar os arquivos do servidor
+function evRecarregarMidias() {
+  evPausar(); Object.values(ES.els || {}).forEach(el => { try { el.pause && el.pause(); el.removeAttribute && el.removeAttribute('src'); el.load && el.load(); } catch (e) {} });
+  ES.els = {}; ES.aud = {}; ES.sons = {}; ES.locais = {}; ES.locaisPend = null; ES.__precarga = false; ES.chavesSig = null; EVGL.lento = false;
+  evSincronizar(ES.t, false); setTimeout(() => { evDesenhar(); evPreCarregarMidias(); }, 400); mostrarToast('🔄 Vídeos recarregados.');
+}
 function evTocar() {
   if (!ES) return;
   if (ES.tocando) return evPausar();
@@ -21696,7 +21707,7 @@ function evTocar() {
       if (e.esperando) { e.esperando = false; evSincronizar(ES.t, true); if (e.rec.state === 'paused' && !document.hidden) { e.rec.resume(); evExpAudio(ES.t); } ES.t0 = performance.now() - ES.t * 1000; ES.raf = requestAnimationFrame(loop); return; }
     }
     const q0 = performance.now();
-    ES.t = t; evSincronizar(t, true); evDesenhar(undefined, !!ES.exportando); evAtualizarCabeca();
+    ES.t = t; evSincronizar(t, true); if (ES.exportando || !evQuadroAindaCarregando(t)) evDesenhar(undefined, !!ES.exportando); evAtualizarCabeca();
     if (!ES.exportando && !ES.leve) { const dq = performance.now() - q0; ES.qn = (ES.qn || 0) + 1; ES.qs = (ES.qs || 0) + dq; if (ES.qn >= 40) { if (ES.qs / ES.qn > 22) { ES.leve = true; evAjustarPalco(); mostrarToast('⚡ Modo leve ligado para a prévia rodar sem travar (o vídeo final sai com qualidade total).'); } ES.qn = 0; ES.qs = 0; } }
     if (ES.exportando) evProgressoExport(t / tot);
     ES.raf = requestAnimationFrame(loop);
@@ -22079,10 +22090,18 @@ async function evPreCarregarMidias() {
   const lista = ES.p.dados.midias.filter(m => (m.tipo === 'video' || m.tipo === 'audio') && m.url && !/^blob:/.test(m.url) && !(ES.locais || {})[m.id] && !m.enviando);
   for (const m of lista) {
     try {
-      const h = await fetch(m.url, { method: 'HEAD' }); const tam = Number(h.headers.get('content-length')) || 0;
-      if (!h.ok || !tam || tam > maxArq || tam > orc) continue;
-      const b = await (await fetch(m.url)).blob(); if (!ES || ES.p.id !== pid) return;
-      orc -= tam; ES.locaisPend = ES.locaisPend || {}; ES.locaisPend[m.id] = URL.createObjectURL(b);
+      if (m.preparando || m.convertendo || /\.part$/.test(m.url)) continue;
+      const h = await fetch(m.url, { method: 'HEAD' }); const tam = Number(h.headers.get('content-length')) || 0, tipo = h.headers.get('content-type') || '';
+      if (!h.ok || !tam || tam > maxArq || tam > orc || (tipo && !/video|audio|octet/.test(tipo))) continue;
+      const r = await fetch(m.url); const b = await r.blob(); if (!ES || ES.p.id !== pid) return;
+      if (!r.ok || b.size !== tam) continue; // download incompleto: continua usando o do servidor
+      const url = URL.createObjectURL(b);
+      // só usa a cópia se ela abrir de verdade (com imagem e a duração certa)
+      const ok = await new Promise(fim => { const el = document.createElement(m.tipo === 'audio' ? 'audio' : 'video'); el.muted = true; el.preload = 'auto';
+        const tm = setTimeout(() => fim(false), 10000); el.onloadeddata = () => { clearTimeout(tm); fim((m.tipo === 'audio' || el.videoWidth > 0) && (!m.duracao || !isFinite(el.duration) || Math.abs(el.duration - m.duracao) < 1.5)); };
+        el.onerror = () => { clearTimeout(tm); fim(false); }; el.src = url; });
+      if (!ok) { URL.revokeObjectURL(url); continue; }
+      orc -= tam; ES.locaisPend = ES.locaisPend || {}; ES.locaisPend[m.id] = url;
       if (!ES.tocando && !ES.exportando) evAplicarLocaisPend();
     } catch (e) {}
   }
@@ -23425,6 +23444,7 @@ function evDesenharProps() {
       ${evCampo('Legenda do post', `<textarea rows="6" placeholder="Primeira linha = gancho…" onchange="ES.p.legenda=this.value; evMudou(false)">${escapeHtml(ES.p.legenda || '')}</textarea>`)}
       ${evCampo('Hashtags (3 a 5)', `<input value="${escapeHtml(ES.p.hashtags || '')}" placeholder="#lideranca #gestao" onchange="ES.p.hashtags=this.value; evMudou(false)">`)}
       <div class="ev-linha-btn"><button class="ev-btn ia" onclick="evIaLegenda()">🤖 Legenda + hashtags</button></div>
+      <button class="ev-btn" style="width:100%;margin-top:6px;" onclick="evRecarregarMidias()">🔄 Recarregar vídeos (tela preta ou travando)</button>
       ${evHtmlVersoes()}
       <div class="ev-sub" style="margin-top:14px;">Selecione um clipe, texto ou áudio na linha do tempo para editar.<br><br><b>Atalhos:</b> espaço = play · S = dividir · Delete = excluir · Ctrl+Z = desfazer · Ctrl+D = duplicar · setas = quadro a quadro.</div>`;
     return;
@@ -24100,6 +24120,8 @@ function evGradeAprox(g, it) {
 }
 function evGLGrade(el, mw, mh, g, intensidade) {
   const gl = evGLIniciar(); if (!gl || !g) return null;
+  if (gl.isContextLost && gl.isContextLost()) { EVGL.lento = true; return null; }
+  if (el.tagName === 'VIDEO' && el.readyState < 2) return null;
   const it = intensidade === undefined ? 1 : intensidade, mix = (a, b) => a + (b - a) * it;
   const lim = ES.exportando || ES.telaCheia ? 1920 : Math.max(720, Math.round(Math.max(ES.canvas.width, ES.canvas.height) * 1.3));
   const esc = Math.min(1, lim / Math.max(mw, mh)), w = Math.round(mw * esc), h = Math.round(mh * esc);
