@@ -1551,6 +1551,10 @@
   .ch-atual { font-size:12.5px; color:#475569; margin:8px 0 0; } .ch-card details { font-size:13px; margin:8px 0; } .ch-card summary { cursor:pointer; color:#2563eb; font-weight:600; } .ch-card ol { margin:6px 0; padding-left:20px; } .ch-card code { background:#f1f5f9; border-radius:6px; padding:1px 5px; font-size:12px; word-break:break-all; }
   .ch-linha { display:flex; gap:6px; flex-wrap:wrap; } .ch-linha input { flex:1; min-width:160px; margin:0; }
   @media (max-width: 700px) { .ch-grade { grid-template-columns:1fr; } }
+.evc-partes { position:absolute; left:50%; top:62px; transform:translateX(-50%); z-index:6; display:flex; align-items:center; gap:8px; background:rgba(15,23,42,.78); color:#fff; border-radius:14px; padding:6px 8px; backdrop-filter:blur(6px); max-width:92%; }
+  .evc-partes > div { display:flex; flex-direction:column; align-items:center; gap:2px; min-width:120px; } .evc-partes b { font-size:14px; } .evc-partes small { font-size:11px; opacity:.85; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .evc-partes span { display:flex; gap:4px; flex-wrap:wrap; justify-content:center; } .evc-partes i { width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,.3); } .evc-partes i.ok { background:#22c55e; } .evc-partes i.at { background:#facc15; }
+  .evc-partes button { border:none; background:rgba(255,255,255,.15); color:#fff; width:34px; height:34px; border-radius:50%; font-size:20px; cursor:pointer; } .evc-partes button:disabled { opacity:.3; } .evc-ic.on { background:#4f46e5 !important; }
   .evc-fundos { overflow:auto; } .evc-fundos-grade { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; margin:6px 0 10px; } .evc-fundos-grade button, .evc-fundos-grade label { display:flex; flex-direction:column; align-items:center; gap:2px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:#fff; border-radius:10px; padding:8px 4px; font-size:12px; font-weight:700; cursor:pointer; text-align:center; } .evc-fundos-grade span { font-size:20px; } .evc-fundos-grade .on { background:#4f46e5; border-color:#818cf8; }
   /* ---------- Instagram: Insights & Treino ---------- */
   .ig-sec { background:#fff !important; color:#8134af !important; border:2px solid #8134af !important; }
@@ -22845,13 +22849,15 @@ async function evAbrirCamera() {
       <div class="ev-cam-tp" id="ev-cam-tp" hidden><div class="ev-cam-tp-txt" id="ev-cam-tp-txt"></div><i></i></div>
       <div class="ev-cam-rec evc-tempo" id="ev-cam-rec" hidden>● 00:00</div><div class="ev-cam-conta" id="ev-cam-conta"></div></div>
     <div class="evc-topo">
-      <button class="evc-ic" onclick="evFecharCamera()" title="Fechar">✕</button>
+      <button class="evc-ic" onclick="evCamSairPartes()" title="Fechar">✕</button>
       <div class="evc-modos" id="ev-cam-modos">${EVCAM.div ? `<span class="evc-div-rot">🎙️ Tela dividida${EVCAM.divEl && EVCAM.divEl.tagName === 'VIDEO' ? ` · <button onclick="EVCAM.divEl.muted=!EVCAM.divEl.muted; this.textContent=EVCAM.divEl.muted?'🔇 som do vídeo':'🔊 som do vídeo'">🔊 som do vídeo</button>` : ''}</span>` : ''}${temTela ? [['camera', '📷 Câmera'], ['tela', '🖥️ Tela'], ['telacam', '🖥️+📷']].map(([k, r]) => `<button class="${EVCAM.modo === k ? 'on' : ''}" onclick="evCamModo('${k}')">${r}</button>`).join('') : ''}</div>
       <button class="evc-ic" id="evc-flash" hidden onclick="evCamFlash()" title="Lanterna / flash">⚡</button>
       <button class="evc-ic" onclick="evCamVirar()" title="Trocar câmera (frontal / traseira)">🔄</button>
+      <button class="evc-ic ${EVCAM.pp ? 'on' : ''}" id="evc-pp-bt" onclick="evCamPartesLigar(!EVCAM.pp)" title="Gravar por partes (uma parte do roteiro de cada vez)">🧩</button>
       <button class="evc-ic" onclick="evCamFundosAbrir()" title="Trocar o fundo (foto, sugestões ou IA)">🖼️</button>
       <button class="evc-ic" onclick="evCamAjustes()" title="Ajustes da câmera">⚙️</button>
     </div>
+    <div class="evc-partes" id="evc-partes" hidden></div>
     <div class="evc-zoom" id="evc-zoom" hidden><div class="evc-zchips" id="evc-zchips"></div><input type="range" id="ev-cam-zoom" step="0.01" oninput="EVCAM.zoom && EVCAM.zoom.setar(this.value)"><b id="evc-zoom-v">1x</b></div>
     <div class="evc-base">
       <div class="evc-msg" id="ev-cam-msg">Toque no botão vermelho para gravar · a gravação entra direto no vídeo</div>
@@ -22878,7 +22884,7 @@ async function evAbrirCamera() {
       <div id="ev-cam-tpcfg" class="ev-dupla" style="align-items:center;"><button class="ev-mini" onclick="EVCAM.ppm=Math.max(60,EVCAM.ppm-10); evCamTp()">−</button><span id="ev-cam-ppm" style="font-size:12px;">${EVCAM.ppm} ppm</span><button class="ev-mini" onclick="EVCAM.ppm=Math.min(260,EVCAM.ppm+10); evCamTp()">+</button><button class="ev-mini" onclick="evAbrirTeleprompter()">✏️ roteiro</button></div>
     </div>
   </div>`;
-  await evCamLigar(true); evCamTp();
+  await evCamLigar(true); evCamTp(); evCamPartesUI();
 }
 window.addEventListener('resize', () => { clearTimeout(EVCAM.tGiro); EVCAM.tGiro = setTimeout(() => { if (document.getElementById('ev-cam-cv') && EVCAM.stream && !EVCAM.rec && !EVCAM.ultima && evCelularAqui() && EVCAM.orientou !== (window.innerHeight >= window.innerWidth)) evCamLigar(); }, 450); });
 function evCamAjustes() { const a = document.getElementById('evc-ajustes'); if (a) a.hidden = !a.hidden; }
@@ -22994,10 +23000,70 @@ function evCamDesenharLoop() {
   };
   passo();
 }
+// ---------- Gravar por partes: cada parte do roteiro é gravada e salva separada (cortes certinhos), tudo no mesmo projeto ----------
+function evDividirRoteiro(r) {
+  const txt = String(r || '').replace(/\r/g, '').trim(); if (!txt) return [];
+  // [TÍTULO] numa linha abre uma parte nova; senão, cada bloco separado por linha em branco é uma parte
+  const blocos = []; let atual = { titulo: '', linhas: [] };
+  txt.split('\n').forEach(l => { const tit = /^\s*\[([^\]]+)\]\s*$/.exec(l); if (tit) { if (atual.linhas.join('').trim() || atual.titulo) blocos.push(atual); atual = { titulo: tit[1].trim(), linhas: [] }; } else atual.linhas.push(l); });
+  if (atual.linhas.join('').trim() || atual.titulo) blocos.push(atual);
+  const temTitulos = blocos.some(b => b.titulo);
+  const partes = temTitulos ? blocos.map(b => ({ titulo: b.titulo, texto: b.linhas.join('\n').trim() })) : txt.split(/\n\s*\n/).map(t => ({ titulo: '', texto: t.trim() }));
+  return partes.filter(p => p.texto || p.titulo);
+}
+function evCamPartesLigar(on) {
+  if (EVCAM.rec) return mostrarToast('Pare a gravação primeiro.', true);
+  if (!on) { EVCAM.pp = null; evCamPartesUI(); evCamTp(); return; }
+  const partes = evDividirRoteiro(ES.p.dados.roteiro);
+  EVCAM.pp = { partes: partes.length ? partes : [{ titulo: '', texto: '' }], i: 0, feitas: {}, livre: !partes.length };
+  const ch = document.getElementById('ev-cam-usatp'); if (ch && partes.length && !ch.checked) { ch.checked = true; const b = document.getElementById('evc-tp-bt'); if (b) b.classList.add('on'); }
+  evCamPartesUI(); evCamTp();
+  mostrarToast(partes.length ? `🧩 Roteiro dividido em ${partes.length} partes. Grave a parte 1, confira e siga para a próxima.` : '🧩 Gravação por partes ligada: grave, use e grave a próxima — elas entram em sequência no vídeo.');
+}
+function evCamPartesUI() {
+  const el = document.getElementById('evc-partes'); if (!el) return; const P = EVCAM.pp;
+  const b = document.getElementById('evc-pp-bt'); if (b) b.classList.toggle('on', !!P);
+  if (!P) { el.hidden = true; return; }
+  const n = P.livre ? Math.max(P.i + 1, Object.keys(P.feitas).length + 1) : P.partes.length, p = P.partes[P.i] || {};
+  el.hidden = false;
+  el.innerHTML = `<button onclick="evCamParteIr(-1)" ${P.i ? '' : 'disabled'}>‹</button><div><b>Parte ${P.i + 1}${P.livre ? '' : ' de ' + n}</b>${p.titulo ? `<small>${escapeHtml(p.titulo)}</small>` : ''}<span>${Array.from({ length: n }, (_, k) => `<i class="${P.feitas[k] ? 'ok' : k === P.i ? 'at' : ''}"></i>`).join('')}</span></div><button onclick="evCamParteIr(1)" ${P.livre || P.i < n - 1 ? '' : 'disabled'}>›</button>`;
+  const m = document.getElementById('ev-cam-msg'); if (m && !EVCAM.rec && !EVCAM.ultima) m.textContent = P.feitas[P.i] ? `✅ Parte ${P.i + 1} já gravada · grave de novo para trocar, ou › para a próxima` : `Grave a parte ${P.i + 1}${p.titulo ? ' — ' + p.titulo : ''}`;
+}
+function evCamParteIr(d) { const P = EVCAM.pp; if (!P || EVCAM.rec || EVCAM.ultima) return; const n = P.livre ? P.i + 2 : P.partes.length; P.i = Math.max(0, Math.min(n - 1, P.i + d)); if (P.livre && !P.partes[P.i]) P.partes[P.i] = { titulo: '', texto: '' }; EVCAM.pos = 0; const t = document.getElementById('ev-cam-tp-txt'); if (t) t.style.transform = ''; evCamPartesUI(); evCamTp(); }
+// usou a parte: entra no lugar dela na linha do tempo (regravar troca a anterior) e a câmera já fica pronta para a próxima
+function evCamParteEncaixar(m) {
+  const P = EVCAM.pp, d = ES.p.dados, ant = P.feitas[P.i];
+  m.nome = `Parte ${P.i + 1}${(P.partes[P.i] || {}).titulo ? ' · ' + P.partes[P.i].titulo : ''}`; m.parte = P.i + 1;
+  const c0 = ant ? d.clips.find(c => c.midia === ant) : null;
+  if (c0) { Object.assign(c0, { midia: m.id, ini: 0, fim: m.duracao || 3, fimAuto: !m.duracao ? true : undefined }); }
+  else { // entra depois da última parte anterior já gravada (mantém a ordem do roteiro)
+    evAdicionarClipe(m.id, true); const novo = d.clips.pop();
+    let pos = d.clips.length; for (let k = P.i + 1; k < 400; k++) { const mid = P.feitas[k]; if (!mid) continue; const idx = d.clips.findIndex(c => c.midia === mid); if (idx >= 0) { pos = idx; break; } }
+    d.clips.splice(pos, 0, novo);
+  }
+  P.feitas[P.i] = m.id; P.midias = P.midias || []; P.midias.push(m);
+  const total = P.livre ? Infinity : P.partes.length, faltam = P.livre ? null : P.partes.map((_, k) => k).filter(k => !P.feitas[k]);
+  EVCAM.ultima = null; clearInterval(EVCAM.revTimer); const rv = document.getElementById('evc-rev'); if (rv) rv.remove();
+  EVCAM.partes = []; EVCAM.tamLocal = 0; EVCAM.pos = 0; const t = document.getElementById('ev-cam-tp-txt'); if (t) t.style.transform = '';
+  if (faltam && !faltam.length) return true; // todas gravadas
+  P.i = faltam ? (faltam.find(k => k > P.i) ?? faltam[0]) : P.i + 1; if (P.livre && !P.partes[P.i]) P.partes[P.i] = { titulo: '', texto: '' };
+  evCamPartesUI(); evCamTp(); evCamDesenharLoop();
+  mostrarToast(`✅ Parte salva no vídeo. Agora a parte ${P.i + 1}${total !== Infinity ? ' de ' + total : ''}.`);
+  return false;
+}
+// terminou: fecha a câmera, melhora todas as partes (tremedura, rosto, luz)
+function evCamPartesConcluir() {
+  const P = EVCAM.pp, melhorar = (document.getElementById('ev-cam-luz') || {}).checked, firmar = (document.getElementById('ev-cam-estab') || { checked: true }).checked;
+  const mids = (P && P.midias || []).filter(m => ES.p.dados.clips.some(c => c.midia === m.id));
+  EVCAM.pp = null; evFecharCamera(true); evMudou(); evPainel('midia');
+  mostrarToast(`🎬 ${mids.length} parte(s) gravada(s) e montada(s) em sequência no mesmo vídeo.`);
+  if (mids.length && (melhorar || firmar)) setTimeout(async () => { if (firmar && ES) { const curtas = mids.filter(x => !x.duracao || x.duracao <= 180); if (curtas.length) await evEstabilizar({ midias: curtas, silencioso: true }); } if (ES) await evImagemInteligente({ silencioso: false, cor: !!melhorar, enquadrar: true }); }, 800);
+}
 function evCamTp() {
   const on = (document.getElementById('ev-cam-usatp') || {}).checked, tp = document.getElementById('ev-cam-tp'); if (!tp) return;
   tp.hidden = !on; document.getElementById('ev-cam-tpcfg').style.display = on ? '' : 'none'; document.getElementById('ev-cam-ppm').textContent = EVCAM.ppm + ' ppm';
-  document.getElementById('ev-cam-tp-txt').textContent = (ES.p.dados.roteiro || 'Escreva o roteiro em ✏️ roteiro.').replace(/^\s*\[[^\]]*\]\s*$/gm, '') + '\n\n\n';
+  const pp = EVCAM.pp && EVCAM.pp.partes[EVCAM.pp.i];
+  document.getElementById('ev-cam-tp-txt').textContent = (pp ? (pp.texto || (EVCAM.pp.livre ? 'Parte ' + (EVCAM.pp.i + 1) + ' — fale à vontade.' : '')) : (ES.p.dados.roteiro || 'Escreva o roteiro em ✏️ roteiro.')).replace(/^\s*\[[^\]]*\]\s*$/gm, '') + '\n\n\n';
 }
 async function evCamGravar() {
   if (EVCAM.rec) { if (EVCAM.rec.state === 'paused') EVCAM.rec.resume(); EVCAM.rec.stop(); return; }
@@ -23092,9 +23158,9 @@ function evCamRevisar() {
   rv.innerHTML = `<div class="evc-rev-video">${g.url ? `<video src="${g.url}" controls playsinline autoplay></video>` : '<div class="evc-rev-sem">🎬 Gravação longa demais para pré-visualizar aqui — ela já está sendo salva no servidor.</div>'}</div>
     <div class="evc-rev-info"><b>✅ Gravação de ${evFmtT(g.dur).slice(0, 5)}</b><span id="evc-rev-st">${E.erro ? '⚠️ ' + escapeHtml(E.erro) : E.resposta ? '☁️ Já está salva no servidor' : `☁️ Enviando… ${pct}% (pode usar agora, termina sozinho)`}</span></div>
     <div class="evc-rev-bts">
-      <button class="evc-rev-bt pri" onclick="evCamUsar()">✅ Usar no vídeo</button>
+      ${EVCAM.pp ? `<button class="evc-rev-bt pri" onclick="evCamUsar()">✅ Usar a parte ${EVCAM.pp.i + 1}${!EVCAM.pp.livre && EVCAM.pp.partes.map((_, k) => k).filter(k => !EVCAM.pp.feitas[k] && k !== EVCAM.pp.i).length ? ' e ir para a próxima' : ' e terminar'}</button>${EVCAM.pp.livre ? `<button class="evc-rev-bt" onclick="EVCAM.ppTerminar=true; evCamUsar()">✅ Usar e terminar</button>` : ''}` : `<button class="evc-rev-bt pri" onclick="evCamUsar()">✅ Usar no vídeo</button>`}
       <button class="evc-rev-bt" onclick="evCamSalvarAparelho()" ${g.blob ? '' : 'disabled'}>💾 Salvar no aparelho</button>
-      <button class="evc-rev-bt" onclick="evCamGravarDeNovo()">🔁 Gravar de novo</button>
+      <button class="evc-rev-bt" onclick="evCamGravarDeNovo()">🔁 Gravar de novo${EVCAM.pp ? ' esta parte' : ''}</button>
       <button class="evc-rev-bt" onclick="evFecharCamera()">✕ Sair</button>
     </div>`;
   clearInterval(EVCAM.revTimer); EVCAM.revTimer = setInterval(() => { const st = document.getElementById('evc-rev-st'); if (!st || !EVCAM.ultima) return clearInterval(EVCAM.revTimer); const E2 = EVCAM.ultima.envio; st.textContent = E2.erro ? '⚠️ ' + E2.erro : E2.resposta ? '☁️ Já está salva no servidor' : `☁️ Enviando… ${Math.min(99, Math.round(E2.enviado / Math.max(1, E2.total) * 100))}% (pode usar agora, termina sozinho)`; }, 1000);
@@ -23127,11 +23193,16 @@ async function evCamUsar() {
   }
   ES.p.dados.midias.push(m);
   const div = EVCAM.div;
+  if (EVCAM.pp && !div) {
+    const tudo = evCamParteEncaixar(m); evMudou(false); evDesenharLinha();
+    if (tudo || EVCAM.ppTerminar) { EVCAM.ppTerminar = false; evCamPartesConcluir(); }
+  } else {
   if (div) evEncaixarDividida(div, m, g.dur); else evAdicionarClipe(m.id, true);
   evMudou(); evPainel('midia');
   evFecharCamera(true);
   mostrarToast('🎥 Gravação na linha do tempo! Ela termina de subir sozinha em segundo plano.');
-  if (g.modo === 'camera' && (melhorar || firmar)) setTimeout(async () => { if (firmar && ES) await evEstabilizar({ midias: [m] }); if (ES) await evImagemInteligente({ silencioso: false, cor: !!melhorar, enquadrar: true }); }, 600);
+  }
+  if (!EVCAM.pp && !(m.parte) && g.modo === 'camera' && (melhorar || firmar)) setTimeout(async () => { if (firmar && ES && g.dur <= 180) await evEstabilizar({ midias: [m] }); else if (firmar && g.dur > 180) mostrarToast('📳 Gravação longa: para tirar a tremedura, use Filtros › Tirar a tremedura (leva o tempo do vídeo).'); if (ES) await evImagemInteligente({ silencioso: false, cor: !!melhorar, enquadrar: true }); }, 600);
   if (m.enviando) {
     const pid = ES.p.id; EVENV.ativos++; EVENV.atual = m; evStatusEnvio();
     const tick = setInterval(() => { m.__prog = E.enviado / Math.max(1, E.total); evStatusEnvio(); }, 1000);
@@ -23142,6 +23213,7 @@ async function evCamUsar() {
     } finally { clearInterval(tick); EVENV.ativos--; EVENV.atual = null; evStatusEnvio(); }
   }
 }
+function evCamSairPartes() { if (EVCAM.pp && Object.keys(EVCAM.pp.feitas).length && !EVCAM.rec && !EVCAM.ultima) return evCamPartesConcluir(); evFecharCamera(); }
 function evFecharCamera(forcar) {
   if (!forcar && EVCAM.rec && !confirm('Parar e descartar a gravação em andamento?')) return;
   if (!forcar && !EVCAM.rec && EVCAM.ultima && !EVCAM.ultima.usada && !confirm('Sair sem usar a gravação? Ela será descartada.')) return;
@@ -24849,7 +24921,7 @@ async function evAbrirTeleprompter() {
     <button class="ev-btn ia" style="width:100%;" onclick="evTpGerarRoteiro()">🤖 Criar roteiro ${aula ? 'da aula ' : ''}com IA</button>
     <label class="ev-campo"><span>Roteiro (o que você vai falar — linha em branco entre as partes; [TÍTULOS] aparecem só como guia)</span><textarea id="tp-roteiro" rows="10" placeholder="Escreva aqui ou clique em Criar roteiro com IA">${escapeHtml(ES.roteiroTp || '')}</textarea></label>
     <div class="ev-sub" id="tp-estimativa"></div>
-    <div class="ev-linha-btn"><button class="ev-btn primario grande" onclick="evTpGravarAqui()">🎥 Gravar agora aqui (roteiro na tela)</button><button class="ev-btn grande" onclick="evTpGerarLink()">📱 Gravar em outro aparelho (QR / link)</button></div>
+    <div class="ev-linha-btn"><button class="ev-btn grande" onclick="evTpGravarAqui(true)" title="Grava uma parte do roteiro de cada vez (linha em branco ou [TÍTULO] separa as partes)">🧩 Gravar por partes</button><button class="ev-btn primario grande" onclick="evTpGravarAqui()">🎥 Gravar agora aqui (roteiro na tela)</button><button class="ev-btn grande" onclick="evTpGerarLink()">📱 Gravar em outro aparelho (QR / link)</button></div>
     <div id="tp-link"></div>
   </div></div>`;
   const ta = document.getElementById('tp-roteiro');
@@ -24876,9 +24948,9 @@ async function evTpGerarRoteiro() {
   } catch (e) { mostrarToast(/conectada/.test(e.message) ? 'A IA não está conectada — escreva o roteiro no campo (ou conecte a IA em Agente Viral).' : e.message, true); }
 }
 // grava aqui mesmo, com o roteiro passando na tela: ao terminar, o vídeo já cai na linha do tempo para editar
-function evTpGravarAqui() {
+function evTpGravarAqui(porPartes) {
   const ta = document.getElementById('tp-roteiro'); if (ta) { ES.roteiroTp = ta.value; ES.p.dados.roteiro = ta.value; evMudou(false); }
-  document.getElementById('ev-modal').innerHTML = ''; evAbrirCamera();
+  document.getElementById('ev-modal').innerHTML = ''; evAbrirCamera().then(() => { if (porPartes) evCamPartesLigar(true); });
 }
 async function evTpGerarLink(semPerguntar) {
   ES.roteiroTp = document.getElementById('tp-roteiro').value; ES.p.dados.roteiro = ES.roteiroTp; evMudou(false);
