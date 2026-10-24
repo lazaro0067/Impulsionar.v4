@@ -13484,7 +13484,7 @@ const FUNC_EST = {
 async function funcionalidadesEst() { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_precos_func'`).catch(() => null); let pr = {}; try { pr = JSON.parse((r && r.value) || '{}'); } catch (e) {} const o = {}; Object.entries(FUNC_EST).forEach(([k, f]) => { o[k] = Object.assign({}, f, pr[k] !== undefined ? { preco: Number(pr[k]) } : {}); }); return o; }
 const recursosValidosEst = l => Array.isArray(l) ? [...new Set(l.filter(k => FUNC_EST[k]))] : null;
 // Qual funcionalidade cada rota usa (o que não está no plano é bloqueado no servidor)
-const ROTAS_FUNC_EST = [[/^POST \/ia\/imagens-fala$/, 'imagens_ia'], [/^POST \/ia\/cenas-reais$/, 'imagens_ia'], [/^POST \/broll\/buscar$/, 'ia'], [/^POST \/ia\/[\w-]+$/, 'ia'], [/^POST \/transcrever(-url)?$/, 'legendas_auto'], [/^POST \/(narrar|minha-voz)$/, 'voz_ia'], [/^POST \/limpar-audio$/, 'limpeza_audio'], [/^POST \/radar$/, 'radar'], [/^(POST \/projetos\/\d+\/publicar|PUT \/instagram|(GET|POST|PUT) \/instagram\/.+)$/, 'instagram'], [/^POST \/avatar-video$/, 'avatar'], [/^POST \/projetos\/\d+\/gravador$/, 'gravadora']];
+const ROTAS_FUNC_EST = [[/^POST \/ia\/imagens-fala$/, 'imagens_ia'], [/^POST \/ia\/cenas-reais$/, 'imagens_ia'], [/^POST \/broll\/buscar$/, 'ia'], [/^POST \/broll\/pedido$/, 'ia'], [/^POST \/ia\/[\w-]+$/, 'ia'], [/^POST \/transcrever(-url)?$/, 'legendas_auto'], [/^POST \/(narrar|minha-voz)$/, 'voz_ia'], [/^POST \/limpar-audio$/, 'limpeza_audio'], [/^POST \/radar$/, 'radar'], [/^(POST \/projetos\/\d+\/publicar|PUT \/instagram|(GET|POST|PUT) \/instagram\/.+)$/, 'instagram'], [/^POST \/avatar-video$/, 'avatar'], [/^POST \/projetos\/\d+\/gravador$/, 'gravadora']];
 db.run(`ALTER TABLE estudio_planos ADD COLUMN recursos TEXT`, () => {});
 setTimeout(() => {
     ['estudio_recursos TEXT', 'estudio_preco REAL'].forEach(c => db.run(`ALTER TABLE users ADD COLUMN ${c}`, () => {}));
@@ -14098,6 +14098,26 @@ JSON: {"momentos":[{"ini":3.2,"dur":3,"busca":"","busca2":"","tipo":"video","mod
         const r = await resolverCenasReaisEst(momentos, vertical, (i) => { job.feitas = i; });
         Object.assign(job, { status: r.cenas.length ? 'pronto' : 'erro', cenas: r.cenas, temVideos: r.temVideos, error: r.cenas.length ? undefined : 'Não achei cenas reais para estes momentos. Tente de novo.' });
     } catch (e) { Object.assign(job, { status: 'erro', error: e.message }); }
+});
+// cena escolhida à mão: a pessoa escreve o que quer ver ("operação toda bagunçada", "dinheiro pegando fogo") e o sistema busca a filmagem real ou desenha
+app.post('/api/admin/estudio/broll/pedido', requireRole('admin', 'estudio'), async (req, res) => {
+    const b = req.body || {}, texto = String(b.texto || '').trim().slice(0, 300), tipo = ['video', 'foto', 'ilustracao'].includes(b.tipo) ? b.tipo : 'video', vertical = b.vertical !== false;
+    if (texto.length < 3) return res.status(400).json({ error: 'Escreva o que quer mostrar.' });
+    try {
+        if (tipo === 'ilustracao') {
+            if (!iaDisponivelMt()) throw new Error('A IA não está conectada.');
+            await consumirEst('imagens_ia', 1);
+            const larg = 1080, alt = vertical ? 1920 : 1080;
+            const r = await iaPesquisarMt('Você é um ilustrador vetorial excelente. Você responde apenas com código SVG válido e completo.', `Desenhe esta cena como uma imagem SVG de alta qualidade para aparecer num vídeo:\nCENA: ${texto}\nESTILO: ilustração moderna, com profundidade, luz e sombra, cores vivas, sem texto.\nREGRAS: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${larg} ${alt}" width="${larg}" height="${alt}">, preencha todo o fundo, sem imagens externas, sem fontes externas. Responda só o SVG.`, 9000, false, { modelo: ANTHROPIC_MODEL_AVANCADO });
+            const svg = limparSvgIa(r.texto); if (!svg) throw new Error('A IA não conseguiu desenhar. Tente descrever de outro jeito.');
+            return res.json({ tipo: 'svg', svg, w: larg, h: alt });
+        }
+        let busca = texto, busca2 = '';
+        if (iaDisponivelMt()) { try { const r = await iaPesquisarMt('Você traduz pedidos de cena para buscas de banco de vídeos. Responda só JSON.', `Pedido (português): "${texto}"\nCrie 2 buscas em INGLÊS, concretas e visuais (2 a 5 palavras), para achar esta cena no Pexels/Pixabay. JSON: {"busca":"","busca2":""}`, 300, false, {}); const t = r.texto, i = t.indexOf('{'), f = t.lastIndexOf('}'); const j = JSON.parse(t.slice(i, f + 1)); if (j.busca) { busca = String(j.busca).slice(0, 80); busca2 = String(j.busca2 || '').slice(0, 80); } } catch (e) {} }
+        const r = await resolverCenasReaisEst([{ busca, busca2, dur: Number(b.dur) || 3, tipo: tipo === 'foto' ? 'foto' : 'video' }], vertical);
+        if (!r.cenas.length) throw new Error('Não achei uma cena real para isso. Tente descrever de outro jeito (ex.: "escritório bagunçado", "fogo").');
+        res.json(Object.assign({ semVideos: !r.temVideos }, r.cenas[0]));
+    } catch (e) { if (e.limite) return erroLimiteEst(res, e); res.status(400).json({ error: e.message }); }
 });
 app.get('/api/admin/estudio/ia/cenas-reais/:id', requireRole('admin', 'estudio'), (req, res) => { const j = JOBS_REAIS.get(req.params.id); if (!j) return res.status(404).json({ error: 'Processamento não encontrado (o servidor reiniciou).' }); res.json(j); });
 // busca direta (vídeo criado pela IA: uma cena real para cada parte do roteiro)
