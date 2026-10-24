@@ -1839,6 +1839,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="/mp4-completo.js?v=1"></script>
 <script src="/camera-certa.js?v=1"></script>
+<script src="/mp4-mux.js?v=1"></script>
 <script>
 /* ==========================================================
    ESTADO E HELPERS DE API
@@ -21727,6 +21728,92 @@ function evMimeExport() {
   const tipos = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
   return tipos.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
 }
+// ---------- Exportação profissional: quadro a quadro (nada trava nem pula) + som montado antes, num MP4 completo ----------
+// Usa os codificadores do próprio aparelho (WebCodecs). Se o navegador não tiver, cai na exportação ao vivo.
+let EV_EXPORT_TESTE = false; // testes automáticos aceitam VP9/Opus
+async function evCodecsPro(W, H) {
+  if (!window.VideoEncoder || !window.AudioEncoder || !window.VideoFrame || !window.Mp4Mux) return null;
+  let v = null;
+  for (const codec of ['avc1.42E028', 'avc1.4D0028', 'avc1.640028', 'avc1.42E01F']) { try { const c = { codec, width: W, height: H, bitrate: 10000000, framerate: 30, avc: { format: 'avc' } }; if ((await VideoEncoder.isConfigSupported(c)).supported) { v = { cfg: c, mux: 'avc' }; break; } } catch (e) {} }
+  if (!v && EV_EXPORT_TESTE) { const c = { codec: 'vp09.00.40.08', width: W, height: H, bitrate: 10000000, framerate: 30 }; try { if ((await VideoEncoder.isConfigSupported(c)).supported) v = { cfg: c, mux: 'vp9' }; } catch (e) {} }
+  if (!v) return null;
+  let a = null;
+  try { const c = { codec: 'mp4a.40.2', sampleRate: 48000, numberOfChannels: 2, bitrate: 192000 }; if ((await AudioEncoder.isConfigSupported(c)).supported) a = { cfg: c, mux: 'aac' }; } catch (e) {}
+  if (!a && EV_EXPORT_TESTE) { const c = { codec: 'opus', sampleRate: 48000, numberOfChannels: 2, bitrate: 160000 }; try { if ((await AudioEncoder.isConfigSupported(c)).supported) a = { cfg: c, mux: 'opus' }; } catch (e) {} }
+  if (!a) return null; // o Instagram exige AAC
+  return { v, a };
+}
+// deixa cada vídeo exatamente no quadro do tempo t (sem tocar: posiciona, espera e desenha)
+function evIrQuadro(el, quer) {
+  return new Promise(ok => {
+    if (!el || el.fundo || !(el instanceof HTMLMediaElement)) return ok();
+    if (!el.paused) el.pause();
+    if (Math.abs(el.currentTime - quer) < 0.0005 && el.readyState >= 2) return ok();
+    let feito = false; const fim = () => { if (feito) return; feito = true; el.removeEventListener('seeked', fim); clearTimeout(tm); ok(); };
+    el.addEventListener('seeked', fim); const tm = setTimeout(fim, 5000); el.currentTime = Math.max(0, quer);
+  });
+}
+async function evPosicionarQuadro(t) {
+  const d = ES.p.dados, ini = evInicios(), esp = [];
+  d.clips.forEach((c, i) => {
+    const m = evMidia(c.midia); if (!m || m.tipo !== 'video') return; const dur = evClipDur(c);
+    const ativo = t >= ini[i] && t < ini[i] + dur, transicao = !ativo && t >= ini[i] + dur && t < ini[i] + dur + 0.45;
+    if (!ativo && !transicao) return; const el = evElemento(c); if (!el) return;
+    esp.push(evIrQuadro(el, ativo ? (c.ini || 0) + (t - ini[i]) * (c.vel || 1) : Math.max(c.ini || 0, (c.fim || 0) - 0.04)));
+  });
+  (d.sobreposicoes || []).forEach(o => { const m = evMidia(o.midia); if (!m || m.tipo !== 'video' || t < o.ini || t >= o.ini + o.dur) return; const el = evElemento(o, 'o:' + o.id); if (el) esp.push(evIrQuadro(el, (o.corte || 0) + (t - o.ini) * (o.vel || 1))); });
+  await Promise.all(esp);
+}
+async function evExportarPro() {
+  const W = ES.W, H = ES.H, fps = 30, tot = evTotal();
+  if (tot > 15 * 60) return false; // vídeos muito longos: exportação ao vivo (memória)
+  const cod = await evCodecsPro(W, H); if (!cod) return false;
+  let mix; try { evCarregando('🎧 Montando o som do vídeo…'); mix = await evMixarSom(0, tot, p => { const e = document.querySelector('#ev-carregando b'); if (e) e.textContent = `🎧 Montando o som do vídeo… ${Math.round(p * 100)}%`; }); } catch (e) { evCarregando(null); console.warn('pro: som', e); return false; }
+  evCarregando(null);
+  const mux = new Mp4Mux({ video: { codec: cod.v.mux, width: W, height: H }, audio: { codec: cod.a.mux, sampleRate: 48000, channels: 2, bitrate: cod.a.cfg.bitrate } });
+  let erro = null;
+  const venc = new VideoEncoder({ output: (c, m) => mux.addVideoChunk(c, m), error: e => { erro = e; } });
+  const aenc = new AudioEncoder({ output: (c, m) => mux.addAudioChunk(c, m), error: e => { erro = e; } });
+  venc.configure(cod.v.cfg); aenc.configure(cod.a.cfg);
+  evResolucaoCanvas(true); ES.esc = 1;
+  ES.exportando = { pro: true, cancelado: false, mixado: true, partes: [], mime: 'video/mp4', rec: { state: 'inactive', stop() {}, pause() {}, resume() {} } };
+  const ov = document.getElementById('ev-export-ov'); ov.hidden = false; const sub = ov.querySelector('.ev-export-sub'); if (sub) sub.textContent = `Exportação profissional, quadro a quadro (${W}×${H}). Pode usar outra aba — não trava nem pula.`;
+  const tx = document.getElementById('ev-export-txt'), barra = document.getElementById('ev-export-barra');
+  const N = Math.max(1, Math.round(tot * fps)), t0 = performance.now();
+  try {
+    for (let i = 0; i < N; i++) {
+      if (ES.exportando.cancelado) throw new Error('cancelado'); if (erro) throw erro;
+      const t = i / fps; ES.t = t;
+      await evPosicionarQuadro(t); evDesenhar(t, true);
+      const vf = new VideoFrame(ES.canvas, { timestamp: Math.round(t * 1e6), duration: Math.round(1e6 / fps) });
+      venc.encode(vf, { keyFrame: i % 60 === 0 }); vf.close();
+      while (venc.encodeQueueSize > 6) await new Promise(r => { let ok = false; const f = () => { if (!ok) { ok = true; r(); } }; try { venc.addEventListener('dequeue', f, { once: true }); } catch (e) {} setTimeout(f, 20); });
+      if (i % 5 === 0) { const p = (i + 1) / N, rest = (performance.now() - t0) / 1000 / p * (1 - p); if (barra) barra.style.width = Math.round(p * 90) + '%'; if (tx) tx.textContent = `🎬 Quadro ${i + 1} de ${N} · faltam ~${Math.max(1, Math.round(rest))} s`; }
+    }
+    if (tx) tx.textContent = '🎧 Codificando o som…';
+    const ch = mix.numberOfChannels, sr = mix.sampleRate, L = mix.length, P = 4096;
+    const c0 = mix.getChannelData(0), c1 = ch > 1 ? mix.getChannelData(1) : c0;
+    for (let i = 0; i < L; i += P) {
+      const n = Math.min(P, L - i), buf = new Float32Array(n * 2); buf.set(c0.subarray(i, i + n), 0); buf.set(c1.subarray(i, i + n), n);
+      const ad = new AudioData({ format: 'f32-planar', sampleRate: sr, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(i / sr * 1e6), data: buf });
+      aenc.encode(ad); ad.close();
+    }
+    if (tx) tx.textContent = 'Finalizando o MP4…';
+    await venc.flush(); await aenc.flush(); if (erro) throw erro;
+    venc.close(); aenc.close();
+    const blob = mux.finish();
+    ES.exportando.partes = [blob]; ES.exportando.pronto = true;
+    if (barra) barra.style.width = '92%';
+    ES.t = 0; await evConcluirExport();
+    return true;
+  } catch (e) {
+    try { venc.close(); } catch (x) {} try { aenc.close(); } catch (x) {}
+    const canc = ES.exportando && ES.exportando.cancelado; ES.exportando = null; ov.hidden = true; evAjustarPalco();
+    if (canc || e.message === 'cancelado') { mostrarToast('Exportação cancelada.'); return true; }
+    console.warn('exportação profissional falhou:', e); mostrarToast('A exportação quadro a quadro falhou (' + e.message + '). Vou exportar do jeito ao vivo.', true);
+    return false;
+  }
+}
 async function evExportar() {
   if (!ES || ES.exportando) return;
   if (!ES.p.dados.clips.length && !ES.p.dados.textos.length) return mostrarToast('Adicione mídia ou textos antes de exportar.', true);
@@ -21737,6 +21824,7 @@ async function evExportar() {
   const faltando = await evConferirMidias().catch(() => []);
   evCarregando(null);
   if (faltando.length) return evMostrarFaltando(faltando);
+  if (!ES.exportarAoVivo) { evAplicarLocaisPend(); if (await evExportarPro()) return; }
   // som: montado antes, por inteiro (não some, fica sincronizado e com o redutor de ruído); se não der, captura ao vivo como antes
   let mix = null;
   try { evCarregando('🎧 Montando o som do vídeo…'); mix = await evMixarSom(0, evTotal(), p => { const e = document.querySelector('#ev-carregando b'); if (e) e.textContent = `🎧 Montando o som do vídeo… ${Math.round(p * 100)}%`; }); } catch (e) { console.warn('mixagem antecipada:', e.message); mix = null; }
@@ -21891,7 +21979,7 @@ async function evConcluirExport() {
   let blob = new Blob(ex.partes, { type: ex.mime || 'video/webm' });
   // o MP4 gravado pelo navegador vem "em pedaços" (sem a duração no índice): a galeria e o Instagram liam só
   // os primeiros segundos. Aqui ele vira um MP4 normal e completo, sem perder qualidade.
-  if (ext === 'mp4' && window.Mp4Completo) { if (tx) tx.textContent = 'Finalizando o MP4 completo…'; try { blob = await Mp4Completo.mp4CompletoBlob(blob); } catch (e) { console.warn('MP4 completo:', e); } }
+  if (ext === 'mp4' && window.Mp4Completo && !ex.pronto) { if (tx) tx.textContent = 'Finalizando o MP4 completo…'; try { blob = await Mp4Completo.mp4CompletoBlob(blob); } catch (e) { console.warn('MP4 completo:', e); } }
   const nome = (ES.p.titulo || 'video').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').slice(0, 50) + '.' + ext;
   ES.ultimoExport = { url: URL.createObjectURL(blob), nome, blob };
   if (tx) tx.textContent = 'Enviando o vídeo para o servidor...';
@@ -23852,20 +23940,20 @@ function evCamFundoIa(tipo) { const t = (document.getElementById('evc-fundo-txt'
 // desenha: fundo escolhido + você recortado por cima (com borda suave)
 function evCamComFundo(g, W, H, zoom) {
   const F = EVCAM.fx = EVCAM.fx || {}, f = EVCAM.fundo;
-  if (!F.a || F.a.width !== W || F.a.height !== H) { const cv = (w, h) => Object.assign(document.createElement('canvas'), { width: w, height: h }); F.a = cv(W, H); F.p = cv(W, H); const sw = 256, sh = Math.round(256 * H / W); F.s = cv(sw, sh); F.m = cv(sw, sh); F.img = new ImageData(sw, sh); }
+  if (!F.a || F.a.width !== W || F.a.height !== H) { const cv = (w, h) => Object.assign(document.createElement('canvas'), { width: w, height: h }); F.a = cv(W, H); F.p = cv(W, H); const sw = 320, sh = Math.round(320 * H / W); F.s = cv(sw, sh); F.m = cv(sw, sh); F.img = new ImageData(sw, sh); F.ant = null; }
   const gA = F.a.getContext('2d'); gA.fillStyle = '#000'; gA.fillRect(0, 0, W, H); CameraCerta.desenhar(gA, EVCAM.vid, W, H, zoom);
   const agora = performance.now();
   if (EV_SEG && (!F.ult || agora - F.ult > 30)) {
     F.ult = agora; const gS = F.s.getContext('2d', { willReadFrequently: true }); gS.drawImage(F.a, 0, 0, F.s.width, F.s.height);
     try { const r = EV_SEG.segmentForVideo(F.s, agora), mk = r && r.confidenceMasks && r.confidenceMasks[0];
-      if (mk) { const arr = mk.getAsFloat32Array(), dt = F.img.data; for (let i = 0; i < arr.length; i++) { const a = Math.min(1, Math.max(0, (arr[i] - 0.3) / 0.45)); dt[i * 4 + 3] = a * 255; } F.m.getContext('2d').putImageData(F.img, 0, 0); }
+      if (mk) { const arr = mk.getAsFloat32Array(), dt = F.img.data; if (!F.ant || F.ant.length !== arr.length) F.ant = Float32Array.from(arr); const ant = F.ant; for (let i = 0; i < arr.length; i++) { const v = ant[i] = ant[i] * 0.4 + arr[i] * 0.6; dt[i * 4 + 3] = Math.min(1, Math.max(0, (v - 0.45) / 0.3)) * 255; } F.m.getContext('2d').putImageData(F.img, 0, 0); }
       if (r && r.close) r.close(); } catch (e) {}
   }
   // fundo
   if (f.tipo === 'desfoque') { if (EV_SEM_FILTRO) CameraCerta.fundo(g, F.a, 0, 0, W, H); else { g.save(); g.filter = 'blur(22px) brightness(0.9)'; g.drawImage(F.a, -30, -30, W + 60, H + 60); g.restore(); } }
   else if (f.img) { const iw = f.img.naturalWidth || f.img.width, ih = f.img.naturalHeight || f.img.height, s = Math.max(W / iw, H / ih); g.drawImage(f.img, (W - iw * s) / 2, (H - ih * s) / 2, iw * s, ih * s); }
   // você, recortado
-  const gP = F.p.getContext('2d'); gP.globalCompositeOperation = 'copy'; gP.drawImage(F.a, 0, 0); gP.globalCompositeOperation = 'destination-in'; gP.imageSmoothingEnabled = true; gP.drawImage(F.m, 0, 0, W, H); gP.globalCompositeOperation = 'source-over';
+  const gP = F.p.getContext('2d'); gP.globalCompositeOperation = 'copy'; gP.drawImage(F.a, 0, 0); gP.globalCompositeOperation = 'destination-in'; gP.imageSmoothingEnabled = true; gP.imageSmoothingQuality = 'high'; if (!EV_SEM_FILTRO) gP.filter = `blur(${Math.max(1.5, W / 540)}px)`; gP.drawImage(F.m, 0, 0, W, H); gP.filter = 'none'; gP.globalCompositeOperation = 'source-over';
   g.drawImage(F.p, 0, 0);
 }
 async function evCarregarDetectorRosto() {
