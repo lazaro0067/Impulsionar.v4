@@ -14311,7 +14311,7 @@ const CACHE_MUSICAS = new Map();
 const HUMORES_MUSICA = { motivacional: 'motivational upbeat', corporativo: 'corporate business background', inspirador: 'inspiring cinematic', animado: 'happy energetic pop', calmo: 'calm relaxing ambient', epico: 'epic cinematic trailer', lofi: 'lofi chill hip hop', eletronico: 'electronic dance', acustico: 'acoustic guitar', emocionante: 'emotional piano', tecnologia: 'technology future', suspense: 'suspense tension' };
 async function buscarMusicasEst(q) {
     const chave = q.toLowerCase(); const c = CACHE_MUSICAS.get(chave); if (c && c.t > Date.now() - 3600000) return c.l;
-    const u = `https://api.openverse.org/v1/audio/?q=${encodeURIComponent(q)}&category=music&license_type=commercial&page_size=30&mature=false`;
+    const u = `https://api.openverse.org/v1/audio/?q=${encodeURIComponent(q)}&category=music&license_type=commercial&page_size=20&mature=false`;
     const r = await fetch(u, { headers: { 'User-Agent': 'ImpulsionarV4/1.0 (estudio de video; contato@impulsionarv4.com.br)' }, signal: AbortSignal.timeout(15000) });
     const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error('Busca de músicas: ' + (j.detail || ('HTTP ' + r.status)));
     const l = (j.results || []).filter(x => x.url && (!x.duration || x.duration >= 20000)).map(x => ({ id: x.id, titulo: x.title || 'Sem título', artista: x.creator || '', duracao: x.duration ? Math.round(x.duration / 1000) : 0, licenca: ((x.license || '') + ' ' + (x.license_version || '')).toUpperCase().trim(), fonte: x.source || x.provider || '', ouvir: x.url, capa: x.thumbnail || '', generos: (x.genres || []).slice(0, 3) }));
@@ -15262,7 +15262,9 @@ app.get('/api/admin/estudio/instagram/plano', requireRole('admin', 'estudio'), a
     const js = (v, d) => { try { return v ? JSON.parse(v) : d; } catch (e) { return d; } };
     let agora = null;
     if (p.status === 'pronto' && req.query.atual) { try { const ig = await lerIgEst(dono); agora = (await igEst('GET', /graph\.instagram/.test(hostIgEst(ig.token)) ? '/me' : '/' + ig.userId, { fields: 'followers_count,media_count' }, ig.token)); } catch (e) {} }
-    res.json({ plano: { id: p.id, status: p.status, erro: p.erro, criado_em: p.criado_em, objetivo: p.objetivo, seguidores_inicio: p.seguidores_inicio, perfil: js(p.perfil, null), conteudo: js(p.plano, null), feitos: js(p.feitos, {}) }, agora });
+    const pm = js(p.projetos, {}), projetos = {};
+    for (const [dia, pid] of Object.entries(pm)) { const pr = await dbGet(`SELECT id, status, video_url, agendado_para, ig_permalink, dados FROM estudio_projetos WHERE id = ?`, [pid]).catch(() => null); if (pr) { let cl = 0; try { cl = (JSON.parse(pr.dados || '{}').clips || []).length; } catch (e) {} projetos[dia] = { id: pr.id, status: pr.status, exportado: !!pr.video_url, gravado: cl > 0, agendado_para: pr.agendado_para, link: pr.ig_permalink }; } }
+    res.json({ plano: { id: p.id, status: p.status, erro: p.erro, criado_em: p.criado_em, objetivo: p.objetivo, seguidores_inicio: p.seguidores_inicio, perfil: js(p.perfil, null), conteudo: js(p.plano, null), feitos: js(p.feitos, {}), projetos }, agora });
 });
 app.post('/api/admin/estudio/instagram/plano', requireRole('admin', 'estudio'), async (req, res) => {
     const dono = donoAtualEst(), ig = await lerIgEst(dono);
@@ -15272,6 +15274,16 @@ app.post('/api/admin/estudio/instagram/plano', requireRole('admin', 'estudio'), 
     try { await consumirEst('ia', 1); } catch (e) { return erroLimiteEst(res, e); }
     gerarPlanoIg(dono, { objetivo: (req.body || {}).objetivo }).catch(() => {});
     res.json({ message: 'Lendo o seu perfil e montando o plano de 10 dias… leva cerca de 1 minuto.' });
+});
+['projetos TEXT'].forEach(c => { const f = () => db.run(`ALTER TABLE ig_planos ADD COLUMN ${c}`, () => {}); f(); setTimeout(f, 3000); });
+// vídeo gravado para cada dia do plano (grava agora, posta depois)
+app.put('/api/admin/estudio/instagram/plano/:id/projeto', requireRole('admin', 'estudio'), async (req, res) => {
+    const p = await dbGet(`SELECT id, projetos FROM ig_planos WHERE id = ? AND dono = ?`, [Number(req.params.id), donoAtualEst()]).catch(() => null);
+    if (!p) return res.status(404).json({ error: 'Plano não encontrado.' });
+    let m = {}; try { m = JSON.parse(p.projetos || '{}'); } catch (e) {}
+    const dia = String(Number((req.body || {}).dia) || 0), pid = Number((req.body || {}).projeto) || 0; if (dia === '0') return res.status(400).json({ error: 'Dia inválido.' });
+    if (pid) m[dia] = pid; else delete m[dia];
+    db.run(`UPDATE ig_planos SET projetos = ? WHERE id = ?`, [JSON.stringify(m), p.id], () => res.json({ ok: true, projetos: m }));
 });
 app.put('/api/admin/estudio/instagram/plano/:id/feito', requireRole('admin', 'estudio'), async (req, res) => {
     const p = await dbGet(`SELECT id, feitos FROM ig_planos WHERE id = ? AND dono = ?`, [Number(req.params.id), donoAtualEst()]).catch(() => null);

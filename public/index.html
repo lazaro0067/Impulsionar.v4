@@ -1543,6 +1543,7 @@
   .evc-guia .nivel { position:absolute; left:50%; top:10px; transform:translateX(-50%); background:rgba(0,0,0,.45); color:#fde68a; font-size:12px; font-weight:800; border-radius:10px; padding:2px 8px; } .evc-guia .nivel:empty { display:none; } .evc-guia .nivel.ok { color:#86efac; }
   .ig-perf-lista { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; } .ig-perf { display:inline-flex; gap:6px; align-items:center; background:#faf5ff; border:1px solid #e9d5ff; border-radius:20px; padding:4px 6px 4px 12px; font-size:13px; } .ig-perf small { color:#7c3aed; } .ig-perf button { border:none; background:none; color:#dc2626; cursor:pointer; }
   .ig-looks { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; } .ig-look { border:1px solid #e2e8f0; border-radius:12px; padding:8px; display:flex; flex-direction:column; gap:3px; font-size:12.5px; } .ig-look small { color:#64748b; } .ig-look-cores { display:flex; height:26px; border-radius:8px; overflow:hidden; } .ig-look-cores i { flex:1; }
+  .ig-dia-st { font-size:12.5px; font-weight:700; color:#475569; background:#f1f5f9; border-radius:8px; padding:5px 9px; } .ig-dia-badge { font-size:11px; font-weight:700; background:#f3e8ff; color:#7c3aed; border-radius:8px; padding:1px 7px; margin-left:4px; }
   /* ---------- Instagram: Insights & Treino ---------- */
   .ig-sec { background:#fff !important; color:#8134af !important; border:2px solid #8134af !important; }
   .ig-ins-cab { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:16px 2px 8px; } .ig-ins-cab span { color:#64748b; font-size:12.5px; }
@@ -25685,7 +25686,7 @@ async function evCriarProjetoBase(titulo, formato, tipo) {
 }
 function evNomeAgora(pref) { return pref + ' ' + new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
 async function evCelGravar() {
-  try { const id = await evCriarProjetoBase(evNomeAgora('Vídeo'), '9:16'); await evAbrirEditor(id); if (ES) evAbrirCamera(); }
+  try { const id = await evCriarProjetoBase(evNomeAgora('Reels'), '9:16', 'reels'); await evAbrirEditor(id); if (ES) { ES.p.ig_formato = 'reels'; evAbrirCamera(); } }
   catch (e) { mostrarToast(e.message, true); }
 }
 async function evCelGaleria(files) {
@@ -25706,6 +25707,7 @@ function evDesenharHomeCelular(corpo) {
     </header>
     <div class="eh-acoes">
       <label class="eh-acao"><input type="file" accept="video/*,image/*" multiple hidden onchange="evCelGaleria(this.files); this.value=''"><span>🖼️</span><b>Da galeria</b><small>Fotos e vídeos do celular</small></label>
+      <button class="eh-acao" onclick="evCelGravar()"><span>🎬</span><b>Gravar Reels</b><small>Vídeo em pé para o feed e Reels</small></button>
       <button class="eh-acao" onclick="evGravarStory()"><span>📱</span><b>Gravar Story</b><small>Grave, edite e agende o Story</small></button>
       <button class="eh-acao" onclick="evAbrirCriarVideoIa()"><span>🤖</span><b>Criar com IA</b><small>Roteiro, pessoa ou animação</small></button>
       ${ESTADO.usuario.role === 'admin' ? `<button class="eh-acao" onclick="evNovaAula()"><span>🎓</span><b>Gravar aula</b><small>Teleprompter + Academy</small></button>` : `<button class="eh-acao" onclick="renderEstudioVideo('conta')"><span>💳</span><b>Meu plano</b><small>Uso do mês e renovação</small></button>`}
@@ -25932,6 +25934,7 @@ async function igCarregarPlano() {
       <div><small>Seguidores no início</small><b>${ini != null ? Number(ini).toLocaleString('pt-BR') : '—'}</b></div>
       <div><small>Agora</small><b>${agora != null ? Number(agora).toLocaleString('pt-BR') : '—'}</b>${delta != null ? `<em class="${delta >= 0 ? 'sobe' : 'desce'}">${delta >= 0 ? '+' : ''}${delta.toLocaleString('pt-BR')}</em>` : ''}</div>
       <div><small>Meta de seguidores</small><b class="meta">${escapeHtml(mt.seguidores || '—')}</b></div>
+      <div><small>Vídeos gravados</small><b>${Object.values(p.projetos || {}).filter(v => v.gravado).length}/${dias.filter(x => /reels|v[ií]deo|live|story|stories/i.test(x.formato || '') || x.roteiro).length}</b><small>${Object.values(p.projetos || {}).filter(v => v.status === 'publicado').length} postado(s) · ${Object.values(p.projetos || {}).filter(v => v.status === 'agendado').length} agendado(s)</small></div>
       <div><small>Dias concluídos</small><b>${nFeitos}/10</b><div class="ig-barra"><i style="width:${nFeitos * 10}%"></i></div></div>
     </div>
     <div id="ig-evol"></div>
@@ -25945,14 +25948,14 @@ async function igCarregarPlano() {
     </div>
     <h3 class="ig-tit">🗓️ Plano dia a dia</h3>
     <div class="ig-dias">${dias.map((x, i) => { const n = x.dia || i + 1, ok = !!feitos[n]; return `<details class="ig-dia ${ok ? 'feito' : ''}" ${!ok && !dias.slice(0, i).some((y, k) => !feitos[y.dia || k + 1]) ? 'open' : ''}>
-      <summary><span class="ig-n">${ok ? '✓' : n}</span><div><b>Dia ${n} · ${escapeHtml(x.tema || '')}</b><small>${escapeHtml(x.formato || '')}${x.horario ? ' · ⏰ ' + escapeHtml(x.horario) : ''}${x.meta_do_dia ? ' · 🎯 ' + escapeHtml(x.meta_do_dia) : ''}</small></div></summary>
+      <summary><span class="ig-n">${ok ? '✓' : n}</span><div><b>Dia ${n} · ${escapeHtml(x.tema || '')}${(p.projetos || {})[n] ? ` <span class="ig-dia-badge">${p.projetos[n].status === 'publicado' ? '✅ postado' : p.projetos[n].status === 'agendado' ? '🗓️ agendado' : p.projetos[n].gravado ? '🎥 gravado' : '⏺️'}</span>` : ''}</b><small>${escapeHtml(x.formato || '')}${x.horario ? ' · ⏰ ' + escapeHtml(x.horario) : ''}${x.meta_do_dia ? ' · 🎯 ' + escapeHtml(x.meta_do_dia) : ''}</small></div></summary>
       <div class="ig-dia-corpo">
         ${x.objetivo_do_dia ? `<p class="plano-meta">${escapeHtml(x.objetivo_do_dia)}</p>` : ''}
         ${x.gancho ? `<div class="ig-gancho">🪝 <b>Gancho:</b> “${escapeHtml(x.gancho)}”</div>` : ''}
         ${x.roteiro ? `<div class="ig-bloco"><div class="ig-bloco-cab"><b>🎙️ Roteiro para gravar</b>${copiar(x.roteiro, 'Roteiro')}</div><p>${escapeHtml(x.roteiro).replace(/\n/g, '<br>')}</p></div>` : ''}
         ${x.legenda ? `<div class="ig-bloco"><div class="ig-bloco-cab"><b>✍️ Legenda</b>${copiar(x.legenda + (x.hashtags ? '\n\n' + x.hashtags : ''), 'Legenda')}</div><p>${escapeHtml(x.legenda).replace(/\n/g, '<br>')}</p>${x.hashtags ? `<p class="ig-hash">${escapeHtml(x.hashtags)}</p>` : ''}</div>` : ''}
         <div class="ig-2">${(x.stories || []).length ? `<div><b>📱 Stories</b><ul>${lista(x.stories)}</ul></div>` : ''}${(x.engajamento || []).length ? `<div><b>🤝 Engajamento</b><ul>${lista(x.engajamento)}</ul></div>` : ''}</div>
-        <div class="ig-acoes">${/reels|v[ií]deo|live/i.test(x.formato || '') || x.roteiro ? `<button class="ig-gravar" onclick="igGravarDia(${i})">🎬 Gravar este vídeo</button>` : ''}<label class="ig-ok"><input type="checkbox" ${ok ? 'checked' : ''} onchange="igMarcar(${n}, this.checked)"> Concluí este dia</label></div>
+        <div class="ig-acoes">${/reels|v[ií]deo|live|story|stories/i.test(x.formato || '') || x.roteiro ? igHtmlDiaVideo(i, n) : ''}<label class="ig-ok"><input type="checkbox" ${ok ? 'checked' : ''} onchange="igMarcar(${n}, this.checked)"> Concluí este dia</label></div>
       </div></details>`; }).join('')}</div>
     <div class="ig-grade">${(P.o_que_medir || []).length ? `<div class="ig-card"><h3>📊 O que medir</h3><ul>${lista(P.o_que_medir)}</ul></div>` : ''}${(P.dicas_finais || []).length ? `<div class="ig-card"><h3>💡 Dicas</h3><ul>${lista(P.dicas_finais)}</ul></div>` : ''}</div>
     <div class="ig-novo peq"><b>💡 Para acelerar:</b> use <a href="#" onclick="IGABA='roteiros'; igMostrarAba(); return false;">🔥 Roteiros virais</a> para mais vídeos no padrão que já funciona no seu perfil e ligue a <a href="#" onclick="IGABA='interacao'; igMostrarAba(); return false;">💬 Interação automática</a> para responder todos os comentários.</div>
@@ -25965,9 +25968,20 @@ async function igGerarPlano() {
 }
 async function igMarcar(dia, feito) { if (!IGP) return; try { const r = await api(`/api/admin/estudio/instagram/plano/${IGP.id}/feito`, { method: 'PUT', body: JSON.stringify({ dia, feito }) }); IGP.feitos = r.feitos; if (feito) mostrarToast(`🔥 Dia ${dia} concluído!`); igCarregarPlano(); } catch (e) { mostrarToast(e.message, true); } }
 // cria o projeto com o roteiro e a legenda do dia e abre a gravação com teleprompter
-async function igGravarDia(i) {
-  const x = ((IGP || {}).conteudo || {}).dias[i]; if (!x) return;
-  return igAbrirGravacao(`Dia ${x.dia || i + 1} · ${x.tema || 'Plano Instagram'}`, [x.gancho, x.roteiro].filter(Boolean).join('\n\n'), x.legenda, x.hashtags);
+async function igGravarDia(i, acao) {
+  const x = ((IGP || {}).conteudo || {}).dias[i]; if (!x) return; const n = x.dia || i + 1, pr = (IGP.projetos || {})[n];
+  if (pr) { // o dia já tem vídeo: abre o mesmo (sem duplicar)
+    await evAbrirEditor(pr.id); if (!ES) return;
+    if (acao === 'postar') return evAbrirPublicar(); if (acao === 'gravar' || !pr.gravado) evAbrirCamera(); return;
+  }
+  return igAbrirGravacao(`Dia ${n} · ${x.tema || 'Plano Instagram'}`, [x.gancho, x.roteiro].filter(Boolean).join('\n\n'), [x.legenda, x.cta_comentario].filter(Boolean).join('\n\n'), x.hashtags,
+    async id => { try { await api(`/api/admin/estudio/instagram/plano/${IGP.id}/projeto`, { method: 'PUT', body: JSON.stringify({ dia: n, projeto: id }) }); IGP.projetos = IGP.projetos || {}; IGP.projetos[n] = { id, status: 'rascunho' }; } catch (e) {} });
+}
+function igHtmlDiaVideo(i, n) {
+  const pr = ((IGP || {}).projetos || {})[n];
+  if (!pr) return `<button class="ig-gravar" onclick="igGravarDia(${i})">🎬 Gravar este vídeo</button>`;
+  const st = pr.status === 'publicado' ? `✅ Postado${pr.link ? ` · <a href="${escapeHtml(pr.link)}" target="_blank" rel="noopener">ver ↗</a>` : ''}` : pr.status === 'agendado' ? `🗓️ Agendado para ${new Date(pr.agendado_para).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : pr.exportado ? '📦 Pronto para postar' : pr.gravado ? '🎥 Gravado — falta editar/exportar' : '⏺️ Ainda não gravado';
+  return `<span class="ig-dia-st">${st}</span>${pr.status !== 'publicado' ? `${!pr.gravado ? `<button class="ig-gravar" onclick="igGravarDia(${i}, 'gravar')">🎬 Gravar</button>` : `<button class="ig-cp" onclick="igGravarDia(${i}, 'gravar')">🎬 Regravar</button><button class="ig-cp" onclick="igGravarDia(${i}, 'editar')">✏️ Editar</button>`}${pr.gravado ? `<button class="ig-gravar" onclick="igGravarDia(${i}, 'postar')">📤 ${pr.status === 'agendado' ? 'Mudar agendamento' : 'Postar / agendar'}</button>` : ''}` : ''}`;
 }
 // ---------- Story: gravar já como Story (9:16) ----------
 async function evGravarStory() {
@@ -26225,12 +26239,13 @@ async function igGerarRoteiros() {
   try { await api('/api/admin/estudio/instagram/roteiros', { method: 'POST', body: JSON.stringify({ tema: document.getElementById('ig-rot-tema').value, qtd: Number(document.getElementById('ig-rot-qtd').value) }) }); mostrarToast('🔥 Roteiros prontos!'); igRoteiros(document.getElementById('ig-aba')); }
   catch (e) { mostrarToast(e.message, true); b.disabled = false; b.textContent = '✨ Criar roteiros'; }
 }
-async function igAbrirGravacao(titulo, roteiro, legenda, hashtags) {
+async function igAbrirGravacao(titulo, roteiro, legenda, hashtags, antesDeAbrir) {
   try {
     const id = await evCriarProjetoBase(String(titulo).slice(0, 80), '9:16', 'reels');
-    await evAbrirEditor(id); if (!ES) return;
-    ES.p.dados.roteiro = roteiro; ES.p.legenda = legenda || ''; ES.p.hashtags = hashtags || ''; evMudou(false); await evSalvar(true).catch(() => {});
-    evAbrirCamera();
+    if (antesDeAbrir) await antesDeAbrir(id);
+    await evAbrirEditor(id); if (!ES) return id;
+    ES.p.dados.roteiro = roteiro; ES.p.legenda = legenda || ''; ES.p.hashtags = hashtags || ''; ES.p.ig_formato = 'reels'; evMudou(false); await evSalvar(true).catch(() => {});
+    evAbrirCamera(); return id;
   } catch (e) { mostrarToast(e.message, true); }
 }
 function igGravarRoteiro(i) { const x = (((IGROT || {}).conteudo || {}).roteiros || [])[i]; if (!x) return; igAbrirGravacao(x.titulo || 'Roteiro viral', [x.gancho, x.roteiro].filter(Boolean).join('\n\n'), [x.legenda, x.cta_comentario && !(x.legenda || '').includes(x.cta_comentario) ? x.cta_comentario : ''].filter(Boolean).join('\n\n'), x.hashtags); }
