@@ -13484,7 +13484,7 @@ const FUNC_EST = {
 async function funcionalidadesEst() { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_precos_func'`).catch(() => null); let pr = {}; try { pr = JSON.parse((r && r.value) || '{}'); } catch (e) {} const o = {}; Object.entries(FUNC_EST).forEach(([k, f]) => { o[k] = Object.assign({}, f, pr[k] !== undefined ? { preco: Number(pr[k]) } : {}); }); return o; }
 const recursosValidosEst = l => Array.isArray(l) ? [...new Set(l.filter(k => FUNC_EST[k]))] : null;
 // Qual funcionalidade cada rota usa (o que não está no plano é bloqueado no servidor)
-const ROTAS_FUNC_EST = [[/^POST \/ia\/imagens-fala$/, 'imagens_ia'], [/^POST \/ia\/[\w-]+$/, 'ia'], [/^POST \/transcrever(-url)?$/, 'legendas_auto'], [/^POST \/(narrar|minha-voz)$/, 'voz_ia'], [/^POST \/limpar-audio$/, 'limpeza_audio'], [/^POST \/radar$/, 'radar'], [/^(POST \/projetos\/\d+\/publicar|PUT \/instagram|(GET|POST|PUT) \/instagram\/.+)$/, 'instagram'], [/^POST \/avatar-video$/, 'avatar'], [/^POST \/projetos\/\d+\/gravador$/, 'gravadora']];
+const ROTAS_FUNC_EST = [[/^POST \/ia\/imagens-fala$/, 'imagens_ia'], [/^POST \/ia\/cenas-reais$/, 'imagens_ia'], [/^POST \/broll\/buscar$/, 'ia'], [/^POST \/ia\/[\w-]+$/, 'ia'], [/^POST \/transcrever(-url)?$/, 'legendas_auto'], [/^POST \/(narrar|minha-voz)$/, 'voz_ia'], [/^POST \/limpar-audio$/, 'limpeza_audio'], [/^POST \/radar$/, 'radar'], [/^(POST \/projetos\/\d+\/publicar|PUT \/instagram|(GET|POST|PUT) \/instagram\/.+)$/, 'instagram'], [/^POST \/avatar-video$/, 'avatar'], [/^POST \/projetos\/\d+\/gravador$/, 'gravadora']];
 db.run(`ALTER TABLE estudio_planos ADD COLUMN recursos TEXT`, () => {});
 setTimeout(() => {
     ['estudio_recursos TEXT', 'estudio_preco REAL'].forEach(c => db.run(`ALTER TABLE users ADD COLUMN ${c}`, () => {}));
@@ -14012,6 +14012,101 @@ app.get('/api/admin/estudio/limpar-audio/:id', requireRole('admin', 'estudio'), 
 // ===== Imagens automáticas com a IA (Claude) conforme a fala =====
 // 1) a IA lê a transcrição e escolhe os momentos que merecem uma imagem; 2) desenha cada imagem como
 // ilustração vetorial (SVG) — o editor transforma em PNG e coloca no vídeo, no tempo exato da fala.
+// ===== Cenas reais (B-roll): vídeos e fotos de verdade que mostram o que a pessoa está falando =====
+// Fontes: Pexels e Pixabay (vídeos e fotos livres para uso comercial, chave grátis) · sem chave: fotos reais do Openverse.
+async function cfgBrollEst() { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_broll_cfg'`).catch(() => null); try { return JSON.parse((r && r.value) || '{}'); } catch (e) { return {}; } }
+app.get('/api/admin/estudio-broll', requireRole('admin', 'estudio'), async (req, res) => { const c = await cfgBrollEst(); res.json({ pexels: !!c.pexels, pixabay: !!c.pixabay, master: req.user.role === 'admin' }); });
+app.put('/api/admin/estudio-broll', requireRole('admin'), async (req, res) => {
+    const b = req.body || {}, c = await cfgBrollEst();
+    if (b.pexels !== undefined) { c.pexels = String(b.pexels || '').trim(); if (c.pexels) { const r = await fetch('https://api.pexels.com/videos/search?query=office&per_page=1', { headers: { Authorization: c.pexels }, signal: AbortSignal.timeout(15000) }).catch(() => null); if (!r || !r.ok) return res.status(400).json({ error: 'O Pexels recusou a chave (confira em pexels.com/api).' }); } }
+    if (b.pixabay !== undefined) { c.pixabay = String(b.pixabay || '').trim(); if (c.pixabay) { const r = await fetch(`https://pixabay.com/api/videos/?key=${encodeURIComponent(c.pixabay)}&q=office&per_page=3`, { signal: AbortSignal.timeout(15000) }).catch(() => null); if (!r || !r.ok) return res.status(400).json({ error: 'O Pixabay recusou a chave.' }); } }
+    db.run(`INSERT INTO integration_settings (key, value) VALUES ('estudio_broll_cfg', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [JSON.stringify(c)], () => res.json({ ok: true, message: 'Banco de vídeos reais conectado! ✅' }));
+});
+async function buscarVideoRealEst(cfg, busca, { vertical, dur, usados }) {
+    const lista = [];
+    if (cfg.pexels) { try {
+        const r = await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(busca)}&per_page=10&size=medium${vertical ? '&orientation=portrait' : ''}`, { headers: { Authorization: cfg.pexels }, signal: AbortSignal.timeout(15000) });
+        const j = await r.json().catch(() => ({}));
+        (j.videos || []).forEach(v => { const fs2 = (v.video_files || []).filter(f => /mp4/.test(f.file_type || '') && f.width && f.height).sort((a, b) => Math.abs(Math.min(a.width, a.height) - 1080) - Math.abs(Math.min(b.width, b.height) - 1080)); const f = fs2[0]; if (f) lista.push({ id: 'px' + v.id, url: f.link, w: f.width, h: f.height, duracao: v.duration, thumb: v.image, credito: `Vídeo: ${(v.user || {}).name || 'Pexels'} (Pexels)`, fonte: 'Pexels' }); });
+    } catch (e) {} }
+    if (cfg.pixabay && lista.length < 3) { try {
+        const r = await fetch(`https://pixabay.com/api/videos/?key=${encodeURIComponent(cfg.pixabay)}&q=${encodeURIComponent(busca.slice(0, 100))}&per_page=10&safesearch=true`, { signal: AbortSignal.timeout(15000) });
+        const j = await r.json().catch(() => ({}));
+        (j.hits || []).forEach(v => { const f = (v.videos || {}).medium || (v.videos || {}).large || (v.videos || {}).small; if (f && f.url) lista.push({ id: 'pb' + v.id, url: f.url, w: f.width, h: f.height, duracao: v.duration, thumb: f.thumbnail || '', credito: `Vídeo: ${v.user || 'Pixabay'} (Pixabay)`, fonte: 'Pixabay' }); });
+    } catch (e) {} }
+    const bons = lista.filter(v => !usados.has(v.id));
+    // prefere: na orientação do vídeo e com duração suficiente
+    bons.sort((a, b) => ((vertical ? b.h >= b.w : b.w >= b.h) - (vertical ? a.h >= a.w : a.w >= a.h)) || ((b.duracao >= dur) - (a.duracao >= dur)));
+    return bons[0] || null;
+}
+async function buscarFotoRealEst(cfg, busca, { vertical, usados }) {
+    const lista = [];
+    if (cfg.pexels) { try { const r = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(busca)}&per_page=8${vertical ? '&orientation=portrait' : ''}`, { headers: { Authorization: cfg.pexels }, signal: AbortSignal.timeout(15000) }); const j = await r.json().catch(() => ({}));
+        (j.photos || []).forEach(p => lista.push({ id: 'pxf' + p.id, url: (p.src || {})[vertical ? 'portrait' : 'large2x'] || (p.src || {}).large, thumb: (p.src || {}).tiny, credito: `Foto: ${p.photographer || 'Pexels'} (Pexels)`, fonte: 'Pexels' })); } catch (e) {} }
+    if (cfg.pixabay && !lista.length) { try { const r = await fetch(`https://pixabay.com/api/?key=${encodeURIComponent(cfg.pixabay)}&q=${encodeURIComponent(busca.slice(0, 100))}&image_type=photo&per_page=8&safesearch=true${vertical ? '&orientation=vertical' : ''}`, { signal: AbortSignal.timeout(15000) }); const j = await r.json().catch(() => ({}));
+        (j.hits || []).forEach(p => lista.push({ id: 'pbf' + p.id, url: p.largeImageURL, thumb: p.previewURL, credito: `Foto: ${p.user || 'Pixabay'} (Pixabay)`, fonte: 'Pixabay' })); } catch (e) {} }
+    if (!lista.length) { try { const r = await fetch(`https://api.openverse.org/v1/images/?q=${encodeURIComponent(busca)}&license_type=commercial&page_size=10&mature=false`, { headers: { 'User-Agent': 'ImpulsionarV4/1.0 (estudio de video)' }, signal: AbortSignal.timeout(15000) }); const j = await r.json().catch(() => ({}));
+        (j.results || []).filter(x => x.url && /\.(jpe?g|png|webp)(\?|$)/i.test(x.url)).forEach(x => lista.push({ id: 'ov' + x.id, url: x.url, thumb: x.thumbnail, credito: `Foto: ${x.creator || 'autor'} (${(x.license || '').toUpperCase()} ${x.license_version || ''}, ${x.source || 'Openverse'})`, fonte: 'Openverse' })); } catch (e) {} }
+    return lista.find(v => !usados.has(v.id)) || null;
+}
+// baixa para o nosso servidor (o editor precisa do arquivo no mesmo endereço para desenhar e exportar)
+async function baixarMidiaRealEst(url, ext) {
+    const r = await fetch(url, { signal: AbortSignal.timeout(120000), headers: { 'User-Agent': 'ImpulsionarV4/1.0' } }); if (!r.ok) throw new Error('download ' + r.status);
+    const buf = Buffer.from(await r.arrayBuffer()); if (buf.length > 120 * 1048576) throw new Error('arquivo grande demais');
+    const nome = 'real-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + '.' + ext, arq = path.join(PASTA_UPLOADS, nome); fs.writeFileSync(arq, buf);
+    if (ext !== 'mp4') copiarUploadParaBanco({ filename: nome, path: arq, size: buf.length, mimetype: 'image/jpeg' });
+    return '/uploads/' + nome;
+}
+async function resolverCenasReaisEst(itens, vertical, aoProgresso) {
+    const cfg = await cfgBrollEst(), usados = new Set(), out = [];
+    let i = 0;
+    for (const it of itens) {
+        i++; if (aoProgresso) aoProgresso(i, itens.length);
+        try {
+            const buscas = [it.busca, it.busca2].filter(Boolean);
+            let achou = null, tipo = 'video';
+            if ((cfg.pexels || cfg.pixabay) && it.tipo !== 'foto') for (const q of buscas) { achou = await buscarVideoRealEst(cfg, q, { vertical, dur: it.dur || 3, usados }); if (achou) break; }
+            if (!achou) { tipo = 'foto'; for (const q of buscas) { achou = await buscarFotoRealEst(cfg, q, { vertical, usados }); if (achou) break; } }
+            if (!achou) continue; usados.add(achou.id);
+            const url = await baixarMidiaRealEst(achou.url, tipo === 'video' ? 'mp4' : (/\.png(\?|$)/i.test(achou.url) ? 'png' : 'jpg'));
+            out.push(Object.assign({}, it, { tipo, url, w: achou.w || (vertical ? 1080 : 1920), h: achou.h || (vertical ? 1920 : 1080), duracao: achou.duracao || 0, thumb: achou.thumb || '', credito: achou.credito, fonte: achou.fonte }));
+        } catch (e) { console.warn('cena real:', e.message); }
+    }
+    return { cenas: out, temVideos: !!(cfg.pexels || cfg.pixabay) };
+}
+const JOBS_REAIS = new Map();
+// a IA ouve a fala, escolhe os momentos e o que mostrar (de forma criativa) e busca a cena real de cada um
+app.post('/api/admin/estudio/ia/cenas-reais', requireRole('admin', 'estudio'), async (req, res) => {
+    if (!iaDisponivelMt()) return res.status(400).json({ error: 'A IA ainda não está conectada.' });
+    const b = req.body || {}, frases = (Array.isArray(b.frases) ? b.frases : []).slice(0, 400).map(f => ({ ini: Number(f.ini) || 0, fim: Number(f.fim) || 0, texto: String(f.texto || '').slice(0, 300) })).filter(f => f.texto.trim());
+    if (!frases.length) return res.status(400).json({ error: 'Não encontrei fala no vídeo.' });
+    const total = Math.max(...frases.map(f => f.fim)), qtd = Math.max(1, Math.min(30, Number(b.qtd) || Math.round(total / 6))), vertical = b.vertical !== false;
+    try { await consumirEst('imagens_ia', Math.min(qtd, 10)); } catch (e) { return erroLimiteEst(res, e); }
+    const id = require('crypto').randomBytes(6).toString('hex'), job = { status: 'planejando', feitas: 0, total: qtd, cenas: [], t: Date.now() };
+    JOBS_REAIS.set(id, job); setTimeout(() => JOBS_REAIS.delete(id), 3 * 3600 * 1000); res.json({ id });
+    try {
+        const linhas = frases.map(f => `[${f.ini.toFixed(1)}-${f.fim.toFixed(1)}] ${f.texto}`).join('\n');
+        const plano = await iaPesquisarMt('Você é diretor criativo de Reels virais e editor de B-roll. Responde só com JSON válido.',
+            `Fala do vídeo com o tempo (segundos):\n${linhas.slice(0, 24000)}\n\nEscolha até ${qtd} momentos para cobrir com uma CENA REAL de banco de vídeos (filmagem de verdade, não ilustração) que mostre literalmente — ou de forma criativa e impactante — o que está sendo dito. Exemplos: "seu negócio está uma bagunça" → escritório bagunçado, papéis espalhados, pessoa estressada; "isso tudo vai pegar fogo" → fogo de verdade, chamas; "caminhão parado" → caminhão parado na estrada; "dinheiro indo embora" → notas de dinheiro voando. Prefira metáforas visuais fortes nos momentos de impacto (frases de efeito, números, dor, virada) e cenas do dia a dia de empresas/operações/logística/liderança no resto. Não cubra os primeiros 1,5 s (o rosto no gancho prende a atenção) nem o mesmo trecho duas vezes.
+Para cada momento: ini (s), dur (2 a 4 s), busca (termos em INGLÊS, concretos e visuais, 2 a 5 palavras, como se busca no Pexels: ex. "messy office papers", "fire flames close up", "truck highway"), busca2 (alternativa em inglês), tipo ("video" ou "foto"), modo ("cheio" = cena cobre a tela toda; "cima" = cena em cima e a pessoa embaixo), impacto (true se for um momento de impacto: entra com flash e zoom), legenda (até 4 palavras para mostrar sobre a cena, opcional, em português) e motivo.
+JSON: {"momentos":[{"ini":3.2,"dur":3,"busca":"","busca2":"","tipo":"video","modo":"cheio","impacto":false,"legenda":"","motivo":""}]}`, 4000, false, {});
+        const txt = plano.texto, ini = txt.indexOf('{'), fim = txt.lastIndexOf('}');
+        let momentos = []; try { momentos = JSON.parse(txt.slice(ini, fim + 1)).momentos || []; } catch (e) {}
+        momentos = momentos.filter(m => m && m.busca).slice(0, qtd).map(m => ({ ini: Math.max(0, Number(m.ini) || 0), dur: Math.max(1.5, Math.min(5, Number(m.dur) || 3)), busca: String(m.busca).slice(0, 80), busca2: String(m.busca2 || '').slice(0, 80), tipo: m.tipo === 'foto' ? 'foto' : 'video', modo: ['cheio', 'cima', 'pip'].includes(m.modo) ? m.modo : 'cheio', impacto: !!m.impacto, legenda: String(m.legenda || '').slice(0, 40), motivo: String(m.motivo || '').slice(0, 200) }));
+        if (!momentos.length) throw new Error('A IA não encontrou momentos para cobrir com cenas.');
+        Object.assign(job, { status: 'buscando', total: momentos.length });
+        const r = await resolverCenasReaisEst(momentos, vertical, (i) => { job.feitas = i; });
+        Object.assign(job, { status: r.cenas.length ? 'pronto' : 'erro', cenas: r.cenas, temVideos: r.temVideos, error: r.cenas.length ? undefined : 'Não achei cenas reais para estes momentos. Tente de novo.' });
+    } catch (e) { Object.assign(job, { status: 'erro', error: e.message }); }
+});
+app.get('/api/admin/estudio/ia/cenas-reais/:id', requireRole('admin', 'estudio'), (req, res) => { const j = JOBS_REAIS.get(req.params.id); if (!j) return res.status(404).json({ error: 'Processamento não encontrado (o servidor reiniciou).' }); res.json(j); });
+// busca direta (vídeo criado pela IA: uma cena real para cada parte do roteiro)
+app.post('/api/admin/estudio/broll/buscar', requireRole('admin', 'estudio'), async (req, res) => {
+    const b = req.body || {}, itens = (Array.isArray(b.itens) ? b.itens : []).slice(0, 14).map((x, i) => ({ i, busca: String(x.busca || '').slice(0, 80), busca2: String(x.busca2 || '').slice(0, 80), dur: Number(x.dur) || 3, tipo: x.tipo === 'foto' ? 'foto' : 'video' })).filter(x => x.busca);
+    if (!itens.length) return res.status(400).json({ error: 'Nada para buscar.' });
+    try { res.json(await resolverCenasReaisEst(itens, b.vertical !== false)); } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
 const JOBS_IMAGENS = new Map();
 function limparSvgIa(txt) {
     let svg = (String(txt || '').match(/<svg[\s\S]*<\/svg>/i) || [])[0]; if (!svg) return null;
@@ -14635,7 +14730,7 @@ app.post('/api/admin/estudio/ia/:acao', requireRole('admin', 'estudio'), async (
         else if (acao === 'video-autonomo') {
             max = 8000;
             const modo = String(b.modo || 'motion');
-            pedido = `${base}\nMODO: ${modo === 'avatar' ? 'uma pessoa (avatar) fala para a câmera o tempo todo — a "fala" de cada cena é exatamente o que ela vai dizer, natural e direta' : modo === 'meus' ? 'vídeo montado com filmagens da própria empresa — a "fala" vira legenda na tela' : 'vídeo animado sem pessoa (motion design): a "fala" aparece como legenda dinâmica e o "texto_tela" como título grande'}.\n${b.look && Array.isArray(b.look.paleta) ? `VISUAL DESTE VÍDEO (os vídeos alternam de visual — NÃO use sempre as mesmas cores): "${String(b.look.nome || '').slice(0, 60)}" — paleta ${b.look.paleta.slice(0, 4).join(', ')}. Cores da marca só em detalhes: ${(Array.isArray(b.cores) ? b.cores : []).join(', ') || '#0b1329, #dc4c4c'}` : 'CORES DA MARCA: ' + ((Array.isArray(b.cores) ? b.cores : []).join(', ') || '#0b1329, #dc4c4c')}\nCrie o roteiro completo de ~${duracao}s dividido em 5 a 10 cenas curtas. Cena 1 = gancho fortíssimo (até 2,5 s). Ritmo rápido, uma ideia por cena, final com CTA.\nPara cada cena: duracao (s), fala (frases curtas, linguagem falada), texto_tela (até 6 palavras, impacto), emoji (1, combinando com a cena), cor1 e cor2 (hex, para fundo animado, variando dentro da paleta do VISUAL deste vídeo).\nJSON: {"titulo":"","cenas":[{"duracao":2.5,"fala":"","texto_tela":"","emoji":"","cor1":"#","cor2":"#"}],"cta":"texto curto da chamada final","legenda":"legenda do post com gancho na 1ª linha","hashtags":["#..."],"filtro":"vibrante","paleta":["#","#","#"]}`;
+            pedido = `${base}\nMODO: ${modo === 'avatar' ? 'uma pessoa (avatar) fala para a câmera o tempo todo — a "fala" de cada cena é exatamente o que ela vai dizer, natural e direta' : modo === 'meus' ? 'vídeo montado com filmagens da própria empresa — a "fala" vira legenda na tela' : modo === 'real' ? 'vídeo com CENAS REAIS de banco de vídeos (filmagens de verdade: pessoas, escritórios, operações, caminhões, dinheiro, fogo...) — cada cena mostra literalmente ou de forma criativa e impactante o que a fala diz; a "fala" vira legenda e o "texto_tela" título. Para cada cena inclua também "busca" e "busca2": termos em INGLÊS, concretos e visuais (2 a 5 palavras), para achar a filmagem no Pexels (ex.: "messy office papers", "fire flames", "warehouse workers")' : 'vídeo animado sem pessoa (motion design): a "fala" aparece como legenda dinâmica e o "texto_tela" como título grande'}.\n${b.look && Array.isArray(b.look.paleta) ? `VISUAL DESTE VÍDEO (os vídeos alternam de visual — NÃO use sempre as mesmas cores): "${String(b.look.nome || '').slice(0, 60)}" — paleta ${b.look.paleta.slice(0, 4).join(', ')}. Cores da marca só em detalhes: ${(Array.isArray(b.cores) ? b.cores : []).join(', ') || '#0b1329, #dc4c4c'}` : 'CORES DA MARCA: ' + ((Array.isArray(b.cores) ? b.cores : []).join(', ') || '#0b1329, #dc4c4c')}\nCrie o roteiro completo de ~${duracao}s dividido em 5 a 10 cenas curtas. Cena 1 = gancho fortíssimo (até 2,5 s). Ritmo rápido, uma ideia por cena, final com CTA.\nPara cada cena: duracao (s), fala (frases curtas, linguagem falada), texto_tela (até 6 palavras, impacto), emoji (1, combinando com a cena), cor1 e cor2 (hex, para fundo animado, variando dentro da paleta do VISUAL deste vídeo).\nJSON: {"titulo":"","cenas":[{"duracao":2.5,"fala":"","texto_tela":"","emoji":"","cor1":"#","cor2":"#"${modo === 'real' ? ',"busca":"","busca2":""' : ''}}],"cta":"texto curto da chamada final","legenda":"legenda do post com gancho na 1ª linha","hashtags":["#..."],"filtro":"vibrante","paleta":["#","#","#"]}`;
         }
         else if (acao === 'cortes') {
             max = 4000;

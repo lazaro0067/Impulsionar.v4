@@ -21549,7 +21549,9 @@ function evDesenhar(tForcado, exportando) {
       const loc = t - o.ini, alpha = o.layout === 'cheio' ? Math.min(1, loc / 0.2, (o.dur - loc) / 0.2) : Math.min(1, loc / 0.25);
       const Ro = evRetSobreposicao(o), forma = o.layout === 'circulo' ? 'circulo' : o.layout === 'pip' ? 'arredondado' : null;
       if (forma) { ctx.save(); ctx.globalAlpha = alpha * 0.5; ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 30 * k; ctx.fillStyle = '#000'; ctx.beginPath(); if (forma === 'circulo') ctx.arc(Ro.x + Ro.w / 2, Ro.y + Ro.h / 2, Ro.w / 2, 0, 7); else evRetArred(ctx, Ro.x, Ro.y, Ro.w, Ro.h, Math.min(Ro.w, Ro.h) * 0.08); ctx.fill(); ctx.restore(); }
-      evDesenharMidia(ctx, o, el, loc / o.dur, alpha, 0, 1, Ro, forma);
+      const punch = o.impacto ? 1 + 0.14 * (1 - easeOut(Math.min(1, loc / 0.45))) : 1;
+      evDesenharMidia(ctx, o, el, loc / o.dur, alpha, 0, punch, Ro, forma);
+      if (o.impacto && loc < 0.22) { ctx.save(); ctx.globalAlpha = 0.85 * (1 - loc / 0.22); ctx.fillStyle = '#fff'; ctx.fillRect(Ro.x, Ro.y, Ro.w, Ro.h); ctx.restore(); }
       if (o.borda !== false && forma) { ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = o.corBorda || '#ffffff'; ctx.lineWidth = 8 * k; ctx.beginPath(); if (forma === 'circulo') ctx.arc(Ro.x + Ro.w / 2, Ro.y + Ro.h / 2, Ro.w / 2, 0, 7); else evRetArred(ctx, Ro.x, Ro.y, Ro.w, Ro.h, Math.min(Ro.w, Ro.h) * 0.08); ctx.stroke(); ctx.restore(); }
       if (['cima', 'baixo', 'esq', 'dir'].includes(o.layout) && o.borda !== false) { ctx.save(); ctx.fillStyle = o.corBorda || '#ffffff'; if (o.layout === 'cima' || o.layout === 'baixo') ctx.fillRect(0, H / 2 - 4 * k, W, 8 * k); else ctx.fillRect(W / 2 - 4 * k, 0, 8 * k, H); ctx.restore(); }
     });
@@ -21911,7 +21913,7 @@ async function evAbrirEditor(id) {
     </div>
     <section class="ev-linha">
       <div class="ev-linha-barra">
-        <button class="ev-tl-ia ev-so-cel" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button><button class="ev-so-cel" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="ev-so-cel" onclick="document.getElementById('ev-galeria').click()" title="Adicionar fotos e vídeos da galeria"><i>🖼️</i><span>Galeria</span></button><span class="ev-sep ev-so-cel"></span><button class="ev-so-pc" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)"><i>↶</i><span>Desfazer</span></button><button class="ev-so-pc" onclick="evRefazer()" title="Refazer (Ctrl+Y)"><i>↷</i><span>Refazer</span></button><span class="ev-sep ev-so-pc"></span><button class="" onclick="evDividir()" title="Dividir no cursor (S)"><i>✂️</i><span>Dividir</span></button><button class="" onclick="evExcluirSel()" title="Excluir (Delete)"><i>🗑️</i><span>Excluir</span></button><button class="" onclick="evDuplicarSel()" title="Duplicar (Ctrl+D)"><i>⧉</i><span>Duplicar</span></button><span class="ev-sep"></span><button class="" onclick="evPopBarra('velocidade', this)" title="Velocidade"><i>⏩</i><span>Velocidade</span></button><button class="" onclick="evPopBarra('volume', this)" title="Volume"><i>🔊</i><span>Volume</span></button><button class="" onclick="evPopBarra('zoom', this)" title="Zoom"><i>🔍</i><span>Zoom</span></button><button class="" onclick="evPopBarra('enquadrar', this)" title="Enquadrar, espelhar e posicionar"><i>🎯</i><span>Enquadrar</span></button><button class="" onclick="evPopBarra('transicao', this)" title="Transição"><i>🔀</i><span>Transição</span></button><span class="ev-sep"></span><button class="ev-so-pc" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="" onclick="evPopBarra('texto', this)" title="Adicionar texto"><i>🔤</i><span>Texto</span></button><button class="" onclick="evLegendasDaFala()" title="Legendas automáticas do que é falado"><i>💬</i><span>Legendas</span></button><button class="" onclick="evPopBarra('musica', this)" title="Música de fundo"><i>🎵</i><span>Música</span></button><button class="ev-tl-ia" onclick="evAbrirImagensIa()" title="A IA cria imagens conforme você fala"><i>🖼️</i><span>Imagens IA</span></button><button class="" onclick="evPainel('audio'); evSheet('painel'); setTimeout(()=>{const e=document.getElementById('ev-limpeza'); if(e) e.scrollIntoView({block:'start'});},80)" title="Tirar ruído do áudio com IA"><i>🎧</i><span>Limpar áudio</span></button><button class="ev-so-cel" onclick="evPainel('filtros'); evSheet('painel')" title="Filtros e imagem inteligente"><i>🎨</i><span>Filtros</span></button><button class="ev-so-cel" onclick="evPainel('elementos'); evSheet('painel')" title="Logo, emojis e encerramento"><i>🏷️</i><span>Marca</span></button><button class="ev-so-cel" onclick="evPainel('midia'); evSheet('painel')" title="Mídias do projeto"><i>🎞️</i><span>Mídias</span></button><button class="ev-so-cel" onclick="evPainel('ia'); evSheet('painel')" title="Agente IA"><i>🤖</i><span>Agente</span></button><button class="ev-so-cel" onclick="evSheet('props')" title="Ajustes do item selecionado"><i>⚙️</i><span>Ajustes</span></button><button class="" onclick="evPopBarra('mais', this)" title="Mais ferramentas"><i>⋯</i><span>Mais</span></button><span class="ev-sep ev-so-pc"></span><button class="ev-tl-ia ev-so-pc" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button>
+        <button class="ev-tl-ia ev-so-cel" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button><button class="ev-so-cel" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="ev-so-cel" onclick="document.getElementById('ev-galeria').click()" title="Adicionar fotos e vídeos da galeria"><i>🖼️</i><span>Galeria</span></button><span class="ev-sep ev-so-cel"></span><button class="ev-so-pc" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)"><i>↶</i><span>Desfazer</span></button><button class="ev-so-pc" onclick="evRefazer()" title="Refazer (Ctrl+Y)"><i>↷</i><span>Refazer</span></button><span class="ev-sep ev-so-pc"></span><button class="" onclick="evDividir()" title="Dividir no cursor (S)"><i>✂️</i><span>Dividir</span></button><button class="" onclick="evExcluirSel()" title="Excluir (Delete)"><i>🗑️</i><span>Excluir</span></button><button class="" onclick="evDuplicarSel()" title="Duplicar (Ctrl+D)"><i>⧉</i><span>Duplicar</span></button><span class="ev-sep"></span><button class="" onclick="evPopBarra('velocidade', this)" title="Velocidade"><i>⏩</i><span>Velocidade</span></button><button class="" onclick="evPopBarra('volume', this)" title="Volume"><i>🔊</i><span>Volume</span></button><button class="" onclick="evPopBarra('zoom', this)" title="Zoom"><i>🔍</i><span>Zoom</span></button><button class="" onclick="evPopBarra('enquadrar', this)" title="Enquadrar, espelhar e posicionar"><i>🎯</i><span>Enquadrar</span></button><button class="" onclick="evPopBarra('transicao', this)" title="Transição"><i>🔀</i><span>Transição</span></button><span class="ev-sep"></span><button class="ev-so-pc" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="" onclick="evPopBarra('texto', this)" title="Adicionar texto"><i>🔤</i><span>Texto</span></button><button class="" onclick="evLegendasDaFala()" title="Legendas automáticas do que é falado"><i>💬</i><span>Legendas</span></button><button class="" onclick="evPopBarra('musica', this)" title="Música de fundo"><i>🎵</i><span>Música</span></button><button class="ev-tl-ia" onclick="evAbrirImagensIa()" title="A IA cria imagens conforme você fala"><i>🖼️</i><span>Imagens IA</span></button><button class="ev-tl-ia" onclick="evAbrirCenasReais()" title="Filmagens reais do que você fala"><i>🎬</i><span>Cenas reais</span></button><button class="" onclick="evPainel('audio'); evSheet('painel'); setTimeout(()=>{const e=document.getElementById('ev-limpeza'); if(e) e.scrollIntoView({block:'start'});},80)" title="Tirar ruído do áudio com IA"><i>🎧</i><span>Limpar áudio</span></button><button class="ev-so-cel" onclick="evPainel('filtros'); evSheet('painel')" title="Filtros e imagem inteligente"><i>🎨</i><span>Filtros</span></button><button class="ev-so-cel" onclick="evPainel('elementos'); evSheet('painel')" title="Logo, emojis e encerramento"><i>🏷️</i><span>Marca</span></button><button class="ev-so-cel" onclick="evPainel('midia'); evSheet('painel')" title="Mídias do projeto"><i>🎞️</i><span>Mídias</span></button><button class="ev-so-cel" onclick="evPainel('ia'); evSheet('painel')" title="Agente IA"><i>🤖</i><span>Agente</span></button><button class="ev-so-cel" onclick="evSheet('props')" title="Ajustes do item selecionado"><i>⚙️</i><span>Ajustes</span></button><button class="" onclick="evPopBarra('mais', this)" title="Mais ferramentas"><i>⋯</i><span>Mais</span></button><span class="ev-sep ev-so-pc"></span><button class="ev-tl-ia ev-so-pc" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button>
         <div style="flex:1" class="ev-so-pc"></div>
         <span class="ev-so-pc" style="font-size:12px;opacity:.7;">Zoom</span><input class="ev-so-pc" type="range" min="15" max="200" value="${ES.pxs}" oninput="ES.pxs=Number(this.value); evDesenharLinha()">
         <input type="file" id="ev-galeria" accept="video/*,image/*,audio/*" multiple hidden onchange="evSubir(this.files); this.value=''">
@@ -22284,6 +22286,79 @@ const EV_ESTILOS_IMG = {
   neon: ['🌃 Neon / tecnologia', 'estilo neon futurista, fundo escuro, linhas e brilhos coloridos, clima tecnológico'],
   corporativo: ['💼 Corporativo', 'ilustração corporativa profissional, pessoas estilizadas, gráficos, ícones de negócios, cores sóbrias']
 };
+// ---------- 🎬 Cenas reais: filmagens de verdade que mostram o que você fala (B-roll automático) ----------
+let EV_BROLL_CFG = null;
+async function evBrollCfg(forcar) { if (!EV_BROLL_CFG || forcar) { try { EV_BROLL_CFG = await api('/api/admin/estudio-broll'); } catch (e) { EV_BROLL_CFG = { pexels: false, pixabay: false }; } } return EV_BROLL_CFG; }
+async function evAbrirCenasReais() {
+  if (!evPrecisa('imagens_ia')) return;
+  const d = ES.p.dados; if (!d.clips.some(c => (evMidia(c.midia) || {}).tipo === 'video')) return mostrarToast('Coloque na linha do tempo o vídeo em que você fala.', true);
+  const cfgB = await evBrollCfg(), tot = evTotal(), sug = Math.max(2, Math.round(tot / 6));
+  const cfg = ES.reais = ES.reais || { qtd: Math.min(sug, 15), layout: 'auto', impacto: true, legenda: true };
+  const chip = (k, v, r) => `<button class="${cfg[k] === v ? 'on' : ''}" onclick="ES.reais.${k}=${typeof v === 'string' ? `'${v}'` : v}; evAbrirCenasReais()">${r}</button>`;
+  const temVid = cfgB.pexels || cfgB.pixabay;
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal">
+    <div class="ev-modal-cab"><h3>🎬 Cenas reais conforme a fala</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <div class="ev-sub">A IA ouve o que você fala e cobre os momentos com <b>filmagens de verdade</b>: “seu negócio está uma bagunça” → um escritório bagunçado; “isso vai pegar fogo” → fogo de verdade. Nos momentos de impacto entra com flash e zoom.</div>
+    ${temVid ? '' : `<div class="ev-dica-fixa">⚠️ Sem banco de vídeos conectado: por enquanto entram <b>fotos reais</b>. ${cfgB.master ? `<button class="ev-mini" onclick="evConfigBroll()">🔑 Conectar vídeos reais (Pexels — grátis)</button>` : 'Peça ao administrador para conectar o Pexels (grátis) e ter vídeos reais.'}</div>`}
+    ${evCampo('Como a cena aparece', `<div class="ev-chips">${chip('layout', 'auto', '🎬 A IA escolhe')}${chip('layout', 'cheio', '⛶ Tela cheia (você só na voz)')}${chip('layout', 'cima', '⬒ Cena em cima, você embaixo')}${chip('layout', 'pip', '▣ Janelinha')}</div>`)}
+    ${evCampo(`Quantidade <b>${cfg.qtd}</b> <small>(vídeo de ${evFmtT(tot).slice(0, 5)} · sugerido ${sug})</small>`, `<input type="range" min="1" max="${Math.max(3, Math.min(30, Math.round(tot / 2.5)))}" value="${cfg.qtd}" oninput="ES.reais.qtd=Number(this.value); this.parentElement.querySelector('b').textContent=this.value">`)}
+    <label class="ev-chk2"><input type="checkbox" ${cfg.impacto ? 'checked' : ''} onchange="ES.reais.impacto=this.checked"><span>⚡ Efeito de impacto (flash + zoom) nas frases fortes</span></label>
+    <label class="ev-chk2"><input type="checkbox" ${cfg.legenda ? 'checked' : ''} onchange="ES.reais.legenda=this.checked"><span>🔤 Palavra-chave grande sobre a cena</span></label>
+    ${d.sobreposicoes.some(o => o.cenaReal) ? '<div class="ev-dica-fixa">As cenas reais colocadas antes serão trocadas pelas novas.</div>' : ''}
+    <button class="ev-btn ia grande" onclick="evGerarCenasReais()">🎬 Colocar as cenas reais</button>
+    ${cfgB.master && temVid ? `<div class="ev-sub" style="text-align:right;"><a href="#" onclick="evConfigBroll(); return false;">🔑 Bancos de vídeo conectados</a></div>` : ''}</div></div>`;
+}
+function evConfigBroll() {
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal">
+    <div class="ev-modal-cab"><h3>🔑 Vídeos e fotos reais</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <div class="ev-sub">Milhões de filmagens profissionais, grátis e liberadas para uso comercial (sem precisar dar crédito). Crie a chave em 1 minuto:</div>
+    <ol class="ev-sub"><li><b>Pexels</b> (recomendado): entre em <a href="https://www.pexels.com/api/" target="_blank" rel="noopener">pexels.com/api</a> › <i>Get Started</i> › copie a <b>API Key</b>.</li><li><b>Pixabay</b> (opcional, mais opções): <a href="https://pixabay.com/api/docs/" target="_blank" rel="noopener">pixabay.com/api/docs</a> › faça login › a chave aparece na página.</li></ol>
+    <label class="ev-campo"><span>Chave do Pexels ${EV_BROLL_CFG && EV_BROLL_CFG.pexels ? '✅ conectada' : ''}</span><input id="ev-pexels" placeholder="cole aqui"></label>
+    <label class="ev-campo"><span>Chave do Pixabay ${EV_BROLL_CFG && EV_BROLL_CFG.pixabay ? '✅ conectada' : ''}</span><input id="ev-pixabay" placeholder="opcional"></label>
+    <button class="ev-btn primario grande" onclick="evSalvarBroll()">💾 Salvar</button></div></div>`;
+}
+async function evSalvarBroll() {
+  const px = document.getElementById('ev-pexels').value.trim(), pb = document.getElementById('ev-pixabay').value.trim(), corpo = {};
+  if (px) corpo.pexels = px; if (pb) corpo.pixabay = pb; if (!px && !pb) return mostrarToast('Cole pelo menos a chave do Pexels.', true);
+  try { const r = await api('/api/admin/estudio-broll', { method: 'PUT', body: JSON.stringify(corpo) }); mostrarToast(r.message); await evBrollCfg(true); if (ES) evAbrirCenasReais(); else document.getElementById('ev-modal').innerHTML = ''; } catch (e) { mostrarToast(e.message, true); }
+}
+// coloca as cenas na linha do tempo (como cobertura) — vídeos tocam sem som, fotos com zoom lento
+function evPorCenasReais(d, cenas, cfg) {
+  const antigas = new Set(d.sobreposicoes.filter(o => o.cenaReal).map(o => o.midia));
+  d.sobreposicoes = d.sobreposicoes.filter(o => !o.cenaReal); d.midias = d.midias.filter(m => !(antigas.has(m.id) && m.cenaReal)); d.textos = d.textos.filter(x => !x.cenaReal);
+  const tot = evTotal(); let ok = 0;
+  cenas.forEach((c, i) => {
+    const m = { id: evUid(), url: c.url, nome: (c.tipo === 'video' ? '🎬 ' : '📷 ') + (c.busca || 'cena real'), tipo: c.tipo === 'video' ? 'video' : 'imagem', duracao: c.tipo === 'video' ? (c.duracao || 0) : 0, w: c.w, h: c.h, thumb: c.thumb || '', credito: c.credito, cenaReal: true };
+    d.midias.push(m);
+    const ini = Math.max(0, Math.min(c.ini, tot - 1)), dur = Math.max(1.2, Math.min(c.dur, tot - ini)), layout = cfg.layout === 'auto' ? (c.modo || 'cheio') : cfg.layout;
+    const corte = c.tipo === 'video' && c.duracao > dur + 1 ? Math.min(1.5, c.duracao - dur - 0.5) : 0;
+    d.sobreposicoes.push({ id: evUid(), midia: m.id, ini, dur, corte, vel: 1, vol: 0, layout, ajuste: 'cobrir', zoom: c.tipo === 'video' ? 1.02 : 1.12, impacto: !!(cfg.impacto && c.impacto), cenaReal: true, borda: layout === 'cheio' ? false : undefined, tam: layout === 'pip' ? 0.42 : undefined });
+    if (cfg.legenda && c.legenda) d.textos.push({ id: evUid(), texto: String(c.legenda).toUpperCase(), ini: ini + 0.15, dur: Math.max(1, dur - 0.3), estilo: 'titulo', x: 0.5, y: layout === 'cima' ? 0.25 : 0.42, tam: 120, cenaReal: true });
+    ok++;
+  });
+  return ok;
+}
+async function evGerarCenasReais() {
+  const cfg = ES.reais, d = ES.p.dados; document.getElementById('ev-modal').innerHTML = ''; evPausar();
+  if (!(await evTranscricaoConfigurada())) return evPedirTranscricao(() => evGerarCenasReais());
+  try {
+    const medias = [...new Set(d.clips.map(c => c.midia))].map(evMidia).filter(m => m && m.tipo === 'video');
+    for (let i = 0; i < medias.length; i++) { evCarregando(`👂 Ouvindo a fala${medias.length > 1 ? ` (${i + 1}/${medias.length})` : ''}…`); await evTranscreverMidia(medias[i]); }
+    const frases = evFrasesDaFala(evPalavrasNaTimeline()); if (!frases.length) throw new Error('Não encontrei fala no vídeo.');
+    evCarregando('🎬 A IA está escolhendo as cenas…');
+    const job = await api('/api/admin/estudio/ia/cenas-reais', { method: 'POST', body: JSON.stringify({ frases, qtd: cfg.qtd, vertical: (ES.p.formato || '9:16') === '9:16' && cfg.layout !== 'cima' }) });
+    let st = null;
+    for (let k = 0; k < 1500; k++) {
+      await new Promise(z => setTimeout(z, 2500)); st = await api('/api/admin/estudio/ia/cenas-reais/' + job.id).catch(() => st);
+      if (!st) continue; if (st.status === 'pronto' || st.status === 'erro') break;
+      const e = document.querySelector('#ev-carregando b'); if (e) e.textContent = st.status === 'planejando' ? '🎬 A IA está escolhendo as cenas…' : `🔎 Buscando filmagens reais… ${st.feitas} de ${st.total}`;
+    }
+    if (!st || st.status !== 'pronto') throw new Error((st && st.error) || 'A busca das cenas não terminou.');
+    const ok = evPorCenasReais(d, st.cenas, cfg);
+    evCarregando(null); evMudou(); evPainel(ES.painel); evDesenhar();
+    mostrarToast(`🎬 ${ok} cena${ok > 1 ? 's' : ''} real${ok > 1 ? 'is' : ''} no momento certo da fala${st.temVideos ? '' : ' (fotos — conecte o Pexels para vídeos)'}. Toque numa delas na linha do tempo para trocar ou ajustar.`);
+  } catch (e) { evCarregando(null); mostrarToast(e.message, true); }
+}
 function evAbrirImagensIa() {
   if (!evPrecisa('imagens_ia')) return;
   const d = ES.p.dados; if (!d.clips.some(c => (evMidia(c.midia) || {}).tipo === 'video')) return mostrarToast('Coloque na linha do tempo o vídeo em que você fala.', true);
@@ -23162,6 +23237,7 @@ function evPainelIa() {
     <label class="ev-campo"><span>Objetivo</span><select id="ev-ia-obj">${['Alcance (viralizar)', 'Autoridade', 'Gerar clientes (leads)', 'Engajamento (comentários)', 'Divulgar treinamento/evento'].map(o => `<option>${o}</option>`).join('')}</select></label>
     <label class="ev-chk2"><input type="checkbox" id="ev-ia-web" checked> 🔎 Pesquisar tendências na internet</label>
     <button class="ev-btn ia grande" onclick="evAbrirEdicaoCompleta()">✨ Editar com IA para viralizar</button>
+    <button class="ev-btn ia" style="width:100%;margin-top:6px;" onclick="evAbrirCenasReais()">🎬 Cenas reais conforme a fala (vídeos de verdade)</button>
     <button class="ev-btn ia" style="width:100%;margin-top:6px;" onclick="evAbrirImagensIa()">🖼️ Imagens automáticas conforme a fala</button>
     <div class="ev-sub">Legendas da fala, zooms estratégicos, gancho, frases de impacto, CTA, voz limpa, cor e marca — pesquisando o que viraliza no tema. Só corta se você pedir.</div>
     <button class="ev-btn" style="width:100%;" onclick="evIaEditar()">⚡ Montagem rápida por ritmo (clipes e fotos)</button>
@@ -23917,6 +23993,7 @@ async function evAbrirCriarVideoIa() {
     <span class="ev-campo"><span>Como o vídeo vai ser feito?</span></span>
     <div class="ev-modos">
       <button class="${EVIA.modo === 'avatar' ? 'on' : ''}" onclick="EVIA.modo='avatar'; evAbrirCriarVideoIa()"><b>🧑 Com uma pessoa falando</b><small>Usa a foto de um avatar salvo: a pessoa fala o roteiro com voz em português (precisa do D-ID conectado).</small></button>
+      <button class="${EVIA.modo === 'real' ? 'on' : ''}" onclick="EVIA.modo='real'; evAbrirCriarVideoIa()"><b>🎬 Com cenas reais</b><small>Sem câmera: a IA monta o vídeo com filmagens de verdade (escritórios, operação, pessoas, caminhões…) mostrando cada parte do que é dito, com voz e legendas.</small></button>
       <button class="${EVIA.modo === 'motion' ? 'on' : ''}" onclick="EVIA.modo='motion'; evAbrirCriarVideoIa()"><b>✨ Autonomia total da IA</b><small>Sem câmera: a IA cria um vídeo animado (motion design) com fundos, textos, ícones e as cores da marca.</small></button>
       <button class="${EVIA.modo === 'meus' ? 'on' : ''}" onclick="EVIA.modo='meus'; evAbrirCriarVideoIa()"><b>🎞️ Com os meus vídeos</b><small>${ES ? 'Usa as mídias deste projeto e monta a edição pelo roteiro.' : 'Abra um projeto com vídeos para usar esta opção.'}</small></button>
     </div>
@@ -24100,6 +24177,21 @@ async function evCriarVideoIa() {
     const ms = ES.p.dados.midias.filter(m => m.tipo !== 'audio'); dados.midias = JSON.parse(JSON.stringify(ES.p.dados.midias));
     durs.forEach((d, i) => { const m = ms[i % ms.length], ini = m.tipo === 'video' && m.duracao ? Math.min(Math.max(0, m.duracao - d), (m.duracao / Math.max(1, Math.ceil(cenas.length / ms.length))) * Math.floor(i / ms.length)) : 0; dados.clips.push({ id: evUid(), midia: m.id, ini, fim: m.tipo === 'video' ? Math.min(m.duracao || ini + d, ini + d) : d, vel: 1, vol: 1, zoom: m.tipo === 'imagem' ? 1.15 : (i % 2 ? 1.1 : 1), ajuste: m.w > m.h ? 'conter' : 'cobrir' }); });
     dados.audios = JSON.parse(JSON.stringify(ES.p.dados.audios));
+  } else if (modo === 'real') {
+    // uma filmagem real para cada cena (o que a fala diz, de forma literal ou criativa)
+    evCarregandoGlobal('🎬 Buscando filmagens reais para cada cena…');
+    let reais = { cenas: [] };
+    try { reais = await api('/api/admin/estudio/broll/buscar', { method: 'POST', body: JSON.stringify({ vertical: true, itens: cenas.map((c, i) => ({ busca: c.busca || c.texto_tela || c.fala, busca2: c.busca2 || '', dur: durs[i] })) }) }); } catch (e) { mostrarToast('Cenas reais: ' + e.message, true); }
+    const porI = {}; (reais.cenas || []).forEach(r => { porI[r.i] = r; });
+    const cores = (rot.paleta && rot.paleta.length >= 2) ? rot.paleta : [kit.cor1 || '#0b1329', kit.cor2 || '#dc4c4c'];
+    cenas.forEach((c, i) => {
+      const r = porI[i], id = 'r' + i;
+      if (r) { dados.midias.push({ id, tipo: r.tipo === 'video' ? 'video' : 'imagem', url: r.url, nome: (r.tipo === 'video' ? '🎬 ' : '📷 ') + (r.busca || 'cena'), duracao: r.tipo === 'video' ? r.duracao || 0 : 0, w: r.w, h: r.h, thumb: r.thumb || '', credito: r.credito, cenaReal: true });
+        const ini = r.tipo === 'video' && r.duracao > durs[i] + 1 ? Math.min(1.5, r.duracao - durs[i] - 0.5) : 0;
+        dados.clips.push({ id: evUid(), midia: id, ini, fim: r.tipo === 'video' ? ini + Math.min(durs[i], Math.max(1, (r.duracao || durs[i]) - ini)) : durs[i], vel: r.tipo === 'video' && r.duracao && r.duracao - ini < durs[i] ? Math.max(0.5, (r.duracao - ini) / durs[i]) : 1, vol: 0, zoom: r.tipo === 'video' ? 1.03 : 1.12, ajuste: 'cobrir', transicao: i ? (i % 3 === 0 ? 'flash' : 'corte') : undefined }); }
+      else { dados.midias.push({ id, tipo: 'fundo', nome: 'Cena ' + (i + 1), cores: [c.cor1 || cores[i % cores.length], c.cor2 || cores[(i + 1) % cores.length]], estilo: EV_ESTILOS_FUNDO[i % EV_ESTILOS_FUNDO.length], duracao: 0 }); dados.clips.push({ id: evUid(), midia: id, ini: 0, fim: durs[i], vel: 1, vol: 1 }); }
+    });
+    dados.corAuto = false; if (!(reais.cenas || []).length) mostrarToast('Não achei filmagens reais agora — usei fundos animados.', true);
   } else {
     const cores = (rot.paleta && rot.paleta.length >= 2) ? rot.paleta : [kit.cor1 || '#0b1329', kit.cor2 || '#dc4c4c', '#1d3a8a', '#7c3aed'];
     cenas.forEach((c, i) => { const id = 'f' + i; dados.midias.push({ id, tipo: 'fundo', nome: 'Cena ' + (i + 1), cores: [c.cor1 || cores[i % cores.length], c.cor2 || cores[(i + 1) % cores.length]], estilo: EV_ESTILOS_FUNDO[i % EV_ESTILOS_FUNDO.length], duracao: 0 }); dados.clips.push({ id: evUid(), midia: id, ini: 0, fim: durs[i], vel: 1, vol: 1, zoom: 1, transicao: i ? (['fade', 'deslizar', 'zoom'][i % 3]) : undefined }); });
