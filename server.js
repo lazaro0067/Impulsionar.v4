@@ -32,9 +32,23 @@ const PORT = process.env.PORT || 3000;
 // persistente usado pelo DB_PATH, tipo /data/uploads), os arquivos enviados
 // (contratos anexados, fotos, vídeos etc.) ficam FORA da pasta do código —
 // senão eles são apagados a cada novo deploy, igual acontecia com o banco.
-const PASTA_UPLOADS = process.env.UPLOADS_PATH || path.join(__dirname, 'public', 'uploads');
+// Sem UPLOADS_PATH mas com DB_PATH num Volume (ex.: /data/impulsionar.db), os vídeos passam a ficar
+// automaticamente ao lado do banco (/data/uploads) — assim um novo deploy não apaga mais as gravações.
+const PASTA_UPLOADS_CODIGO = path.join(__dirname, 'public', 'uploads');
+const PASTA_UPLOADS_AUTO = (() => {
+    try {
+        if (!process.env.DB_PATH) return null;
+        const dir = path.dirname(path.resolve(process.env.DB_PATH));
+        if (dir === path.resolve(__dirname) || dir.startsWith(path.resolve(__dirname) + path.sep)) return null; // banco dentro do código: não é Volume
+        const alvo = path.join(dir, 'uploads');
+        fs.mkdirSync(alvo, { recursive: true }); fs.accessSync(alvo, fs.constants.W_OK);
+        return alvo;
+    } catch (e) { return null; }
+})();
+const PASTA_UPLOADS = process.env.UPLOADS_PATH || PASTA_UPLOADS_AUTO || PASTA_UPLOADS_CODIGO;
+const UPLOADS_PERSISTENTES = !!(process.env.UPLOADS_PATH || PASTA_UPLOADS_AUTO);
 if (!fs.existsSync(PASTA_UPLOADS)) fs.mkdirSync(PASTA_UPLOADS, { recursive: true });
-console.log(`📁 Uploads salvos em: ${PASTA_UPLOADS}${process.env.UPLOADS_PATH ? ' (persistente, via UPLOADS_PATH)' : ' (⚠️ dentro da pasta do código — configure UPLOADS_PATH com um Volume para não perder arquivos a cada deploy)'}`);
+console.log(`📁 Uploads salvos em: ${PASTA_UPLOADS}${process.env.UPLOADS_PATH ? ' (persistente, via UPLOADS_PATH)' : PASTA_UPLOADS_AUTO ? ' (persistente, ao lado do banco no Volume)' : ' (⚠️ dentro da pasta do código — configure UPLOADS_PATH com um Volume para não perder arquivos a cada deploy)'}`);
 
 const armazenamentoUpload = multer.diskStorage({
     destination: (req, file, cb) => cb(null, PASTA_UPLOADS),
@@ -1994,7 +2008,7 @@ db.run(`CREATE TABLE IF NOT EXISTS arquivos_persistidos (nome TEXT PRIMARY KEY, 
 function copiarUploadParaBanco(f) {
     try {
         if (!f || !f.filename || !f.path || !(f.size <= LIMITE_COPIA_UPLOAD)) return;
-        if (process.env.UPLOADS_PATH) return; // disco persistente: não precisa duplicar no banco (economiza memória e espaço)
+        if (UPLOADS_PERSISTENTES) return; // disco persistente: não precisa duplicar no banco (economiza memória e espaço)
         if (/^(video|audio)\//.test(f.mimetype || '') || /\.(mp4|webm|mov|m4v|mkv|mp3|wav|m4a|aac|ogg|part)$/i.test(f.filename)) return; // vídeo/áudio não vão para o banco
         fs.readFile(f.path, (err, dados) => {
             if (err) return;
@@ -2040,7 +2054,7 @@ app.get('/uploads/:nome', async (req, res, next) => {
 // Ao subir o servidor, guarda no banco (um por vez, sem pesar a memória) os arquivos pequenos que ainda não têm cópia.
 // Com disco persistente (UPLOADS_PATH) isso não é necessário e fica desligado.
 setTimeout(() => {
-    if (process.env.UPLOADS_PATH) return;
+    if (UPLOADS_PERSISTENTES) return;
     try {
         fs.readdir(PASTA_UPLOADS, (err, nomes) => {
             if (err) return;
@@ -2061,7 +2075,7 @@ setTimeout(() => {
 }, 15000);
 
 // Verificação de saúde (usada pelo servidor próprio / Docker para reiniciar sozinho se travar).
-app.get('/saude', (req, res) => res.json({ ok: true, versao: '2026-10-24 estudio-pro', ffmpeg: FFMPEG_OK, memoriaMB: Math.round(process.memoryUsage().rss / 1048576), noArDesde: Math.round(process.uptime()) }));
+app.get('/saude', (req, res) => res.json({ ok: true, versao: '2026-10-24 uploads-volume', ffmpeg: FFMPEG_OK, uploadsPersistentes: UPLOADS_PERSISTENTES, memoriaMB: Math.round(process.memoryUsage().rss / 1048576), noArDesde: Math.round(process.uptime()) }));
 app.use(authenticateToken);
 
 // Neutraliza CSV Injection: se o valor começa com =, +, - ou @, o Excel/Sheets
@@ -12806,6 +12820,7 @@ app.get('/api/ranking', async (req, res) => {
 // código, se UPLOADS_PATH estiver definido) — tem que vir ANTES do estático
 // genérico de /public pra funcionar mesmo quando os dois caminhos são diferentes.
 app.use('/uploads', express.static(PASTA_UPLOADS));
+if (PASTA_UPLOADS !== PASTA_UPLOADS_CODIGO) app.use('/uploads', express.static(PASTA_UPLOADS_CODIGO)); // arquivos antigos que ainda estejam na pasta do código
 app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res, arq) => { if (/\.html$/.test(arq)) res.setHeader('Cache-Control', 'no-cache, must-revalidate'); } }));
 // Acesso só ao Estúdio de Vídeo (celular): mesmo sistema, abre direto nas abas de criar/editar vídeo.
 // Pode ser instalado na tela inicial do celular (PWA) e sincroniza com o computador pelo servidor.

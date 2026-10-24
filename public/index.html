@@ -21272,6 +21272,7 @@ function evElemento(c, chave) {
     evRegistrarSom(el, k);
     el.addEventListener('error', () => { // o navegador não abriu o arquivo do aparelho: usa o do servidor (convertido)
       if (ES && ES.locais && ES.locais[m.id] === src) { delete ES.locais[m.id]; if (m.enviando || m.preparando) m.convertendo = true; if (ES.els[k] === el) delete ES.els[k]; evDesenhar(); }
+      else if (ES && !/^blob:/.test(src)) evVerificarArquivos(); // arquivo do servidor não abriu: confere se ele ainda existe
     });
   }
   el.__url = src; ES.els[k] = el; return el;
@@ -21386,6 +21387,11 @@ function evDesenharMidia(ctx, c, el, prog, alpha, dx, escalaExtra, R, forma) {
       const k = ES.W / 1080; ctx.fillStyle = '#0b1329'; ctx.fillRect(R.x, R.y, R.w, R.h); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = `700 ${Math.round(44 * k)}px Montserrat, Arial`; ctx.fillText('⚙️ Preparando o vídeo…', R.x + R.w / 2, R.y + R.h / 2 - 30 * k);
       ctx.font = `400 ${Math.round(30 * k)}px Montserrat, Arial`; ctx.fillStyle = '#cbd5e1'; ctx.fillText(m.enviando ? `Subindo ${Math.round((m.__prog || 0) * 100)}%` : 'Convertendo para edição', R.x + R.w / 2, R.y + R.h / 2 + 30 * k);
+    } else if (m.faltando) { // arquivo apagado do servidor: avisa no lugar da tela preta
+      const k = ES.W / 1080; ctx.fillStyle = '#2a0f14'; ctx.fillRect(R.x, R.y, R.w, R.h); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `700 ${Math.round(46 * k)}px Montserrat, Arial`; ctx.fillText('⚠️ Arquivo não encontrado', R.x + R.w / 2, R.y + R.h / 2 - 50 * k);
+      ctx.font = `400 ${Math.round(30 * k)}px Montserrat, Arial`; ctx.fillStyle = '#fecaca'; ctx.fillText(String(m.nome || 'vídeo').slice(0, 34), R.x + R.w / 2, R.y + R.h / 2 + 5 * k);
+      ctx.fillStyle = '#cbd5e1'; ctx.fillText('Toque no vídeo para reenviar', R.x + R.w / 2, R.y + R.h / 2 + 55 * k);
     }
     ctx.restore(); return;
   }
@@ -21931,7 +21937,7 @@ async function evReenviarMidia(id, files) {
   try {
     ES.locais = ES.locais || {}; ES.locais[id] = URL.createObjectURL(f);
     const r = await evEnviarArquivo(f, p => { if (st) st.textContent = 'Enviando… ' + Math.round(p * 100) + '%'; });
-    m.url = r.url; if (f.name) m.nome = m.nome || f.name;
+    m.url = r.url; delete m.faltando; if (f.name) m.nome = m.nome || f.name;
     Object.keys(ES.els || {}).forEach(k => { if (ES.els[k] && ES.els[k].__url && !ES.els[k].fundo) { const e = ES.els[k]; if (e.pause) e.pause(); delete ES.els[k]; } });
     ES.aud = {}; ES.chavesSig = null;
     evMudou(); await evSalvar(true).catch(() => {});
@@ -22104,8 +22110,40 @@ async function evAbrirEditor(id) {
   ES.sync = setInterval(evSincronizarAparelhos, 8000);
   if (!d.clips.length && !d.textos.length) setTimeout(() => evDica('Comece subindo seus vídeos e fotos em 🎞️ Mídia — ou peça ao 🤖 Agente IA para montar a edição.'), 400);
   setTimeout(() => evPreCarregarMidias(), 1500);
+  setTimeout(() => evVerificarArquivos(), 900);
 }
 // ---------- Edição fluida: baixa os vídeos/áudios do projeto para a memória do aparelho (a prévia e a exportação não travam esperando a internet) ----------
+// Confere no servidor se os vídeos/áudios do projeto ainda existem (um deploy sem disco permanente apaga os arquivos).
+// Se faltar algum, mostra no lugar e abre a janela de reenviar — em vez de deixar a tela preta.
+function evQualClipNoTempo(t, falt) {
+  const d = ES.p.dados, ini = evInicios(), ids = new Set(falt.map(m => m.id));
+  for (let k = 0; k < d.clips.length; k++) if (t >= ini[k] && t < ini[k] + evClipDur(d.clips[k])) return ids.has(d.clips[k].midia);
+  return false;
+}
+async function evArquivoExiste(url) {
+  try {
+    const r = await fetch(url, { method: 'HEAD', cache: 'no-store', redirect: 'follow' });
+    if (r.status === 404 || r.status === 401 || r.status === 403 || r.status === 410) return false;
+    if (!r.ok) return null; // erro passageiro do servidor: não dá para afirmar
+    const tipo = r.headers.get('content-type') || '';
+    if (/text\/html|application\/json/.test(tipo)) return false;
+    const tam = r.headers.get('content-length'); if (tam !== null && Number(tam) === 0) return false;
+    return true;
+  } catch (e) { return null; }
+}
+async function evVerificarArquivos(mostrar = true) {
+  if (!ES || ES.__verificando) return; ES.__verificando = true; const pid = ES.p.id;
+  try {
+    const d = ES.p.dados, usados = new Set([...d.clips.map(c => c.midia), ...(d.sobreposicoes || []).map(o => o.midia), ...d.audios.map(a => a.midia)]);
+    const lista = d.midias.filter(m => usados.has(m.id) && m.tipo !== 'fundo' && m.url && !/^(blob:|data:)/.test(m.url) && !m.enviando && !m.preparando && !(ES.locais || {})[m.id]);
+    const faltando = [];
+    await Promise.all(lista.map(async m => { const ok = await evArquivoExiste(m.url); if (ok === false) { m.faltando = true; faltando.push(m); } else if (ok) delete m.faltando; }));
+    if (!ES || ES.p.id !== pid) return;
+    evDesenhar();
+    if (faltando.length && mostrar && !document.querySelector('#ev-modal .ev-modal')) evMostrarFaltando(faltando);
+    if (faltando.length && !ES.__avisoVolume) { ES.__avisoVolume = true; fetch('/saude').then(r => r.json()).then(j => { if (j && j.uploadsPersistentes === false) mostrarToast('⚠️ O servidor ainda não guarda os vídeos num disco permanente: cada atualização apaga as gravações. Peça para configurar UPLOADS_PATH no Railway.', true); }).catch(() => {}); }
+  } finally { if (ES) ES.__verificando = false; }
+}
 async function evPreCarregarMidias() {
   if (!ES || ES.__precarga) return; ES.__precarga = true;
   const pid = ES.p.id, cel = evCelularAqui(); let orc = (cel ? 250 : 900) * 1048576; const maxArq = (cel ? 150 : 450) * 1048576;
@@ -22238,6 +22276,7 @@ function evLigarCanvas() {
   const pos = e => { const b = cv.getBoundingClientRect(); return { x: (e.clientX - b.left) * ES.W / b.width, y: (e.clientY - b.top) * ES.H / b.height }; };
   cv.addEventListener('pointerdown', e => {
     const p = pos(e);
+    { const falt = ES.p.dados.midias.filter(m => m.faltando); if (falt.length && evQualClipNoTempo(ES.t, falt)) { evMostrarFaltando(falt); return; } }
     const ovl = (ES.p.dados.sobreposicoes || []).filter(o => ['pip', 'circulo'].includes(o.layout) && ES.t >= o.ini && ES.t < o.ini + o.dur).reverse().find(o => { const r = evRetSobreposicao(o); return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h; });
     if (ovl && !Object.values(ES.caixas).some(b => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h)) {
       evSelecionar('ovl', ovl.id); const r = evRetSobreposicao(ovl);
