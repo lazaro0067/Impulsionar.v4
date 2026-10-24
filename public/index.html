@@ -1555,6 +1555,7 @@
   .evc-partes > div { display:flex; flex-direction:column; align-items:center; gap:2px; min-width:120px; } .evc-partes b { font-size:14px; } .evc-partes small { font-size:11px; opacity:.85; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .evc-partes span { display:flex; gap:4px; flex-wrap:wrap; justify-content:center; } .evc-partes i { width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,.3); } .evc-partes i.ok { background:#22c55e; } .evc-partes i.at { background:#facc15; }
   .evc-partes button { border:none; background:rgba(255,255,255,.15); color:#fff; width:34px; height:34px; border-radius:50%; font-size:20px; cursor:pointer; } .evc-partes button:disabled { opacity:.3; } .evc-ic.on { background:#4f46e5 !important; }
+  .ev-versao { display:flex; gap:8px; align-items:center; justify-content:space-between; border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:6px 8px; margin:5px 0; } .ev-versao b { display:block; font-size:12.5px; } .ev-versao small { opacity:.7; font-size:11px; }
   .evc-fundos { overflow:auto; } .evc-fundos-grade { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; margin:6px 0 10px; } .evc-fundos-grade button, .evc-fundos-grade label { display:flex; flex-direction:column; align-items:center; gap:2px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:#fff; border-radius:10px; padding:8px 4px; font-size:12px; font-weight:700; cursor:pointer; text-align:center; } .evc-fundos-grade span { font-size:20px; } .evc-fundos-grade .on { background:#4f46e5; border-color:#818cf8; }
   /* ---------- Instagram: Insights & Treino ---------- */
   .ig-sec { background:#fff !important; color:#8134af !important; border:2px solid #8134af !important; }
@@ -22449,7 +22450,7 @@ function evPorCenasReais(d, cenas, cfg) {
   return ok;
 }
 async function evGerarCenasReais() {
-  const cfg = ES.reais, d = ES.p.dados;
+  const cfg = ES.reais, d = ES.p.dados; evSalvarVersao('Antes das cenas reais', true);
   if (!d.clips.some(c => (evMidia(c.midia) || {}).tipo === 'video')) return mostrarToast('Coloque na linha do tempo o vídeo em que você fala.', true);
   document.getElementById('ev-modal').innerHTML = ''; evPausar();
   if (!(await evTranscricaoConfigurada())) return evPedirTranscricao(() => evGerarCenasReais());
@@ -23336,6 +23337,7 @@ function evDesenharProps() {
       ${evCampo('Legenda do post', `<textarea rows="6" placeholder="Primeira linha = gancho…" onchange="ES.p.legenda=this.value; evMudou(false)">${escapeHtml(ES.p.legenda || '')}</textarea>`)}
       ${evCampo('Hashtags (3 a 5)', `<input value="${escapeHtml(ES.p.hashtags || '')}" placeholder="#lideranca #gestao" onchange="ES.p.hashtags=this.value; evMudou(false)">`)}
       <div class="ev-linha-btn"><button class="ev-btn ia" onclick="evIaLegenda()">🤖 Legenda + hashtags</button></div>
+      ${evHtmlVersoes()}
       <div class="ev-sub" style="margin-top:14px;">Selecione um clipe, texto ou áudio na linha do tempo para editar.<br><br><b>Atalhos:</b> espaço = play · S = dividir · Delete = excluir · Ctrl+Z = desfazer · Ctrl+D = duplicar · setas = quadro a quadro.</div>`;
     return;
   }
@@ -24527,6 +24529,7 @@ async function evEdicaoCompleta() {
   if (!m) { // só fotos: montagem por ritmo
     return evIaEditar();
   }
+  evSalvarVersao('Antes da edição com IA', true);
   const antes = JSON.stringify(d);
   try {
     evCarregando('🎧 Analisando o áudio do vídeo...');
@@ -25136,11 +25139,12 @@ async function evAbrirEdicaoCompleta() {
   if (!d.midias.some(m => m.tipo !== 'audio')) return mostrarToast('Suba seus vídeos e fotos em 🎞️ Mídia primeiro.', true);
   let tr = false, ia = false; tr = await evTranscricaoConfigurada(); ia = ES.p.iaAtiva !== undefined ? !!ES.p.iaAtiva : false; if (!ia && ESTADO.usuario.role === 'admin') { try { ia = !!(await api('/api/admin/treinamentos-mt-config')).iaAtiva; } catch (e) {} }
   const principal = videos.slice().sort((a, b) => (b.duracao || 0) - (a.duracao || 0))[0];
+  const naLinha = [...new Set(d.clips.map(c => c.midia))].map(evMidia).filter(m => m && m.tipo === 'video'), seqDur = d.clips.filter(c => (evMidia(c.midia) || {}).tipo === 'video').reduce((s, c) => s + evClipDur(c), 0);
   const op = (id, t, s, ok, marcado) => `<label class="ev-check2 ${ok ? '' : 'desl'}"><input type="checkbox" id="${id}" ${marcado && ok ? 'checked' : ''} ${ok ? '' : 'disabled'}><div><b>${t}</b><small>${s}</small></div></label>`;
   document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal grande">
     <div class="ev-modal-cab"><h3>✨ Editar com IA para viralizar</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
     <div class="ev-sub" style="margin-top:0;">A IA ajusta o vídeo inteiro como um editor de Reels profissional — <b>sem cortar nada</b>, a não ser que você marque os cortes lá embaixo.</div>
-    ${videos.length ? `<label class="ev-campo"><span>Vídeo principal (quem fala)</span><select id="ec-principal">${videos.map(v => `<option value="${v.id}" ${v.id === principal.id ? 'selected' : ''}>${escapeHtml(v.nome)} · ${evFmtT(v.duracao)}</option>`).join('')}</select></label>` : ''}
+    ${videos.length ? `<label class="ev-campo"><span>Vídeo principal (quem fala)</span><select id="ec-principal">${naLinha.length > 1 ? `<option value="__seq" selected>🧩 Todas as partes em sequência (${naLinha.length} vídeos · ${evFmtT(seqDur).slice(0, 5)})</option>` : ''}${videos.map(v => `<option value="${v.id}" ${v.id === principal.id && naLinha.length <= 1 ? 'selected' : ''}>${escapeHtml(v.nome)} · ${evFmtT(v.duracao)}</option>`).join('')}</select></label>` : ''}
     <div class="ev-checks">
       ${op('ec-legendas', '💬 Legendas automáticas da fala', tr ? 'Escreve exatamente o que você fala, no tempo certo, com palavra-chave em destaque.' : 'Clique em "Conectar legendas" abaixo (uma vez só).', tr, true)}
       ${op('ec-zoom', '🔍 Zooms estratégicos', 'Aproxima nos momentos de ênfase e frases de impacto (sem cortar).', true, true)}
@@ -25164,23 +25168,68 @@ async function evAbrirEdicaoCompleta() {
   </div></div>`;
   ['ec-silencio', 'ec-trechos'].forEach(id => { const e = document.getElementById(id); if (e) e.addEventListener('change', () => { document.getElementById('ec-max-box').style.display = (document.getElementById('ec-silencio').checked || (document.getElementById('ec-trechos') || {}).checked) ? '' : 'none'; }); });
 }
+// ---------- Versões salvas: antes de cada edição grande da IA guarda uma cópia (dá para voltar a qualquer momento) ----------
+const EV_PESADOS = ['transcricao', 'rostos', 'tremor', 'grade', '__audio'];
+function evSalvarVersao(nome, silencioso) {
+  if (!ES) return; const d = ES.p.dados;
+  const copia = JSON.parse(JSON.stringify(Object.assign({}, d, { versoes: undefined })));
+  (copia.midias || []).forEach(m => EV_PESADOS.forEach(k => delete m[k])); // os dados pesados continuam na versão atual
+  d.versoes = (d.versoes || []).slice(-5); d.versoes.push({ id: evUid(), nome: String(nome || 'Versão salva').slice(0, 60), em: new Date().toISOString(), legenda: ES.p.legenda || '', hashtags: ES.p.hashtags || '', dados: copia });
+  evMudou(false); evSalvar(true).catch(() => {});
+  if (!silencioso) { mostrarToast('💾 Versão salva. Para voltar: Projeto › Versões salvas.'); evDesenharProps(); }
+}
+function evRestaurarVersao(id) {
+  const d = ES.p.dados, v = (d.versoes || []).find(x => x.id === id); if (!v) return;
+  if (!confirm(`Voltar para a versão "${v.nome}" (${new Date(v.em).toLocaleString('pt-BR')})? A versão de agora fica guardada também.`)) return;
+  evSalvarVersao('Antes de voltar para "' + v.nome + '"', true);
+  const atuais = Object.fromEntries((d.midias || []).map(m => [m.id, m]));
+  const nova = JSON.parse(JSON.stringify(v.dados)); nova.versoes = d.versoes;
+  (nova.midias || []).forEach(m => { const a = atuais[m.id]; if (a) EV_PESADOS.forEach(k => { if (a[k] !== undefined && m[k] === undefined) m[k] = a[k]; }); });
+  // mídias que existem agora e não existiam na versão continuam na biblioteca (nada se perde)
+  (d.midias || []).forEach(m => { if (!nova.midias.some(x => x.id === m.id)) nova.midias.push(m); });
+  ES.hist.push(JSON.stringify(d)); ES.p.dados = nova; if (v.legenda) ES.p.legenda = v.legenda; if (v.hashtags) ES.p.hashtags = v.hashtags;
+  ES.sel = null; evMudou(); evIrPara(0); evPainel(ES.painel); evDesenharProps(); mostrarToast('↩ Versão restaurada.');
+}
+function evHtmlVersoes() {
+  const l = (ES.p.dados.versoes || []).slice().reverse();
+  return `<h4>🕘 Versões salvas</h4><button class="ev-btn" style="width:100%;" onclick="evSalvarVersao(prompt('Nome desta versão:', 'Minha versão') || 'Minha versão')">💾 Salvar uma versão agora</button>
+    ${l.length ? l.map(v => `<div class="ev-versao"><div><b>${escapeHtml(v.nome)}</b><small>${new Date(v.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} · ${(v.dados.clips || []).length} clipe(s)</small></div><button class="ev-mini" onclick="evRestaurarVersao('${v.id}')">↩ Voltar</button></div>`).join('') : '<div class="ev-sub">Antes de cada edição com IA o sistema guarda uma versão sozinho.</div>'}`;
+}
 async function evEdicaoViral() {
   const v = id => { const e = document.getElementById(id); return !!(e && e.checked && !e.disabled); };
   const op = { musica: v('ec-musica'), legendas: v('ec-legendas'), zoom: v('ec-zoom'), texto: v('ec-texto'), pesquisa: v('ec-pesquisa'), voz: v('ec-voz'), cor: v('ec-cor'), marca: v('ec-marca'), broll: v('ec-broll'), silencio: v('ec-silencio'), trechos: v('ec-trechos') };
   const max = Number((document.getElementById('ec-max') || {}).value) || 0, pid = (document.getElementById('ec-principal') || {}).value;
   document.getElementById('ev-modal').innerHTML = '';
-  const d = ES.p.dados, m = pid ? evMidia(pid) : null;
+  const d = ES.p.dados, seq = pid === '__seq' ? d.clips.map(c => Object.assign({}, c)) : null;
+  const m = seq ? evMidia((seq.find(c => (evMidia(c.midia) || {}).tipo === 'video') || {}).midia) : pid ? evMidia(pid) : null;
   if (!m) return evIaEditar(); // só fotos: montagem por ritmo
-  const antes = JSON.stringify(d);
+  evSalvarVersao('Antes da edição com IA', true); // se não gostar, é só voltar
+  const antes = JSON.stringify(d), seqMids = new Set(seq ? seq.map(c => c.midia) : [m.id]);
+  const vidsSeq = [...seqMids].map(evMidia).filter(x => x && x.tipo === 'video');
   try {
     // 1) vídeo principal na linha do tempo (inteiro), se ainda não estiver
-    if (!d.clips.some(c => c.midia === m.id)) { d.clips = d.clips.filter(c => (evMidia(c.midia) || {}).tipo !== 'fundo'); d.clips.unshift({ id: evUid(), midia: m.id, ini: 0, fim: m.duracao || 10, vel: 1, vol: 1, zoom: 1, ajuste: m.w > m.h && ES.p.formato === '9:16' ? 'conter' : 'cobrir' }); }
+    if (!seq && !d.clips.some(c => c.midia === m.id)) { d.clips = d.clips.filter(c => (evMidia(c.midia) || {}).tipo !== 'fundo'); d.clips.unshift({ id: evUid(), midia: m.id, ini: 0, fim: m.duracao || 10, vel: 1, vol: 1, zoom: 1, ajuste: m.w > m.h && ES.p.formato === '9:16' ? 'conter' : 'cobrir' }); }
     // 2) transcrição (uma vez por mídia)
     let temFala = false;
-    if (op.legendas || op.trechos) { try { evCarregando('💬 Ouvindo e transcrevendo a fala...'); await evTranscreverMidia(m); temFala = true; } catch (e) { mostrarToast('Legendas: ' + e.message, true); } }
+    if (op.legendas || op.trechos) { try { for (let k = 0; k < vidsSeq.length; k++) { evCarregando(`💬 Ouvindo e transcrevendo a fala${vidsSeq.length > 1 ? ` (parte ${k + 1} de ${vidsSeq.length})` : ''}...`); await evTranscreverMidia(vidsSeq[k]); } temFala = true; } catch (e) { mostrarToast('Legendas: ' + e.message, true); } }
     // 3) cortes — somente se pedidos
     let cortou = 0;
-    if (op.silencio || op.trechos) {
+    if (seq && (op.silencio || op.trechos)) { // várias partes: corta cada uma e junta na ordem
+      evCarregando('✂️ Fazendo os cortes em todas as partes...');
+      let lista = [], idn = 0;
+      for (const c of seq) {
+        const mm = evMidia(c.midia); if (!mm || mm.tipo !== 'video') { lista.push({ id: ++idn, fixo: true, clip: c, dur: evClipDur(c), texto: '' }); continue; }
+        const a = mm.__audio || await evDecodificarAudio(evSrc(mm)); const c0 = c.ini || 0, c1 = c.fim || a.duracao;
+        let segs = op.silencio ? evDetectarFala(a) : [[c0, c1]];
+        if (op.trechos && temFala) { const fr = evFrasesDaFala(mm.transcricao || []); if (fr.length) segs = fr.map(f => [Math.max(0, f.ini - 0.12), Math.min(a.duracao, f.fim + 0.15)]); }
+        segs.map(sg => [Math.max(c0, sg[0]), Math.min(c1, sg[1])]).filter(sg => sg[1] - sg[0] > 0.25).forEach(sg => lista.push({ id: ++idn, midia: mm.id, base: c, ini: sg[0], fim: sg[1], dur: sg[1] - sg[0], texto: (mm.transcricao || []).filter(p => p.ini >= sg[0] - 0.05 && p.fim <= sg[1] + 0.05).map(p => p.w).join(' ') }));
+      }
+      if (op.trechos) { try { const pl = await api('/api/admin/estudio/ia/cortes', { method: 'POST', body: JSON.stringify(Object.assign(evIaBase(), { segmentos: lista.filter(x => !x.fixo).map(x => ({ id: x.id, dur: x.dur, texto: x.texto })), duracaoMax: max || undefined })) }); if (Array.isArray(pl.manter) && pl.manter.length) { const ok = new Set(pl.manter.map(Number)); lista = lista.filter(x => x.fixo || ok.has(x.id)); } } catch (e) { if (!/conectada/.test(e.message)) mostrarToast('IA: ' + e.message, true); } }
+      if (max) { let s2 = 0; lista = lista.filter(x => (s2 += x.dur) <= max + 0.5 || s2 - x.dur < 1); }
+      const totAntes = seq.reduce((s2, c) => s2 + evClipDur(c), 0);
+      d.clips = lista.map(x => x.fixo ? x.clip : { id: evUid(), midia: x.midia, ini: x.ini, fim: x.fim, vel: 1, vol: x.base.vol !== undefined ? x.base.vol : 1, mudo: x.base.mudo, zoom: 1, ajuste: x.base.ajuste || 'cobrir', transicao: 'corte' });
+      cortou = totAntes - lista.reduce((s2, x) => s2 + x.dur, 0);
+    } else if (op.silencio || op.trechos) {
       evCarregando('✂️ Fazendo os cortes que você pediu...');
       const a = m.__audio || await evDecodificarAudio(evSrc(m));
       let segs = op.silencio ? evDetectarFala(a) : [[0, a.duracao]];
@@ -25235,7 +25284,7 @@ async function evEdicaoViral() {
     }
     // 8) cobertura, voz, marca e cor
     d.sobreposicoes = (d.sobreposicoes || []).filter(o => !o.auto);
-    if (op.broll) { const outras = d.midias.filter(x => x.id !== m.id && (x.tipo === 'video' || x.tipo === 'imagem')); let k = 0; for (let tt = 6; tt < tot - 4 && k < outras.length * 2; tt += 8, k++) d.sobreposicoes.push({ id: evUid(), midia: outras[k % outras.length].id, ini: tt, dur: 2, corte: 0, vel: 1, vol: 0, layout: 'cheio', ajuste: 'cobrir', zoom: 1.08, auto: true }); }
+    if (op.broll) { const outras = d.midias.filter(x => !seqMids.has(x.id) && !x.parte && (x.tipo === 'video' || x.tipo === 'imagem')); let k = 0; for (let tt = 6; tt < tot - 4 && k < outras.length * 2; tt += 8, k++) d.sobreposicoes.push({ id: evUid(), midia: outras[k % outras.length].id, ini: tt, dur: 2, corte: 0, vel: 1, vol: 0, layout: 'cheio', ajuste: 'cobrir', zoom: 1.08, auto: true }); }
     d.extras = d.extras || {}; if (op.voz) { d.extras.vozLimpa = true; evAtualizarVozLimpa(); }
     if (op.marca) { evAplicarKit(await evCarregarKit(), true); } else if (d.extras.encerramento) d.extras.encerramento.ativo = false;
     if (op.cor) { if (EV_FILTROS[plano.filtro]) d.filtro = plano.filtro; d.ajustes = { brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 }; evCarregando('🎨 Ajustando luz, cor e enquadramento no rosto...'); await evImagemInteligente({ silencioso: true }); d.filtroForca = 0.45; }
@@ -25245,8 +25294,8 @@ async function evEdicaoViral() {
     if (op.musica && !d.audios.length && plano.musica !== 'nenhuma') { evCarregando('🎵 Escolhendo uma música boa para o fundo…'); await evMusicaBoa(((refEst && refEst.estilo && refEst.estilo.musica) || {}).estilo || plano.musica || 'motivacional'); evCarregando(null); }
     if (ES.painel !== 'ia') evPainel('ia');
     evIaSaida(`<div class="ev-ia-card"><b>✅ Vídeo editado para viralizar</b><p>${[op.legendas ? (pal.length ? 'legendas da fala' : '⚠️ sem legendas (a transcrição não respondeu)') : '', zooms ? zooms + ' zooms estratégicos' : '', op.texto ? 'gancho, frases e CTA' : '', op.voz ? 'voz limpa' : '', op.musica && d.audios.length ? 'música de fundo' : '', cortou > 0.5 ? Math.round(cortou) + ' s cortados' : 'sem cortes'].filter(Boolean).join(' · ')}.</p>${plano.estrategia ? `<p><b>Estratégia:</b> ${escapeHtml(plano.estrategia)}</p>` : ''}${(plano.referencias || []).length ? `<p class="ev-sub">Referências: ${plano.referencias.filter(r => r.url).slice(0, 4).map(r => `<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.titulo || r.url)}</a>`).join(' · ')}</p>` : ''}${plano.local ? '<p class="ev-sub">IA desconectada: usei uma estratégia padrão. Conecte a IA em Agente Viral para frases e zooms sob medida.</p>' : evFeedbackHtml('edição viral')}</div>`);
-    mostrarToast('✅ Vídeo editado! Dê o play para conferir.');
-  } catch (e) { evCarregando(null); mostrarToast('Não consegui editar: ' + e.message, true); }
+    mostrarToast('✅ Vídeo editado! Dê o play para conferir. Não gostou? Projeto › 🕘 Versões salvas › Voltar.');
+  } catch (e) { evCarregando(null); mostrarToast('Não consegui editar: ' + e.message + ' — nada foi perdido (veja Projeto › Versões salvas).', true); }
 }
 
 
