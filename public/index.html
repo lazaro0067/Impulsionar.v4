@@ -1555,6 +1555,7 @@
   .evc-partes > div { display:flex; flex-direction:column; align-items:center; gap:2px; min-width:120px; } .evc-partes b { font-size:14px; } .evc-partes small { font-size:11px; opacity:.85; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .evc-partes span { display:flex; gap:4px; flex-wrap:wrap; justify-content:center; } .evc-partes i { width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,.3); } .evc-partes i.ok { background:#22c55e; } .evc-partes i.at { background:#facc15; }
   .evc-partes button { border:none; background:rgba(255,255,255,.15); color:#fff; width:34px; height:34px; border-radius:50%; font-size:20px; cursor:pointer; } .evc-partes button:disabled { opacity:.3; } .evc-ic.on { background:#4f46e5 !important; }
+  .ev-diag-txt { white-space:pre-wrap; font-size:11px; background:rgba(0,0,0,.35); border-radius:8px; padding:8px; max-height:200px; overflow:auto; }
   .ev-versao { display:flex; gap:8px; align-items:center; justify-content:space-between; border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:6px 8px; margin:5px 0; } .ev-versao b { display:block; font-size:12.5px; } .ev-versao small { opacity:.7; font-size:11px; }
   .evc-fundos { overflow:auto; } .evc-fundos-grade { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; margin:6px 0 10px; } .evc-fundos-grade button, .evc-fundos-grade label { display:flex; flex-direction:column; align-items:center; gap:2px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:#fff; border-radius:10px; padding:8px 4px; font-size:12px; font-weight:700; cursor:pointer; text-align:center; } .evc-fundos-grade span { font-size:20px; } .evc-fundos-grade .on { background:#4f46e5; border-color:#818cf8; }
   /* ---------- Instagram: Insights & Treino ---------- */
@@ -21394,9 +21395,9 @@ function evDesenharMidia(ctx, c, el, prog, alpha, dx, escalaExtra, R, forma) {
   let fonte = el, semGrade = false;
   if (ES.leveAgora) {
     // modo leve (celular tocando): o filtro vai no elemento da tela (placa de vídeo), não em cada quadro
-    if (!ES.filtroTela) ES.filtroTela = (ES.p.dados.corAuto && m.grade && c.corAuto !== false ? evGradeAprox(m.grade, ES.p.dados.corIntensidade) + ' ' : '') + evFiltroCss(c, true).replace(/^none$/, '');
+    if (!ES.filtroTela) ES.filtroTela = (ES.p.dados.corAuto && m.grade && c.corAuto !== false && evGradeValida(m.grade) ? evGradeAprox(m.grade, ES.p.dados.corIntensidade) + ' ' : '') + evFiltroCss(c, true).replace(/^none$/, '');
     semGrade = true; ctx.filter = 'none';
-  } else if (ES.p.dados.corAuto && m.grade && c.corAuto !== false && !EVGL.lento) {
+  } else if (ES.p.dados.corAuto && m.grade && c.corAuto !== false && !EVGL.lento && evGradeValida(m.grade)) {
     const t0 = performance.now(), gc = evGLGrade(el, mw, mh, m.grade, ES.p.dados.corIntensidade);
     if (gc) { fonte = gc; semGrade = true; const dt = performance.now() - t0; EVGL.n = (EVGL.n || 0) + 1; EVGL.soma = (EVGL.soma || 0) + dt; if (EVGL.n >= 15 && EVGL.soma / EVGL.n > 30) EVGL.lento = true; } // computador sem aceleração: usa o filtro mais leve
   }
@@ -21424,6 +21425,7 @@ function evDesenharMidia(ctx, c, el, prog, alpha, dx, escalaExtra, R, forma) {
     const s = cobrir * z2, fx = Math.max(0, (mw * s - R.w) / 2), fy = Math.max(0, (mh * s - R.h) / 2);
     cx += Math.max(-fx, Math.min(fx, tr.x * mw * s)); cy += Math.max(-fy, Math.min(fy, tr.y * mh * s));
   }
+  if (!isFinite(cx) || !isFinite(cy) || !(z2 > 0) || !isFinite(z2)) { cx = R.x + R.w / 2; cy = R.y + R.h / 2; z2 = zoom || 1; } // valores estragados (análise falhou): desenha o vídeo normal em vez de nada
   if (c.espelhar) { ctx.translate(2 * (R.x + R.w / 2), 0); ctx.scale(-1, 1); }
   if (c.ajuste === 'conter') {
     // fundo desfocado (padrão profissional para vídeos horizontais em 9:16)
@@ -21680,6 +21682,26 @@ function evQuadroAindaCarregando(t) {
   const el = (ES.els || {})[evChaveClip(d.clips[i])]; return !!(el && el.readyState < 2 && !el.error);
 }
 // tela preta / vídeo travado: recria todos os players e volta a usar os arquivos do servidor
+function evDiagnostico() {
+  const d = ES.p.dados, ini = evInicios(), linhas = [];
+  [...new Set(d.clips.map(c => c.midia))].map(evMidia).filter(Boolean).forEach(m => {
+    const c = d.clips.find(x => x.midia === m.id), el = (ES.els || {})[evChaveClip(c)] || null;
+    linhas.push({ nome: m.nome || m.id, tipo: m.tipo, origem: (ES.locais || {})[m.id] ? 'cópia no aparelho' : 'servidor', url: String(m.url || '').slice(0, 60), estado: el ? `pronto=${el.readyState} imagem=${el.videoWidth || 0}x${el.videoHeight || 0}${el.error ? ' ERRO ' + el.error.code : ''}` : 'sem player', cor: m.grade ? (evGradeValida(m.grade) ? 'ok' : 'INVÁLIDA') : '—', tremor: m.tremor ? 'zoom ' + m.tremorZoom : '—' });
+  });
+  const txt = `Projeto ${ES.p.id} · ${d.clips.length} clipes · corAuto=${!!d.corAuto} estabilizar=${!!d.estabilizar} rosto=${!!d.enquadrarRosto} filtro=${d.filtro} leve=${!!ES.leve} gpu=${EVGL.lento ? 'desligada' : 'ligada'}\n` + linhas.map(l => `${l.nome} [${l.tipo}] ${l.origem} · ${l.estado} · cor ${l.cor} · tremor ${l.tremor} · ${l.url}`).join('\n');
+  const tg = (rot, k, val) => `<label class="ev-chk2"><input type="checkbox" ${val ? 'checked' : ''} onchange="${k}; evDesenhar(); evDiagnostico()"><span>${rot}</span></label>`;
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal">
+    <div class="ev-modal-cab"><h3>🩺 Diagnóstico da prévia</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <div class="ev-sub">Desligue um de cada vez para achar o que deixa a tela preta:</div>
+    ${tg('🎨 Correção de luz e cor', 'ES.p.dados.corAuto=this.checked; evMudou(false)', d.corAuto)}
+    ${tg('🖥️ Cor pela placa de vídeo (GPU)', 'EVGL.lento=!this.checked', !EVGL.lento)}
+    ${tg('📳 Estabilizar', 'ES.p.dados.estabilizar=this.checked; evMudou(false)', d.estabilizar)}
+    ${tg('🎯 Seguir o rosto', 'ES.p.dados.enquadrarRosto=this.checked; evMudou(false)', d.enquadrarRosto)}
+    ${tg('⚡ Prévia leve', 'ES.leve=this.checked; ES.canvas.style.filter=\'none\'', ES.leve)}
+    <button class="ev-btn" onclick="ES.p.dados.filtro='nenhum'; evMudou(false); evDesenhar(); evDiagnostico()">Tirar o filtro de estilo (agora: ${escapeHtml(d.filtro || 'nenhum')})</button>
+    <pre class="ev-diag-txt">${escapeHtml(txt)}</pre>
+    <button class="ev-btn primario" onclick="navigator.clipboard.writeText(${escapeHtml(JSON.stringify(txt))}).then(()=>mostrarToast('Diagnóstico copiado — cole na conversa.'))">📋 Copiar diagnóstico</button></div></div>`;
+}
 function evRecarregarMidias() {
   evPausar(); Object.values(ES.els || {}).forEach(el => { try { el.pause && el.pause(); el.removeAttribute && el.removeAttribute('src'); el.load && el.load(); } catch (e) {} });
   ES.els = {}; ES.aud = {}; ES.sons = {}; ES.locais = {}; ES.locaisPend = null; ES.__precarga = false; ES.chavesSig = null; EVGL.lento = false;
@@ -23444,7 +23466,7 @@ function evDesenharProps() {
       ${evCampo('Legenda do post', `<textarea rows="6" placeholder="Primeira linha = gancho…" onchange="ES.p.legenda=this.value; evMudou(false)">${escapeHtml(ES.p.legenda || '')}</textarea>`)}
       ${evCampo('Hashtags (3 a 5)', `<input value="${escapeHtml(ES.p.hashtags || '')}" placeholder="#lideranca #gestao" onchange="ES.p.hashtags=this.value; evMudou(false)">`)}
       <div class="ev-linha-btn"><button class="ev-btn ia" onclick="evIaLegenda()">🤖 Legenda + hashtags</button></div>
-      <button class="ev-btn" style="width:100%;margin-top:6px;" onclick="evRecarregarMidias()">🔄 Recarregar vídeos (tela preta ou travando)</button>
+      <div class="ev-linha-btn"><button class="ev-btn" onclick="evRecarregarMidias()">🔄 Recarregar vídeos</button><button class="ev-btn" onclick="evDiagnostico()">🩺 Tela preta?</button></div>
       ${evHtmlVersoes()}
       <div class="ev-sub" style="margin-top:14px;">Selecione um clipe, texto ou áudio na linha do tempo para editar.<br><br><b>Atalhos:</b> espaço = play · S = dividir · Delete = excluir · Ctrl+Z = desfazer · Ctrl+D = duplicar · setas = quadro a quadro.</div>`;
     return;
@@ -24055,6 +24077,7 @@ function evCalcularGrade(analises, larguraFonte) {
   if (temPele) satF = Math.min(satF, 1.12);
   if (temPele && peleS > 0.42) satF = Math.min(satF, 0.92); else if (temPele && peleS > 0.34) satF = Math.min(satF, 1.02);
   const nitidez = larguraFonte && larguraFonte < 900 ? 0.32 : 0.16;
+  if (!(n > 0)) return null;
   return { v: 2, preto: +preto.toFixed(3), branco: +branco.toFixed(3), gama: +gama.toFixed(3), ombro, curvaS, wb: wb.map(x => +x.toFixed(3)), sat: +satF.toFixed(3), nitidez,
     diag: { luz: +p50.toFixed(2), pele: peleY && +peleY.toFixed(2), estourado: +(est * 100).toFixed(1), sat: +sat.toFixed(2) } };
 }
@@ -24118,6 +24141,21 @@ function evGradeAprox(g, it) {
   const meio = evCurvaGrade(g, 0.5), br = mix(1, Math.max(0.75, Math.min(1.35, meio / 0.5))), ct = mix(1, 1 + (g.curvaS || 0) * 1.6 + ((g.branco - g.preto) < 0.9 ? 0.06 : 0)), sat = mix(1, g.sat || 1);
   return `brightness(${br.toFixed(3)}) contrast(${ct.toFixed(3)}) saturate(${sat.toFixed(3)})`;
 }
+function evGradeValida(g) {
+  if (!g || typeof g !== 'object') return false; const n = v => typeof v === 'number' && isFinite(v);
+  return n(g.preto) && n(g.branco) && g.branco - g.preto > 0.2 && n(g.gama) && g.gama > 0.3 && g.gama < 3 && n(g.sat) && Array.isArray(g.wb) && g.wb.every(n);
+}
+// confere de vez em quando se a cor pela placa de vídeo está saindo certa (se sair preta, desliga e usa o caminho simples)
+function evGLConferir(el, gl) {
+  EVGL.nConf = (EVGL.nConf || 0) + 1; if (EVGL.nConf % 30 !== 1) return true;
+  try {
+    const px = new Uint8Array(4); gl.readPixels(Math.floor(EVGL.cv.width / 2), Math.floor(EVGL.cv.height / 2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    const t = EVGL.teste || (EVGL.teste = Object.assign(document.createElement('canvas'), { width: 4, height: 4 })), g2 = t.getContext('2d', { willReadFrequently: true });
+    g2.drawImage(el, 0, 0, 4, 4); const r = g2.getImageData(1, 1, 2, 2).data; const bruto = (r[0] + r[1] + r[2] + r[4] + r[5] + r[6]) / 6, saida = (px[0] + px[1] + px[2]) / 3;
+    if (bruto > 25 && saida < 4) { EVGL.lento = true; console.warn('Cor pela GPU saiu preta — usando o caminho simples.'); return false; }
+  } catch (e) {}
+  return true;
+}
 function evGLGrade(el, mw, mh, g, intensidade) {
   const gl = evGLIniciar(); if (!gl || !g) return null;
   if (gl.isContextLost && gl.isContextLost()) { EVGL.lento = true; return null; }
@@ -24135,6 +24173,7 @@ function evGLGrade(el, mw, mh, g, intensidade) {
   catch (e) { return null; }
   gl.uniform3f(EVGL.u.wb, mix(1, g.wb[0]), mix(1, g.wb[1]), mix(1, g.wb[2])); gl.uniform1f(EVGL.u.sat, mix(1, g.sat)); gl.uniform1f(EVGL.u.nit, (g.nitidez || 0) * Math.min(1, it)); gl.uniform2f(EVGL.u.px, 1 / mw, 1 / mh);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  if (!evGLConferir(el, gl)) return null;
   return EVGL.cv;
 }
 // Lê quadros espalhados pela mídia (sem atrapalhar a prévia), analisa cor e procura o rosto.
