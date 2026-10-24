@@ -1551,6 +1551,7 @@
   .ch-atual { font-size:12.5px; color:#475569; margin:8px 0 0; } .ch-card details { font-size:13px; margin:8px 0; } .ch-card summary { cursor:pointer; color:#2563eb; font-weight:600; } .ch-card ol { margin:6px 0; padding-left:20px; } .ch-card code { background:#f1f5f9; border-radius:6px; padding:1px 5px; font-size:12px; word-break:break-all; }
   .ch-linha { display:flex; gap:6px; flex-wrap:wrap; } .ch-linha input { flex:1; min-width:160px; margin:0; }
   @media (max-width: 700px) { .ch-grade { grid-template-columns:1fr; } }
+  .evc-fundos { overflow:auto; } .evc-fundos-grade { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; margin:6px 0 10px; } .evc-fundos-grade button, .evc-fundos-grade label { display:flex; flex-direction:column; align-items:center; gap:2px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:#fff; border-radius:10px; padding:8px 4px; font-size:12px; font-weight:700; cursor:pointer; text-align:center; } .evc-fundos-grade span { font-size:20px; } .evc-fundos-grade .on { background:#4f46e5; border-color:#818cf8; }
   /* ---------- Instagram: Insights & Treino ---------- */
   .ig-sec { background:#fff !important; color:#8134af !important; border:2px solid #8134af !important; }
   .ig-ins-cab { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:16px 2px 8px; } .ig-ins-cab span { color:#64748b; font-size:12.5px; }
@@ -22848,6 +22849,7 @@ async function evAbrirCamera() {
       <div class="evc-modos" id="ev-cam-modos">${EVCAM.div ? `<span class="evc-div-rot">🎙️ Tela dividida${EVCAM.divEl && EVCAM.divEl.tagName === 'VIDEO' ? ` · <button onclick="EVCAM.divEl.muted=!EVCAM.divEl.muted; this.textContent=EVCAM.divEl.muted?'🔇 som do vídeo':'🔊 som do vídeo'">🔊 som do vídeo</button>` : ''}</span>` : ''}${temTela ? [['camera', '📷 Câmera'], ['tela', '🖥️ Tela'], ['telacam', '🖥️+📷']].map(([k, r]) => `<button class="${EVCAM.modo === k ? 'on' : ''}" onclick="evCamModo('${k}')">${r}</button>`).join('') : ''}</div>
       <button class="evc-ic" id="evc-flash" hidden onclick="evCamFlash()" title="Lanterna / flash">⚡</button>
       <button class="evc-ic" onclick="evCamVirar()" title="Trocar câmera (frontal / traseira)">🔄</button>
+      <button class="evc-ic" onclick="evCamFundosAbrir()" title="Trocar o fundo (foto, sugestões ou IA)">🖼️</button>
       <button class="evc-ic" onclick="evCamAjustes()" title="Ajustes da câmera">⚙️</button>
     </div>
     <div class="evc-zoom" id="evc-zoom" hidden><div class="evc-zchips" id="evc-zchips"></div><input type="range" id="ev-cam-zoom" step="0.01" oninput="EVCAM.zoom && EVCAM.zoom.setar(this.value)"><b id="evc-zoom-v">1x</b></div>
@@ -22859,6 +22861,7 @@ async function evAbrirCamera() {
         <button class="evc-lat ${temRoteiro ? 'on' : ''}" id="evc-tp-bt" onclick="const c=document.getElementById('ev-cam-usatp'); c.checked=!c.checked; this.classList.toggle('on', c.checked); evCamTp()" title="Roteiro na tela (teleprompter)">📝</button>
       </div>
     </div>
+    <div class="evc-ajustes evc-fundos" id="evc-fundos" hidden></div>
     <div class="evc-ajustes" id="evc-ajustes" hidden>
       <div class="evc-aj-cab"><b>⚙️ Ajustes da câmera</b><button class="evc-ic" onclick="evCamAjustes()">✕</button></div>
       <label class="ev-campo"><span>Câmera</span><select id="ev-cam-sel" onchange="evCamLigar()"></select></label>
@@ -22979,7 +22982,7 @@ function evCamDesenharLoop() {
     else if (EVCAM.modo === 'camera' || !EVCAM.tela) {
       // a imagem é gravada sem espelho; o espelho é só visual (na tela), então a prévia não "pula" ao começar a gravar
       const espVis = (document.getElementById('ev-cam-espelho') || {}).checked && !EVCAM.traseira; if (cv.__esp !== espVis) { cv.__esp = espVis; cv.style.transform = espVis ? 'scaleX(-1)' : ''; }
-      if (EVCAM.vid) CameraCerta.desenhar(g, EVCAM.vid, W, H, EVCAM.zoom ? EVCAM.zoom.dig : 1);
+      if (EVCAM.vid) { if (EVCAM.fundo && EVCAM.fundo.tipo !== 'nenhum' && EV_SEG) evCamComFundo(g, W, H, EVCAM.zoom ? EVCAM.zoom.dig : 1); else CameraCerta.desenhar(g, EVCAM.vid, W, H, EVCAM.zoom ? EVCAM.zoom.dig : 1); }
     }
     else {
       conter(EVCAM.vTela);
@@ -23004,7 +23007,7 @@ async function evCamGravar() {
   conta.textContent = '';
   const cv = document.getElementById('ev-cam-cv');
   // qualidade máxima: grava a imagem que sai direto da câmera (o encoder do próprio aparelho), sem passar pela tela
-  const direto = (document.getElementById('ev-cam-direto') || {}).checked && EVCAM.modo === 'camera' && !EVCAM.div && EVCAM.stream && (!EVCAM.zoom || EVCAM.zoom.dig < 1.02);
+  const direto = (document.getElementById('ev-cam-direto') || {}).checked && !(EVCAM.fundo && EVCAM.fundo.tipo !== 'nenhum') && EVCAM.modo === 'camera' && !EVCAM.div && EVCAM.stream && (!EVCAM.zoom || EVCAM.zoom.dig < 1.02);
   const fluxo = direto ? new MediaStream(EVCAM.stream.getVideoTracks()) : (EVCAM.div && EVCAM.cvRec ? EVCAM.cvRec : cv).captureStream(30);
   EVCAM.gravDireto = direto; EVCAM.gravDims = direto ? Object.assign({}, EVCAM.dims || {}) : null;
   if (EVCAM.div && EVCAM.divEl && EVCAM.divEl.play) { try { EVCAM.divEl.currentTime = EVCAM.div.mediaIni || 0; } catch (e) {} EVCAM.divEl.play().catch(() => {}); }
@@ -23722,6 +23725,75 @@ function evQuadroAtual(larg) {
 // ==========================================================
 const EV_MP_VISION = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 let EV_DETECTOR_ROSTO = null, EV_DETECTOR_TENTOU = false;
+// ---------- Fundo virtual na gravação: recorta a pessoa (IA no aparelho) e troca o fundo — foto sua, sugestão ou criado com IA ----------
+let EV_SEG = null, EV_SEG_TENTOU = false;
+async function evCarregarSegmentador() {
+  if (EV_SEG || EV_SEG_TENTOU) return EV_SEG; EV_SEG_TENTOU = true;
+  const modelo = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite';
+  try {
+    const v = await import(EV_MP_VISION + '/vision_bundle.mjs'), fs = await v.FilesetResolver.forVisionTasks(EV_MP_VISION + '/wasm');
+    try { EV_SEG = await v.ImageSegmenter.createFromOptions(fs, { baseOptions: { modelAssetPath: modelo, delegate: 'GPU' }, runningMode: 'VIDEO', outputConfidenceMasks: true, outputCategoryMask: false }); }
+    catch (e) { EV_SEG = await v.ImageSegmenter.createFromOptions(fs, { baseOptions: { modelAssetPath: modelo, delegate: 'CPU' }, runningMode: 'VIDEO', outputConfidenceMasks: true, outputCategoryMask: false }); }
+  } catch (e) { console.warn('recorte de pessoa indisponível:', e.message); EV_SEG = null; EV_SEG_TENTOU = false; }
+  return EV_SEG;
+}
+const EV_FUNDOS_SUGEST = [['🏢', 'Escritório moderno', 'modern office interior blurred background'], ['📦', 'Armazém / logística', 'warehouse logistics shelves'], ['🤝', 'Sala de reunião', 'meeting room interior'], ['🌆', 'Cidade à noite', 'city skyline night lights'], ['📚', 'Biblioteca', 'library bookshelves'], ['💜', 'Estúdio neon', 'neon light studio background'], ['🚚', 'Frota de caminhões', 'trucks fleet parking'], ['🌳', 'Natureza', 'green nature background bokeh']];
+function evCamFundosAbrir() {
+  const el = document.getElementById('evc-fundos'); if (!el) return; el.hidden = !el.hidden; if (el.hidden) return;
+  const f = EVCAM.fundo || { tipo: 'nenhum' };
+  el.innerHTML = `<div class="evc-aj-cab"><b>🖼️ Fundo do vídeo</b><button class="evc-ic" onclick="document.getElementById('evc-fundos').hidden=true">✕</button></div>
+    <div class="ev-sub" id="evc-fundo-st">${EV_SEG ? '✅ Recorte de pessoa pronto.' : 'A IA recorta você e troca o que está atrás — funciona melhor com boa luz e fundo sem muita bagunça.'}</div>
+    <div class="evc-fundos-grade">
+      <button class="${f.tipo === 'nenhum' ? 'on' : ''}" onclick="evCamFundo({ tipo: 'nenhum' })"><span>⛔</span>Sem troca</button>
+      <button class="${f.tipo === 'desfoque' ? 'on' : ''}" onclick="evCamFundo({ tipo: 'desfoque' })"><span>🌫️</span>Desfocar o fundo</button>
+      <label><span>📷</span>Subir foto<input type="file" accept="image/*" hidden onchange="evCamFundoArquivo(this.files)"></label>
+      <button onclick="evCamFundoMarca()"><span>🎨</span>Cores da marca</button>
+    </div>
+    <b style="font-size:12.5px;">✨ Sugestões</b>
+    <div class="evc-fundos-grade">${EV_FUNDOS_SUGEST.map(([i, n], k) => `<button class="${f.nome === n ? 'on' : ''}" onclick="evCamFundoBuscar(${k})"><span>${i}</span>${n}</button>`).join('')}</div>
+    <b style="font-size:12.5px;">🤖 Criar com IA</b>
+    <div class="ev-dupla"><input id="evc-fundo-txt" placeholder="Ex.: escritório de diretoria com vista para a cidade" style="flex:1;"></div>
+    <div class="ev-dupla"><button class="ev-btn" onclick="evCamFundoIa('foto')">📷 Foto real</button><button class="ev-btn ia" onclick="evCamFundoIa('ilustracao')">🎨 Ilustração da IA</button></div>`;
+  evCarregarSegmentador().then(s => { const st = document.getElementById('evc-fundo-st'); if (st) st.textContent = s ? '✅ Recorte de pessoa pronto.' : '⚠️ Não consegui carregar o recorte de pessoa (precisa de internet na primeira vez).'; });
+}
+async function evCamFundo(f) {
+  if (EVCAM.rec) return mostrarToast('Pare a gravação para trocar o fundo.', true);
+  if (f.tipo !== 'nenhum') { const st = document.getElementById('evc-fundo-st'); if (st && !EV_SEG) st.textContent = '⏳ Carregando o recorte de pessoa…'; if (!(await evCarregarSegmentador())) return mostrarToast('O recorte de pessoa não carregou neste aparelho. Tente de novo com internet.', true); }
+  EVCAM.fundo = f; const d = document.getElementById('ev-cam-direto'); if (d && f.tipo !== 'nenhum' && d.checked) { d.checked = false; EVCAM.direto = false; mostrarToast('Com fundo trocado, a gravação passa pela tela (a qualidade máxima direta fica desligada).'); }
+  const el = document.getElementById('evc-fundos'); if (el && !el.hidden) { el.hidden = true; evCamFundosAbrir(); }
+}
+function evCamFundoImagem(url, nome) { return new Promise((ok, ko) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => ok(i); i.onerror = () => ko(new Error('Não consegui abrir a imagem.')); i.src = url; }).then(i => evCamFundo({ tipo: 'imagem', img: i, nome })); }
+function evCamFundoArquivo(files) { const f = (files || [])[0]; if (!f) return; evCamFundoImagem(URL.createObjectURL(f), 'Minha foto').catch(e => mostrarToast(e.message, true)); }
+async function evCamFundoMarca() { const kit = await evCarregarKit(), cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1920; const g = cv.getContext('2d'), gr = g.createLinearGradient(0, 0, 1080, 1920); gr.addColorStop(0, kit.cor1 || '#0b1329'); gr.addColorStop(1, kit.cor2 || '#dc4c4c'); g.fillStyle = gr; g.fillRect(0, 0, 1080, 1920); for (let i = 0; i < 18; i++) { g.fillStyle = `rgba(255,255,255,${0.03 + Math.random() * 0.05})`; g.beginPath(); g.arc(Math.random() * 1080, Math.random() * 1920, 60 + Math.random() * 260, 0, 7); g.fill(); } evCamFundoImagem(cv.toDataURL('image/jpeg', 0.9), 'Cores da marca'); }
+async function evCamFundoPedido(texto, tipo, nome) {
+  const st = document.getElementById('evc-fundo-st'); if (st) st.textContent = tipo === 'ilustracao' ? '🎨 A IA está desenhando o fundo…' : '🔎 Buscando a foto…';
+  try {
+    const r = await api('/api/admin/estudio/broll/pedido', { method: 'POST', body: JSON.stringify({ texto, tipo, vertical: true }) });
+    let url = r.url; if (r.tipo === 'svg') { const { blob } = await evSvgParaPng(r.svg, r.w, r.h); url = URL.createObjectURL(blob); }
+    await evCamFundoImagem(url, nome || texto.slice(0, 30));
+  } catch (e) { if (st) st.textContent = '⚠️ ' + e.message; mostrarToast(e.message, true); }
+}
+function evCamFundoBuscar(k) { const s = EV_FUNDOS_SUGEST[k]; EVCAM.cacheFundos = EVCAM.cacheFundos || {}; if (EVCAM.cacheFundos[k]) return evCamFundo(EVCAM.cacheFundos[k]); evCamFundoPedido(s[2], 'foto', s[1]).then(() => { if (EVCAM.fundo && EVCAM.fundo.nome === s[1]) EVCAM.cacheFundos[k] = EVCAM.fundo; }); }
+function evCamFundoIa(tipo) { const t = (document.getElementById('evc-fundo-txt') || {}).value || ''; if (t.trim().length < 3) return mostrarToast('Descreva o fundo que você quer.', true); evCamFundoPedido(t.trim(), tipo); }
+// desenha: fundo escolhido + você recortado por cima (com borda suave)
+function evCamComFundo(g, W, H, zoom) {
+  const F = EVCAM.fx = EVCAM.fx || {}, f = EVCAM.fundo;
+  if (!F.a || F.a.width !== W || F.a.height !== H) { const cv = (w, h) => Object.assign(document.createElement('canvas'), { width: w, height: h }); F.a = cv(W, H); F.p = cv(W, H); const sw = 256, sh = Math.round(256 * H / W); F.s = cv(sw, sh); F.m = cv(sw, sh); F.img = new ImageData(sw, sh); }
+  const gA = F.a.getContext('2d'); gA.fillStyle = '#000'; gA.fillRect(0, 0, W, H); CameraCerta.desenhar(gA, EVCAM.vid, W, H, zoom);
+  const agora = performance.now();
+  if (EV_SEG && (!F.ult || agora - F.ult > 30)) {
+    F.ult = agora; const gS = F.s.getContext('2d', { willReadFrequently: true }); gS.drawImage(F.a, 0, 0, F.s.width, F.s.height);
+    try { const r = EV_SEG.segmentForVideo(F.s, agora), mk = r && r.confidenceMasks && r.confidenceMasks[0];
+      if (mk) { const arr = mk.getAsFloat32Array(), dt = F.img.data; for (let i = 0; i < arr.length; i++) { const a = Math.min(1, Math.max(0, (arr[i] - 0.3) / 0.45)); dt[i * 4 + 3] = a * 255; } F.m.getContext('2d').putImageData(F.img, 0, 0); }
+      if (r && r.close) r.close(); } catch (e) {}
+  }
+  // fundo
+  if (f.tipo === 'desfoque') { if (EV_SEM_FILTRO) CameraCerta.fundo(g, F.a, 0, 0, W, H); else { g.save(); g.filter = 'blur(22px) brightness(0.9)'; g.drawImage(F.a, -30, -30, W + 60, H + 60); g.restore(); } }
+  else if (f.img) { const iw = f.img.naturalWidth || f.img.width, ih = f.img.naturalHeight || f.img.height, s = Math.max(W / iw, H / ih); g.drawImage(f.img, (W - iw * s) / 2, (H - ih * s) / 2, iw * s, ih * s); }
+  // você, recortado
+  const gP = F.p.getContext('2d'); gP.globalCompositeOperation = 'copy'; gP.drawImage(F.a, 0, 0); gP.globalCompositeOperation = 'destination-in'; gP.imageSmoothingEnabled = true; gP.drawImage(F.m, 0, 0, W, H); gP.globalCompositeOperation = 'source-over';
+  g.drawImage(F.p, 0, 0);
+}
 async function evCarregarDetectorRosto() {
   if (EV_DETECTOR_ROSTO || EV_DETECTOR_TENTOU) return EV_DETECTOR_ROSTO;
   EV_DETECTOR_TENTOU = true;
