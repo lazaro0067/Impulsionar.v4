@@ -235,8 +235,13 @@ function desenharZoom(Z) {
   el.innerHTML = Z.chips().map(([v, r]) => `<button class="${Math.abs(Z.z - v) < 0.03 ? 'on' : ''}" onclick="zoom.setar(${v})">${r}</button>`).join('') + (Z.chips().some(([v]) => Math.abs(Z.z - v) < 0.03) ? '' : `<span>${Z.rotulo()}</span>`);
 }
 // fluxo que vai para o gravador: no celular é a tela desenhada (formato certo) + o som do microfone
+// qualidade máxima: no celular grava direto da câmera (encoder do aparelho) quando a imagem já está na posição do formato e sem zoom digital
+let gravouDireto = false;
+function podeDireto() { const T = tamanhoGravacao(), d = dimsCam || {}; return !ehPc && tipo !== 'aula' && d.w && d.h && ((d.w > d.h) === (T.w > T.h)) && (!zoom || zoom.dig < 1.02); }
 function fluxoGravacao() {
+  gravouDireto = false;
   if (ehPc) return stream;
+  if (podeDireto()) { gravouDireto = true; return new MediaStream(stream.getTracks()); }
   const f = $('tela').captureStream(30);
   stream.getAudioTracks().forEach(t => f.addTrack(t));
   return f;
@@ -350,7 +355,7 @@ async function alternarGravacao() {
   for (const n of [3, 2, 1]) { $('contagem-n').textContent = n; $('contagem').classList.add('on'); await new Promise(r => setTimeout(r, 850)); }
   $('contagem').classList.remove('on'); contando = false;
   const tipoMime = tipoGravacao(); partes = []; tempoPausado = 0; let tamLocal = 0;
-  const bits = tipo === 'aula' ? 2500000 : 6000000; // aula longa: arquivo leve (2 h ≈ 2,3 GB), boa nitidez para quem fala
+  const bits = tipo === 'aula' ? 2500000 : podeDireto() ? 16000000 : 10000000; // aula longa: arquivo leve (2 h ≈ 2,3 GB), boa nitidez para quem fala
   rec = new MediaRecorder(fluxoGravacao(), tipoMime ? { mimeType: tipoMime, videoBitsPerSecond: bits } : undefined);
   envio = novoEnvio(rec.mimeType || tipoMime || 'video/webm');
   const E = envio;

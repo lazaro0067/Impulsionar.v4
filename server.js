@@ -2061,7 +2061,7 @@ setTimeout(() => {
 }, 15000);
 
 // Verificação de saúde (usada pelo servidor próprio / Docker para reiniciar sozinho se travar).
-app.get('/saude', (req, res) => res.json({ ok: true, ffmpeg: FFMPEG_OK, memoriaMB: Math.round(process.memoryUsage().rss / 1048576), noArDesde: Math.round(process.uptime()) }));
+app.get('/saude', (req, res) => res.json({ ok: true, versao: '2026-10-24 estudio-pro', ffmpeg: FFMPEG_OK, memoriaMB: Math.round(process.memoryUsage().rss / 1048576), noArDesde: Math.round(process.uptime()) }));
 app.use(authenticateToken);
 
 // Neutraliza CSV Injection: se o valor começa com =, +, - ou @, o Excel/Sheets
@@ -14299,8 +14299,9 @@ async function cfgMusicaEst() { const r = await dbGet(`SELECT value FROM integra
 const TAGS_JAMENDO = { motivacional: 'motivational inspirational upbeat', corporativo: 'corporate business positive', inspirador: 'inspiring cinematic emotional', animado: 'happy upbeat pop fun', calmo: 'calm relaxing ambient', epico: 'epic cinematic trailer', lofi: 'lofi chillhop chill', eletronico: 'electronic edm dance', emocionante: 'emotional piano cinematic', acustico: 'acoustic guitar folk', tecnologia: 'technology electronic future', suspense: 'suspense dark tension', viral: 'hiphop trap upbeat energetic', funk: 'funk groove dance', energia: 'energetic rock sport', tensao: 'suspense tension dark' };
 db.run(`CREATE TABLE IF NOT EXISTS estudio_musicas (id INTEGER PRIMARY KEY AUTOINCREMENT, dono INTEGER DEFAULT 0, titulo TEXT, artista TEXT, url TEXT, duracao REAL, humor TEXT, credito TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
 async function buscarJamendoEst(cfg, { q, humor, emAlta }) {
-    const p = new URLSearchParams({ client_id: cfg.jamendo, format: 'json', limit: '30', order: emAlta ? 'popularity_week' : 'popularity_month', vocalinstrumental: 'instrumental', durationbetween: '25_480', audioformat: 'mp32', include: 'musicinfo licenses', ccnc: 'false', ccnd: 'false' });
+    const p = new URLSearchParams({ client_id: cfg.jamendo, format: 'json', limit: '30', order: emAlta ? 'popularity_week' : (q ? 'relevance' : 'popularity_total'), vocalinstrumental: 'instrumental', durationbetween: '25_480', audioformat: 'mp32', include: 'musicinfo licenses', ccnc: 'false', ccnd: 'false' });
     if (q) p.set('search', q); else p.set('fuzzytags', TAGS_JAMENDO[humor] || TAGS_JAMENDO.motivacional);
+    if (!q && ['motivacional', 'animado', 'eletronico', 'epico', 'viral'].includes(humor)) p.set('speed', 'high veryhigh');
     const r = await fetch('https://api.jamendo.com/v3.0/tracks/?' + p, { signal: AbortSignal.timeout(15000) });
     const j = await r.json().catch(() => ({})); if (!r.ok || (j.headers && j.headers.status === 'failed')) throw new Error('Jamendo: ' + ((j.headers && j.headers.error_message) || ('HTTP ' + r.status)));
     return (j.results || []).filter(x => x.audio).map(x => ({ id: 'jm:' + x.id, titulo: x.name, artista: x.artist_name || '', duracao: Number(x.duration) || 0, licenca: /by-sa/.test(x.license_ccurl || '') ? 'CC BY-SA' : /by\//.test(x.license_ccurl || '') ? 'CC BY' : 'CC', ouvir: x.audio, fonte: 'Jamendo', capa: x.image || '' }));
@@ -14634,7 +14635,7 @@ app.post('/api/admin/estudio/ia/:acao', requireRole('admin', 'estudio'), async (
         else if (acao === 'video-autonomo') {
             max = 8000;
             const modo = String(b.modo || 'motion');
-            pedido = `${base}\nMODO: ${modo === 'avatar' ? 'uma pessoa (avatar) fala para a câmera o tempo todo — a "fala" de cada cena é exatamente o que ela vai dizer, natural e direta' : modo === 'meus' ? 'vídeo montado com filmagens da própria empresa — a "fala" vira legenda na tela' : 'vídeo animado sem pessoa (motion design): a "fala" aparece como legenda dinâmica e o "texto_tela" como título grande'}.\nCORES DA MARCA: ${(Array.isArray(b.cores) ? b.cores : []).join(', ') || '#0b1329, #dc4c4c'}\nCrie o roteiro completo de ~${duracao}s dividido em 5 a 10 cenas curtas. Cena 1 = gancho fortíssimo (até 2,5 s). Ritmo rápido, uma ideia por cena, final com CTA.\nPara cada cena: duracao (s), fala (frases curtas, linguagem falada), texto_tela (até 6 palavras, impacto), emoji (1, combinando com a cena), cor1 e cor2 (hex, para fundo animado, variando dentro da paleta da marca).\nJSON: {"titulo":"","cenas":[{"duracao":2.5,"fala":"","texto_tela":"","emoji":"","cor1":"#","cor2":"#"}],"cta":"texto curto da chamada final","legenda":"legenda do post com gancho na 1ª linha","hashtags":["#..."],"filtro":"vibrante","paleta":["#","#","#"]}`;
+            pedido = `${base}\nMODO: ${modo === 'avatar' ? 'uma pessoa (avatar) fala para a câmera o tempo todo — a "fala" de cada cena é exatamente o que ela vai dizer, natural e direta' : modo === 'meus' ? 'vídeo montado com filmagens da própria empresa — a "fala" vira legenda na tela' : 'vídeo animado sem pessoa (motion design): a "fala" aparece como legenda dinâmica e o "texto_tela" como título grande'}.\n${b.look && Array.isArray(b.look.paleta) ? `VISUAL DESTE VÍDEO (os vídeos alternam de visual — NÃO use sempre as mesmas cores): "${String(b.look.nome || '').slice(0, 60)}" — paleta ${b.look.paleta.slice(0, 4).join(', ')}. Cores da marca só em detalhes: ${(Array.isArray(b.cores) ? b.cores : []).join(', ') || '#0b1329, #dc4c4c'}` : 'CORES DA MARCA: ' + ((Array.isArray(b.cores) ? b.cores : []).join(', ') || '#0b1329, #dc4c4c')}\nCrie o roteiro completo de ~${duracao}s dividido em 5 a 10 cenas curtas. Cena 1 = gancho fortíssimo (até 2,5 s). Ritmo rápido, uma ideia por cena, final com CTA.\nPara cada cena: duracao (s), fala (frases curtas, linguagem falada), texto_tela (até 6 palavras, impacto), emoji (1, combinando com a cena), cor1 e cor2 (hex, para fundo animado, variando dentro da paleta do VISUAL deste vídeo).\nJSON: {"titulo":"","cenas":[{"duracao":2.5,"fala":"","texto_tela":"","emoji":"","cor1":"#","cor2":"#"}],"cta":"texto curto da chamada final","legenda":"legenda do post com gancho na 1ª linha","hashtags":["#..."],"filtro":"vibrante","paleta":["#","#","#"]}`;
         }
         else if (acao === 'cortes') {
             max = 4000;
@@ -14741,6 +14742,67 @@ app.post('/api/admin/estudio/projetos/:id/academy', requireRole('admin', 'estudi
 
 // ----- Radar Viral: pesquisa no mercado o que está viralizando e cria conteúdos com os mesmos padrões -----
 db.run(`CREATE TABLE IF NOT EXISTS estudio_radar (id INTEGER PRIMARY KEY AUTOINCREMENT, nicho TEXT, dados TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`, () => db.run(`ALTER TABLE estudio_radar ADD COLUMN dono INTEGER`, () => {}));
+// ===== Perfis do nicho que mandam bem: o agente estuda (dados oficiais quando a Meta permite + pesquisa na internet) e aprende ganchos, formatos e VISUAIS =====
+const PERFIS_JOBS = new Map();
+const arrobaDeEst = s => { const m = String(s || '').match(/@?([A-Za-z0-9._]{2,30})/); return m ? m[1].replace(/\.$/, '').toLowerCase() : ''; };
+async function descobrirPerfilIg(ig, usuario) {
+    if (!ig || !ig.userId || !ig.token) return null;
+    const campos = `business_discovery.username(${usuario}){username,name,biography,followers_count,media_count,media.limit(15){caption,media_type,media_product_type,like_count,comments_count,timestamp,permalink}}`;
+    const j = await igEst('GET', '/' + ig.userId, { fields: campos }, ig.token);
+    const b = j.business_discovery; if (!b) return null;
+    const posts = ((b.media || {}).data || []).map(x => ({ tipo: x.media_product_type === 'REELS' ? 'Reels' : x.media_type === 'CAROUSEL_ALBUM' ? 'Carrossel' : 'Post', curtidas: x.like_count, comentarios: x.comments_count, data: String(x.timestamp || '').slice(0, 10), legenda: String(x.caption || '').replace(/\s+/g, ' ').slice(0, 160), link: x.permalink }));
+    return { seguidores: b.followers_count, posts_total: b.media_count, bio: b.biography || '', nome: b.name || '', posts };
+}
+app.post('/api/admin/estudio/instagram/perfis/estudar', requireRole('admin', 'estudio'), async (req, res) => {
+    if (!iaDisponivelMt()) return res.status(400).json({ error: 'A IA não está conectada.' });
+    const dono = donoAtualEst();
+    const refs = (await dbAll(`SELECT id, titulo, conteudo FROM estudio_agente WHERE tipo = 'referencia' AND ativo = 1 AND COALESCE(dono, 0) = ? AND titulo LIKE '@%' ORDER BY id DESC LIMIT 10`, [dono]).catch(() => []))
+        .map(r => ({ arroba: arrobaDeEst(r.titulo), nota: String(r.conteudo || '').slice(0, 300) })).filter(p => p.arroba);
+    if (!refs.length) return res.status(400).json({ error: 'Cadastre pelo menos 1 perfil do seu nicho (ex.: @perfil).' });
+    try { await consumirEst('radar', 1); } catch (e) { return erroLimiteEst(res, e); }
+    const id = require('crypto').randomBytes(6).toString('hex'); PERFIS_JOBS.set(id, { status: 'estudando', inicio: Date.now() }); res.json({ id });
+    try {
+        const ig = await lerIgEst(dono).catch(() => ({})), oficiais = {};
+        for (const p of refs) { try { const d = await descobrirPerfilIg(ig, p.arroba); if (d) oficiais[p.arroba] = d; } catch (e) {} }
+        const pedido = `MISSÃO: ESTUDAR OS PERFIS QUE MANDAM BEM NO MEU NICHO NO INSTAGRAM e aprender o que faz os vídeos deles viralizarem — para eu criar conteúdo ORIGINAL com os mesmos padrões (sem copiar).
+PERFIS:
+${refs.map(p => `- @${p.arroba}${p.nota && p.nota !== '@' + p.arroba ? ' (o que eu gosto nele: ' + p.nota + ')' : ''}${oficiais[p.arroba] ? `\n  DADOS OFICIAIS (API do Instagram): ${oficiais[p.arroba].seguidores ?? '?'} seguidores · bio: "${oficiais[p.arroba].bio}"\n  Últimos posts: ${oficiais[p.arroba].posts.map(x => `[${x.tipo} ${x.data} ❤${x.curtidas ?? '?'} 💬${x.comentarios ?? '?'}] "${x.legenda}"`).join(' | ')}` : ''}`).join('\n')}
+
+Pesquise na internet cada perfil (instagram.com/perfil, matérias, entrevistas, vídeos repostados em outras redes) e os Reels que mais bombaram deles. Use dados reais e traga links; não invente números.
+${SINAIS_ALGORITMO_IG}
+Para cada perfil descubra: ganchos (frases dos 2 primeiros segundos), formatos, duração, ritmo de edição, estilo de legenda na tela, CORES e visual (paleta, filtro, fonte), temas que mais engajam e como pedem comentário/compartilhamento.
+Depois junte tudo em padrões e proponha de 4 a 6 VISUAIS (looks) diferentes inspirados no que viraliza nesses perfis — cada um com paleta em hex para alternar entre os vídeos (o agente NÃO deve usar sempre a mesma cor).
+JSON: {"resumo":"","perfis":[{"arroba":"","o_que_funciona":"","ganchos":[""],"formatos":[""],"duracao":"","edicao":"ritmo, cortes, zoom, legendas","visual":"cores, filtro, fonte","temas":[""],"cta":"","exemplos":[{"titulo":"","url":"","metricas":""}]}],"padroes":{"ganchos":[""],"estruturas":[""],"duracao_ideal":"","ritmo":"","texto_tela":"","cta":[""],"audios":[""],"evitar":[""]},"looks":[{"nome":"","paleta":["#hex","#hex","#hex"],"destaque":"#hex (cor da palavra em destaque na legenda)","gancho":"#hex (fundo do texto do gancho)","filtro":"nenhum|vibrante|cinema|quente|frio|suave|contraste|pb|noite","fonte":"Montserrat|Bebas Neue|Anton|Poppins","inspirado_em":"@perfil"}],"licoes":["regra curta e acionável para o agente seguir sempre"]}`;
+        const out = await iaEstudio(pedido, { web: true, max: 14000, avancado: true, maxBuscas: 12 });
+        out.fontes = (out.__fontes || []).slice(0, 30); delete out.__fontes; out.criadoEm = new Date().toISOString(); out.oficiais = Object.keys(oficiais);
+        const hex = v => /^#[0-9a-f]{6}$/i.test(String(v || '').trim()) ? String(v).trim() : null;
+        out.looks = (Array.isArray(out.looks) ? out.looks : []).map(l => ({ nome: String(l.nome || 'Visual').slice(0, 60), paleta: (Array.isArray(l.paleta) ? l.paleta : []).map(hex).filter(Boolean).slice(0, 4), destaque: hex(l.destaque), gancho: hex(l.gancho), filtro: String(l.filtro || 'vibrante'), fonte: String(l.fonte || ''), inspirado_em: String(l.inspirado_em || '') })).filter(l => l.paleta.length >= 2).slice(0, 6);
+        const txt = [`PERFIS DO NICHO ESTUDADOS: ${refs.map(p => '@' + p.arroba).join(', ')}`, out.resumo || '', ...(out.perfis || []).map(p => `@${p.arroba}: ${p.o_que_funciona || ''} | ganchos: ${(p.ganchos || []).slice(0, 3).join(' / ')} | edição: ${p.edicao || ''} | visual: ${p.visual || ''}`), out.padroes ? `Ganchos: ${(out.padroes.ganchos || []).join(' / ')}\nEstruturas: ${(out.padroes.estruturas || []).join(' / ')}\nDuração: ${out.padroes.duracao_ideal || ''} · Ritmo: ${out.padroes.ritmo || ''}\nEvitar: ${(out.padroes.evitar || []).join(' / ')}` : '', out.looks.length ? 'VISUAIS PARA ALTERNAR (nunca use sempre a mesma cor): ' + out.looks.map(l => `${l.nome} (${l.paleta.join(', ')}; filtro ${l.filtro})`).join(' · ') : ''].filter(Boolean).join('\n');
+        await new Promise(ok => db.run(`INSERT INTO estudio_agente (tipo, titulo, conteudo, metricas, dono) VALUES ('tendencia', ?, ?, ?, ?)`, [`Perfis do nicho (${new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })})`, txt.slice(0, 7900), JSON.stringify({ looks: out.looks, perfis: refs.map(p => p.arroba) }), dono || null], ok));
+        db.run(`UPDATE estudio_agente SET ativo = 0 WHERE tipo = 'tendencia' AND COALESCE(dono, 0) = ? AND id NOT IN (SELECT id FROM estudio_agente WHERE tipo = 'tendencia' AND COALESCE(dono, 0) = ? ORDER BY id DESC LIMIT 3)`, [dono, dono]);
+        db.run(`INSERT INTO ig_diagnosticos (dono, media_id, tipo, conteudo) VALUES (?, NULL, 'perfis', ?)`, [dono, JSON.stringify(out)]);
+        PERFIS_JOBS.set(id, { status: 'pronto', resultado: out });
+    } catch (e) { PERFIS_JOBS.set(id, { status: 'erro', erro: e.message }); }
+    setTimeout(() => PERFIS_JOBS.delete(id), 30 * 60 * 1000);
+});
+app.get('/api/admin/estudio/instagram/perfis/estudar/:id', requireRole('admin', 'estudio'), (req, res) => {
+    const j = PERFIS_JOBS.get(req.params.id); if (!j) return res.status(404).json({ error: 'Estudo não encontrado. Rode de novo.' });
+    res.json({ status: j.status, erro: j.erro, resultado: j.resultado, segundos: Math.round((Date.now() - j.inicio) / 1000) || undefined });
+});
+app.get('/api/admin/estudio/instagram/perfis/ultimo', requireRole('admin', 'estudio'), async (req, res) => {
+    const r = await dbGet(`SELECT conteudo, criado_em FROM ig_diagnosticos WHERE dono = ? AND tipo = 'perfis' ORDER BY id DESC LIMIT 1`, [donoAtualEst()]).catch(() => null);
+    if (!r) return res.json(null); try { res.json({ ...JSON.parse(r.conteudo), criado_em: r.criado_em }); } catch (e) { res.json(null); }
+});
+// visuais (looks) aprendidos dos perfis do nicho e dos vídeos de referência: o editor alterna entre eles para não repetir cor
+app.get('/api/admin/estudio/looks', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), out = [];
+    const l = await dbAll(`SELECT tipo, titulo, metricas FROM estudio_agente WHERE tipo IN ('tendencia', 'estilo') AND ativo = 1 AND COALESCE(dono, 0) = ? ORDER BY id DESC LIMIT 8`, [dono]).catch(() => []);
+    l.forEach((r, i) => { let m = {}; try { m = JSON.parse(r.metricas || '{}'); } catch (e) {}
+        if (r.tipo === 'tendencia') (m.looks || []).forEach((k, j) => out.push({ id: `ap${i}_${j}`, ...k, origem: 'perfis do nicho' }));
+        else if (m.preset && m.preset.destaque) out.push({ id: `ref${i}`, nome: 'Estilo de ' + (r.titulo || 'referência'), paleta: [m.preset.fundo && /^#/.test(m.preset.fundo) ? m.preset.fundo : '#111111', m.preset.destaque, m.preset.cor || '#ffffff'].filter(x => /^#[0-9a-f]{6}$/i.test(x)), destaque: m.preset.destaque, gancho: m.preset.destaque, filtro: ((m.estilo || {}).cor || {}).filtro || 'vibrante', fonte: m.preset.fonte || '', origem: 'vídeo de referência' }); });
+    res.json(out.filter(k => (k.paleta || []).length >= 2));
+});
+
 const RADAR_JOBS = new Map();
 function textoPadroesRadar(r) {
     const p = r.padroes || {}, l = (a) => (Array.isArray(a) ? a : []).filter(Boolean).map(x => '  • ' + (typeof x === 'string' ? x : JSON.stringify(x))).join('\n');
@@ -14799,7 +14861,7 @@ app.get('/api/admin/estudio/marca', requireRole('admin', 'estudio'), async (req,
 });
 app.put('/api/admin/estudio/marca', requireRole('admin', 'estudio'), (req, res) => {
     const b = req.body || {}, cor = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : undefined, url = v => /^\/(uploads|assets)\/[\w.\-]+$/.test(v || '') ? v : '';
-    const kit = { logo: url(b.logo), arroba: String(b.arroba || '').slice(0, 60), cor1: cor(b.cor1) || '#0b1329', cor2: cor(b.cor2) || '#dc4c4c', cta: String(b.cta || '').slice(0, 120), ctaSec: String(b.ctaSec || '').slice(0, 120) };
+    const kit = { logo: url(b.logo), arroba: String(b.arroba || '').slice(0, 60), cor1: cor(b.cor1) || '#0b1329', cor2: cor(b.cor2) || '#dc4c4c', cta: String(b.cta || '').slice(0, 120), ctaSec: String(b.ctaSec || '').slice(0, 120), finalMarca: b.finalMarca === true };
     db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [chaveMarcaEst(donoAtualEst()), JSON.stringify(kit)], () => res.json({ ok: true, kit }));
 });
 // ----- Avatares (fotos salvas para criar vídeos com a pessoa) -----
