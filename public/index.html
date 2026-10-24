@@ -6822,6 +6822,26 @@ async function baixarBackupBanco() {
   } catch (e) { mostrarToast(e.message, true); }
 }
 
+async function restaurarBackupBanco(inp) {
+  const f = inp.files && inp.files[0]; inp.value = ''; if (!f) return;
+  const st = document.getElementById('restaurar-banco-status');
+  if (!confirm(`Restaurar o backup "${f.name}"?\n\nTODOS os dados atuais do sistema serão trocados pelos desse arquivo (o banco atual fica guardado no servidor como cópia de segurança). O sistema reinicia e fica fora do ar por cerca de 1 minuto.`)) return;
+  try {
+    if (st) st.textContent = 'Enviando backup… 0%';
+    const fd = new FormData(); fd.append('arquivo', f);
+    const r = await new Promise((ok, falha) => {
+      const x = new XMLHttpRequest(); x.open('POST', '/api/admin/database-restore'); x.setRequestHeader('Authorization', 'Bearer ' + ESTADO.token);
+      x.upload.onprogress = e => { if (st && e.lengthComputable) st.textContent = 'Enviando backup… ' + Math.round(e.loaded / e.total * 100) + '%'; };
+      x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch (e) {} x.status < 300 ? ok(j) : falha(new Error(j.error || 'Erro ao restaurar.')); };
+      x.onerror = () => falha(new Error('Falha de conexão ao enviar o backup.')); x.send(fd);
+    });
+    if (st) st.innerHTML = `✅ Backup recebido (${r.usuarios} usuários). Reiniciando o sistema… a página recarrega sozinha.`;
+    let tent = 0; await new Promise(ok => setTimeout(ok, 6000));
+    const esperar = async () => { tent++; try { const s = await fetch('/saude', { cache: 'no-store' }); if (s.ok) { mostrarToast('✅ Backup restaurado!'); return setTimeout(() => location.reload(), 800); } } catch (e) {} if (tent < 60) setTimeout(esperar, 3000); else if (st) st.textContent = '⚠️ O sistema está demorando para voltar. No Railway, clique em Restart no serviço.'; };
+    esperar();
+  } catch (e) { if (st) st.textContent = '⚠️ ' + e.message; mostrarToast(e.message, true); }
+}
+
 async function baixarCertificadoPdf(trackId) {
   try {
     const resp = await fetch('/api/tracks/' + trackId + '/certificate/pdf', {
@@ -19462,7 +19482,9 @@ async function renderMeuPerfilImpulsionar() {
       </p>
       <div class="formulario" style="max-width:640px;">
         <p style="font-size:12px;color:#64748b;">Baixe uma cópia do banco atual antes de qualquer mudança arriscada (trocar de servidor, configurar o Volume, etc.) — assim você sempre tem uma cópia de segurança na mão.</p>
-        <div class="acoes-form"><button class="btn-secundario" onclick="baixarBackupBanco()">⬇️ Baixar Backup Agora (.sqlite)</button></div>
+        <div class="acoes-form"><button class="btn-secundario" onclick="baixarBackupBanco()">⬇️ Baixar Backup Agora (.sqlite)</button>
+          <label class="btn-secundario" style="cursor:pointer;">♻️ Restaurar backup…<input type="file" accept=".sqlite,.db,application/octet-stream" style="display:none;" onchange="restaurarBackupBanco(this)"></label></div>
+        <p id="restaurar-banco-status" style="font-size:12px;color:#64748b;"></p>
       </div>
 
       <h3 style="margin-top:28px;">Envio de E-mail por API (recomendado no Railway)</h3>

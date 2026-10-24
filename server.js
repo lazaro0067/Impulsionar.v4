@@ -464,6 +464,18 @@ if (process.env.DB_PATH && dbFile !== DB_CAMINHO_ANTIGO && !fs.existsSync(dbFile
     console.log(`♻️  Banco existente migrado automaticamente para o Volume persistente: ${dbFile}`);
 }
 
+// Restauração de backup pedida pelo admin (Meu Perfil › Restaurar backup): o arquivo enviado fica em
+// "<banco>.restaurar" e entra no lugar do banco aqui, ANTES de abrir a conexão. O banco anterior é guardado.
+const DB_RESTAURAR = dbFile + '.restaurar';
+if (fs.existsSync(DB_RESTAURAR)) {
+    try {
+        if (fs.existsSync(dbFile)) fs.copyFileSync(dbFile, dbFile + '.antes-restaurar');
+        ['-wal', '-shm', '-journal'].forEach(suf => { try { fs.unlinkSync(dbFile + suf); } catch (e) {} });
+        fs.renameSync(DB_RESTAURAR, dbFile);
+        console.log('♻️  Backup restaurado no banco: ' + dbFile + ' (o anterior ficou em ' + dbFile + '.antes-restaurar)');
+    } catch (e) { console.error('Falha ao restaurar o backup do banco:', e.message); }
+}
+
 console.log(`📂 Usando banco de dados em: ${dbFile}${process.env.DB_PATH ? ' (persistente, via DB_PATH)' : ' (⚠️ dentro da pasta do código — configure DB_PATH com um Volume para não perder dados a cada deploy)'}`);
 const db = new sqlite3.Database(dbFile, (err) => {
     if (err) {
@@ -6064,6 +6076,30 @@ app.get('/api/admin/database-backup', requireRole('admin'), (req, res) => {
     res.download(dbFile, 'backup-impulsionar.sqlite', (err) => {
         if (err && !res.headersSent) res.status(500).json({ error: 'Erro ao gerar o backup do banco.' });
     });
+});
+
+// Restaura um backup (.sqlite) baixado antes: confere se é um banco válido do Impulsionar, deixa
+// pronto para troca e reinicia o servidor — na subida ele entra no lugar do banco atual.
+const uploadRestaurarBanco = multer({ dest: pastaDoBanco, limits: { fileSize: 4 * 1024 * 1024 * 1024 } });
+app.post('/api/admin/database-restore', requireRole('admin'), uploadRestaurarBanco.single('arquivo'), async (req, res) => {
+    const f = req.file; const apagar = () => { try { if (f) fs.unlinkSync(f.path); } catch (e) {} };
+    try {
+        if (!f) return res.status(400).json({ error: 'Escolha o arquivo .sqlite do backup.' });
+        const fd = fs.openSync(f.path, 'r'); const cab = Buffer.alloc(16); fs.readSync(fd, cab, 0, 16, 0); fs.closeSync(fd);
+        if (cab.toString('latin1') !== 'SQLite format 3\0') { apagar(); return res.status(400).json({ error: 'Esse arquivo não é um backup do banco (.sqlite).' }); }
+        const info = await new Promise(ok => {
+            const t = new sqlite3.Database(f.path, sqlite3.OPEN_READONLY, err => {
+                if (err) return ok(null);
+                t.get(`SELECT COUNT(*) AS n FROM users`, [], (e, r) => { t.close(); ok(e ? null : r); });
+            });
+        });
+        if (!info) { apagar(); return res.status(400).json({ error: 'O arquivo não tem os dados do Impulsionar (tabela de usuários não encontrada).' }); }
+        if (!(info.n > 0)) { apagar(); return res.status(400).json({ error: 'Esse backup está vazio (nenhum usuário).' }); }
+        fs.renameSync(f.path, DB_RESTAURAR);
+        res.json({ ok: true, usuarios: info.n });
+        console.log('♻️  Backup recebido (' + info.n + ' usuários). Reiniciando para restaurar...');
+        setTimeout(() => process.exit(1), 1500); // o Railway religa sozinho; na subida o backup entra no lugar
+    } catch (e) { apagar(); if (!res.headersSent) res.status(500).json({ error: 'Erro ao restaurar: ' + e.message }); }
 });
 
 // ============================================================
