@@ -21618,10 +21618,10 @@ function evDesenhar(tForcado, exportando) {
     let idx = -1; for (let i = 0; i < d.clips.length; i++) if (t >= ini[i] && t < ini[i] + evClipDur(d.clips[i])) { idx = i; break; }
     if (idx < 0 && d.clips.length && t >= ini[ini.length - 1]) idx = d.clips.length - 1;
     if (idx >= 0) {
-      const c = d.clips[idx], el = evElemento(c), local = t - ini[idx], prog = local / evClipDur(c);
+      const c = d.clips[idx], el = evElDesenho(c), local = t - ini[idx], prog = local / evClipDur(c);
       const tr = c.transicao || d.transicao || 'corte', TD = 0.4;
       if (idx > 0 && tr !== 'corte' && local < TD) {
-        const pc = d.clips[idx - 1], pel = evElemento(pc), p = local / TD;
+        const pc = d.clips[idx - 1], pel = evElDesenho(pc), p = local / TD;
         if (pel) evDesenharMidia(ctx, pc, pel, 1, 1, tr === 'deslizar' ? -p * R.w : 0, tr === 'zoom' ? 1 + p * 0.15 : 1, R);
         if (el) evDesenharMidia(ctx, c, el, prog, tr === 'fade' || tr === 'zoom' ? p : 1, tr === 'deslizar' ? (1 - easeOut(p)) * R.w : 0, tr === 'zoom' ? 1.15 - 0.15 * p : 1, R);
         if (tr === 'flash') { ctx.save(); ctx.globalAlpha = 1 - p; ctx.fillStyle = '#fff'; ctx.fillRect(R.x, R.y, R.w, R.h); ctx.restore(); }
@@ -21631,7 +21631,7 @@ function evDesenhar(tForcado, exportando) {
     }
     // segundo vídeo: tela dividida, lado a lado, janelinha ou cobertura (B-roll)
     ativas.sort((a, b) => (a.layout === 'cheio' ? 0 : 1) - (b.layout === 'cheio' ? 0 : 1)).forEach(o => {
-      const el = evElemento(o, 'o:' + o.id); if (!el) return;
+      const el = evElDesenho(o, 'o:' + o.id); if (!el) return;
       const loc = t - o.ini, alpha = o.layout === 'cheio' ? Math.min(1, loc / 0.2, (o.dur - loc) / 0.2) : Math.min(1, loc / 0.25);
       const Ro = evRetSobreposicao(o), forma = o.layout === 'circulo' ? 'circulo' : o.layout === 'pip' ? 'arredondado' : null;
       if (forma) { ctx.save(); ctx.globalAlpha = alpha * 0.5; ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 30 * k; ctx.fillStyle = '#000'; ctx.beginPath(); if (forma === 'circulo') ctx.arc(Ro.x + Ro.w / 2, Ro.y + Ro.h / 2, Ro.w / 2, 0, 7); else evRetArred(ctx, Ro.x, Ro.y, Ro.w, Ro.h, Math.min(Ro.w, Ro.h) * 0.08); ctx.fill(); ctx.restore(); }
@@ -21828,7 +21828,7 @@ async function evEsperarImagemNova(el, quer) {
   for (let i = 0; i < 60 && el.readyState < 2; i++) await new Promise(z => setTimeout(z, 50)); // ainda carregando: espera até 3 s
   const anterior = el.__hashQ, mudouTempo = el.__tempoQ === undefined || Math.abs(quer - el.__tempoQ) >= 0.02;
   let h = evAmostraQuadro(el);
-  if (anterior !== undefined && h !== null && mudouTempo) for (let i = 0; i < 12 && h === anterior; i++) { await new Promise(z => setTimeout(z, 20)); h = evAmostraQuadro(el); }
+  if (anterior !== undefined && h !== null && mudouTempo) for (let i = 0; i < 5 && h === anterior; i++) { await new Promise(z => setTimeout(z, 16)); h = evAmostraQuadro(el); }
   el.__hashQ = h; el.__tempoQ = quer;
 }
 function evIrQuadro(el, quer) {
@@ -21851,6 +21851,179 @@ async function evPosicionarQuadro(t) {
   (d.sobreposicoes || []).forEach(o => { const m = evMidia(o.midia); if (!m || m.tipo !== 'video' || t < o.ini || t >= o.ini + o.dur) return; const el = evElemento(o, 'o:' + o.id); if (el) esp.push(evIrQuadro(el, (o.corte || 0) + (t - o.ini) * (o.vel || 1))); });
   await Promise.all(esp);
 }
+// ---------- Exportação rápida: lê o MP4 e decodifica os quadros EM SEQUÊNCIA (WebCodecs) ----------
+// Antes, cada quadro exigia "pular" o vídeo para um tempo, e o celular decodificava de novo desde o último quadro-chave
+// (lento e às vezes entregava o quadro errado). Agora cada quadro é decodificado uma vez só, na ordem.
+const EvMp4Leitor = {
+  u32: (b, o) => ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0,
+  i32: (b, o) => (b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3],
+  u64: (b, o) => EvMp4Leitor.u32(b, o) * 4294967296 + EvMp4Leitor.u32(b, o + 4),
+  tipo: (b, o) => String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]),
+  // caixas filhas dentro de [ini, fim)
+  caixas(b, ini, fim) {
+    const out = []; let o = ini;
+    while (o + 8 <= fim) {
+      let tam = this.u32(b, o), cab = 8; const tp = this.tipo(b, o + 4);
+      if (tam === 1) { tam = this.u64(b, o + 8); cab = 16; } else if (tam === 0) tam = fim - o;
+      if (tam < cab || o + tam > fim) break;
+      out.push({ tipo: tp, ini: o + cab, fim: o + tam }); o += tam;
+    }
+    return out;
+  },
+  achar(b, ini, fim, caminho) { let atual = [{ ini, fim }]; for (const p of caminho) { const prox = []; atual.forEach(c => this.caixas(b, c.ini, c.fim).forEach(x => { if (x.tipo === p) prox.push(x); })); if (!prox.length) return null; atual = prox; } return atual[0]; },
+  todas(b, ini, fim, tipo) { return this.caixas(b, ini, fim).filter(x => x.tipo === tipo); }
+};
+async function evMp4Fonte(url) {
+  // blob do aparelho: lê pedaços direto. Servidor: pedaços por "Range" (se o servidor não aceitar, baixa uma vez só)
+  if (/^blob:/.test(url)) { const blob = await (await fetch(url)).blob(); return { tam: blob.size, ler: async (a, z) => new Uint8Array(await blob.slice(a, z).arrayBuffer()) }; }
+  const r0 = await fetch(url, { headers: { Range: 'bytes=0-65535' } });
+  if (r0.status !== 206) { const blob = await r0.blob(); return { tam: blob.size, ler: async (a, z) => new Uint8Array(await blob.slice(a, z).arrayBuffer()) }; }
+  const total = Number((r0.headers.get('content-range') || '').split('/')[1]) || 0; await r0.arrayBuffer().catch(() => {});
+  if (!total) throw new Error('tamanho desconhecido');
+  return { tam: total, ler: async (a, z) => { const r = await fetch(url, { headers: { Range: `bytes=${a}-${z - 1}` } }); if (r.status !== 206 && r.status !== 200) throw new Error('leitura ' + r.status); const u = new Uint8Array(await r.arrayBuffer()); return r.status === 200 ? u.subarray(a, z) : u; } };
+}
+async function evMp4Abrir(url) {
+  const F = await evMp4Fonte(url), L = EvMp4Leitor;
+  // acha a caixa moov olhando só os cabeçalhos das caixas de primeiro nível
+  let o = 0, moov = null;
+  while (o + 8 <= F.tam) {
+    const h = await F.ler(o, Math.min(F.tam, o + 16)); let tam = L.u32(h, 0); const tp = L.tipo(h, 4);
+    if (tam === 1) tam = L.u64(h, 8); else if (tam === 0) tam = F.tam - o;
+    if (tam < 8) throw new Error('MP4 inválido');
+    if (tp === 'moof') throw new Error('MP4 fragmentado');
+    if (tp === 'moov') { moov = await F.ler(o, o + tam); break; }
+    o += tam;
+  }
+  if (!moov) throw new Error('sem moov');
+  const b = moov, raiz = L.caixas(b, 0, b.length)[0];
+  const trak = L.todas(b, raiz.ini, raiz.fim, 'trak').find(t => { const h = L.achar(b, t.ini, t.fim, ['mdia', 'hdlr']); return h && L.tipo(b, h.ini + 8) === 'vide'; });
+  if (!trak) throw new Error('sem vídeo');
+  const tkhd = L.achar(b, trak.ini, trak.fim, ['tkhd']), vT = b[tkhd.ini], mtx = tkhd.ini + 4 + (vT ? 32 : 20) + 16;
+  const ma = L.i32(b, mtx), mb = L.i32(b, mtx + 4), giro = Math.round(Math.atan2(mb, ma) * 180 / Math.PI);
+  const mdhd = L.achar(b, trak.ini, trak.fim, ['mdia', 'mdhd']), vM = b[mdhd.ini], escala = L.u32(b, mdhd.ini + (vM ? 20 : 12));
+  let atraso = 0; const elst = L.achar(b, trak.ini, trak.fim, ['edts', 'elst']);
+  if (elst) { const v = b[elst.ini], n = L.u32(b, elst.ini + 4); let p = elst.ini + 8; for (let i = 0; i < n; i++) { const mt = v ? L.u64(b, p + 8) : L.i32(b, p + 4); if (mt >= 0 && mt < 2 ** 50) { atraso = mt; break; } p += v ? 20 : 12; } }
+  const stbl = L.achar(b, trak.ini, trak.fim, ['mdia', 'minf', 'stbl']), em = t => L.achar(b, stbl.ini, stbl.fim, [t]);
+  const stsd = em('stsd'), ent = L.caixas(b, stsd.ini + 8, stsd.fim)[0], tipoEnt = ent.tipo;
+  const filhos = L.caixas(b, ent.ini + 78, ent.fim), largura = (b[ent.ini + 24] << 8) | b[ent.ini + 25], altura = (b[ent.ini + 26] << 8) | b[ent.ini + 27];
+  let codec, descricao = null; const hx = n => n.toString(16).padStart(2, '0');
+  if (/^avc[13]$/.test(tipoEnt)) { const c = filhos.find(x => x.tipo === 'avcC'); descricao = b.slice(c.ini, c.fim); codec = 'avc1.' + hx(descricao[1]) + hx(descricao[2]) + hx(descricao[3]); }
+  else if (/^(hvc1|hev1)$/.test(tipoEnt)) {
+    const c = filhos.find(x => x.tipo === 'hvcC'); descricao = b.slice(c.ini, c.fim); const d = descricao;
+    const esp = ['', 'A', 'B', 'C'][d[1] >> 6], tier = (d[1] >> 5) & 1 ? 'H' : 'L', perfil = d[1] & 31;
+    let comp = L.u32(d, 2), rev = 0; for (let i = 0; i < 32; i++) { rev = (rev << 1) | (comp & 1); comp >>>= 1; }
+    const restr = Array.from(d.slice(6, 12)); while (restr.length > 1 && restr[restr.length - 1] === 0) restr.pop();
+    codec = `${tipoEnt}.${esp}${perfil}.${(rev >>> 0).toString(16)}.${tier}${d[12]}` + (restr.length && restr.some(x => x) ? '.' + restr.map(x => x.toString(16)).join('.') : '');
+  }
+  else if (tipoEnt === 'vp09') { const c = filhos.find(x => x.tipo === 'vpcC'), p = c ? c.ini + 4 : 0; const dd = n => String(n).padStart(2, '0'); codec = c ? `vp09.${dd(b[p])}.${dd(b[p + 1])}.${dd(b[p + 2] >> 4)}` : 'vp09.00.10.08'; }
+  else if (tipoEnt === 'av01') codec = 'av01.0.08M.08';
+  else throw new Error('codec ' + tipoEnt);
+  // tabela de amostras
+  const stsz = em('stsz'), fixo = L.u32(b, stsz.ini + 4), n = L.u32(b, stsz.ini + 8), tams = new Uint32Array(n);
+  for (let i = 0; i < n; i++) tams[i] = fixo || L.u32(b, stsz.ini + 12 + i * 4);
+  const stco = em('stco'), co64 = em('co64'), cx = stco || co64, nc = L.u32(b, cx.ini + 4), offs = []; for (let i = 0; i < nc; i++) offs.push(co64 ? L.u64(b, cx.ini + 8 + i * 8) : L.u32(b, cx.ini + 8 + i * 4));
+  const stsc = em('stsc'), ns = L.u32(b, stsc.ini + 4), runs = []; for (let i = 0; i < ns; i++) runs.push([L.u32(b, stsc.ini + 8 + i * 12), L.u32(b, stsc.ini + 12 + i * 12)]);
+  const pos = new Float64Array(n); { let s = 0; for (let r = 0; r < runs.length; r++) { const [prim, por] = runs[r], ult = r + 1 < runs.length ? runs[r + 1][0] - 1 : nc; for (let ch = prim; ch <= ult && s < n; ch++) { let p = offs[ch - 1]; for (let k = 0; k < por && s < n; k++) { pos[s] = p; p += tams[s]; s++; } } } }
+  const dts = new Float64Array(n); { const stts = em('stts'), ne = L.u32(b, stts.ini + 4); let s = 0, t = 0; for (let i = 0; i < ne; i++) { const c = L.u32(b, stts.ini + 8 + i * 8), dl = L.u32(b, stts.ini + 12 + i * 8); for (let k = 0; k < c && s < n; k++) { dts[s++] = t; t += dl; } } }
+  const pts = new Float64Array(n); { const ctts = em('ctts'); let s = 0; if (ctts) { const v = b[ctts.ini], ne = L.u32(b, ctts.ini + 4); for (let i = 0; i < ne; i++) { const c = L.u32(b, ctts.ini + 8 + i * 8), of = v ? L.i32(b, ctts.ini + 12 + i * 8) : L.u32(b, ctts.ini + 12 + i * 8); for (let k = 0; k < c && s < n; k++, s++) pts[s] = dts[s] + of; } } for (; s < n; s++) pts[s] = dts[s]; }
+  const chave = new Uint8Array(n); { const stss = em('stss'); if (stss) { const ne = L.u32(b, stss.ini + 4); for (let i = 0; i < ne; i++) { const k = L.u32(b, stss.ini + 8 + i * 4) - 1; if (k >= 0 && k < n) chave[k] = 1; } } else chave.fill(1); }
+  const us = x => Math.round((x - atraso) * 1e6 / escala);
+  const amostras = Array.from({ length: n }, (_, i) => ({ pos: pos[i], tam: tams[i], pts: us(pts[i]), dts: us(dts[i]), chave: !!chave[i] }));
+  return { fonte: F, codec, descricao, largura, altura, giro: ((giro % 360) + 360) % 360, amostras };
+}
+class EvDecVideo {
+  static async criar(url) {
+    if (!window.VideoDecoder) throw new Error('sem WebCodecs');
+    const mp4 = await evMp4Abrir(url);
+    const cfg = { codec: mp4.codec, codedWidth: mp4.largura, codedHeight: mp4.altura, hardwareAcceleration: 'no-preference' }; if (mp4.descricao) cfg.description = mp4.descricao;
+    const sup = await VideoDecoder.isConfigSupported(cfg).catch(() => ({ supported: false })); if (!sup.supported) throw new Error('decodificador não suporta ' + mp4.codec);
+    const d = new EvDecVideo(); d.mp4 = mp4; d.cfg = cfg; d.ini(); return d;
+  }
+  ini() {
+    this.saida = []; this.erro = null; this.prox = 0; this.ultPts = -Infinity; this.esvaziado = false; this.janela = null;
+    this.dec = new VideoDecoder({ output: f => { this.saida.push(f); this.saida.sort((a, b) => a.timestamp - b.timestamp); }, error: e => { this.erro = e; } });
+    this.dec.configure(this.cfg);
+  }
+  limparSaida(manter) { this.saida = this.saida.filter(f => { if (f === manter) return true; try { f.close(); } catch (e) {} return false; }); }
+  reposicionar(tUs) {
+    try { this.dec.close(); } catch (e) {} this.limparSaida(null); if (this.atual) { try { this.atual.close(); } catch (e) {} this.atual = null; }
+    this.ini(); const am = this.mp4.amostras; let k = 0; for (let i = 0; i < am.length; i++) { if (am[i].chave && am[i].pts <= tUs) k = i; if (am[i].dts > tUs) break; } this.prox = k;
+  }
+  async dados(i) {
+    const a = this.mp4.amostras[i], J = this.janela;
+    if (!J || a.pos < J.ini || a.pos + a.tam > J.fim) { const ini = a.pos, fim = Math.min(this.mp4.fonte.tam, Math.max(a.pos + a.tam, a.pos + 4 * 1048576)); this.janela = { ini, fim, b: await this.mp4.fonte.ler(ini, fim) }; }
+    const W = this.janela; return W.b.subarray(a.pos - W.ini, a.pos - W.ini + a.tam);
+  }
+  // devolve o quadro que aparece no tempo t (segundos do vídeo original)
+  async quadro(t) {
+    const tUs = Math.round(t * 1e6), am = this.mp4.amostras, tol = 4000;
+    if (this.erro) throw this.erro;
+    const temp = this.ultPedido;
+    if (temp !== undefined && (tUs < temp - 1000 || tUs > this.ultPts + 3e6)) this.reposicionar(tUs);
+    else if (temp === undefined && tUs > 1e6) this.reposicionar(tUs);
+    this.ultPedido = tUs;
+    const futuro = () => this.saida.some(f => f.timestamp > tUs + tol) || (this.atual && this.atual.timestamp > tUs + tol);
+    let espera = 0;
+    while (!futuro()) {
+      if (this.erro) throw this.erro;
+      if (this.prox < am.length) {
+        if (this.dec.decodeQueueSize > 6) { await new Promise(z => setTimeout(z, 2)); if (++espera > 3000) throw new Error('decodificador parado'); continue; }
+        const i = this.prox++, a = am[i]; const data = await this.dados(i);
+        this.dec.decode(new EncodedVideoChunk({ type: a.chave ? 'key' : 'delta', timestamp: a.pts, data }));
+        this.ultPts = Math.max(this.ultPts, a.pts);
+        if (this.saida.length > 6) { const ok = this.saida.filter(f => f.timestamp <= tUs + tol); if (ok.length > 1) { const manter = ok[ok.length - 1]; this.saida.filter(f => f.timestamp < manter.timestamp).forEach(f => { try { f.close(); } catch (e) {} }); this.saida = this.saida.filter(f => f.timestamp >= manter.timestamp); } }
+        if (this.prox % 4 === 0) await new Promise(z => setTimeout(z, 0));
+      } else { if (!this.esvaziado) { this.esvaziado = true; await this.dec.flush().catch(() => {}); } break; }
+    }
+    // o quadro mais recente que já deveria estar na tela
+    const cand = this.saida.filter(f => f.timestamp <= tUs + tol);
+    let escolhido = cand.length ? cand[cand.length - 1] : null;
+    if (escolhido) { if (this.atual && this.atual !== escolhido) { try { this.atual.close(); } catch (e) {} } this.atual = escolhido; this.saida = this.saida.filter(f => { if (f === escolhido) return false; if (f.timestamp < escolhido.timestamp) { try { f.close(); } catch (e) {} return false; } return true; }); }
+    else if (!this.atual && this.saida.length) { this.atual = this.saida.shift(); }
+    return this.atual;
+  }
+  fechar() { try { this.dec.close(); } catch (e) {} this.limparSaida(null); if (this.atual) { try { this.atual.close(); } catch (e) {} this.atual = null; } }
+}
+// desenha o quadro decodificado numa tela própria daquele clipe (já girado como o celular gravou)
+function evQuadroNaTela(chave, frame, giro) {
+  const ex = ES.exportando; ex.quadros = ex.quadros || {};
+  const fw = frame.displayWidth, fh = frame.displayHeight, deitado = giro === 90 || giro === 270, w = deitado ? fh : fw, h = deitado ? fw : fh;
+  let cv = ex.quadros[chave]; if (!cv) { cv = document.createElement('canvas'); ex.quadros[chave] = cv; }
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  const g = cv.getContext('2d'); g.save(); g.translate(w / 2, h / 2); g.rotate(giro * Math.PI / 180); g.drawImage(frame, -fw / 2, -fh / 2, fw, fh); g.restore();
+  cv.currentTime = frame.timestamp / 1e6; cv.readyState = 4; // o desenho usa o tempo do quadro (estabilização e enquadramento do rosto)
+}
+async function evPrepararDecodificadores() {
+  const d = ES.p.dados, ex = ES.exportando, ids = new Set();
+  d.clips.forEach(c => { const m = evMidia(c.midia); if (m && m.tipo === 'video') ids.add(m.id); });
+  (d.sobreposicoes || []).forEach(o => { const m = evMidia(o.midia); if (m && m.tipo === 'video') ids.add(m.id); });
+  ex.decs = {}; ex.quadros = {};
+  for (const id of ids) {
+    const m = evMidia(id), opcoes = [(ES.locais || {})[id], m.url && !/\.part$/.test(m.url) && !m.enviando ? m.url : null].filter(Boolean);
+    for (const url of opcoes) { try { ex.decs[id] = await EvDecVideo.criar(url); break; } catch (e) { console.warn('Exportação rápida indisponível para', m.nome || id, '-', e.message); } }
+  }
+  return Object.keys(ex.decs).length;
+}
+function evFecharDecodificadores() { const ex = ES && ES.exportando; if (!ex || !ex.decs) return; Object.values(ex.decs).forEach(dd => dd.fechar()); ex.decs = null; ex.quadros = null; }
+async function evPosicionarQuadroRapido(t) {
+  const d = ES.p.dados, ini = evInicios(), ex = ES.exportando, esp = [];
+  const pedir = async (chave, m, el, quer) => {
+    const dec = ex.decs && ex.decs[m.id];
+    if (dec) { try { const f = await dec.quadro(quer); if (f) evQuadroNaTela(chave, f, dec.mp4.giro); return; } catch (e) { console.warn('decodificação:', e.message); ex.decs[m.id] = null; dec.fechar(); if (ex.quadros) delete ex.quadros[chave]; } }
+    if (el) await evIrQuadro(el, quer);
+  };
+  d.clips.forEach((c, i) => {
+    const m = evMidia(c.midia); if (!m || m.tipo !== 'video') return; const dur = evClipDur(c), k = evChaveClip(c);
+    const ativo = t >= ini[i] && t < ini[i] + dur, transicao = !ativo && t >= ini[i] + dur && t < ini[i] + dur + 0.45;
+    if (!ativo && !transicao) return;
+    if (transicao && ex.quadros && ex.quadros[k]) return; // na transição o clipe anterior fica no último quadro dele
+    esp.push(() => pedir(k, m, ex.decs && ex.decs[m.id] ? null : evElemento(c), ativo ? (c.ini || 0) + (t - ini[i]) * (c.vel || 1) : Math.max(c.ini || 0, (c.fim || 0) - 0.04)));
+  });
+  (d.sobreposicoes || []).forEach(o => { const m = evMidia(o.midia); if (!m || m.tipo !== 'video' || t < o.ini || t >= o.ini + o.dur) return; const k = 'o:' + o.id; esp.push(() => pedir(k, m, ex.decs && ex.decs[m.id] ? null : evElemento(o, k), (o.corte || 0) + (t - o.ini) * (o.vel || 1))); });
+  for (const f of esp) await f(); // um de cada vez: o celular tem poucos decodificadores
+}
+// durante a exportação rápida, o desenho usa o quadro decodificado no lugar do player
+function evElDesenho(c, chave) { const ex = ES.exportando; if (ex && ex.quadros) { const k = chave || evChaveClip(c), q = ex.quadros[k]; if (q) return q; } return evElemento(c, chave); }
 async function evExportarPro() {
   const W = ES.W, H = ES.H, fps = 30, tot = evTotal();
   if (tot > 15 * 60) return false; // vídeos muito longos: exportação ao vivo (memória)
@@ -21866,12 +22039,14 @@ async function evExportarPro() {
   ES.exportando = { pro: true, cancelado: false, mixado: true, partes: [], mime: 'video/mp4', rec: { state: 'inactive', stop() {}, pause() {}, resume() {} } };
   const ov = document.getElementById('ev-export-ov'); ov.hidden = false; const sub = ov.querySelector('.ev-export-sub'); if (sub) sub.textContent = `Exportação profissional, quadro a quadro (${W}×${H}). Pode usar outra aba — não trava nem pula.`;
   const tx = document.getElementById('ev-export-txt'), barra = document.getElementById('ev-export-barra');
+  let rapidos = 0; if (tx) tx.textContent = '⚡ Preparando a exportação rápida…'; try { rapidos = await evPrepararDecodificadores(); } catch (e) { console.warn('exportação rápida:', e.message); }
+  if (sub && rapidos) sub.textContent = `Exportação profissional rápida (${W}×${H}), quadro a quadro, sem pular.`;
   const N = Math.max(1, Math.round(tot * fps)), t0 = performance.now();
   try {
     for (let i = 0; i < N; i++) {
       if (ES.exportando.cancelado) throw new Error('cancelado'); if (erro) throw erro;
       const t = i / fps; ES.t = t;
-      await evPosicionarQuadro(t); evDesenhar(t, true);
+      if (rapidos) await evPosicionarQuadroRapido(t); else await evPosicionarQuadro(t); evDesenhar(t, true);
       const vf = new VideoFrame(ES.canvas, { timestamp: Math.round(t * 1e6), duration: Math.round(1e6 / fps) });
       venc.encode(vf, { keyFrame: i % 60 === 0 }); vf.close();
       while (venc.encodeQueueSize > 6) await new Promise(r => { let ok = false; const f = () => { if (!ok) { ok = true; r(); } }; try { venc.addEventListener('dequeue', f, { once: true }); } catch (e) {} setTimeout(f, 20); });
@@ -21891,10 +22066,10 @@ async function evExportarPro() {
     const blob = mux.finish();
     ES.exportando.partes = [blob]; ES.exportando.pronto = true;
     if (barra) barra.style.width = '92%';
-    ES.t = 0; await evConcluirExport();
+    evFecharDecodificadores(); ES.t = 0; await evConcluirExport();
     return true;
   } catch (e) {
-    try { venc.close(); } catch (x) {} try { aenc.close(); } catch (x) {}
+    try { venc.close(); } catch (x) {} try { aenc.close(); } catch (x) {} try { evFecharDecodificadores(); } catch (x) {}
     const canc = ES.exportando && ES.exportando.cancelado; ES.exportando = null; ov.hidden = true; evAjustarPalco();
     if (canc || e.message === 'cancelado') { mostrarToast('Exportação cancelada.'); return true; }
     console.warn('exportação profissional falhou:', e); mostrarToast('A exportação quadro a quadro falhou (' + e.message + '). Vou exportar do jeito ao vivo.', true);
