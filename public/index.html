@@ -21816,12 +21816,27 @@ async function evCodecsPro(W, H) {
   return { v, a };
 }
 // deixa cada vídeo exatamente no quadro do tempo t (sem tocar: posiciona, espera e desenha)
+// Exportação quadro a quadro: posiciona o vídeo no tempo exato e só libera quando a IMAGEM NOVA já está pronta.
+// (no celular o "seeked" chega antes do quadro ser decodificado e o desenho repetia o quadro anterior = vídeo travando)
+let EV_AMOSTRA = null;
+function evAmostraQuadro(el) {
+  try { const c = EV_AMOSTRA || (EV_AMOSTRA = document.createElement('canvas')); c.width = 24; c.height = 24; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(el, 0, 0, 24, 24);
+    const d = g.getImageData(0, 0, 24, 24).data; let h = 2166136261; for (let i = 0; i < d.length; i += 4) h = Math.imul(h ^ (d[i] + d[i + 1] * 3 + d[i + 2] * 7), 16777619) >>> 0; return h; } catch (e) { return null; }
+}
+async function evEsperarImagemNova(el, quer) {
+  if (!(el instanceof HTMLVideoElement)) return;
+  for (let i = 0; i < 60 && el.readyState < 2; i++) await new Promise(z => setTimeout(z, 50)); // ainda carregando: espera até 3 s
+  const anterior = el.__hashQ, mudouTempo = el.__tempoQ === undefined || Math.abs(quer - el.__tempoQ) >= 0.02;
+  let h = evAmostraQuadro(el);
+  if (anterior !== undefined && h !== null && mudouTempo) for (let i = 0; i < 12 && h === anterior; i++) { await new Promise(z => setTimeout(z, 20)); h = evAmostraQuadro(el); }
+  el.__hashQ = h; el.__tempoQ = quer;
+}
 function evIrQuadro(el, quer) {
   return new Promise(ok => {
     if (!el || el.fundo || !(el instanceof HTMLMediaElement)) return ok();
     if (!el.paused) el.pause();
     if (Math.abs(el.currentTime - quer) < 0.0005 && el.readyState >= 2) return ok();
-    let feito = false; const fim = () => { if (feito) return; feito = true; el.removeEventListener('seeked', fim); clearTimeout(tm); ok(); };
+    let feito = false; const fim = () => { if (feito) return; feito = true; el.removeEventListener('seeked', fim); clearTimeout(tm); evEsperarImagemNova(el, quer).then(ok, ok); };
     el.addEventListener('seeked', fim); const tm = setTimeout(fim, 5000); el.currentTime = Math.max(0, quer);
   });
 }
