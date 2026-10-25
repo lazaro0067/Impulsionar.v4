@@ -2087,7 +2087,8 @@ setTimeout(() => {
 }, 15000);
 
 // Verificação de saúde (usada pelo servidor próprio / Docker para reiniciar sozinho se travar).
-app.get('/saude', (req, res) => res.json({ ok: true, versao: '2026-10-24 uploads-volume', ffmpeg: FFMPEG_OK, uploadsPersistentes: UPLOADS_PERSISTENTES, memoriaMB: Math.round(process.memoryUsage().rss / 1048576), noArDesde: Math.round(process.uptime()) }));
+const discoLivreMB = pasta => { try { const st = fs.statfsSync(pasta); return Math.round(st.bavail * st.bsize / 1048576); } catch (e) { return null; } };
+app.get('/saude', (req, res) => res.json({ ok: true, discoUploadsLivreMB: discoLivreMB(PASTA_UPLOADS), discoTempLivreMB: discoLivreMB(PASTA_PARTES), versao: '2026-10-24 uploads-volume', ffmpeg: FFMPEG_OK, uploadsPersistentes: UPLOADS_PERSISTENTES, memoriaMB: Math.round(process.memoryUsage().rss / 1048576), noArDesde: Math.round(process.uptime()) }));
 app.use(authenticateToken);
 
 // Neutraliza CSV Injection: se o valor começa com =, +, - ou @, o Excel/Sheets
@@ -13936,6 +13937,7 @@ async function receberParteEst(req, res, aoFinal) {
     if (!fluxo && tamParte >= 1024 * 1024 && tamParte <= 12 * 1024 * 1024) {
         let e = ENVIOS_EM_PARTES.get(id);
         if (!e) { e = { paralelo: true, recebidas: new Set(), tam: 0, tmp: path.join(PASTA_PARTES, id + '.part'), t: Date.now(), mime: String(req.headers['x-mime'] || '') }; ENVIOS_EM_PARTES.set(id, e); try { fs.closeSync(fs.openSync(e.tmp, 'w')); } catch (x) { return res.status(500).json({ error: 'Erro ao iniciar o envio.' }); } }
+        if (e.pendenteFinal && !e.finalizando && e.recebidas.size >= total) { e.pendenteFinal = false; e.finalizando = true; ENVIOS_EM_PARTES.delete(id); return finalizarEnvioEst(e, id, nomeOrig, ext, res, aoFinal, preparar); }
         if (e.recebidas.has(i) || e.finalizando) return res.json({ ok: true });
         try { const fh = await fs.promises.open(e.tmp, 'r+'); try { await fh.write(req.body, 0, req.body.length, i * tamParte); } finally { await fh.close(); } }
         catch (x) { return res.status(500).json({ error: 'Erro ao gravar a parte no servidor.' }); }
@@ -13948,6 +13950,7 @@ async function receberParteEst(req, res, aoFinal) {
     }
     let e = ENVIOS_EM_PARTES.get(id);
     if (!e) { if (i !== 0) return res.status(409).json({ error: 'Envio não encontrado — recomece.', prox: 0 }); e = { prox: 0, tam: 0, tmp: path.join(PASTA_PARTES, id + '.part'), t: Date.now(), mime: String(req.headers['x-mime'] || '') }; ENVIOS_EM_PARTES.set(id, e); try { fs.unlinkSync(e.tmp); } catch (x) {} }
+    if (e.pendenteFinal && i === e.prox - 1) { e.pendenteFinal = false; ENVIOS_EM_PARTES.delete(id); return finalizarEnvioEst(e, id, nomeOrig, ext, res, aoFinal, preparar); } // nova tentativa de finalizar (o arquivo já está completo)
     if (i < e.prox) return res.json({ ok: true, prox: e.prox }); // parte repetida (nova tentativa após falha de rede)
     if (i > e.prox) return res.status(409).json({ error: 'Parte fora de ordem.', prox: e.prox });
     try { await fs.promises.appendFile(e.tmp, req.body); } catch (x) { return res.status(500).json({ error: 'Erro ao gravar a parte no servidor.' }); }
@@ -13958,8 +13961,20 @@ async function receberParteEst(req, res, aoFinal) {
     return finalizarEnvioEst(e, id, nomeOrig, ext, res, aoFinal, preparar);
 }
 async function finalizarEnvioEst(e, id, nomeOrig, ext, res, aoFinal, preparar) {
-    const final = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + ext, destino = path.join(PASTA_UPLOADS, final);
-    try { await fs.promises.rename(e.tmp, destino); } catch (x) { try { await fs.promises.copyFile(e.tmp, destino); await fs.promises.unlink(e.tmp); } catch (y) { return res.status(500).json({ error: 'Erro ao finalizar o envio.' }); } }
+    const final = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + ext; let destino = path.join(PASTA_UPLOADS, final);
+    // move a gravação para a pasta definitiva. A pasta temporária e o Volume são discos diferentes (rename falha com EXDEV),
+    // então copia. Se o Volume estiver cheio (ENOSPC) ou der erro, guarda na pasta do código para NÃO perder o vídeo.
+    const mover = async alvo => { try { await fs.promises.rename(e.tmp, alvo); } catch (x) { try { await fs.promises.copyFile(e.tmp, alvo); } catch (y) { try { fs.unlinkSync(alvo); } catch (z) {} throw y; } fs.promises.unlink(e.tmp).catch(() => {}); } };
+    try { await mover(destino); }
+    catch (y) {
+        console.error('Finalizar envio em ' + PASTA_UPLOADS + ':', y.code || '', y.message);
+        let ok = false;
+        if (PASTA_UPLOADS !== PASTA_UPLOADS_CODIGO) { try { fs.mkdirSync(PASTA_UPLOADS_CODIGO, { recursive: true }); destino = path.join(PASTA_UPLOADS_CODIGO, final); await mover(destino); ok = true; console.warn('⚠️ Vídeo guardado na pasta do código (Volume cheio ou com erro): ' + final); } catch (z) { console.error('Plano B do envio falhou:', z.code || '', z.message); } }
+        if (!ok) {
+            ENVIOS_EM_PARTES.set(id, Object.assign(e, { finalizando: false, pendenteFinal: true, t: Date.now() })); // mantém o envio: a próxima tentativa só finaliza de novo, sem recomeçar do zero
+            return res.status(507).json({ error: y.code === 'ENOSPC' ? 'O disco do servidor está cheio — aumente o Volume no Railway.' : 'Erro ao finalizar o envio (' + (y.code || y.message) + ').', semEspaco: y.code === 'ENOSPC' });
+        }
+    }
     const mime = e.mime || ({ '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm', '.m4v': 'video/mp4', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.wav': 'audio/wav' }[ext] || 'application/octet-stream');
     copiarUploadParaBanco({ filename: final, path: destino, size: e.tam, mimetype: mime });
     const dados = { url: '/uploads/' + final, nome: nomeOrig, mime, tamanho: e.tam, completo: true };

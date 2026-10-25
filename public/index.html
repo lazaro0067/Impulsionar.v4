@@ -23012,8 +23012,27 @@ async function evEsperarPreparo(id, m) {
 async function evAguardarEnvio(m) {
   if (!m.enviando && !m.preparando && m.url) return;
   evCarregando('⬆️ Terminando de subir o vídeo para o servidor…');
-  try { for (let i = 0; i < 7200 && (m.enviando || m.preparando || !m.url); i++) { if (m.erroEnvio) throw new Error('o vídeo não subiu para o servidor'); await new Promise(z => setTimeout(z, 1000)); } }
+  // botões para não ficar preso: salvar a cópia que está no aparelho ou voltar a editar
+  const o = document.getElementById('ev-carregando'); let desistiu = false;
+  if (o && o.firstElementChild) { const b = document.createElement('div'); b.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px;';
+    b.innerHTML = `${(ES.locais || {})[m.id] ? '<button class="ev-btn primario" data-a="salvar">💾 Salvar o vídeo no aparelho</button>' : ''}<button class="ev-btn" data-a="voltar">← Voltar a editar</button>`;
+    b.onclick = ev => { const a = ev.target && ev.target.dataset && ev.target.dataset.a; if (a === 'salvar') evSalvarMidiaNoAparelho(m); if (a === 'voltar') desistiu = true; };
+    o.firstElementChild.appendChild(b); }
+  try { for (let i = 0; i < 7200 && (m.enviando || m.preparando || !m.url); i++) { if (desistiu) throw new Error('o vídeo ainda está subindo — ele continua subindo em segundo plano'); if (m.erroEnvio) throw new Error('o vídeo não subiu para o servidor'); await new Promise(z => setTimeout(z, 1000)); } }
   finally { evCarregando(null); }
+}
+// Salva no celular/computador a cópia do vídeo que está no aparelho (gravação ou arquivo escolhido) — nunca perde o vídeo.
+async function evSalvarMidiaNoAparelho(m) {
+  try {
+    const src = (ES.locais || {})[m.id] || m.url; if (!src) return mostrarToast('Não há cópia deste vídeo no aparelho.', true);
+    let blob = await (await fetch(src)).blob(); const mp4 = /mp4/.test(blob.type || '') || /\.mp4/i.test(m.url || '');
+    if (mp4 && window.Mp4Completo) { try { blob = await Mp4Completo.mp4CompletoBlob(blob); } catch (e) {} }
+    const nome = (m.nome || 'video').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w]+/g, '-').slice(0, 40) + '-' + Date.now() + (mp4 ? '.mp4' : '.webm');
+    const arq = new File([blob], nome, { type: blob.type || (mp4 ? 'video/mp4' : 'video/webm') });
+    if (evCelularAqui() && navigator.canShare && navigator.canShare({ files: [arq] })) { try { await navigator.share({ files: [arq] }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(arq); a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+    mostrarToast('💾 Vídeo salvo no aparelho.');
+  } catch (e) { mostrarToast('Não consegui salvar: ' + e.message, true); }
 }
 // Se você fechou o editor antes de terminar de subir, grava o endereço certo no projeto mesmo assim.
 async function evAtualizarMidiaRemota(pid, m) {
@@ -23312,14 +23331,14 @@ async function evCamEnviarFila(E) {
         if (r.status === 409 && Number.isInteger(j.prox)) {
           if (j.prox > E.i) { E.i = j.prox; break; }
           // o servidor perdeu o envio (reiniciou): recomeça do zero com o que está guardado no aparelho
-          if (j.prox === 0 && E.i > 0 && EVCAM.tamLocal < 300 * 1048576) { E.id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); E.i = 0; E.enviado = 0; E.fila = E.todas.slice(); aviso('☁️ Reenviando a gravação…'); E.enviando = false; return evCamEnviarFila(E); }
+          if (j.prox === 0 && E.i > 0 && EVCAM.tamLocal < 300 * 1048576 && (E.recomecos = (E.recomecos || 0) + 1) <= 3) { E.id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); E.i = 0; E.enviado = 0; E.fila = E.todas.slice(); aviso('☁️ Reenviando a gravação…'); E.enviando = false; return evCamEnviarFila(E); }
         }
         if (!r.ok) { const e = new Error(j.error || ('Falha no envio (HTTP ' + r.status + ')')); e.status = r.status; throw e; }
         if (item.fim || j.completo) E.resposta = j;
         E.i++; E.enviado += item.blob.size; break;
       } catch (e) {
         tent++;
-        if (e.status === 401 || e.status === 402 || e.status === 403) { aviso('⚠️ ' + e.message + ' — use "Salvar no aparelho" para não perder a gravação.'); E.erro = e.message; E.enviando = false; return; }
+        if (e.status === 401 || e.status === 402 || e.status === 403 || (e.status === 409 && (E.recomecos || 0) > 3) || (e.status === 507 && tent >= 3)) { aviso('⚠️ ' + e.message + ' — use "Salvar no aparelho" para não perder a gravação.'); E.erro = e.message; E.enviando = false; return; }
         aviso(`📶 Sinal fraco — a gravação está guardada no aparelho e continua subindo sozinha (tentativa ${tent})…`);
         await new Promise(z => setTimeout(z, Math.min(20000, 2000 * tent)));
       }
