@@ -1662,6 +1662,13 @@
   body.modo-estudio .ea-kpi, body.modo-estudio .ea-item, body.modo-estudio .ea-plano, body.modo-estudio .ea-pag, body.modo-estudio .ea-barra, body.modo-estudio .ea-vazio { background:#0f172e; border-color:#1c2747; color:#e6eaf2; } body.modo-estudio .ea-acoes button, body.modo-estudio .ea-bt:not(.pri) { background:#16224a; border-color:#25325c; color:#e6eaf2; } body.modo-estudio .ea h3, body.modo-estudio .ea h2 { color:#fff; } body.modo-estudio .ea-plano li { border-color:#1c2747; } body.modo-estudio .ea-plano li span { color:#cbd5e1; } body.modo-estudio .ea-barra i { background:#1c2747; }
   @media (max-width: 600px) { .ea-item { flex-wrap:wrap; } .ea-acoes { width:100%; } .ea-acoes button { flex:1; } .ea-lims { grid-template-columns:1fr; } }
   .ev-so-pequeno, .ev-sheet-x, .ev-so-cel { display:none !important; }
+  .evc-nativa { display:block; margin:6px auto 8px; padding:9px 14px; border-radius:999px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); color:#fff; font-size:14px; font-weight:700; text-align:center; cursor:pointer; max-width:420px; }
+  .evc-nativa small { font-weight:400; opacity:.75; }
+  .ditado-wrap { position:relative; display:block; }
+  .ditado-wrap > textarea { width:100%; box-sizing:border-box; padding-right:46px !important; }
+  .ditado-bt { position:absolute; right:7px; bottom:9px; width:34px; height:34px; border-radius:50%; border:none; background:#4f7cff; color:#fff; font-size:16px; line-height:34px; padding:0; cursor:pointer; z-index:3; box-shadow:0 2px 8px rgba(0,0,0,.25); }
+  .ditado-bt.on { background:#e11d48; animation:ditadoPulso 1s infinite; }
+  @keyframes ditadoPulso { 0%,100% { box-shadow:0 0 0 0 rgba(225,29,72,.6); } 50% { box-shadow:0 0 0 9px rgba(225,29,72,0); } }
   .ev-comparar { display:grid; gap:8px; margin-top:8px; } .ev-comparar b { display:block; font-size:12px; margin-bottom:3px; } .ev-comparar audio { width:100%; height:36px; }
   .ev-narr { margin-top:12px; padding:12px; border:1px solid var(--e-bd, #25325c); border-radius:12px; background:rgba(124,58,237,.08); } .ev-narr-op { display:flex !important; gap:8px; align-items:flex-start; margin:6px 0; font-size:13.5px; line-height:1.4; color:inherit; cursor:pointer; } .ev-narr-op input { margin-top:3px; flex-shrink:0; width:auto; } .ev-narr-op b { white-space:nowrap; }
   .ev-mus-lista { display:grid; gap:6px; margin-top:8px; max-height:340px; overflow-y:auto; } .ev-mus { display:flex; align-items:center; gap:8px; padding:7px; border:1px solid var(--e-bd, #25325c); border-radius:10px; }
@@ -21509,9 +21516,11 @@ function evRetArred(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y);
 function evDesenharTexto(ctx, x, t) {
   const W = ES.W, H = ES.H, k = W / 1080;
   const local = t - x.ini; if (local < 0 || local > x.dur) return;
+  if (ES.legOcultas && ES.legOcultas.has(x.id)) return;
   const est = Object.assign({}, EV_ESTILOS[x.estilo] || EV_ESTILOS.apoio, x);
+  if (x.estilo === 'apoio' && ES.temLegenda && !x.yFixo && (est.y === undefined || est.y > 0.3)) est.y = 0.2; // frase de apoio vai para o alto quando a legenda está na tela
   let txt = String(x.texto || ''); if (est.maiusc) txt = txt.toUpperCase();
-  const anim = est.anim || 'fade', ent = Math.min(1, local / 0.28), sai = Math.min(1, (x.dur - local) / 0.18);
+  const leg = x.estilo === 'legenda', anim = est.anim || 'fade', ent = Math.min(1, local / (leg ? 0.08 : 0.28)), sai = Math.min(1, (x.dur - local) / (leg ? 0.05 : 0.18)); // legenda troca seca, sem rastro
   let alpha = Math.min(1, sai), escala = 1, dy = 0;
   if (anim === 'fade') alpha *= ent;
   if (anim === 'pop') { const p = Math.min(1, local / 0.25); escala = p < 0.7 ? 0.6 + 0.48 * (p / 0.7) : 1.08 - 0.08 * ((p - 0.7) / 0.3); alpha *= Math.min(1, local / 0.08); }
@@ -21633,6 +21642,8 @@ function evDesenhar(tForcado, exportando) {
       if (['cima', 'baixo', 'esq', 'dir'].includes(o.layout) && o.borda !== false) { ctx.save(); ctx.fillStyle = o.corBorda || '#ffffff'; if (o.layout === 'cima' || o.layout === 'baixo') ctx.fillRect(0, H / 2 - 4 * k, W, 8 * k); else ctx.fillRect(W / 2 - 4 * k, 0, 8 * k, H); ctx.restore(); }
     });
     ES.ocupados = [];
+    // legenda limpa: se duas legendas se encostam no tempo, só a mais nova aparece (nada de legenda "fantasma" por baixo)
+    { const ativasL = d.textos.filter(x => x.estilo === 'legenda' && t >= x.ini && t <= x.ini + x.dur); ES.legOcultas = ativasL.length > 1 ? new Set(ativasL.sort((a, b) => b.ini - a.ini).slice(1).map(x => x.id)) : null; ES.temLegenda = ativasL.length > 0; }
     d.textos.slice().sort((a, b) => ((a.camada || 0) - (b.camada || 0)) || ((a.estilo === 'legenda') - (b.estilo === 'legenda'))).forEach(x => evDesenharTexto(ctx, x, t));
     // logo da marca
     // logo só aparece durante o vídeo se o usuário ligar; por padrão fica apenas na tela final
@@ -22111,7 +22122,7 @@ async function evAbrirEditor(id) {
     </div>
     <section class="ev-linha">
       <div class="ev-linha-barra">
-        <button class="ev-tl-ia ev-so-cel" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button><button class="ev-so-cel" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="ev-so-cel" onclick="document.getElementById('ev-galeria').click()" title="Adicionar fotos e vídeos da galeria"><i>🖼️</i><span>Galeria</span></button><span class="ev-sep ev-so-cel"></span><button class="ev-so-pc" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)"><i>↶</i><span>Desfazer</span></button><button class="ev-so-pc" onclick="evRefazer()" title="Refazer (Ctrl+Y)"><i>↷</i><span>Refazer</span></button><span class="ev-sep ev-so-pc"></span><button class="" onclick="evDividir()" title="Dividir no cursor (S)"><i>✂️</i><span>Dividir</span></button><button class="" onclick="evExcluirSel()" title="Excluir (Delete)"><i>🗑️</i><span>Excluir</span></button><button class="" onclick="evDuplicarSel()" title="Duplicar (Ctrl+D)"><i>⧉</i><span>Duplicar</span></button><span class="ev-sep"></span><button class="" onclick="evPopBarra('velocidade', this)" title="Velocidade"><i>⏩</i><span>Velocidade</span></button><button class="" onclick="evPopBarra('volume', this)" title="Volume"><i>🔊</i><span>Volume</span></button><button class="" onclick="evPopBarra('zoom', this)" title="Zoom"><i>🔍</i><span>Zoom</span></button><button class="" onclick="evPopBarra('enquadrar', this)" title="Enquadrar, espelhar e posicionar"><i>🎯</i><span>Enquadrar</span></button><button class="" onclick="evPopBarra('transicao', this)" title="Transição"><i>🔀</i><span>Transição</span></button><span class="ev-sep"></span><button class="ev-so-pc" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="" onclick="evPopBarra('texto', this)" title="Adicionar texto"><i>🔤</i><span>Texto</span></button><button class="" onclick="evLegendasDaFala()" title="Legendas automáticas do que é falado"><i>💬</i><span>Legendas</span></button><button class="" onclick="evPopBarra('musica', this)" title="Música de fundo"><i>🎵</i><span>Música</span></button><button class="ev-tl-ia" onclick="evAbrirImagensIa()" title="A IA cria imagens conforme você fala"><i>🖼️</i><span>Imagens IA</span></button><button class="ev-tl-ia" onclick="evAbrirCenasReais()" title="Filmagens reais do que você fala"><i>🎬</i><span>Cenas reais</span></button><button class="" onclick="evPainel('audio'); evSheet('painel'); setTimeout(()=>{const e=document.getElementById('ev-limpeza'); if(e) e.scrollIntoView({block:'start'});},80)" title="Tirar ruído do áudio com IA"><i>🎧</i><span>Limpar áudio</span></button><button class="" onclick="evSepararAudio()" title="Separar o som do vídeo para editar só o áudio"><i>🔊</i><span>Separar áudio</span></button><button class="" onclick="evAbrirInserirCena()" title="Colocar uma cena (vídeo real, foto ou ilustração) num trecho"><i>🧩</i><span>Inserir cena</span></button><button class="ev-so-cel" onclick="evPainel('filtros'); evSheet('painel')" title="Filtros e imagem inteligente"><i>🎨</i><span>Filtros</span></button><button class="ev-so-cel" onclick="evPainel('elementos'); evSheet('painel')" title="Logo, emojis e encerramento"><i>🏷️</i><span>Marca</span></button><button class="ev-so-cel" onclick="evPainel('midia'); evSheet('painel')" title="Mídias do projeto"><i>🎞️</i><span>Mídias</span></button><button class="ev-so-cel" onclick="evPainel('ia'); evSheet('painel')" title="Agente IA"><i>🤖</i><span>Agente</span></button><button class="ev-so-cel" onclick="evSheet('props')" title="Ajustes do item selecionado"><i>⚙️</i><span>Ajustes</span></button><button class="" onclick="evPopBarra('mais', this)" title="Mais ferramentas"><i>⋯</i><span>Mais</span></button><span class="ev-sep ev-so-pc"></span><button class="ev-tl-ia ev-so-pc" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button>
+        <button class="ev-tl-ia ev-so-cel" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button><button class="ev-so-cel" onclick="evDesfazer()" title="Desfazer"><i>↶</i><span>Desfazer</span></button><button class="" onclick="evAbrirVersoes()" title="Versões salvas: voltar para uma edição anterior"><i>🕘</i><span>Versões</span></button><button class="ev-so-cel" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="ev-so-cel" onclick="document.getElementById('ev-galeria').click()" title="Adicionar fotos e vídeos da galeria"><i>🖼️</i><span>Galeria</span></button><span class="ev-sep ev-so-cel"></span><button class="ev-so-pc" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)"><i>↶</i><span>Desfazer</span></button><button class="ev-so-pc" onclick="evRefazer()" title="Refazer (Ctrl+Y)"><i>↷</i><span>Refazer</span></button><span class="ev-sep ev-so-pc"></span><button class="" onclick="evDividir()" title="Dividir no cursor (S)"><i>✂️</i><span>Dividir</span></button><button class="" onclick="evExcluirSel()" title="Excluir (Delete)"><i>🗑️</i><span>Excluir</span></button><button class="" onclick="evDuplicarSel()" title="Duplicar (Ctrl+D)"><i>⧉</i><span>Duplicar</span></button><span class="ev-sep"></span><button class="" onclick="evPopBarra('velocidade', this)" title="Velocidade"><i>⏩</i><span>Velocidade</span></button><button class="" onclick="evPopBarra('volume', this)" title="Volume"><i>🔊</i><span>Volume</span></button><button class="" onclick="evPopBarra('zoom', this)" title="Zoom"><i>🔍</i><span>Zoom</span></button><button class="" onclick="evPopBarra('enquadrar', this)" title="Enquadrar, espelhar e posicionar"><i>🎯</i><span>Enquadrar</span></button><button class="" onclick="evPopBarra('transicao', this)" title="Transição"><i>🔀</i><span>Transição</span></button><span class="ev-sep"></span><button class="ev-so-pc" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="" onclick="evPopBarra('texto', this)" title="Adicionar texto"><i>🔤</i><span>Texto</span></button><button class="" onclick="evLegendasDaFala()" title="Legendas automáticas do que é falado"><i>💬</i><span>Legendas</span></button><button class="" onclick="evPopBarra('musica', this)" title="Música de fundo"><i>🎵</i><span>Música</span></button><button class="ev-tl-ia" onclick="evAbrirImagensIa()" title="A IA cria imagens conforme você fala"><i>🖼️</i><span>Imagens IA</span></button><button class="ev-tl-ia" onclick="evAbrirCenasReais()" title="Filmagens reais do que você fala"><i>🎬</i><span>Cenas reais</span></button><button class="" onclick="evPainel('audio'); evSheet('painel'); setTimeout(()=>{const e=document.getElementById('ev-limpeza'); if(e) e.scrollIntoView({block:'start'});},80)" title="Tirar ruído do áudio com IA"><i>🎧</i><span>Limpar áudio</span></button><button class="" onclick="evSepararAudio()" title="Separar o som do vídeo para editar só o áudio"><i>🔊</i><span>Separar áudio</span></button><button class="" onclick="evAbrirInserirCena()" title="Colocar uma cena (vídeo real, foto ou ilustração) num trecho"><i>🧩</i><span>Inserir cena</span></button><button class="ev-so-cel" onclick="evPainel('filtros'); evSheet('painel')" title="Filtros e imagem inteligente"><i>🎨</i><span>Filtros</span></button><button class="ev-so-cel" onclick="evPainel('elementos'); evSheet('painel')" title="Logo, emojis e encerramento"><i>🏷️</i><span>Marca</span></button><button class="ev-so-cel" onclick="evPainel('midia'); evSheet('painel')" title="Mídias do projeto"><i>🎞️</i><span>Mídias</span></button><button class="ev-so-cel" onclick="evPainel('ia'); evSheet('painel')" title="Agente IA"><i>🤖</i><span>Agente</span></button><button class="ev-so-cel" onclick="evSheet('props')" title="Ajustes do item selecionado"><i>⚙️</i><span>Ajustes</span></button><button class="" onclick="evPopBarra('mais', this)" title="Mais ferramentas"><i>⋯</i><span>Mais</span></button><span class="ev-sep ev-so-pc"></span><button class="ev-tl-ia ev-so-pc" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button>
         <div style="flex:1" class="ev-so-pc"></div>
         <span class="ev-so-pc" style="font-size:12px;opacity:.7;">Zoom</span><input class="ev-so-pc" type="range" min="15" max="200" value="${ES.pxs}" oninput="ES.pxs=Number(this.value); evDesenharLinha()">
         <input type="file" id="ev-galeria" accept="video/*,image/*,audio/*" multiple hidden onchange="evSubir(this.files); this.value=''">
@@ -23271,6 +23282,7 @@ async function evAbrirCamera() {
     <div class="evc-zoom" id="evc-zoom" hidden><div class="evc-zchips" id="evc-zchips"></div><input type="range" id="ev-cam-zoom" step="0.01" oninput="EVCAM.zoom && EVCAM.zoom.setar(this.value)"><b id="evc-zoom-v">1x</b></div>
     <div class="evc-base">
       <div class="evc-msg" id="ev-cam-msg">Toque no botão vermelho para gravar · a gravação entra direto no vídeo</div>
+      <label class="evc-nativa" onclick="evCamSoltarCamera()">📱 Gravar com a câmera do celular <small>(qualidade máxima, sem travar)</small><input type="file" accept="video/*" capture="user" hidden onchange="evCamNativa(this)"></label>
       <div class="evc-botoes">
         <button class="evc-lat" id="ev-cam-pausa" onclick="evCamPausar()" disabled title="Pausar">⏸</button>
         <button class="evc-rec" id="ev-cam-bt" onclick="evCamGravar()" title="Gravar (Enter)"><i></i></button>
@@ -23441,6 +23453,21 @@ function evCamPartesUI() {
 }
 function evCamParteIr(d) { const P = EVCAM.pp; if (!P || EVCAM.rec || EVCAM.ultima) return; const n = P.livre ? P.i + 2 : P.partes.length; P.i = Math.max(0, Math.min(n - 1, P.i + d)); if (P.livre && !P.partes[P.i]) P.partes[P.i] = { titulo: '', texto: '' }; EVCAM.pos = 0; const t = document.getElementById('ev-cam-tp-txt'); if (t) t.style.transform = ''; evCamPartesUI(); evCamTp(); }
 // usou a parte: entra no lugar dela na linha do tempo (regravar troca a anterior) e a câmera já fica pronta para a próxima
+// 📱 Gravar com o app de câmera do próprio celular: imagem nítida e 30/60 quadros por segundo de verdade.
+// (a gravação feita dentro do navegador perde quadros quando o celular esquenta ou com fundo virtual)
+function evCamSoltarCamera() { try { if (EVCAM.stream) EVCAM.stream.getTracks().forEach(t => t.stop()); EVCAM.soltou = true; } catch (e) {} }
+async function evCamNativa(inp) {
+  const f = inp.files && inp.files[0]; inp.value = '';
+  if (!f) { if (EVCAM.soltou) { EVCAM.soltou = false; evCamLigar(); } return; }
+  EVCAM.soltou = false;
+  const url = URL.createObjectURL(f);
+  const info = await new Promise(ok => { const v = document.createElement('video'); v.muted = true; v.preload = 'metadata'; const tm = setTimeout(() => ok({}), 8000); v.onloadedmetadata = () => { clearTimeout(tm); ok({ dur: isFinite(v.duration) ? v.duration : 0, w: v.videoWidth, h: v.videoHeight }); }; v.onerror = () => { clearTimeout(tm); ok({}); }; v.src = url; });
+  const m = { id: evUid(), url: '', nome: 'Gravação do celular', tipo: 'video', duracao: info.dur || 0, w: info.w || 1080, h: info.h || 1920, enviando: true };
+  ES.locais = ES.locais || {}; ES.locais[m.id] = url; ES.p.dados.midias.push(m);
+  if (EVCAM.pp) { const tudo = evCamParteEncaixar(m); evMudou(false); evDesenharLinha(); if (tudo) evCamPartesConcluir(); else evCamLigar(); }
+  else { evAdicionarClipe(m.id, true); evMudou(); evPainel('midia'); evFecharCamera(true); mostrarToast('🎥 Gravação na linha do tempo! Ela sobe para o servidor em segundo plano.'); }
+  ES.filaEnvio = (ES.filaEnvio || Promise.resolve()).then(() => evEnviarMidiaFundo(f, m));
+}
 function evCamParteEncaixar(m) {
   const P = EVCAM.pp, d = ES.p.dados, ant = P.feitas[P.i];
   m.nome = `Parte ${P.i + 1}${(P.partes[P.i] || {}).titulo ? ' · ' + P.partes[P.i].titulo : ''}`; m.parte = P.i + 1;
@@ -25605,7 +25632,7 @@ function evSalvarVersao(nome, silencioso) {
   (copia.midias || []).forEach(m => EV_PESADOS.forEach(k => delete m[k])); // os dados pesados continuam na versão atual
   d.versoes = (d.versoes || []).slice(-5); d.versoes.push({ id: evUid(), nome: String(nome || 'Versão salva').slice(0, 60), em: new Date().toISOString(), legenda: ES.p.legenda || '', hashtags: ES.p.hashtags || '', dados: copia });
   evMudou(false); evSalvar(true).catch(() => {});
-  if (!silencioso) { mostrarToast('💾 Versão salva. Para voltar: Projeto › Versões salvas.'); evDesenharProps(); }
+  if (!silencioso) { mostrarToast('💾 Versão salva. Para voltar: botão 🕘 Versões.'); evDesenharProps(); const lm = document.getElementById('ev-versoes-lista'); if (lm) lm.innerHTML = evHtmlVersoes(); }
 }
 function evRestaurarVersao(id) {
   const d = ES.p.dados, v = (d.versoes || []).find(x => x.id === id); if (!v) return;
@@ -25617,7 +25644,61 @@ function evRestaurarVersao(id) {
   // mídias que existem agora e não existiam na versão continuam na biblioteca (nada se perde)
   (d.midias || []).forEach(m => { if (!nova.midias.some(x => x.id === m.id)) nova.midias.push(m); });
   ES.hist.push(JSON.stringify(d)); ES.p.dados = nova; if (v.legenda) ES.p.legenda = v.legenda; if (v.hashtags) ES.p.hashtags = v.hashtags;
-  ES.sel = null; evMudou(); evIrPara(0); evPainel(ES.painel); evDesenharProps(); mostrarToast('↩ Versão restaurada.');
+  ES.sel = null; evMudou(); evIrPara(0); evPainel(ES.painel); evDesenharProps(); { const lm = document.getElementById('ev-versoes-lista'); if (lm) document.getElementById('ev-modal').innerHTML = ''; } mostrarToast('↩ Versão restaurada.');
+}
+// ---------- 🎤 Ditado: em todo campo de escrever há um microfone para falar em vez de digitar ----------
+let DITADO = null;
+function ditadoAnexar() {
+  document.querySelectorAll('textarea:not([data-ditado])').forEach(campo => {
+    if (campo.readOnly || campo.disabled || campo.closest('[data-sem-ditado]')) { campo.dataset.ditado = '0'; return; }
+    campo.dataset.ditado = '1';
+    const w = document.createElement('span'); w.className = 'ditado-wrap'; campo.parentNode.insertBefore(w, campo); w.appendChild(campo);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'ditado-bt'; b.title = 'Falar em vez de digitar'; b.textContent = '🎤';
+    b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); ditadoAlternar(campo, b); }); w.appendChild(b);
+  });
+}
+function ditadoEscrever(campo, base, txt) {
+  const sep = base && !/\s$/.test(base) ? ' ' : ''; campo.value = base + sep + txt;
+  campo.dispatchEvent(new Event('input', { bubbles: true }));
+}
+async function ditadoAlternar(campo, b) {
+  if (DITADO) { const atual = DITADO; DITADO = null; atual.parar(); if (atual.campo === campo) return; }
+  const base = campo.value, Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (Rec) {
+    const r = new Rec(); r.lang = 'pt-BR'; r.continuous = true; r.interimResults = true; let final = '';
+    r.onresult = e => { let inter = ''; for (let i = e.resultIndex; i < e.results.length; i++) { const tx = e.results[i][0].transcript; if (e.results[i].isFinal) final += (final ? ' ' : '') + tx.trim(); else inter += tx; } ditadoEscrever(campo, base, (final + ' ' + inter).trim()); };
+    const fim = () => { b.classList.remove('on'); b.textContent = '🎤'; campo.dispatchEvent(new Event('change', { bubbles: true })); if (DITADO && DITADO.campo === campo) DITADO = null; };
+    r.onend = fim; r.onerror = e => { if (e.error === 'not-allowed') mostrarToast('Permita o uso do microfone para falar.', true); else if (e.error !== 'no-speech' && e.error !== 'aborted') mostrarToast('Ditado: ' + e.error, true); };
+    try { r.start(); } catch (e) { return mostrarToast('Não consegui ligar o microfone.', true); }
+    b.classList.add('on'); b.textContent = '⏹'; mostrarToast('🎤 Pode falar… toque de novo para parar.');
+    DITADO = { campo, parar: () => { try { r.stop(); } catch (e) {} } };
+    return;
+  }
+  // navegador sem ditado: grava o áudio e o servidor transcreve
+  let st; try { st = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (e) { return mostrarToast('Permita o uso do microfone para falar.', true); }
+  const tipo = ['audio/webm', 'audio/mp4', 'audio/ogg'].find(x => window.MediaRecorder && MediaRecorder.isTypeSupported(x)) || '';
+  const mr = new MediaRecorder(st, tipo ? { mimeType: tipo } : undefined), partes = [];
+  mr.ondataavailable = e => { if (e.data.size) partes.push(e.data); };
+  mr.onstop = async () => {
+    st.getTracks().forEach(t => t.stop()); b.classList.remove('on'); b.textContent = '⏳';
+    try {
+      const blob = new Blob(partes, { type: mr.mimeType || 'audio/webm' }), fd = new FormData(); fd.append('file', blob, 'ditado.' + (/mp4/.test(blob.type) ? 'm4a' : /ogg/.test(blob.type) ? 'ogg' : 'webm'));
+      const r = await fetch('/api/admin/estudio/transcrever', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd }); const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || 'não consegui transcrever');
+      ditadoEscrever(campo, base, String(j.texto || '').trim()); campo.dispatchEvent(new Event('change', { bubbles: true }));
+    } catch (e) { mostrarToast('Ditado: ' + e.message, true); }
+    b.textContent = '🎤';
+  };
+  mr.start(); b.classList.add('on'); b.textContent = '⏹'; mostrarToast('🎤 Gravando… toque de novo para parar.');
+  const tm = setTimeout(() => { if (mr.state === 'recording') mr.stop(); }, 120000);
+  DITADO = { campo, parar: () => { clearTimeout(tm); if (mr.state === 'recording') mr.stop(); } };
+}
+{ let espera = null; new MutationObserver(() => { if (espera) return; espera = setTimeout(() => { espera = null; ditadoAnexar(); }, 250); }).observe(document.documentElement, { childList: true, subtree: true }); setTimeout(ditadoAnexar, 500); }
+function evAbrirVersoes() {
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal" style="max-width:520px;max-height:88vh;overflow:auto;">
+    <div class="ev-modal-cab"><h3>🕘 Versões</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <div class="ev-sub" style="margin-bottom:8px;">Antes de cada edição com IA (e de outras mudanças grandes) o sistema guarda uma versão. Toque em <b>Voltar</b> para recuperar como estava.</div>
+    <div id="ev-versoes-lista">${evHtmlVersoes()}</div></div></div>`;
 }
 function evHtmlVersoes() {
   const l = (ES.p.dados.versoes || []).slice().reverse();
