@@ -22505,6 +22505,7 @@ function evPainel(qual) {
       <div id="ev-up-prog"></div>
       <div class="ev-midias">${d.midias.filter(m => m.tipo !== 'audio').map(m => `<div class="ev-midia" title="${escapeHtml(m.nome)}" onclick="if(event.target.closest('button')) return; evMenuMidia('${m.id}')" style="cursor:pointer;">${m.tipo === 'fundo' ? `<div class="ev-midia-ico" style="background:linear-gradient(135deg,${(m.cores || [])[0] || '#0b1329'},${(m.cores || [])[1] || '#dc4c4c'})">✨</div>` : m.thumb ? `<img src="${m.thumb}">` : `<div class="ev-midia-ico">${m.tipo === 'video' ? '🎬' : '🖼️'}</div>`}<span>${m.tipo === 'video' ? evFmtT(m.duracao) : m.tipo === 'fundo' ? 'cena animada' : 'foto'}</span><button onclick="evAdicionarClipe('${m.id}')" title="Adicionar na linha do tempo">＋</button><button class="sb" onclick="evMenuMidia('${m.id}')" title="Tela dividida: gravar narrando ou usar como 2º vídeo">⧉</button><button class="x" onclick="evRemoverMidia('${m.id}')" title="Remover do projeto">×</button></div>`).join('') || '<div class="ev-vazio">Nenhuma mídia ainda.</div>'}</div>
       ${d.midias.some(m => m.tipo !== 'audio') ? `<button class="ev-btn" onclick="evAdicionarTodas()">＋ Colocar todas na linha do tempo</button>` : ''}
+      ${ESTADO.usuario && ESTADO.usuario.role === 'admin' ? `<button class="ev-btn" onclick="evAbrirRecuperar()">🛟 Recuperar vídeos enviados</button>` : ''}
       <div class="ev-dica-fixa">🧩 <b>Dois vídeos juntos:</b> clique em ⧉ numa mídia para usar como tela dividida (em cima/embaixo), lado a lado, janelinha ou cobertura (B-roll).</div>
       <div class="ev-dica-fixa">💡 Dica de edição viral: cortes curtos (1,5 a 3 s), o melhor momento primeiro e nada de introdução.</div>`;
   } else if (qual === 'texto') {
@@ -22589,6 +22590,30 @@ async function evInserirCena() {
 // ---------- 🎬 Cenas reais: filmagens de verdade que mostram o que você fala (B-roll automático) ----------
 let EV_BROLL_CFG = null;
 async function evBrollCfg(forcar) { if (!EV_BROLL_CFG || forcar) { try { EV_BROLL_CFG = await api('/api/admin/estudio-broll'); } catch (e) { EV_BROLL_CFG = { pexels: false, pixabay: false }; } } return EV_BROLL_CFG; }
+// Recuperar gravações que chegaram ao servidor mas não ficaram no projeto
+async function evAbrirRecuperar() {
+  const modal = document.getElementById('ev-modal');
+  modal.innerHTML = `<div class="ev-modal-fundo"><div class="ev-modal" style="max-width:560px;"><h3 style="margin:0 0 6px;">🛟 Recuperar vídeos enviados</h3><div class="ev-sub">Procurando no servidor…</div></div></div>`;
+  let lista = []; try { lista = await api('/api/admin/estudio/recuperaveis'); } catch (e) { return modal.innerHTML = `<div class="ev-modal-fundo"><div class="ev-modal"><h3>🛟 Recuperar</h3><div class="ev-sub">⚠️ ${escapeHtml(e.message)}</div><button class="ev-btn" style="width:100%;margin-top:10px;" onclick="document.getElementById('ev-modal').innerHTML=''">Fechar</button></div></div>`; }
+  ES.recuperaveis = lista;
+  modal.innerHTML = `<div class="ev-modal-fundo"><div class="ev-modal" style="max-width:560px;max-height:88vh;overflow:auto;">
+    <h3 style="margin:0 0 4px;">🛟 Recuperar vídeos enviados</h3>
+    <div class="ev-sub" style="margin-bottom:8px;">Vídeos que chegaram ao servidor nos últimos 7 dias mas não estão em nenhum projeto. Assista e toque em <b>Adicionar</b> no que for o seu. Se aparecer o mesmo vídeo repetido, basta adicionar um.</div>
+    ${lista.length ? lista.map((v, i) => `<div style="border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px;margin:8px 0;">
+      <video src="${v.url}#t=0.5" preload="metadata" controls playsinline style="width:100%;max-height:260px;background:#000;border-radius:8px;"></video>
+      <div class="ev-dupla" style="align-items:center;margin-top:6px;"><span class="ev-sub" style="flex:1;">${new Date(v.quando).toLocaleString('pt-BR')} · ${v.tamanhoMB} MB${v.persistente ? '' : ' · ⚠️ fora do disco permanente'}</span>
+      <button class="ev-btn primario" onclick="evRecuperarAdicionar(${i}, this)">＋ Adicionar</button></div></div>`).join('') : '<div class="ev-sub" style="padding:14px 0;">Nenhum vídeo solto encontrado no servidor.</div>'}
+    <button class="ev-btn" style="width:100%;margin-top:6px;" onclick="document.getElementById('ev-modal').innerHTML=''">Fechar</button></div></div>`;
+}
+async function evRecuperarAdicionar(i, bt) {
+  const v = (ES.recuperaveis || [])[i]; if (!v) return; if (bt) { bt.disabled = true; bt.textContent = 'Adicionando…'; }
+  const m = { id: evUid(), url: v.url, nome: 'Vídeo recuperado ' + new Date(v.quando).toLocaleTimeString('pt-BR').slice(0, 5), tipo: 'video' };
+  try { const info = await evInfoUrl(v.url); if (info.duracao) m.duracao = info.duracao; if (info.w) { m.w = info.w; m.h = info.h; } if (info.thumb) m.thumb = info.thumb; } catch (e) {}
+  await evGarantirDuracao(m).catch(() => {});
+  ES.p.dados.midias.push(m); evAdicionarClipe(m.id, true); evMudou(); await evSalvar(true).catch(() => {});
+  evPainel('midia'); evDesenhar(); if (bt) bt.textContent = '✅ Adicionado';
+  mostrarToast('✅ Vídeo recuperado e colocado na linha do tempo.');
+}
 async function evAbrirCenasReais() {
   if (!evPrecisa('imagens_ia')) return;
   const d = ES.p.dados;

@@ -13788,6 +13788,25 @@ app.get('/api/admin/estudio/projetos', requireRole('admin', 'estudio'), async (r
     try { res.json((await dbAll(`SELECT id, titulo, formato, tipo, status, capa_url, video_url, agendado_para, publicado_em, ig_permalink, erro_publicacao, ig_formato, viral_score, legenda, updated_at, created_at, dados FROM estudio_projetos ${filtro} ORDER BY updated_at DESC`)).map(p => { const o = linhaProjetoEst(p); const d = o.dados || {}; o.duracao = (d.clips || []).reduce((s, c) => s + Math.max(0, ((c.fim || 0) - (c.ini || 0)) / (c.vel || 1)), 0); o.qtdClips = (d.clips || []).length; o.video_existe = o.video_url ? videoExisteEst(o.video_url) : false; o.thumb = (d.midias || []).find(m => m.tipo === 'imagem') ? (d.midias || []).find(m => m.tipo === 'imagem').url : ''; delete o.dados; return o; })); }
     catch (e) { res.status(500).json({ error: 'Erro ao carregar os projetos.' }); }
 });
+// Vídeos que chegaram ao servidor mas não ficaram ligados a nenhum projeto (ex.: o envio terminou depois que o
+// celular desistiu de esperar). Permite recuperar a gravação sem precisar gravar de novo.
+app.get('/api/admin/estudio/recuperaveis', requireRole('admin'), async (req, res) => {
+    try {
+        const textos = await dbAll(`SELECT COALESCE(dados,'') || ' ' || COALESCE(video_url,'') || ' ' || COALESCE(capa_url,'') AS t FROM estudio_projetos`).catch(() => []);
+        const subs = await dbAll(`SELECT antigo, novo FROM estudio_substitutos`).catch(() => []);
+        const usados = textos.map(r => r.t).join('\n') + '\n' + subs.map(r => r.antigo + ' ' + r.novo).join('\n');
+        const lista = [];
+        for (const pasta of [...new Set([PASTA_UPLOADS, PASTA_UPLOADS_CODIGO])]) {
+            let nomes = []; try { nomes = await fs.promises.readdir(pasta); } catch (e) { continue; }
+            for (const n of nomes) {
+                if (!/^file-\d+-\d+\.(mp4|webm|mov|m4v)$/i.test(n) || usados.includes(n)) continue;
+                try { const st = await fs.promises.stat(path.join(pasta, n)); if (st.size < 200 * 1024 || Date.now() - st.mtimeMs > 7 * 24 * 3600 * 1000) continue; lista.push({ nome: n, url: '/uploads/' + n, tamanhoMB: Math.round(st.size / 104857.6) / 10, quando: new Date(st.mtimeMs).toISOString(), persistente: pasta === PASTA_UPLOADS && UPLOADS_PERSISTENTES }); } catch (e) {}
+            }
+        }
+        lista.sort((a, b) => b.quando.localeCompare(a.quando));
+        res.json(lista.slice(0, 40));
+    } catch (e) { res.status(500).json({ error: 'Erro ao procurar vídeos: ' + e.message }); }
+});
 app.get('/api/admin/estudio/projetos/:id', requireRole('admin', 'estudio'), async (req, res) => {
     const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
     if (!p) return res.status(404).json({ error: 'Projeto não encontrado.' });
