@@ -15321,6 +15321,89 @@ app.post('/api/admin/estudio/transcrever', requireRole('admin', 'estudio'), asyn
     });
 });
 
+// ⚡ Baixar rápido: o SERVIDOR monta o vídeo (cortes, velocidade, legendas e música) com ffmpeg — o celular não precisa exportar.
+const JOBS_RENDER = new Map();
+let FFMPEG_ASS = null;
+async function ffmpegTemLegendas() { if (FFMPEG_ASS !== null) return FFMPEG_ASS; try { const o = await rodarFfmpegJa(['-hide_banner', '-filters'], 15000); FFMPEG_ASS = /\bsubtitles\b/.test(o) || /\bass\b/.test(o); } catch (e) { FFMPEG_ASS = /\bsubtitles\b/.test(String(e.stderr || '')); } return FFMPEG_ASS; }
+function arquivoDaUrlEst(url) {
+    const nome = path.basename(String(url || '').split('?')[0]); if (!nome) return null;
+    for (const pasta of [PASTA_UPLOADS, PASTA_UPLOADS_CODIGO]) { const a = path.join(pasta, nome); if (fs.existsSync(a)) return a; }
+    return null;
+}
+function assTempo(s) { s = Math.max(0, s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), seg = s % 60; return `${h}:${String(m).padStart(2, '0')}:${seg.toFixed(2).padStart(5, '0')}`; }
+function assCor(hex, alfa) { const h = String(hex || '#ffffff').replace('#', ''); const c = h.length === 3 ? h.split('').map(x => x + x).join('') : h.padEnd(6, 'f'); return `&H${(alfa || '00')}${c.slice(4, 6)}${c.slice(2, 4)}${c.slice(0, 2)}`.toUpperCase(); }
+function montarAssEst(textos, W, H) {
+    const est = { legenda: { tam: 68, y: 0.66, cor: '#ffffff', borda: 5, neg: 1 }, gancho: { tam: 76, y: 0.24, cor: '#ffffff', borda: 0, caixa: '#dc4c4c', neg: 1 }, apoio: { tam: 58, y: 0.2, cor: '#ffffff', borda: 4, neg: 1 }, cta: { tam: 64, y: 0.74, cor: '#0b1329', borda: 0, caixa: '#ffd600', neg: 1 }, titulo: { tam: 120, y: 0.36, cor: '#ffffff', borda: 4, neg: 1 }, caixa: { tam: 52, y: 0.82, cor: '#ffffff', borda: 0, caixa: '#000000', neg: 0 } };
+    const k = W / 1080; const linhas = [];
+    linhas.push('[Script Info]', 'ScriptType: v4.00+', `PlayResX: ${W}`, `PlayResY: ${H}`, 'WrapStyle: 0', 'ScaledBorderAndShadow: yes', '', '[V4+ Styles]',
+        'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding');
+    Object.entries(est).forEach(([n, e]) => linhas.push(`Style: ${n},DejaVu Sans,${Math.round(e.tam * k)},${assCor(e.cor)},${assCor(e.cor)},${e.caixa ? assCor(e.caixa) : '&H00000000'},${e.caixa ? assCor(e.caixa) : '&H64000000'},${e.neg ? -1 : 0},0,0,0,100,100,0,0,${e.caixa ? 3 : 1},${e.caixa ? Math.round(14 * k) : Math.round(e.borda * k)},0,5,${Math.round(70 * k)},${Math.round(70 * k)},0,1`));
+    linhas.push('', '[Events]', 'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text');
+    const limpo = t => String(t || '').replace(/\p{Extended_Pictographic}|\uFE0F/gu, '').replace(/[{}\\]/g, '').replace(/\n/g, '\\N').trim();
+    (textos || []).filter(x => est[x.estilo] && String(x.texto || '').trim() && x.dur > 0).sort((a, b) => a.ini - b.ini).forEach(x => {
+        const e = est[x.estilo], y = Math.round((x.y !== undefined ? x.y : e.y) * H), xx = Math.round((x.x !== undefined ? x.x : 0.5) * W);
+        let txt = limpo(x.estilo === 'legenda' || x.estilo === 'gancho' || x.estilo === 'titulo' ? String(x.texto).toUpperCase() : x.texto);
+        if (x.estilo === 'legenda') { const dest = assCor(x.destaque || '#ffd600'); const orig = String(x.texto || '').split(/\s+/).filter(w => w.length > 2 && w === w.toUpperCase() && /[A-ZÁÉÍÓÚÂÊÔÃÕÇ]/.test(w)).map(w => w.replace(/[^\wÀ-ú]/g, ''));
+            txt = txt.split(' ').map(w => orig.includes(w.replace(/[^\wÀ-ú]/g, '')) ? `{\\c${dest}}${w}{\\c${assCor(x.cor || '#ffffff')}}` : w).join(' '); }
+        linhas.push(`Dialogue: ${x.estilo === 'legenda' ? 1 : 2},${assTempo(x.ini)},${assTempo(x.ini + x.dur)},${x.estilo},,0,0,0,,{\\pos(${xx},${y})}${txt}`);
+    });
+    return linhas.join('\n');
+}
+app.post('/api/admin/estudio/projetos/:id/render-rapido', requireRole('admin', 'estudio'), async (req, res) => {
+    if (!(await ffmpegDisponivel())) return res.status(400).json({ error: 'O servidor não tem o ffmpeg para montar o vídeo.' });
+    const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null); if (!p) return res.status(404).json({ error: 'Projeto não encontrado.' });
+    let d = {}; try { d = JSON.parse(p.dados || '{}'); } catch (e) {}
+    const formatos = { '9:16': [1080, 1920], '4:5': [1080, 1350], '1:1': [1080, 1080], '16:9': [1920, 1080] }, [W, H] = formatos[p.formato] || formatos['9:16'];
+    const midias = Object.fromEntries((d.midias || []).map(m => [m.id, m]));
+    const clips = (d.clips || []).map(c => ({ c, m: midias[c.midia] })).filter(x => x.m && (x.m.tipo === 'video' || x.m.tipo === 'imagem'));
+    if (!clips.length) return res.status(400).json({ error: 'O projeto não tem vídeo na linha do tempo.' });
+    const faltam = clips.filter(x => !arquivoDaUrlEst(x.m.url)).map(x => x.m.nome || 'vídeo'); if (faltam.length) return res.status(400).json({ error: 'Falta no servidor o arquivo de: ' + [...new Set(faltam)].join(', ') + '. Espere terminar de subir ou reenvie.' });
+    const id = require('crypto').randomBytes(6).toString('hex'), job = { status: 'processando', progresso: 0, t: Date.now() }; JOBS_RENDER.set(id, job); setTimeout(() => JOBS_RENDER.delete(id), 6 * 3600 * 1000);
+    res.json({ job: id });
+    (async () => {
+        const tmpDir = path.join(require('os').tmpdir(), 'render-' + id); fs.mkdirSync(tmpDir, { recursive: true });
+        try {
+            const args = ['-y', '-hide_banner', '-loglevel', 'error'], fil = []; let n = 0, total = 0;
+            for (const { c, m } of clips) {
+                const arq = arquivoDaUrlEst(m.url), vel = Math.max(0.25, Math.min(4, Number(c.vel) || 1));
+                if (m.tipo === 'imagem') {
+                    const dur = Math.max(0.3, (Number(c.fim) || 3) - (Number(c.ini) || 0)); args.push('-loop', '1', '-t', String(dur), '-i', arq);
+                    fil.push(`[${n}:v]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},fps=30,format=yuv420p,setsar=1[v${n}]`, `anullsrc=r=48000:cl=stereo,atrim=0:${dur.toFixed(3)}[a${n}]`); total += dur;
+                } else {
+                    let info = ''; try { await rodarFfmpegJa(['-hide_banner', '-i', arq], 20000); } catch (e) { info = String(e.stderr || ''); }
+                    const temAudio = /Stream #[^\n]*Audio:/.test(info), ini = Math.max(0, Number(c.ini) || 0), fim = Math.max(ini + 0.1, Number(c.fim) || ini + 3), dur = (fim - ini) / vel;
+                    args.push('-i', arq);
+                    const zoom = Math.max(1, Math.min(2, Number(c.zoom) || 1)), zf = zoom > 1.001 ? `,scale=iw*${zoom.toFixed(3)}:ih*${zoom.toFixed(3)},crop=${W}:${H}` : '';
+                    fil.push(`[${n}:v]trim=start=${ini.toFixed(3)}:end=${fim.toFixed(3)},setpts=(PTS-STARTPTS)/${vel},scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}${zf},fps=30,format=yuv420p,setsar=1[v${n}]`);
+                    const vol = c.mudo ? 0 : (c.vol !== undefined ? Number(c.vol) : 1);
+                    if (temAudio) { let at = ''; let v2 = vel; while (v2 > 2) { at += ',atempo=2'; v2 /= 2; } while (v2 < 0.5) { at += ',atempo=0.5'; v2 /= 0.5; } if (Math.abs(v2 - 1) > 0.001) at += `,atempo=${v2.toFixed(4)}`;
+                        fil.push(`[${n}:a]atrim=start=${ini.toFixed(3)}:end=${fim.toFixed(3)},asetpts=PTS-STARTPTS${at},aresample=48000,aformat=channel_layouts=stereo,volume=${vol.toFixed(3)}[a${n}]`); }
+                    else fil.push(`anullsrc=r=48000:cl=stereo,atrim=0:${dur.toFixed(3)}[a${n}]`);
+                    total += dur;
+                }
+                n++;
+            }
+            fil.push(clips.map((_, i) => `[v${i}][a${i}]`).join('') + `concat=n=${clips.length}:v=1:a=1[vc][ac]`);
+            // música e outros áudios da linha do tempo
+            let saidaA = '[ac]'; const extras = [];
+            (d.audios || []).forEach(a => { const m = midias[a.midia]; const arq = m && arquivoDaUrlEst(m.url); if (!arq || !(a.dur > 0)) return; args.push('-i', arq); const k = n++, vol = a.vol !== undefined ? Number(a.vol) : 0.5;
+                fil.push(`[${k}:a]atrim=start=${(Number(a.corte) || 0).toFixed(3)}:duration=${Number(a.dur).toFixed(3)},asetpts=PTS-STARTPTS,aresample=48000,aformat=channel_layouts=stereo,volume=${vol.toFixed(3)},adelay=${Math.round((Number(a.ini) || 0) * 1000)}|${Math.round((Number(a.ini) || 0) * 1000)}[m${k}]`); extras.push(`[m${k}]`); });
+            if (extras.length) { fil.push(`[ac]${extras.join('')}amix=inputs=${extras.length + 1}:duration=first:normalize=0[am]`); saidaA = '[am]'; }
+            let saidaV = '[vc]';
+            if (await ffmpegTemLegendas()) { const assArq = path.join(tmpDir, 'leg.ass'); fs.writeFileSync(assArq, montarAssEst(d.textos, W, H)); fil.push(`[vc]subtitles=${assArq.replace(/\\/g, '/').replace(/:/g, '\\:')}[vs]`); saidaV = '[vs]'; }
+            else job.aviso = 'O ffmpeg do servidor não tem o módulo de legendas: o vídeo saiu sem os textos.';
+            const nome = 'rapido-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + '.mp4', out = path.join(PASTA_UPLOADS, nome), tmpOut = path.join(tmpDir, 'saida.mp4');
+            args.push('-filter_complex', fil.join(';'), '-map', saidaV, '-map', saidaA, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p', '-r', '30', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', '-t', total.toFixed(3), tmpOut);
+            job.status = 'processando'; job.total = total;
+            await rodarFfmpeg(args, 60 * 60 * 1000);
+            try { await fs.promises.rename(tmpOut, out); } catch (e) { await fs.promises.copyFile(tmpOut, out); }
+            Object.assign(job, { status: 'pronto', url: '/uploads/' + nome, progresso: 1 });
+        } catch (e) { Object.assign(job, { status: 'erro', erro: String(e.stderr || e.message).slice(0, 300) }); console.warn('Render rápido:', job.erro); }
+        finally { fs.rm(tmpDir, { recursive: true, force: true }, () => {}); }
+    })();
+});
+app.get('/api/admin/estudio/render-rapido/:job', requireRole('admin', 'estudio'), (req, res) => { const j = JOBS_RENDER.get(req.params.job); if (!j) return res.status(404).json({ error: 'Não encontrado (o servidor reiniciou). Tente de novo.' }); res.json(j); });
+
 // ----- Teleprompter: link para gravar no celular com o roteiro rolando na tela -----
 db.run(`CREATE TABLE IF NOT EXISTS estudio_gravadores (codigo TEXT PRIMARY KEY, projeto_id INTEGER, titulo TEXT, roteiro TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
 db.run(`CREATE TABLE IF NOT EXISTS estudio_gravacoes (id INTEGER PRIMARY KEY AUTOINCREMENT, projeto_id INTEGER, url TEXT, nome TEXT, duracao REAL, mime TEXT, importada INTEGER DEFAULT 0, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);

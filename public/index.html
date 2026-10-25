@@ -22212,6 +22212,49 @@ async function evBaixarCompleto(galeria) {
     mostrarToast(galeria ? '⬇️ Vídeo baixado. Ele fica em Downloads/Arquivos — abra e toque em "Salvar na galeria".' : '⬇️ Vídeo completo baixado.');
   } catch (e) { evCarregando(null); mostrarToast('Não consegui baixar: ' + e.message, true); }
 }
+// ⬇️ Menu de baixar: rápido pelo servidor, completo no aparelho ou a gravação original
+function evMenuBaixar() {
+  const vids = ES.p.dados.midias.filter(m => m.tipo === 'video' && (m.url || (ES.locais || {})[m.id]));
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal" style="max-width:500px;">
+    <div class="ev-modal-cab"><h3>⬇️ Baixar o vídeo</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <button class="ev-btn primario grande" style="width:100%;text-align:left;" onclick="evBaixarRapido()">⚡ Baixar rápido <small style="display:block;font-weight:400;opacity:.85;">O servidor monta em segundos: cortes, velocidade, zoom, legendas e música. O celular não precisa exportar.</small></button>
+    <button class="ev-btn grande" style="width:100%;text-align:left;margin-top:8px;" onclick="document.getElementById('ev-modal').innerHTML=''; evExportar()">🎬 Exportar completo no aparelho <small style="display:block;font-weight:400;opacity:.85;">Com todos os efeitos (colagem, cenas, cores, estabilização). Mais lento.</small></button>
+    ${vids.length ? `<div class="ev-sub" style="margin:14px 0 6px;"><b>🎞️ Gravação original, sem edição:</b></div>${vids.map(m => `<button class="ev-btn" style="width:100%;text-align:left;margin-top:6px;" onclick="evBaixarOriginal('${m.id}')">⬇️ ${escapeHtml(m.nome || 'Vídeo')}${m.duracao ? ' · ' + evFmtT(m.duracao).slice(0, 5) : ''}</button>`).join('')}` : ''}
+  </div></div>`;
+}
+async function evEntregarArquivo(blob, nome) {
+  const arq = new File([blob], nome, { type: blob.type || 'video/mp4' });
+  if (evCelularAqui() && navigator.canShare && navigator.canShare({ files: [arq] })) { try { await navigator.share({ files: [arq] }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(arq); a.download = nome; document.body.appendChild(a); a.click(); a.remove(); mostrarToast('⬇️ Vídeo baixado.');
+}
+async function evBaixarOriginal(id) {
+  const m = evMidia(id); if (!m) return; document.getElementById('ev-modal').innerHTML = '';
+  try { evCarregando('⬇️ Preparando a gravação original…'); const src = (ES.locais || {})[id] || m.url; let blob = await (await fetch(src)).blob();
+    const mp4 = /mp4/.test(blob.type) || /\.mp4/i.test(m.url || ''); if (mp4 && window.Mp4Completo) { try { blob = await Mp4Completo.mp4CompletoBlob(blob); } catch (e) {} }
+    evCarregando(null); await evEntregarArquivo(blob, evNomeArquivo(mp4 ? 'mp4' : 'webm').replace(/\.(mp4|webm)$/, '-original.$1'));
+  } catch (e) { evCarregando(null); mostrarToast('Não consegui baixar: ' + e.message, true); }
+}
+async function evBaixarRapido() {
+  document.getElementById('ev-modal').innerHTML = '';
+  const subindo = ES.p.dados.midias.filter(m => m.enviando || m.preparando);
+  if (subindo.length) return mostrarToast('⏳ Espere o vídeo terminar de subir para o servidor (barra "Subindo" no alto) e tente de novo.', true);
+  try {
+    evCarregando('⚡ O servidor está montando o vídeo…'); await evSalvar(true);
+    const r = await api('/api/admin/estudio/projetos/' + ES.p.id + '/render-rapido', { method: 'POST', body: '{}' }), t0 = Date.now();
+    let j = null;
+    for (let i = 0; i < 1800; i++) {
+      await new Promise(z => setTimeout(z, i < 5 ? 1000 : 2000));
+      j = await api('/api/admin/estudio/render-rapido/' + r.job);
+      const e = document.querySelector('#ev-carregando b'); if (e) e.textContent = `⚡ O servidor está montando o vídeo… ${Math.round((Date.now() - t0) / 1000)} s`;
+      if (j.status !== 'processando') break;
+    }
+    if (!j || j.status !== 'pronto') throw new Error((j && j.erro) || 'o servidor não terminou');
+    const e = document.querySelector('#ev-carregando b'); if (e) e.textContent = '⬇️ Baixando o vídeo pronto…';
+    const blob = await (await fetch(j.url)).blob(); evCarregando(null);
+    if (j.aviso) mostrarToast(j.aviso, true);
+    await evEntregarArquivo(blob, evNomeArquivo('mp4'));
+  } catch (e) { evCarregando(null); mostrarToast('Baixar rápido: ' + e.message, true); }
+}
 function evPrecisaExportar() {
   document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal" style="max-width:460px;text-align:center;">
     <div style="font-size:48px;">🎬</div><h3 style="margin:6px 0;">Vamos gerar o vídeo de novo</h3>
@@ -22286,7 +22329,7 @@ async function evAbrirEditor(id) {
       <button class="ev-score" id="ev-score" onclick="evAbrirAnalise()" title="Potencial de viralização"></button>
       <button class="ev-tb" onclick="evTelaCheia()" title="Ver em tela cheia (F)">⛶<span class="ev-tbr"> Tela cheia</span></button>
       <button class="ev-tb" onclick="evAbrirPublicar()">${p.tipo === 'aula' ? '🎓' : '📤'}<span class="ev-tbr"> ${p.tipo === 'aula' ? 'Salvar aula' : 'Publicar'}</span></button>
-      <button class="ev-tb primario" onclick="evExportar()">⬇️<span class="ev-tbr"> Exportar vídeo</span></button>
+      <button class="ev-tb primario" onclick="evMenuBaixar()">⬇️<span class="ev-tbr"> Baixar / Exportar</span></button>
     </header>
     <div class="ev-corpo">
       <aside class="ev-esq">
