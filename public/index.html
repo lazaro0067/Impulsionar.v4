@@ -14081,7 +14081,7 @@ const CHAVES_SERVICOS = [
   { k: 'pexels', ico: '🎞️', nome: 'Vídeos e fotos reais — Pexels', para: 'Mais opções de cenas reais (opcional). O Pexels pausou chaves novas; se você já tiver uma, cole aqui.', passos: ['<a href="https://www.pexels.com/api/" target="_blank" rel="noopener">pexels.com/api</a> › <b>Your API Key</b>'], ph: 'chave do Pexels', salvar: v => api('/api/admin/estudio-broll', { method: 'PUT', body: JSON.stringify({ pexels: v }) }), remover: () => api('/api/admin/chaves/remover-broll', { method: 'PUT', body: JSON.stringify({ qual: 'pexels' }) }) },
   { k: 'jamendo', ico: '🎵', nome: 'Músicas de verdade — Jamendo', para: 'Músicas de fundo boas (as mais tocadas, liberadas para uso comercial). Grátis.', passos: ['Crie a conta em <a href="https://devportal.jamendo.com" target="_blank" rel="noopener">devportal.jamendo.com</a>', 'Em <b>My Applications</b> › <b>Create</b> (nome: Impulsionar, site: www.impulsionarv4.com.br) e copie o <b>Client ID</b>'], ph: 'Client ID', salvar: v => api('/api/admin/estudio-musica', { method: 'PUT', body: JSON.stringify({ jamendo: v }) }), remover: () => api('/api/admin/estudio-musica', { method: 'PUT', body: JSON.stringify({ jamendo: '' }) }) },
   { k: 'elevenlabs', ico: '🎙️', nome: 'Voz premium — ElevenLabs', para: 'Narração com voz natural e "a IA aprender a minha voz".', passos: ['<a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">elevenlabs.io › API Keys</a> › <b>Create API Key</b>', 'Libere <b>Text to Speech</b> e <b>Voices (Write)</b>'], ph: 'chave da ElevenLabs', salvar: v => api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify({ elevenlabs: v }) }), remover: () => api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify({ elevenlabs: '' }) }) },
-  { k: 'openai', ico: '🗣️', nome: 'Voz — OpenAI', para: 'Vozes naturais da OpenAI para narração (opcional).', passos: ['<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com › API keys</a> › <b>Create new secret key</b>'], ph: 'sk-...', salvar: v => api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify({ openai: v }) }), remover: () => api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify({ openai: '' }) }) },
+  { k: 'openai', ico: '🗣️', nome: 'OpenAI — voz e imagens', para: 'Vozes naturais para narração e a IA que DESENHA as imagens da Colagem editorial (gravuras no estilo revista). Opcional: sem ela a colagem usa gravuras/fotos reais.', passos: ['<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com › API keys</a> › <b>Create new secret key</b>'], ph: 'sk-...', salvar: v => api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify({ openai: v }) }), remover: () => api('/api/admin/estudio-voz', { method: 'PUT', body: JSON.stringify({ openai: '' }) }) },
   { k: 'did', ico: '🧑', nome: 'Avatar falando — D-ID', para: 'Vídeo com uma pessoa (foto) falando o roteiro.', passos: ['<a href="https://studio.d-id.com/account-settings" target="_blank" rel="noopener">studio.d-id.com › API Keys</a> › <b>Generate</b>'], ph: 'chave do D-ID', salvar: v => api('/api/admin/estudio/provedor-video', { method: 'PUT', body: JSON.stringify({ chave: v }) }), remover: () => api('/api/admin/estudio/provedor-video', { method: 'PUT', body: JSON.stringify({ remover: true }) }) }
 ];
 let CHAVES_ST = null;
@@ -21627,7 +21627,7 @@ function evDesenhar(tForcado, exportando) {
       const Ro = evRetSobreposicao(o), forma = o.layout === 'circulo' ? 'circulo' : o.layout === 'pip' ? 'arredondado' : null;
       if (forma) { ctx.save(); ctx.globalAlpha = alpha * 0.5; ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 30 * k; ctx.fillStyle = '#000'; ctx.beginPath(); if (forma === 'circulo') ctx.arc(Ro.x + Ro.w / 2, Ro.y + Ro.h / 2, Ro.w / 2, 0, 7); else evRetArred(ctx, Ro.x, Ro.y, Ro.w, Ro.h, Math.min(Ro.w, Ro.h) * 0.08); ctx.fill(); ctx.restore(); }
       const punch = o.impacto ? 1 + 0.14 * (1 - easeOut(Math.min(1, loc / 0.45))) : 1;
-      evDesenharMidia(ctx, o, el, loc / o.dur, alpha, 0, punch, Ro, forma);
+      if (o.colagem) evDesenharColagem(ctx, o, el, loc, alpha, Ro); else evDesenharMidia(ctx, o, el, loc / o.dur, alpha, 0, punch, Ro, forma);
       if (o.impacto && loc < 0.22) { ctx.save(); ctx.globalAlpha = 0.85 * (1 - loc / 0.22); ctx.fillStyle = '#fff'; ctx.fillRect(Ro.x, Ro.y, Ro.w, Ro.h); ctx.restore(); }
       if (o.borda !== false && forma) { ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = o.corBorda || '#ffffff'; ctx.lineWidth = 8 * k; ctx.beginPath(); if (forma === 'circulo') ctx.arc(Ro.x + Ro.w / 2, Ro.y + Ro.h / 2, Ro.w / 2, 0, 7); else evRetArred(ctx, Ro.x, Ro.y, Ro.w, Ro.h, Math.min(Ro.w, Ro.h) * 0.08); ctx.stroke(); ctx.restore(); }
       if (['cima', 'baixo', 'esq', 'dir'].includes(o.layout) && o.borda !== false) { ctx.save(); ctx.fillStyle = o.corBorda || '#ffffff'; if (o.layout === 'cima' || o.layout === 'baixo') ctx.fillRect(0, H / 2 - 4 * k, W, 8 * k); else ctx.fillRect(W / 2 - 4 * k, 0, 8 * k, H); ctx.restore(); }
@@ -22547,6 +22547,167 @@ const EV_ESTILOS_IMG = {
   neon: ['🌃 Neon / tecnologia', 'estilo neon futurista, fundo escuro, linhas e brilhos coloridos, clima tecnológico'],
   corporativo: ['💼 Corporativo', 'ilustração corporativa profissional, pessoas estilizadas, gráficos, ícones de negócios, cores sóbrias']
 };
+// ---------- 🗞️ Colagem editorial: papel rasgado, gravura antiga, céu/sol, título grande e selos (animado) ----------
+const EV_COL_PALETAS = {
+  ceu: { nome: '🌤️ Céu azul', papel: '#e8dfcb', destaque: 'ceu', titulo: '#141414', contorno: '#efe6d2' },
+  sol: { nome: '🌞 Sol amarelo', papel: '#e8dfcb', destaque: 'sol', titulo: '#141414', contorno: '#efe6d2' },
+  ouro: { nome: '🪙 Dourado', papel: '#c79a2a', destaque: 'ceu', titulo: '#efe6d2', contorno: '#3a2a06', ouro: true },
+  escuro: { nome: '🌑 Escuro', papel: '#171717', destaque: 'ceu', titulo: '#efe6d2', contorno: '#000', escuro: true },
+  papel: { nome: '📜 Papel antigo', papel: '#e8dfcb', destaque: 'rasgo', titulo: '#141414', contorno: '#efe6d2' }
+};
+const EV_COL_SELOS = [['#141414', '#efe6d2'], ['#c0392b', '#fff4e6'], ['#efe6d2', '#141414'], ['#2e6b46', '#f3f0e6']];
+function evColRnd(seed) { let s = (seed >>> 0) || 1; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+function evColSeed(str) { let h = 2166136261; for (const ch of String(str)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function evColCache() { ES.colCache = ES.colCache || {}; return ES.colCache; }
+function evColCanvas(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; }
+// borda rasgada: pontos ao longo de uma linha horizontal com "dentes" irregulares
+function evColBorda(x0, x1, y, amp, rnd) { const pts = [], passos = Math.max(12, Math.round((x1 - x0) / (amp * 1.4))); for (let i = 0; i <= passos; i++) pts.push([x0 + (x1 - x0) * i / passos, y + (rnd() - 0.5) * 2 * amp * (i % 3 === 0 ? 1.6 : 1)]); return pts; }
+// papel envelhecido com manchas e "colunas de jornal" apagadas (gerado uma vez e guardado)
+function evColPapel(w, h, pal, seed) {
+  const key = `p|${Math.round(w)}x${Math.round(h)}|${pal.papel}|${seed}`, cache = evColCache(); if (cache[key]) return cache[key];
+  const s = 0.5, c = evColCanvas(w * s, h * s), g = c.getContext('2d'), rnd = evColRnd(seed), W = c.width, H = c.height;
+  g.fillStyle = pal.papel; g.fillRect(0, 0, W, H);
+  if (pal.ouro) { const gr = g.createLinearGradient(0, 0, W, H); gr.addColorStop(0, '#e4c55a'); gr.addColorStop(0.45, '#b8871c'); gr.addColorStop(0.7, '#f0d77a'); gr.addColorStop(1, '#9c6f12'); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
+  for (let i = 0; i < 40; i++) { const x = rnd() * W, y = rnd() * H, r = (0.05 + rnd() * 0.25) * W, gr = g.createRadialGradient(x, y, 0, x, y, r), esc = rnd() < 0.5; gr.addColorStop(0, esc ? (pal.escuro ? 'rgba(255,255,255,.035)' : 'rgba(90,60,20,.07)') : 'rgba(255,255,255,.08)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
+  // colunas de texto apagadas (jornal)
+  g.fillStyle = pal.escuro ? 'rgba(255,255,255,.05)' : 'rgba(40,30,20,.07)';
+  for (let b = 0; b < 5; b++) { const bx = rnd() * W * 0.8, by = rnd() * H * 0.9, bw = W * (0.15 + rnd() * 0.25), bh = H * (0.06 + rnd() * 0.15); for (let y = by; y < by + bh; y += 5) { let x = bx; while (x < bx + bw) { const pw = 4 + rnd() * 14; g.fillRect(x, y, Math.min(pw, bx + bw - x), 1.6); x += pw + 2.5; } } }
+  // granulado
+  const im = g.getImageData(0, 0, W, H), d = im.data; for (let i = 0; i < d.length; i += 4) { const n = (rnd() - 0.5) * 22; d[i] += n; d[i + 1] += n; d[i + 2] += n; } g.putImageData(im, 0, 0);
+  return cache[key] = c;
+}
+// faixa de céu com nuvens
+function evColCeu(w, h, seed) {
+  const key = `c|${Math.round(w)}x${Math.round(h)}|${seed}`, cache = evColCache(); if (cache[key]) return cache[key];
+  const c = evColCanvas(w * 0.5, h * 0.5), g = c.getContext('2d'), W = c.width, H = c.height, rnd = evColRnd(seed + 7);
+  const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#2c6fae'); gr.addColorStop(1, '#7fb8e0'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 8; i++) { const cx = rnd() * W, cy = H * (0.45 + rnd() * 0.55), r = W * (0.05 + rnd() * 0.06); for (let j = 0; j < 14; j++) { const x = cx + (rnd() - 0.5) * r * 3, y = cy - Math.abs(rnd() - 0.5) * r * 1.2, rr = r * (0.35 + rnd() * 0.45), gg = g.createRadialGradient(x, y, 0, x, y, rr); gg.addColorStop(0, 'rgba(255,255,255,.55)'); gg.addColorStop(0.55, 'rgba(250,252,255,.32)'); gg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gg; g.fillRect(x - rr, y - rr, rr * 2, rr * 2); } }
+  return cache[key] = c;
+}
+// imagem principal em "gravura": preto e branco com contraste, traço de gravura e, se o fundo for branco, recortada
+function evColGravura(img, recorte) {
+  if (!img || !img.complete || !img.naturalWidth) return null;
+  const key = 'g|' + img.src + '|' + (recorte ? 1 : 0), cache = evColCache(); if (cache[key]) return cache[key];
+  const esc = Math.min(1, 1100 / Math.max(img.naturalWidth, img.naturalHeight)), c = evColCanvas(img.naturalWidth * esc, img.naturalHeight * esc), g = c.getContext('2d'), W = c.width, H = c.height;
+  g.drawImage(img, 0, 0, W, H);
+  let im; try { im = g.getImageData(0, 0, W, H); } catch (e) { return cache[key] = c; }
+  const d = im.data, lum = new Float32Array(W * H);
+  for (let i = 0, p = 0; p < lum.length; i += 4, p++) lum[p] = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+  // fundo branco ligado às bordas = transparente (só quando a imagem tem mesmo fundo claro)
+  let fundo = null;
+  if (recorte) {
+    let cl = 0, tot = 0; for (let x = 0; x < W; x += 4) { tot += 2; if (lum[x] > 225) cl++; if (lum[(H - 1) * W + x] > 225) cl++; } for (let y = 0; y < H; y += 4) { tot += 2; if (lum[y * W] > 225) cl++; if (lum[y * W + W - 1] > 225) cl++; }
+    if (cl / tot > 0.6) {
+      fundo = new Uint8Array(W * H); const fila = new Int32Array(W * H); let a = 0, b = 0;
+      const pode = p => !fundo[p] && lum[p] > 222;
+      for (let x = 0; x < W; x++) { [x, (H - 1) * W + x].forEach(p => { if (pode(p)) { fundo[p] = 1; fila[b++] = p; } }); }
+      for (let y = 0; y < H; y++) { [y * W, y * W + W - 1].forEach(p => { if (pode(p)) { fundo[p] = 1; fila[b++] = p; } }); }
+      while (a < b) { const p = fila[a++], x = p % W; if (x > 0 && pode(p - 1)) { fundo[p - 1] = 1; fila[b++] = p - 1; } if (x < W - 1 && pode(p + 1)) { fundo[p + 1] = 1; fila[b++] = p + 1; } if (p >= W && pode(p - W)) { fundo[p - W] = 1; fila[b++] = p - W; } if (p < (H - 1) * W && pode(p + W)) { fundo[p + W] = 1; fila[b++] = p + W; } }
+    }
+  }
+  for (let p = 0, i = 0; p < lum.length; p++, i += 4) {
+    const x = p % W, y = (p / W) | 0; let l = Math.max(0, Math.min(255, (lum[p] - 128) * 1.4 + 132));
+    const linha = 0.5 + 0.5 * Math.sin(x * 0.9 + y * 0.42), t = l / 255, traco = t > linha * 0.85 + 0.08 ? 255 : 28;
+    l = l * 0.72 + traco * 0.28;
+    d[i] = l; d[i + 1] = l * 0.975; d[i + 2] = l * 0.9;
+    if (fundo) { let viz = 0; if (!fundo[p]) { if (x > 0 && fundo[p - 1]) viz++; if (x < W - 1 && fundo[p + 1]) viz++; if (p >= W && fundo[p - W]) viz++; if (p < (H - 1) * W && fundo[p + W]) viz++; } d[i + 3] = fundo[p] ? 0 : viz ? 150 : 255; }
+  }
+  g.putImageData(im, 0, 0); c.__recortada = !!fundo;
+  return cache[key] = c;
+}
+function evColRuido() { const cache = evColCache(); if (cache.ruido) return cache.ruido; const c = evColCanvas(220, 220), g = c.getContext('2d'), im = g.createImageData(220, 220); for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 40; } g.putImageData(im, 0, 0); return cache.ruido = c; }
+function evColCaminho(ctx, pts, continuar) { if (continuar) ctx.lineTo(pts[0][0], pts[0][1]); else ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); }
+function evDesenharColagem(ctx, o, img, loc, alpha, R) {
+  const pal = EV_COL_PALETAS[o.paleta] || EV_COL_PALETAS.ceu, seed = evColSeed(o.id), k = R.w / 1080, dur = Math.max(0.5, o.dur || 3);
+  const e = easeOut(Math.min(1, loc / 0.55)), e2 = easeOut(Math.max(0, Math.min(1, (loc - 0.12) / 0.6)));
+  const fixo = evColRnd(seed);
+  ctx.save(); ctx.globalAlpha = alpha; ctx.beginPath(); ctx.rect(R.x, R.y, R.w, R.h); ctx.clip();
+  ctx.drawImage(evColPapel(R.w, R.h, pal, seed), R.x, R.y, R.w, R.h);
+  const temTitulo = !!String(o.titulo || '').trim();
+  // destaque: faixa de céu rasgada, sol ou rasgo escuro
+  const yA = R.y + R.h * (temTitulo ? 0.27 : 0.2), yB = R.y + R.h * (temTitulo ? 0.66 : 0.62);
+  if (pal.destaque === 'ceu') {
+    const dx = (1 - e) * -R.w * 0.6, r1 = evColRnd(seed + 1), r2 = evColRnd(seed + 2), amp = 14 * k;
+    const cima = evColBorda(R.x - 20, R.x + R.w + 20, yA, amp, r1), baixo = evColBorda(R.x - 20, R.x + R.w + 20, yB, amp, r2).reverse();
+    ctx.save(); ctx.translate(dx, 0);
+    ctx.beginPath(); evColCaminho(ctx, cima.map(([x, y]) => [x, y - 6 * k])); evColCaminho(ctx, baixo.map(([x, y]) => [x, y + 6 * k]), true); ctx.closePath(); ctx.fillStyle = pal.escuro ? '#d8d0bd' : '#f6f1e6'; ctx.fill(); // borda branca do papel rasgado
+    ctx.beginPath(); evColCaminho(ctx, cima); evColCaminho(ctx, baixo, true); ctx.closePath(); ctx.save(); ctx.clip();
+    const ceu = evColCeu(R.w, yB - yA + 40 * k, seed); ctx.drawImage(ceu, R.x - 10 * k - loc * 8 * k, yA - 20 * k, R.w + 40 * k, yB - yA + 40 * k); ctx.restore();
+    ctx.restore();
+  } else if (pal.destaque === 'sol') {
+    const r = R.w * 0.36 * (0.6 + 0.4 * easeOut(Math.min(1, loc / 0.7))), cx = R.x + R.w * 0.5, cy = R.y + R.h * 0.47;
+    ctx.save(); ctx.fillStyle = '#f2c230'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill(); ctx.globalAlpha *= 0.25; ctx.drawImage(evColRuido(), cx - r, cy - r, r * 2, r * 2); ctx.restore();
+  } else {
+    const r1 = evColRnd(seed + 3), amp = 18 * k, y0 = R.y + R.h * 0.55; ctx.save(); ctx.beginPath(); evColCaminho(ctx, evColBorda(R.x - 20, R.x + R.w + 20, y0, amp, r1)); ctx.lineTo(R.x + R.w + 20, R.y + R.h + 20); ctx.lineTo(R.x - 20, R.y + R.h + 20); ctx.closePath(); ctx.fillStyle = '#2b2622'; ctx.fill(); ctx.restore();
+  }
+  // pássaros ao longe
+  if (!pal.escuro) { ctx.save(); ctx.strokeStyle = 'rgba(30,30,30,.75)'; ctx.lineWidth = 2.4 * k; const rb = evColRnd(seed + 9); for (let i = 0; i < 4; i++) { const bx = R.x + ((rb() * R.w + loc * (18 + rb() * 22) * k) % (R.w + 60 * k)) - 30 * k, by = yA + (rb() * 0.35) * (yB - yA), s = (9 + rb() * 8) * k, bat = Math.sin(loc * 7 + i) * 0.35; ctx.beginPath(); ctx.moveTo(bx - s, by - s * (0.35 + bat)); ctx.quadraticCurveTo(bx - s * 0.4, by - s * 0.1, bx, by); ctx.quadraticCurveTo(bx + s * 0.4, by - s * 0.1, bx + s, by - s * (0.35 + bat)); ctx.stroke(); } ctx.restore(); }
+  // imagem principal (gravura)
+  const g = evColGravura(img, o.recorte !== false);
+  if (g) {
+    const caixaW = R.w * 0.9, caixaH = R.h * (temTitulo ? 0.7 : 0.78), esc = Math.min(caixaW / g.width, caixaH / g.height) * (1 + 0.06 * Math.min(1, loc / dur)), w = g.width * esc, h = g.height * esc;
+    const x = R.x + (R.w - w) / 2, y = R.y + R.h * 0.97 - h + (1 - e2) * R.h * 0.18 + Math.sin(loc * 1.3) * R.h * 0.004;
+    ctx.save(); ctx.globalAlpha *= Math.min(1, loc / 0.25 + 0.2);
+    if (g.__recortada) { ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 22 * k; ctx.shadowOffsetY = 10 * k; ctx.drawImage(g, x, y, w, h); }
+    else {
+      const ang = (fixo() - 0.5) * 0.06, cx = x + w / 2, cy = y + h / 2, bw = w * 0.92, bh = h * 0.92, r1 = evColRnd(seed + 4), r2 = evColRnd(seed + 5), amp = 9 * k;
+      ctx.translate(cx, cy); ctx.rotate(ang);
+      const topo = evColBorda(-bw / 2, bw / 2, -bh / 2, amp, r1), base = evColBorda(-bw / 2, bw / 2, bh / 2, amp, r2).reverse();
+      ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 20 * k; ctx.shadowOffsetY = 8 * k;
+      ctx.beginPath(); evColCaminho(ctx, topo.map(([a, b]) => [a, b - 8 * k])); evColCaminho(ctx, base.map(([a, b]) => [a, b + 8 * k]), true); ctx.closePath(); ctx.fillStyle = '#f4efe4'; ctx.fill(); ctx.shadowColor = 'transparent';
+      ctx.beginPath(); evColCaminho(ctx, topo); evColCaminho(ctx, base, true); ctx.closePath(); ctx.clip();
+      const ec = Math.max(bw / g.width, bh / g.height); ctx.drawImage(g, -g.width * ec / 2, -g.height * ec / 2, g.width * ec, g.height * ec);
+    }
+    ctx.restore();
+  }
+  // título grande (serifado, estilo capa de revista)
+  if (temTitulo) {
+    const txt = String(o.titulo).trim().toUpperCase(); let fs = 260 * k; ctx.save(); ctx.font = `900 ${fs}px "Playfair Display", Georgia, serif`;
+    const larg = ctx.measureText(txt).width; fs = Math.min(fs, fs * (R.w * 0.94) / Math.max(1, larg)); ctx.font = `900 ${fs}px "Playfair Display", Georgia, serif`;
+    const te = easeOut(Math.min(1, loc / 0.5)); ctx.globalAlpha *= te; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    const tx = R.x + R.w / 2, ty = R.y + R.h * 0.015 + (1 - te) * -20 * k; ctx.translate(tx, ty); const sc = 1.06 - 0.06 * te; ctx.scale(sc, sc);
+    ctx.lineWidth = fs * 0.05; ctx.strokeStyle = pal.contorno; ctx.strokeText(txt, 0, 0); ctx.fillStyle = pal.titulo; ctx.fillText(txt, 0, 0); ctx.restore();
+  }
+  // selos (etiquetas de papel que "pulam" na tela)
+  const selos = (Array.isArray(o.selos) ? o.selos : []).map(s => String(s).trim()).filter(Boolean).slice(0, 4);
+  selos.forEach((s, i) => {
+    const t0 = 0.45 + i * 0.35, p = Math.max(0, Math.min(1, (loc - t0) / 0.35)); if (p <= 0) return;
+    const back = p < 1 ? 1 + 2.2 * Math.pow(p - 1, 3) + 1.2 * Math.pow(p - 1, 2) : 1, [fundo, cor] = EV_COL_SELOS[i % EV_COL_SELOS.length], rs = evColRnd(seed + 20 + i);
+    const fs = 64 * k; ctx.save(); ctx.font = `900 ${fs}px "Playfair Display", Georgia, serif`; const tw = ctx.measureText(s).width, pw = tw + fs * 0.7, ph = fs * 1.3;
+    const px = R.x + R.w * (i % 2 ? 0.6 : 0.4) + (rs() - 0.5) * R.w * 0.12, py = R.y + R.h * ((temTitulo ? 0.3 : 0.14) + i * 0.11);
+    ctx.translate(px, py); ctx.rotate((rs() - 0.5) * 0.14 + Math.sin(loc * 2 + i) * 0.01); ctx.scale(back, back);
+    ctx.shadowColor = 'rgba(0,0,0,.4)'; ctx.shadowBlur = 12 * k; ctx.shadowOffsetY = 6 * k; ctx.fillStyle = fundo;
+    ctx.beginPath(); const rr = evColRnd(seed + 40 + i); ctx.moveTo(-pw / 2, -ph / 2 + rr() * 4 * k); ctx.lineTo(pw / 2, -ph / 2 + rr() * 4 * k); ctx.lineTo(pw / 2 - rr() * 4 * k, ph / 2); ctx.lineTo(-pw / 2 + rr() * 4 * k, ph / 2); ctx.closePath(); ctx.fill();
+    ctx.shadowColor = 'transparent'; ctx.fillStyle = cor; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, 0, fs * 0.06); ctx.restore();
+  });
+  // granulado animado e cantos escurecidos
+  ctx.save(); ctx.globalAlpha = alpha * 0.5; const rz = evColRuido(), ox = (Math.floor(loc * 12) * 37) % 220, oy = (Math.floor(loc * 12) * 53) % 220; for (let y = R.y - oy; y < R.y + R.h; y += 220 * 2) for (let x = R.x - ox; x < R.x + R.w; x += 220 * 2) ctx.drawImage(rz, x, y, 440, 440); ctx.restore();
+  const vg = ctx.createRadialGradient(R.x + R.w / 2, R.y + R.h / 2, Math.min(R.w, R.h) * 0.35, R.x + R.w / 2, R.y + R.h / 2, Math.max(R.w, R.h) * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.28)'); ctx.fillStyle = vg; ctx.fillRect(R.x, R.y, R.w, R.h);
+  ctx.restore();
+}
+// Trocar a imagem da colagem selecionada pedindo em texto ("troca esse prédio por outro")
+async function evColagemTrocar() {
+  const o = evItemSel(), campo = document.getElementById('col-pedido'), pedido = String((campo && campo.value) || '').trim(); if (!o || !o.colagem) return;
+  if (pedido.length < 3) return mostrarToast('Escreva o que quer mostrar (ex.: "troca esse prédio por uma fábrica antiga").', true);
+  evPausar(); evCarregando(o.fonteCol === 'real' ? '🔎 Buscando a nova imagem…' : '🎨 Criando a nova imagem…');
+  try {
+    const r = await api('/api/admin/estudio/colagem/imagem', { method: 'POST', body: JSON.stringify({ pedido, vertical: o.layout === 'cheio' && (ES.p.formato || '9:16') === '9:16', fonte: o.fonteCol || 'auto' }) });
+    const m = { id: evUid(), url: r.url, nome: '🗞️ ' + pedido.slice(0, 40), tipo: 'imagem', duracao: 0, credito: r.credito };
+    ES.p.dados.midias.push(m); o.midia = m.id; o.recorte = r.recorte !== false; o.pedidoCol = pedido;
+    evCarregando(null); evMudou(); evDesenharProps(); evIrPara(o.ini + Math.min(1.2, o.dur / 2));
+    mostrarToast(r.fonte === 'ia' ? '✅ Imagem nova criada pela IA.' : '✅ Imagem trocada.' + (r.semIa ? ' (Para a IA desenhar do zero, conecte a chave da OpenAI em Administração › Chaves.)' : ''));
+  } catch (e) { evCarregando(null); mostrarToast(e.message, true); }
+}
+function evPropsColagem(x) {
+  return `<h4>🗞️ Colagem editorial</h4>
+    <label class="ev-campo"><span>✏️ Peça uma mudança na imagem</span><textarea id="col-pedido" rows="2" placeholder="Ex.: troca esse prédio por outro · coloca uma fábrica antiga com fumaça">${escapeHtml(x.pedidoCol || '')}</textarea></label>
+    <button class="ev-btn ia" style="width:100%;" onclick="evColagemTrocar()">✨ Criar nova imagem</button>
+    ${evCampo('Imagem', `<div class="ev-chips">${[['auto', '🤖 Automático'], ['ia', '🎨 IA desenha'], ['real', '📷 Gravura/foto real']].map(([v, r]) => `<button class="${(x.fonteCol || 'auto') === v ? 'on' : ''}" onclick="evSet('fonteCol','${v}'); evDesenharProps()">${r}</button>`).join('')}</div>`)}
+    <label class="ev-campo"><span>Título grande</span><input value="${escapeHtml(x.titulo || '')}" placeholder="Ex.: ESTILO" onchange="evSet('titulo', this.value.toUpperCase().slice(0, 18)); evMudou(false)"></label>
+    <label class="ev-campo"><span>Selos (separe por vírgula)</span><input value="${escapeHtml((x.selos || []).join(', '))}" placeholder="Ex.: FEITA COM IA, MOTION $$$" onchange="evSet('selos', this.value.split(',').map(s => s.trim()).filter(Boolean).slice(0, 4)); evMudou(false)"></label>
+    ${evCampo('Cores', `<div class="ev-chips">${Object.entries(EV_COL_PALETAS).map(([k2, p]) => `<button class="${(x.paleta || 'ceu') === k2 ? 'on' : ''}" onclick="evSet('paleta','${k2}'); evMudou(false); evDesenharProps()">${p.nome}</button>`).join('')}</div>`)}
+    <label class="ev-chk2"><input type="checkbox" ${x.recorte !== false ? 'checked' : ''} onchange="evSet('recorte', this.checked); evMudou(false)"><span>✂️ Recortar o fundo branco da imagem</span></label>`;
+}
 // ---------- 🧩 Inserir cena num trecho (manual): escreva o que quer ver → filmagem real, foto real ou ilustração da IA ----------
 function evAbrirInserirCena() {
   const x = evItemSel(), s = ES.sel, ini0 = x ? (s.tipo === 'clip' ? evInicios()[ES.p.dados.clips.indexOf(x)] : x.ini) : ES.t, dur0 = x ? (s.tipo === 'clip' ? evClipDur(x) : x.dur) : 3;
@@ -22554,7 +22715,7 @@ function evAbrirInserirCena() {
   const chip = (k, v, r) => `<button class="${cfg[k] === v ? 'on' : ''}" onclick="evInsCampos(); ES.insc.${k}='${v}'; evAbrirInserirCena2()">${r}</button>`;
   ES.insc.__chip = chip; evAbrirInserirCena2();
 }
-function evInsCampos() { const g = id => document.getElementById(id); if (!g('ins-txt')) return; Object.assign(ES.insc, { texto: g('ins-txt').value, ini: Number(g('ins-ini').value) || 0, dur: Number(g('ins-dur').value) || 3, palavra: g('ins-pal').value, impacto: g('ins-imp').checked }); }
+function evInsCampos() { const g = id => document.getElementById(id); if (!g('ins-txt')) return; Object.assign(ES.insc, { texto: g('ins-txt').value, ini: Number(g('ins-ini').value) || 0, dur: Number(g('ins-dur').value) || 3, palavra: g('ins-pal').value, impacto: g('ins-imp').checked }); if (g('ins-selos')) ES.insc.selos = g('ins-selos').value; }
 function evAbrirInserirCena2() {
   const cfg = ES.insc, chip = cfg.__chip;
   document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal">
@@ -22562,9 +22723,13 @@ function evAbrirInserirCena2() {
     <div class="ev-dupla"><label class="ev-campo"><span>Começa em (s)</span><input type="number" id="ins-ini" step="0.1" min="0" value="${cfg.ini}"></label><label class="ev-campo"><span>Dura (s)</span><input type="number" id="ins-dur" step="0.1" min="0.5" max="30" value="${cfg.dur}"></label></div>
     <div class="ev-sub" style="margin-top:-4px;">Dica: selecione uma legenda ou um trecho na linha do tempo antes de abrir — o tempo já vem certo.</div>
     <label class="ev-campo"><span>O que quer mostrar?</span><textarea id="ins-txt" rows="3" placeholder="Ex.: uma operação toda bagunçada · escritório pegando fogo · caminhão parado na estrada · equipe comemorando meta">${escapeHtml(cfg.texto || '')}</textarea></label>
-    ${evCampo('Tipo', `<div class="ev-chips">${chip('tipo', 'video', '🎬 Vídeo real')}${chip('tipo', 'foto', '📷 Foto real')}${chip('tipo', 'ilustracao', '🎨 Ilustração da IA')}</div>`)}
+    ${evCampo('Tipo', `<div class="ev-chips">${chip('tipo', 'video', '🎬 Vídeo real')}${chip('tipo', 'foto', '📷 Foto real')}${chip('tipo', 'ilustracao', '🎨 Ilustração da IA')}${chip('tipo', 'colagem', '🗞️ Colagem editorial')}</div>`)}
+    ${cfg.tipo === 'colagem' ? `<div class="ev-dica-fixa">🗞️ Estilo revista/papel rasgado: gravura antiga em preto e branco, céu ou sol de fundo, título grande e selos que pulam na tela — tudo animado. Depois dá para pedir mudanças na imagem por texto.</div>
+    ${evCampo('Cores', `<div class="ev-chips">${Object.entries(EV_COL_PALETAS).map(([k2, p]) => chip('paleta', k2, p.nome)).join('')}</div>`)}
+    ${evCampo('Imagem', `<div class="ev-chips">${chip('fonteCol', 'auto', '🤖 Automático')}${chip('fonteCol', 'ia', '🎨 IA desenha')}${chip('fonteCol', 'real', '📷 Gravura/foto real')}</div>`)}
+    <label class="ev-campo"><span>Selos (opcional, separe por vírgula)</span><input id="ins-selos" value="${escapeHtml(cfg.selos || '')}" placeholder="Ex.: FEITA COM IA, MOTION $$$"></label>` : ''}
     ${evCampo('Como aparece', `<div class="ev-chips">${chip('layout', 'cheio', '⛶ Tela cheia')}${chip('layout', 'cima', '⬒ Cena em cima, você embaixo')}${chip('layout', 'baixo', '⬓ Você em cima, cena embaixo')}${chip('layout', 'pip', '▣ Janelinha')}</div>`)}
-    <label class="ev-campo"><span>Palavra grande sobre a cena (opcional)</span><input id="ins-pal" value="${escapeHtml(cfg.palavra || '')}" placeholder="Ex.: BAGUNÇA"></label>
+    <label class="ev-campo"><span>${cfg.tipo === 'colagem' ? 'Título grande da colagem (opcional)' : 'Palavra grande sobre a cena (opcional)'}</span><input id="ins-pal" value="${escapeHtml(cfg.palavra || '')}" placeholder="Ex.: BAGUNÇA"></label>
     <label class="ev-chk2"><input type="checkbox" id="ins-imp" ${cfg.impacto ? 'checked' : ''}><span>⚡ Entrar com impacto (flash + zoom)</span></label>
     <button class="ev-btn ia grande" onclick="evInserirCena()">✨ Criar e colocar no vídeo</button></div></div>`;
 }
@@ -22573,6 +22738,16 @@ async function evInserirCena() {
   document.getElementById('ev-modal').innerHTML = ''; evPausar();
   const vertical = cfg.layout === 'cheio' && (ES.p.formato || '9:16') === '9:16';
   try {
+    if (cfg.tipo === 'colagem') {
+      evCarregando(cfg.fonteCol === 'real' ? '🔎 Buscando a gravura…' : '🎨 Montando a colagem…');
+      const rc = await api('/api/admin/estudio/colagem/imagem', { method: 'POST', body: JSON.stringify({ pedido: cfg.texto, vertical, fonte: cfg.fonteCol || 'auto' }) });
+      const mc = { id: evUid(), url: rc.url, nome: '🗞️ ' + cfg.texto.slice(0, 40), tipo: 'imagem', duracao: 0, credito: rc.credito }; d.midias.push(mc);
+      const tot = evTotal(), ini = Math.max(0, Math.min(cfg.ini, Math.max(0, tot - 0.5))), dur = Math.max(0.5, Math.min(cfg.dur, tot - ini || cfg.dur));
+      const oc = { id: evUid(), midia: mc.id, ini, dur, corte: 0, vel: 1, vol: 0, layout: cfg.layout, ajuste: 'cobrir', zoom: 1, impacto: !!cfg.impacto, manual: true, borda: cfg.layout === 'cheio' ? false : undefined, tam: cfg.layout === 'pip' ? 0.42 : undefined,
+        colagem: true, paleta: cfg.paleta || 'ceu', titulo: String(cfg.palavra || '').trim().toUpperCase().slice(0, 18), selos: String(cfg.selos || '').split(',').map(x => x.trim()).filter(Boolean).slice(0, 4), recorte: rc.recorte !== false, fonteCol: cfg.fonteCol || 'auto', pedidoCol: cfg.texto };
+      d.sobreposicoes.push(oc); ES.sel = { tipo: 'ovl', id: oc.id }; evCarregando(null); evMudou(); evIrPara(ini + Math.min(1.2, dur / 2)); evDesenharProps();
+      return mostrarToast(`✅ Colagem colocada de ${evFmtT(ini).slice(0, 5)} a ${evFmtT(ini + dur).slice(0, 5)}. No painel ao lado você pede mudanças na imagem, troca título, selos e cores.${rc.semIa ? ' (Para a IA desenhar do zero, conecte a chave da OpenAI em Administração › Chaves.)' : ''}`);
+    }
     evCarregando(cfg.tipo === 'ilustracao' ? '🎨 A IA está desenhando…' : '🔎 Buscando a cena real…');
     const r = await api('/api/admin/estudio/broll/pedido', { method: 'POST', body: JSON.stringify({ texto: cfg.texto, tipo: cfg.tipo, vertical, dur: cfg.dur }) });
     let m;
@@ -24003,7 +24178,7 @@ function evEscolherSobreposicao(mid) {
 }
 function evPropsSobreposicao(x) {
   const m = evMidia(x.midia) || {};
-  return `<h4>🧩 2º vídeo <small>${escapeHtml(m.nome || '')}</small></h4>
+  return `${x.colagem ? evPropsColagem(x) : ''}<h4>🧩 2º vídeo <small>${escapeHtml(m.nome || '')}</small></h4>
     ${evCampo('Modo', `<div class="ev-layouts mini">${Object.entries(EV_LAYOUTS).map(([k, r]) => `<button class="${x.layout === k ? 'on' : ''}" title="${r}" onclick="evSet('layout','${k}', true); evMudou(false); evDesenharProps()"><i class="ly ly-${k}"><b></b></i></button>`).join('')}</div><div class="ev-sub">${escapeHtml(EV_LAYOUTS[x.layout] || '')}</div>`)}
     ${['pip', 'circulo'].includes(x.layout) ? evCampo(`Tamanho <b>${Math.round((x.tam || 0.34) * 100)}%</b>`, `<input type="range" min="0.15" max="0.7" step="0.01" value="${x.tam || (x.layout === 'circulo' ? 0.36 : 0.34)}" oninput="evSet('tam', Number(this.value)); this.parentElement.querySelector('b').textContent=Math.round(this.value*100)+'%'" onchange="evMudou(false)">`) +
       evCampo('Posição rápida', `<div class="ev-chips">${[['↖', 0.05, 0.14], ['↗', 0.62, 0.14], ['↙', 0.05, 0.6], ['↘', 0.62, 0.6]].map(([r, px, py]) => `<button onclick="evSet('x', ${px}); evSet('y', ${py}); evMudou(false)">${r}</button>`).join('')}</div><div class="ev-sub">Ou arraste a janelinha direto no vídeo.</div>`) : ''}

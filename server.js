@@ -13536,7 +13536,7 @@ const FUNC_EST = {
 async function funcionalidadesEst() { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'estudio_precos_func'`).catch(() => null); let pr = {}; try { pr = JSON.parse((r && r.value) || '{}'); } catch (e) {} const o = {}; Object.entries(FUNC_EST).forEach(([k, f]) => { o[k] = Object.assign({}, f, pr[k] !== undefined ? { preco: Number(pr[k]) } : {}); }); return o; }
 const recursosValidosEst = l => Array.isArray(l) ? [...new Set(l.filter(k => FUNC_EST[k]))] : null;
 // Qual funcionalidade cada rota usa (o que não está no plano é bloqueado no servidor)
-const ROTAS_FUNC_EST = [[/^POST \/ia\/imagens-fala$/, 'imagens_ia'], [/^POST \/ia\/cenas-reais$/, 'imagens_ia'], [/^POST \/broll\/buscar$/, 'ia'], [/^POST \/broll\/pedido$/, 'ia'], [/^POST \/ia\/[\w-]+$/, 'ia'], [/^POST \/transcrever(-url)?$/, 'legendas_auto'], [/^POST \/(narrar|minha-voz)$/, 'voz_ia'], [/^POST \/limpar-audio$/, 'limpeza_audio'], [/^POST \/radar$/, 'radar'], [/^(POST \/projetos\/\d+\/publicar|PUT \/instagram|(GET|POST|PUT) \/instagram\/.+)$/, 'instagram'], [/^POST \/avatar-video$/, 'avatar'], [/^POST \/projetos\/\d+\/gravador$/, 'gravadora']];
+const ROTAS_FUNC_EST = [[/^POST \/ia\/imagens-fala$/, 'imagens_ia'], [/^POST \/colagem\/imagem$/, 'imagens_ia'], [/^POST \/ia\/cenas-reais$/, 'imagens_ia'], [/^POST \/broll\/buscar$/, 'ia'], [/^POST \/broll\/pedido$/, 'ia'], [/^POST \/ia\/[\w-]+$/, 'ia'], [/^POST \/transcrever(-url)?$/, 'legendas_auto'], [/^POST \/(narrar|minha-voz)$/, 'voz_ia'], [/^POST \/limpar-audio$/, 'limpeza_audio'], [/^POST \/radar$/, 'radar'], [/^(POST \/projetos\/\d+\/publicar|PUT \/instagram|(GET|POST|PUT) \/instagram\/.+)$/, 'instagram'], [/^POST \/avatar-video$/, 'avatar'], [/^POST \/projetos\/\d+\/gravador$/, 'gravadora']];
 db.run(`ALTER TABLE estudio_planos ADD COLUMN recursos TEXT`, () => {});
 setTimeout(() => {
     ['estudio_recursos TEXT', 'estudio_preco REAL'].forEach(c => db.run(`ALTER TABLE users ADD COLUMN ${c}`, () => {}));
@@ -14215,6 +14215,51 @@ app.post('/api/admin/estudio/broll/pedido', requireRole('admin', 'estudio'), asy
         const r = await resolverCenasReaisEst([{ busca, busca2, dur: Number(b.dur) || 3, tipo: tipo === 'foto' ? 'foto' : 'video' }], vertical);
         if (!r.cenas.length) throw new Error('Não achei uma cena real para isso. Tente descrever de outro jeito (ex.: "escritório bagunçado", "fogo").');
         res.json(Object.assign({ semVideos: !r.temVideos }, r.cenas[0]));
+    } catch (e) { if (e.limite) return erroLimiteEst(res, e); res.status(400).json({ error: e.message }); }
+});
+// 🗞️ Cena "colagem editorial" (estilo das animações de papel rasgado + gravura antiga): devolve a imagem principal.
+// Com a chave da OpenAI (a mesma da voz) a IA DESENHA a gravura do zero; sem ela, busca uma gravura/foto real.
+app.post('/api/admin/estudio/colagem/imagem', requireRole('admin', 'estudio'), async (req, res) => {
+    const b = req.body || {}, pedido = String(b.pedido || '').trim().slice(0, 400), vertical = b.vertical !== false, fonte = ['ia', 'real'].includes(b.fonte) ? b.fonte : 'auto';
+    if (pedido.length < 3) return res.status(400).json({ error: 'Escreva o que quer mostrar.' });
+    try {
+        let en = pedido, prompt = pedido, gravura = pedido;
+        if (iaDisponivelMt()) {
+            try {
+                const r = await iaPesquisarMt('Você prepara pedidos de imagem para uma colagem editorial (gravura antiga, papel rasgado). Responda só JSON.',
+                    `Pedido (português): "${pedido}"\nDevolva JSON: {"assunto":"o objeto/pessoa/lugar principal em INGLÊS, 2 a 5 palavras","gravura":"busca em INGLÊS para achar uma gravura antiga disso (ex.: 'capitol building engraving')","prompt":"descrição visual em INGLÊS, 1 frase, só do assunto principal, concreta"}`, 400, false);
+                const j = JSON.parse(String(r.texto || '').replace(/^[^{]*/, '').replace(/[^}]*$/, ''));
+                if (j.assunto) en = String(j.assunto).slice(0, 80); if (j.prompt) prompt = String(j.prompt).slice(0, 400); if (j.gravura) gravura = String(j.gravura).slice(0, 80);
+            } catch (e) {}
+        }
+        const voz = await lerVozConfigEst().catch(() => ({})), chaveImg = process.env.OPENAI_API_KEY || voz.openai;
+        if (fonte !== 'real' && chaveImg) {
+            try {
+                await consumirEst('imagens_ia', 1);
+                const r = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', signal: AbortSignal.timeout(180000), headers: { Authorization: 'Bearer ' + chaveImg, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: 'gpt-image-1', size: vertical ? '1024x1536' : '1536x1024', quality: 'medium', n: 1,
+                        prompt: `${prompt}. Vintage black-and-white engraving illustration, fine etched lines and halftone shading like an old newspaper print, high contrast, a single subject centered and fully visible, isolated on a pure flat white background, no text, no letters, no frame, no border.` }) });
+                const j = await r.json().catch(() => ({}));
+                if (!r.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + r.status));
+                const b64 = j.data && j.data[0] && j.data[0].b64_json; if (!b64) throw new Error('a IA não devolveu a imagem');
+                const nome = 'colagem-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + '.png', arq = path.join(PASTA_UPLOADS, nome), buf = Buffer.from(b64, 'base64');
+                fs.writeFileSync(arq, buf); copiarUploadParaBanco({ filename: nome, path: arq, size: buf.length, mimetype: 'image/png' });
+                return res.json({ url: '/uploads/' + nome, fonte: 'ia', recorte: true, assunto: en });
+            } catch (e) { if (e.limite) return erroLimiteEst(res, e); if (fonte === 'ia') throw new Error('A IA de imagens falhou: ' + e.message); console.warn('Colagem (IA de imagem):', e.message); }
+        } else if (fonte === 'ia') throw new Error('Para a IA desenhar, conecte a chave da OpenAI em Administração › Chaves (a mesma da voz).');
+        // sem IA de imagem: gravura antiga de domínio público (Openverse) ou foto real
+        let achou = null;
+        try {
+            const r = await fetch(`https://api.openverse.org/v1/images/?q=${encodeURIComponent(gravura)}&license_type=commercial&page_size=20&mature=false`, { headers: { 'User-Agent': 'ImpulsionarV4/1.0 (estudio de video)' }, signal: AbortSignal.timeout(15000) });
+            const j = await r.json().catch(() => ({}));
+            const ok = (j.results || []).filter(x => x.url && /\.(jpe?g|png)(\?|$)/i.test(x.url) && (!x.width || x.width >= 500));
+            const x = ok[Math.floor(Math.random() * Math.min(4, ok.length))];
+            if (x) achou = { url: x.url, credito: `Imagem: ${x.creator || 'autor'} (${(x.license || '').toUpperCase()} ${x.license_version || ''}, ${x.source || 'Openverse'})` };
+        } catch (e) {}
+        if (!achou) { const f = await buscarFotoRealEst(await cfgBrollEst(), en, { vertical, usados: new Set() }); if (f) achou = { url: f.url, credito: f.credito }; }
+        if (!achou) throw new Error('Não achei imagem para isso. Tente descrever de outro jeito (ex.: "fábrica antiga", "relógio").');
+        const url = await baixarMidiaRealEst(achou.url, /\.png(\?|$)/i.test(achou.url) ? 'png' : 'jpg');
+        res.json({ url, fonte: 'real', recorte: false, credito: achou.credito, assunto: en, semIa: !chaveImg });
     } catch (e) { if (e.limite) return erroLimiteEst(res, e); res.status(400).json({ error: e.message }); }
 });
 app.get('/api/admin/estudio/ia/cenas-reais/:id', requireRole('admin', 'estudio'), (req, res) => { const j = JOBS_REAIS.get(req.params.id); if (!j) return res.status(404).json({ error: 'Processamento não encontrado (o servidor reiniciou).' }); res.json(j); });
