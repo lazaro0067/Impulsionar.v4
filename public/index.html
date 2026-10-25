@@ -23326,7 +23326,7 @@ async function evCamEnviarFila(E) {
     const item = E.fila[0]; let tent = 0;
     while (!E.cancelado) {
       try {
-        const r = await fetch('/api/admin/estudio/upload-parte', { method: 'POST', signal: AbortSignal.timeout(120000), headers: { Authorization: 'Bearer ' + ESTADO.token, 'Content-Type': 'application/octet-stream', 'x-upload-id': E.id, 'x-parte': String(E.i), 'x-total': '0', 'x-fim': item.fim ? '1' : '0', 'x-nome': encodeURIComponent('gravacao.' + ext), 'x-mime': EVCAM.mime }, body: item.blob });
+        const r = await fetch('/api/admin/estudio/upload-parte', { method: 'POST', signal: AbortSignal.timeout(300000), headers: { Authorization: 'Bearer ' + ESTADO.token, 'Content-Type': 'application/octet-stream', 'x-upload-id': E.id, 'x-parte': String(E.i), 'x-total': '0', 'x-fim': item.fim ? '1' : '0', 'x-nome': encodeURIComponent('gravacao.' + ext), 'x-mime': EVCAM.mime }, body: item.blob });
         const j = await r.json().catch(() => ({}));
         if (r.status === 409 && Number.isInteger(j.prox)) {
           if (j.prox > E.i) { E.i = j.prox; break; }

@@ -13918,14 +13918,19 @@ async function reempacotarVideo(arq) {
 }
 
 // Envio em partes (8 MB cada): vídeos longos e grandes sobem sem cair por tempo limite e sem pesar a memória do servidor.
-const PASTA_PARTES = path.join(require('os').tmpdir(), 'impulsionar-partes');
+// As partes ficam no MESMO disco da pasta final (o Volume): no fim é só renomear, na hora. Antes ficavam no disco
+// temporário e era preciso COPIAR o vídeo inteiro para o Volume — com vídeo grande isso passava de 2 minutos,
+// o celular desistia de esperar e recomeçava o envio do zero, sem fim.
+const PASTA_PARTES = UPLOADS_PERSISTENTES ? path.join(PASTA_UPLOADS, '.partes') : path.join(require('os').tmpdir(), 'impulsionar-partes');
 try { fs.mkdirSync(PASTA_PARTES, { recursive: true }); } catch (e) {}
-const ENVIOS_EM_PARTES = new Map(), FINALIZADOS_PARTES = new Map();
+setTimeout(() => { fs.readdir(PASTA_PARTES, (err, nomes) => { (nomes || []).forEach(n => { const a = path.join(PASTA_PARTES, n); fs.stat(a, (e2, st) => { if (!e2 && Date.now() - st.mtimeMs > 12 * 3600 * 1000) fs.unlink(a, () => {}); }); }); }); }, 60000);
+const ENVIOS_EM_PARTES = new Map(), FINALIZADOS_PARTES = new Map(), FINALIZANDO_PARTES = new Map();
 setInterval(() => { const agora = Date.now(); ENVIOS_EM_PARTES.forEach((e, id) => { if (agora - e.t > 6 * 3600 * 1000) { fs.unlink(e.tmp, () => {}); ENVIOS_EM_PARTES.delete(id); } }); }, 30 * 60 * 1000);
 async function receberParteEst(req, res, aoFinal) {
     const id = String(req.headers['x-upload-id'] || '').replace(/[^\w-]/g, '').slice(0, 48);
     const i = Number(req.headers['x-parte']), total = Number(req.headers['x-total']), fluxo = total === 0, fimFluxo = String(req.headers['x-fim'] || '') === '1';
     if (FINALIZADOS_PARTES.has(id)) return res.json(FINALIZADOS_PARTES.get(id)); // já terminou (nova tentativa do último pedaço)
+    if (FINALIZANDO_PARTES.has(id)) { const pronto = await FINALIZANDO_PARTES.get(id).catch(() => null); if (pronto) return res.json(pronto); } // ainda terminando: espera em vez de mandar recomeçar
     const nomeOrig = decodeURIComponent(String(req.headers['x-nome'] || 'video.mp4')).slice(0, 150);
     const ext = (path.extname(nomeOrig) || '.mp4').toLowerCase();
     if (!id || !Number.isInteger(i) || !Number.isInteger(total) || i < 0 || (!fluxo && (total < 1 || i >= total || total > 500)) || (fluxo && i > 20000)) return res.status(400).json({ error: 'Parte inválida.' });
@@ -13961,6 +13966,14 @@ async function receberParteEst(req, res, aoFinal) {
     return finalizarEnvioEst(e, id, nomeOrig, ext, res, aoFinal, preparar);
 }
 async function finalizarEnvioEst(e, id, nomeOrig, ext, res, aoFinal, preparar) {
+    let fim; FINALIZANDO_PARTES.set(id, new Promise(ok => { fim = ok; }));
+    try {
+        const dados = await finalizarEnvioEst2(e, id, nomeOrig, ext, res, aoFinal, preparar);
+        fim(dados || FINALIZADOS_PARTES.get(id) || null);
+    } catch (x) { fim(null); if (!res.headersSent) res.status(500).json({ error: 'Erro ao finalizar o envio.' }); }
+    finally { setTimeout(() => FINALIZANDO_PARTES.delete(id), 1000); }
+}
+async function finalizarEnvioEst2(e, id, nomeOrig, ext, res, aoFinal, preparar) {
     const final = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + ext; let destino = path.join(PASTA_UPLOADS, final);
     // move a gravação para a pasta definitiva. A pasta temporária e o Volume são discos diferentes (rename falha com EXDEV),
     // então copia. Se o Volume estiver cheio (ENOSPC) ou der erro, guarda na pasta do código para NÃO perder o vídeo.
