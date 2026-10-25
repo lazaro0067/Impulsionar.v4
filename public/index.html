@@ -22563,7 +22563,7 @@ function evLigarCanvas() {
   cv.addEventListener('pointermove', e => {
     if (!arr) return; const p = pos(e);
     if (arr.ovl) { arr.ovl.x = Math.max(0, Math.min(0.95, (p.x - arr.dx) / ES.W)); arr.ovl.y = Math.max(0, Math.min(0.95, (p.y - arr.dy) / ES.H)); arr.mexeu = true; evDesenhar(); return; }
-    arr.x.x = Math.max(0.05, Math.min(0.95, (p.x - arr.dx) / ES.W)); arr.x.y = Math.max(0.04, Math.min(0.96, (p.y - arr.dy) / ES.H));
+    arr.x.x = Math.max(0.05, Math.min(0.95, (p.x - arr.dx) / ES.W)); arr.x.y = Math.max(0.04, Math.min(0.96, (p.y - arr.dy) / ES.H)); arr.x.yFixo = true;
     if (Math.abs(arr.x.x - 0.5) < 0.015) arr.x.x = 0.5; // ímã no centro
     evLegendasJuntas(arr.x, 'x', arr.x.x); evLegendasJuntas(arr.x, 'y', arr.x.y); // todas as legendas acompanham
     arr.mexeu = true; evDesenhar();
@@ -23983,7 +23983,7 @@ async function evGerarLegendas(comIa) {
 
 // ---------- Painel de propriedades (direita) ----------
 function evCampo(rot, html) { return `<label class="ev-campo"><span>${rot}</span>${html}</label>`; }
-function evSet(k, v, redesenharLinha) { const x = evItemSel(); if (!x) return; if (v === null) delete x[k]; else x[k] = v; if (ES.sel && ES.sel.tipo === 'texto') evLegendasJuntas(x, k, v); evDesenhar(); if (redesenharLinha) evDesenharLinha(); }
+function evSet(k, v, redesenharLinha) { const x = evItemSel(); if (!x) return; if (v === null) delete x[k]; else x[k] = v; if ((k === 'y' || k === 'x') && ES.sel && ES.sel.tipo === 'texto') x.yFixo = true; if (ES.sel && ES.sel.tipo === 'texto') evLegendasJuntas(x, k, v); evDesenhar(); if (redesenharLinha) evDesenharLinha(); }
 // ---------- Legendas em massa: ajusta uma e todas acompanham (posição, tamanho, fonte, cor...) ----------
 const EV_CHAVES_LEGENDA = ['x', 'y', 'fonte', 'peso', 'tam', 'cor', 'fundo', 'contorno', 'sombra', 'anim', 'maiusc', 'destaque'];
 function evLegendasJuntasAtivo() { return ES && ES.p.dados.extras.legendasJuntas !== false; }
