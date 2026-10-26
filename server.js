@@ -13905,8 +13905,33 @@ app.post('/api/admin/estudio/projetos/:id/duplicar', requireRole('admin', 'estud
     db.run(`INSERT INTO estudio_projetos (titulo, formato, tipo, dados, legenda, hashtags, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, [p.titulo + ' (cópia)', p.formato, p.tipo, p.dados, p.legenda, p.hashtags, req.user.userId],
         function (err) { if (err) return res.status(500).json({ error: 'Erro ao duplicar.' }); res.json({ id: this.lastID }); });
 });
-app.delete('/api/admin/estudio/projetos/:id', requireRole('admin', 'estudio'), (req, res) => {
-    db.run(`DELETE FROM estudio_projetos WHERE id = ?`, [req.params.id], () => res.json({ ok: true }));
+// Excluir projetos E os arquivos de vídeo deles no servidor (libera espaço) — só apaga arquivo que não é usado em mais nada
+async function excluirProjetosEst(ids) {
+    const dono = donoAtualEst(); ids = [...new Set((ids || []).map(Number).filter(Boolean))].slice(0, 500);
+    if (!ids.length) return { projetos: 0, arquivos: 0, mb: 0 };
+    const linhas = await dbAll(`SELECT id, dados, video_url, capa_url, created_by FROM estudio_projetos WHERE id IN (${ids.map(() => '?').join(',')})`, ids).catch(() => []);
+    const meus = linhas.filter(l => !dono || Number(l.created_by) === Number(dono));
+    const nomes = new Set();
+    meus.forEach(l => { String((l.dados || '') + ' ' + (l.video_url || '') + ' ' + (l.capa_url || '')).replace(/\/uploads\/([\w.-]+)/g, (_, n) => { nomes.add(n); return _; }); });
+    if (meus.length) await new Promise(ok => db.run(`DELETE FROM estudio_projetos WHERE id IN (${meus.map(() => '?').join(',')})`, meus.map(l => l.id), ok));
+    // o vídeo "preparado" (substituto) também sai
+    const subs = await dbAll(`SELECT antigo, novo FROM estudio_substitutos`).catch(() => []); subs.forEach(r => { if (nomes.has(r.antigo)) nomes.add(r.novo); });
+    let arquivos = 0, mb = 0;
+    if (nomes.size) {
+        const usados = await nomesReferenciadosNoBanco();
+        for (const n of nomes) {
+            if (usados.includes(n)) continue;
+            for (const pasta of [...new Set([PASTA_UPLOADS, PASTA_UPLOADS_CODIGO])]) { const a = path.join(pasta, path.basename(n)); try { const st = fs.statSync(a); fs.unlinkSync(a); arquivos++; mb += st.size / 1048576; } catch (e) {} }
+            db.run(`DELETE FROM arquivos_persistidos WHERE nome = ?`, [n], () => {}); db.run(`DELETE FROM estudio_substitutos WHERE antigo = ? OR novo = ?`, [n, n], () => {});
+        }
+    }
+    return { projetos: meus.length, arquivos, mb: Math.round(mb) };
+}
+app.delete('/api/admin/estudio/projetos/:id', requireRole('admin', 'estudio'), async (req, res) => {
+    try { res.json(Object.assign({ ok: true }, await excluirProjetosEst([req.params.id]))); } catch (e) { res.status(500).json({ error: 'Erro ao excluir: ' + e.message }); }
+});
+app.post('/api/admin/estudio/projetos/excluir-varios', requireRole('admin', 'estudio'), async (req, res) => {
+    try { res.json(Object.assign({ ok: true }, await excluirProjetosEst((req.body || {}).ids))); } catch (e) { res.status(500).json({ error: 'Erro ao excluir: ' + e.message }); }
 });
 app.post('/api/admin/estudio/upload', requireRole('admin', 'estudio'), (req, res) => {
     uploadEstudio.single('file')(req, res, (err) => {

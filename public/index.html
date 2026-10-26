@@ -1662,6 +1662,9 @@
   body.modo-estudio .ea-kpi, body.modo-estudio .ea-item, body.modo-estudio .ea-plano, body.modo-estudio .ea-pag, body.modo-estudio .ea-barra, body.modo-estudio .ea-vazio { background:#0f172e; border-color:#1c2747; color:#e6eaf2; } body.modo-estudio .ea-acoes button, body.modo-estudio .ea-bt:not(.pri) { background:#16224a; border-color:#25325c; color:#e6eaf2; } body.modo-estudio .ea h3, body.modo-estudio .ea h2 { color:#fff; } body.modo-estudio .ea-plano li { border-color:#1c2747; } body.modo-estudio .ea-plano li span { color:#cbd5e1; } body.modo-estudio .ea-barra i { background:#1c2747; }
   @media (max-width: 600px) { .ea-item { flex-wrap:wrap; } .ea-acoes { width:100%; } .ea-acoes button { flex:1; } .ea-lims { grid-template-columns:1fr; } }
   .ev-so-pequeno, .ev-sheet-x, .ev-so-cel { display:none !important; }
+  .ev-selbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0 12px; }
+  .ev-card.marcado { outline:3px solid #2563eb; outline-offset:2px; }
+  .ev-card-check { position:absolute; top:8px; left:8px; z-index:3; font-size:24px; background:rgba(255,255,255,.9); border-radius:8px; line-height:1; padding:2px; }
   .evc-nativa { display:block; margin:6px auto 8px; padding:9px 14px; border-radius:999px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); color:#fff; font-size:14px; font-weight:700; text-align:center; cursor:pointer; max-width:420px; }
   .evc-nativa small { font-weight:400; opacity:.75; }
   .ditado-wrap { position:relative; display:block; }
@@ -27139,8 +27142,10 @@ function evDesenharProjetos(corpo) {
   const l = EVL.lista;
   const kpi = (n, r, c) => `<div class="ev-kpi"><b style="color:${c}">${n}</b><span>${r}</span></div>`;
   corpo.innerHTML = `<div class="ev-kpis">${kpi(l.length, 'projetos', '#0b1329')}${kpi(l.filter(p => p.status === 'publicado').length, 'publicados', '#16a34a')}${kpi(l.filter(p => p.status === 'agendado').length, 'agendados', '#7c3aed')}${kpi(l.length ? Math.round(l.reduce((s, p) => s + (p.viral_score || 0), 0) / l.length) : 0, 'nota viral média', '#dc4c4c')}</div>
-    ${l.length ? `<div class="ev-cards">${l.map(p => { const st = EV_STATUS[p.status] || EV_STATUS.rascunho; return `<div class="ev-card" onclick="evAbrirEditor(${p.id})">
-      <div class="ev-card-capa f${(p.formato || '9:16').replace(':', '-')}">${p.thumb ? `<img src="${escapeHtml(p.thumb)}">` : '<span>🎬</span>'}<i style="background:${st[1]}">${st[0]}</i>${p.viral_score ? `<em>🔥 ${p.viral_score}</em>` : ''}</div>
+    ${l.length ? `<div class="ev-selbar">${EVL.selecionando ? `<b>${EVL.sel.size} selecionado(s)</b><button class="btn-secundario" onclick="evSelTodos()">${EVL.sel.size === l.length ? 'Desmarcar todos' : 'Marcar todos'}</button><button class="btn-perigo" ${EVL.sel.size ? '' : 'disabled'} onclick="evExcluirSelecionados()">🗑️ Excluir selecionados</button><button class="btn-secundario" onclick="EVL.selecionando=false; EVL.sel.clear(); evDesenharProjetos(document.getElementById('ev-pag-corpo'))">Cancelar</button>`
+        : `<button class="btn-secundario" onclick="EVL.selecionando=true; EVL.sel=EVL.sel||new Set(); evDesenharProjetos(document.getElementById('ev-pag-corpo'))">☑️ Selecionar vários</button>${ESTADO.usuario && ESTADO.usuario.role === 'admin' ? `<button class="btn-secundario" onclick="evLimparSistema()">🧹 Limpar o sistema</button>` : ''}`}</div>
+    <div class="ev-cards">${l.map(p => { const st = EV_STATUS[p.status] || EV_STATUS.rascunho; const marcado = EVL.selecionando && EVL.sel.has(p.id); return `<div class="ev-card${marcado ? ' marcado' : ''}" onclick="${EVL.selecionando ? `evSelAlternar(${p.id})` : `evAbrirEditor(${p.id})`}">
+      <div class="ev-card-capa f${(p.formato || '9:16').replace(':', '-')}">${EVL.selecionando ? `<span class="ev-card-check">${marcado ? '✅' : '⬜'}</span>` : ''}${p.thumb ? `<img src="${escapeHtml(p.thumb)}">` : '<span>🎬</span>'}<i style="background:${st[1]}">${st[0]}</i>${p.viral_score ? `<em>🔥 ${p.viral_score}</em>` : ''}</div>
       <div class="ev-card-info"><b>${escapeHtml(p.titulo)}</b><small>${p.tipo === 'aula' ? '🎓 Aula · ' : ''}${escapeHtml(p.formato)} · ${p.qtdClips} clipes · ${evFmtT(p.duracao || 0).slice(0, 5)}</small>
       ${p.status === 'agendado' && p.agendado_para ? `<small>🗓️ ${new Date(p.agendado_para).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</small>` : ''}
       ${p.ig_permalink ? `<a href="${escapeHtml(p.ig_permalink)}" target="_blank" onclick="event.stopPropagation()">Ver no Instagram ↗</a>` : ''}
@@ -27242,7 +27247,22 @@ async function evCriarAula() {
   } catch (e) { mostrarToast(e.message, true); }
 }
 async function evDuplicarProjeto(id) { try { await api(`/api/admin/estudio/projetos/${id}/duplicar`, { method: 'POST', body: '{}' }); mostrarToast('Projeto duplicado!'); renderEstudioVideo(); } catch (e) { mostrarToast(e.message, true); } }
-async function evExcluirProjeto(id) { if (!confirm('Excluir este projeto de vídeo?')) return; try { await api('/api/admin/estudio/projetos/' + id, { method: 'DELETE' }); renderEstudioVideo(); } catch (e) { mostrarToast(e.message, true); } }
+function evCorpoProjetos() { return document.getElementById('ev-pag-corpo'); }
+function evSelAlternar(id) { EVL.sel = EVL.sel || new Set(); EVL.sel.has(id) ? EVL.sel.delete(id) : EVL.sel.add(id); const c = evCorpoProjetos(); if (c) evDesenharProjetos(c); }
+function evSelTodos() { EVL.sel = EVL.sel || new Set(); if (EVL.sel.size === EVL.lista.length) EVL.sel.clear(); else EVL.lista.forEach(p => EVL.sel.add(p.id)); const c = evCorpoProjetos(); if (c) evDesenharProjetos(c); }
+async function evExcluirSelecionados() {
+  const ids = [...(EVL.sel || [])]; if (!ids.length) return;
+  if (!confirm(`Excluir ${ids.length} projeto(s) e os vídeos deles no servidor? Isso libera espaço e não pode ser desfeito.`)) return;
+  try { mostrarToast('🗑️ Excluindo…'); const r = await api('/api/admin/estudio/projetos/excluir-varios', { method: 'POST', body: JSON.stringify({ ids }) }); EVL.sel.clear(); EVL.selecionando = false; mostrarToast(`🗑️ ${r.projetos} projeto(s) excluídos · ${r.arquivos} arquivo(s) apagados · ${r.mb} MB liberados.`); renderEstudioVideo(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function evLimparSistema() {
+  let r; try { r = await api('/api/admin/estudio/espaco'); } catch (e) { return mostrarToast(e.message, true); }
+  if (!confirm(`🧹 Limpar o sistema?\n\n• ${r.partes.length} envio(s) interrompido(s): ${r.partesMB} MB\n• ${r.soltos.length} vídeo(s) soltos (não usados em nenhum projeto nem em outra parte do sistema): ${r.soltosMB} MB\n\nLivre agora: ${r.livreMB === null ? '?' : (r.livreMB / 1024).toFixed(1) + ' GB'}. Os seus projetos NÃO são apagados.`)) return;
+  try { const x = await api('/api/admin/estudio/espaco/limpar', { method: 'POST', body: JSON.stringify({ partes: true, soltos: true, minHoras: 1 }) }); mostrarToast(`🧹 Sistema limpo: ${x.apagados} arquivo(s) · ${x.mb} MB liberados · livre: ${x.livreMB === null ? '?' : (x.livreMB / 1024).toFixed(1) + ' GB'}.`); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function evExcluirProjeto(id) { if (!confirm('Excluir este projeto de vídeo e os vídeos dele no servidor?')) return; try { const r = await api('/api/admin/estudio/projetos/' + id, { method: 'DELETE' }); if (r && r.mb) mostrarToast(`🗑️ Projeto excluído · ${r.mb} MB liberados.`); renderEstudioVideo(); } catch (e) { mostrarToast(e.message, true); } }
 function evDesenharAgenda(corpo) {
   const ag = EVL.lista.filter(p => p.status === 'agendado').sort((a, b) => String(a.agendado_para).localeCompare(String(b.agendado_para)));
   const pub = EVL.lista.filter(p => ['publicado', 'publicando', 'erro'].includes(p.status)).sort((a, b) => String(b.publicado_em || b.updated_at).localeCompare(String(a.publicado_em || a.updated_at)));
