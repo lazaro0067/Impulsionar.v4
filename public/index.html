@@ -22377,6 +22377,7 @@ async function evAbrirEditor(id) {
   if (!d.clips.length && !d.textos.length) setTimeout(() => evDica('Comece subindo seus vídeos e fotos em 🎞️ Mídia — ou peça ao 🤖 Agente IA para montar a edição.'), 400);
   setTimeout(() => evPreCarregarMidias(), 1500);
   setTimeout(() => evVerificarArquivos(), 900);
+  setTimeout(() => evConferirGravacoesPendentes().catch(() => {}), 2500);
 }
 // ---------- Edição fluida: baixa os vídeos/áudios do projeto para a memória do aparelho (a prévia e a exportação não travam esperando a internet) ----------
 // Confere no servidor se os vídeos/áudios do projeto ainda existem (um deploy sem disco permanente apaga os arquivos).
@@ -23018,11 +23019,18 @@ async function evAbrirRecuperar() {
   modal.innerHTML = `<div class="ev-modal-fundo"><div class="ev-modal" style="max-width:560px;max-height:88vh;overflow:auto;">
     <h3 style="margin:0 0 4px;">🛟 Recuperar vídeos enviados</h3>
     <div class="ev-sub" style="margin-bottom:8px;">Vídeos que chegaram ao servidor nos últimos 7 dias mas não estão em nenhum projeto. Assista e toque em <b>Adicionar</b> no que for o seu. Se aparecer o mesmo vídeo repetido, basta adicionar um.</div>
-    ${lista.length ? lista.map((v, i) => `<div style="border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px;margin:8px 0;">
+    ${lista.length ? lista.map((v, i) => v.parcial ? `<div style="border:1px solid rgba(245,158,11,.5);border-radius:12px;padding:10px;margin:8px 0;">
+      <b>⏸️ Gravação que parou no meio do envio</b><div class="ev-sub">${new Date(v.quando).toLocaleString('pt-BR')} · ${v.tamanhoMB} MB chegaram ao servidor · ${escapeHtml(v.nome || '')}</div>
+      <button class="ev-btn primario" style="margin-top:6px;" onclick="evRecuperarParcial(${i}, this)">🛟 Recuperar o que chegou e colocar no vídeo</button></div>` : `<div style="border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px;margin:8px 0;">
       <video src="${v.url}#t=0.5" preload="metadata" controls playsinline style="width:100%;max-height:260px;background:#000;border-radius:8px;"></video>
       <div class="ev-dupla" style="align-items:center;margin-top:6px;"><span class="ev-sub" style="flex:1;">${new Date(v.quando).toLocaleString('pt-BR')} · ${v.tamanhoMB} MB${v.persistente ? '' : ' · ⚠️ fora do disco permanente'}</span>
       <button class="ev-btn primario" onclick="evRecuperarAdicionar(${i}, this)">＋ Adicionar</button></div></div>`).join('') : '<div class="ev-sub" style="padding:14px 0;">Nenhum vídeo solto encontrado no servidor.</div>'}
     <button class="ev-btn" style="width:100%;margin-top:6px;" onclick="document.getElementById('ev-modal').innerHTML=''">Fechar</button></div></div>`;
+}
+async function evRecuperarParcial(i, bt) {
+  const v = (ES.recuperaveis || [])[i]; if (!v) return; if (bt) { bt.disabled = true; bt.textContent = '⏳ Montando o vídeo (pode levar 1 a 2 minutos)…'; }
+  try { const r = await api('/api/admin/estudio/recuperar-parcial', { method: 'POST', body: JSON.stringify({ id: v.id }) }); ES.recuperaveis[i] = { url: r.url, quando: v.quando, tamanhoMB: v.tamanhoMB }; await evRecuperarAdicionar(i, bt); }
+  catch (e) { if (bt) { bt.disabled = false; bt.textContent = '🛟 Tentar de novo'; } mostrarToast(e.message, true); }
 }
 async function evRecuperarAdicionar(i, bt) {
   const v = (ES.recuperaveis || [])[i]; if (!v) return; if (bt) { bt.disabled = true; bt.textContent = 'Adicionando…'; }
@@ -23756,14 +23764,19 @@ async function evCamGravar() {
   } catch (e) { EVCAM.stream.getAudioTracks().forEach(t => fluxo.addTrack(t)); }
   const mime = ['video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
   EVCAM.partes = []; EVCAM.tamLocal = 0; const altG = direto && EVCAM.gravDims ? Math.min(EVCAM.gravDims.w || 0, EVCAM.gravDims.h || 0) : 1080;
-  EVCAM.rec = new MediaRecorder(fluxo, mime ? { mimeType: mime, videoBitsPerSecond: EVCAM.modo === 'camera' ? (direto ? (altG >= 1800 ? 40000000 : altG >= 1000 ? 16000000 : 8000000) : 10000000) : 5000000, audioBitsPerSecond: 192000 } : undefined);
+  EVCAM.rec = new MediaRecorder(fluxo, mime ? { mimeType: mime, videoBitsPerSecond: EVCAM.modo === 'camera' ? (direto ? (altG >= 1800 ? 16000000 : altG >= 1000 ? 8000000 : 5000000) : 6000000) : 4000000, audioBitsPerSecond: 192000 } : undefined);
   // envio contínuo: a gravação vai subindo para o servidor enquanto você grava (aulas de até 2 h sem estourar a memória)
   EVCAM.mime = EVCAM.rec.mimeType || mime || 'video/webm';
   EVCAM.envio = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), i: 0, fila: [], enviando: false, enviado: 0, total: 0, resposta: null, todas: [] };
   EVCAM.envio.pronto = new Promise(ok => { EVCAM.envio.concluir = ok; });
-  const E0 = EVCAM.envio;
-  EVCAM.rec.ondataavailable = e => { if (!e.data.size) return; if (EVCAM.tamLocal < 300 * 1048576) { EVCAM.partes.push(e.data); EVCAM.tamLocal += e.data.size; } E0.total += e.data.size; evCamEnfileirar(E0, e.data); evCamEnviarFila(E0); };
-  EVCAM.rec.onstop = () => { E0.fila.push({ blob: new Blob([]), fim: true }); E0.todas.push({ blob: new Blob([]), fim: true }); evCamEnviarFila(E0); evCamTerminou(); };
+  const E0 = EVCAM.envio; E0.rec = E0.id; E0.seq = 0;
+  E0.meta = { rec: E0.rec, mime: EVCAM.mime, projeto: ES && ES.p ? ES.p.id : null, nome: (EVCAM.pp ? 'Parte ' + (EVCAM.pp.i + 1) : 'Gravação') + ' ' + new Date().toLocaleString('pt-BR'), inicio: Date.now(), terminou: false };
+  evIdbGravacao(E0.meta);
+  // 💡 tela sempre ligada enquanto grava (se a tela apaga, o celular para a câmera e fica só o áudio)
+  try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(w => { EVCAM.wake = w; }).catch(() => {}); } catch (e) {}
+  { const vt = fluxo.getVideoTracks()[0]; if (vt) { const avisar = () => { if (!EVCAM.rec) return; const m = document.getElementById('ev-cam-msg'); if (m) m.textContent = '⚠️ A câmera parou de mandar imagem — mantenha a tela ligada e o Impulsionar aberto na frente.'; mostrarToast('⚠️ A câmera parou de mandar imagem. Não saia do app e não bloqueie a tela durante a gravação.', true); }; vt.addEventListener('ended', avisar); vt.addEventListener('mute', avisar); } }
+  EVCAM.rec.ondataavailable = e => { if (!e.data.size) return; evIdbGuardarPedaco(E0.rec, E0.seq++, e.data); if (EVCAM.tamLocal < 120 * 1048576) { EVCAM.partes.push(e.data); EVCAM.tamLocal += e.data.size; } E0.total += e.data.size; evCamEnfileirar(E0, e.data); evCamEnviarFila(E0); };
+  EVCAM.rec.onstop = () => { E0.terminou = true; E0.meta.terminou = true; E0.meta.total = E0.total; evIdbGravacao(E0.meta); E0.fila.push({ blob: new Blob([]), fim: true }); evCamEnviarFila(E0); evCamTerminou(); };
   EVCAM.rec.start(2000);
   { const b = document.getElementById('ev-cam-pausa'); if (b) b.textContent = '⏸'; } EVCAM.inicio = Date.now(); EVCAM.pausado = 0;
   if ((document.getElementById('ev-cam-usatp') || {}).checked) { EVCAM.pos = 0; EVCAM.ult = 0; EVCAM.rolando = true; }
@@ -23777,7 +23790,52 @@ function evCamPausar() {
   else if (r.state === 'paused') { EVCAM.pausado += Date.now() - EVCAM.pausaEm; r.resume(); EVCAM.ult = 0; EVCAM.rolando = (document.getElementById('ev-cam-usatp') || {}).checked; b.textContent = '⏸'; if (EVCAM.divEl && EVCAM.divEl.play) EVCAM.divEl.play().catch(() => {}); }
 }
 // pedaços grandes (sinal fraco acumula) vão em partes de até 6 MB
-function evCamEnfileirar(E, blob) { const T = 6 * 1048576; for (let p = 0; p < blob.size; p += T) { const it = { blob: blob.slice(p, Math.min(blob.size, p + T)) }; E.fila.push(it); E.todas.push(it); } }
+// 💾 Toda gravação fica guardada no próprio aparelho (IndexedDB) enquanto grava: se a página fechar, o celular travar,
+// a internet cair ou o servidor reiniciar, nada se perde — dá para continuar o envio ou salvar no aparelho depois.
+const EVIDB = { p: null };
+function evIdb() {
+  if (EVIDB.p) return EVIDB.p;
+  EVIDB.p = new Promise((ok, ko) => { try { const r = indexedDB.open('impulsionar-gravacoes', 1);
+    r.onupgradeneeded = () => { const db = r.result; if (!db.objectStoreNames.contains('pedacos')) db.createObjectStore('pedacos', { keyPath: ['rec', 'seq'] }); if (!db.objectStoreNames.contains('gravacoes')) db.createObjectStore('gravacoes', { keyPath: 'rec' }); };
+    r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); } catch (e) { ko(e); } });
+  EVIDB.p.catch(() => { EVIDB.p = null; }); return EVIDB.p;
+}
+async function evIdbOp(loja, modo, fn) { const db = await evIdb(); return new Promise((ok, ko) => { const tx = db.transaction(loja, modo), r = fn(tx.objectStore(loja)); let res; if (r) r.onsuccess = () => { res = r.result; }; tx.oncomplete = () => ok(res); tx.onerror = () => ko(tx.error); tx.onabort = () => ko(tx.error); }); }
+function evIdbGuardarPedaco(rec, seq, blob) { return evIdbOp('pedacos', 'readwrite', st => st.put({ rec, seq, blob })).catch(e => console.warn('cópia no aparelho:', e && e.message)); }
+function evIdbGravacao(g) { return evIdbOp('gravacoes', 'readwrite', st => st.put(Object.assign({}, g))).catch(() => {}); }
+async function evIdbListar() { try { return (await evIdbOp('gravacoes', 'readonly', st => st.getAll())) || []; } catch (e) { return []; } }
+async function evIdbPedacos(rec) { try { return ((await evIdbOp('pedacos', 'readonly', st => st.getAll(IDBKeyRange.bound([rec, 0], [rec, Infinity])))) || []).sort((a, b) => a.seq - b.seq).map(x => x.blob); } catch (e) { return []; } }
+async function evIdbApagar(rec) { try { await evIdbOp('pedacos', 'readwrite', st => st.delete(IDBKeyRange.bound([rec, 0], [rec, Infinity]))); await evIdbOp('gravacoes', 'readwrite', st => st.delete(rec)); } catch (e) {} }
+// Ao abrir o editor: gravações que ficaram guardadas no aparelho sem terminar de subir
+async function evConferirGravacoesPendentes() {
+  const lista = (await evIdbListar()).filter(g => !(EVCAM.envio && EVCAM.envio.rec === g.rec && !EVCAM.envio.resposta)); if (!lista.length || !ES) return;
+  ES.pendentesIdb = lista;
+  const tam = async g => { const b = await evIdbPedacos(g.rec); return { n: b.length, mb: Math.round(b.reduce((s, x) => s + x.size, 0) / 1048576) }; };
+  const infos = await Promise.all(lista.map(tam)); if (!ES) return;
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo"><div class="ev-modal" style="max-width:520px;max-height:88vh;overflow:auto;">
+    <div class="ev-modal-cab"><h3>💾 Gravações guardadas no aparelho</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <div class="ev-sub">Estas gravações ficaram guardadas neste celular/computador e não terminaram de subir. Nada foi perdido.</div>
+    ${lista.map((g, i) => `<div style="border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;margin:10px 0;">
+      <b>${escapeHtml(g.nome || 'Gravação')}</b><div class="ev-sub">${infos[i].mb} MB${g.terminou ? '' : ' · a gravação foi interrompida (fica até onde gravou)'}</div><div class="ev-sub" id="evp-st-${i}"></div>
+      <div class="ev-dupla" style="margin-top:6px;flex-wrap:wrap;gap:6px;"><button class="ev-btn primario" onclick="evPendenteEnviar(${i})">☁️ Enviar e colocar no vídeo</button><button class="ev-btn" onclick="evPendenteSalvar(${i})">💾 Salvar no aparelho</button><button class="ev-btn perigo" onclick="evPendenteDescartar(${i})">🗑️</button></div></div>`).join('')}
+  </div></div>`;
+}
+async function evPendenteBlob(g) { const blobs = await evIdbPedacos(g.rec); let blob = new Blob(blobs, { type: g.mime || 'video/webm' }); if (/mp4/.test(blob.type) && window.Mp4Completo) { try { blob = await Mp4Completo.mp4CompletoBlob(blob); } catch (e) {} } return blob; }
+async function evPendenteSalvar(i) { const g = (ES.pendentesIdb || [])[i]; if (!g) return; try { evCarregando('💾 Montando o arquivo…'); const b = await evPendenteBlob(g); evCarregando(null); await evEntregarArquivo(b, 'gravacao-' + new Date(g.inicio || Date.now()).toISOString().slice(0, 16).replace(/[:T]/g, '-') + (/mp4/.test(b.type) ? '.mp4' : '.webm')); } catch (e) { evCarregando(null); mostrarToast(e.message, true); } }
+async function evPendenteDescartar(i) { const g = (ES.pendentesIdb || [])[i]; if (!g || !confirm('Apagar esta gravação do aparelho? Isso não pode ser desfeito.')) return; await evIdbApagar(g.rec); evConferirGravacoesPendentes(); if (!(await evIdbListar()).length) document.getElementById('ev-modal').innerHTML = ''; }
+async function evPendenteEnviar(i) {
+  const g = (ES.pendentesIdb || [])[i]; if (!g) return; const st = document.getElementById('evp-st-' + i);
+  try {
+    if (st) st.textContent = 'Preparando…'; const blob = await evPendenteBlob(g), url = URL.createObjectURL(blob);
+    const info = await new Promise(ok => { const v = document.createElement('video'); v.muted = true; v.preload = 'metadata'; const tm = setTimeout(() => ok({}), 8000); v.onloadedmetadata = () => { clearTimeout(tm); ok({ dur: isFinite(v.duration) ? v.duration : 0, w: v.videoWidth, h: v.videoHeight }); }; v.onerror = () => { clearTimeout(tm); ok({}); }; v.src = url; });
+    const m = { id: evUid(), url: '', nome: g.nome || 'Gravação recuperada', tipo: 'video', duracao: info.dur || 0, w: info.w || 1080, h: info.h || 1920, enviando: true };
+    ES.locais = ES.locais || {}; ES.locais[m.id] = url; ES.p.dados.midias.push(m); evAdicionarClipe(m.id, true); evMudou(); evPainel('midia');
+    document.getElementById('ev-modal').innerHTML = ''; mostrarToast('✅ Gravação na linha do tempo. Ela sobe para o servidor em segundo plano.');
+    const arq = new File([blob], 'gravacao.' + (/mp4/.test(blob.type) ? 'mp4' : 'webm'), { type: blob.type });
+    ES.filaEnvio = (ES.filaEnvio || Promise.resolve()).then(async () => { await evEnviarMidiaFundo(arq, m); if (m.url && !m.erroEnvio) evIdbApagar(g.rec); });
+  } catch (e) { if (st) st.textContent = '⚠️ ' + e.message; }
+}
+function evCamEnfileirar(E, blob) { const T = 6 * 1048576; for (let p = 0; p < blob.size; p += T) E.fila.push({ blob: blob.slice(p, Math.min(blob.size, p + T)) }); } // a cópia de segurança fica no aparelho (IndexedDB), não na memória }
 // Envio contínuo da gravação: o vídeo fica guardado no aparelho e vai subindo; se a internet cair, continua sozinho de onde parou.
 async function evCamEnviarFila(E) {
   E = E || EVCAM.envio; if (!E || E.enviando || E.cancelado) return; E.enviando = true;
@@ -23786,12 +23844,12 @@ async function evCamEnviarFila(E) {
     const item = E.fila[0]; let tent = 0;
     while (!E.cancelado) {
       try {
-        const r = await fetch('/api/admin/estudio/upload-parte', { method: 'POST', signal: AbortSignal.timeout(300000), headers: { Authorization: 'Bearer ' + ESTADO.token, 'Content-Type': 'application/octet-stream', 'x-upload-id': E.id, 'x-parte': String(E.i), 'x-total': '0', 'x-fim': item.fim ? '1' : '0', 'x-nome': encodeURIComponent('gravacao.' + ext), 'x-mime': EVCAM.mime }, body: item.blob });
+        const r = await fetch('/api/admin/estudio/upload-parte', { method: 'POST', signal: AbortSignal.timeout(300000), headers: { Authorization: 'Bearer ' + ESTADO.token, 'Content-Type': 'application/octet-stream', 'x-upload-id': E.id, 'x-parte': String(E.i), 'x-desloc': String(E.enviado), 'x-total': '0', 'x-fim': item.fim ? '1' : '0', 'x-nome': encodeURIComponent('gravacao.' + ext), 'x-mime': EVCAM.mime }, body: item.blob });
         const j = await r.json().catch(() => ({}));
         if (r.status === 409 && Number.isInteger(j.prox)) {
           if (j.prox > E.i) { E.i = j.prox; break; }
           // o servidor perdeu o envio (reiniciou): recomeça do zero com o que está guardado no aparelho
-          if (j.prox === 0 && E.i > 0 && EVCAM.tamLocal < 300 * 1048576 && (E.recomecos = (E.recomecos || 0) + 1) <= 3) { E.id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); E.i = 0; E.enviado = 0; E.fila = E.todas.slice(); aviso('☁️ Reenviando a gravação…'); E.enviando = false; return evCamEnviarFila(E); }
+          if (j.prox === 0 && E.i > 0 && (E.recomecos = (E.recomecos || 0) + 1) <= 3) { const blobs = E.rec ? await evIdbPedacos(E.rec) : []; if (blobs.length) { E.id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); E.i = 0; E.enviado = 0; E.fila = []; blobs.forEach(b => evCamEnfileirar(E, b)); if (E.terminou) E.fila.push({ blob: new Blob([]), fim: true }); aviso('☁️ Reenviando a gravação (guardada no aparelho)…'); E.enviando = false; return evCamEnviarFila(E); } }
         }
         if (!r.ok) { const e = new Error(j.error || ('Falha no envio (HTTP ' + r.status + ')')); e.status = r.status; throw e; }
         if (item.fim || j.completo) E.resposta = j;
@@ -23806,15 +23864,18 @@ async function evCamEnviarFila(E) {
     E.fila.shift();
     if (EVCAM.rec) aviso(`☁️ Salvo no servidor: ${(E.enviado / 1048576).toFixed(0)} MB (sobe enquanto você grava)`);
     else if (EVCAM.ultima && EVCAM.ultima.envio === E && !E.resposta) aviso(`☁️ Enviando… ${Math.min(99, Math.round(E.enviado / Math.max(1, E.total) * 100))}%`);
-    if (E.resposta) { E.concluir(E.resposta); break; }
+    if (E.resposta) { if (E.rec) evIdbApagar(E.rec); E.concluir(E.resposta); break; }
   }
   E.enviando = false;
 }
 // Fim da gravação: tela de revisão com Usar no vídeo / Salvar no aparelho / Gravar de novo / Sair
 async function evCamTerminou() {
+  try { if (EVCAM.wake) EVCAM.wake.release(); } catch (e) {} EVCAM.wake = null;
   clearInterval(EVCAM.timer); EVCAM.rolando = false; if (EVCAM.divEl && EVCAM.divEl.pause) EVCAM.divEl.pause();
   const tipo = EVCAM.mime || 'video/webm', dur = (Date.now() - EVCAM.inicio - EVCAM.pausado) / 1000; EVCAM.rec = null;
-  const blob = EVCAM.tamLocal < 300 * 1048576 ? new Blob(EVCAM.partes, { type: tipo }) : null, nome = 'gravacao-' + new Date().toLocaleString('pt-BR').replace(/[/:, ]+/g, '-') + (/mp4/.test(tipo) ? '.mp4' : '.webm');
+  let blob = EVCAM.tamLocal < 120 * 1048576 ? new Blob(EVCAM.partes, { type: tipo }) : null;
+  if (!blob && EVCAM.envio && EVCAM.envio.rec) { await new Promise(z => setTimeout(z, 600)); const ps = await evIdbPedacos(EVCAM.envio.rec); if (ps.length) blob = new Blob(ps, { type: tipo }); } // gravação longa: a cópia vem do armazenamento do aparelho (não da memória)
+  const nome = 'gravacao-' + new Date().toLocaleString('pt-BR').replace(/[/:, ]+/g, '-') + (/mp4/.test(tipo) ? '.mp4' : '.webm');
   EVCAM.ultima = { blob, tipo, dur, nome, envio: EVCAM.envio, modo: EVCAM.modo, url: blob ? URL.createObjectURL(blob) : '' };
   const rc = document.getElementById('ev-cam-rec'); if (rc) rc.hidden = true;
   const bt = document.getElementById('ev-cam-bt'); if (bt) bt.classList.remove('gravando');
@@ -23844,7 +23905,7 @@ async function evCamSalvarAparelho() {
   mostrarToast('💾 Gravação salva no aparelho.');
 }
 function evCamGravarDeNovo() {
-  const g = EVCAM.ultima; if (g && !g.usada && g.envio) g.envio.cancelado = true;
+  const g = EVCAM.ultima; if (g && !g.usada && g.envio) { g.envio.cancelado = true; if (g.envio.rec) evIdbApagar(g.envio.rec); }
   EVCAM.ultima = null; clearInterval(EVCAM.revTimer); const rv = document.getElementById('evc-rev'); if (rv) rv.remove();
   EVCAM.partes = []; EVCAM.tamLocal = 0; EVCAM.pos = 0; const t = document.getElementById('ev-cam-tp-txt'); if (t) t.style.transform = '';
   if (EVCAM.div && EVCAM.divEl && EVCAM.divEl.pause) { EVCAM.divEl.pause(); try { EVCAM.divEl.currentTime = EVCAM.div.mediaIni || 0; } catch (e) {} }
@@ -23887,8 +23948,10 @@ function evCamSairPartes() { if (EVCAM.pp && Object.keys(EVCAM.pp.feitas).length
 function evFecharCamera(forcar) {
   if (!forcar && EVCAM.rec && !confirm('Parar e descartar a gravação em andamento?')) return;
   if (!forcar && !EVCAM.rec && EVCAM.ultima && !EVCAM.ultima.usada && !confirm('Sair sem usar a gravação? Ela será descartada.')) return;
-  if (EVCAM.ultima && !EVCAM.ultima.usada && EVCAM.ultima.envio) EVCAM.ultima.envio.cancelado = true;
+  if (EVCAM.ultima && !EVCAM.ultima.usada && EVCAM.ultima.envio) { EVCAM.ultima.envio.cancelado = true; if (EVCAM.ultima.envio.rec) evIdbApagar(EVCAM.ultima.envio.rec); }
+  if (!forcar && EVCAM.rec && EVCAM.envio && EVCAM.envio.rec) { const r0 = EVCAM.envio.rec; EVCAM.envio.cancelado = true; setTimeout(() => evIdbApagar(r0), 1500); }
   if (EVCAM.rec) { EVCAM.rec.onstop = null; try { EVCAM.rec.stop(); } catch (e) {} EVCAM.rec = null; }
+  try { if (EVCAM.wake) EVCAM.wake.release(); } catch (e) {} EVCAM.wake = null;
   cancelAnimationFrame(EVCAM.raf); clearInterval(EVCAM.timer); EVCAM.rolando = false;
   [EVCAM.stream, EVCAM.tela].forEach(s => s && s.getTracks().forEach(t => t.stop())); EVCAM.stream = null; EVCAM.tela = null; EVCAM.an = null;
   if (EVCAM.vid) EVCAM.vid.srcObject = null; if (EVCAM.vTela) EVCAM.vTela.srcObject = null;

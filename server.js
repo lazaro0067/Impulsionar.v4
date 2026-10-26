@@ -13803,9 +13803,33 @@ app.get('/api/admin/estudio/recuperaveis', requireRole('admin'), async (req, res
                 try { const st = await fs.promises.stat(path.join(pasta, n)); if (st.size < 200 * 1024 || Date.now() - st.mtimeMs > 7 * 24 * 3600 * 1000) continue; lista.push({ nome: n, url: '/uploads/' + n, tamanhoMB: Math.round(st.size / 104857.6) / 10, quando: new Date(st.mtimeMs).toISOString(), persistente: pasta === PASTA_UPLOADS && UPLOADS_PERSISTENTES }); } catch (e) {}
             }
         }
+        // gravações que pararam no meio do envio (o celular fechou, a internet caiu, o servidor reiniciou)
+        try {
+            const ativos = new Set([...ENVIOS_EM_PARTES.entries()].filter(([, e]) => Date.now() - e.t < 3 * 60 * 1000).map(([id]) => id));
+            for (const n of await fs.promises.readdir(PASTA_PARTES)) {
+                const m = n.match(/^([\w-]+)\.part$/); if (!m || ativos.has(m[1])) continue;
+                const st = await fs.promises.stat(path.join(PASTA_PARTES, n)).catch(() => null); if (!st || st.size < 1024 * 1024) continue;
+                let meta = {}; try { meta = JSON.parse(fs.readFileSync(path.join(PASTA_PARTES, m[1] + '.json'), 'utf8')); } catch (e) {}
+                lista.push({ parcial: true, id: m[1], nome: meta.nome || 'gravação', tamanhoMB: Math.round(st.size / 104857.6) / 10, quando: new Date(st.mtimeMs).toISOString(), persistente: UPLOADS_PERSISTENTES });
+            }
+        } catch (e) {}
         lista.sort((a, b) => b.quando.localeCompare(a.quando));
         res.json(lista.slice(0, 40));
     } catch (e) { res.status(500).json({ error: 'Erro ao procurar vídeos: ' + e.message }); }
+});
+// transforma o que chegou de uma gravação interrompida num vídeo normal (até onde foi enviado)
+app.post('/api/admin/estudio/recuperar-parcial', requireRole('admin'), async (req, res) => {
+    const id = String((req.body || {}).id || '').replace(/[^\w-]/g, ''); if (!id) return res.status(400).json({ error: 'Gravação inválida.' });
+    const tmp = path.join(PASTA_PARTES, id + '.part'); if (!fs.existsSync(tmp)) return res.status(404).json({ error: 'Essa gravação não está mais no servidor.' });
+    try {
+        const fd = fs.openSync(tmp, 'r'), cab = Buffer.alloc(12); fs.readSync(fd, cab, 0, 12, 0); fs.closeSync(fd);
+        const ext = cab.readUInt32BE(0) === 0x1A45DFA3 ? '.webm' : '.mp4', nome = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + ext, destino = path.join(PASTA_UPLOADS, nome);
+        ENVIOS_EM_PARTES.delete(id);
+        try { await fs.promises.rename(tmp, destino); } catch (e) { await fs.promises.copyFile(tmp, destino); fs.unlink(tmp, () => {}); }
+        fs.unlink(path.join(PASTA_PARTES, id + '.json'), () => {});
+        await reempacotarVideo(destino).catch(() => {}); // conserta o índice/duração (vídeo que parou no meio)
+        res.json({ url: '/uploads/' + nome });
+    } catch (e) { res.status(500).json({ error: 'Não consegui recuperar: ' + e.message }); }
 });
 app.get('/api/admin/estudio/projetos/:id', requireRole('admin', 'estudio'), async (req, res) => {
     const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null);
@@ -13942,9 +13966,9 @@ async function reempacotarVideo(arq) {
 // o celular desistia de esperar e recomeçava o envio do zero, sem fim.
 const PASTA_PARTES = UPLOADS_PERSISTENTES ? path.join(PASTA_UPLOADS, '.partes') : path.join(require('os').tmpdir(), 'impulsionar-partes');
 try { fs.mkdirSync(PASTA_PARTES, { recursive: true }); } catch (e) {}
-setTimeout(() => { fs.readdir(PASTA_PARTES, (err, nomes) => { (nomes || []).forEach(n => { const a = path.join(PASTA_PARTES, n); fs.stat(a, (e2, st) => { if (!e2 && Date.now() - st.mtimeMs > 12 * 3600 * 1000) fs.unlink(a, () => {}); }); }); }); }, 60000);
+setTimeout(() => { fs.readdir(PASTA_PARTES, (err, nomes) => { (nomes || []).forEach(n => { const a = path.join(PASTA_PARTES, n); fs.stat(a, (e2, st) => { if (!e2 && Date.now() - st.mtimeMs > 72 * 3600 * 1000) fs.unlink(a, () => {}); }); }); }); }, 60000);
 const ENVIOS_EM_PARTES = new Map(), FINALIZADOS_PARTES = new Map(), FINALIZANDO_PARTES = new Map();
-setInterval(() => { const agora = Date.now(); ENVIOS_EM_PARTES.forEach((e, id) => { if (agora - e.t > 6 * 3600 * 1000) { fs.unlink(e.tmp, () => {}); ENVIOS_EM_PARTES.delete(id); } }); }, 30 * 60 * 1000);
+setInterval(() => { const agora = Date.now(); ENVIOS_EM_PARTES.forEach((e, id) => { if (agora - e.t > 6 * 3600 * 1000) ENVIOS_EM_PARTES.delete(id); }); }, 30 * 60 * 1000); // o arquivo parcial fica no disco (pode ser recuperado) e é apagado depois de 3 dias
 async function receberParteEst(req, res, aoFinal) {
     const id = String(req.headers['x-upload-id'] || '').replace(/[^\w-]/g, '').slice(0, 48);
     const i = Number(req.headers['x-parte']), total = Number(req.headers['x-total']), fluxo = total === 0, fimFluxo = String(req.headers['x-fim'] || '') === '1';
@@ -13973,7 +13997,14 @@ async function receberParteEst(req, res, aoFinal) {
         return finalizarEnvioEst(e, id, nomeOrig, ext, res, aoFinal, preparar);
     }
     let e = ENVIOS_EM_PARTES.get(id);
-    if (!e) { if (i !== 0) return res.status(409).json({ error: 'Envio não encontrado — recomece.', prox: 0 }); e = { prox: 0, tam: 0, tmp: path.join(PASTA_PARTES, id + '.part'), t: Date.now(), mime: String(req.headers['x-mime'] || '') }; ENVIOS_EM_PARTES.set(id, e); try { fs.unlinkSync(e.tmp); } catch (x) {} }
+    if (!e && i !== 0) {
+        // o servidor reiniciou no meio do envio: se o arquivo parcial está no disco, continua de onde parou (o celular diz quantos bytes já mandou)
+        const desloc = Number(req.headers['x-desloc']), tmp = path.join(PASTA_PARTES, id + '.part');
+        try { if (Number.isFinite(desloc) && desloc > 0 && fs.existsSync(tmp)) { const st = fs.statSync(tmp); if (st.size >= desloc) { if (st.size > desloc) fs.truncateSync(tmp, desloc); e = { prox: i, tam: desloc, tmp, t: Date.now(), mime: String(req.headers['x-mime'] || '') }; ENVIOS_EM_PARTES.set(id, e); console.log('♻️ Envio retomado depois de reiniciar:', id, Math.round(desloc / 1048576) + ' MB'); } } } catch (x) {}
+        if (!e) return res.status(409).json({ error: 'Envio não encontrado — recomece.', prox: 0 });
+    }
+    if (!e) { e = { prox: 0, tam: 0, tmp: path.join(PASTA_PARTES, id + '.part'), t: Date.now(), mime: String(req.headers['x-mime'] || '') }; ENVIOS_EM_PARTES.set(id, e); try { fs.unlinkSync(e.tmp); } catch (x) {}
+        try { fs.writeFileSync(path.join(PASTA_PARTES, id + '.json'), JSON.stringify({ nome: nomeOrig, mime: e.mime, ext, inicio: new Date().toISOString() })); } catch (x) {} }
     if (e.pendenteFinal && i === e.prox - 1) { e.pendenteFinal = false; ENVIOS_EM_PARTES.delete(id); return finalizarEnvioEst(e, id, nomeOrig, ext, res, aoFinal, preparar); } // nova tentativa de finalizar (o arquivo já está completo)
     if (i < e.prox) return res.json({ ok: true, prox: e.prox }); // parte repetida (nova tentativa após falha de rede)
     if (i > e.prox) return res.status(409).json({ error: 'Parte fora de ordem.', prox: e.prox });
@@ -13994,6 +14025,7 @@ async function finalizarEnvioEst(e, id, nomeOrig, ext, res, aoFinal, preparar) {
 }
 async function finalizarEnvioEst2(e, id, nomeOrig, ext, res, aoFinal, preparar) {
     const final = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + ext; let destino = path.join(PASTA_UPLOADS, final);
+    fs.unlink(path.join(PASTA_PARTES, id + '.json'), () => {});
     // move a gravação para a pasta definitiva. A pasta temporária e o Volume são discos diferentes (rename falha com EXDEV),
     // então copia. Se o Volume estiver cheio (ENOSPC) ou der erro, guarda na pasta do código para NÃO perder o vídeo.
     const mover = async alvo => { try { await fs.promises.rename(e.tmp, alvo); } catch (x) { try { await fs.promises.copyFile(e.tmp, alvo); } catch (y) { try { fs.unlinkSync(alvo); } catch (z) {} throw y; } fs.promises.unlink(e.tmp).catch(() => {}); } };
