@@ -13817,6 +13817,35 @@ app.get('/api/admin/estudio/recuperaveis', requireRole('admin'), async (req, res
         res.json(lista.slice(0, 40));
     } catch (e) { res.status(500).json({ error: 'Erro ao procurar vídeos: ' + e.message }); }
 });
+// 🧹 Espaço do disco do servidor: mostra o que ocupa e limpa sobras (envios interrompidos, cópias repetidas, vídeos soltos)
+async function nomesReferenciadosNoBanco() {
+    const texto = []; const tabelas = await dbAll(`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('arquivos_persistidos', 'sqlite_sequence')`).catch(() => []);
+    for (const { name } of tabelas) {
+        const cols = (await dbAll(`PRAGMA table_info("${name.replace(/"/g, '')}")`).catch(() => [])).filter(c => !/blob/i.test(c.type || '')).map(c => `COALESCE("${c.name.replace(/"/g, '')}", '')`);
+        if (!cols.length) continue;
+        const linhas = await dbAll(`SELECT ${cols.join(' || \' \' || ')} AS t FROM "${name.replace(/"/g, '')}"`).catch(() => []);
+        linhas.forEach(l => { if (l.t && /uploads|file-|rapido-|colagem-|real-/.test(l.t)) texto.push(l.t); });
+    }
+    return texto.join('\n');
+}
+async function levantarEspacoEst() {
+    const livre = discoLivreMB(PASTA_UPLOADS), usados = await nomesReferenciadosNoBanco(), agora = Date.now(), r = { livreMB: livre, partes: [], soltos: [], bancoMB: 0 };
+    try { r.bancoMB = Math.round(fs.statSync(dbFile).size / 1048576); } catch (e) {}
+    try { for (const n of await fs.promises.readdir(PASTA_PARTES)) { if (!/\.part$/.test(n)) continue; const id = n.replace(/\.part$/, ''); const e = ENVIOS_EM_PARTES.get(id); if (e && agora - e.t < 10 * 60 * 1000) continue; const st = await fs.promises.stat(path.join(PASTA_PARTES, n)).catch(() => null); if (st) r.partes.push({ nome: n, mb: Math.round(st.size / 1048576), horas: Math.round((agora - st.mtimeMs) / 3600000) }); } } catch (e) {}
+    try { for (const n of await fs.promises.readdir(PASTA_UPLOADS)) { if (!/\.(mp4|webm|mov|m4v|mkv)$/i.test(n) || usados.includes(n)) continue; const st = await fs.promises.stat(path.join(PASTA_UPLOADS, n)).catch(() => null); if (st && st.isFile()) r.soltos.push({ nome: n, mb: Math.round(st.size / 1048576), horas: Math.round((agora - st.mtimeMs) / 3600000) }); } } catch (e) {}
+    r.partesMB = r.partes.reduce((s, x) => s + x.mb, 0); r.soltosMB = r.soltos.reduce((s, x) => s + x.mb, 0);
+    return r;
+}
+app.get('/api/admin/estudio/espaco', requireRole('admin'), async (req, res) => { try { res.json(await levantarEspacoEst()); } catch (e) { res.status(500).json({ error: e.message }); } });
+app.post('/api/admin/estudio/espaco/limpar', requireRole('admin'), async (req, res) => {
+    const b = req.body || {}, minHoras = Math.max(1, Number(b.minHoras) || 24); let apagados = 0, mb = 0;
+    try {
+        const r = await levantarEspacoEst();
+        if (b.partes) for (const x of r.partes.filter(x => x.horas >= minHoras)) { try { fs.unlinkSync(path.join(PASTA_PARTES, x.nome)); fs.unlink(path.join(PASTA_PARTES, x.nome.replace(/\.part$/, '.json')), () => {}); apagados++; mb += x.mb; } catch (e) {} }
+        if (b.soltos) for (const x of r.soltos.filter(x => x.horas >= minHoras)) { try { fs.unlinkSync(path.join(PASTA_UPLOADS, x.nome)); apagados++; mb += x.mb; } catch (e) {} }
+        res.json({ apagados, mb, livreMB: discoLivreMB(PASTA_UPLOADS) });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
 // transforma o que chegou de uma gravação interrompida num vídeo normal (até onde foi enviado)
 app.post('/api/admin/estudio/recuperar-parcial', requireRole('admin'), async (req, res) => {
     const id = String((req.body || {}).id || '').replace(/[^\w-]/g, ''); if (!id) return res.status(400).json({ error: 'Gravação inválida.' });

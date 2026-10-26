@@ -22212,6 +22212,98 @@ async function evBaixarCompleto(galeria) {
     mostrarToast(galeria ? '⬇️ Vídeo baixado. Ele fica em Downloads/Arquivos — abra e toque em "Salvar na galeria".' : '⬇️ Vídeo completo baixado.');
   } catch (e) { evCarregando(null); mostrarToast('Não consegui baixar: ' + e.message, true); }
 }
+// ---------- 📁 Pasta do meu PC: os vídeos ficam guardados numa pasta do computador e abrem de lá (rápido, sem depender do servidor) ----------
+const EVPASTA = { dir: null, arquivos: null };
+function evPastaSuportada() { return !!window.showDirectoryPicker && !evCelularAqui(); }
+function evPastaDb() { return new Promise((ok, ko) => { try { const r = indexedDB.open('impulsionar-pasta', 1); r.onupgradeneeded = () => r.result.createObjectStore('h'); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); } catch (e) { ko(e); } }); }
+async function evPastaLerHandle() { try { const db = await evPastaDb(); return await new Promise(ok => { const r = db.transaction('h').objectStore('h').get('pasta'); r.onsuccess = () => ok(r.result || null); r.onerror = () => ok(null); }); } catch (e) { return null; } }
+async function evPastaGuardarHandle(h) { try { const db = await evPastaDb(); await new Promise(ok => { const tx = db.transaction('h', 'readwrite'); tx.objectStore('h').put(h, 'pasta'); tx.oncomplete = ok; tx.onerror = ok; }); } catch (e) {} }
+// pedir = true só quando o usuário clicou (o navegador exige um clique para liberar a pasta)
+async function evPastaObter(pedir, escolherNova) {
+  if (!evPastaSuportada()) return null;
+  let h = escolherNova ? null : (EVPASTA.dir || await evPastaLerHandle());
+  if (!h) { if (!pedir) return null; try { h = await window.showDirectoryPicker({ id: 'impulsionar-videos', mode: 'readwrite' }); } catch (e) { return null; } await evPastaGuardarHandle(h); }
+  let perm = await h.queryPermission({ mode: 'readwrite' }).catch(() => 'denied');
+  if (perm !== 'granted' && pedir) perm = await h.requestPermission({ mode: 'readwrite' }).catch(() => 'denied');
+  if (perm !== 'granted') { EVPASTA.semPermissao = h; return null; }
+  EVPASTA.dir = h; EVPASTA.arquivos = null; return h;
+}
+function evPastaNome(m, nomeOriginal) { const base = String(nomeOriginal || (m.url ? m.url.split('/').pop().split('?')[0] : '') || (m.nome || 'video')).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w.-]+/g, '-').slice(-80); return m.id + '-' + (/\.\w{2,4}$/.test(base) ? base : base + (m.tipo === 'audio' ? '.m4a' : '.mp4')); }
+async function evPastaListar() { if (EVPASTA.arquivos) return EVPASTA.arquivos; const mapa = {}; for await (const [nome, h] of EVPASTA.dir.entries()) if (h.kind === 'file') mapa[nome] = h; return EVPASTA.arquivos = mapa; }
+async function evPastaAchar(m) { const mapa = await evPastaListar(), pref = m.id + '-'; const nome = Object.keys(mapa).find(n => n.startsWith(pref)); return nome ? mapa[nome] : null; }
+// abre do PC todos os vídeos/áudios do projeto que já estão na pasta
+async function evPastaCarregar(silencioso) {
+  if (!EVPASTA.dir || !ES) return 0; let n = 0;
+  for (const m of ES.p.dados.midias.filter(m => ['video', 'audio', 'imagem'].includes(m.tipo))) {
+    if ((ES.locais || {})[m.id]) continue;
+    try { const h = await evPastaAchar(m); if (!h) continue; const f = await h.getFile(); ES.locais = ES.locais || {}; ES.locais[m.id] = URL.createObjectURL(f); n++; } catch (e) {}
+  }
+  if (n) { Object.keys(ES.els || {}).forEach(k => { const e = ES.els[k]; if (e && e.pause) e.pause(); delete ES.els[k]; }); ES.aud = {}; ES.chavesSig = null; ES.p.dados.midias.forEach(m => { if ((ES.locais || {})[m.id]) delete m.faltando; }); evSincronizar(ES.t, false); evDesenhar(); evPainel(ES.painel); }
+  if (!silencioso) mostrarToast(n ? `📁 ${n} arquivo(s) abertos direto do seu PC.` : '📁 Nenhum vídeo deste projeto está na pasta ainda — use "Trazer os vídeos para a pasta".');
+  return n;
+}
+async function evPastaGravar(m, blobOuFile, nomeOriginal) {
+  if (!EVPASTA.dir) return false;
+  try { const nome = evPastaNome(m, nomeOriginal), h = await EVPASTA.dir.getFileHandle(nome, { create: true }), w = await h.createWritable(); await w.write(blobOuFile); await w.close(); if (EVPASTA.arquivos) EVPASTA.arquivos[nome] = h; return true; } catch (e) { console.warn('pasta do PC:', e.message); return false; }
+}
+// baixa do servidor para a pasta os vídeos do projeto que ainda não estão lá
+async function evPastaTrazer() {
+  if (!(await evPastaObter(true))) return;
+  const lista = []; for (const m of ES.p.dados.midias.filter(m => ['video', 'audio', 'imagem'].includes(m.tipo) && m.url && !/^blob:/.test(m.url))) if (!(await evPastaAchar(m))) lista.push(m);
+  if (!lista.length) { await evPastaCarregar(); return evAbrirPasta(); }
+  let i = 0, falhas = 0;
+  for (const m of lista) {
+    i++; evCarregando(`📁 Guardando no seu PC (${i}/${lista.length}): ${m.nome || 'vídeo'}…`);
+    try {
+      const r = await fetch(m.url); if (!r.ok) throw new Error('HTTP ' + r.status); const tipo = r.headers.get('content-type') || '';
+      if (/text\/html|json/.test(tipo)) throw new Error('arquivo não está no servidor');
+      const nome = evPastaNome(m), h = await EVPASTA.dir.getFileHandle(nome, { create: true }), w = await h.createWritable();
+      await r.body.pipeTo(w); if (EVPASTA.arquivos) EVPASTA.arquivos[nome] = h;
+    } catch (e) { falhas++; console.warn('trazer para a pasta:', m.nome, e.message); }
+  }
+  evCarregando(null); await evPastaCarregar(true);
+  mostrarToast(`📁 ${lista.length - falhas} arquivo(s) guardados na pasta do PC${falhas ? ` · ${falhas} não estão mais no servidor (use 🛟 Recuperar ou reenvie)` : ''}. Agora abrem direto do computador.`, !!falhas);
+  evAbrirPasta();
+}
+async function evAbrirPasta() {
+  if (!evPastaSuportada()) return mostrarToast('A pasta do PC funciona no Chrome ou Edge do computador.', true);
+  const h = EVPASTA.dir || await evPastaLerHandle(), ok = !!EVPASTA.dir;
+  const locais = ES.p.dados.midias.filter(m => (ES.locais || {})[m.id]).length, total = ES.p.dados.midias.filter(m => ['video', 'audio', 'imagem'].includes(m.tipo)).length;
+  document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal" style="max-width:520px;">
+    <div class="ev-modal-cab"><h3>📁 Pasta do meu PC</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <div class="ev-sub">Os vídeos ficam guardados numa pasta do seu computador e o editor abre direto de lá: <b>sem esperar o servidor, sem tela preta e sem travar</b>. O servidor continua guardando a edição.</div>
+    <div class="ev-dica-fixa" style="margin:10px 0;">${h ? `Pasta: <b>${escapeHtml(h.name)}</b> ${ok ? '✅ liberada' : '— clique em "Usar a pasta" para liberar'}` : 'Nenhuma pasta escolhida ainda.'}<br>Deste projeto: <b>${locais} de ${total}</b> arquivos abrindo do PC.</div>
+    ${h && !ok ? `<button class="ev-btn primario grande" style="width:100%;" onclick="evPastaObter(true).then(d => d && evPastaCarregar().then(() => evAbrirPasta()))">📂 Usar a pasta ${escapeHtml(h.name)}</button>` : ''}
+    ${ok ? `<button class="ev-btn primario grande" style="width:100%;" onclick="evPastaTrazer()">⬇️ Trazer os vídeos deste projeto para a pasta</button>` : ''}
+    <button class="ev-btn" style="width:100%;margin-top:8px;" onclick="evPastaObter(true, true).then(d => d && evPastaCarregar().then(() => evAbrirPasta()))">${h ? '🔁 Escolher outra pasta' : '📂 Escolher a pasta'}</button>
+    <div class="ev-sub" style="margin-top:10px;">Dica: crie uma pasta tipo <b>Documentos › Impulsionar Vídeos</b>. Vídeos novos que você colocar pelo computador também são guardados lá, e os vídeos exportados vão para lá.</div>
+  </div></div>`;
+}
+// ao abrir o editor no computador: se a pasta já está liberada, abre os vídeos de lá; se precisa de um clique, avisa
+async function evPastaAoAbrir() {
+  if (!evPastaSuportada() || !ES) return;
+  const d = await evPastaObter(false);
+  if (d) { await evPastaCarregar(true); return; }
+  if (EVPASTA.semPermissao && ES) mostrarToast('📁 Seus vídeos estão na pasta do PC: toque em 📁 Pasta do PC › "Usar a pasta" para abrir de lá (mais rápido).');
+}
+// 🧹 Espaço do servidor
+async function evAbrirEspaco() {
+  const modal = document.getElementById('ev-modal'); modal.innerHTML = `<div class="ev-modal-fundo"><div class="ev-modal"><h3>🧹 Espaço do servidor</h3><div class="ev-sub">Medindo…</div></div></div>`;
+  let r; try { r = await api('/api/admin/estudio/espaco'); } catch (e) { modal.innerHTML = ''; return mostrarToast(e.message, true); }
+  const livre = r.livreMB === null ? '?' : (r.livreMB / 1024).toFixed(1) + ' GB', critico = r.livreMB !== null && r.livreMB < 1500;
+  const velhos = (l) => l.filter(x => x.horas >= 24);
+  modal.innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal" style="max-width:520px;">
+    <div class="ev-modal-cab"><h3>🧹 Espaço do servidor</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
+    <div class="ev-dica-fixa" style="${critico ? 'border-color:#ef4444;' : ''}">Livre no disco: <b>${livre}</b>${critico ? ' — ⚠️ quase cheio! Com o disco cheio os vídeos novos chegam quebrados (pretos). Limpe abaixo e/ou aumente o Volume no Railway (Volume › Settings › Size).' : ''}<br>Banco de dados: ${r.bancoMB} MB</div>
+    <div style="margin:10px 0;"><b>⏸️ Envios interrompidos:</b> ${r.partes.length} (${r.partesMB} MB)${velhos(r.partes).length ? ` · ${velhos(r.partes).length} com mais de 1 dia` : ''}<div class="ev-sub">Antes de limpar, recupere em 🎞️ Mídia › 🛟 Recuperar o que ainda quiser.</div></div>
+    <div style="margin:10px 0;"><b>🎞️ Vídeos soltos</b> (não usados em nenhum projeto nem em outra parte do sistema): ${r.soltos.length} (${r.soltosMB} MB)</div>
+    <button class="ev-btn perigo" style="width:100%;" onclick="evLimparEspaco()">🧹 Limpar envios interrompidos e vídeos soltos com mais de 1 dia</button>
+  </div></div>`;
+}
+async function evLimparEspaco() {
+  if (!confirm('Apagar do servidor os envios interrompidos e os vídeos soltos (não usados em nenhum lugar) com mais de 1 dia? Isso não pode ser desfeito.')) return;
+  try { const r = await api('/api/admin/estudio/espaco/limpar', { method: 'POST', body: JSON.stringify({ partes: true, soltos: true, minHoras: 24 }) }); mostrarToast(`🧹 ${r.apagados} arquivo(s) apagados · ${r.mb} MB liberados.`); evAbrirEspaco(); } catch (e) { mostrarToast(e.message, true); }
+}
 // ⬇️ Menu de baixar: rápido pelo servidor, completo no aparelho ou a gravação original
 function evMenuBaixar() {
   const vids = ES.p.dados.midias.filter(m => m.tipo === 'video' && (m.url || (ES.locais || {})[m.id]));
@@ -22224,6 +22316,7 @@ function evMenuBaixar() {
 }
 async function evEntregarArquivo(blob, nome) {
   const arq = new File([blob], nome, { type: blob.type || 'video/mp4' });
+  if (EVPASTA.dir) { try { const sub = await EVPASTA.dir.getDirectoryHandle('Exportados', { create: true }), h = await sub.getFileHandle(nome, { create: true }), w = await h.createWritable(); await w.write(arq); await w.close(); mostrarToast(`📁 Vídeo salvo na pasta do PC: ${EVPASTA.dir.name} › Exportados › ${nome}`); return; } catch (e) { console.warn('salvar na pasta:', e.message); } }
   if (evCelularAqui() && navigator.canShare && navigator.canShare({ files: [arq] })) { try { await navigator.share({ files: [arq] }); return; } catch (e) { if (e.name === 'AbortError') return; } }
   const a = document.createElement('a'); a.href = URL.createObjectURL(arq); a.download = nome; document.body.appendChild(a); a.click(); a.remove(); mostrarToast('⬇️ Vídeo baixado.');
 }
@@ -22355,7 +22448,7 @@ async function evAbrirEditor(id) {
     </div>
     <section class="ev-linha">
       <div class="ev-linha-barra">
-        <button class="ev-tl-ia ev-so-cel" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button><button class="ev-so-cel" onclick="evDesfazer()" title="Desfazer"><i>↶</i><span>Desfazer</span></button><button class="" onclick="evAbrirVersoes()" title="Versões salvas: voltar para uma edição anterior"><i>🕘</i><span>Versões</span></button><button class="" onclick="evImagemNatural()" title="Tirar filtros e escurecimento: imagem natural, como foi gravada"><i>🧼</i><span>Natural</span></button><button class="ev-so-cel" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="ev-so-cel" onclick="document.getElementById('ev-galeria').click()" title="Adicionar fotos e vídeos da galeria"><i>🖼️</i><span>Galeria</span></button><span class="ev-sep ev-so-cel"></span><button class="ev-so-pc" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)"><i>↶</i><span>Desfazer</span></button><button class="ev-so-pc" onclick="evRefazer()" title="Refazer (Ctrl+Y)"><i>↷</i><span>Refazer</span></button><span class="ev-sep ev-so-pc"></span><button class="" onclick="evDividir()" title="Dividir no cursor (S)"><i>✂️</i><span>Dividir</span></button><button class="" onclick="evExcluirSel()" title="Excluir (Delete)"><i>🗑️</i><span>Excluir</span></button><button class="" onclick="evDuplicarSel()" title="Duplicar (Ctrl+D)"><i>⧉</i><span>Duplicar</span></button><span class="ev-sep"></span><button class="" onclick="evPopBarra('velocidade', this)" title="Velocidade"><i>⏩</i><span>Velocidade</span></button><button class="" onclick="evPopBarra('volume', this)" title="Volume"><i>🔊</i><span>Volume</span></button><button class="" onclick="evPopBarra('zoom', this)" title="Zoom"><i>🔍</i><span>Zoom</span></button><button class="" onclick="evPopBarra('enquadrar', this)" title="Enquadrar, espelhar e posicionar"><i>🎯</i><span>Enquadrar</span></button><button class="" onclick="evPopBarra('transicao', this)" title="Transição"><i>🔀</i><span>Transição</span></button><span class="ev-sep"></span><button class="ev-so-pc" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="" onclick="evPopBarra('texto', this)" title="Adicionar texto"><i>🔤</i><span>Texto</span></button><button class="" onclick="evLegendasDaFala()" title="Legendas automáticas do que é falado"><i>💬</i><span>Legendas</span></button><button class="" onclick="evPopBarra('musica', this)" title="Música de fundo"><i>🎵</i><span>Música</span></button><button class="ev-tl-ia" onclick="evAbrirImagensIa()" title="A IA cria imagens conforme você fala"><i>🖼️</i><span>Imagens IA</span></button><button class="ev-tl-ia" onclick="evAbrirCenasReais()" title="Filmagens reais do que você fala"><i>🎬</i><span>Cenas reais</span></button><button class="" onclick="evPainel('audio'); evSheet('painel'); setTimeout(()=>{const e=document.getElementById('ev-limpeza'); if(e) e.scrollIntoView({block:'start'});},80)" title="Tirar ruído do áudio com IA"><i>🎧</i><span>Limpar áudio</span></button><button class="" onclick="evSepararAudio()" title="Separar o som do vídeo para editar só o áudio"><i>🔊</i><span>Separar áudio</span></button><button class="" onclick="evAbrirInserirCena()" title="Colocar uma cena (vídeo real, foto ou ilustração) num trecho"><i>🧩</i><span>Inserir cena</span></button><button class="ev-so-cel" onclick="evPainel('filtros'); evSheet('painel')" title="Filtros e imagem inteligente"><i>🎨</i><span>Filtros</span></button><button class="ev-so-cel" onclick="evPainel('elementos'); evSheet('painel')" title="Logo, emojis e encerramento"><i>🏷️</i><span>Marca</span></button><button class="ev-so-cel" onclick="evPainel('midia'); evSheet('painel')" title="Mídias do projeto"><i>🎞️</i><span>Mídias</span></button><button class="ev-so-cel" onclick="evPainel('ia'); evSheet('painel')" title="Agente IA"><i>🤖</i><span>Agente</span></button><button class="ev-so-cel" onclick="evSheet('props')" title="Ajustes do item selecionado"><i>⚙️</i><span>Ajustes</span></button><button class="" onclick="evPopBarra('mais', this)" title="Mais ferramentas"><i>⋯</i><span>Mais</span></button><span class="ev-sep ev-so-pc"></span><button class="ev-tl-ia ev-so-pc" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button>
+        <button class="ev-tl-ia ev-so-cel" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button><button class="ev-so-cel" onclick="evDesfazer()" title="Desfazer"><i>↶</i><span>Desfazer</span></button><button class="" onclick="evAbrirVersoes()" title="Versões salvas: voltar para uma edição anterior"><i>🕘</i><span>Versões</span></button><button class="" onclick="evImagemNatural()" title="Tirar filtros e escurecimento: imagem natural, como foi gravada"><i>🧼</i><span>Natural</span></button><button class="ev-so-pc" onclick="evAbrirPasta()" title="Guardar e abrir os vídeos numa pasta do seu computador (rápido)"><i>📁</i><span>Pasta do PC</span></button>${ESTADO.usuario && ESTADO.usuario.role === 'admin' ? `<button class="" onclick="evAbrirEspaco()" title="Espaço do servidor e limpeza"><i>🧹</i><span>Espaço</span></button>` : ''}<button class="ev-so-cel" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="ev-so-cel" onclick="document.getElementById('ev-galeria').click()" title="Adicionar fotos e vídeos da galeria"><i>🖼️</i><span>Galeria</span></button><span class="ev-sep ev-so-cel"></span><button class="ev-so-pc" onclick="evDesfazer()" title="Desfazer (Ctrl+Z)"><i>↶</i><span>Desfazer</span></button><button class="ev-so-pc" onclick="evRefazer()" title="Refazer (Ctrl+Y)"><i>↷</i><span>Refazer</span></button><span class="ev-sep ev-so-pc"></span><button class="" onclick="evDividir()" title="Dividir no cursor (S)"><i>✂️</i><span>Dividir</span></button><button class="" onclick="evExcluirSel()" title="Excluir (Delete)"><i>🗑️</i><span>Excluir</span></button><button class="" onclick="evDuplicarSel()" title="Duplicar (Ctrl+D)"><i>⧉</i><span>Duplicar</span></button><span class="ev-sep"></span><button class="" onclick="evPopBarra('velocidade', this)" title="Velocidade"><i>⏩</i><span>Velocidade</span></button><button class="" onclick="evPopBarra('volume', this)" title="Volume"><i>🔊</i><span>Volume</span></button><button class="" onclick="evPopBarra('zoom', this)" title="Zoom"><i>🔍</i><span>Zoom</span></button><button class="" onclick="evPopBarra('enquadrar', this)" title="Enquadrar, espelhar e posicionar"><i>🎯</i><span>Enquadrar</span></button><button class="" onclick="evPopBarra('transicao', this)" title="Transição"><i>🔀</i><span>Transição</span></button><span class="ev-sep"></span><button class="ev-so-pc" onclick="evAbrirCamera()" title="Gravar com a câmera ou a tela aqui no editor"><i>📷</i><span>Gravar</span></button><button class="" onclick="evPopBarra('texto', this)" title="Adicionar texto"><i>🔤</i><span>Texto</span></button><button class="" onclick="evLegendasDaFala()" title="Legendas automáticas do que é falado"><i>💬</i><span>Legendas</span></button><button class="" onclick="evPopBarra('musica', this)" title="Música de fundo"><i>🎵</i><span>Música</span></button><button class="ev-tl-ia" onclick="evAbrirImagensIa()" title="A IA cria imagens conforme você fala"><i>🖼️</i><span>Imagens IA</span></button><button class="ev-tl-ia" onclick="evAbrirCenasReais()" title="Filmagens reais do que você fala"><i>🎬</i><span>Cenas reais</span></button><button class="" onclick="evPainel('audio'); evSheet('painel'); setTimeout(()=>{const e=document.getElementById('ev-limpeza'); if(e) e.scrollIntoView({block:'start'});},80)" title="Tirar ruído do áudio com IA"><i>🎧</i><span>Limpar áudio</span></button><button class="" onclick="evSepararAudio()" title="Separar o som do vídeo para editar só o áudio"><i>🔊</i><span>Separar áudio</span></button><button class="" onclick="evAbrirInserirCena()" title="Colocar uma cena (vídeo real, foto ou ilustração) num trecho"><i>🧩</i><span>Inserir cena</span></button><button class="ev-so-cel" onclick="evPainel('filtros'); evSheet('painel')" title="Filtros e imagem inteligente"><i>🎨</i><span>Filtros</span></button><button class="ev-so-cel" onclick="evPainel('elementos'); evSheet('painel')" title="Logo, emojis e encerramento"><i>🏷️</i><span>Marca</span></button><button class="ev-so-cel" onclick="evPainel('midia'); evSheet('painel')" title="Mídias do projeto"><i>🎞️</i><span>Mídias</span></button><button class="ev-so-cel" onclick="evPainel('ia'); evSheet('painel')" title="Agente IA"><i>🤖</i><span>Agente</span></button><button class="ev-so-cel" onclick="evSheet('props')" title="Ajustes do item selecionado"><i>⚙️</i><span>Ajustes</span></button><button class="" onclick="evPopBarra('mais', this)" title="Mais ferramentas"><i>⋯</i><span>Mais</span></button><span class="ev-sep ev-so-pc"></span><button class="ev-tl-ia ev-so-pc" onclick="evAbrirEdicaoCompleta()" title="Edição viral com IA"><i>✨</i><span>Editar com IA</span></button>
         <div style="flex:1" class="ev-so-pc"></div>
         <span class="ev-so-pc" style="font-size:12px;opacity:.7;">Zoom</span><input class="ev-so-pc" type="range" min="15" max="200" value="${ES.pxs}" oninput="ES.pxs=Number(this.value); evDesenharLinha()">
         <input type="file" id="ev-galeria" accept="video/*,image/*,audio/*" multiple hidden onchange="evSubir(this.files); this.value=''">
@@ -22378,6 +22471,7 @@ async function evAbrirEditor(id) {
   setTimeout(() => evPreCarregarMidias(), 1500);
   setTimeout(() => evVerificarArquivos(), 900);
   setTimeout(() => evConferirGravacoesPendentes().catch(() => {}), 2500);
+  setTimeout(() => evPastaAoAbrir().catch(() => {}), 600);
 }
 // ---------- Edição fluida: baixa os vídeos/áudios do projeto para a memória do aparelho (a prévia e a exportação não travam esperando a internet) ----------
 // Confere no servidor se os vídeos/áudios do projeto ainda existem (um deploy sem disco permanente apaga os arquivos).
@@ -23423,6 +23517,7 @@ async function evSubir(files) {
   { const tot = evTotal(); if (tot * ES.pxs > 12000) ES.pxs = Math.max(2, Math.round(9000 / tot)); } // vídeo longo: linha do tempo cabe na tela
   evMudou(); evPainel(ES.painel); evDesenhar();
   if (novos.length) mostrarToast(novos.some(([, m]) => m.convertendo) ? '⚙️ Este vídeo está num formato que o navegador não abre: o servidor vai converter e ele aparece sozinho em seguida.' : '✅ Pronto para editar! O vídeo sobe para o servidor em segundo plano.');
+  if (EVPASTA.dir) novos.forEach(([f, m]) => evPastaGravar(m, f, f.name)); // cópia na pasta do PC
   novos.forEach(([f, m]) => { ES.filaEnvio = (ES.filaEnvio || Promise.resolve()).then(() => evEnviarMidiaFundo(f, m)); });
 }
 async function evEnviarMidiaFundo(f, m) {
@@ -24750,12 +24845,13 @@ function evGradeValida(g) {
 }
 // confere de vez em quando se a cor pela placa de vídeo está saindo certa (se sair preta, desliga e usa o caminho simples)
 function evGLConferir(el, gl) {
-  EVGL.nConf = (EVGL.nConf || 0) + 1; if (ES && ES.exportando ? EVGL.nConf % 150 !== 1 : EVGL.nConf > 3) return true; // conferência rápida só no começo (ler pixels da GPU a toda hora travava o vídeo)
+  EVGL.nConf = (EVGL.nConf || 0) + 1; if (EVGL.nConf % (ES && ES.exportando ? 150 : 60) !== 1 || (EVGL.okConf || 0) >= 5 && !(ES && ES.exportando)) return true; // confere de vez em quando até ter 5 conferências boas (ler pixels a toda hora travava; não conferir deixava tela preta)
   try {
     const px = new Uint8Array(4); gl.readPixels(Math.floor(EVGL.cv.width / 2), Math.floor(EVGL.cv.height / 2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
     const t = EVGL.teste || (EVGL.teste = Object.assign(document.createElement('canvas'), { width: 4, height: 4 })), g2 = t.getContext('2d', { willReadFrequently: true });
     g2.drawImage(el, 0, 0, 4, 4); const r = g2.getImageData(1, 1, 2, 2).data; const bruto = (r[0] + r[1] + r[2] + r[4] + r[5] + r[6]) / 6, saida = (px[0] + px[1] + px[2]) / 3;
     if (bruto > 25 && saida < 4) { EVGL.lento = true; console.warn('Cor pela GPU saiu preta — usando o caminho simples.'); return false; }
+    if (bruto > 25) EVGL.okConf = (EVGL.okConf || 0) + 1;
   } catch (e) {}
   return true;
 }
