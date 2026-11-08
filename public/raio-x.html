@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Raio-X do Líder (grátis) · Lázaro Salles</title>
+<meta name="description" content="30 perguntas, 5 minutos: descubra em qual pilar do método MOVER sua liderança mais precisa evoluir.">
+<meta property="og:title" content="Raio-X do Líder — descubra seu ponto fraco como líder">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/mentoria-estilo.css?v=1">
+<style>
+  .rx { max-width:760px; margin:0 auto; }
+  .barra { height:8px; background:#e2e8f0; border-radius:99px; overflow:hidden; margin:14px 0 24px; } .barra i { display:block; height:100%; background:var(--ambar); transition:width .3s; }
+  .perg { background:#fff; border:1px solid var(--linha); border-radius:16px; padding:18px; margin-bottom:12px; }
+  .perg b { display:block; margin-bottom:12px; font-size:16px; }
+  .escala { display:grid; grid-template-columns:repeat(5, 1fr); gap:6px; }
+  .escala button { font:inherit; border:1.5px solid var(--linha); background:#fff; border-radius:12px; padding:10px 4px; cursor:pointer; font-weight:800; font-size:16px; }
+  .escala button small { display:block; font-size:10px; font-weight:600; color:var(--cinza); margin-top:2px; }
+  .escala button.on { background:var(--ambar); border-color:var(--ambar); color:var(--navy); }
+  .escala button.on small { color:var(--navy); }
+  .res-pilar { display:grid; grid-template-columns:44px 1fr 56px; gap:12px; align-items:center; margin:10px 0; }
+  .res-pilar .l { width:44px; height:44px; border-radius:12px; background:var(--navy); color:var(--ambar); font-weight:900; display:grid; place-items:center; font-size:20px; }
+  .res-pilar .b { height:14px; background:#e2e8f0; border-radius:99px; overflow:hidden; } .res-pilar .b i { display:block; height:100%; border-radius:99px; }
+  .res-pilar span { font-weight:900; text-align:right; }
+  .nota-geral { font-size:64px; font-weight:900; color:var(--ambar); line-height:1; }
+</style>
+</head>
+<body>
+<div id="app"><div class="cx" style="padding:80px 20px;text-align:center;color:#64748b;">Carregando…</div></div>
+<script src="/mentoria-comum.js?v=1"></script>
+<script>
+const RX = { resp: [], etapa: 0 };
+const RX_PILARES = { M: 'Mentalidade de dono', O: 'Operação sob controle', V: 'Vínculo com o time', E: 'Execução com disciplina', R: 'Replicar líderes' };
+const RX_DICA = {
+  M: 'Seu próximo passo é a postura: sair do "fazer" para o "fazer acontecer". Comece assumindo um indicador do time como seu e mostre pelo exemplo o padrão que você cobra.',
+  O: 'Seu próximo passo é controlar a operação pelos números: escolha 3 a 5 indicadores, coloque na parede e descubra a causa de cada piora em até 48 horas.',
+  V: 'Seu próximo passo é o vínculo com o time: feedback toda semana em 3 passos (fato, impacto, combinado) e reconhecimento público de quem faz bem feito.',
+  E: 'Seu próximo passo é a rotina: reunião de 15 minutos no início do turno, todo problema vira plano de ação com dono e prazo, e revisão no fim da semana.',
+  R: 'Seu próximo passo é formar sucessores: escolha 2 pessoas-chave, faça o PDI delas e comece a delegar com acompanhamento.'
+};
+(async () => {
+  let d; try { d = await mtCarregar(); } catch (e) { return mtErroPagina(e); }
+  RX.resp = d.raioX.map(() => 0); desenhar();
+})();
+function grupos() { const g = {}; MT.dados.raioX.forEach((x, i) => { (g[x.p] = g[x.p] || []).push(i); }); return Object.entries(g); }
+function desenhar() {
+  const d = MT.dados, gs = grupos(), total = gs.length + 1, et = RX.etapa;
+  let corpo;
+  if (et === 0) corpo = `<div class="rx centro"><span class="selo" style="color:var(--ambar);">🩻 Grátis · 5 minutos</span><h1 style="font-size:clamp(30px,5vw,48px);font-weight:900;margin:14px 0;">Raio-X do Líder</h1>
+    <p style="font-size:18px;color:var(--cinza);">30 afirmações sobre o seu dia a dia de líder. Responda com sinceridade, de 1 (nunca) a 5 (sempre), e descubra em qual dos 5 pilares do método MOVER a sua liderança mais precisa evoluir.</p>
+    <div class="grade g5" style="margin:26px 0;">${Object.entries(RX_PILARES).map(([k, v]) => `<div class="card" style="padding:16px;"><div class="letra" style="margin:0 auto 8px;width:46px;height:46px;font-size:22px;">${k}</div><b style="font-size:14px;">${v}</b></div>`).join('')}</div>
+    <button class="bt ambar" onclick="RX.etapa=1; desenhar(); scrollTo(0,0)">Começar o Raio-X</button></div>`;
+  else if (et <= gs.length) {
+    const [p, idx] = gs[et - 1], completo = idx.every(i => RX.resp[i]);
+    corpo = `<div class="rx"><small style="color:var(--ambar);font-weight:800;">ETAPA ${et} DE ${gs.length}</small><h2 style="margin:4px 0 0;font-size:28px;font-weight:900;">${p} — ${RX_PILARES[p] || ''}</h2>
+      <div class="barra"><i style="width:${Math.round((et - 1) / total * 100)}%"></i></div>
+      ${idx.map(i => `<div class="perg"><b>${mtEsc(d.raioX[i].q)}</b><div class="escala">${[1, 2, 3, 4, 5].map(n => `<button class="${RX.resp[i] === n ? 'on' : ''}" onclick="RX.resp[${i}]=${n}; desenhar()">${n}<small>${['nunca', 'raramente', 'às vezes', 'quase sempre', 'sempre'][n - 1]}</small></button>`).join('')}</div></div>`).join('')}
+      <div style="display:flex;gap:10px;justify-content:space-between;margin-top:16px;"><button class="bt claro" onclick="RX.etapa--; desenhar(); scrollTo(0,0)">← Voltar</button><button class="bt ambar" ${completo ? '' : 'disabled title="Responda todas"'} onclick="RX.etapa++; desenhar(); scrollTo(0,0)">${et === gs.length ? 'Ver meu resultado →' : 'Próxima etapa →'}</button></div></div>`;
+  } else if (!RX.resultado) {
+    corpo = `<div class="rx"><div class="barra"><i style="width:${Math.round(gs.length / total * 100)}%"></i></div><div class="card" style="background:#fff;">
+      <h2 style="margin:0 0 6px;font-size:26px;font-weight:900;">Seu resultado está pronto 🎯</h2><p style="color:var(--cinza);margin:0 0 16px;">Deixe seu contato para ver o resultado e receber o plano de ação do seu pilar mais fraco.</p>
+      <form class="form" onsubmit="rxEnviar(event)">
+        <label>Seu nome<input name="nome" required autocomplete="name"></label>
+        <div class="dupla"><label>WhatsApp (com DDD)<input name="whatsapp" required inputmode="tel"></label><label>E-mail<input name="email" type="email"></label></div>
+        <div class="dupla"><label>Cargo<input name="cargo"></label><label>Empresa<input name="empresa"></label></div>
+        <div class="msg-area"></div><button class="bt ambar cheio" type="submit">Ver meu Raio-X</button>
+      </form></div></div>`;
+  } else {
+    const r = RX.resultado, cor = n => n >= 75 ? '#16a34a' : n >= 50 ? '#f59e0b' : '#dc2626';
+    corpo = `<div class="rx"><div class="card centro" style="background:#fff;"><small style="color:var(--cinza);font-weight:700;">SUA NOTA DE LIDERANÇA</small><div class="nota-geral">${r.geral}%</div>
+      <p style="color:var(--cinza);">${r.geral >= 75 ? 'Liderança forte — agora é escalar e formar outros líderes.' : r.geral >= 50 ? 'Boa base, mas com pontos que estão travando o resultado do seu time.' : 'Sua operação depende demais de você. Dá para virar esse jogo com método.'}</p></div>
+      <div class="card" style="background:#fff;margin-top:14px;">${Object.entries(RX_PILARES).map(([k, v]) => `<div class="res-pilar"><div class="l">${k}</div><div><b style="font-size:14px;">${v}</b><div class="b"><i style="width:${r.nota[k] || 0}%;background:${cor(r.nota[k] || 0)}"></i></div></div><span style="color:${cor(r.nota[k] || 0)}">${r.nota[k] || 0}%</span></div>`).join('')}</div>
+      <div class="card" style="margin-top:14px;border-left:5px solid var(--ambar);background:#fff;"><h3>🎯 Seu pilar prioritário: ${r.fraco} — ${RX_PILARES[r.fraco]}</h3><p>${RX_DICA[r.fraco]}</p></div>
+      <div class="preco" style="margin-top:18px;grid-template-columns:1fr;"><div><h2 style="margin:0 0 8px;font-size:26px;font-weight:900;">Quer acelerar isso com acompanhamento?</h2><p style="color:#cbd5e1;margin:0 0 18px;">Na mentoria ${mtEsc(MT.dados.marca.nome)} você trabalha os 5 pilares em 12 semanas, aplicando no seu time real.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;"><a class="bt ambar" href="/mentoria#inscricao">Conhecer a mentoria</a>${mtWhats() ? `<a class="bt claro" href="${mtWhats(`Olá, Lázaro! Fiz o Raio-X do Líder: ${r.geral}%, pilar mais fraco ${r.fraco} (${RX_PILARES[r.fraco]}). Quero conversar.`)}" target="_blank" rel="noopener">💬 Conversar com o Lázaro</a>` : ''}</div></div></div></div>`;
+  }
+  document.getElementById('app').innerHTML = `${mtTopo('raio')}<section><div class="cx">${corpo}</div></section>${mtRodape()}`;
+}
+async function rxEnviar(ev) {
+  ev.preventDefault(); const f = ev.target;
+  try { RX.resultado = await mtEnviar(f, '/api/public/mentoria/raio-x', { respostas: RX.resp }); desenhar(); scrollTo(0, 0); } catch (e) {}
+}
+</script>
+</body>
+</html>

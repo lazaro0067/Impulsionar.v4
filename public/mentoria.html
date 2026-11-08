@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mentoria Do Chão à Gestão · Lázaro Salles</title>
+<meta name="description" content="Mentoria de 12 semanas para líderes de operação: rotina de gestão, time engajado e indicador melhorando. Método MOVER, por Lázaro Salles.">
+<meta property="og:title" content="Mentoria Do Chão à Gestão · Lázaro Salles">
+<meta property="og:description" content="12 semanas para você montar sua rotina, motivar seu time e melhorar seu indicador.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/mentoria-estilo.css?v=1">
+</head>
+<body>
+<div id="app"><div class="cx" style="padding:80px 20px;text-align:center;color:#64748b;">Carregando…</div></div>
+<div class="modal" id="m-insc"><div class="caixa">
+  <button class="x" onclick="mtModal('m-insc', false)">✕</button>
+  <div id="m-insc-corpo"></div>
+</div></div>
+<script src="/mentoria-comum.js?v=1"></script>
+<script>
+(async () => {
+  let d; try { d = await mtCarregar(); } catch (e) { return mtErroPagina(e); }
+  const m = d.marca, g = d.ofertas.find(o => o.codigo === 'grupo') || {}, t = d.turma, preco = t ? t.preco : g.valor;
+  document.title = `Mentoria ${m.nome} · ${m.mentor}`;
+  const pago = new URLSearchParams(location.search).get('pago');
+  document.getElementById('app').innerHTML = `${mtTopo('mentoria')}
+  ${pago === '1' ? `<div style="background:#dcfce7;color:#14532d;padding:14px 0;text-align:center;font-weight:700;">✅ Pagamento recebido! Bem-vindo(a) à ${mtEsc(m.nome)}. O Lázaro vai te chamar no WhatsApp com os próximos passos.</div>` : pago === '2' ? `<div style="background:#fef9c3;color:#713f12;padding:14px 0;text-align:center;font-weight:700;">⏳ Pagamento em processamento. Assim que confirmar, você recebe as boas-vindas no WhatsApp.</div>` : ''}
+  <section class="hero"><div class="cx">
+    <div>
+      <span class="selo">🎯 Mentoria para líderes de operação</span>
+      <h1>Faça seu time <em>render</em> sem gritar e sem perder o controle da operação.</h1>
+      <p class="sub">${mtEsc(m.nome)}: 12 semanas para você sair do "apaga-incêndio", montar sua rotina de líder, engajar o time e melhorar seu indicador — com o método de quem começou carregando caixa e hoje lidera 3 unidades.</p>
+      <div class="acoes"><a class="bt ambar" href="#inscricao">Quero minha vaga</a><a class="bt claro" href="/raio-x">Fazer o Raio-X do Líder grátis</a></div>
+      <div class="prova"><div><b>+12 anos</b>liderando operação</div><div><b>250</b>pessoas num só time</div><div><b>3</b>unidades sob gestão</div></div>
+    </div>
+    <div class="foto">${m.fotoUrl ? `<img src="${mtEsc(m.fotoUrl)}" alt="${mtEsc(m.mentor)}">` : `<div class="ini">${mtEsc(mtIniciais(m.mentor))}</div>`}<div class="leg"><b>${mtEsc(m.mentor)}</b>De ajudante de distribuição a gerente corporativo de operações</div></div>
+  </div></section>
+
+  <section><div class="cx">
+    <div class="titulo"><small>Para quem é</small><h2>Você foi promovido por ser bom no que fazia. Agora precisa liderar gente.</h2><p>${mtEsc(d.publico.principal)}</p></div>
+    <div class="grade g2">${d.dores.map(x => `<div class="card dor"><span>🔥</span><p style="color:var(--texto);font-weight:600;">${mtEsc(x)}</p></div>`).join('')}</div>
+  </div></section>
+
+  <section class="alt"><div class="cx">
+    <div class="titulo"><small>Quem conduz</small><h2>Do chão à gestão: eu já estive no seu lugar.</h2><p>${mtEsc(m.frase)}</p></div>
+    <div class="linha-tempo">${d.historia.map(h => `<div class="degrau"><div class="ano">${mtEsc(h.fase)}</div><div><b>${mtEsc(h.cargo)}</b><small>${mtEsc(h.licao)}</small></div></div>`).join('')}</div>
+  </div></section>
+
+  <section class="escuro"><div class="cx">
+    <div class="titulo"><small>O método</small><h2>MOVER: os 5 pilares do líder que entrega resultado através das pessoas</h2><p>Primeiro você muda a postura, depois controla a operação, conquista o time, cria rotina e, por fim, forma outros líderes.</p></div>
+    <div class="grade g5">${d.metodo.map(p => `<div class="card pilar"><div class="letra">${mtEsc(p.letra)}</div><h3>${mtEsc(p.nome)}</h3><p>${mtEsc(p.descricao)}</p><div class="ent">📎 ${mtEsc(p.entregavel)}</div></div>`).join('')}</div>
+  </div></section>
+
+  <section><div class="cx">
+    <div class="titulo"><small>Como funciona</small><h2>12 semanas, aplicando no seu time real</h2><p>${mtEsc(d.formato)}</p></div>
+    <div class="semanas">${d.semanas.map(s => `<div class="sem"><small>Semana ${s.n}</small><b>${mtEsc(s.modulo)}</b><span>${mtEsc(s.tema)}</span></div>`).join('')}</div>
+    <div class="card" style="margin-top:18px;border-left:5px solid var(--ambar);"><h3>⭐ Regra de ouro</h3><p>${mtEsc(d.regraOuro)}</p></div>
+  </div></section>
+
+  <section class="alt"><div class="cx">
+    <div class="titulo"><small>Você leva</small><h2>Kit de ferramentas do líder de operação</h2></div>
+    <div class="grade g3">${d.kit.map(k => `<div class="card"><h3 style="font-size:16px;">🧰 ${mtEsc(k)}</h3></div>`).join('')}</div>
+  </div></section>
+
+  <section id="inscricao"><div class="cx">
+    <div class="preco">
+      <div>
+        <span class="selo">${t ? `🗓️ ${mtEsc(t.nome)}${t.inicio ? ' · começa ' + mtEsc(mtData(t.inicio)) : ''}` : '📣 Próxima turma'}</span>
+        <h2 style="font-size:clamp(26px,3.4vw,38px);margin:14px 0 16px;font-weight:900;">Mentoria em grupo ${mtEsc(m.nome)}</h2>
+        <ul><li>12 encontros ao vivo em grupo (90 min, online)</li><li>Sessões individuais a cada 15 dias (30 min)</li><li>Grupo de WhatsApp para dúvidas e cobrança</li>${d.bonus.map(b => `<li>${mtEsc(b)}</li>`).join('')}</ul>
+      </div>
+      <div class="valor">
+        ${t && Number(preco) < Number(g.valor) ? `<div class="de">${mtMoeda(g.valor)}</div>` : ''}
+        <div class="por">${mtMoeda(preco)}</div>
+        <div class="parc">ou 12x no cartão</div>
+        ${t ? `<button class="bt ambar cheio" onclick="mtAbrirInscricao()">Garantir minha vaga</button><small>${t.restantes > 0 ? `${t.restantes} vaga(s) restante(s) · turma de no máximo ${t.vagas} líderes` : 'Vagas esgotadas — entre na lista de espera'}</small>` : `<button class="bt ambar cheio" onclick="mtAbrirInscricao()">Quero ser avisado da próxima turma</button><small>Turmas pequenas, com no máximo 8 líderes</small>`}
+      </div>
+    </div>
+  </div></section>
+
+  <section class="alt"><div class="cx faq">
+    <div class="titulo"><small>Dúvidas</small><h2>Perguntas frequentes</h2></div>
+    <details><summary>Serve para quem lidera em qualquer área?</summary><p>Foi feita para operação (logística, indústria, varejo, distribuição), mas tudo vale para qualquer líder com time de execução: rotina, indicadores, feedback e formação de sucessores.</p></details>
+    <details><summary>Quanto tempo preciso por semana?</summary><p>90 minutos do encontro ao vivo + a tarefa prática aplicada no seu próprio time (que é o seu trabalho do dia a dia, feito com método).</p></details>
+    <details><summary>E se eu perder um encontro?</summary><p>Todos os encontros ficam gravados e você continua com o acompanhamento pelo grupo de WhatsApp.</p></details>
+    <details><summary>Tem garantia?</summary><p>Sim: 7 dias de garantia. Se não for para você, devolvemos o valor.</p></details>
+    <details><summary>Minha empresa pode pagar?</summary><p>Pode. Para turmas fechadas de líderes da sua empresa, veja o <a href="/palestra#contratar">treinamento in-company</a>.</p></details>
+  </div></section>
+  <section class="escuro centro"><div class="cx"><p class="frase">"${mtEsc(m.central.replace(/\.$/, ''))}."</p><div style="margin-top:26px;"><a class="bt ambar" href="#inscricao">Quero entrar na mentoria</a></div></div></section>
+  ${mtRodape()}`;
+  if (location.hash === '#inscricao') document.getElementById('inscricao').scrollIntoView();
+})();
+function mtAbrirInscricao() {
+  const d = MT.dados, t = d.turma;
+  document.getElementById('m-insc-corpo').innerHTML = `<h3>${t && t.restantes > 0 ? 'Garantir minha vaga' : 'Quero participar'}</h3><p class="sub">${t && t.restantes > 0 ? (d.pagamentoOnline ? 'Preencha e você vai para o pagamento seguro do Mercado Pago (Pix ou cartão em até 12x).' : 'Preencha e o Lázaro te chama no WhatsApp para confirmar a vaga.') : 'Deixe seus dados: você é avisado em primeira mão quando a turma abrir.'}</p>
+    <form class="form" onsubmit="mtInscrever(event)">
+      <label>Seu nome<input name="nome" required autocomplete="name"></label>
+      <div class="dupla"><label>WhatsApp (com DDD)<input name="whatsapp" required inputmode="tel" placeholder="(64) 9 9999-9999"></label><label>E-mail<input name="email" type="email" required autocomplete="email"></label></div>
+      <div class="dupla"><label>Seu cargo<input name="cargo" placeholder="Ex.: Supervisor de armazém"></label><label>Quantas pessoas você lidera?<select name="pessoas"><option>até 10</option><option>11 a 30</option><option>31 a 100</option><option>mais de 100</option></select></label></div>
+      <label>Empresa (opcional)<input name="empresa"></label>
+      <label>Qual é hoje o maior desafio com o seu time?<textarea name="mensagem" rows="3"></textarea></label>
+      <input class="hp" name="site" tabindex="-1" autocomplete="off">
+      <div class="msg-area"></div>
+      <button class="bt ambar cheio" type="submit">${t && t.restantes > 0 && d.pagamentoOnline ? 'Ir para o pagamento' : 'Enviar'}</button>
+    </form>`;
+  mtModal('m-insc');
+}
+async function mtInscrever(ev) {
+  ev.preventDefault(); const f = ev.target;
+  try {
+    const j = await mtEnviar(f, '/api/public/mentoria/inscricao');
+    if (j.checkout) { location.href = j.checkout; return; }
+    document.getElementById('m-insc-corpo').innerHTML = `<h3>✅ Recebido!</h3><p class="sub">${mtEsc(j.mensagem || 'Recebemos sua inscrição.')}</p>${mtWhats() ? `<a class="bt ambar cheio" href="${mtWhats('Olá, Lázaro! Acabei de me inscrever na mentoria ' + MT.dados.marca.nome + '.')}" target="_blank" rel="noopener">💬 Falar com o Lázaro agora</a>` : ''}`;
+  } catch (e) {}
+}
+</script>
+</body>
+</html>

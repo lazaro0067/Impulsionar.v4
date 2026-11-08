@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Palestra Quem Move Pessoas, Move Resultados · Lázaro Salles</title>
+<meta name="description" content="Palestra e treinamento in-company para líderes de operação: motivação, indicadores, rotina e formação de sucessores. Por Lázaro Salles.">
+<meta property="og:title" content="Palestra: Quem Move Pessoas, Move Resultados">
+<meta property="og:description" content="Para SIPAT, convenções e reuniões de resultado. Leve para os líderes da sua empresa.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/mentoria-estilo.css?v=1">
+</head>
+<body>
+<div id="app"><div class="cx" style="padding:80px 20px;text-align:center;color:#64748b;">Carregando…</div></div>
+<script src="/mentoria-comum.js?v=1"></script>
+<script>
+(async () => {
+  let d; try { d = await mtCarregar(); } catch (e) { return mtErroPagina(e); }
+  const m = d.marca, p = d.palestra, pal = d.ofertas.find(o => o.codigo === 'palestra') || {}, inc = d.ofertas.find(o => o.codigo === 'incompany') || {};
+  document.title = `Palestra ${p.titulo} · ${m.mentor}`;
+  document.getElementById('app').innerHTML = `${mtTopo('palestra')}
+  <section class="hero"><div class="cx">
+    <div>
+      <span class="selo">🎤 Palestra para empresas</span>
+      <h1>${mtEsc(p.titulo).replace(/,\s*/, ',<br>').replace(/(Move Resultados)/i, '<em>$1</em>')}</h1>
+      <p class="sub">${mtEsc(p.mensagem)}</p>
+      <div class="acoes"><a class="bt ambar" href="#contratar">Levar para minha empresa</a><a class="bt claro" href="#roteiro">Ver o roteiro</a></div>
+      <div class="prova"><div><b>${mtEsc(p.duracao)}</b>de conteúdo prático</div><div><b>3</b>formatos</div><div><b>1</b>compromisso por participante</div></div>
+    </div>
+    <div class="foto">${m.fotoUrl ? `<img src="${mtEsc(m.fotoUrl)}" alt="${mtEsc(m.mentor)}">` : `<div class="ini">${mtEsc(mtIniciais(m.mentor))}</div>`}<div class="leg"><b>${mtEsc(m.mentor)}</b>+12 anos liderando operações com até 250 pessoas</div></div>
+  </div></section>
+
+  <section><div class="cx">
+    <div class="titulo"><small>Para quem</small><h2>Para os líderes que fazem a operação acontecer</h2><p>${mtEsc(d.publico.corporativo)} Ideal para SIPAT, convenções de vendas e de operações, reuniões de resultado e programas de desenvolvimento de líderes.</p></div>
+    <div class="grade g3">
+      <div class="card"><h3>🔥 Time engajado</h3><p>Como motivar sem prometer dinheiro: reconhecimento, propósito e clareza.</p></div>
+      <div class="card"><h3>📊 Indicador que todos entendem</h3><p>Quem não mede, discute. Quem mede, decide. Gestão à vista que o time da ponta entende.</p></div>
+      <div class="card"><h3>🧭 Rotina e sucessores</h3><p>A rotina do líder que tira o time do apaga-incêndio e forma os próximos líderes.</p></div>
+    </div>
+  </div></section>
+
+  <section class="alt" id="roteiro"><div class="cx">
+    <div class="titulo"><small>Roteiro</small><h2>Uma jornada do chão à gestão, em ${mtEsc(p.duracao)}</h2></div>
+    <div class="linha-tempo">${p.roteiro.map(r => `<div class="degrau"><div class="ano">${mtEsc(r.tempo)}</div><div><b>${mtEsc(r.bloco)}</b></div></div>`).join('')}</div>
+  </div></section>
+
+  <section class="escuro"><div class="cx">
+    <div class="titulo"><small>Frases que o público leva</small><h2>O que fica depois da palestra</h2></div>
+    <div class="grade g2">${p.frases.map(f => `<div class="card"><h3 style="font-size:20px;">"${mtEsc(f)}"</h3></div>`).join('')}</div>
+  </div></section>
+
+  <section><div class="cx">
+    <div class="titulo"><small>Formatos</small><h2>Escolha o formato do seu evento</h2></div>
+    <div class="grade g3">${p.versoes.map(v => `<div class="card"><h3>${mtEsc(v.nome)}</h3><p>${mtEsc(v.uso)}</p></div>`).join('')}</div>
+    <div class="card" style="margin-top:18px;border-left:5px solid var(--ambar);"><h3>🏭 Treinamento in-company</h3><p>${mtEsc(inc.produto || '')}: o método MOVER aplicado com a turma de líderes da sua empresa, com ferramentas práticas e acompanhamento de indicador.</p></div>
+  </div></section>
+
+  <section class="alt" id="contratar"><div class="cx" style="max-width:760px;">
+    <div class="titulo centro"><small>Contratar</small><h2>Leve a palestra para os líderes da sua empresa</h2><p>Preencha e receba a proposta em até 1 dia útil.</p></div>
+    <div class="card" style="background:#fff;">
+      <form class="form" id="f-emp" onsubmit="mtPedirPalestra(event)">
+        <div class="dupla"><label>Seu nome<input name="nome" required autocomplete="name"></label><label>Cargo<input name="cargo" placeholder="Ex.: Analista de RH"></label></div>
+        <div class="dupla"><label>Empresa<input name="empresa" required></label><label>Cidade<input name="cidade"></label></div>
+        <div class="dupla"><label>WhatsApp (com DDD)<input name="whatsapp" required inputmode="tel"></label><label>E-mail<input name="email" type="email" required></label></div>
+        <div class="dupla"><label>Formato<select name="formato"><option>Palestra de 60 min</option><option>Pocket de 20 min</option><option>Workshop de 4 h</option><option>Treinamento in-company</option></select></label><label>Nº de participantes<input name="participantes" inputmode="numeric"></label></div>
+        <label>Data desejada<input name="data" placeholder="Ex.: SIPAT em março"></label>
+        <label>Conte sobre o evento e o objetivo<textarea name="mensagem" rows="3"></textarea></label>
+        <input class="hp" name="site" tabindex="-1" autocomplete="off">
+        <div class="msg-area"></div>
+        <button class="bt ambar cheio" type="submit">Pedir proposta</button>
+      </form>
+    </div>
+  </div></section>
+  ${mtRodape()}`;
+})();
+async function mtPedirPalestra(ev) {
+  ev.preventDefault(); const f = ev.target;
+  try {
+    await mtEnviar(f, '/api/public/mentoria/lead', { tipo: 'empresa', origem: 'pagina-palestra' });
+    f.innerHTML = `<div class="msg ok" style="font-size:16px;">✅ Pedido recebido! O Lázaro vai te enviar a proposta em até 1 dia útil.</div>${mtWhats() ? `<a class="bt ambar cheio" style="margin-top:12px;" href="${mtWhats('Olá, Lázaro! Acabei de pedir uma proposta de palestra pelo site.')}" target="_blank" rel="noopener">💬 Adiantar pelo WhatsApp</a>` : ''}`;
+  } catch (e) {}
+}
+</script>
+</body>
+</html>

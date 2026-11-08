@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lázaro Salles · Liderança que move operações</title>
+<meta name="description" content="Mentoria, palestras, aula gratuita e Raio-X do Líder.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/mentoria-estilo.css?v=1">
+<style>
+  body { background:radial-gradient(900px 500px at 50% -10%, rgba(245,158,11,.25), transparent 60%), linear-gradient(180deg, var(--navy), var(--navy2)); min-height:100vh; color:#fff; }
+  .bio { max-width:520px; margin:0 auto; padding:44px 20px 60px; text-align:center; }
+  .bio .av { width:112px; height:112px; border-radius:50%; margin:0 auto 14px; background:#1e293b; border:3px solid var(--ambar); overflow:hidden; display:grid; place-items:center; font-size:40px; font-weight:900; color:var(--ambar); }
+  .bio .av img { width:100%; height:100%; object-fit:cover; }
+  .bio h1 { font-size:24px; margin:0; font-weight:900; } .bio p { color:#cbd5e1; margin:6px 0 24px; white-space:pre-line; font-size:14px; }
+  .lk { display:flex; align-items:center; gap:14px; text-align:left; text-decoration:none; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:15px 18px; margin:10px 0; transition:transform .15s, background .15s; }
+  .lk:hover { transform:translateY(-2px); background:rgba(255,255,255,.12); }
+  .lk.dest { background:var(--ambar); color:var(--navy); border-color:var(--ambar); }
+  .lk span { font-size:26px; } .lk b { display:block; font-size:16px; } .lk small { opacity:.8; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="bio" id="app">Carregando…</div>
+<script src="/mentoria-comum.js?v=1"></script>
+<script>
+(async () => {
+  let d; try { d = await mtCarregar(); } catch (e) { return mtErroPagina(e); }
+  const m = d.marca, t = d.turma, a = d.aula || {}, ig = String(m.instagram || '').replace(/^@/, '');
+  const aulaQuando = a.data && !isNaN(new Date(a.data)) ? new Date(a.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '';
+  document.getElementById('app').innerHTML = `<div class="av">${m.fotoUrl ? `<img src="${mtEsc(m.fotoUrl)}" alt="">` : mtEsc(mtIniciais(m.mentor))}</div>
+    <h1>${mtEsc(m.mentor)}</h1><p>${mtEsc(m.titulo)}\nDe ajudante de distribuição a gerente corporativo</p>
+    <a class="lk dest" href="/mentoria"><span>🚀</span><div><b>Mentoria ${mtEsc(m.nome)}</b><small>${t ? `${mtEsc(t.nome)}${t.inicio ? ' · começa ' + mtEsc(mtData(t.inicio)) : ''} · ${t.restantes} vagas` : '12 semanas para líderes de operação'}</small></div></a>
+    <a class="lk" href="/raio-x"><span>🩻</span><div><b>Raio-X do Líder (grátis)</b><small>Descubra seu ponto fraco como líder em 5 minutos</small></div></a>
+    <a class="lk" href="/aula"><span>🔴</span><div><b>Aula gratuita${aulaQuando ? ' · ' + aulaQuando : ''}</b><small>${mtEsc(a.tema || 'Ao vivo, para líderes de operação')}</small></div></a>
+    <a class="lk" href="/palestra"><span>🎤</span><div><b>Palestras e treinamento para empresas</b><small>${mtEsc(d.palestra.titulo)}</small></div></a>
+    ${mtWhats() ? `<a class="lk" href="${mtWhats('Olá, Lázaro! Vim pelo Instagram.')}" target="_blank" rel="noopener"><span>💬</span><div><b>Falar no WhatsApp</b><small>Tire suas dúvidas</small></div></a>` : ''}
+    ${ig ? `<a class="lk" href="https://instagram.com/${mtEsc(ig)}" target="_blank" rel="noopener"><span>📸</span><div><b>@${mtEsc(ig)}</b><small>Conteúdo de liderança toda semana</small></div></a>` : ''}`;
+})();
+</script>
+</body>
+</html>

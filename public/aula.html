@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula gratuita para líderes de operação · Lázaro Salles</title>
+<meta name="description" content="Aula ao vivo e gratuita para líderes de operação, com Lázaro Salles.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/mentoria-estilo.css?v=1">
+</head>
+<body>
+<div id="app"><div class="cx" style="padding:80px 20px;text-align:center;color:#64748b;">Carregando…</div></div>
+<script src="/mentoria-comum.js?v=1"></script>
+<script>
+(async () => {
+  let d; try { d = await mtCarregar(); } catch (e) { return mtErroPagina(e); }
+  const m = d.marca, a = d.aula || {};
+  const quando = a.data ? new Date(a.data) : null, quandoTxt = quando && !isNaN(quando) ? quando.toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' }) : 'Data a confirmar — inscreva-se para ser avisado';
+  document.getElementById('app').innerHTML = `${mtTopo('aula')}
+  <section class="hero"><div class="cx">
+    <div>
+      <span class="selo">🔴 Aula ao vivo e gratuita</span>
+      <h1>${mtEsc(a.tema || 'Aula gratuita para líderes de operação')}</h1>
+      <p class="sub">60 minutos práticos, direto ao ponto, para você aplicar no seu time no dia seguinte. Com ${mtEsc(m.mentor)}, ${mtEsc(m.titulo.toLowerCase())}.</p>
+      <div class="card" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.15);color:#fff;max-width:520px;"><b style="font-size:18px;">🗓️ ${mtEsc(quandoTxt)}</b><p style="color:#cbd5e1;margin-top:4px;">Online e ao vivo · o link chega no seu WhatsApp</p></div>
+    </div>
+    <div class="card" style="background:#fff;color:var(--texto);">
+      <h3 style="font-size:22px;">Garanta seu lugar</h3>
+      <form class="form" id="f-aula" onsubmit="mtInscreverAula(event)">
+        <label>Seu nome<input name="nome" required autocomplete="name"></label>
+        <label>WhatsApp (com DDD)<input name="whatsapp" required inputmode="tel"></label>
+        <label>E-mail<input name="email" type="email"></label>
+        <label>Seu cargo<input name="cargo" placeholder="Ex.: Coordenador de logística"></label>
+        <input class="hp" name="site" tabindex="-1" autocomplete="off">
+        <div class="msg-area"></div>
+        <button class="bt ambar cheio" type="submit">Quero participar</button>
+      </form>
+    </div>
+  </div></section>
+  <section><div class="cx">
+    <div class="titulo"><small>Na aula</small><h2>O que você vai aprender</h2></div>
+    <div class="grade g3">
+      <div class="card"><h3>📊 O que olhar</h3><p>Os indicadores que realmente mostram se sua operação está saudável.</p></div>
+      <div class="card"><h3>🗣️ Como falar com o time</h3><p>Feedback em 3 passos — fato, impacto, combinado — para cobrar sem perder ninguém.</p></div>
+      <div class="card"><h3>🧭 A rotina que funciona</h3><p>A reunião de 15 minutos que faz o problema aparecer cedo, antes de virar incêndio.</p></div>
+    </div>
+  </div></section>
+  ${mtRodape()}`;
+})();
+async function mtInscreverAula(ev) {
+  ev.preventDefault(); const f = ev.target;
+  try {
+    const j = await mtEnviar(f, '/api/public/mentoria/lead', { tipo: 'aula', origem: 'pagina-aula' });
+    f.innerHTML = `<div class="msg ok" style="font-size:16px;">✅ Inscrição feita! Você recebe o link da aula no WhatsApp.</div>
+      ${j.linkAula ? `<a class="bt ambar cheio" style="margin-top:12px;" href="${mtEsc(j.linkAula)}" target="_blank" rel="noopener">Abrir o link da aula</a>` : ''}
+      ${j.whatsappGrupo ? `<a class="bt escuro cheio" style="margin-top:10px;" href="${mtEsc(j.whatsappGrupo)}" target="_blank" rel="noopener">💬 Entrar no grupo de avisos</a>` : ''}
+      <a class="bt claro cheio" style="margin-top:10px;" href="/raio-x">Enquanto isso, faça o Raio-X do Líder</a>`;
+  } catch (e) {}
+}
+</script>
+</body>
+</html>

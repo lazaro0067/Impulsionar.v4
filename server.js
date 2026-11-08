@@ -12723,6 +12723,8 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
                     [dataId, jobId], () => resolve()
                 ));
                 if (vaga) notificarGestoresDaEmpresa(vaga.company_id, 'Taxa de fechamento paga', `Pagamento da taxa de fechamento da vaga "${vaga.title}" confirmado.`);
+            } else if (ref.startsWith('mentoria:') && pagamento.status === 'approved') {
+                await mtConfirmarPagamento(ref.split(':')[1], String(dataId));
             } else if (ref.startsWith('estudio:') && pagamento.status === 'approved') {
                 await confirmarPagamentoEst(ref.split(':')[1], String(dataId));
             } else if (ref.startsWith('dpoaudit:') && pagamento.status === 'approved') {
@@ -12858,6 +12860,343 @@ app.get('/api/ranking', async (req, res) => {
 // genérico de /public pra funcionar mesmo quando os dois caminhos são diferentes.
 app.use('/uploads', express.static(PASTA_UPLOADS));
 if (PASTA_UPLOADS !== PASTA_UPLOADS_CODIGO) app.use('/uploads', express.static(PASTA_UPLOADS_CODIGO)); // arquivos antigos que ainda estejam na pasta do código
+// =====================================================================
+// 🚀 MENTORIA "DO CHÃO À GESTÃO" — o negócio de mentoria e palestras do Lázaro dentro do Impulsionar
+// Tudo num lugar: conteúdo (método MOVER, 12 semanas, palestra, roteiros), páginas públicas com
+// inscrição e pagamento, funil de leads (alunos e empresas), turmas e o plano de 90 dias com indicadores.
+// =====================================================================
+const MT_PADRAO = {
+    marca: {
+        nome: 'Do Chão à Gestão', mentor: 'Lázaro Salles', titulo: 'Liderança que move operações',
+        frase: 'Eu comecei carregando caixa em 2013. Hoje lidero operações com centenas de pessoas. Eu ensino líderes a fazer o time render, sem gritar e sem perder o controle da operação.',
+        promessa: 'Transformar líderes de operação em líderes que entregam resultado através das pessoas.',
+        central: 'Quem move pessoas, move resultados.',
+        instagram: '', whatsapp: '', email: '', linkedin: '', fotoUrl: ''
+    },
+    historia: [
+        { fase: '2013', cargo: 'Ajudante de distribuição', licao: 'Como o time da ponta enxerga o líder' },
+        { fase: 'Início', cargo: 'Manobrista e conferente de armazém', licao: 'Disciplina, padrão e atenção ao detalhe' },
+        { fase: 'Formosa → Rio Verde (GO)', cargo: 'Supervisor de armazém e de distribuição', licao: 'Captar, treinar e desenvolver gente' },
+        { fase: 'Crescimento', cargo: 'Coordenador de armazém, distribuição e operações', licao: 'Indicadores: NPS, on-time, in-full, quebra, estoque' },
+        { fase: 'Gestão', cargo: 'Gerente de operações', licao: '250 pessoas, 47 caminhões, 14 carretas, R$ 12 milhões em estoque por dia' },
+        { fase: 'Hoje', cargo: 'Gerente corporativo (3 unidades) e custo operacional', licao: 'Formar gerentes, planejar e fazer a máquina girar' }
+    ],
+    publico: {
+        principal: 'Supervisores, coordenadores e gerentes de operação (logística, indústria, varejo, distribuição) que foram promovidos por serem bons tecnicamente e agora precisam liderar gente.',
+        secundario: 'Donos de pequenas e médias empresas com equipe operacional que não entrega.',
+        corporativo: 'RH e diretores de operação que contratam palestra e treinamento para os líderes.'
+    },
+    dores: ['Time desmotivado, alta rotatividade e absenteísmo.', 'Líder que apaga incêndio o dia todo e não tem rotina de gestão.', 'Indicador ruim e ninguém sabe por quê.', 'Líder novo que não sabe dar feedback nem cobrar sem perder o time.'],
+    cuidado: 'Você ainda é gestor dentro do sistema Ambev. Antes de lançar, confira seu contrato e a política de conflito de interesses. Não use logo, marcas, números internos confidenciais nem fotos de unidades sem autorização. Fale da sua trajetória e dos aprendizados, não dos dados da empresa.',
+    metodo: [
+        { letra: 'M', nome: 'Mentalidade de dono', descricao: 'Sair do "fazer" para o "fazer acontecer"; postura, exemplo, responsabilidade.', entregavel: 'Plano de virada pessoal' },
+        { letra: 'O', nome: 'Operação sob controle', descricao: 'Escolher os 3 a 5 indicadores que importam; gestão à vista; leitura de causa.', entregavel: 'Painel de indicadores do time' },
+        { letra: 'V', nome: 'Vínculo com o time', descricao: 'Motivação, comunicação, feedback e cobrança sem perder a equipe.', entregavel: 'Roteiro de feedback e de conversa difícil' },
+        { letra: 'E', nome: 'Execução com disciplina', descricao: 'Rotina do líder: reunião de início de turno, PDCA, plano de ação, auditoria de padrão.', entregavel: 'Agenda-padrão do líder + quadro de plano de ação' },
+        { letra: 'R', nome: 'Replicar líderes', descricao: 'Captar, treinar e formar sucessores; PDI do time.', entregavel: 'Mapa de talentos + PDI de 2 pessoas-chave' }
+    ],
+    formato: '1 encontro ao vivo em grupo por semana (90 min, online) + 1 sessão individual a cada 15 dias (30 min) + grupo de WhatsApp para dúvidas e cobrança.',
+    semanas: [
+        { n: 1, modulo: 'Diagnóstico', tema: 'Onde estão os gaps do líder e do time', entregavel: 'Raio-X do Líder (autoavaliação + avaliação do time)' },
+        { n: 2, modulo: 'M — Mentalidade de dono', tema: 'Do "fazer" para o "fazer acontecer": postura e exemplo', entregavel: 'Plano de virada pessoal (rascunho)' },
+        { n: 3, modulo: 'M — Mentalidade de dono', tema: 'Responsabilidade e dono do resultado', entregavel: 'Plano de virada pessoal' },
+        { n: 4, modulo: 'O — Operação sob controle', tema: 'Os 3 a 5 indicadores que importam', entregavel: 'Lista de indicadores do time' },
+        { n: 5, modulo: 'O — Operação sob controle', tema: 'Gestão à vista e leitura de causa', entregavel: 'Painel de indicadores do time' },
+        { n: 6, modulo: 'V — Vínculo com o time', tema: 'Motivação e comunicação', entregavel: 'Plano de reconhecimento do time' },
+        { n: 7, modulo: 'V — Vínculo com o time', tema: 'Feedback e cobrança sem perder a equipe', entregavel: 'Roteiro de feedback e de conversa difícil' },
+        { n: 8, modulo: 'E — Execução com disciplina', tema: 'Rotina do líder e reunião de início de turno', entregavel: 'Agenda-padrão do líder' },
+        { n: 9, modulo: 'E — Execução com disciplina', tema: 'PDCA, plano de ação e auditoria de padrão', entregavel: 'Quadro de plano de ação (5W2H)' },
+        { n: 10, modulo: 'R — Replicar líderes', tema: 'Captar e treinar sucessores', entregavel: 'Mapa de talentos (9 box)' },
+        { n: 11, modulo: 'R — Replicar líderes', tema: 'PDI do time', entregavel: 'PDI de 2 pessoas-chave' },
+        { n: 12, modulo: 'Fechamento', tema: 'Apresentação do resultado: indicador antes e depois', entregavel: 'Case do aluno (vira depoimento)' }
+    ],
+    kit: ['Raio-X do Líder (questionário de 30 perguntas)', 'Painel de indicadores (planilha modelo)', 'Roteiros de feedback, reconhecimento e conversa difícil', 'Modelo de reunião de 15 minutos de início de turno', 'Plano de ação 5W2H e quadro PDCA', 'Mapa de talentos (9 box) e modelo de PDI'],
+    regraOuro: 'Toda semana termina com uma tarefa prática aplicada no time real. O aluno traz o resultado no encontro seguinte. É isso que gera depoimento e venda das próximas turmas.',
+    ofertas: [
+        { codigo: 'conteudo', degrau: 0, produto: 'Conteúdo no Instagram, lives e aula gratuita', preco: 'Grátis', valor: 0, para: 'Atrair e gerar confiança' },
+        { codigo: 'minicurso', degrau: 1, produto: 'Mini-curso "Rotina do Líder de Operação" (gravado, 2 h)', preco: 'R$ 97', valor: 97, para: 'Primeira compra, filtra quem é sério' },
+        { codigo: 'grupo', degrau: 2, produto: 'Mentoria em grupo Do Chão à Gestão (12 semanas)', preco: 'R$ 2.997 ou 12x de R$ 297', valor: 2997, para: 'Supervisores, coordenadores, gerentes' },
+        { codigo: 'individual', degrau: 3, produto: 'Mentoria individual (3 meses)', preco: 'R$ 9.000', valor: 9000, para: 'Gerentes e donos de negócio' },
+        { codigo: 'palestra', degrau: 4, produto: 'Palestra (60–90 min)', preco: 'R$ 5.000 a R$ 8.000', valor: 6000, para: 'RH, convenções, SIPAT, eventos' },
+        { codigo: 'incompany', degrau: 5, produto: 'Treinamento in-company (turma de líderes, 4 encontros)', preco: 'R$ 15.000 a R$ 25.000', valor: 18000, para: 'Empresas com operação grande' }
+    ],
+    bonus: ['Kit de ferramentas completo (planilhas e roteiros)', '1 sessão individual de diagnóstico antes de começar', 'Garantia de 7 dias', 'Certificado de conclusão'],
+    metaMensal: 50000,
+    cenarios: [
+        { fonte: 'Palestras', c50: '2 × R$ 6.000 = R$ 12.000', c100: '4 × R$ 7.000 = R$ 28.000' },
+        { fonte: 'Treinamento in-company', c50: '1 × R$ 18.000 = R$ 18.000', c100: '2 × R$ 18.000 = R$ 36.000' },
+        { fonte: 'Mentoria em grupo', c50: '6 alunos = R$ 17.982', c100: '10 alunos = R$ 29.970' },
+        { fonte: 'Mentoria individual', c50: '—', c100: '2 alunos = R$ 6.000 por mês' },
+        { fonte: 'Mini-curso', c50: '25 vendas = R$ 2.425', c100: '50 vendas = R$ 4.850' },
+        { fonte: 'Total', c50: 'R$ 50.407', c100: 'R$ 104.820' }
+    ],
+    instagram: {
+        bio: 'Lázaro Salles | Liderança que move operações\nDe ajudante de distribuição a gerente corporativo\n+12 anos liderando times de até 250 pessoas\nMentoria Do Chão à Gestão ⬇️',
+        linhas: [
+            { linha: 'História (20%)', objetivo: 'Gerar conexão', exemplos: '"Eu era ajudante e um supervisor mudou minha vida"; primeira vez liderando 250 pessoas' },
+            { linha: 'Ensino (40%)', objetivo: 'Gerar autoridade', exemplos: 'Como dar feedback em 3 passos; os 5 indicadores que todo líder de operação deve olhar' },
+            { linha: 'Bastidor (20%)', objetivo: 'Gerar confiança', exemplos: 'Rotina de um gerente corporativo; reunião de início de turno; dia de palestra' },
+            { linha: 'Prova e oferta (20%)', objetivo: 'Gerar venda', exemplos: 'Resultado de aluno; abertura de turma; depoimento de empresa' }
+        ],
+        frequencia: ['4 reels por semana (30–60 segundos)', '2 carrosséis por semana (dicas práticas, salváveis)', 'Stories todos os dias: bastidor, enquete, caixinha de perguntas', '1 live por mês com tema prático (vira aula gratuita para captar alunos)'],
+        calendario: [
+            { dia: 'Segunda', formato: 'Reel', linha: 'Ensino' }, { dia: 'Terça', formato: 'Carrossel', linha: 'Ensino' }, { dia: 'Quarta', formato: 'Reel', linha: 'História' },
+            { dia: 'Quinta', formato: 'Reel', linha: 'Bastidor' }, { dia: 'Sexta', formato: 'Carrossel', linha: 'Prova e oferta' }, { dia: 'Sábado', formato: 'Reel', linha: 'Ensino ou opinião forte' }, { dia: 'Domingo', formato: 'Só stories', linha: 'Reflexão da semana' }
+        ],
+        reels: [
+            { titulo: 'Reel 1 — História (gancho de autoridade)', gancho: 'Em 2013 eu era ajudante de caminhão. Hoje eu lidero gerentes.', conteudo: 'Não foi sorte. Foi um líder que me viu, me treinou e me cobrou. Eu fui manobrista, conferente, supervisor, coordenador, gerente. Liderança não é cargo. É quantas pessoas você fez crescer.', chamada: 'Me segue que eu vou te mostrar como formar líderes no seu time.' },
+            { titulo: 'Reel 2 — Ensino (feedback)', gancho: 'Se seu time some quando você vira as costas, o problema não é o time.', conteudo: 'Feedback em 3 passos: fato, impacto, combinado. Exemplo: "Ontem o carregamento saiu 40 minutos atrasado. Isso atrasou 6 entregas. O que a gente combina para amanhã?"', chamada: 'Salva esse vídeo e usa amanhã no seu time.' },
+            { titulo: 'Reel 3 — Opinião forte', gancho: 'Líder que grita é líder que não tem rotina.', conteudo: 'Grito é sinal de que o problema chegou tarde. Rotina de gestão faz o problema aparecer cedo: reunião de 15 minutos, indicador na parede e plano de ação.', chamada: 'Concorda? Comenta aí.' },
+            { titulo: 'Reel 4 — Bastidor', gancho: 'Como é a manhã de quem toca 3 unidades.', conteudo: 'Cortes rápidos de agenda, café, revisão de indicadores, conversa com o time (sem mostrar dados ou marcas da empresa). O segredo não é trabalhar mais. É ter rotina.', chamada: 'Me segue para ver a rotina de um líder de operação.' },
+            { titulo: 'Reel 5 — Oferta', gancho: 'Você foi promovido a líder e ninguém te ensinou a liderar?', conteudo: 'Foi pra isso que eu criei a Do Chão à Gestão: 12 semanas para você montar sua rotina, motivar seu time e melhorar seu indicador.', chamada: 'Comenta LÍDER que eu te mando os detalhes.' }
+        ],
+        dicas: ['Os 3 primeiros segundos decidem a visualização: comece pela frase mais forte, sem "olá, pessoal".', 'Legenda na tela sempre (a maioria assiste sem som).', 'Celular na vertical, luz de frente, áudio com microfone de lapela barato.', 'Responda todos os comentários na primeira hora.'],
+        hashtags: '#liderança #gestaodepessoas #lideranca #logistica #operacoes #gestao #desenvolvimentodelideres #docchaoagestao'
+    },
+    funil: {
+        alunos: ['Atração: reels e carrosséis trazem seguidores que são líderes.', 'Captura: a chamada "comenta LÍDER" ou o link na bio leva para o grupo de WhatsApp ou para a aula gratuita mensal.', 'Aula gratuita (live de 60 min): você ensina um tema prático e, no fim, apresenta a mentoria com prazo de inscrição.', 'Conversa de diagnóstico (20 min, por vídeo ou WhatsApp): você entende a dor da pessoa e mostra como a mentoria resolve.', 'Fechamento: link de pagamento (Mercado Pago, parcelado).', 'Pós-venda: resultado do aluno vira depoimento, que vira conteúdo, que traz o próximo aluno.'],
+        empresas: ['Lista de 50 empresas: fornecedores, transportadoras, indústrias e redes de varejo da região de Rio Verde e do agro de Goiás.', 'Contato: mensagem no LinkedIn ou WhatsApp para RH e gerentes de operação, oferecendo uma palestra para os líderes.', 'Primeiras 2 palestras com preço de entrada (ou gratuitas): em troca de gravação, fotos e depoimento do RH.', 'Proposta: depois da palestra, ofereça o treinamento in-company para a turma de líderes.', 'Indicação: peça ao RH duas indicações de outras empresas.'],
+        scriptEmpresa: 'Olá, [nome]. Sou o Lázaro, gestor de operações há mais de 12 anos, hoje responsável por 3 unidades. Desenvolvi uma palestra sobre como líderes de operação motivam o time e melhoram indicadores. Faz sentido conversarmos 15 minutos sobre levar isso para os líderes da [empresa]?',
+        scriptDiagnostico: ['Me conta da sua operação: quantas pessoas você lidera?', 'Qual é hoje o maior problema com o seu time?', 'O que acontece se isso continuar assim nos próximos 6 meses?', 'Se em 12 semanas você tivesse rotina, time engajado e indicador melhorando, o que mudaria para você?', 'Apresente a mentoria, o preço e o prazo. Pergunte: "Faz sentido para você?"']
+    },
+    palestra: {
+        titulo: 'Quem Move Pessoas, Move Resultados', duracao: '60 minutos',
+        mensagem: 'Resultado de alta performance não vem de cobrança, vem de líder que forma gente. A trajetória do Lázaro é o fio condutor e a palestra termina com o público assumindo um compromisso.',
+        roteiro: [
+            { tempo: '0–5 min', bloco: 'Abertura de impacto', acontece: 'Entra sem slide e conta 2013: o primeiro dia como ajudante de distribuição.' },
+            { tempo: '5–12 min', bloco: 'A virada', acontece: 'O líder que te enxergou e te desenvolveu. Pergunta ao público: "Quem foi esse líder na sua vida?"' },
+            { tempo: '12–22 min', bloco: 'Mentalidade de dono', acontece: 'Do "faço minha parte" para o "faço acontecer". Histórias de supervisor de armazém.' },
+            { tempo: '22–32 min', bloco: 'Operação sob controle', acontece: 'Indicador que ninguém entende não motiva ninguém. O caso de assumir 250 pessoas e 47 caminhões.' },
+            { tempo: '32–42 min', bloco: 'Vínculo e motivação', acontece: 'Como motivar sem prometer dinheiro: reconhecimento, propósito, clareza. Dinâmica de 3 minutos em dupla.' },
+            { tempo: '42–52 min', bloco: 'Execução e sucessores', acontece: 'Rotina do líder e o líder que forma outros líderes. Os gerentes de hoje que você ajudou a formar.' },
+            { tempo: '52–58 min', bloco: 'Compromisso', acontece: 'Cada participante escreve 1 atitude que vai mudar na segunda-feira.' },
+            { tempo: '58–60 min', bloco: 'Fechamento', acontece: 'Frase final e convite para a mentoria ou para o treinamento in-company.' }
+        ],
+        abertura: 'Em 2013, eu acordava antes do sol para ajudar a descarregar caminhão. Eu não sabia o que era NPS, não sabia o que era indicador. Mas eu sabia exatamente quando um líder acreditava em mim e quando ele não estava nem aí. Hoje eu lidero gerentes. E eu vim aqui contar o que aprendi no caminho entre esses dois lugares.',
+        frases: ['Liderança não é cargo. É quantas pessoas você fez crescer.', 'Time não abandona empresa. Time abandona líder.', 'Quem não mede, discute. Quem mede, decide.', 'O melhor líder é aquele que, quando sai de férias, a operação continua rodando.'],
+        fechamento: 'Eu comecei no chão. E é por isso que eu nunca esqueço: toda operação grande é feita de gente que acorda cedo e quer ser vista. Seja o líder que enxerga. Porque quem move pessoas, move resultados.',
+        versoes: [{ nome: 'Palestra de 60 min', uso: 'Eventos, convenções, SIPAT' }, { nome: 'Pocket de 20 min', uso: 'Reuniões de resultado e abertura de evento' }, { nome: 'Workshop de 4 h', uso: 'Palestra + ferramentas práticas, porta de entrada para o treinamento in-company' }],
+        dica: 'Grave tudo: cada palestra rende de 5 a 10 cortes para reels.'
+    },
+    plano90: [
+        { mes: 'Mês 1 — Fundação', tarefas: ['Conferir contrato e política de conflito de interesses na empresa atual', 'Abrir CNPJ (MEI ou ME) e conta para receber', 'Ajustar bio, foto de perfil e destaques do Instagram', 'Publicar as páginas da mentoria e da palestra (links abaixo) e colocar o link na bio', 'Gravar os 5 reels do plano e postar 4 por semana', 'Montar a apresentação da palestra (slides com fotos e frases, pouco texto)', 'Fazer a lista de 50 empresas e contatos de RH (cadastrar no funil)'] },
+        { mes: 'Mês 2 — Validação', tarefas: ['Fazer 2 palestras de entrada (gravar e pegar depoimento)', 'Fazer a primeira live/aula gratuita', 'Abrir a turma piloto da mentoria com preço de lançamento (R$ 1.497) para até 8 alunos', 'Contatar 10 empresas por semana', 'Postar 3 cortes da palestra por semana'] },
+        { mes: 'Mês 3 — Primeira entrega', tarefas: ['Rodar as semanas 1 a 4 da turma piloto', 'Fechar a primeira palestra paga a preço cheio', 'Enviar proposta de treinamento in-company para as empresas da palestra', 'Lançar o mini-curso de R$ 97', 'Coletar depoimentos e preparar a turma 2 com preço cheio (R$ 2.997)'] }
+    ],
+    feitos: {},
+    inicioProjeto: '',
+    indicadores: [
+        { id: 'seguidores', nome: 'Seguidores novos por semana', meta: 300 },
+        { id: 'conversas', nome: 'Conversas de diagnóstico por semana', meta: 5 },
+        { id: 'empresas', nome: 'Empresas contatadas por semana', meta: 10 },
+        { id: 'palestras', nome: 'Palestras fechadas no mês', meta: 2 },
+        { id: 'alunos', nome: 'Alunos na turma piloto', meta: 8 },
+        { id: 'faturamento', nome: 'Faturamento do mês (R$)', meta: 15000 }
+    ],
+    registros: [],
+    links: { whatsappGrupo: '', meet: '', proximaAula: { data: '', tema: 'Os 5 indicadores que todo líder de operação precisa olhar', link: '' } },
+    pagamentoOnline: true,
+    raioX: [
+        { p: 'M', q: 'Eu assumo o resultado do meu time como meu, sem culpar outras áreas.' },
+        { p: 'M', q: 'Meu time me vê fazendo o que eu cobro deles.' },
+        { p: 'M', q: 'Passo mais tempo fazendo acontecer (planejando, orientando) do que fazendo o trabalho do time.' },
+        { p: 'M', q: 'Tomo decisões rápidas quando a operação precisa, sem esperar ordem.' },
+        { p: 'M', q: 'Penso no custo e no resultado como se a empresa fosse minha.' },
+        { p: 'M', q: 'Sei qual é o meu próximo passo de carreira e o que preciso desenvolver.' },
+        { p: 'O', q: 'Sei de cabeça os 3 a 5 indicadores mais importantes da minha operação.' },
+        { p: 'O', q: 'Meus indicadores ficam visíveis para o time (quadro, painel, reunião).' },
+        { p: 'O', q: 'Quando um indicador piora, descubro a causa em até 48 horas.' },
+        { p: 'O', q: 'Meu time sabe explicar o que cada indicador significa.' },
+        { p: 'O', q: 'Tenho metas claras por pessoa ou por turno.' },
+        { p: 'O', q: 'Uso os números para decidir, não só a intuição.' },
+        { p: 'V', q: 'Dou feedback (positivo e corretivo) toda semana.' },
+        { p: 'V', q: 'Consigo cobrar sem perder o respeito e a confiança do time.' },
+        { p: 'V', q: 'Reconheço publicamente quem faz bem feito.' },
+        { p: 'V', q: 'Conheço a história e os objetivos das pessoas-chave do meu time.' },
+        { p: 'V', q: 'A rotatividade e as faltas do meu time estão sob controle.' },
+        { p: 'V', q: 'Meu time traz os problemas para mim antes que virem incêndio.' },
+        { p: 'E', q: 'Faço uma reunião curta de início de turno todos os dias.' },
+        { p: 'E', q: 'Tenho uma agenda-padrão da semana e consigo cumprir.' },
+        { p: 'E', q: 'Todo problema importante vira um plano de ação com dono e prazo.' },
+        { p: 'E', q: 'Confiro se os padrões estão sendo seguidos (auditoria, checklist).' },
+        { p: 'E', q: 'Termino a semana revisando o que funcionou e o que não funcionou (PDCA).' },
+        { p: 'E', q: 'Passo menos da metade do dia apagando incêndio.' },
+        { p: 'R', q: 'Tenho pelo menos uma pessoa preparada para me substituir.' },
+        { p: 'R', q: 'Cada pessoa-chave do time tem um plano de desenvolvimento (PDI).' },
+        { p: 'R', q: 'Treino novos líderes de forma estruturada, não só "no susto".' },
+        { p: 'R', q: 'Sei quem são os talentos e quem precisa de atenção no meu time (9 box).' },
+        { p: 'R', q: 'Quando saio de férias, a operação continua rodando.' },
+        { p: 'R', q: 'Delego tarefas importantes e acompanho, sem fazer por eles.' }
+    ]
+};
+db.run(`CREATE TABLE IF NOT EXISTS mentoria_negocio (id INTEGER PRIMARY KEY, dados TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+db.run(`CREATE TABLE IF NOT EXISTS mentoria_leads (id INTEGER PRIMARY KEY AUTOINCREMENT, tipo TEXT, nome TEXT, email TEXT, whatsapp TEXT, empresa TEXT, cargo TEXT, cidade TEXT, mensagem TEXT, origem TEXT,
+    etapa TEXT DEFAULT 'novo', valor REAL DEFAULT 0, notas TEXT, dados TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+db.run(`CREATE TABLE IF NOT EXISTS mentoria_turmas (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, inicio TEXT, horario TEXT, preco REAL, vagas INTEGER DEFAULT 8, status TEXT DEFAULT 'aberta',
+    link_encontro TEXT, whatsapp_grupo TEXT, dados TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+db.run(`CREATE TABLE IF NOT EXISTS mentoria_alunos (id INTEGER PRIMARY KEY AUTOINCREMENT, turma_id INTEGER, lead_id INTEGER, nome TEXT, email TEXT, whatsapp TEXT, cargo TEXT, empresa TEXT,
+    produto TEXT DEFAULT 'grupo', valor REAL DEFAULT 0, pagamento TEXT DEFAULT 'pendente', mp_preference_id TEXT, mp_payment_id TEXT, checkout_url TEXT, progresso TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+const mtRun = (sql, p = []) => new Promise((ok, ko) => db.run(sql, p, function (e) { e ? ko(e) : ok(this); }));
+async function mtLer() {
+    const r = await dbGet(`SELECT dados FROM mentoria_negocio WHERE id = 1`).catch(() => null);
+    let d = {}; try { d = r && r.dados ? JSON.parse(r.dados) : {}; } catch (e) {}
+    // completa com o padrão o que ainda não existe (sem apagar o que o Lázaro editou)
+    const out = JSON.parse(JSON.stringify(MT_PADRAO));
+    Object.keys(d).forEach(k => { if (d[k] !== undefined && d[k] !== null) out[k] = (typeof d[k] === 'object' && !Array.isArray(d[k]) && typeof out[k] === 'object' && !Array.isArray(out[k])) ? Object.assign(out[k], d[k]) : d[k]; });
+    return out;
+}
+async function mtSalvar(d) { await mtRun(`INSERT INTO mentoria_negocio (id, dados, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET dados = excluded.dados, updated_at = CURRENT_TIMESTAMP`, [JSON.stringify(d)]); }
+async function mtTurmaAberta() {
+    const t = await dbGet(`SELECT * FROM mentoria_turmas WHERE status = 'aberta' ORDER BY COALESCE(inicio, '9999') ASC, id DESC LIMIT 1`).catch(() => null);
+    if (!t) return null;
+    const n = await dbGet(`SELECT COUNT(*) AS n FROM mentoria_alunos WHERE turma_id = ? AND pagamento = 'pago'`, [t.id]).catch(() => ({ n: 0 }));
+    return Object.assign(t, { inscritos: n.n, restantes: Math.max(0, (t.vagas || 0) - n.n) });
+}
+const mtTxt = (v, n) => String(v === undefined || v === null ? '' : v).trim().slice(0, n || 300);
+// ---------- admin ----------
+app.get('/api/admin/mentoria', requireRole('admin'), async (req, res) => {
+    try {
+        const d = await mtLer();
+        const etapas = await dbAll(`SELECT tipo, etapa, COUNT(*) AS n, SUM(valor) AS v FROM mentoria_leads GROUP BY tipo, etapa`).catch(() => []);
+        const semana = await dbGet(`SELECT COUNT(*) AS n FROM mentoria_leads WHERE created_at >= datetime('now', '-7 days')`).catch(() => ({ n: 0 }));
+        const mes = await dbGet(`SELECT COALESCE(SUM(valor), 0) AS v FROM mentoria_leads WHERE etapa = 'fechado' AND strftime('%Y-%m', updated_at) = strftime('%Y-%m', 'now')`).catch(() => ({ v: 0 }));
+        const pagos = await dbGet(`SELECT COUNT(*) AS n, COALESCE(SUM(valor), 0) AS v FROM mentoria_alunos WHERE pagamento = 'pago' AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')`).catch(() => ({ n: 0, v: 0 }));
+        res.json({ dados: d, resumo: { etapas, leadsSemana: semana.n, fechadoMes: mes.v, alunosPagosMes: pagos.n, alunosValorMes: pagos.v }, base: urlPublicaValida(appBaseUrlAtiva) ? appBaseUrlAtiva : '', mp: !!mpPreference, turma: await mtTurmaAberta() });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.put('/api/admin/mentoria', requireRole('admin'), async (req, res) => {
+    try { const atual = await mtLer(), b = req.body || {}, ehObj = v => v && typeof v === 'object' && !Array.isArray(v); Object.keys(b).forEach(k => { if (k in MT_PADRAO) atual[k] = ehObj(atual[k]) && ehObj(b[k]) ? Object.assign({}, atual[k], b[k]) : b[k]; }); await mtSalvar(atual); res.json({ ok: true, dados: atual }); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/admin/mentoria/restaurar-padrao', requireRole('admin'), async (req, res) => {
+    try { const atual = await mtLer(), campo = String((req.body || {}).campo || ''); if (!(campo in MT_PADRAO)) return res.status(400).json({ error: 'Campo inválido.' }); atual[campo] = JSON.parse(JSON.stringify(MT_PADRAO[campo])); await mtSalvar(atual); res.json({ ok: true, dados: atual }); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.get('/api/admin/mentoria/leads', requireRole('admin'), async (req, res) => {
+    res.json(await dbAll(`SELECT * FROM mentoria_leads ORDER BY datetime(updated_at) DESC, id DESC LIMIT 1000`).catch(() => []));
+});
+app.post('/api/admin/mentoria/leads', requireRole('admin'), async (req, res) => {
+    const b = req.body || {};
+    try { const r = await mtRun(`INSERT INTO mentoria_leads (tipo, nome, email, whatsapp, empresa, cargo, cidade, mensagem, origem, etapa, valor, notas) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [mtTxt(b.tipo || 'aluno', 20), mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.empresa, 160), mtTxt(b.cargo, 120), mtTxt(b.cidade, 120), mtTxt(b.mensagem, 2000), mtTxt(b.origem || 'manual', 60), mtTxt(b.etapa || 'novo', 20), Number(b.valor) || 0, mtTxt(b.notas, 4000)]);
+        res.json({ id: r.lastID }); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.put('/api/admin/mentoria/leads/:id', requireRole('admin'), async (req, res) => {
+    const b = req.body || {}, campos = ['tipo', 'nome', 'email', 'whatsapp', 'empresa', 'cargo', 'cidade', 'mensagem', 'etapa', 'valor', 'notas'].filter(k => k in b);
+    if (!campos.length) return res.json({ ok: true });
+    try { await mtRun(`UPDATE mentoria_leads SET ${campos.map(k => k + ' = ?').join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [...campos.map(k => k === 'valor' ? Number(b[k]) || 0 : mtTxt(b[k], k === 'notas' || k === 'mensagem' ? 4000 : 200)), req.params.id]); res.json({ ok: true }); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.delete('/api/admin/mentoria/leads/:id', requireRole('admin'), async (req, res) => { await mtRun(`DELETE FROM mentoria_leads WHERE id = ?`, [req.params.id]).catch(() => {}); res.json({ ok: true }); });
+app.get('/api/admin/mentoria/turmas', requireRole('admin'), async (req, res) => {
+    const turmas = await dbAll(`SELECT * FROM mentoria_turmas ORDER BY id DESC`).catch(() => []), alunos = await dbAll(`SELECT * FROM mentoria_alunos ORDER BY id`).catch(() => []);
+    res.json(turmas.map(t => Object.assign(t, { dados: (() => { try { return JSON.parse(t.dados || '{}'); } catch (e) { return {}; } })(), alunos: alunos.filter(a => a.turma_id === t.id).map(a => Object.assign(a, { progresso: (() => { try { return JSON.parse(a.progresso || '{}'); } catch (e) { return {}; } })() })) })));
+});
+app.post('/api/admin/mentoria/turmas', requireRole('admin'), async (req, res) => {
+    const b = req.body || {};
+    try { const r = await mtRun(`INSERT INTO mentoria_turmas (nome, inicio, horario, preco, vagas, status, link_encontro, whatsapp_grupo, dados) VALUES (?,?,?,?,?,?,?,?,?)`,
+        [mtTxt(b.nome || 'Turma piloto', 120), mtTxt(b.inicio, 20), mtTxt(b.horario || '20:00', 20), Number(b.preco) || 1497, Number(b.vagas) || 8, mtTxt(b.status || 'aberta', 20), mtTxt(b.link_encontro, 300), mtTxt(b.whatsapp_grupo, 300), JSON.stringify(b.dados || {})]);
+        res.json({ id: r.lastID }); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.put('/api/admin/mentoria/turmas/:id', requireRole('admin'), async (req, res) => {
+    const b = req.body || {}, campos = ['nome', 'inicio', 'horario', 'preco', 'vagas', 'status', 'link_encontro', 'whatsapp_grupo', 'dados'].filter(k => k in b);
+    if (!campos.length) return res.json({ ok: true });
+    try { await mtRun(`UPDATE mentoria_turmas SET ${campos.map(k => k + ' = ?').join(', ')} WHERE id = ?`, [...campos.map(k => k === 'dados' ? JSON.stringify(b[k] || {}) : ['preco', 'vagas'].includes(k) ? Number(b[k]) || 0 : mtTxt(b[k], 300)), req.params.id]); res.json({ ok: true }); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.delete('/api/admin/mentoria/turmas/:id', requireRole('admin'), async (req, res) => { await mtRun(`DELETE FROM mentoria_alunos WHERE turma_id = ?`, [req.params.id]).catch(() => {}); await mtRun(`DELETE FROM mentoria_turmas WHERE id = ?`, [req.params.id]).catch(() => {}); res.json({ ok: true }); });
+app.post('/api/admin/mentoria/alunos', requireRole('admin'), async (req, res) => {
+    const b = req.body || {};
+    try { const r = await mtRun(`INSERT INTO mentoria_alunos (turma_id, lead_id, nome, email, whatsapp, cargo, empresa, produto, valor, pagamento, progresso) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+        [Number(b.turma_id) || null, Number(b.lead_id) || null, mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.cargo, 120), mtTxt(b.empresa, 160), mtTxt(b.produto || 'grupo', 20), Number(b.valor) || 0, mtTxt(b.pagamento || 'pago', 20), JSON.stringify(b.progresso || {})]);
+        if (b.lead_id) await mtRun(`UPDATE mentoria_leads SET etapa = 'fechado', valor = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [Number(b.valor) || 0, b.lead_id]).catch(() => {});
+        res.json({ id: r.lastID }); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.put('/api/admin/mentoria/alunos/:id', requireRole('admin'), async (req, res) => {
+    const b = req.body || {}, campos = ['turma_id', 'nome', 'email', 'whatsapp', 'cargo', 'empresa', 'produto', 'valor', 'pagamento', 'progresso'].filter(k => k in b);
+    if (!campos.length) return res.json({ ok: true });
+    try { await mtRun(`UPDATE mentoria_alunos SET ${campos.map(k => k + ' = ?').join(', ')} WHERE id = ?`, [...campos.map(k => k === 'progresso' ? JSON.stringify(b[k] || {}) : ['valor', 'turma_id'].includes(k) ? Number(b[k]) || 0 : mtTxt(b[k], 200)), req.params.id]); res.json({ ok: true }); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.delete('/api/admin/mentoria/alunos/:id', requireRole('admin'), async (req, res) => { await mtRun(`DELETE FROM mentoria_alunos WHERE id = ?`, [req.params.id]).catch(() => {}); res.json({ ok: true }); });
+// ---------- público (páginas de venda, inscrição, Raio-X) ----------
+const MT_LIMITE = new Map();
+function mtLimite(req) { const ip = String(req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim(), agora = Date.now(), l = (MT_LIMITE.get(ip) || []).filter(t => agora - t < 3600000); if (l.length >= 20) return false; l.push(agora); MT_LIMITE.set(ip, l); return true; }
+app.get('/api/public/mentoria', async (req, res) => {
+    try {
+        const d = await mtLer(), t = await mtTurmaAberta();
+        res.json({ marca: d.marca, historia: d.historia, publico: d.publico, dores: d.dores, metodo: d.metodo, formato: d.formato, semanas: d.semanas, kit: d.kit, regraOuro: d.regraOuro,
+            ofertas: d.ofertas, bonus: d.bonus, palestra: { titulo: d.palestra.titulo, duracao: d.palestra.duracao, mensagem: d.palestra.mensagem, roteiro: d.palestra.roteiro.map(r => ({ tempo: r.tempo, bloco: r.bloco })), frases: d.palestra.frases, versoes: d.palestra.versoes },
+            aula: d.links.proximaAula, raioX: d.raioX.map(x => ({ p: x.p, q: x.q })), turma: t ? { nome: t.nome, inicio: t.inicio, horario: t.horario, preco: t.preco, vagas: t.vagas, restantes: t.restantes } : null,
+            pagamentoOnline: !!(d.pagamentoOnline && mpPreference && t) });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// apresentação da palestra (roteiro completo, para o Lázaro apresentar)
+app.get('/api/public/mentoria/palestra-completa', async (req, res) => { const d = await mtLer(); res.json({ marca: d.marca, palestra: d.palestra, historia: d.historia, metodo: d.metodo }); });
+app.post('/api/public/mentoria/lead', async (req, res) => {
+    if (!mtLimite(req)) return res.status(429).json({ error: 'Muitas tentativas. Tente de novo em instantes.' });
+    const b = req.body || {}, tipo = ['aluno', 'empresa', 'aula', 'raiox', 'contato'].includes(b.tipo) ? b.tipo : 'contato';
+    if (mtTxt(b.nome).length < 2 || (mtTxt(b.whatsapp).replace(/\D/g, '').length < 10 && !/@/.test(mtTxt(b.email)))) return res.status(400).json({ error: 'Informe seu nome e um WhatsApp (com DDD) ou e-mail.' });
+    if (b.site) return res.json({ ok: true }); // armadilha anti-robô
+    try {
+        const extra = { participantes: mtTxt(b.participantes, 40), data: mtTxt(b.data, 40), formato: mtTxt(b.formato, 60), pessoas: mtTxt(b.pessoas, 40) };
+        const r = await mtRun(`INSERT INTO mentoria_leads (tipo, nome, email, whatsapp, empresa, cargo, cidade, mensagem, origem, etapa, valor, dados) VALUES (?,?,?,?,?,?,?,?,?,'novo',?,?)`,
+            [tipo, mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.empresa, 160), mtTxt(b.cargo, 120), mtTxt(b.cidade, 120), mtTxt(b.mensagem, 2000), mtTxt(b.origem || 'site', 60), tipo === 'empresa' ? 6000 : 0, JSON.stringify(extra)]);
+        const rot = { aluno: 'Novo interessado na mentoria', empresa: 'Empresa pediu palestra/treinamento', aula: 'Nova inscrição na aula gratuita', raiox: 'Novo Raio-X do Líder', contato: 'Novo contato' }[tipo];
+        try { notificarMasters('🚀 ' + rot, `${mtTxt(b.nome, 80)}${b.empresa ? ' · ' + mtTxt(b.empresa, 80) : ''}${b.whatsapp ? ' · ' + mtTxt(b.whatsapp, 30) : ''}`, 'mentoriaNegocio'); } catch (e) {}
+        const d = await mtLer();
+        res.json({ ok: true, id: r.lastID, whatsappGrupo: tipo === 'aula' ? d.links.whatsappGrupo : '', linkAula: tipo === 'aula' ? d.links.proximaAula.link : '' });
+    } catch (e) { res.status(500).json({ error: 'Não consegui registrar agora. Tente de novo.' }); }
+});
+app.post('/api/public/mentoria/raio-x', async (req, res) => {
+    if (!mtLimite(req)) return res.status(429).json({ error: 'Muitas tentativas. Tente de novo em instantes.' });
+    const b = req.body || {}, d = await mtLer(), resp = Array.isArray(b.respostas) ? b.respostas.map(n => Math.max(1, Math.min(5, Number(n) || 0))) : [];
+    if (resp.length !== d.raioX.length || resp.some(n => !n)) return res.status(400).json({ error: 'Responda todas as perguntas.' });
+    const pil = {}; d.raioX.forEach((x, i) => { pil[x.p] = pil[x.p] || []; pil[x.p].push(resp[i]); });
+    const nota = {}; Object.entries(pil).forEach(([p, l]) => { nota[p] = Math.round(l.reduce((s, n) => s + n, 0) / (l.length * 5) * 100); });
+    const geral = Math.round(Object.values(nota).reduce((s, n) => s + n, 0) / Object.keys(nota).length);
+    const fraco = Object.entries(nota).sort((a, b) => a[1] - b[1])[0][0];
+    let id = null;
+    if (mtTxt(b.nome).length >= 2 && (mtTxt(b.whatsapp).replace(/\D/g, '').length >= 10 || /@/.test(mtTxt(b.email)))) {
+        const r = await mtRun(`INSERT INTO mentoria_leads (tipo, nome, email, whatsapp, cargo, empresa, origem, etapa, mensagem, dados) VALUES ('raiox',?,?,?,?,?, 'raio-x', 'novo', ?, ?)`,
+            [mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.cargo, 120), mtTxt(b.empresa, 160), `Raio-X: ${geral}% · ponto mais fraco: ${fraco}`, JSON.stringify({ nota, geral, fraco, respostas: resp })]).catch(() => null);
+        id = r && r.lastID;
+        try { notificarMasters('🚀 Novo Raio-X do Líder', `${mtTxt(b.nome, 80)} · ${geral}% · mais fraco em ${fraco}`, 'mentoriaNegocio'); } catch (e) {}
+    }
+    res.json({ nota, geral, fraco, id });
+});
+// inscrição na mentoria em grupo: reserva a vaga e gera o pagamento (Mercado Pago)
+app.post('/api/public/mentoria/inscricao', async (req, res) => {
+    if (!mtLimite(req)) return res.status(429).json({ error: 'Muitas tentativas. Tente de novo em instantes.' });
+    const b = req.body || {};
+    if (mtTxt(b.nome).length < 2 || mtTxt(b.whatsapp).replace(/\D/g, '').length < 10 || !/@/.test(mtTxt(b.email))) return res.status(400).json({ error: 'Informe nome, WhatsApp com DDD e e-mail.' });
+    try {
+        const d = await mtLer(), t = await mtTurmaAberta();
+        const lead = await mtRun(`INSERT INTO mentoria_leads (tipo, nome, email, whatsapp, cargo, empresa, origem, etapa, mensagem, valor, dados) VALUES ('aluno',?,?,?,?,?, 'inscricao', 'proposta', ?, ?, ?)`,
+            [mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.cargo, 120), mtTxt(b.empresa, 160), mtTxt(b.mensagem, 2000), t ? t.preco : 0, JSON.stringify({ pessoas: mtTxt(b.pessoas, 40) })]);
+        try { notificarMasters('🚀 Inscrição na mentoria', `${mtTxt(b.nome, 80)} · ${mtTxt(b.whatsapp, 30)}${t ? ' · ' + t.nome : ''}`, 'mentoriaNegocio'); } catch (e) {}
+        if (!t || !d.pagamentoOnline || !mpPreference) return res.json({ ok: true, semPagamento: true, mensagem: t ? 'Recebemos sua inscrição! O Lázaro vai te chamar no WhatsApp para confirmar a vaga.' : 'Recebemos seu interesse! Você será avisado em primeira mão quando a próxima turma abrir.' });
+        if (t.restantes <= 0) return res.json({ ok: true, semPagamento: true, mensagem: 'As vagas desta turma acabaram. Você entrou na lista de espera da próxima turma.' });
+        const al = await mtRun(`INSERT INTO mentoria_alunos (turma_id, lead_id, nome, email, whatsapp, cargo, empresa, produto, valor, pagamento) VALUES (?,?,?,?,?,?,?, 'grupo', ?, 'pendente')`,
+            [t.id, lead.lastID, mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.cargo, 120), mtTxt(b.empresa, 160), t.preco]);
+        const pref = await mpPreference.create({ body: {
+            items: [{ title: `Mentoria ${d.marca.nome} — ${t.nome}`, quantity: 1, unit_price: Number(t.preco), currency_id: 'BRL' }],
+            payer: { name: mtTxt(b.nome, 120), email: mtTxt(b.email, 160) },
+            payment_methods: { installments: 12 },
+            external_reference: `mentoria:${al.lastID}`, ...(urlPublicaValida(appBaseUrlAtiva) ? { back_urls: { success: appBaseUrlAtiva.replace(/\/$/, '') + '/mentoria?pago=1', failure: appBaseUrlAtiva.replace(/\/$/, '') + '/mentoria?pago=0', pending: appBaseUrlAtiva.replace(/\/$/, '') + '/mentoria?pago=2' }, auto_return: 'approved' } : {})
+        } });
+        await mtRun(`UPDATE mentoria_alunos SET mp_preference_id = ?, checkout_url = ? WHERE id = ?`, [pref.id, pref.init_point, al.lastID]).catch(() => {});
+        res.json({ ok: true, checkout: pref.init_point });
+    } catch (e) { console.error('Inscrição mentoria:', e.message); res.status(500).json({ error: 'Não consegui gerar o pagamento agora. Seus dados foram salvos e o Lázaro vai te chamar no WhatsApp.' }); }
+});
+async function mtConfirmarPagamento(alunoId, pagamentoId) {
+    const a = await dbGet(`SELECT * FROM mentoria_alunos WHERE id = ?`, [alunoId]).catch(() => null); if (!a || a.pagamento === 'pago') return;
+    await mtRun(`UPDATE mentoria_alunos SET pagamento = 'pago', mp_payment_id = ? WHERE id = ?`, [pagamentoId, alunoId]);
+    if (a.lead_id) await mtRun(`UPDATE mentoria_leads SET etapa = 'fechado', valor = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [a.valor || 0, a.lead_id]).catch(() => {});
+    try { notificarMasters('💰 Pagamento da mentoria confirmado', `${a.nome} · R$ ${Number(a.valor || 0).toLocaleString('pt-BR')}`, 'mentoriaNegocio'); } catch (e) {}
+}
+// páginas públicas com endereço curto
+[['/mentoria', 'mentoria.html'], ['/palestra', 'palestra.html'], ['/aula', 'aula.html'], ['/raio-x', 'raio-x.html'], ['/bio', 'bio.html'], ['/palestra/apresentar', 'palestra-apresentar.html']]
+    .forEach(([rota, arq]) => app.get(rota, (req, res) => res.sendFile(path.join(__dirname, 'public', arq))));
+
 app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res, arq) => { if (/\.html$/.test(arq)) res.setHeader('Cache-Control', 'no-cache, must-revalidate'); } }));
 // Acesso só ao Estúdio de Vídeo (celular): mesmo sistema, abre direto nas abas de criar/editar vídeo.
 // Pode ser instalado na tela inicial do celular (PWA) e sincroniza com o computador pelo servidor.
