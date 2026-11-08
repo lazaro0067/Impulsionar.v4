@@ -1776,6 +1776,7 @@
   .mag-legenda-d { margin-top:10px; color:#64748b; font-size:12.5px; } .mag-legenda-d summary { cursor:pointer; }
   .mag-este { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px; margin:6px 0 8px; font-size:14px; } .mag-este.ok { background:#f0fdf4; border-color:#bbf7d0; } .mag-este.erro { background:#fef2f2; border-color:#fecaca; color:#991b1b; }
   @media (max-width:700px) { .mag-acoes { width:auto !important; } .mag-ic span { display:none; } .mag-acoes .mag-ic { flex:0 0 auto !important; } }
+  .mtn-ped-probs { margin:6px 0; display:flex; flex-wrap:wrap; gap:6px; align-items:center; } .mtn-ped-probs small { color:#64748b; font-weight:700; } .mtn-ped-probs span { background:#fef3c7; color:#92400e; border-radius:99px; padding:3px 10px; font-size:12.5px; font-weight:700; }
   .mtn-chk { display:flex !important; align-items:center; gap:8px; } .mtn-chk input { width:auto; }
   .mtn-turma { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:14px 16px; margin-bottom:14px; } .mtn-turma-cab { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; } .mtn-turma-cab h3 { margin:0; }
   .mtn-st { font-size:12px; border-radius:99px; padding:3px 10px; background:#e2e8f0; margin-left:6px; vertical-align:middle; } .mtn-st.aberta { background:#dcfce7; color:#166534; } .mtn-st.andamento { background:#dbeafe; color:#1e40af; }
@@ -14366,12 +14367,13 @@ function mtnPedidos() {
 }
 function mtnCartaoPedido(l) {
   const x = mtnDadosLead(l), et = l.etapa || 'novo', etRot = (MTN_ETAPAS.find(e => e[0] === et) || [])[1] || et;
-  const det = [['🎤 Formato', x.formato], ['👥 Participantes', x.participantes], ['📅 Data desejada', x.data], ['👥 Lidera', x.pessoas], ['📊 Raio-X', x.geral != null ? `${x.geral}% · mais fraco em ${x.fraco}` : '']].filter(d => d[1]);
+  const det = [['🎯 Tema', x.tema], ['🏷️ Evento', x.evento], ['🎤 Formato', x.formato + (x.modalidade ? ' · ' + x.modalidade : '')], ['👥 Participantes', x.participantes], ['📅 Data desejada', x.data], ['👥 Lidera', x.pessoas], ['📊 Raio-X', x.geral != null ? `${x.geral}% · mais fraco em ${x.fraco}` : '']].filter(d => d[1] && d[1] !== 'undefined');
   return `<div class="mtn-ped ${et === 'novo' ? 'novo' : ''}">
     <div class="mtn-ped-cab"><span class="mtn-tipo">${MTN_TIPOS[l.tipo] || l.tipo}</span><span class="mtn-ped-et et-${et}">${etRot}</span><small>${escapeHtml(mtnQuando(l.created_at))}${l.origem ? ' · ' + escapeHtml(l.origem) : ''}</small></div>
     <b class="mtn-ped-nome">${escapeHtml(l.nome || '(sem nome)')}${l.empresa ? ` <span>· ${escapeHtml(l.empresa)}</span>` : ''}</b>
     <div class="mtn-ped-contato">${[l.cargo, l.cidade].filter(Boolean).map(escapeHtml).join(' · ')}${l.whatsapp ? ` · 📱 ${escapeHtml(l.whatsapp)}` : ''}${l.email ? ` · ✉️ ${escapeHtml(l.email)}` : ''}</div>
     ${det.length ? `<div class="mtn-ped-det">${det.map(([k, v]) => `<div><small>${k}</small><b>${escapeHtml(String(v))}</b></div>`).join('')}</div>` : ''}
+    ${x.problemas ? `<div class="mtn-ped-probs"><small>🔥 Maior problema hoje:</small> ${x.problemas.split(', ').map(p => `<span>${escapeHtml(p)}</span>`).join('')}</div>` : ''}
     ${l.mensagem && l.tipo !== 'raiox' ? `<p class="mtn-ped-msg">"${escapeHtml(l.mensagem)}"</p>` : ''}
     ${l.notas ? `<p class="mtn-ped-notas">📝 ${escapeHtml(l.notas)}</p>` : ''}
     ${Number(l.valor) && l.tipo === 'empresa' ? `<p class="mtn-ped-valor">💰 ${et === 'fechado' ? 'Fechado' : 'Valor em negociação'}: <b>${mtnMoeda(l.valor)}</b></p>` : ''}
@@ -14388,7 +14390,7 @@ function mtnCartaoPedido(l) {
 function mtnNum(l) { const n = String(l.whatsapp || '').replace(/\D/g, ''); return n.length <= 11 ? '55' + n : n; }
 function mtnTextoResposta(l) {
   const x = mtnDadosLead(l), nome = String(l.nome || '').split(' ')[0], eu = MTN.d.marca.mentor || 'Lázaro', pal = MTN.d.palestra.titulo;
-  if (l.tipo === 'empresa') return `Olá, ${nome}! Aqui é o ${eu}. Recebi seu pedido de proposta da palestra "${pal}"${l.empresa ? ' para a ' + l.empresa : ''}${x.formato ? ` (${x.formato}${x.participantes ? ', ' + x.participantes + ' participantes' : ''}${x.data ? ', ' + x.data : ''})` : ''}. Obrigado pelo contato! Para eu montar a proposta do jeito certo, consegue falar 15 minutos hoje ou amanhã? Quero entender o objetivo do evento e o momento dos líderes.`;
+  if (l.tipo === 'empresa') return `Olá, ${nome}! Aqui é o ${eu}. Recebi seu pedido de proposta da palestra${x.tema ? ' sobre "' + x.tema.replace(/ \(.*\)$/, '') + '"' : ' "' + pal + '"'}${l.empresa ? ' para a ' + l.empresa : ''}${x.formato ? ` (${[x.evento, x.formato, x.participantes ? x.participantes + ' participantes' : '', x.data].filter(Boolean).join(', ')})` : ''}. Obrigado pelo contato!${x.problemas ? ` Vi que hoje o maior desafio é ${x.problemas.toLowerCase().replace(/, ([^,]*)$/, ' e $1')} — vou montar o conteúdo em cima disso.` : ''} Consegue falar 15 minutos hoje ou amanhã para eu entender melhor o cenário e fechar a proposta?`;
   if (l.tipo === 'raiox') return `Olá, ${nome}! Aqui é o ${eu}. Vi o seu Raio-X do Líder${x.geral != null ? ` (${x.geral}%, ponto mais fraco: ${x.fraco})` : ''}. Posso te fazer 3 perguntas rápidas sobre o seu time e te passar o primeiro passo para melhorar isso?`;
   if (l.tipo === 'aula') return `Olá, ${nome}! Aqui é o ${eu}. Sua vaga na aula gratuita está garantida 🙌 Me conta: quantas pessoas você lidera hoje e qual o maior desafio com o time?`;
   return `Olá, ${nome}! Aqui é o ${eu}. Recebi seu interesse na mentoria ${MTN.d.marca.nome}. Me conta da sua operação: quantas pessoas você lidera e qual é hoje o maior desafio com o time?`;
@@ -14406,10 +14408,10 @@ function mtnProposta(id) {
   const of = (d.ofertas || []).find(o => o.codigo === (/in-company|treinamento/i.test(x.formato || '') ? 'incompany' : 'palestra')) || {};
   const valor = Number(l.valor) || Number(of.valor) || 6000;
   const txt = `PROPOSTA — ${/in-company|treinamento/i.test(x.formato || '') ? 'TREINAMENTO IN-COMPANY' : 'PALESTRA'}
-"${p.titulo}"
+"${x.tema && !x.tema.startsWith(p.titulo) && !/sob medida/i.test(x.tema) ? x.tema : p.titulo}"
 Para: ${l.empresa || l.nome}${l.nome && l.empresa ? ' · A/C ' + l.nome + (l.cargo ? ' (' + l.cargo + ')' : '') : ''}
 
-FORMATO: ${x.formato || 'Palestra de 60 min'}${x.participantes ? ' · ' + x.participantes + ' participantes' : ''}${x.data ? ' · ' + x.data : ''}${l.cidade ? ' · ' + l.cidade : ''}
+${x.tema ? 'TEMA: ' + x.tema + '\n' : ''}FORMATO: ${[x.evento, x.formato || 'Palestra de 60 min', x.modalidade].filter(Boolean).join(' · ')}${x.participantes ? ' · ' + x.participantes + ' participantes' : ''}${x.data ? ' · ' + x.data : ''}${l.cidade ? ' · ' + l.cidade : ''}${x.problemas ? '\n\nDESAFIO QUE A EMPRESA TRAZ\n' + x.problemas + (l.mensagem ? '\n' + l.mensagem : '') + '\nO conteúdo será adaptado para atacar diretamente esse ponto, com exemplos práticos da operação.' : ''}
 
 OBJETIVO
 ${p.mensagem}

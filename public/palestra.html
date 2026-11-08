@@ -10,6 +10,15 @@
 <meta property="og:image" content="https://www.impulsionarv4.com.br/mentoria-foto.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/mentoria-estilo.css?v=1">
+<style>
+  .probs { border:1.5px solid var(--linha); border-radius:12px; padding:10px 12px 6px; margin:0; min-width:0; } .probs-op { display:flex; flex-wrap:wrap; gap:6px; }
+  .probs legend { font-size:13px; font-weight:700; padding:0 6px; } .probs legend small { font-weight:500; color:var(--cinza); }
+  .probs label { display:inline-flex !important; width:auto !important; align-items:center; cursor:pointer; margin:0; position:relative; }
+  .probs input { position:absolute; opacity:0; width:1px !important; height:1px; }
+  .probs span { border:1.5px solid var(--linha); border-radius:99px; padding:6px 11px; font-weight:600; font-size:12.5px; white-space:nowrap; background:#fff; transition:.15s; }
+  .probs input:checked + span { background:var(--ambar); border-color:var(--ambar); color:var(--navy); }
+  .probs input:focus-visible + span { box-shadow:0 0 0 4px rgba(245,158,11,.25); }
+</style>
 </head>
 <body>
 <div id="app"><div class="cx" style="padding:80px 20px;text-align:center;color:#64748b;">Carregando…</div></div>
@@ -63,9 +72,22 @@
         <div class="dupla"><label>Seu nome<input name="nome" required autocomplete="name"></label><label>Cargo<input name="cargo" placeholder="Ex.: Analista de RH"></label></div>
         <div class="dupla"><label>Empresa<input name="empresa" required></label><label>Cidade<input name="cidade"></label></div>
         <div class="dupla"><label>WhatsApp (com DDD)<input name="whatsapp" required inputmode="tel"></label><label>E-mail<input name="email" type="email" required></label></div>
-        <div class="dupla"><label>Formato<select name="formato"><option>Palestra de 60 min</option><option>Pocket de 20 min</option><option>Workshop de 4 h</option><option>Treinamento in-company</option></select></label><label>Nº de participantes<input name="participantes" inputmode="numeric"></label></div>
-        <label>Data desejada<input name="data" placeholder="Ex.: SIPAT em março"></label>
-        <label>Conte sobre o evento e o objetivo<textarea name="mensagem" rows="3"></textarea></label>
+        <label>Tema da palestra<select name="tema">
+          <option>${mtEsc(p.titulo)} (liderança e motivação)</option>
+          <option>Indicadores e gestão à vista: o time entendendo o resultado</option>
+          <option>Rotina do líder: saindo do apaga-incêndio</option>
+          <option>Formação de sucessores e novos líderes</option>
+          <option>Segurança e cuidado com as pessoas (SIPAT)</option>
+          <option>Quero um tema sob medida — explico abaixo</option></select></label>
+        <div class="dupla"><label>Tipo de evento<select name="evento"><option>SIPAT</option><option>Convenção / encontro de líderes</option><option>Reunião de resultados</option><option>Treinamento de líderes</option><option>Abertura de evento / integração</option><option>Outro</option></select></label>
+          <label>Formato<select name="formato"><option>Palestra de 60 min</option><option>Pocket de 20 min</option><option>Workshop de 4 h</option><option>Treinamento in-company</option></select></label></div>
+        <div class="dupla"><label>Data desejada<input name="dataEvento" type="date" min="${new Date().toISOString().slice(0, 10)}"></label><label>Horário<input name="horaEvento" type="time" step="900"></label></div>
+        <div class="dupla"><label>Nº de participantes<select name="participantes"><option value="">Selecione</option><option>até 30</option><option>31 a 80</option><option>81 a 150</option><option>151 a 300</option><option>mais de 300</option></select></label>
+          <label>Modalidade<select name="modalidade"><option>Presencial</option><option>Online</option><option>Ainda não sei</option></select></label></div>
+        <fieldset class="probs"><legend>Qual é hoje o maior problema da empresa com os líderes e o time? <small>(pode marcar mais de um)</small></legend><div class="probs-op">
+          ${['Rotatividade alta', 'Time desmotivado', 'Indicadores abaixo da meta', 'Líderes sem preparo', 'Falta de rotina e processos', 'Acidentes e segurança', 'Comunicação ruim', 'Conflito entre áreas'].map(x => `<label><input type="checkbox" value="${x}"><span>${x}</span></label>`).join('')}</div>
+        </fieldset>
+        <label>Conte mais sobre esse problema e o objetivo do evento<textarea name="mensagem" rows="3" placeholder="Ex.: a rotatividade dos conferentes passou de 8% ao mês e os supervisores não conseguem dar feedback..."></textarea></label>
         <input class="hp" name="site" tabindex="-1" autocomplete="off">
         <div class="msg-area"></div>
         <button class="bt ambar cheio" type="submit">Pedir proposta</button>
@@ -77,7 +99,10 @@
 async function mtPedirPalestra(ev) {
   ev.preventDefault(); const f = ev.target;
   try {
-    await mtEnviar(f, '/api/public/mentoria/lead', { tipo: 'empresa', origem: 'pagina-palestra' });
+    const g = n => (f.querySelector(`[name=${n}]`) || {}).value || '', dt = g('dataEvento'), hr = g('horaEvento');
+    const problemas = [...f.querySelectorAll('.probs input:checked')].map(x => x.value).join(', ');
+    const data = dt ? dt.split('-').reverse().join('/') + (hr ? ' às ' + hr : '') : (hr ? 'horário ' + hr : '');
+    await mtEnviar(f, '/api/public/mentoria/lead', { tipo: 'empresa', origem: 'pagina-palestra', data, dataIso: dt, hora: hr, problemas });
     f.innerHTML = `<div class="msg ok" style="font-size:16px;">✅ Pedido recebido! O Lázaro vai te enviar a proposta em até 1 dia útil.</div>${mtWhats() ? `<a class="bt ambar cheio" style="margin-top:12px;" href="${mtWhats('Olá, Lázaro! Acabei de pedir uma proposta de palestra pelo site.')}" target="_blank" rel="noopener">💬 Adiantar pelo WhatsApp</a>` : ''}`;
   } catch (e) {}
 }

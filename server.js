@@ -13205,7 +13205,7 @@ app.post('/api/public/mentoria/lead', async (req, res) => {
     if (mtTxt(b.nome).length < 2 || (mtTxt(b.whatsapp).replace(/\D/g, '').length < 10 && !/@/.test(mtTxt(b.email)))) return res.status(400).json({ error: 'Informe seu nome e um WhatsApp (com DDD) ou e-mail.' });
     if (b.site) return res.json({ ok: true }); // armadilha anti-robô
     try {
-        const extra = { participantes: mtTxt(b.participantes, 40), data: mtTxt(b.data, 40), formato: mtTxt(b.formato, 60), pessoas: mtTxt(b.pessoas, 40) };
+        const extra = { participantes: mtTxt(b.participantes, 40), data: mtTxt(b.data, 40), formato: mtTxt(b.formato, 60), pessoas: mtTxt(b.pessoas, 40), tema: mtTxt(b.tema, 140), evento: mtTxt(b.evento, 80), modalidade: mtTxt(b.modalidade, 40), problemas: mtTxt(b.problemas, 400), dataIso: /^\d{4}-\d{2}-\d{2}$/.test(b.dataIso || '') ? b.dataIso : '', hora: /^\d{2}:\d{2}$/.test(b.hora || '') ? b.hora : '' };
         const r = await mtRun(`INSERT INTO mentoria_leads (tipo, nome, email, whatsapp, empresa, cargo, cidade, mensagem, origem, etapa, valor, dados) VALUES (?,?,?,?,?,?,?,?,?,'novo',?,?)`,
             [tipo, mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.empresa, 160), mtTxt(b.cargo, 120), mtTxt(b.cidade, 120), mtTxt(b.mensagem, 2000), mtTxt(b.origem || 'site', 60), tipo === 'empresa' ? 6000 : 0, JSON.stringify(extra)]);
         const rot = { aluno: 'Novo interessado na mentoria', empresa: 'Empresa pediu palestra/treinamento', aula: 'Nova inscrição na aula gratuita', raiox: 'Novo Raio-X do Líder', contato: 'Novo contato' }[tipo];
