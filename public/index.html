@@ -37,7 +37,7 @@
   .lg-hero h1 { font-size:clamp(30px, 3.4vw, 44px); line-height:1.08; font-weight:900; color:#fff; margin:0 0 14px; letter-spacing:-.5px; } .lg-hero h1 em { font-style:normal; background:linear-gradient(90deg,#4ade80,#2dd4bf); -webkit-background-clip:text; background-clip:text; color:transparent; }
   .lg-hero > p { color:#94a3b8; font-size:16px; margin:0 0 26px; line-height:1.5; }
   .lg-hero ul { list-style:none; padding:0; margin:0; display:grid; gap:12px; }
-  .lg-hero li { display:flex; gap:12px; align-items:center; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px 14px; }
+  .lg-hero li a { display:flex; gap:12px; align-items:center; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px 14px; text-decoration:none; color:inherit; transition:background .15s, border-color .15s, transform .15s; } .lg-hero li a:hover { background:rgba(74,222,128,.08); border-color:rgba(74,222,128,.35); transform:translateX(3px); } .lg-hero li a > div { flex:1; } .lg-hero li i { font-style:normal; color:#4ade80; font-weight:800; }
   .lg-hero li span { font-size:22px; } .lg-hero li b { display:block; color:#fff; font-size:14px; } .lg-hero li small { color:#94a3b8; font-size:12.5px; }
   html:not(.estudio) #tela-login .card-login { position:relative; z-index:1; max-width:420px; background:rgba(15,23,42,.72); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,.1); border-radius:22px; padding:34px 32px; color:#e2e8f0; box-shadow:0 30px 80px rgba(0,0,0,.45); }
   html:not(.estudio) #tela-login .card-login label { color:#cbd5e1; font-weight:600; }
@@ -1866,9 +1866,9 @@
     <h1>Processos que funcionam.<br><em>Pessoas que crescem.</em></h1>
     <p>A plataforma que une gestão de processos, desenvolvimento de líderes e resultado — num lugar só.</p>
     <ul>
-      <li><span>📊</span><div><b>Gestão & DPO</b><small>Consultoria por pilar, auditorias e planos de ação</small></div></li>
-      <li><span>🎯</span><div><b>Desenvolvimento de pessoas</b><small>PDI, trilhas, mentorias e Competence Check</small></div></li>
-      <li><span>🚀</span><div><b>Conteúdo que vende</b><small>Estúdio de vídeo com IA e agenda do Instagram</small></div></li>
+      <li><a href="/mentoria" target="_blank" rel="noopener"><span>🚀</span><div><b>Mentorias</b><small>Do Chão à Gestão: 12 semanas para líderes de operação</small></div><i>↗</i></a></li>
+      <li><a href="/palestra" target="_blank" rel="noopener"><span>🎤</span><div><b>Palestras</b><small>Quem Move Pessoas, Move Resultados — SIPAT, convenções e eventos</small></div><i>↗</i></a></li>
+      <li><a href="/palestra#contratar" target="_blank" rel="noopener"><span>👥</span><div><b>Desenvolvimento do time</b><small>Treinamento in-company, PDI, trilhas e acompanhamento de líderes</small></div><i>↗</i></a></li>
     </ul>
   </div>
   <div class="card-login">
