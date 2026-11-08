@@ -13103,6 +13103,7 @@ async function mtLer() {
     // completa com o padrão o que ainda não existe (sem apagar o que o Lázaro editou)
     const out = JSON.parse(JSON.stringify(MT_PADRAO));
     Object.keys(d).forEach(k => { if (d[k] !== undefined && d[k] !== null) out[k] = (typeof d[k] === 'object' && !Array.isArray(d[k]) && typeof out[k] === 'object' && !Array.isArray(out[k])) ? Object.assign(out[k], d[k]) : d[k]; });
+    if (!out.marca.fotoUrl) out.marca.fotoUrl = MT_PADRAO.marca.fotoUrl; // sem foto escolhida: usa a foto oficial
     return out;
 }
 async function mtSalvar(d) { await mtRun(`INSERT INTO mentoria_negocio (id, dados, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET dados = excluded.dados, updated_at = CURRENT_TIMESTAMP`, [JSON.stringify(d)]); }

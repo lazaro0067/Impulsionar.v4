@@ -1713,6 +1713,10 @@
   .mtn-gancho { background:#fffbeb; border-radius:8px; padding:8px 10px; margin:6px 0; font-weight:600; }
   .mtn-grav details { margin:6px 0 8px; } .mtn-grav summary { cursor:pointer; font-weight:700; color:#2563eb; font-size:13px; }
   .mtn-grav details p { margin:8px 0; } .mtn-grav details p span { display:block; font-size:11px; font-weight:800; color:#d97706; text-transform:uppercase; }
+
+  .mtn-foto { display:flex; gap:14px; align-items:flex-start; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:14px; padding:12px; margin:6px 0 10px; }
+  .mtn-foto-prev { position:relative; flex:0 0 96px; width:96px; height:120px; border-radius:12px; overflow:hidden; background:#e2e8f0; display:grid; place-items:center; font-size:30px; }
+  .mtn-foto-prev img { width:100%; height:100%; object-fit:cover; object-position:top; } .mtn-foto-prev i { position:absolute; inset:auto 0 0 0; background:rgba(15,23,42,.75); color:#fff; font-size:11px; font-style:normal; text-align:center; padding:3px; }
   .mtn-pal-cab { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
   .mtn-fala { background:#fffbeb; border-left:4px solid #f59e0b; padding:10px 12px; border-radius:8px; font-style:italic; }
   @media (max-width: 760px) { .mtn-kanban { grid-template-columns:repeat(5, 82vw); } }
@@ -14421,7 +14425,12 @@ function mtnConfig() {
   const d = MTN.d, m = d.marca, a = d.links.proximaAula || {}, c = (k, r, ph) => `<label>${r}<input id="mtc-${k}" value="${escapeHtml(m[k] || '')}" placeholder="${escapeHtml(ph || '')}"></label>`;
   return `<div class="mtn-bloco"><h3>👤 Você e a marca</h3><div class="mtn-form">${c('nome', 'Nome da mentoria')}${c('mentor', 'Seu nome público')}${c('titulo', 'Título curto', 'Liderança que move operações')}${c('whatsapp', 'WhatsApp (com DDD)', '64999990000')}${c('instagram', 'Instagram', '@seuperfil')}${c('email', 'E-mail de contato')}${c('linkedin', 'LinkedIn (link)')}
       <label>Vídeo da página da mentoria (link)<input id="mtc-videoUrl" value="${escapeHtml(m.videoUrl || '')}" placeholder="Preenchido sozinho pela aba Gravações"></label><label>Vídeo da página da palestra (link)<input id="mtc-videoPalestra" value="${escapeHtml(m.videoPalestra || '')}"></label>
-      <label>Foto (link da imagem)<span style="display:flex;gap:6px;"><input id="mtc-fotoUrl" value="${escapeHtml(m.fotoUrl || '')}" placeholder="https://…"><button class="btn-secundario btn-sm" onclick="document.getElementById('mtc-foto-arq').click()">Enviar</button></span><input type="file" id="mtc-foto-arq" accept="image/*" hidden onchange="mtnEnviarFoto(this)"></label></div>
+      </div>
+      <div class="mtn-foto"><div class="mtn-foto-prev" id="mtc-foto-prev">${m.fotoUrl ? `<img src="${escapeHtml(m.fotoUrl)}" alt="">` : '<span>📷</span>'}</div>
+        <div><b>Sua foto (aparece nas páginas, na bio e na palestra)</b><p class="plano-meta" style="margin:4px 0 8px;">Use uma foto vertical, de boa qualidade (de preferência acima de 1000 px de altura).</p>
+        <div class="mtn-link-bt"><button class="btn-primario btn-sm" style="width:auto;" onclick="document.getElementById('mtc-foto-arq').click()">📷 Carregar foto do computador ou celular</button>${m.fotoUrl ? `<a class="btn-secundario btn-sm" href="${escapeHtml(m.fotoUrl)}" target="_blank" rel="noopener">Ver</a>` : ''}</div>
+        <input type="file" id="mtc-foto-arq" accept="image/*" hidden onchange="mtnEnviarFoto(this)">
+        <details style="margin-top:8px;"><summary class="plano-meta" style="cursor:pointer;">ou colar o link de uma imagem</summary><input id="mtc-fotoUrl" value="${escapeHtml(m.fotoUrl || '')}" placeholder="https://…" style="margin-top:6px;"></details></div></div>
       <label>Frase de posicionamento<textarea id="mtc-frase" rows="2">${escapeHtml(m.frase || '')}</textarea></label>
       <button class="btn-primario" style="width:auto;" onclick="mtnSalvarMarca()">Salvar</button></div>
     <div class="mtn-bloco"><h3>🔴 Aula gratuita e links</h3><div class="mtn-form"><label>Data e hora da próxima aula<input id="mtc-aula-data" type="datetime-local" value="${escapeHtml(a.data || '')}"></label><label>Tema<input id="mtc-aula-tema" value="${escapeHtml(a.tema || '')}"></label>
@@ -14439,9 +14448,15 @@ async function mtnSalvarLinks() { const l = Object.assign({}, MTN.d.links, { wha
 async function mtnSalvarPrecos() { const of = MTN.d.ofertas.map((o, i) => Object.assign({}, o, { preco: mtnV('mto-p-' + i), valor: Number(String(mtnV('mto-v-' + i)).replace(/\D/g, '')) || 0 })); if (await mtnSalvarDados({ ofertas: of, metaMensal: Number(mtnV('mtc-meta')) || 50000, pagamentoOnline: document.getElementById('mtc-pg').checked })) mtnDesenhar(); }
 async function mtnRestaurar(campo) { if (!confirm('Voltar esta parte ao texto original do plano? O que você editou nela será substituído.')) return; try { const r = await api('/api/admin/mentoria/restaurar-padrao', { method: 'POST', body: JSON.stringify({ campo }) }); MTN.d = r.dados; mostrarToast('↩️ Restaurado.'); mtnDesenhar(); } catch (e) { mostrarToast(e.message, true); } }
 async function mtnEnviarFoto(inp) {
-  const f = inp.files && inp.files[0]; if (!f) return; const fd = new FormData(); fd.append('file', f);
-  try { const r = await fetch('/api/admin/estudio/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd }); const j = await r.json(); if (!r.ok) throw new Error(j.error || 'Falha no envio'); document.getElementById('mtc-fotoUrl').value = j.url; mostrarToast('📷 Foto enviada — clique em Salvar.'); }
-  catch (e) { mostrarToast(e.message, true); }
+  const f = inp.files && inp.files[0]; inp.value = ''; if (!f) return;
+  if (!/^image\//.test(f.type)) return mostrarToast('Escolha um arquivo de imagem (JPG ou PNG).', true);
+  const prev = document.getElementById('mtc-foto-prev'); if (prev) prev.innerHTML = `<img src="${URL.createObjectURL(f)}" alt=""><i>Enviando…</i>`;
+  try {
+    const fd = new FormData(); fd.append('file', f, f.name || 'foto.jpg');
+    const r = await fetch('/api/admin/estudio/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd }); const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.url) throw new Error(j.error || 'Falha no envio da foto');
+    if (await mtnSalvarDados({ marca: Object.assign({}, MTN.d.marca, { fotoUrl: j.url }) }, true)) { mostrarToast('📷 Foto atualizada nas páginas!'); mtnDesenhar(); }
+  } catch (e) { mostrarToast(e.message, true); if (prev) prev.innerHTML = MTN.d.marca.fotoUrl ? `<img src="${escapeHtml(MTN.d.marca.fotoUrl)}" alt="">` : '<span>📷</span>'; }
 }
 async function renderChavesIntegracoes() {
   const cont = document.getElementById('conteudo'); cont.innerHTML = '<h1>🔑 Chaves e integrações</h1><p>Carregando…</p>';
