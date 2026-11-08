@@ -9350,7 +9350,7 @@ function gerarCheckLocalMt(modulos, qtd, abertas) {
 // Configurações do Ministrar Treinamento: redes da Impulsionar (aparecem no fim) e chave da IA.
 const CHAVES_CFG_MT = ['consultor_instagram', 'impulsionar_instagram', 'impulsionar_whatsapp', 'impulsionar_site', 'impulsionar_instagram_link', 'impulsionar_whatsapp_link', 'anthropic_api_key', 'anthropic_model'];
 function divulgacaoMt(cfg) {
-    const insta = cfg.impulsionar_instagram || '@impulsionarv4', zap = cfg.impulsionar_whatsapp || '(61) 9396-4750', consultor = cfg.consultor_instagram || '@lazaroneto.oficial';
+    const insta = cfg.impulsionar_instagram || '@impulsionarv4', zap = cfg.impulsionar_whatsapp || '(61) 99396-4750', consultor = cfg.consultor_instagram || '@lazaroneto.oficial';
     const dig = zap.replace(/\D/g, '');
     return { instagram: insta, whatsapp: zap, site: cfg.impulsionar_site || 'impulsionarv4.com.br', consultor, consultorLink: 'https://instagram.com/' + consultor.replace(/^@/, ''),
         instagramLink: cfg.impulsionar_instagram_link || (insta ? 'https://instagram.com/' + insta.replace(/^@/, '') : ''),
@@ -12901,7 +12901,7 @@ const MT_PADRAO = {
         frase: 'Eu comecei carregando caixa em 2013. Hoje lidero operações com centenas de pessoas. Eu ensino líderes a fazer o time render, sem gritar e sem perder o controle da operação.',
         promessa: 'Transformar líderes de operação em líderes que entregam resultado através das pessoas.',
         central: 'Quem move pessoas, move resultados.',
-        instagram: 'lazaroneto.oficial', instagramEmpresa: 'impulsionarv4', empresa: 'Impulsionar V4', cargo: 'Consultor', whatsapp: '(61) 9396-4750', email: '', linkedin: '', fotoUrl: '/mentoria-foto.jpg', videoUrl: '', videoPalestra: ''
+        instagram: 'lazaroneto.oficial', instagramEmpresa: 'impulsionarv4', empresa: 'Impulsionar V4', cargo: 'Consultor', whatsapp: '(61) 99396-4750', email: '', linkedin: '', fotoUrl: '/mentoria-foto.jpg', videoUrl: '', videoPalestra: ''
     },
     historia: [
         { fase: '2013', cargo: 'Ajudante de distribuição', licao: 'Como o time da ponta enxerga o líder' },
@@ -13135,6 +13135,7 @@ async function mtLer() {
     Object.keys(d).forEach(k => { if (d[k] !== undefined && d[k] !== null) out[k] = (typeof d[k] === 'object' && !Array.isArray(d[k]) && typeof out[k] === 'object' && !Array.isArray(out[k])) ? Object.assign(out[k], d[k]) : d[k]; });
     if (!out.marca.fotoUrl) out.marca.fotoUrl = MT_PADRAO.marca.fotoUrl;
     if (out.marca.mentor === 'Lázaro Salles') out.marca.mentor = 'Lázaro Neto'; // nome público escolhido
+    if (out.marca.whatsapp === '(61) 9396-4750') out.marca.whatsapp = '(61) 99396-4750'; // número com o 9
     ['instagram', 'instagramEmpresa', 'empresa', 'cargo', 'whatsapp'].forEach(k => { if (!out.marca[k]) out.marca[k] = MT_PADRAO.marca[k]; }); // marca Impulsionar V4
     if (out.funil && /^Olá, \[nome\]\. Sou o Lázaro, gestor/.test(out.funil.scriptEmpresa || '')) out.funil.scriptEmpresa = MT_PADRAO.funil.scriptEmpresa;
     if (out.instagram && typeof out.instagram.bio === 'string') out.instagram.bio = out.instagram.bio.replace('Lázaro Salles', 'Lázaro Neto'); // sem foto escolhida: usa a foto oficial
