@@ -1704,6 +1704,15 @@
   .mtn-pre { white-space:pre-wrap; background:#f8fafc; border-radius:10px; padding:10px; font-family:inherit; font-size:14px; }
   .mtn-reels { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:10px; }
   .mtn-reel { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px; font-size:14px; } .mtn-reel p { margin:6px 0; } .mtn-reel p span { display:block; font-size:11px; font-weight:800; color:#d97706; text-transform:uppercase; }
+
+  .mtn-gravs { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:10px; }
+  .mtn-grav { background:#fff; border:1px solid #e2e8f0; border-left:5px solid #cbd5e1; border-radius:14px; padding:12px 14px; font-size:14px; }
+  .mtn-grav.criado { border-left-color:#f59e0b; } .mtn-grav.grav { border-left-color:#2563eb; } .mtn-grav.exp, .mtn-grav.ag { border-left-color:#7c3aed; } .mtn-grav.pub { border-left-color:#16a34a; }
+  .mtn-grav-cab { display:flex; justify-content:space-between; margin-bottom:6px; } .mtn-grav > b { font-size:16px; display:block; }
+  .mtn-grav-st { font-size:12px; font-weight:700; color:#475569; margin:2px 0 6px; }
+  .mtn-gancho { background:#fffbeb; border-radius:8px; padding:8px 10px; margin:6px 0; font-weight:600; }
+  .mtn-grav details { margin:6px 0 8px; } .mtn-grav summary { cursor:pointer; font-weight:700; color:#2563eb; font-size:13px; }
+  .mtn-grav details p { margin:8px 0; } .mtn-grav details p span { display:block; font-size:11px; font-weight:800; color:#d97706; text-transform:uppercase; }
   .mtn-pal-cab { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
   .mtn-fala { background:#fffbeb; border-left:4px solid #f59e0b; padding:10px 12px; border-radius:8px; font-style:italic; }
   @media (max-width: 760px) { .mtn-kanban { grid-template-columns:repeat(5, 82vw); } }
@@ -14172,11 +14181,11 @@ async function renderMentoriaNegocio() {
   mtnDesenhar();
 }
 function mtnDesenhar() {
-  const cont = document.getElementById('conteudo'), d = MTN.d, abas = [['painel', '🏁 Painel'], ['funil', '🧲 Funil de vendas'], ['turmas', '🎓 Turmas'], ['conteudo', '📚 Método e conteúdo'], ['palestra', '🎤 Palestra'], ['config', '⚙️ Configurações']];
+  const cont = document.getElementById('conteudo'), d = MTN.d, abas = [['painel', '🏁 Painel'], ['gravar', '🎬 Gravações'], ['funil', '🧲 Funil de vendas'], ['turmas', '🎓 Turmas'], ['conteudo', '📚 Método e conteúdo'], ['palestra', '🎤 Palestra'], ['config', '⚙️ Configurações']];
   cont.innerHTML = `<div class="mtn"><div class="mtn-cab"><div><h1 style="margin:0;">🚀 ${escapeHtml(d.marca.nome)}</h1><p class="plano-meta" style="margin:4px 0 0;">${escapeHtml(d.marca.mentor)} · ${escapeHtml(d.marca.titulo)} — mentoria, palestras e o plano de 90 dias num lugar só.</p></div>
     <div class="mtn-acoes"><a class="btn-secundario" href="/mentoria" target="_blank" rel="noopener">👁️ Ver página de venda</a><a class="btn-primario" style="width:auto;" href="/palestra/apresentar" target="_blank" rel="noopener">▶️ Apresentar palestra</a></div></div>
     <nav class="mtn-abas">${abas.map(([k, r]) => `<button class="${MTN.aba === k ? 'on' : ''}" onclick="MTN.aba='${k}'; mtnDesenhar()">${r}</button>`).join('')}</nav>
-    <div id="mtn-corpo">${({ painel: mtnPainel, funil: mtnFunil, turmas: mtnTurmas, conteudo: mtnConteudo, palestra: mtnPalestra, config: mtnConfig }[MTN.aba] || mtnPainel)()}</div></div>`;
+    <div id="mtn-corpo">${({ painel: mtnPainel, gravar: mtnGravacoes, funil: mtnFunil, turmas: mtnTurmas, conteudo: mtnConteudo, palestra: mtnPalestra, config: mtnConfig }[MTN.aba] || mtnPainel)()}</div></div>`;
 }
 // ---------- 🏁 Painel ----------
 function mtnPainel() {
@@ -14341,7 +14350,8 @@ function mtnConteudo() {
       <h3 style="margin-top:14px;">Frequência mínima</h3><ul>${ig.frequencia.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul></div>
     <div class="mtn-bloco"><h3>Calendário semanal</h3><table class="mtn-tab">${ig.calendario.map(c => `<tr><td><b>${escapeHtml(c.dia)}</b></td><td>${escapeHtml(c.formato)}</td><td>${escapeHtml(c.linha)}</td></tr>`).join('')}</table>
       <h3 style="margin-top:14px;">4 linhas de conteúdo</h3><ul>${ig.linhas.map(l => `<li><b>${escapeHtml(l.linha)}</b> — ${escapeHtml(l.objetivo)}: ${escapeHtml(l.exemplos)}</li>`).join('')}</ul></div></div>
-    <h3 class="mtn-h2" style="font-size:18px;">🎬 Roteiros de reels prontos para gravar</h3>
+    <div class="mtn-aviso">🎬 Os roteiros completos das 4 semanas (16 reels + vídeo de vendas e convites), já divididos em partes para o teleprompter, estão na aba <a href="#" onclick="MTN.aba='gravar'; mtnDesenhar(); return false;">🎬 Gravações</a>.</div>
+    <h3 class="mtn-h2" style="font-size:18px;">🎬 Os 5 reels do plano original</h3>
     <div class="mtn-reels">${ig.reels.map((r, i) => `<div class="mtn-reel"><b>${escapeHtml(r.titulo)}</b><p><span>Gancho (0–3 s)</span>${escapeHtml(r.gancho)}</p><p><span>Conteúdo</span>${escapeHtml(r.conteudo)}</p><p><span>Chamada</span>${escapeHtml(r.chamada)}</p>
       <div class="mtn-link-bt"><button class="btn-primario btn-sm" style="width:auto;" onclick="mtnGravarReel(${i})">🎬 Gravar no Estúdio</button><button class="btn-secundario btn-sm" onclick="mtnCopiar(mtnRoteiroReel(${i}))">Copiar roteiro</button></div></div>`).join('')}</div>
     <div class="mtn-bloco"><h3>🎥 Dicas de gravação</h3><ul>${ig.dicas.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul></div>
@@ -14354,6 +14364,46 @@ function mtnGravarReel(i) {
   const r = MTN.d.instagram.reels[i];
   if (typeof igAbrirGravacao === 'function') return igAbrirGravacao(r.titulo, mtnRoteiroReel(i), `${r.gancho}\n\n${r.chamada}`, MTN.d.instagram.hashtags, () => {});
   mtnCopiar(mtnRoteiroReel(i)); irPara('estudioVideo');
+}
+// ---------- 🎬 Gravações: cada vídeo do plano já com roteiro dividido em partes, pronto para o teleprompter do Estúdio ----------
+function mtnRoteiroGravacao(g) { return (g.partes || []).map(([t, x]) => `[${t}]\n${x}`).join('\n\n'); }
+async function mtnCarregarProjetos() { try { const l = await api('/api/admin/estudio/projetos'); MTN.projetos = Object.fromEntries((l || []).map(p => [p.id, p])); } catch (e) { MTN.projetos = {}; } }
+function mtnStatusGravacao(g) {
+  const pid = (MTN.d.projetosGravacao || {})[g.id], p = pid && (MTN.projetos || {})[pid];
+  if (pid && !p && MTN.projetos) return { id: null, rot: '', cls: '' }; // o projeto foi excluído no Estúdio
+  if (!p) return { id: pid || null, rot: pid ? '🎬 Projeto criado' : '⏺️ Para gravar', cls: pid ? 'criado' : '' };
+  if (p.status === 'publicado') return { id: p.id, rot: '✅ Publicado', cls: 'pub', p };
+  if (p.status === 'agendado') return { id: p.id, rot: '🗓️ Agendado', cls: 'ag', p };
+  if (p.video_url && p.video_existe) return { id: p.id, rot: '📦 Exportado', cls: 'exp', p };
+  if (p.qtdClips > 0) return { id: p.id, rot: '🎞️ Gravado — falta editar/exportar', cls: 'grav', p };
+  return { id: p.id, rot: '🎬 Projeto criado — falta gravar', cls: 'criado', p };
+}
+function mtnGravacoes() {
+  if (!MTN.projetos) { mtnCarregarProjetos().then(() => { if (MTN.aba === 'gravar') mtnDesenhar(); }); }
+  const G = MTN.d.gravacoes || [], sem = [...new Set(G.map(g => g.semana))].sort((a, b) => (a || 99) - (b || 99));
+  const feitos = G.filter(g => ['pub', 'ag', 'exp'].includes(mtnStatusGravacao(g).cls)).length;
+  return `<div class="mtn-aviso">🎬 Cada vídeo já tem <b>roteiro dividido em partes</b>, <b>legenda do post</b> e <b>hashtags</b>. Toque em <b>Gravar</b>: o Estúdio cria o projeto, abre a câmera com o <b>teleprompter</b> e você usa <b>🧩 Gravar por partes</b> (uma parte de cada vez, com corte certinho). Depois é só <b>Editar com IA</b> e <b>Publicar/Agendar</b>. Dica: prefira <b>📱 Gravar com a câmera do celular</b> para a melhor qualidade.</div>
+    <div class="mtn-kpis" style="margin-bottom:6px;"><div class="mtn-kpi"><b>${feitos}/${G.length}</b><span>vídeos prontos (exportados, agendados ou publicados)</span></div><div class="mtn-kpi"><b>4</b><span>reels por semana · segunda, quarta, quinta e sábado</span></div></div>
+    ${sem.map(s => `<h2 class="mtn-h2">${s ? `📅 Semana ${s}` : '⭐ Vídeos especiais (páginas e divulgação)'}</h2><div class="mtn-gravs">${G.filter(g => g.semana === s).map(g => { const st = mtnStatusGravacao(g), i = G.indexOf(g); return `<div class="mtn-grav ${st.cls}">
+      <div class="mtn-grav-cab"><span class="mtn-tipo">${escapeHtml(g.dia)} · ${escapeHtml(g.linha)}</span><small>⏱️ ${escapeHtml(g.duracao)}</small></div>
+      <b>${escapeHtml(g.titulo)}</b><div class="mtn-grav-st">${st.rot}</div>
+      <p class="mtn-gancho">"${escapeHtml((g.partes[0] || [])[1] || '')}"</p>
+      <details><summary>Ver roteiro (${g.partes.length} partes) e legenda</summary>${g.partes.map(([t, x]) => `<p><span>${escapeHtml(t)}</span>${escapeHtml(x).replace(/\n/g, '<br>')}</p>`).join('')}<p><span>Legenda do post</span>${escapeHtml(g.legenda).replace(/\n/g, '<br>')}</p>${g.cena ? `<p><span>🎥 Como gravar</span>${escapeHtml(g.cena)}</p>` : ''}</details>
+      <div class="mtn-link-bt">${!st.id ? `<button class="btn-primario btn-sm" style="width:auto;" onclick="mtnGravar(${i})">🎬 Gravar</button>` : `<button class="btn-primario btn-sm" style="width:auto;" onclick="mtnGravar(${i}, 'abrir')">✏️ Abrir no Estúdio</button><button class="btn-secundario btn-sm" onclick="mtnGravar(${i}, 'gravar')">🎬 ${st.cls && st.cls !== 'criado' ? 'Regravar' : 'Gravar'}</button>${['grav', 'exp'].includes(st.cls) ? `<button class="btn-secundario btn-sm" onclick="mtnGravar(${i}, 'postar')">📤 Publicar</button>` : ''}`}
+        <button class="btn-secundario btn-sm" onclick="mtnCopiar(MTN.d.gravacoes[${i}].legenda + '\\n\\n' + (MTN.d.instagram.hashtags || ''))">Copiar legenda</button>
+        ${g.pagina && st.p && st.p.video_url && st.p.video_existe ? `<button class="btn-secundario btn-sm" onclick="mtnUsarNaPagina(${i})">🌐 Colocar na página ${g.pagina === 'palestra' ? 'da palestra' : 'da mentoria'}</button>` : ''}</div></div>`; }).join('')}</div>`).join('')}`;
+}
+async function mtnGravar(i, acao) {
+  const g = MTN.d.gravacoes[i]; if (!g) return; const st = mtnStatusGravacao(g);
+  if (st.id) { await evAbrirEditor(st.id); if (!ES) return; if (acao === 'postar') return evAbrirPublicar(); if (acao === 'gravar') evAbrirCamera(); return; }
+  return igAbrirGravacao(g.titulo, mtnRoteiroGravacao(g), g.legenda, MTN.d.instagram.hashtags, async id => {
+    const mapa = Object.assign({}, MTN.d.projetosGravacao || {}, { [g.id]: id }); await mtnSalvarDados({ projetosGravacao: mapa }, true); MTN.projetos = null;
+  });
+}
+async function mtnUsarNaPagina(i) {
+  const g = MTN.d.gravacoes[i], st = mtnStatusGravacao(g); if (!st.p || !st.p.video_url) return;
+  const campo = g.pagina === 'palestra' ? 'videoPalestra' : 'videoUrl';
+  if (await mtnSalvarDados({ marca: Object.assign({}, MTN.d.marca, { [campo]: st.p.video_url }) })) { mostrarToast(`🌐 Vídeo colocado na página ${g.pagina === 'palestra' ? 'da palestra' : 'da mentoria'}.`); mtnDesenhar(); }
 }
 // ---------- 🎤 Palestra ----------
 function mtnPalestra() {
@@ -14370,6 +14420,7 @@ function mtnPalestra() {
 function mtnConfig() {
   const d = MTN.d, m = d.marca, a = d.links.proximaAula || {}, c = (k, r, ph) => `<label>${r}<input id="mtc-${k}" value="${escapeHtml(m[k] || '')}" placeholder="${escapeHtml(ph || '')}"></label>`;
   return `<div class="mtn-bloco"><h3>👤 Você e a marca</h3><div class="mtn-form">${c('nome', 'Nome da mentoria')}${c('mentor', 'Seu nome público')}${c('titulo', 'Título curto', 'Liderança que move operações')}${c('whatsapp', 'WhatsApp (com DDD)', '64999990000')}${c('instagram', 'Instagram', '@seuperfil')}${c('email', 'E-mail de contato')}${c('linkedin', 'LinkedIn (link)')}
+      <label>Vídeo da página da mentoria (link)<input id="mtc-videoUrl" value="${escapeHtml(m.videoUrl || '')}" placeholder="Preenchido sozinho pela aba Gravações"></label><label>Vídeo da página da palestra (link)<input id="mtc-videoPalestra" value="${escapeHtml(m.videoPalestra || '')}"></label>
       <label>Foto (link da imagem)<span style="display:flex;gap:6px;"><input id="mtc-fotoUrl" value="${escapeHtml(m.fotoUrl || '')}" placeholder="https://…"><button class="btn-secundario btn-sm" onclick="document.getElementById('mtc-foto-arq').click()">Enviar</button></span><input type="file" id="mtc-foto-arq" accept="image/*" hidden onchange="mtnEnviarFoto(this)"></label></div>
       <label>Frase de posicionamento<textarea id="mtc-frase" rows="2">${escapeHtml(m.frase || '')}</textarea></label>
       <button class="btn-primario" style="width:auto;" onclick="mtnSalvarMarca()">Salvar</button></div>
@@ -14380,10 +14431,10 @@ function mtnConfig() {
       <div class="mtn-form"><label>Meta de faturamento mensal (R$)<input id="mtc-meta" type="number" value="${escapeHtml(d.metaMensal || 50000)}"></label>
       <label class="mtn-chk"><input type="checkbox" id="mtc-pg" ${d.pagamentoOnline ? 'checked' : ''}> Cobrar a inscrição online pelo Mercado Pago ${MTN.mp ? '<small style="color:#16a34a">(conectado)</small>' : '<small style="color:#dc2626">(Mercado Pago não configurado — a inscrição vira contato no funil)</small>'}</label></div>
       <button class="btn-primario" style="width:auto;" onclick="mtnSalvarPrecos()">Salvar</button></div>
-    <div class="mtn-bloco"><h3>↩️ Voltar textos ao modelo original</h3><p class="plano-meta">Se quiser recomeçar alguma parte com o conteúdo do plano original:</p><div class="mtn-link-bt">${[['metodo', 'Método'], ['semanas', '12 semanas'], ['instagram', 'Instagram e reels'], ['palestra', 'Palestra'], ['plano90', 'Plano de 90 dias'], ['raioX', 'Raio-X']].map(([k, r]) => `<button class="btn-secundario btn-sm" onclick="mtnRestaurar('${k}')">${r}</button>`).join('')}</div></div>`;
+    <div class="mtn-bloco"><h3>↩️ Voltar textos ao modelo original</h3><p class="plano-meta">Se quiser recomeçar alguma parte com o conteúdo do plano original:</p><div class="mtn-link-bt">${[['metodo', 'Método'], ['semanas', '12 semanas'], ['instagram', 'Instagram e reels'], ['gravacoes', 'Roteiros de gravação'], ['palestra', 'Palestra'], ['plano90', 'Plano de 90 dias'], ['raioX', 'Raio-X']].map(([k, r]) => `<button class="btn-secundario btn-sm" onclick="mtnRestaurar('${k}')">${r}</button>`).join('')}</div></div>`;
 }
 const mtnV = id => (document.getElementById(id) || {}).value;
-async function mtnSalvarMarca() { const m = Object.assign({}, MTN.d.marca); ['nome', 'mentor', 'titulo', 'whatsapp', 'instagram', 'email', 'linkedin', 'fotoUrl', 'frase'].forEach(k => m[k] = String(mtnV('mtc-' + k) || '').trim()); if (await mtnSalvarDados({ marca: m })) mtnDesenhar(); }
+async function mtnSalvarMarca() { const m = Object.assign({}, MTN.d.marca); ['nome', 'mentor', 'titulo', 'whatsapp', 'instagram', 'email', 'linkedin', 'fotoUrl', 'videoUrl', 'videoPalestra', 'frase'].forEach(k => m[k] = String(mtnV('mtc-' + k) || '').trim()); if (await mtnSalvarDados({ marca: m })) mtnDesenhar(); }
 async function mtnSalvarLinks() { const l = Object.assign({}, MTN.d.links, { whatsappGrupo: String(mtnV('mtc-grupo') || '').trim(), proximaAula: { data: mtnV('mtc-aula-data') || '', tema: String(mtnV('mtc-aula-tema') || '').trim(), link: String(mtnV('mtc-aula-link') || '').trim() } }); if (await mtnSalvarDados({ links: l })) mtnDesenhar(); }
 async function mtnSalvarPrecos() { const of = MTN.d.ofertas.map((o, i) => Object.assign({}, o, { preco: mtnV('mto-p-' + i), valor: Number(String(mtnV('mto-v-' + i)).replace(/\D/g, '')) || 0 })); if (await mtnSalvarDados({ ofertas: of, metaMensal: Number(mtnV('mtc-meta')) || 50000, pagamentoOnline: document.getElementById('mtc-pg').checked })) mtnDesenhar(); }
 async function mtnRestaurar(campo) { if (!confirm('Voltar esta parte ao texto original do plano? O que você editou nela será substituído.')) return; try { const r = await api('/api/admin/mentoria/restaurar-padrao', { method: 'POST', body: JSON.stringify({ campo }) }); MTN.d = r.dados; mostrarToast('↩️ Restaurado.'); mtnDesenhar(); } catch (e) { mostrarToast(e.message, true); } }
