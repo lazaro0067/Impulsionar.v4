@@ -7032,7 +7032,7 @@ async function graphMs365(c, metodo, caminho, corpo) {
     const r = await fetch('https://graph.microsoft.com/v1.0' + caminho, { method: metodo, headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', Prefer: 'outlook.timezone="America/Sao_Paulo"' }, body: corpo ? JSON.stringify(corpo) : undefined });
     if (r.status === 204 || r.status === 202) return {};
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error('Microsoft 365: ' + ((j.error && j.error.message) || ('erro ' + r.status)) + (r.status === 403 ? ' — dê ao app a permissão de aplicativo "Calendars.ReadWrite" com consentimento do administrador.' : ''));
+    if (!r.ok) throw Object.assign(new Error('Microsoft 365: ' + ((j.error && j.error.message) || ('erro ' + r.status)) + (j.error && j.error.code ? ' [' + j.error.code + ']' : '') + (r.status === 403 ? ' — dê ao app a permissão de aplicativo "Calendars.ReadWrite" com consentimento do administrador.' : '')), { status: r.status, codigo: j.error && j.error.code });
     return j;
 }
 
@@ -7220,6 +7220,16 @@ app.put('/api/admin/dpo/ms365', requireRole('admin'), async (req, res) => {
         if (ms365Ativo(c) && req.body.testar !== false) {
             try { await graphMs365(c, 'GET', `/users/${encodeURIComponent(c.organizador)}/calendar`); }
             catch (e) {
+                // Lê o token que a Microsoft entregou para dizer exatamente o que falta (permissões e diretório)
+                let diag = '';
+                if (e.status === 401 || e.status === 403) {
+                    try {
+                        const tk = await tokenMs365(c), pl = JSON.parse(Buffer.from(tk.split('.')[1], 'base64url').toString()), roles = pl.roles || [];
+                        if (!roles.some(r => /^Calendars\.ReadWrite/.test(r))) diag = `O login no Azure funcionou ✅, mas o app NÃO tem a permissão de aplicativo Calendars.ReadWrite concedida (permissões atuais: ${roles.length ? roles.join(', ') : 'nenhuma'}). No Azure: Permissões de API › Adicionar › Microsoft Graph › Permissões de APLICATIVO (não "Delegadas") › Calendars.ReadWrite › e clique em "Conceder consentimento do administrador" (precisa ficar com ✅ verde em Status).`;
+                        else diag = `O login e a permissão estão certos ✅, mas o e-mail ${c.organizador} não pertence ao mesmo Microsoft 365 onde o app foi registrado (diretório ${pl.tid}) — ou a TI bloqueou o acesso a essa caixa. Registre o app no Azure da mesma empresa do e-mail (entrando no portal.azure.com com esse e-mail) ou use um e-mail desse diretório.`;
+                    } catch (e2) { /* sem diagnóstico extra */ }
+                }
+                if (diag) { await marcarFalha(true); return res.status(400).json({ error: 'Salvo, mas o teste falhou. ' + diag }); }
                 const m = String(e.message), dica = /AADSTS7000215|invalid client secret/i.test(m) ? 'O segredo está errado: copie a coluna "Valor" do segredo (não o "ID do segredo"). Se não aparecer mais, crie um segredo novo.'
                     : /AADSTS90002|AADSTS900023|tenant/i.test(m) && /AADSTS/.test(m) ? 'O Tenant ID está errado: copie o "ID do diretório (locatário)" da Visão geral do app.'
                     : /AADSTS700016|application with identifier/i.test(m) ? 'O Client ID está errado ou o app é de outro diretório: copie o "ID do aplicativo (cliente)" da Visão geral.'
