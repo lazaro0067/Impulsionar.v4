@@ -13320,7 +13320,7 @@ async function agManuais(uid, de, ate) {
         let d = e.data, n = 0; const fim = e.repetir_ate && e.repetir_ate < ate ? e.repetir_ate : ate;
         const dia0 = Number(e.data.slice(8, 10));
         while (d <= fim && n < 800) {
-            if (d >= de) out.push(Object.assign({ id: `m:${e.id}:${d}`, data: d }, base));
+            if (d >= de && !(e.repetir === 'util' && [0, 6].includes(new Date(d + 'T12:00:00Z').getUTCDay()))) out.push(Object.assign({ id: `m:${e.id}:${d}`, data: d }, base));
             n++;
             if (e.repetir === 'diario') d = agSomarDias(d, 1);
             else if (e.repetir === 'util') { d = agSomarDias(d, 1); while ([0, 6].includes(new Date(d + 'T12:00:00Z').getUTCDay())) d = agSomarDias(d, 1); }
@@ -13467,7 +13467,7 @@ async function agOutlook(cfg, de, ate, forcar) {
             const txt = await r.text(); if (!/BEGIN:VCALENDAR/.test(txt)) throw new Error('O link não é de um calendário (.ics).');
             res = { t: Date.now(), itens: agLerIcs(txt, de, ate) };
         }
-    } catch (e) { res = { t: Date.now(), itens: (c0 && c0.itens) || [], erro: e.message }; }
+    } catch (e) { res = { t: Date.now(), itens: (c0 && c0.itens) || [], erro: /fetch failed|abort|ENOTFOUND|ECONN/i.test(e.message + (e.cause ? ' ' + e.cause.code : '')) ? 'não foi possível acessar o calendário do Outlook agora (link fora do ar ou incorreto).' : e.message }; }
     AG_CACHE_OUTLOOK.set(chave, res);
     if (AG_CACHE_OUTLOOK.size > 60) AG_CACHE_OUTLOOK.delete(AG_CACHE_OUTLOOK.keys().next().value);
     return res;
@@ -13711,9 +13711,9 @@ app.get(['/estudio', '/estudio/'], (req, res) => {
     });
 });
 // App do sistema (Impulsionar V4) para instalar no celular/computador
-app.get(['/app', '/instalar'], (req, res) => res.redirect('/?instalar=1'));
+app.get(['/app', '/instalar', '/baixar'], (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'app.html')));
 app.get('/manifest.webmanifest', (req, res) => {
-    res.set('Cache-Control', 'no-cache').type('application/manifest+json').send(JSON.stringify({ id: '/', name: 'Impulsionar V4 — Gestão & Pessoas', short_name: 'Impulsionar', description: 'Gestão de processos e desenvolvimento de pessoas', start_url: '/?app=1', scope: '/', display: 'standalone', orientation: 'any', background_color: '#0b1329', theme_color: '#0b1329', lang: 'pt-BR',
+    res.set('Cache-Control', 'no-cache').type('application/manifest+json').send(JSON.stringify({ id: '/', name: 'Impulsionar V4 — Gestão & Pessoas', short_name: 'Impulsionar', description: 'Gestão de processos e desenvolvimento de pessoas', start_url: '/?app=1', scope: '/', display: 'standalone', related_applications: [{ platform: 'webapp', url: `https://${req.get('host') || 'www.impulsionarv4.com.br'}/manifest.webmanifest` }], prefer_related_applications: false, orientation: 'any', background_color: '#0b1329', theme_color: '#0b1329', lang: 'pt-BR',
         icons: [192, 512].map(t => ({ src: `/assets/app-icone-${t}.png?v=1`, sizes: `${t}x${t}`, type: 'image/png', purpose: 'any' })).concat([{ src: '/assets/app-icone-maskable-512.png?v=1', sizes: '512x512', type: 'image/png', purpose: 'maskable' }]),
         shortcuts: [{ name: 'Agente de Relatórios', url: '/?app=1#ir=agenteRelatorios', icons: [{ src: '/assets/app-icone-192.png?v=1', sizes: '192x192' }] }, { name: 'Estúdio de Vídeo', url: '/estudio', icons: [{ src: '/assets/estudio-icone-192.png?v=2', sizes: '192x192' }] }] }));
 });

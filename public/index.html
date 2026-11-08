@@ -1609,6 +1609,8 @@
   .lg-app { display:flex; align-items:center; gap:12px; width:100%; margin-top:16px; text-align:left; cursor:pointer; font:inherit; border-radius:14px; padding:12px 14px; border:1px solid rgba(74,222,128,.45); background:rgba(34,197,94,.1); color:#e2e8f0; }
   .lg-app span { font-size:24px; } .lg-app b { display:block; color:#4ade80; font-size:14px; } .lg-app small { color:#94a3b8; font-size:12px; } .lg-app[hidden] { display:none; }
   html.estudio .lg-app { display:none !important; }
+  .lg-app.ok { cursor:default; border-color:rgba(148,163,184,.3); background:rgba(148,163,184,.08); } .lg-app.ok b { color:#e2e8f0; }
+  .lg-versao { text-align:center; color:#64748b; font-size:11px; margin-top:14px; } html.estudio .lg-versao { display:none; }
   .app-caixa .sec { background:#fff !important; color:#0b1329 !important; border:1px solid #cbd5e1 !important; margin-top:8px; }
   .app-caixa .nunca { display:block; text-align:center; margin-top:12px; color:#64748b; font-size:12px; }
   .app-modal { position:fixed; inset:0; z-index:20500; background:rgba(2,6,23,.6); display:flex; align-items:flex-end; justify-content:center; padding:12px; }
@@ -1911,7 +1913,8 @@
       <div id="erro-login"></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
-      <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()" hidden><span>📲</span><div><b>Instalar o app Impulsionar</b><small>Abra direto da tela do celular, em tela cheia</small></div></button>
+      <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
+      <div class="lg-versao">Impulsionar V4 · atualização 08/11 (3)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -28334,7 +28337,14 @@ const appEhIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigat
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); APP.prompt = e; appAtualizarBotao(); });
 window.addEventListener('appinstalled', () => { APP.prompt = null; appAtualizarBotao(); const b = document.getElementById('app-banner'); if (b) b.remove(); mostrarToast('📲 Impulsionar instalado! Abra pelo ícone na tela do celular.'); });
-function appAtualizarBotao() { const oculto = appInstalado() || !(APP.prompt || appEhIos() || evCelularAquiApp()); ['btn-instalar-app', 'btn-app-login'].forEach(id => { const b = document.getElementById(id); if (b) b.hidden = oculto; }); }
+function appAtualizarBotao() {
+  const noApp = appInstalado();
+  const s = document.getElementById('btn-instalar-app'); if (s) s.hidden = noApp;
+  const b = document.getElementById('btn-app-login'); if (!b) return;
+  b.hidden = false; b.classList.toggle('ok', noApp); b.onclick = noApp ? null : appInstalar;
+  b.innerHTML = noApp ? '<span>✅</span><div><b>Você já está no app Impulsionar</b><small>Ele fica na tela inicial do celular, com o ícone V4</small></div>'
+    : `<span>📲</span><div><b>Baixar o app Impulsionar</b><small>${evCelularAquiApp() || appEhIos() ? 'Instale no celular: ícone na tela inicial, abre em tela cheia' : 'Instale no computador ou abra este site no celular'}</small></div>`;
+}
 function evCelularAquiApp() { return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent); }
 appAtualizarBotao(); window.addEventListener('load', appAtualizarBotao); // mostra o "Instalar o app" já na tela de login
 const appNavegadorInterno = () => /Instagram|FBAN|FBAV|FB_IAB|Line\/|LinkedInApp|TikTok|musical_ly|Snapchat|; wv\)/i.test(navigator.userAgent);
@@ -28348,11 +28358,11 @@ async function appInstalar() {
     document.body.appendChild(m); return;
   }
   if (APP.prompt) { APP.prompt.prompt(); const r = await APP.prompt.userChoice.catch(() => ({})); if (r.outcome === 'accepted') APP.prompt = null; appAtualizarBotao(); return; }
-  const ios = appEhIos();
+  const ios = appEhIos(), pc = !ios && !evCelularAquiApp();
   const m = document.createElement('div'); m.className = 'app-modal'; m.onclick = e => { if (e.target === m) m.remove(); };
-  m.innerHTML = `<div class="app-caixa"><img src="/assets/app-icone-192.png?v=1" alt=""><h3>Instalar o Impulsionar no celular</h3>
-    ${ios ? `<ol><li>Abra este link no <b>Safari</b>.</li><li>Toque em <b>Compartilhar</b> <span class="app-ic">⬆️</span> (barra de baixo).</li><li>Role e toque em <b>“Adicionar à Tela de Início”</b>.</li><li>Toque em <b>Adicionar</b> — o ícone do Impulsionar aparece na tela do celular.</li></ol>`
-      : `<ol><li>Abra este link no <b>Chrome</b> (ou Edge/Samsung Internet).</li><li>Toque no menu <b>⋮</b> (canto de cima).</li><li>Toque em <b>“Instalar app”</b> ou <b>“Adicionar à tela inicial”</b>.</li><li>Confirme — o ícone do Impulsionar aparece na tela do celular.</li></ol>`}
+  m.innerHTML = `<div class="app-caixa"><img src="/assets/app-icone-192.png?v=1" alt=""><h3>${pc ? 'Instalar o Impulsionar' : 'Instalar o Impulsionar no celular'}</h3>
+    ${pc ? `<ol><li><b>No celular:</b> abra <b>impulsionarv4.com.br/app</b> no Chrome (Android) ou no Safari (iPhone) e toque em <b>Baixar o app</b>.</li><li><b>Neste computador (Chrome ou Edge):</b> clique no ícone de instalar <span class="app-ic">⊕</span> na barra de endereço, ou no menu <b>⋮</b> › <b>Transmitir, salvar e compartilhar</b> › <b>Instalar página como app</b>.</li></ol>` : ios ? `<ol><li>Abra este link no <b>Safari</b>.</li><li>Toque em <b>Compartilhar</b> <span class="app-ic">⬆️</span> (barra de baixo).</li><li>Role e toque em <b>“Adicionar à Tela de Início”</b>.</li><li>Toque em <b>Adicionar</b> — o ícone do Impulsionar aparece na tela do celular.</li></ol>`
+      : `<ol><li>Abra este link no <b>Chrome</b> (ou Edge/Samsung Internet).</li><li>Toque no menu <b>⋮</b> (canto de cima).</li><li>Toque em <b>“Instalar app”</b> ou <b>“Adicionar à tela inicial”</b>.</li><li>Confirme — o ícone do Impulsionar aparece na tela do celular.</li></ol><p>Se no menu aparecer <b>“Abrir app”</b>, ele já está instalado: procure o ícone <b>Impulsionar</b> na tela inicial.</p>`}
     <p>Depois é só tocar no ícone: abre direto, em tela cheia, já logado.</p><button onclick="this.closest('.app-modal').remove()">Entendi</button></div>`;
   document.body.appendChild(m);
 }
