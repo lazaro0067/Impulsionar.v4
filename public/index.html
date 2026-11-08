@@ -1780,6 +1780,20 @@
   .mag-este { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px; margin:6px 0 8px; font-size:14px; } .mag-este.ok { background:#f0fdf4; border-color:#bbf7d0; } .mag-este.erro { background:#fef2f2; border-color:#fecaca; color:#991b1b; }
   @media (max-width:700px) { .mag-acoes { width:auto !important; } .mag-ic span { display:none; } .mag-acoes .mag-ic { flex:0 0 auto !important; } }
   .mtn-ped-probs { margin:6px 0; display:flex; flex-wrap:wrap; gap:6px; align-items:center; } .mtn-ped-probs small { color:#64748b; font-weight:700; } .mtn-ped-probs span { background:#fef3c7; color:#92400e; border-radius:99px; padding:3px 10px; font-size:12.5px; font-weight:700; }
+  .mtn-qrbt { grid-column:1 / -1; margin-top:6px; border:1px solid #0b1329; background:#0b1329; color:#fff; border-radius:8px; padding:5px 8px; font:inherit; font-size:11.5px; font-weight:700; cursor:pointer; width:auto; }
+  .mtn-acesso-link { display:flex; gap:6px; flex-wrap:wrap; } .mtn-acesso-link input { flex:1 1 240px; font-size:12.5px; }
+  .mtn-acessos div { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid #f1f5f9; } .mtn-acessos small { display:block; color:#64748b; font-size:12px; }
+  .mtq { position:fixed; inset:0; z-index:10050; background:radial-gradient(900px 500px at 80% -10%, rgba(245,158,11,.22), transparent 60%), linear-gradient(160deg,#0f172a,#172554); color:#fff; display:flex; flex-direction:column; padding:18px 26px; overflow:auto; font-family:Montserrat, system-ui, sans-serif; }
+  .mtq-top { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; } .mtq-logo { display:flex; align-items:center; gap:10px; font-weight:900; letter-spacing:.18em; } .mtq-logo i { font-style:normal; width:42px; height:42px; border-radius:12px; background:#0b1329; box-shadow:0 0 0 2px #22c55e; display:grid; place-items:center; letter-spacing:-.04em; } .mtq-logo small { display:block; color:#4ade80; font-size:10px; letter-spacing:.2em; }
+  .mtq-bts { display:flex; gap:8px; } .mtq-bts button { border:none; background:rgba(255,255,255,.12); color:#fff; border-radius:999px; padding:9px 14px; font:inherit; font-weight:700; cursor:pointer; width:auto; }
+  .mtq-corpo { flex:1; display:grid; grid-template-columns:1fr auto 260px; gap:34px; align-items:center; padding:20px 0; }
+  .mtq-esq small { color:#fbbf24; font-weight:800; letter-spacing:.15em; } .mtq-esq h1 { font-size:clamp(30px, 4vw, 54px); line-height:1.05; margin:10px 0; color:#fff; } .mtq-esq p { color:#cbd5e1; font-size:20px; margin:0 0 16px; } .mtq-esq ol { font-size:19px; line-height:1.8; padding-left:24px; }
+  .mtq-link { color:#94a3b8; margin-top:10px; word-break:break-all; } .mtq-link b { color:#fff; } .mtq-val { margin-top:8px; color:#fbbf24; font-weight:700; }
+  .mtq-qr img { width:min(46vh, 34vw); height:min(46vh, 34vw); background:#fff; border-radius:22px; padding:12px; box-shadow:0 30px 70px rgba(0,0,0,.45); }
+  .mtq-lista { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:18px; padding:14px; max-height:62vh; overflow:auto; } .mtq-lista > b { display:flex; justify-content:space-between; margin-bottom:8px; } .mtq-lista > b span { color:#4ade80; }
+  .mtq-lista button { display:block; width:100%; text-align:left; border:none; background:rgba(255,255,255,.05); color:#cbd5e1; border-radius:10px; padding:8px 10px; margin-bottom:6px; font:inherit; font-size:14px; cursor:pointer; } .mtq-lista button.ok { background:rgba(34,197,94,.18); color:#fff; font-weight:700; }
+  .mtq-lista .mtq-feito { background:#f59e0b !important; color:#0f172a !important; font-weight:800; text-align:center; margin-top:10px; }
+  @media (max-width:900px) { .mtq-corpo { grid-template-columns:1fr; text-align:center; } .mtq-esq ol { text-align:left; display:inline-block; } .mtq-qr img { width:70vw; height:70vw; } }
   .mtn-chk { display:flex !important; align-items:center; gap:8px; } .mtn-chk input { width:auto; }
   .mtn-turma { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:14px 16px; margin-bottom:14px; } .mtn-turma-cab { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; } .mtn-turma-cab h3 { margin:0; }
   .mtn-st { font-size:12px; border-radius:99px; padding:3px 10px; background:#e2e8f0; margin-left:6px; vertical-align:middle; } .mtn-st.aberta { background:#dcfce7; color:#166534; } .mtn-st.andamento { background:#dbeafe; color:#1e40af; }
@@ -14507,6 +14521,79 @@ async function mtnImportarSalvar() {
   mtnModal(''); MTN.leads = await api('/api/admin/mentoria/leads'); MTN.filtro = 'empresa'; mtnDesenhar(); mostrarToast(`✅ ${n} empresa(s) no funil.`);
 }
 // ---------- 🎓 Turmas ----------
+// ---------- 🎓 Área do Aluno: acessos, presença por QR ----------
+const mtnZap = n => { const d = String(n || '').replace(/\D/g, ''); return d ? (d.length <= 11 ? '55' + d : d) : ''; };
+function mtnMsgAcesso(a, t, link) {
+  return `Olá, ${String(a.nome || '').split(' ')[0]}! Aqui é o ${MTN.d.marca.mentor}, consultor da ${MTN.d.marca.empresa || 'Impulsionar V4'}. 🎓\n\nSeja muito bem-vindo(a) à *${t.nome}* da mentoria *${MTN.d.marca.nome}*!\n\nEste é o seu acesso pessoal à *Área do Aluno* — lá você vê os encontros, marca as tarefas da semana, acompanha sua presença e o seu indicador:\n${link}\n\n📌 Salve este link (ele é só seu, não compartilhe).\n📷 No fim de cada encontro eu mostro um QR code: é só apontar a câmera do celular para registrar sua presença.\n\nVamos juntos! 💪`;
+}
+async function mtnGarantirAcesso(a, novo) {
+  if (a.acesso_token && !novo) return a.acesso_token;
+  const r = await api(`/api/admin/mentoria/alunos/${a.id}/acesso`, { method: 'POST', body: JSON.stringify({ novo: !!novo }) });
+  a.acesso_token = r.token; a.temAcesso = true; return r.token;
+}
+async function mtnAcesso(tid, aid, novo) {
+  const t = MTN.turmas.find(x => x.id === tid), a = t.alunos.find(x => x.id === aid);
+  if (novo && !confirm('Gerar um link novo? O link antigo deste aluno para de funcionar.')) return;
+  try {
+    const tk = await mtnGarantirAcesso(a, novo), link = `${mtnBase()}/aluno/${tk}`, msg = mtnMsgAcesso(a, t, link), z = mtnZap(a.whatsapp);
+    mtnModal(`<h3 style="margin-top:0;">🔑 Acesso de ${escapeHtml(a.nome)}</h3>
+      <p class="plano-meta">Link pessoal da Área do Aluno — não precisa de senha. Envie pelo WhatsApp:</p>
+      <div class="mtn-acesso-link"><input readonly value="${escapeHtml(link)}" onclick="this.select()"><button class="btn-secundario btn-sm" onclick="mtnCopiar('${escapeHtml(link)}')">Copiar</button><a class="btn-secundario btn-sm" href="${escapeHtml(link)}" target="_blank" rel="noopener">Ver como aluno</a></div>
+      <label style="margin-top:10px;">Mensagem<textarea id="mta-msg" rows="9">${escapeHtml(msg)}</textarea></label>
+      <div class="acoes-form" style="flex-wrap:wrap;">${z ? `<a class="btn-primario" style="width:auto;background:#16a34a;" target="_blank" rel="noopener" href="#" onclick="this.href='https://wa.me/${z}?text='+encodeURIComponent(document.getElementById('mta-msg').value)">💬 Enviar pelo WhatsApp</a>` : '<span class="plano-meta">Cadastre o WhatsApp do aluno para enviar direto.</span>'}
+        <button class="btn-secundario" onclick="mtnAcesso(${tid}, ${aid}, true)">🔄 Gerar link novo</button><button class="btn-secundario" onclick="mtnModal(''); mtnDesenhar()">Fechar</button></div>`);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function mtnAcessosTurma(tid) {
+  const t = MTN.turmas.find(x => x.id === tid), alunos = t.alunos.filter(a => a.pagamento !== 'reembolsado');
+  if (!alunos.length) return mostrarToast('Adicione os alunos na turma primeiro.', true);
+  mtnModal('<p>Preparando os links…</p>');
+  try { for (const a of alunos) await mtnGarantirAcesso(a); } catch (e) { return mostrarToast(e.message, true); }
+  mtnModal(`<h3 style="margin-top:0;">🔑 Enviar acessos · ${escapeHtml(t.nome)}</h3><p class="plano-meta">Toque em cada aluno: abre o WhatsApp com a mensagem de boas-vindas e o link pessoal da Área do Aluno.</p>
+    <div class="mtn-acessos">${alunos.map(a => { const z = mtnZap(a.whatsapp), link = `${mtnBase()}/aluno/${a.acesso_token}`; return `<div><span><b>${escapeHtml(a.nome)}</b><small>${escapeHtml(a.whatsapp || 'sem WhatsApp')}${a.ultimo_acesso ? ' · já acessou' : ''}</small></span>
+      ${z ? `<a class="btn-primario btn-sm" style="width:auto;background:#16a34a;" target="_blank" rel="noopener" href="https://wa.me/${z}?text=${encodeURIComponent(mtnMsgAcesso(a, t, link))}" onclick="this.textContent='✓ Enviado'; this.style.background='#64748b'">💬 Enviar</a>` : `<button class="btn-secundario btn-sm" onclick="mtnCopiar('${escapeHtml(link)}')">Copiar link</button>`}</div>`; }).join('')}</div>
+    <div class="acoes-form"><button class="btn-secundario" onclick="mtnModal(''); mtnDesenhar()">Fechar</button></div>`);
+}
+function mtnPresencas(tid, aid) {
+  const t = MTN.turmas.find(x => x.id === tid), a = t.alunos.find(x => x.id === aid), datas = mtnDatasEncontros(t), p = new Set(a.presencas || []);
+  mtnModal(`<h3 style="margin-top:0;">📋 Presença de ${escapeHtml(a.nome)}</h3><p class="plano-meta">Marque ou desmarque à mão (por exemplo, quem estava sem celular).</p>
+    ${MTN.d.semanas.map((s, i) => `<label class="mtn-tarefa ${p.has(s.n) ? 'ok' : ''}"><input type="checkbox" ${p.has(s.n) ? 'checked' : ''} onchange="mtnMarcarPresenca(${tid}, ${aid}, ${s.n}, this.checked, this)"><span><b>S${s.n}${datas[i] ? ' · ' + datas[i].toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''}</b> · ${escapeHtml(s.modulo)}</span></label>`).join('')}
+    <div class="acoes-form"><button class="btn-secundario" onclick="mtnModal(''); mtnDesenhar()">Fechar</button></div>`);
+}
+async function mtnMarcarPresenca(tid, aid, n, on, el) {
+  try { await api('/api/admin/mentoria/presencas', { method: 'POST', body: JSON.stringify({ aluno_id: aid, encontro: n, presente: on }) });
+    const a = MTN.turmas.find(x => x.id === tid).alunos.find(x => x.id === aid), s = new Set(a.presencas || []); if (on) s.add(n); else s.delete(n); a.presencas = [...s];
+    if (el && el.closest('label')) el.closest('label').classList.toggle('ok', on);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+// Tela do QR de presença (para mostrar no fim do encontro, inclusive compartilhando a tela na reunião online)
+const MTQ = { timer: null };
+async function mtnQrPresenca(tid, n) {
+  const t = MTN.turmas.find(x => x.id === tid), s = MTN.d.semanas.find(x => x.n === n) || {};
+  let r; try { r = await api(`/api/admin/mentoria/turmas/${tid}/checkin`, { method: 'POST', body: JSON.stringify({ encontro: n, minutos: 180 }) }); } catch (e) { return mostrarToast(e.message, true); }
+  const link = mtnBase() + r.caminho, ate = new Date(String(r.expira).replace(' ', 'T') + 'Z');
+  document.getElementById('mtq') && document.getElementById('mtq').remove();
+  const el = document.createElement('div'); el.id = 'mtq'; el.className = 'mtq';
+  el.innerHTML = `<div class="mtq-top"><div class="mtq-logo"><i>V4</i><span>IMPULSIONAR<small>${escapeHtml(MTN.d.marca.nome)}</small></span></div><div class="mtq-bts"><button onclick="mtnCopiar('${escapeHtml(link)}')">🔗 Copiar link</button><button onclick="(document.getElementById('mtq').requestFullscreen||function(){}).call(document.getElementById('mtq'))">⛶ Tela cheia</button><button onclick="mtnFecharQr()">✕ Fechar</button></div></div>
+    <div class="mtq-corpo"><div class="mtq-esq"><small>${escapeHtml(t.nome)} · SEMANA ${n}</small><h1>Registre sua presença</h1><p>${escapeHtml(s.modulo || '')}</p>
+        <ol><li>Abra a <b>câmera</b> do celular</li><li>Aponte para o <b>QR code</b></li><li>Toque em <b>Confirmar presença</b></li></ol>
+        <div class="mtq-link">ou acesse <b>${escapeHtml(link.replace(/^https?:\/\//, ''))}</b></div><div class="mtq-val">Válido até ${ate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div></div>
+      <div class="mtq-qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=640x640&margin=10&data=${encodeURIComponent(link)}" alt="QR code de presença"></div>
+      <div class="mtq-lista"><b>Presentes <span id="mtq-cont">0/${t.alunos.length}</span></b><div id="mtq-alunos"></div>
+        ${(t.dados || {}).feitos && (t.dados.feitos || {})[n] ? '' : `<button class="mtq-feito" onclick="mtnEncontro(${tid}, ${n}, true); this.remove(); mostrarToast('✅ Encontro marcado como realizado.')">🏁 Marcar encontro como realizado</button>`}</div></div>`;
+  document.body.appendChild(el);
+  const atualizar = async () => {
+    if (!document.getElementById('mtq')) return clearInterval(MTQ.timer);
+    const l = await api(`/api/admin/mentoria/turmas/${tid}/presencas?encontro=${n}`).catch(() => null); if (!l) return;
+    const ids = new Set(l.map(x => x.aluno_id)); t.alunos.forEach(a => { const s2 = new Set(a.presencas || []); if (ids.has(a.id)) s2.add(n); else s2.delete(n); a.presencas = [...s2]; });
+    const box = document.getElementById('mtq-alunos'); if (!box) return;
+    document.getElementById('mtq-cont').textContent = `${ids.size}/${t.alunos.length}`;
+    box.innerHTML = t.alunos.map(a => `<button class="${ids.has(a.id) ? 'ok' : ''}" title="Clique para marcar/desmarcar à mão" onclick="mtnMarcarPresenca(${tid}, ${a.id}, ${n}, ${!ids.has(a.id)}).then(() => MTQ.atualizar())">${ids.has(a.id) ? '✅' : '⏳'} ${escapeHtml(a.nome)}</button>`).join('') || '<small>Nenhum aluno na turma.</small>';
+  };
+  MTQ.atualizar = atualizar; clearInterval(MTQ.timer); MTQ.timer = setInterval(atualizar, 4000); atualizar();
+}
+function mtnFecharQr() { clearInterval(MTQ.timer); const e = document.getElementById('mtq'); if (e) e.remove(); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); mtnDesenhar(); }
+function datasRealizadas(t) { const f = (t.dados || {}).feitos || {}, hoje = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10), d = mtnDatasEncontros(t); return MTN.d.semanas.filter((s, i) => f[s.n] || (d[i] && d[i].toISOString().slice(0, 10) < hoje)).length; }
 function mtnDatasEncontros(t) { if (!t.inicio) return []; const base = new Date(t.inicio + 'T12:00:00'); return MTN.d.semanas.map((s, i) => { const x = new Date(base); x.setDate(x.getDate() + i * 7); return x; }); }
 function mtnTurmas() {
   const T = MTN.turmas;
@@ -14515,15 +14602,18 @@ function mtnTurmas() {
     ${T.map(t => { const datas = mtnDatasEncontros(t), feitos = (t.dados || {}).feitos || {}, pagos = t.alunos.filter(a => a.pagamento === 'pago'); return `<div class="mtn-turma">
       <div class="mtn-turma-cab"><div><h3>${escapeHtml(t.nome)} <span class="mtn-st ${t.status}">${{ aberta: 'Inscrições abertas', andamento: 'Em andamento', encerrada: 'Encerrada' }[t.status] || t.status}</span></h3>
         <small>${t.inicio ? 'Início ' + new Date(t.inicio + 'T12:00:00').toLocaleDateString('pt-BR') : 'sem data'}${t.horario ? ' · ' + escapeHtml(t.horario) : ''} · ${mtnMoeda(t.preco)} · ${pagos.length}/${t.vagas} pagos · ${mtnMoeda(pagos.reduce((s, a) => s + (Number(a.valor) || 0), 0))}</small></div>
-        <div class="mtn-link-bt">${t.link_encontro ? `<a class="btn-secundario btn-sm" href="${escapeHtml(t.link_encontro)}" target="_blank" rel="noopener">🎥 Sala</a>` : ''}${t.whatsapp_grupo ? `<a class="btn-secundario btn-sm" href="${escapeHtml(t.whatsapp_grupo)}" target="_blank" rel="noopener">💬 Grupo</a>` : ''}<button class="btn-secundario btn-sm" onclick="mtnEditarTurma(${t.id})">✏️</button><button class="btn-secundario btn-sm" onclick="mtnNovoAluno(${t.id})">＋ Aluno</button></div></div>
-      <div class="mtn-encontros">${MTN.d.semanas.map((s, i) => `<label class="mtn-enc ${feitos[s.n] ? 'ok' : ''}"><input type="checkbox" ${feitos[s.n] ? 'checked' : ''} onchange="mtnEncontro(${t.id}, ${s.n}, this.checked)"><b>S${s.n}${datas[i] ? ' · ' + datas[i].toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''}</b><span>${escapeHtml(s.modulo)}</span><small>${escapeHtml(s.entregavel)}</small></label>`).join('')}</div>
-      <div class="tabela-rolagem"><table class="mtn-tab"><thead><tr><th>Aluno</th><th>WhatsApp</th><th>Pagamento</th><th>Entregas</th><th>Indicador antes</th><th>Indicador depois</th><th></th></tr></thead><tbody>
+        <div class="mtn-link-bt">${t.link_encontro ? `<a class="btn-secundario btn-sm" href="${escapeHtml(t.link_encontro)}" target="_blank" rel="noopener">🎥 Sala</a>` : ''}${t.whatsapp_grupo ? `<a class="btn-secundario btn-sm" href="${escapeHtml(t.whatsapp_grupo)}" target="_blank" rel="noopener">💬 Grupo</a>` : ''}<button class="btn-secundario btn-sm" onclick="mtnEditarTurma(${t.id})">✏️</button><button class="btn-secundario btn-sm" onclick="mtnNovoAluno(${t.id})">＋ Aluno</button><button class="btn-primario btn-sm" style="width:auto;" onclick="mtnAcessosTurma(${t.id})">🔑 Enviar acessos</button></div></div>
+      <p class="plano-meta" style="margin:8px 0 0;">📷 No fim de cada encontro, toque em <b>QR presença</b> na semana e mostre a tela (ou compartilhe na reunião online). A lista de presentes atualiza sozinha.</p>
+      <div class="mtn-encontros">${MTN.d.semanas.map((s, i) => `<label class="mtn-enc ${feitos[s.n] ? 'ok' : ''}"><input type="checkbox" ${feitos[s.n] ? 'checked' : ''} onchange="mtnEncontro(${t.id}, ${s.n}, this.checked)"><b>S${s.n}${datas[i] ? ' · ' + datas[i].toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''}</b><span>${escapeHtml(s.modulo)}</span><small>${escapeHtml(s.entregavel)}</small><button class="mtn-qrbt" onclick="event.preventDefault(); event.stopPropagation(); mtnQrPresenca(${t.id}, ${s.n})">📷 QR presença · ${t.alunos.filter(a => (a.presencas || []).includes(s.n)).length}/${t.alunos.length}</button></label>`).join('')}</div>
+      <div class="tabela-rolagem"><table class="mtn-tab"><thead><tr><th>Aluno</th><th>WhatsApp</th><th>Pagamento</th><th>Área do aluno</th><th>Presença</th><th>Entregas</th><th>Indicador antes</th><th>Indicador depois</th><th></th></tr></thead><tbody>
       ${t.alunos.map(a => { const pr = a.progresso || {}, ent = Object.keys(pr.entregas || {}).length; return `<tr><td><b>${escapeHtml(a.nome)}</b><br><small>${escapeHtml([a.cargo, a.empresa].filter(Boolean).join(' · '))}</small></td>
         <td>${a.whatsapp ? `<a href="https://wa.me/${(d => d.length <= 11 ? '55' + d : d)(String(a.whatsapp).replace(/\D/g, ''))}" target="_blank" rel="noopener">${escapeHtml(a.whatsapp)}</a>` : ''}</td>
         <td><select onchange="mtnAluno(${a.id}, { pagamento: this.value })">${['pendente', 'pago', 'cortesia', 'reembolsado'].map(p => `<option ${a.pagamento === p ? 'selected' : ''}>${p}</option>`).join('')}</select>${a.checkout_url && a.pagamento === 'pendente' ? `<br><a href="${escapeHtml(a.checkout_url)}" target="_blank" rel="noopener" style="font-size:12px;">link de pagamento</a>` : ''}</td>
+        <td><button class="btn-secundario btn-sm" onclick="mtnAcesso(${t.id}, ${a.id})">${a.temAcesso ? (a.ultimo_acesso ? '✅ Acessou' : '📨 Link criado') : '🔑 Criar acesso'}</button></td>
+        <td><button class="btn-secundario btn-sm" onclick="mtnPresencas(${t.id}, ${a.id})">${(a.presencas || []).length}/${datasRealizadas(t)}</button></td>
         <td><button class="btn-secundario btn-sm" onclick="mtnEntregas(${t.id}, ${a.id})">${ent}/12</button></td>
         <td><input class="mtn-num" value="${escapeHtml(pr.antes || '')}" onchange="mtnAlunoProg(${t.id}, ${a.id}, 'antes', this.value)"></td><td><input class="mtn-num" value="${escapeHtml(pr.depois || '')}" onchange="mtnAlunoProg(${t.id}, ${a.id}, 'depois', this.value)"></td>
-        <td><button class="btn-secundario btn-sm" onclick="mtnExcluirAluno(${a.id})">🗑️</button></td></tr>`; }).join('') || '<tr><td colspan="7" class="plano-meta">Nenhum aluno ainda. As inscrições pagas pela página entram aqui sozinhas.</td></tr>'}</tbody></table></div></div>`; }).join('')}`;
+        <td><button class="btn-secundario btn-sm" onclick="mtnExcluirAluno(${a.id})">🗑️</button></td></tr>`; }).join('') || '<tr><td colspan="9" class="plano-meta">Nenhum aluno ainda. As inscrições pagas pela página entram aqui sozinhas.</td></tr>'}</tbody></table></div></div>`; }).join('')}`;
 }
 function mtnEditarTurma(id) {
   const t = MTN.turmas.find(x => x.id === id) || { nome: MTN.turmas.length ? `Turma ${MTN.turmas.length + 1}` : 'Turma Fundadora', preco: MTN.turmas.length ? 2997 : 1497, vagas: 8, horario: 'Terças, 20h', status: 'aberta' };

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Área do Aluno · Mentoria Do Chão à Gestão</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0f172a">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/mentoria-estilo.css?v=2">
+<style>
+  .hero { padding:46px 0 54px; } @media (min-width:861px) { .hero .cx { grid-template-columns:1.2fr .8fr; } }
+  .hero h1 { font-size:clamp(30px, 5vw, 48px); margin:14px 0 8px; }
+  .anel { width:150px; height:150px; border-radius:50%; display:grid; place-items:center; background:conic-gradient(var(--ambar) calc(var(--p) * 1%), rgba(255,255,255,.1) 0); margin:0 auto; }
+  .anel div { width:118px; height:118px; border-radius:50%; background:var(--navy); display:grid; place-items:center; text-align:center; } .anel b { font-size:34px; font-weight:900; display:block; line-height:1; } .anel small { color:#94a3b8; font-size:12px; font-weight:700; }
+  .kpis { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:18px; } .kpis div { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:12px; text-align:center; } .kpis b { display:block; font-size:22px; font-weight:900; color:#fff; } .kpis small { color:#94a3b8; font-size:12px; font-weight:600; }
+  section { padding:44px 0; }
+  .prox { display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:center; background:#fff; border:1px solid var(--linha); border-radius:22px; padding:22px; box-shadow:0 18px 40px rgba(15,23,42,.06); margin-top:-34px; position:relative; }
+  .prox .dia { width:84px; height:90px; border-radius:18px; background:var(--navy); color:#fff; display:grid; place-items:center; text-align:center; } .prox .dia b { font-size:34px; font-weight:900; line-height:1; display:block; } .prox .dia small { color:var(--ambar2); font-weight:800; text-transform:uppercase; font-size:12px; }
+  .prox h3 { margin:2px 0 4px; font-size:20px; } .prox p { margin:0 0 12px; color:var(--cinza); } .prox .bts { display:flex; gap:8px; flex-wrap:wrap; }
+  @media (max-width:600px) { .prox { grid-template-columns:1fr; } .prox .dia { width:100%; height:auto; padding:10px 14px; display:flex; gap:10px; align-items:baseline; justify-content:flex-start; } .prox .dia b { font-size:26px; } }
+  .qrdica { display:flex; gap:14px; align-items:center; background:#fffbeb; border:1px solid #fde68a; border-radius:18px; padding:16px 18px; margin-top:14px; } .qrdica span { font-size:30px; } .qrdica p { margin:0; color:#78350f; font-size:14.5px; }
+  .jornada { display:grid; gap:10px; }
+  .enc { background:#fff; border:1px solid var(--linha); border-radius:18px; padding:16px 18px; display:grid; grid-template-columns:52px 1fr; gap:14px; }
+  .enc .num { width:52px; height:52px; border-radius:14px; display:grid; place-items:center; font-weight:900; font-size:18px; background:#f1f5f9; color:var(--cinza); }
+  .enc.presente .num { background:#dcfce7; color:var(--verde); } .enc.falta .num { background:#fee2e2; color:#dc2626; } .enc.proximo { border-color:var(--ambar); box-shadow:0 0 0 3px rgba(245,158,11,.18); } .enc.proximo .num { background:var(--ambar); color:var(--navy); }
+  .enc.futuro { opacity:.72; }
+  .enc .top { display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .enc .top b { font-size:16px; } .tag { font-size:12px; font-weight:800; border-radius:999px; padding:3px 10px; background:#f1f5f9; color:var(--cinza); }
+  .tag.ok { background:#dcfce7; color:#166534; } .tag.no { background:#fee2e2; color:#991b1b; } .tag.prox { background:#fef3c7; color:#92400e; }
+  .enc p { margin:4px 0 8px; color:var(--cinza); font-size:14px; }
+  .tarefa { background:var(--creme); border-radius:12px; padding:10px 12px; } .tarefa label { display:flex; gap:10px; align-items:flex-start; cursor:pointer; font-weight:700; font-size:14px; } .tarefa input[type=checkbox] { width:20px; height:20px; accent-color:var(--verde); margin-top:1px; flex:0 0 auto; }
+  .tarefa textarea { width:100%; margin-top:8px; font:inherit; font-size:14px; border:1.5px solid var(--linha); border-radius:10px; padding:9px 10px; resize:vertical; min-height:54px; background:#fff; }
+  .tarefa .salvo { font-size:12px; color:var(--verde); font-weight:700; height:14px; display:block; }
+  .ind { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; } .ind input { font:inherit; padding:12px; border:1.5px solid var(--linha); border-radius:12px; width:100%; } .ind label { font-size:13px; font-weight:700; display:grid; gap:6px; }
+  @media (max-width:600px) { .ind { grid-template-columns:1fr; } .kpis b { font-size:19px; } }
+  .kit li { margin:6px 0; } .mentor { display:flex; gap:16px; align-items:center; } .mentor img { width:76px; height:76px; border-radius:50%; object-fit:cover; object-position:center 25%; border:3px solid var(--ambar); }
+  .erro-tela { min-height:70vh; display:grid; place-items:center; text-align:center; padding:30px; }
+  .codigo { display:flex; gap:8px; margin-top:10px; } .codigo input { flex:1; font:inherit; padding:12px; border:1.5px solid var(--linha); border-radius:12px; }
+</style>
+</head>
+<body>
+<div id="app"><div class="cx" style="padding:80px 20px;text-align:center;color:#64748b;">Carregando sua área…</div></div>
+<script>
+const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const SEM = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'], MES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const dt = s => { const x = new Date(s + 'T12:00:00Z'); return { d: x.getUTCDate(), m: MES[x.getUTCMonth()], s: SEM[x.getUTCDay()], br: s.split('-').reverse().join('/') }; };
+let TOKEN = (location.pathname.match(/\/aluno\/([a-f0-9]{32})/) || [])[1] || '', P = null;
+try { if (TOKEN) localStorage.setItem('mt_aluno_token', TOKEN); else TOKEN = localStorage.getItem('mt_aluno_token') || ''; } catch (e) {}
+if (TOKEN && !location.pathname.includes(TOKEN)) history.replaceState(null, '', '/aluno/' + TOKEN);
+function wa(n, t) { const d = String(n || '').replace(/\D/g, ''); return d ? 'https://wa.me/' + (d.length <= 11 ? '55' + d : d) + (t ? '?text=' + encodeURIComponent(t) : '') : ''; }
+async function carregar() {
+  if (!TOKEN) return semAcesso('Para entrar na sua área, use o link pessoal que o mentor enviou no seu WhatsApp.');
+  const r = await fetch('/api/public/aluno/' + TOKEN, { cache: 'no-store' }), j = await r.json().catch(() => ({}));
+  if (!r.ok) { try { localStorage.removeItem('mt_aluno_token'); } catch (e) {} return semAcesso(j.error || 'Não consegui abrir sua área.'); }
+  P = j; desenhar();
+}
+function semAcesso(msg) {
+  document.getElementById('app').innerHTML = `<header class="topo"><div class="cx"><a class="marca" href="/mentoria"><i>V4</i>Área do Aluno</a></div></header>
+    <div class="erro-tela"><div><div style="font-size:54px;">🔐</div><h1 style="margin:10px 0;">Área do Aluno</h1><p style="color:var(--cinza);max-width:420px;">${esc(msg)}</p><a class="bt ambar" href="/mentoria" style="margin-top:14px;">Conhecer a mentoria</a></div></div>`;
+}
+function desenhar() {
+  const a = P.aluno, t = P.turma || {}, R = P.resumo, m = P.mentor, px = P.proximo, hoje = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+  const pct = Math.round(((R.realizados ? R.realizados : 0) / R.total) * 100);
+  document.title = `Área do Aluno · ${a.primeiroNome}`;
+  document.getElementById('app').innerHTML = `<header class="topo"><div class="cx"><a class="marca" href="#"><i>V4</i>Área do Aluno</a>
+      <nav><a href="#jornada">Minha jornada</a><a href="#indicador">Meu indicador</a><a href="#kit">Kit</a></nav>${t.grupo ? `<a class="bt ambar peq" href="${esc(t.grupo)}" target="_blank" rel="noopener">💬 Grupo da turma</a>` : ''}</div></header>
+    <section class="hero"><div class="cx"><div>
+      <span class="selo">🎓 ${esc(m.mentoria)} · ${esc(t.nome || 'Mentoria')}</span>
+      <h1>Olá, ${esc(a.primeiroNome)}! 👋</h1>
+      <p class="sub" style="margin-bottom:0;">Aqui você acompanha sua jornada de 12 semanas: encontros, presença, tarefas e a evolução do seu indicador.</p>
+      <div class="kpis"><div><b>${R.presencas}/${R.realizados || 0}</b><small>presenças</small></div><div><b>${R.entregas}/${R.total}</b><small>tarefas entregues</small></div><div><b>${R.presencaPct}%</b><small>frequência</small></div></div>
+    </div><div><div class="anel" style="--p:${pct}"><div><span><b>${R.realizados}</b><small>de ${R.total} semanas</small></span></div></div></div></div></section>
+    <div class="cx">
+      ${px ? (() => { const x = dt(px.data); return `<div class="prox"><div class="dia"><small>${esc(x.s)}</small><b>${x.d}</b><small>${esc(x.m)}</small></div>
+        <div><small style="color:var(--ambar);font-weight:800;letter-spacing:1px;">${px.data === hoje ? '🔴 ENCONTRO HOJE' : 'PRÓXIMO ENCONTRO'} · SEMANA ${px.n}</small><h3>${esc(px.modulo)}</h3><p>${esc(px.tema)}${t.horario ? ` · ⏰ ${esc(t.horario)}` : ''}</p>
+        <div class="bts">${t.sala ? `<a class="bt ambar peq" href="${esc(t.sala)}" target="_blank" rel="noopener">🎥 Entrar na sala</a>` : ''}${t.grupo ? `<a class="bt claro peq" href="${esc(t.grupo)}" target="_blank" rel="noopener">💬 Grupo</a>` : ''}</div></div></div>`; })()
+        : `<div class="prox"><div class="dia"><b>🏁</b></div><div><h3>${R.realizados >= R.total ? 'Jornada concluída! Parabéns.' : 'Datas dos encontros em breve'}</h3><p>${R.realizados >= R.total ? 'Você completou as 12 semanas. Continue aplicando o método no seu time.' : 'Assim que a turma tiver a data de início, os encontros aparecem aqui.'}</p></div></div>`}
+      <div class="qrdica"><span>📷</span><p><b>Presença:</b> no fim de cada encontro o mentor mostra um <b>QR code</b>. Aponte a câmera do celular para ele e sua presença é registrada na hora.</p></div>
+    </div>
+    <section id="jornada"><div class="cx"><div class="titulo"><small>Minha jornada</small><h2>As 12 semanas</h2><p>${esc(P.regraOuro)}</p></div>
+      <div class="jornada">${P.encontros.map(e => { const st = e.presente ? 'presente' : e.realizado ? 'falta' : px && px.n === e.n ? 'proximo' : 'futuro', x = e.data ? dt(e.data) : null;
+        return `<div class="enc ${st}"><div class="num">${e.presente ? '✓' : e.n}</div><div>
+          <div class="top"><b>Semana ${e.n} · ${esc(e.modulo)}</b>${e.presente ? '<span class="tag ok">✅ Presente</span>' : e.realizado ? '<span class="tag no">Faltou</span>' : st === 'proximo' ? '<span class="tag prox">Próximo</span>' : ''}${x ? `<span class="tag">${x.br}</span>` : ''}</div>
+          <p>${esc(e.tema)}</p>
+          <div class="tarefa"><label><input type="checkbox" ${e.entregue ? 'checked' : ''} onchange="salvarTarefa(${e.n}, this.checked)"><span>📎 Tarefa: ${esc(e.entregavel)}</span></label>
+            <textarea placeholder="Como foi aplicar no seu time? (o mentor lê antes do próximo encontro)" onchange="salvarNota(${e.n}, this.value, this)">${esc(e.nota)}</textarea><small class="salvo" id="salvo-${e.n}"></small></div>
+        </div></div>`; }).join('')}</div>
+    </div></section>
+    <section class="alt" id="indicador"><div class="cx"><div class="titulo"><small>Resultado</small><h2>Meu indicador</h2><p>Escolha o principal indicador do seu time (ex.: produtividade, absenteísmo, devoluções). Anote como estava no começo e como está agora.</p></div>
+      <div class="card"><div class="ind"><label>Indicador<input id="i-nome" value="${esc(P.indicador.nome)}" placeholder="Ex.: Produtividade (caixas/h)"></label><label>Antes da mentoria<input id="i-antes" value="${esc(P.indicador.antes)}" placeholder="Ex.: 180"></label><label>Hoje<input id="i-depois" value="${esc(P.indicador.depois)}" placeholder="Ex.: 215"></label></div>
+      <div style="margin-top:12px;display:flex;gap:10px;align-items:center;"><button class="bt escuro peq" onclick="salvarIndicador(this)">Salvar indicador</button><small id="i-ok" style="color:var(--verde);font-weight:700;"></small></div></div>
+    </div></section>
+    <section id="kit"><div class="cx"><div class="grade g2">
+      <div class="card"><h3>🧰 Seu kit de ferramentas</h3><ul class="kit">${P.kit.map(k => `<li>${esc(k)}</li>`).join('')}</ul><p style="font-size:13px;">Os arquivos são enviados no grupo da turma, semana a semana.</p></div>
+      <div class="card"><div class="mentor">${m.foto ? `<img src="${esc(m.foto === '/mentoria-foto.jpg' ? '/mentoria-foto-perfil.jpg' : m.foto)}" alt="">` : ''}<div><h3 style="margin:0;">${esc(m.nome)}</h3><p>Consultor · ${esc(m.empresa || 'Impulsionar V4')}</p></div></div>
+        <p style="margin:14px 0;">Dúvida sobre uma tarefa ou uma situação com o time? Me chama.</p>
+        ${wa(m.whatsapp) ? `<a class="bt ambar peq" href="${wa(m.whatsapp, `Olá, Lázaro! Sou ${a.nome}, da ${t.nome || 'mentoria'}.`)}" target="_blank" rel="noopener">💬 Falar com o mentor</a>` : ''}</div>
+    </div></div></section>
+    <footer class="rodape"><div class="cx"><div><b style="color:#fff">${esc(m.nome)}</b> · Consultor ${esc(m.empresa || 'Impulsionar V4')}<br>Mentoria ${esc(m.mentoria)}</div>
+      <div><a href="https://instagram.com/${esc(String(m.instagramEmpresa || 'impulsionarv4').replace(/^@/, ''))}" target="_blank" rel="noopener">@${esc(String(m.instagramEmpresa || 'impulsionarv4').replace(/^@/, ''))}</a><a href="https://instagram.com/${esc(String(m.instagram || 'lazaroneto.oficial').replace(/^@/, ''))}" target="_blank" rel="noopener">@${esc(String(m.instagram || 'lazaroneto.oficial').replace(/^@/, ''))}</a></div></div></footer>`;
+}
+async function enviar(corpo) { const r = await fetch('/api/public/aluno/' + TOKEN + '/progresso', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }); if (!r.ok) throw new Error('Não salvou'); }
+async function salvarTarefa(n, ok) { try { await enviar({ encontro: n, entregue: ok }); const e = P.encontros.find(x => x.n === n); e.entregue = ok; P.resumo.entregas += ok ? 1 : -1; const s = document.getElementById('salvo-' + n); if (s) s.textContent = ok ? '✓ Tarefa marcada como entregue' : 'Tarefa desmarcada'; } catch (e) { alert('Não consegui salvar. Confira a internet.'); } }
+async function salvarNota(n, txt, el) { try { await enviar({ encontro: n, nota: txt }); const s = document.getElementById('salvo-' + n); if (s) s.textContent = '✓ Anotação salva'; } catch (e) { alert('Não consegui salvar. Confira a internet.'); } }
+async function salvarIndicador(bt) { try { await enviar({ indicadorNome: document.getElementById('i-nome').value, antes: document.getElementById('i-antes').value, depois: document.getElementById('i-depois').value }); document.getElementById('i-ok').textContent = '✓ Salvo'; } catch (e) { alert('Não consegui salvar.'); } }
+carregar();
+</script>
+</body>
+</html>

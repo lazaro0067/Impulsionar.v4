@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Registrar presença · Mentoria</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0f172a">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/mentoria-estilo.css?v=2">
+<style>
+  body { min-height:100vh; background:radial-gradient(900px 500px at 50% -10%, rgba(245,158,11,.25), transparent 60%), linear-gradient(180deg, var(--navy), var(--navy2)); color:#fff; }
+  .caixa { max-width:440px; margin:0 auto; padding:40px 20px; text-align:center; }
+  .logo { display:inline-flex; align-items:center; gap:10px; font-weight:900; letter-spacing:.18em; font-size:13px; } .logo i { font-style:normal; width:40px; height:40px; border-radius:12px; background:#0b1329; box-shadow:0 0 0 2px #22c55e; display:grid; place-items:center; letter-spacing:-.04em; font-size:16px; }
+  .card { background:#fff; color:var(--texto); border-radius:24px; padding:26px 22px; margin-top:24px; text-align:left; box-shadow:0 30px 70px rgba(0,0,0,.35); }
+  .card h1 { font-size:26px; margin:6px 0 4px; } .card .sub { color:var(--cinza); margin:0 0 18px; }
+  .sel { display:inline-block; background:#fef3c7; color:#92400e; font-weight:800; font-size:12px; border-radius:999px; padding:4px 12px; }
+  .ok { text-align:center; } .ok .gr { width:96px; height:96px; border-radius:50%; background:#dcfce7; color:var(--verde); display:grid; place-items:center; font-size:52px; margin:0 auto 10px; animation:pop .4s ease; }
+  @keyframes pop { from { transform:scale(.4); opacity:0; } to { transform:none; opacity:1; } }
+</style>
+</head>
+<body>
+<div class="caixa"><div class="logo"><i>V4</i>IMPULSIONAR</div><div class="card" id="c">Carregando…</div></div>
+<script>
+const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const COD = (location.pathname.match(/\/presenca\/([a-f0-9]+)/) || [])[1] || '';
+let TOKEN = ''; try { TOKEN = localStorage.getItem('mt_aluno_token') || ''; } catch (e) {}
+const C = document.getElementById('c'); let INFO = null;
+(async () => {
+  const r = await fetch('/api/public/presenca/' + COD, { cache: 'no-store' }), j = await r.json().catch(() => ({}));
+  if (!r.ok) return C.innerHTML = `<h1>😕 QR code inválido</h1><p class="sub">${esc(j.error || 'Não encontrei este QR code.')}</p>`;
+  INFO = j;
+  const cab = `<span class="sel">📍 ${esc(j.turma)} · Semana ${j.encontro}</span><h1>Registrar presença</h1><p class="sub">${esc(j.modulo)}${j.tema ? ' — ' + esc(j.tema) : ''}</p>`;
+  if (!j.valido) return C.innerHTML = cab + `<p style="color:#991b1b;font-weight:700;">⏰ Este QR code já expirou. Fale com o mentor para registrar sua presença.</p>`;
+  if (TOKEN) return registrar({ token: TOKEN }, cab);
+  C.innerHTML = cab + `<form class="form" onsubmit="event.preventDefault(); registrar({ whatsapp: this.whatsapp.value })"><label>Seu WhatsApp (o mesmo da inscrição)<input name="whatsapp" required inputmode="tel" autocomplete="tel" placeholder="(64) 9 9999-9999"></label><div id="m"></div><button class="bt ambar cheio" type="submit">✅ Confirmar minha presença</button></form>`;
+})();
+async function registrar(corpo, cab) {
+  const bt = C.querySelector('button'); if (bt) { bt.disabled = true; bt.textContent = 'Registrando…'; }
+  try {
+    const r = await fetch('/api/public/presenca/' + COD, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }), j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      if (corpo.token) { try { localStorage.removeItem('mt_aluno_token'); } catch (e) {} TOKEN = ''; location.reload(); return; }
+      throw new Error(j.error || 'Não consegui registrar.');
+    }
+    try { localStorage.setItem('mt_aluno_token', j.token); } catch (e) {}
+    C.innerHTML = `<div class="ok"><div class="gr">✓</div><h1>${j.jaRegistrada ? 'Presença já registrada' : 'Presença confirmada!'}</h1><p class="sub">${esc(j.nome)}, sua presença na <b>semana ${j.encontro}</b> está registrada. 💪<br>Não esqueça a tarefa da semana.</p><a class="bt ambar cheio" href="/aluno/${esc(j.token)}">Abrir minha Área do Aluno</a></div>`;
+  } catch (e) { const m = document.getElementById('m'); if (m) m.innerHTML = `<div class="msg erro">${esc(e.message)}</div>`; if (bt) { bt.disabled = false; bt.textContent = '✅ Confirmar minha presença'; } }
+}
+</script>
+</body>
+</html>
