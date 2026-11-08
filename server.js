@@ -13271,6 +13271,7 @@ app.get(['/estudio', '/estudio/'], (req, res) => {
     });
 });
 // App do sistema (Impulsionar V4) para instalar no celular/computador
+app.get(['/app', '/instalar'], (req, res) => res.redirect('/?instalar=1'));
 app.get('/manifest.webmanifest', (req, res) => {
     res.set('Cache-Control', 'no-cache').type('application/manifest+json').send(JSON.stringify({ id: '/', name: 'Impulsionar V4 — Gestão & Pessoas', short_name: 'Impulsionar', description: 'Gestão de processos e desenvolvimento de pessoas', start_url: '/?app=1', scope: '/', display: 'standalone', orientation: 'any', background_color: '#0b1329', theme_color: '#0b1329', lang: 'pt-BR',
         icons: [192, 512].map(t => ({ src: `/assets/app-icone-${t}.png?v=1`, sizes: `${t}x${t}`, type: 'image/png', purpose: 'any' })).concat([{ src: '/assets/app-icone-maskable-512.png?v=1', sizes: '512x512', type: 'image/png', purpose: 'maskable' }]),

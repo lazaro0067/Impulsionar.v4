@@ -1931,9 +1931,9 @@
   <aside class="sidebar">
     <img src="/assets/logo-impulsionar.jpg" alt="Impulsionar V4" class="logo-sidebar" id="logo-sidebar-img" onerror="this.outerHTML='&lt;div class=&quot;logo-fallback-sidebar&quot;&gt;IMPULSIONAR V4&lt;/div&gt;'">
     <div class="usuario" id="info-usuario"></div>
+    <button class="btn-instalar-app" id="btn-instalar-app" onclick="appInstalar()" hidden>📲 Instalar o app no celular</button>
     <nav id="nav-menu"></nav>
     <div class="marca-rodape-sidebar">🚀 Powered by <strong>Impulsionar V4</strong></div>
-    <button class="btn-instalar-app" id="btn-instalar-app" onclick="appInstalar()" hidden>📲 Instalar app no celular</button>
     <button class="sair btn-secundario" onclick="sair()">Sair</button>
   </aside>
   <main class="conteudo" id="conteudo"></main>
@@ -28150,7 +28150,16 @@ window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); APP.pr
 window.addEventListener('appinstalled', () => { APP.prompt = null; appAtualizarBotao(); const b = document.getElementById('app-banner'); if (b) b.remove(); mostrarToast('📲 Impulsionar instalado! Abra pelo ícone na tela do celular.'); });
 function appAtualizarBotao() { const oculto = appInstalado() || !(APP.prompt || appEhIos() || evCelularAquiApp()); ['btn-instalar-app', 'btn-app-login'].forEach(id => { const b = document.getElementById(id); if (b) b.hidden = oculto; }); }
 function evCelularAquiApp() { return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent); }
+const appNavegadorInterno = () => /Instagram|FBAN|FBAV|FB_IAB|Line\/|LinkedInApp|TikTok|musical_ly|Snapchat|; wv\)/i.test(navigator.userAgent);
 async function appInstalar() {
+  if (appNavegadorInterno()) {
+    const m = document.createElement('div'); m.className = 'app-modal'; m.onclick = e => { if (e.target === m) m.remove(); };
+    m.innerHTML = `<div class="app-caixa"><img src="/assets/app-icone-192.png?v=1" alt=""><h3>Abra no navegador do celular</h3>
+      <p>Você abriu o link por dentro de outro app (Instagram, WhatsApp, Facebook…), e por aqui o celular não deixa instalar.</p>
+      <ol><li>Toque no menu <b>⋮</b> ou <b>…</b> no canto da tela.</li><li>Escolha <b>“Abrir no navegador”</b> / <b>“Abrir no Chrome”</b> / <b>“Abrir no Safari”</b>.</li><li>Lá, toque em <b>📲 Instalar o app</b>.</li></ol>
+      <button onclick="navigator.clipboard && navigator.clipboard.writeText('https://www.impulsionarv4.com.br/app').then(() => mostrarToast('Link copiado: cole no Chrome ou Safari.')).catch(() => {}); this.closest('.app-modal').remove()">Copiar o link do app</button></div>`;
+    document.body.appendChild(m); return;
+  }
   if (APP.prompt) { APP.prompt.prompt(); const r = await APP.prompt.userChoice.catch(() => ({})); if (r.outcome === 'accepted') APP.prompt = null; appAtualizarBotao(); return; }
   const ios = appEhIos();
   const m = document.createElement('div'); m.className = 'app-modal'; m.onclick = e => { if (e.target === m) m.remove(); };
@@ -28166,6 +28175,9 @@ function appConvidar() {
   appAtualizarBotao();
   if (appInstalado() || !evCelularAquiApp() || document.body.classList.contains('modo-estudio')) return;
   try { if (localStorage.getItem('app_nunca') === '1' || sessionStorage.getItem('app_convite_sessao') === '1') return; sessionStorage.setItem('app_convite_sessao', '1'); } catch (e) {}
+  appMostrarConvite(1200);
+}
+function appMostrarConvite(espera) {
   setTimeout(() => {
     if (document.getElementById('app-convite') || appInstalado()) return;
     const m = document.createElement('div'); m.className = 'app-modal'; m.id = 'app-convite'; m.onclick = ev => { if (ev.target === m) m.remove(); };
@@ -28175,7 +28187,7 @@ function appConvidar() {
       <button class="sec" onclick="this.closest('.app-modal').remove()">Agora não</button>
       <a href="#" class="nunca" onclick="try{localStorage.setItem('app_nunca','1')}catch(e){}; this.closest('.app-modal').remove(); return false;">Não perguntar mais</a></div>`;
     document.body.appendChild(m);
-  }, 1200);
+  }, espera || 0);
 }
 /* ==========================================================
    BOOT
@@ -28201,6 +28213,8 @@ function appConvidar() {
   }
 })();
 
+// link curto /app (impulsionarv4.com.br/app): abre já oferecendo a instalação do aplicativo
+if (/[?&]instalar=1/.test(location.search)) { try { history.replaceState(null, '', location.pathname + location.hash); sessionStorage.setItem('app_convite_sessao', '1'); } catch (e) {} window.addEventListener('load', () => { appAtualizarBotao(); if (!appInstalado()) appMostrarConvite(700); }); }
 if (ESTADO.token && ESTADO.usuario) {
   iniciarApp();
   // Link externo "#apresentar-mt=<id>": abre o treinamento direto no modo apresentação.
