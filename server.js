@@ -12871,7 +12871,7 @@ const MT_PADRAO = {
         frase: 'Eu comecei carregando caixa em 2013. Hoje lidero operações com centenas de pessoas. Eu ensino líderes a fazer o time render, sem gritar e sem perder o controle da operação.',
         promessa: 'Transformar líderes de operação em líderes que entregam resultado através das pessoas.',
         central: 'Quem move pessoas, move resultados.',
-        instagram: '', whatsapp: '', email: '', linkedin: '', fotoUrl: '', videoUrl: '', videoPalestra: ''
+        instagram: '', whatsapp: '', email: '', linkedin: '', fotoUrl: '/mentoria-foto.jpg', videoUrl: '', videoPalestra: ''
     },
     historia: [
         { fase: '2013', cargo: 'Ajudante de distribuição', licao: 'Como o time da ponta enxerga o líder' },
