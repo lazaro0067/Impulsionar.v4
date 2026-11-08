@@ -27,6 +27,33 @@
     color: var(--cinza-700);
   }
   /* ---------- LOGIN ---------- */
+  /* ---------- LOGIN (novo visual, com a logo V4 Gestão & Pessoas) ---------- */
+  html:not(.estudio) #tela-login { position:relative; overflow:hidden; background:#060b17; gap:56px; padding:32px 24px; font-family:Montserrat, 'Segoe UI', Arial, sans-serif; }
+  html:not(.estudio) #tela-login::before, html:not(.estudio) #tela-login::after { content:''; position:absolute; width:70vmax; height:70vmax; border-radius:50%; filter:blur(80px); opacity:.45; pointer-events:none; animation:ehFlutua 18s ease-in-out infinite alternate; }
+  html:not(.estudio) #tela-login::before { background:radial-gradient(circle, #14b8a6, transparent 60%); top:-38vmax; left:-28vmax; }
+  html:not(.estudio) #tela-login::after { background:radial-gradient(circle, #2563eb, transparent 60%); bottom:-40vmax; right:-30vmax; animation-delay:-9s; }
+  .lg-hero { position:relative; z-index:1; max-width:470px; color:#e2e8f0; }
+  .lg-hero .lg-logo { align-items:flex-start; text-align:left; flex-direction:row; gap:14px; margin:0 0 34px; } .lg-hero .lg-logo .ip-nome { align-items:flex-start; }
+  .lg-hero h1 { font-size:clamp(30px, 3.4vw, 44px); line-height:1.08; font-weight:900; color:#fff; margin:0 0 14px; letter-spacing:-.5px; } .lg-hero h1 em { font-style:normal; background:linear-gradient(90deg,#4ade80,#2dd4bf); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .lg-hero > p { color:#94a3b8; font-size:16px; margin:0 0 26px; line-height:1.5; }
+  .lg-hero ul { list-style:none; padding:0; margin:0; display:grid; gap:12px; }
+  .lg-hero li { display:flex; gap:12px; align-items:center; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px 14px; }
+  .lg-hero li span { font-size:22px; } .lg-hero li b { display:block; color:#fff; font-size:14px; } .lg-hero li small { color:#94a3b8; font-size:12.5px; }
+  html:not(.estudio) #tela-login .card-login { position:relative; z-index:1; max-width:420px; background:rgba(15,23,42,.72); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,.1); border-radius:22px; padding:34px 32px; color:#e2e8f0; box-shadow:0 30px 80px rgba(0,0,0,.45); }
+  html:not(.estudio) #tela-login .card-login label { color:#cbd5e1; font-weight:600; }
+  html:not(.estudio) #tela-login .card-login input, html:not(.estudio) #tela-login .card-login select { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); color:#fff; border-radius:12px; padding:13px 14px; }
+  html:not(.estudio) #tela-login .card-login input:focus { outline:none; border-color:#4ade80; box-shadow:0 0 0 4px rgba(74,222,128,.15); }
+  html:not(.estudio) #tela-login .card-login input:-webkit-autofill { -webkit-text-fill-color:#fff; -webkit-box-shadow:0 0 0 40px #1b2438 inset; caret-color:#fff; }
+  html:not(.estudio) #tela-login .card-login .btn-primario { background:linear-gradient(135deg,#16a34a,#0d9488); border:none; border-radius:12px; padding:14px; font-weight:800; font-size:15px; box-shadow:0 10px 26px rgba(22,163,74,.35); }
+  html:not(.estudio) #tela-login .card-login .btn-primario:hover { filter:brightness(1.08); }
+  html:not(.estudio) #tela-login .link-esqueci a { color:#86efac; } html:not(.estudio) #tela-login #erro-login { color:#fca5a5; }
+  html:not(.estudio) #tela-login .card-login p { color:#94a3b8 !important; }
+  .lg-logo-card { display:none !important; margin-bottom:22px !important; }
+  .lg-titulo h2 { margin:0; color:#fff; font-size:22px; font-weight:800; } .lg-titulo p { margin:4px 0 22px; font-size:14px; }
+  html.estudio .lg-hero, html.estudio .lg-titulo, html.estudio .lg-logo-card { display:none !important; }
+  @media (max-width: 920px) { .lg-hero { display:none; } .lg-logo-card { display:flex !important; } html:not(.estudio) #tela-login .card-login { padding:28px 22px; } }
+
+
   #tela-login, #tela-sala-convidado {
     min-height: 100vh;
     display: flex;
@@ -1834,9 +1861,20 @@
 
 <!-- ===================== TELA DE LOGIN ===================== -->
 <div id="tela-login">
+  <div class="lg-hero">
+    <div class="ip-logo lg-logo"><div class="ip-marca"><i class="ip-anel"></i><b>V4</b><span class="ip-seta">↗</span></div><div class="ip-nome"><b>IMPULSIONAR</b><small>Gestão &amp; Pessoas</small></div></div>
+    <h1>Processos que funcionam.<br><em>Pessoas que crescem.</em></h1>
+    <p>A plataforma que une gestão de processos, desenvolvimento de líderes e resultado — num lugar só.</p>
+    <ul>
+      <li><span>📊</span><div><b>Gestão & DPO</b><small>Consultoria por pilar, auditorias e planos de ação</small></div></li>
+      <li><span>🎯</span><div><b>Desenvolvimento de pessoas</b><small>PDI, trilhas, mentorias e Competence Check</small></div></li>
+      <li><span>🚀</span><div><b>Conteúdo que vende</b><small>Estúdio de vídeo com IA e agenda do Instagram</small></div></li>
+    </ul>
+  </div>
   <div class="card-login">
+    <div class="ip-logo lg-logo-card"><div class="ip-marca"><i class="ip-anel"></i><b>V4</b><span class="ip-seta">↗</span></div><div class="ip-nome"><b>IMPULSIONAR</b><small>Gestão &amp; Pessoas</small></div></div>
+    <div class="lg-titulo"><h2>Bem-vindo de volta</h2><p>Entre com o seu e-mail e senha.</p></div>
     <div class="ei-login-hero"><div class="ei-logo grande"><div class="ei-marca"><i class="ei-anel"></i><b>V4</b></div><div class="ei-nome"><b>IMPULSIONAR</b><small>Estúdio de Vídeo</small></div></div><p>Grave, edite com IA e publique vídeos profissionais — direto do celular.</p></div>
-    <img src="/assets/logo-impulsionar.jpg" alt="Impulsionar V4" class="logo-login" onerror="this.outerHTML='&lt;div class=&quot;logo-fallback-login&quot;&gt;IMPULSIONAR V4&lt;/div&gt;'">
     <form id="form-login">
       <label>E-mail de Acesso</label>
       <input type="email" id="login-email" required autocomplete="username">
