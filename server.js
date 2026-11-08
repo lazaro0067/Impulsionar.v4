@@ -12867,7 +12867,7 @@ if (PASTA_UPLOADS !== PASTA_UPLOADS_CODIGO) app.use('/uploads', express.static(P
 // =====================================================================
 const MT_PADRAO = {
     marca: {
-        nome: 'Do Chão à Gestão', mentor: 'Lázaro Salles', titulo: 'Liderança que move operações',
+        nome: 'Do Chão à Gestão', mentor: 'Lázaro Neto', titulo: 'Liderança que move operações',
         frase: 'Eu comecei carregando caixa em 2013. Hoje lidero operações com centenas de pessoas. Eu ensino líderes a fazer o time render, sem gritar e sem perder o controle da operação.',
         promessa: 'Transformar líderes de operação em líderes que entregam resultado através das pessoas.',
         central: 'Quem move pessoas, move resultados.',
@@ -12931,7 +12931,7 @@ const MT_PADRAO = {
         { fonte: 'Total', c50: 'R$ 50.407', c100: 'R$ 104.820' }
     ],
     instagram: {
-        bio: 'Lázaro Salles | Liderança que move operações\nDe ajudante de distribuição a gerente corporativo\n+12 anos liderando times de até 250 pessoas\nMentoria Do Chão à Gestão ⬇️',
+        bio: 'Lázaro Neto | Liderança que move operações\nDe ajudante de distribuição a gerente corporativo\n+12 anos liderando times de até 250 pessoas\nMentoria Do Chão à Gestão ⬇️',
         linhas: [
             { linha: 'História (20%)', objetivo: 'Gerar conexão', exemplos: '"Eu era ajudante e um supervisor mudou minha vida"; primeira vez liderando 250 pessoas' },
             { linha: 'Ensino (40%)', objetivo: 'Gerar autoridade', exemplos: 'Como dar feedback em 3 passos; os 5 indicadores que todo líder de operação deve olhar' },
@@ -13103,7 +13103,9 @@ async function mtLer() {
     // completa com o padrão o que ainda não existe (sem apagar o que o Lázaro editou)
     const out = JSON.parse(JSON.stringify(MT_PADRAO));
     Object.keys(d).forEach(k => { if (d[k] !== undefined && d[k] !== null) out[k] = (typeof d[k] === 'object' && !Array.isArray(d[k]) && typeof out[k] === 'object' && !Array.isArray(out[k])) ? Object.assign(out[k], d[k]) : d[k]; });
-    if (!out.marca.fotoUrl) out.marca.fotoUrl = MT_PADRAO.marca.fotoUrl; // sem foto escolhida: usa a foto oficial
+    if (!out.marca.fotoUrl) out.marca.fotoUrl = MT_PADRAO.marca.fotoUrl;
+    if (out.marca.mentor === 'Lázaro Salles') out.marca.mentor = 'Lázaro Neto'; // nome público escolhido
+    if (out.instagram && typeof out.instagram.bio === 'string') out.instagram.bio = out.instagram.bio.replace('Lázaro Salles', 'Lázaro Neto'); // sem foto escolhida: usa a foto oficial
     return out;
 }
 async function mtSalvar(d) { await mtRun(`INSERT INTO mentoria_negocio (id, dados, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET dados = excluded.dados, updated_at = CURRENT_TIMESTAMP`, [JSON.stringify(d)]); }

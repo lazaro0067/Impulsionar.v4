@@ -1605,6 +1605,12 @@
   .app-banner { position:fixed; left:10px; right:10px; bottom:calc(env(safe-area-inset-bottom) + 10px); z-index:19000; display:flex; align-items:center; gap:10px; background:#0b1329; color:#fff; border-radius:16px; padding:10px 12px; box-shadow:0 12px 36px rgba(0,0,0,.35); border:1px solid rgba(74,222,128,.35); }
   .app-banner img { width:44px; height:44px; border-radius:11px; } .app-banner div { flex:1; min-width:0; } .app-banner b { display:block; font-size:14px; } .app-banner small { color:#cbd5e1; font-size:12px; }
   .app-banner button { border:none; cursor:pointer; } .app-banner .pri { background:#22c55e; color:#0b1329; font-weight:800; border-radius:10px; padding:9px 14px; } .app-banner .x { background:none; color:#94a3b8; font-size:16px; }
+
+  .lg-app { display:flex; align-items:center; gap:12px; width:100%; margin-top:16px; text-align:left; cursor:pointer; font:inherit; border-radius:14px; padding:12px 14px; border:1px solid rgba(74,222,128,.45); background:rgba(34,197,94,.1); color:#e2e8f0; }
+  .lg-app span { font-size:24px; } .lg-app b { display:block; color:#4ade80; font-size:14px; } .lg-app small { color:#94a3b8; font-size:12px; } .lg-app[hidden] { display:none; }
+  html.estudio .lg-app { display:none !important; }
+  .app-caixa .sec { background:#fff !important; color:#0b1329 !important; border:1px solid #cbd5e1 !important; margin-top:8px; }
+  .app-caixa .nunca { display:block; text-align:center; margin-top:12px; color:#64748b; font-size:12px; }
   .app-modal { position:fixed; inset:0; z-index:20500; background:rgba(2,6,23,.6); display:flex; align-items:flex-end; justify-content:center; padding:12px; }
   .app-caixa { background:#fff; color:#0b1329; border-radius:20px; padding:20px; width:min(420px,100%); text-align:center; } .app-caixa img { width:72px; height:72px; border-radius:18px; } .app-caixa h3 { margin:8px 0; } .app-caixa ol { text-align:left; padding-left:22px; line-height:1.7; font-size:14.5px; } .app-caixa p { color:#475569; font-size:13.5px; }
   .app-caixa button { border:none; background:#0b1329; color:#fff; border-radius:12px; padding:12px 26px; font-weight:800; cursor:pointer; width:100%; } .app-ic { display:inline-block; background:#eef2ff; border-radius:6px; padding:0 4px; }
@@ -1884,6 +1890,7 @@
       <div id="erro-login"></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
+      <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()" hidden><span>📲</span><div><b>Instalar o app Impulsionar</b><small>Abra direto da tela do celular, em tela cheia</small></div></button>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -28141,7 +28148,7 @@ const appEhIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigat
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); APP.prompt = e; appAtualizarBotao(); });
 window.addEventListener('appinstalled', () => { APP.prompt = null; appAtualizarBotao(); const b = document.getElementById('app-banner'); if (b) b.remove(); mostrarToast('📲 Impulsionar instalado! Abra pelo ícone na tela do celular.'); });
-function appAtualizarBotao() { const b = document.getElementById('btn-instalar-app'); if (b) b.hidden = appInstalado() || !(APP.prompt || appEhIos() || evCelularAquiApp()); }
+function appAtualizarBotao() { const oculto = appInstalado() || !(APP.prompt || appEhIos() || evCelularAquiApp()); ['btn-instalar-app', 'btn-app-login'].forEach(id => { const b = document.getElementById(id); if (b) b.hidden = oculto; }); }
 function evCelularAquiApp() { return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent); }
 async function appInstalar() {
   if (APP.prompt) { APP.prompt.prompt(); const r = await APP.prompt.userChoice.catch(() => ({})); if (r.outcome === 'accepted') APP.prompt = null; appAtualizarBotao(); return; }
@@ -28154,16 +28161,21 @@ async function appInstalar() {
   document.body.appendChild(m);
 }
 // convite discreto no celular (uma vez a cada 15 dias, até instalar)
+// ao entrar no celular: oferece instalar o app (até instalar ou até a pessoa pedir para não perguntar mais)
 function appConvidar() {
   appAtualizarBotao();
   if (appInstalado() || !evCelularAquiApp() || document.body.classList.contains('modo-estudio')) return;
-  try { if (Date.now() - Number(localStorage.getItem('app_convite') || 0) < 15 * 86400000) return; } catch (e) {}
+  try { if (localStorage.getItem('app_nunca') === '1' || sessionStorage.getItem('app_convite_sessao') === '1') return; sessionStorage.setItem('app_convite_sessao', '1'); } catch (e) {}
   setTimeout(() => {
-    if (document.getElementById('app-banner') || appInstalado()) return;
-    const b = document.createElement('div'); b.id = 'app-banner'; b.className = 'app-banner';
-    b.innerHTML = `<img src="/assets/app-icone-192.png?v=1" alt=""><div><b>Instale o Impulsionar</b><small>Abre direto da tela do celular, em tela cheia e já logado.</small></div><button class="pri" onclick="appInstalar()">Instalar</button><button class="x" onclick="try{localStorage.setItem('app_convite', Date.now())}catch(e){}; this.parentElement.remove()">✕</button>`;
-    document.body.appendChild(b);
-  }, 2500);
+    if (document.getElementById('app-convite') || appInstalado()) return;
+    const m = document.createElement('div'); m.className = 'app-modal'; m.id = 'app-convite'; m.onclick = ev => { if (ev.target === m) m.remove(); };
+    m.innerHTML = `<div class="app-caixa"><img src="/assets/app-icone-192.png?v=1" alt=""><h3>Use o Impulsionar como aplicativo</h3>
+      <p>Instale no seu celular: o ícone fica na tela inicial, abre em tela cheia, mais rápido e já logado — como qualquer app.</p>
+      <button onclick="this.closest('.app-modal').remove(); appInstalar()">📲 Instalar o app</button>
+      <button class="sec" onclick="this.closest('.app-modal').remove()">Agora não</button>
+      <a href="#" class="nunca" onclick="try{localStorage.setItem('app_nunca','1')}catch(e){}; this.closest('.app-modal').remove(); return false;">Não perguntar mais</a></div>`;
+    document.body.appendChild(m);
+  }, 1200);
 }
 /* ==========================================================
    BOOT
