@@ -1759,6 +1759,23 @@
   .mtn-ped-det { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; margin:8px 0; } .mtn-ped-det div { background:#f8fafc; border-radius:10px; padding:8px 10px; } .mtn-ped-det small { display:block; color:#64748b; font-size:11.5px; } .mtn-ped-det b { font-size:14px; }
   .mtn-ped-msg { background:#f8fafc; border-left:3px solid #cbd5e1; padding:8px 12px; border-radius:8px; color:#334155; margin:8px 0; font-style:italic; white-space:pre-line; } .mtn-ped-notas { color:#475569; font-size:13px; white-space:pre-line; margin:6px 0; } .mtn-ped-valor { margin:6px 0; color:#166534; }
   .mtn-ped-bts { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; } .mtn-bt { border:1px solid #cbd5e1; background:#fff; color:#0b1329; border-radius:10px; padding:8px 12px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; text-decoration:none; width:auto; } .mtn-bt.zap { background:#16a34a; border-color:#16a34a; color:#fff; } select.mtn-bt { padding:7px 8px; }
+  .mag-topo { align-items:center !important; margin-bottom:10px !important; flex-wrap:nowrap !important; } @media (min-width:901px) { .mag-topo { padding-right:64px; } } .mag-topo h1 { white-space:nowrap; } .mag-topo h1 { font-size:clamp(22px, 5vw, 30px); }
+  .mag-ic { position:relative; border:1px solid #cbd5e1; background:#fff; color:#0b1329; border-radius:12px; height:42px; min-width:42px; padding:0 12px; font:inherit; font-weight:800; font-size:16px; cursor:pointer; width:auto !important; margin:0 !important; }
+  .mag-ic.prim { background:#0b1329; color:#fff; border-color:#0b1329; } .mag-ic.peq { height:36px; min-width:36px; padding:0 10px; }
+  .mag-ponto { position:absolute; top:6px; right:6px; width:9px; height:9px; border-radius:50%; background:#f59e0b; border:2px solid #fff; } .mag-ponto.ok { background:#16a34a; } .mag-ponto[hidden] { display:none; }
+  .mag-barra { display:flex; align-items:center; gap:8px; margin-bottom:8px; } .mag-seg { display:flex; flex:1; background:#e2e8f0; border-radius:12px; padding:3px; } .mag-seg button { flex:1; border:none; background:none; border-radius:9px; padding:8px 6px; font:inherit; font-weight:700; color:#475569; cursor:pointer; width:auto; margin:0; } .mag-seg button.on { background:#fff; color:#0b1329; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+  .mag-hoje-linha { font-size:13.5px; color:#475569; margin:0 2px 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .mag-hoje-linha span { color:#16a34a; }
+  .mag-aviso.mini { padding:8px 12px; font-size:13px; }
+  .mag-hojebt { width:auto !important; height:30px !important; font-size:13px !important; padding:0 10px !important; }
+  .mag-faixa { display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; margin-bottom:10px; } .mag-faixa button { border:1px solid #e2e8f0; background:#fff; border-radius:12px; padding:6px 0 4px; font:inherit; cursor:pointer; color:#0b1329; width:auto; margin:0; } .mag-faixa small { display:block; font-size:11px; color:#64748b; } .mag-faixa b { display:block; font-size:17px; } .mag-faixa i { display:block; font-style:normal; color:#16a34a; font-size:12px; line-height:10px; height:10px; letter-spacing:1px; }
+  .mag-faixa button.hoje b { color:#16a34a; } .mag-faixa button.sel { background:#0b1329; border-color:#0b1329; color:#fff; } .mag-faixa button.sel small { color:#cbd5e1; } .mag-faixa button.sel i { color:#4ade80; }
+  .mag-sem-pc { display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:6px; } .mag-col { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:8px; min-height:160px; min-width:0; } .mag-col.hoje { border-color:#16a34a; box-shadow:0 0 0 2px #16a34a22; }
+  .mag-col-t { display:flex; align-items:baseline; gap:6px; margin-bottom:6px; } .mag-col-t small { color:#64748b; font-weight:700; } .mag-col-t b { font-size:18px; } .mag-col-t button { margin-left:auto; border:none; background:#f1f5f9; border-radius:8px; width:26px !important; height:26px; padding:0 !important; cursor:pointer; }
+  .mag-chip { display:block; width:100%; text-align:left; border:none; border-left:3px solid var(--c); background:#f8fafc; border-radius:6px; padding:5px 6px; margin:0 0 4px; font:inherit; font-size:12px; color:#0b1329; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .mag-chip b { display:block; font-size:11px; color:#475569; } .mag-col-v { color:#cbd5e1; }
+  .mag-sem-cel { display:none; } @media (max-width:820px) { .mag-sem-pc { display:none; } .mag-sem-cel { display:block; } }
+  .mag-legenda-d { margin-top:10px; color:#64748b; font-size:12.5px; } .mag-legenda-d summary { cursor:pointer; }
+  .mag-este { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px; margin:6px 0 8px; font-size:14px; } .mag-este.ok { background:#f0fdf4; border-color:#bbf7d0; } .mag-este.erro { background:#fef2f2; border-color:#fecaca; color:#991b1b; }
+  @media (max-width:700px) { .mag-acoes { width:auto !important; } .mag-ic span { display:none; } .mag-acoes .mag-ic { flex:0 0 auto !important; } }
   .mtn-chk { display:flex !important; align-items:center; gap:8px; } .mtn-chk input { width:auto; }
   .mtn-turma { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:14px 16px; margin-bottom:14px; } .mtn-turma-cab { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; } .mtn-turma-cab h3 { margin:0; }
   .mtn-st { font-size:12px; border-radius:99px; padding:3px 10px; background:#e2e8f0; margin-left:6px; vertical-align:middle; } .mtn-st.aberta { background:#dcfce7; color:#166534; } .mtn-st.andamento { background:#dbeafe; color:#1e40af; }
@@ -28310,39 +28327,63 @@ function magDiaTxt(d, hoje) {
   const x = new Date(d + 'T12:00:00Z'), t = `${MAG_SEM[x.getUTCDay()]}, ${x.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', timeZone: 'UTC' })}`; return t[0].toUpperCase() + t.slice(1);
 }
 async function renderAgenda() {
+  try { const v = localStorage.getItem('mag_vista'); if (['lista', 'semana', 'mes'].includes(v)) MAG.vista = v; } catch (e) {}
   const c = document.getElementById('conteudo');
-  c.innerHTML = `<div class="agd"><div class="mag-topo"><div><h1>📅 Minha Agenda</h1><p class="mag-sub">Seus compromissos, os do Impulsionar e os do Outlook num lugar só — com alerta no celular.</p></div>
-    <div class="mag-acoes"><button class="btn-primario" onclick="magEditar()">＋ Novo compromisso</button><button class="btn-secundario" id="mag-bt-push" onclick="magAtivarPush()">🔔 Ativar alertas no celular</button><button class="btn-secundario" onclick="magConfig()">⚙️ Configurar</button></div></div>
+  c.innerHTML = `<div class="agd"><div class="mag-topo"><h1>📅 Minha Agenda</h1>
+    <div class="mag-acoes"><button class="mag-ic prim" onclick="magEditar()" title="Novo compromisso">＋<span> Novo</span></button><button class="mag-ic" id="mag-bt-sino" onclick="magConfig('alertas')" title="Alertas no celular">🔔<i class="mag-ponto" hidden></i></button><button class="mag-ic" onclick="magConfig()" title="Configurar">⚙️<span> Configurar</span></button></div></div>
     <div id="mag-corpo"><p style="color:#64748b;">Carregando…</p></div></div><div id="modal-area"></div>`;
   await magCarregar();
 }
+function magSegunda(d) { return magSoma(d, -new Date(d + 'T12:00:00Z').getUTCDay()); } // semana de domingo a sábado, como o mês
 async function magCarregar(atualizar) {
   try {
     const hoje = (MAG.dados && MAG.dados.hoje) || new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
     let de, ate;
     if (MAG.vista === 'mes') { if (!MAG.mes) MAG.mes = hoje.slice(0, 7); const p = new Date(MAG.mes + '-01T12:00:00Z'); de = magSoma(MAG.mes + '-01', -p.getUTCDay()); ate = magSoma(de, 41); }
+    else if (MAG.vista === 'semana') { if (!MAG.semana) MAG.semana = magSegunda(hoje); de = MAG.semana; ate = magSoma(de, 6); if (!MAG.diaSel || MAG.diaSel < de || MAG.diaSel > ate) MAG.diaSel = hoje >= de && hoje <= ate ? hoje : de; }
     else { de = hoje; ate = magSoma(hoje, 30); }
     MAG.dados = await api(`/api/admin/agenda?de=${de}&ate=${ate}${atualizar ? '&atualizar=1' : ''}`);
-    magDesenhar();
+    magDesenhar(); magEstadoAlertas();
   } catch (e) { const el = document.getElementById('mag-corpo'); if (el) el.innerHTML = `<div class="mag-aviso erro">${escapeHtml(e.message)}</div>`; }
+}
+// este aparelho está mesmo cadastrado no servidor? (compara a inscrição do navegador com a lista)
+async function magEsteAparelho() {
+  try { if (!('serviceWorker' in navigator) || !('PushManager' in window) || Notification.permission !== 'granted') return null; const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription(); if (!sub) return null; const fim = sub.endpoint.slice(-24); return ((MAG.dados || {}).aparelhos || []).find(a => a.fim === fim) || null; } catch (e) { return null; }
+}
+async function magEstadoAlertas() {
+  const ap = await magEsteAparelho(); MAG.aqui = ap;
+  const p = document.querySelector('#mag-bt-sino .mag-ponto'); if (!p) return;
+  p.hidden = false; p.className = 'mag-ponto ' + (ap && !ap.ultimo_erro ? 'ok' : 'off');
+  document.getElementById('mag-bt-sino').title = ap ? (ap.ultimo_erro ? 'Alertas com erro neste aparelho' : 'Alertas ativos neste aparelho') : 'Ativar alertas neste aparelho';
 }
 function magDesenhar() {
   const el = document.getElementById('mag-corpo'); if (!el || !MAG.dados) return;
-  const d = MAG.dados, hoje = d.hoje, cfg = d.config || {};
-  const bt = document.getElementById('mag-bt-push');
-  if (bt) { const aqui = localStorage.getItem('agd_push_ok') === '1' && 'Notification' in window && Notification.permission === 'granted'; bt.textContent = aqui ? '🔔 Alertas ativos neste aparelho' : '🔔 Ativar alertas no celular'; bt.classList.toggle('mag-on', aqui); }
-  const deHoje = d.itens.filter(i => i.data === hoje);
-  const prox = deHoje.find(i => i.hora_inicio && i.hora_inicio >= new Date(Date.now() - 3 * 3600e3).toISOString().slice(11, 16));
-  const avisos = [];
-  if (d.outlookErro) avisos.push(`<div class="mag-aviso erro">Outlook: ${escapeHtml(d.outlookErro)} <a href="#" onclick="magConfig();return false;">Configurar</a></div>`);
-  if (!d.aparelhos.length) avisos.push(`<div class="mag-aviso">📲 Para receber o <b>resumo do dia às ${escapeHtml(cfg.resumoHora || '07:00')}</b> e os lembretes, abra o Impulsionar <b>no celular</b> e toque em <b>🔔 Ativar alertas no celular</b>.${appEhIos() && !appInstalado() ? ' No iPhone, instale o app primeiro (Compartilhar › Adicionar à Tela de Início) e ative por ele.' : ''}</div>`);
-  el.innerHTML = `${avisos.join('')}
-    <div class="mag-resumo"><div class="mag-card"><small>HOJE</small><b>${deHoje.length}</b><span>compromisso${deHoje.length === 1 ? '' : 's'}</span></div>
-      <div class="mag-card mag-prox"><small>PRÓXIMO</small>${prox ? `<b>${escapeHtml(prox.hora_inicio)}</b><span>${escapeHtml(prox.titulo)}</span>` : '<b>—</b><span>nada mais hoje</span>'}</div>
-      <div class="mag-card"><small>ALERTAS</small><b>${d.aparelhos.length}</b><span>aparelho${d.aparelhos.length === 1 ? '' : 's'} · resumo ${cfg.resumoAtivo ? 'às ' + escapeHtml(cfg.resumoHora) : 'desligado'}</span></div></div>
-    <div class="mag-vistas"><button class="${MAG.vista === 'lista' ? 'on' : ''}" onclick="MAG.vista='lista'; magCarregar()">📋 Próximos dias</button><button class="${MAG.vista === 'mes' ? 'on' : ''}" onclick="MAG.vista='mes'; magCarregar()">🗓️ Mês</button><button onclick="magCarregar(true)" title="Atualizar (inclui o Outlook)">↻ Atualizar</button></div>
-    ${MAG.vista === 'mes' ? magMes() : magLista(d.itens)}
-    <div class="mag-legenda">${Object.values(MAG_TIPOS).map(([cor, r]) => `<span><i style="background:${cor}"></i>${r}</span>`).join('')}</div>`;
+  const d = MAG.dados, hoje = d.hoje;
+  const deHoje = d.itens.filter(i => i.data === hoje), agoraHm = new Date(Date.now() - 3 * 3600e3).toISOString().slice(11, 16);
+  const prox = deHoje.find(i => i.hora_inicio && i.hora_inicio >= agoraHm);
+  const vis = [['lista', 'Próximos'], ['semana', 'Semana'], ['mes', 'Mês']];
+  el.innerHTML = `${d.outlookErro ? `<div class="mag-aviso erro mini">Outlook: ${escapeHtml(d.outlookErro)} <a href="#" onclick="magConfig('outlook');return false;">ajustar</a></div>` : ''}
+    <div class="mag-barra"><div class="mag-seg">${vis.map(([k, r]) => `<button class="${MAG.vista === k ? 'on' : ''}" onclick="magVista('${k}')">${r}</button>`).join('')}</div><button class="mag-ic peq" onclick="magCarregar(true)" title="Atualizar (inclui o Outlook)">↻</button></div>
+    <div class="mag-hoje-linha"><b>Hoje:</b> ${deHoje.length ? `${deHoje.length} compromisso${deHoje.length > 1 ? 's' : ''}` : 'livre'}${prox ? ` · <span>próximo <b>${escapeHtml(prox.hora_inicio)}</b> ${escapeHtml(prox.titulo)}</span>` : ''}</div>
+    ${MAG.vista === 'mes' ? magMes() : MAG.vista === 'semana' ? magSemana() : magLista(d.itens)}
+    <details class="mag-legenda-d"><summary>Legenda das cores</summary><div class="mag-legenda">${Object.values(MAG_TIPOS).map(([cor, r]) => `<span><i style="background:${cor}"></i>${r}</span>`).join('')}</div></details>`;
+}
+function magVista(v) { MAG.vista = v; try { localStorage.setItem('mag_vista', v); } catch (e) {} magCarregar(); }
+function magSemana() {
+  const d = MAG.dados, hoje = d.hoje, de = MAG.semana, por = {}, dias = [...Array(7)].map((_, k) => magSoma(de, k));
+  d.itens.forEach(i => { (por[i.data] = por[i.data] || []).push(i); });
+  const fmt = x => new Date(x + 'T12:00:00Z').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' }).replace('.', '');
+  const curto = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const sel = MAG.diaSel, lsel = por[sel] || [];
+  return `<div class="mag-mes-topo"><button onclick="MAG.semana='${magSoma(de, -7)}'; MAG.diaSel=''; magCarregar()">‹</button><b>${fmt(dias[0])} – ${fmt(dias[6])}</b><button onclick="MAG.semana='${magSoma(de, 7)}'; MAG.diaSel=''; magCarregar()">›</button>${de !== magSegunda(hoje) ? `<button class="mag-hojebt" onclick="MAG.semana=''; MAG.diaSel=''; magCarregar()">Hoje</button>` : ''}</div>
+    <div class="mag-sem-cel"><div class="mag-faixa">${dias.map((x, k) => { const n = (por[x] || []).length; return `<button class="${x === sel ? 'sel' : ''} ${x === hoje ? 'hoje' : ''}" onclick="MAG.diaSel='${x}'; magDesenhar()"><small>${curto[k]}</small><b>${Number(x.slice(8))}</b><i>${n ? '•'.repeat(Math.min(n, 3)) : '&nbsp;'}</i></button>`; }).join('')}</div>
+    <div class="mag-dia ${sel === hoje ? 'hoje' : ''}"><div class="mag-dia-t">${escapeHtml(magDiaTxt(sel, hoje))}<small>${sel.split('-').reverse().slice(0, 2).join('/')}</small><button onclick="magEditar(0, '${sel}')">＋</button></div>${lsel.length ? lsel.map(magItem).join('') : '<p class="mag-vazio">Nada marcado neste dia.</p>'}</div></div>
+    <div class="mag-sem-pc">${dias.map((x, k) => `<div class="mag-col ${x === hoje ? 'hoje' : ''}"><div class="mag-col-t"><small>${curto[k]}</small><b>${Number(x.slice(8))}</b><button onclick="magEditar(0, '${x}')" title="Novo neste dia">＋</button></div>
+      ${(por[x] || []).map(i => `<button class="mag-chip" style="--c:${magCor(i)}" onclick="magDetalhe('${escapeHtml(String(i.id))}')"><b>${escapeHtml(i.hora_inicio || 'dia todo')}</b>${escapeHtml(i.titulo)}</button>`).join('') || '<span class="mag-col-v">—</span>'}</div>`).join('')}</div>`;
+}
+function magDetalhe(id) {
+  const i = MAG.dados.itens.find(x => String(x.id) === id); if (!i) return;
+  mtnModal(`<h3 style="margin-top:0;">${escapeHtml(i.titulo)}</h3><p class="mag-dica" style="font-size:14px;">${escapeHtml(magDiaTxt(i.data, MAG.dados.hoje))} · ${i.data.split('-').reverse().join('/')} · ${i.hora_inicio ? escapeHtml(i.hora_inicio + (i.hora_fim ? '–' + i.hora_fim : '')) : 'dia todo'}</p>${magItem(i)}<div class="acoes-form"><button class="btn-secundario" onclick="mtnModal('')">Fechar</button></div>`);
 }
 function magItem(i) {
   const cor = magCor(i);
@@ -28394,17 +28435,20 @@ async function magExcluir(id) {
   if (!confirm(ev.repetir ? 'Excluir este compromisso e todas as repetições?' : 'Excluir este compromisso?')) return;
   try { const r = await api('/api/admin/agenda/eventos/' + id, { method: 'DELETE' }); mtnModal(''); mostrarToast(r.aviso || r.message, !!r.aviso); await magCarregar(); } catch (e) { mostrarToast(e.message, true); }
 }
-function magConfig() {
-  const d = MAG.dados || {}, c = d.config || {}, f = c.fontes || {}, ms = d.ms365 || {};
+function magConfig(foco) {
+  const d = MAG.dados || {}, c = d.config || {}, f = c.fontes || {}, ms = d.ms365 || {}, aqui = MAG.aqui;
   const fontes = [['consultorias', 'Consultorias DPO agendadas'], ['solicitacoes', 'Pedidos de consultoria aguardando resposta'], ['mentorias', 'Mentorias (executivos)'], ['eventos', 'Eventos da comunidade'], ['treinamentos', 'Treinamentos que vou ministrar'], ['prazos', 'Prazos: follow-ups e marcos da consultoria'], ['mentoriaNegocio', 'Turmas e aula gratuita (Do Chão à Gestão)'], ['estudio', 'Posts agendados no Estúdio']];
   mtnModal(`<h3 style="margin-top:0;">⚙️ Configurar a agenda</h3>
-    <div class="mag-sec"><b>🔔 Alertas no celular</b>
+    <div class="mag-sec" id="agc-sec-alertas"><b>🔔 Alertas no celular</b>
+      <div class="mag-este ${aqui ? (aqui.ultimo_erro ? 'erro' : 'ok') : ''}">${aqui ? (aqui.ultimo_erro ? `⚠️ Este aparelho está cadastrado, mas o último envio falhou: ${escapeHtml(aqui.ultimo_erro)}` : '✅ Alertas ativos neste aparelho.') : '📱 Este aparelho ainda não recebe os alertas.'}
+        <button class="btn-primario" style="width:auto;" onclick="magAtivarPush()">${aqui ? (aqui.ultimo_erro ? 'Tentar ativar de novo' : 'Reativar / testar') : '🔔 Ativar neste aparelho'}</button></div>
+      ${appEhIos() && !appInstalado() ? '<p class="mag-dica">No iPhone, os alertas só funcionam pelo app instalado (Safari › Compartilhar › Adicionar à Tela de Início) — ative abrindo pelo ícone.</p>' : ''}
       <label class="mag-chk"><input type="checkbox" id="agc-resumoAtivo" ${c.resumoAtivo ? 'checked' : ''}> Resumo do dia todo dia</label>
       <div class="mtn-form"><label>Horário do resumo<input type="time" id="agc-resumoHora" value="${escapeHtml(c.resumoHora || '07:00')}"></label><label>Lembrete dos compromissos automáticos<select id="agc-lembreteMin">${[[-1, 'Sem lembrete'], [0, 'Na hora'], [10, '10 min antes'], [15, '15 min antes'], [30, '30 min antes'], [60, '1 hora antes']].map(([n, r]) => `<option value="${n}" ${Number(c.lembreteMin) === n ? 'selected' : ''}>${r}</option>`).join('')}</select></label></div>
-      ${(d.aparelhos || []).length ? `<div class="mag-aparelhos">${d.aparelhos.map(a => `<div>📱 ${escapeHtml(a.aparelho || 'Aparelho')} <small>desde ${escapeHtml(String(a.criado_em || '').slice(0, 10).split('-').reverse().join('/'))}</small><button onclick="magRemoverAparelho(${a.id})">remover</button></div>`).join('')}</div><button class="btn-secundario" style="width:auto;" onclick="magTestarPush()">Enviar o resumo de hoje agora (teste)</button>` : '<p class="mag-dica">Nenhum aparelho ainda: abra o Impulsionar no celular e toque em 🔔 Ativar alertas no celular.</p>'}
+      ${(d.aparelhos || []).length ? `<div class="mag-aparelhos"><small style="display:block;font-weight:700;color:#64748b;">Aparelhos que recebem os alertas</small>${d.aparelhos.map(a => `<div>📱 ${escapeHtml(a.aparelho || 'Aparelho')}${aqui && aqui.id === a.id ? ' <b>(este)</b>' : ''} <small>${a.ultimo_erro ? '⚠️ com erro' : a.ultimo_ok ? '✅ ok' : 'desde ' + escapeHtml(String(a.criado_em || '').slice(0, 10).split('-').reverse().join('/'))}</small><button onclick="magRemoverAparelho(${a.id})">remover</button></div>`).join('')}</div><button class="btn-secundario" style="width:auto;" onclick="magTestarPush()">Enviar o resumo de hoje agora (teste)</button>` : ''}
     </div>
     <div class="mag-sec"><b>⚡ Puxar automaticamente do Impulsionar</b>${fontes.map(([k, r]) => `<label class="mag-chk"><input type="checkbox" data-fonte="${k}" ${f[k] !== false ? 'checked' : ''}> ${r}</label>`).join('')}</div>
-    <div class="mag-sec"><b>📧 Outlook</b>
+    <div class="mag-sec" id="agc-sec-outlook"><b>📧 Outlook</b>
       <label class="mag-chk"><input type="radio" name="agc-modo" value="nenhum" ${c.outlookModo === 'nenhum' || !c.outlookModo ? 'checked' : ''} onchange="magModoOutlook()"> Não conectar</label>
       <label class="mag-chk"><input type="radio" name="agc-modo" value="ics" ${c.outlookModo === 'ics' ? 'checked' : ''} onchange="magModoOutlook()"> Pelo link do calendário publicado <small>(mais simples — só leitura)</small></label>
       <label class="mag-chk"><input type="radio" name="agc-modo" value="ms365" ${c.outlookModo === 'ms365' ? 'checked' : ''} onchange="magModoOutlook()"> Pelo Microsoft 365 da empresa <small>(${ms.ativo ? '✅ integração configurada' : 'precisa do app no Azure em 🔑 Chaves e integrações'})</small></label>
@@ -28422,6 +28466,7 @@ function magConfig() {
     <div id="agc-teste"></div>
     <div class="acoes-form"><button class="btn-primario" style="width:auto;" onclick="magSalvarConfig()">Salvar</button><button class="btn-secundario" onclick="mtnModal('')">Fechar</button></div>`);
   magModoOutlook();
+  if (foco) setTimeout(() => { const el = document.getElementById('agc-sec-' + foco); if (el) el.scrollIntoView({ block: 'start' }); }, 60);
 }
 function magModoOutlook() { const m = (document.querySelector('input[name="agc-modo"]:checked') || {}).value; const a = document.getElementById('agc-ics'), b = document.getElementById('agc-ms365'); if (a) a.style.display = m === 'ics' ? '' : 'none'; if (b) b.style.display = m === 'ms365' ? '' : 'none'; }
 async function magSalvarConfig(extra) {
@@ -28436,7 +28481,7 @@ async function magSalvarConfig(extra) {
   } catch (e) { mostrarToast(e.message, true); }
 }
 function magNovoFeed() { if (confirm('Gerar um link novo? Quem assinou o link antigo deixa de ver a agenda.')) magSalvarConfig({ novoFeed: true }); }
-async function magRemoverAparelho(id) { await api('/api/admin/agenda/push/inscricoes/' + id, { method: 'DELETE' }).catch(() => {}); try { localStorage.removeItem('agd_push_ok'); } catch (e) {} await magCarregar(); magConfig(); }
+async function magRemoverAparelho(id) { await api('/api/admin/agenda/push/inscricoes/' + id, { method: 'DELETE' }).catch(() => {}); await magCarregar(); magConfig('alertas'); }
 async function magTestarPush() { try { const r = await api('/api/admin/agenda/push/teste', { method: 'POST' }); mostrarToast(r.message); } catch (e) { mostrarToast(e.message, true); } }
 function magChaveBytes(b64) { const p = '='.repeat((4 - b64.length % 4) % 4), s = atob((b64 + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...s].map(ch => ch.charCodeAt(0))); }
 async function magAtivarPush() {
@@ -28453,8 +28498,8 @@ async function magAtivarPush() {
     if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: magChaveBytes(publicKey) });
     const ua = navigator.userAgent, aparelho = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? ('Android' + ((ua.match(/Android [\d.]+; ([^;)]+)/) || [])[1] ? ' · ' + ua.match(/Android [\d.]+; ([^;)]+)/)[1] : '')) : /Windows/.test(ua) ? 'Computador Windows' : /Mac/.test(ua) ? 'Mac' : 'Navegador';
     const r = await api('/api/admin/agenda/push/inscrever', { method: 'POST', body: JSON.stringify({ inscricao: sub.toJSON(), aparelho }) });
-    try { localStorage.setItem('agd_push_ok', '1'); } catch (e) {}
-    mostrarToast('🔔 ' + r.message); await magCarregar();
+    mostrarToast((r.ok ? '🔔 ' : '⚠️ ') + r.message, !r.ok);
+    const aberto = !!document.getElementById('agc-sec-alertas'); await magCarregar(); if (aberto) magConfig('alertas');
   } catch (e) { mostrarToast('Não foi possível ativar: ' + e.message, true); }
 }
 // clique numa notificação com o app aberto: vai para a agenda

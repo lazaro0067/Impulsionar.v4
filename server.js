@@ -13284,6 +13284,7 @@ db.run(`CREATE TABLE IF NOT EXISTS agenda_config (user_id INTEGER PRIMARY KEY, d
 db.run(`CREATE TABLE IF NOT EXISTS push_inscricoes (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, endpoint TEXT UNIQUE NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL,
     aparelho TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP, ultimo_ok DATETIME)`);
 db.run(`CREATE TABLE IF NOT EXISTS agenda_avisos (chave TEXT PRIMARY KEY, enviado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+db.run(`ALTER TABLE push_inscricoes ADD COLUMN ultimo_erro TEXT`, () => {});
 
 const agRun = (sql, p = []) => new Promise((ok, erro) => db.run(sql, p, function (e) { if (e) erro(e); else ok(this); }));
 const AG_DATA = /^\d{4}-\d{2}-\d{2}$/, AG_HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -13532,20 +13533,21 @@ function agCriptografarPush(inscricao, texto) {
     const rs = Buffer.alloc(4); rs.writeUInt32BE(4096);
     return Buffer.concat([salt, rs, Buffer.from([asPub.length]), asPub, cifrado]);
 }
-async function agEnviarPushInscricao(insc, dados) {
+async function agEnviarPushInscricao(insc, dados, apagarSeExpirada = true) {
     const v = await agVapid(), aud = new URL(insc.endpoint).origin;
     const cab = b64u(JSON.stringify({ typ: 'JWT', alg: 'ES256' })), corpoJwt = b64u(JSON.stringify({ aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: 'mailto:contato@impulsionarv4.com.br' }));
     const ass = crypto.sign('sha256', Buffer.from(cab + '.' + corpoJwt), { key: v.chave, dsaEncoding: 'ieee-p1363' });
     const r = await fetch(insc.endpoint, { method: 'POST', headers: { Authorization: `vapid t=${cab}.${corpoJwt}.${b64u(ass)}, k=${v.publico}`, 'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream', TTL: '86400', Urgency: 'high' }, body: agCriptografarPush(insc, JSON.stringify(dados)) });
-    if (r.status === 404 || r.status === 410) { await agRun(`DELETE FROM push_inscricoes WHERE id = ?`, [insc.id]).catch(() => {}); return 'expirada'; }
+    // 410 = o aparelho cancelou; 404 numa inscrição que já funcionou = expirou. No teste de ativação nunca apaga (mostra o erro).
+    if (apagarSeExpirada && (r.status === 410 || (r.status === 404 && insc.ultimo_ok))) { await agRun(`DELETE FROM push_inscricoes WHERE id = ?`, [insc.id]).catch(() => {}); return 'expirada'; }
     if (!r.ok) throw new Error('Serviço de notificação respondeu ' + r.status + ' ' + (await r.text().catch(() => '')).slice(0, 160));
-    agRun(`UPDATE push_inscricoes SET ultimo_ok = CURRENT_TIMESTAMP WHERE id = ?`, [insc.id]).catch(() => {});
+    agRun(`UPDATE push_inscricoes SET ultimo_ok = CURRENT_TIMESTAMP, ultimo_erro = NULL WHERE id = ?`, [insc.id]).catch(() => {});
     return 'ok';
 }
 async function agPushUsuario(uid, dados) {
     const lista = await dbAll(`SELECT * FROM push_inscricoes WHERE user_id = ?`, [uid]).catch(() => []);
     let ok = 0; const erros = [];
-    for (const i of lista) { try { if (await agEnviarPushInscricao(i, dados) === 'ok') ok++; } catch (e) { erros.push(e.message); } }
+    for (const i of lista) { try { if (await agEnviarPushInscricao(i, dados) === 'ok') ok++; } catch (e) { erros.push(e.message); agRun(`UPDATE push_inscricoes SET ultimo_erro = ? WHERE id = ?`, [String(e.message).slice(0, 300), i.id]).catch(() => {}); } }
     return { ok, total: lista.length, erros };
 }
 
@@ -13557,7 +13559,7 @@ app.get('/api/admin/agenda', requireRole('admin'), async (req, res) => {
         const ate = ate0 < de ? de : (ate0 > agSomarDias(de, 400) ? agSomarDias(de, 400) : ate0);
         const cfg = await agCfg(agUid(req)), r = await agTudo(agUid(req), de, ate, cfg, req.query.atualizar === '1');
         const c = await lerConfigMs365().catch(() => ({}));
-        const aparelhos = await dbAll(`SELECT id, aparelho, criado_em, ultimo_ok FROM push_inscricoes WHERE user_id = ? ORDER BY id DESC`, [agUid(req)]).catch(() => []);
+        const aparelhos = await dbAll(`SELECT id, aparelho, criado_em, ultimo_ok, ultimo_erro, substr(endpoint, -24) AS fim FROM push_inscricoes WHERE user_id = ? ORDER BY id DESC`, [agUid(req)]).catch(() => []);
         res.json({ de, ate, hoje: agHoje(), itens: r.itens, outlookErro: r.outlookErro, config: cfg, ms365: { ativo: ms365Ativo(c), organizador: c.organizador || '' }, aparelhos,
             feedUrl: `${String((typeof appBaseUrlAtiva === 'string' && /^https:\/\//.test(appBaseUrlAtiva) && appBaseUrlAtiva) || 'https://www.impulsionarv4.com.br').replace(/\/+$/, '')}/api/public/agenda/${cfg.feedToken}.ics` });
     } catch (e) { console.error('Agenda:', e); res.status(500).json({ error: 'Não foi possível carregar a agenda.' }); }
@@ -13627,8 +13629,15 @@ app.post('/api/admin/agenda/push/inscrever', requireRole('admin'), async (req, r
     try {
         await agRun(`INSERT INTO push_inscricoes (user_id, endpoint, p256dh, auth, aparelho) VALUES (?,?,?,?,?) ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth, aparelho = excluded.aparelho`,
             [agUid(req), s.endpoint, k.p256dh, k.auth, String((req.body || {}).aparelho || '').slice(0, 80)]);
-        const r = await agPushUsuario(agUid(req), { title: '🔔 Alertas da agenda ativados', body: 'Pronto! Você vai receber o resumo do dia e os lembretes aqui.', url: '/?app=1#ir=agenda', tag: 'agenda-teste' });
-        res.json({ message: r.ok ? 'Alertas ativados neste aparelho! Chegou uma notificação de teste.' : 'Aparelho cadastrado, mas a notificação de teste falhou: ' + (r.erros[0] || '') });
+        const insc = await dbGet(`SELECT * FROM push_inscricoes WHERE endpoint = ?`, [s.endpoint]);
+        try {
+            await agEnviarPushInscricao(insc, { title: '🔔 Alertas da agenda ativados', body: 'Pronto! Você vai receber o resumo do dia e os lembretes aqui.', url: '/?app=1#ir=agenda', tag: 'agenda-teste' }, false);
+            res.json({ ok: true, message: 'Alertas ativados neste aparelho! Deve chegar uma notificação de teste agora.' });
+        } catch (e) {
+            await agRun(`UPDATE push_inscricoes SET ultimo_erro = ? WHERE id = ?`, [String(e.message).slice(0, 300), insc.id]).catch(() => {});
+            console.warn('Agenda (push teste):', e.message);
+            res.json({ ok: false, message: 'O aparelho foi cadastrado, mas o envio de teste falhou: ' + e.message });
+        }
     } catch (e) { res.status(400).json({ error: e.message }); }
 });
 app.post('/api/admin/agenda/push/teste', requireRole('admin'), async (req, res) => {
