@@ -24,7 +24,7 @@ function mtRodape() {
 // envia um formulário (lead, inscrição) e mostra a mensagem
 async function mtEnviar(form, url, extra) {
   const bt = form.querySelector('button[type=submit]'), msg = form.querySelector('.msg-area');
-  const dados = Object.assign(Object.fromEntries(new FormData(form).entries()), extra || {});
+  const dados = Object.assign(Object.fromEntries(new FormData(form).entries()), { visitante: mtVisitante() }, extra || {});
   if (bt) { bt.disabled = true; bt.dataset.t = bt.textContent; bt.textContent = 'Enviando…'; }
   if (msg) msg.innerHTML = '';
   try {
@@ -37,3 +37,27 @@ async function mtEnviar(form, url, extra) {
 }
 function mtModal(id, on) { const m = document.getElementById(id); if (m) m.classList.toggle('on', on !== false); }
 function mtErroPagina(e) { document.body.innerHTML = `<div class="cx" style="padding:80px 20px;text-align:center;"><h2>Página indisponível no momento</h2><p>${mtEsc(e.message)}</p></div>`; }
+
+/* ---------- Rastreio de visitas e cliques (anônimo até a pessoa se cadastrar) ---------- */
+function mtVisitante() {
+  try { let v = localStorage.getItem('mt_v'); if (!v || !/^[a-z0-9]{8,40}$/i.test(v)) { v = (Date.now().toString(36) + Math.random().toString(36).slice(2, 12)).slice(0, 24); localStorage.setItem('mt_v', v); } return v; } catch (e) { return 'anon' + Math.random().toString(36).slice(2, 12); }
+}
+const MT_RS = (() => {
+  const q = new URLSearchParams(location.search); let origem = q.get('utm_source') || q.get('o') || '', l = q.get('l') || '';
+  try { if (origem) sessionStorage.setItem('mt_o', origem); else origem = sessionStorage.getItem('mt_o') || ''; if (l) localStorage.setItem('mt_l', l); else l = localStorage.getItem('mt_l') || ''; } catch (e) {}
+  return { origem, l, ref: document.referrer && !document.referrer.startsWith(location.origin) ? document.referrer : '' };
+})();
+function mtEvento(tipo, alvo, dados) {
+  try {
+    const corpo = JSON.stringify({ v: mtVisitante(), tipo, pagina: location.pathname, alvo: alvo || '', origem: MT_RS.origem, ref: MT_RS.ref, l: MT_RS.l, dados: dados || undefined });
+    if (navigator.sendBeacon && navigator.sendBeacon('/api/public/ev', new Blob([corpo], { type: 'application/json' }))) return;
+    fetch('/api/public/ev', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: corpo, keepalive: true }).catch(() => {});
+  } catch (e) {}
+}
+mtEvento('visita');
+document.addEventListener('click', ev => {
+  const a = ev.target.closest('a, button'); if (!a || a.type === 'submit' || a.closest('.escala')) return;
+  const href = a.getAttribute('href') || '', txt = (a.innerText || a.title || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+  const alvo = /wa\.me|whatsapp/.test(href) ? 'WhatsApp: ' + txt : /instagram\.com/.test(href) ? 'Instagram: ' + txt : href && !href.startsWith('#') ? txt + ' → ' + href.replace(location.origin, '').slice(0, 80) : txt;
+  if (alvo) mtEvento('clique', alvo);
+}, true);

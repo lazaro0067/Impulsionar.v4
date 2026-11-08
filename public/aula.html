@@ -3,60 +3,104 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula gratuita para líderes de operação · Lázaro Neto</title>
-<meta name="description" content="Aula ao vivo e gratuita para líderes de operação, com Lázaro Neto.">
+<title>Aulas gratuitas para líderes de operação · Lázaro Neto</title>
+<meta name="description" content="Aulas gravadas e gratuitas para líderes de operação, com Lázaro Neto, consultor da Impulsionar V4. Assista quando quiser.">
+<meta property="og:title" content="Aulas gratuitas para líderes de operação">
 <meta property="og:image" content="https://www.impulsionarv4.com.br/mentoria-foto.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/mentoria-estilo.css?v=1">
+<link rel="stylesheet" href="/mentoria-estilo.css?v=3">
+<style>
+  .aulas { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:18px; }
+  .aula-c { background:#fff; border:1px solid var(--linha); border-radius:20px; overflow:hidden; display:flex; flex-direction:column; text-decoration:none; color:var(--texto); transition:transform .15s, box-shadow .15s; }
+  .aula-c:hover { transform:translateY(-3px); box-shadow:0 18px 40px rgba(15,23,42,.1); }
+  .aula-c .capa { aspect-ratio:16/9; background:linear-gradient(135deg, var(--navy), #1e3a8a); position:relative; display:grid; place-items:center; color:#fff; overflow:hidden; }
+  .aula-c .capa img { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
+  .aula-c .play { position:relative; width:62px; height:62px; border-radius:50%; background:var(--ambar); color:var(--navy); display:grid; place-items:center; font-size:24px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+  .aula-c .dur { position:absolute; right:10px; bottom:10px; background:rgba(0,0,0,.7); color:#fff; font-size:12px; font-weight:700; border-radius:6px; padding:3px 8px; }
+  .aula-c .txt { padding:16px 18px 18px; } .aula-c h3 { margin:0 0 6px; font-size:18px; } .aula-c p { margin:0; color:var(--cinza); font-size:14px; }
+  .player { background:#000; border-radius:20px; overflow:hidden; aspect-ratio:16/9; box-shadow:0 30px 70px rgba(0,0,0,.35); }
+  .player video, .player iframe { width:100%; height:100%; border:0; display:block; background:#000; }
+  .trava { position:relative; border-radius:20px; overflow:hidden; aspect-ratio:16/9; background:linear-gradient(135deg, var(--navy), #1e3a8a); display:grid; place-items:center; }
+  .trava img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.35; filter:blur(2px); }
+  .trava .card { position:relative; max-width:420px; width:calc(100% - 32px); }
+  @media (max-width:600px) { .trava { aspect-ratio:auto; padding:30px 0; } }
+  .cta-fim { margin-top:18px; display:none; } .cta-fim.on { display:block; }
+  .vazio { text-align:center; padding:40px 20px; color:var(--cinza); }
+</style>
 </head>
 <body>
 <div id="app"><div class="cx" style="padding:80px 20px;text-align:center;color:#64748b;">Carregando…</div></div>
-<script src="/mentoria-comum.js?v=2"></script>
+<script src="/mentoria-comum.js?v=3"></script>
 <script>
+const SLUG = (location.pathname.match(/^\/aula\/([a-z0-9-]+)/) || [])[1] || '';
+let AULAS = [];
+const liberado = () => { try { return localStorage.getItem('mt_aula_ok') === '1'; } catch (e) { return false; } };
+function ytId(u) { const m = String(u || '').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/))([\w-]{11})/); return m ? m[1] : ''; }
+function vimeoId(u) { const m = String(u || '').match(/vimeo\.com\/(?:video\/)?(\d+)/); return m ? m[1] : ''; }
+function capaDe(a) { return a.capa || (ytId(a.video) ? `https://img.youtube.com/vi/${ytId(a.video)}/hqdefault.jpg` : ''); }
 (async () => {
-  let d; try { d = await mtCarregar(); } catch (e) { return mtErroPagina(e); }
-  const m = d.marca, a = d.aula || {};
-  const quando = a.data ? new Date(a.data) : null, quandoTxt = quando && !isNaN(quando) ? quando.toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' }) : 'Data a confirmar — inscreva-se para ser avisado';
+  let d; try { d = await mtCarregar(); AULAS = await (await fetch('/api/public/aulas', { cache: 'no-store' })).json(); } catch (e) { return mtErroPagina(e); }
+  if (SLUG) { const a = AULAS.find(x => x.slug === SLUG); return a ? assistir(a) : lista('Essa aula não está mais disponível — veja as outras abaixo.'); }
+  lista();
+})();
+function lista(aviso) {
+  const m = MT.dados.marca;
   document.getElementById('app').innerHTML = `${mtTopo('aula')}
-  <section class="hero"><div class="cx">
-    <div>
-      <span class="selo">🔴 Aula ao vivo e gratuita</span>
-      <h1>${mtEsc(a.tema || 'Aula gratuita para líderes de operação')}</h1>
-      <p class="sub">60 minutos práticos, direto ao ponto, para você aplicar no seu time no dia seguinte. Com ${mtEsc(m.mentor)}, ${mtEsc(m.titulo.toLowerCase())}.</p>
-      <div class="card" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.15);color:#fff;max-width:520px;"><b style="font-size:18px;">🗓️ ${mtEsc(quandoTxt)}</b><p style="color:#cbd5e1;margin-top:4px;">Online e ao vivo · o link chega no seu WhatsApp</p></div>
-    </div>
-    <div class="card" style="background:#fff;color:var(--texto);">
-      <h3 style="font-size:22px;">Garanta seu lugar</h3>
-      <form class="form" id="f-aula" onsubmit="mtInscreverAula(event)">
-        <label>Seu nome<input name="nome" required autocomplete="name"></label>
-        <label>WhatsApp (com DDD)<input name="whatsapp" required inputmode="tel"></label>
-        <label>E-mail<input name="email" type="email"></label>
-        <label>Seu cargo<input name="cargo" placeholder="Ex.: Coordenador de logística"></label>
-        <input class="hp" name="site" tabindex="-1" autocomplete="off">
-        <div class="msg-area"></div>
-        <button class="bt ambar cheio" type="submit">Quero participar</button>
-      </form>
-    </div>
+  <section class="hero"><div class="cx" style="grid-template-columns:1fr;">
+    <div><span class="selo">🎥 Aulas gravadas · 100% gratuitas</span>
+      <h1>Aulas gratuitas para <em>líderes de operação</em></h1>
+      <p class="sub">Conteúdo prático, direto ao ponto, para você aplicar no seu time no dia seguinte. Assista quando e onde quiser, com ${mtEsc(m.mentor)}, consultor da ${mtEsc(m.empresa || 'Impulsionar V4')}.</p></div>
   </div></section>
   <section><div class="cx">
-    <div class="titulo"><small>Na aula</small><h2>O que você vai aprender</h2></div>
-    <div class="grade g3">
-      <div class="card"><h3>📊 O que olhar</h3><p>Os indicadores que realmente mostram se sua operação está saudável.</p></div>
-      <div class="card"><h3>🗣️ Como falar com o time</h3><p>Feedback em 3 passos — fato, impacto, combinado — para cobrar sem perder ninguém.</p></div>
-      <div class="card"><h3>🧭 A rotina que funciona</h3><p>A reunião de 15 minutos que faz o problema aparecer cedo, antes de virar incêndio.</p></div>
-    </div>
+    ${aviso ? `<div class="msg erro" style="margin-bottom:16px;">${mtEsc(aviso)}</div>` : ''}
+    ${AULAS.length ? `<div class="aulas">${AULAS.map(a => `<a class="aula-c" href="/aula/${mtEsc(a.slug)}"><div class="capa">${capaDe(a) ? `<img src="${mtEsc(capaDe(a))}" alt="" loading="lazy">` : ''}<span class="play">▶</span>${a.duracao ? `<span class="dur">${mtEsc(a.duracao)}</span>` : ''}</div>
+      <div class="txt"><h3>${mtEsc(a.titulo)}</h3><p>${mtEsc(String(a.descricao || '').slice(0, 140))}</p></div></a>`).join('')}</div>`
+      : `<div class="vazio"><div style="font-size:46px;">🎬</div><h3>As primeiras aulas estão sendo gravadas</h3><p>Deixe seu contato e receba o link assim que a primeira aula sair.</p>
+         <form class="form" style="max-width:420px;margin:16px auto 0;text-align:left;" onsubmit="avisarMe(event)"><label>Seu nome<input name="nome" required autocomplete="name"></label><label>WhatsApp (com DDD)<input name="whatsapp" required inputmode="tel"></label><input class="hp" name="site" tabindex="-1" autocomplete="off"><div class="msg-area"></div><button class="bt ambar cheio" type="submit">Quero ser avisado</button></form></div>`}
   </div></section>
   ${mtRodape()}`;
-})();
-async function mtInscreverAula(ev) {
+}
+async function avisarMe(ev) { ev.preventDefault(); const f = ev.target; try { await mtEnviar(f, '/api/public/mentoria/lead', { tipo: 'aula', origem: 'aulas-gravadas' }); f.innerHTML = '<div class="msg ok">✅ Combinado! Você recebe o link no WhatsApp quando a aula sair.</div>'; } catch (e) {} }
+function assistir(a) {
+  document.title = a.titulo + ' · Aula gratuita';
+  const outras = AULAS.filter(x => x.slug !== a.slug).slice(0, 3);
+  document.getElementById('app').innerHTML = `${mtTopo('aula')}
+  <section class="hero" style="padding:34px 0 40px;"><div class="cx" style="grid-template-columns:1fr;">
+    <div><a href="/aula" style="color:#cbd5e1;text-decoration:none;font-weight:700;">← Todas as aulas</a>
+      <h1 style="font-size:clamp(26px,4vw,42px);margin:10px 0 6px;">${mtEsc(a.titulo)}</h1>${a.duracao ? `<p class="sub" style="margin:0 0 16px;">⏱️ ${mtEsc(a.duracao)} · aula gratuita</p>` : ''}
+      <div id="area-video"></div>
+      <div class="cta-fim" id="cta-fim"><div class="preco" style="grid-template-columns:1fr;"><div><h2 style="margin:0 0 8px;font-size:24px;font-weight:900;">Gostou? Vamos aplicar isso no seu time.</h2><p style="color:#cbd5e1;margin:0 0 16px;">Na mentoria ${mtEsc(MT.dados.marca.nome)} você trabalha isso em 12 semanas, com acompanhamento.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;"><a class="bt ambar" href="${mtEsc(a.ctaLink || '/mentoria')}">${mtEsc(a.ctaTexto || 'Conhecer a mentoria')}</a><a class="bt claro" href="/raio-x">Fazer o Raio-X do Líder</a>${mtWhats() ? `<a class="bt claro" target="_blank" rel="noopener" href="${mtWhats('Olá, Lázaro! Assisti a aula "' + a.titulo + '" e quero conversar.')}">💬 Falar com o Lázaro</a>` : ''}</div></div></div></div>
+    </div></div></section>
+  <section><div class="cx">
+    ${a.descricao ? `<div class="card" style="white-space:pre-line;"><h3>Sobre esta aula</h3><p>${mtEsc(a.descricao)}</p></div>` : ''}
+    ${outras.length ? `<div class="titulo" style="margin-top:30px;"><small>Continue aprendendo</small><h2>Outras aulas gratuitas</h2></div><div class="aulas">${outras.map(x => `<a class="aula-c" href="/aula/${mtEsc(x.slug)}"><div class="capa">${capaDe(x) ? `<img src="${mtEsc(capaDe(x))}" alt="" loading="lazy">` : ''}<span class="play">▶</span>${x.duracao ? `<span class="dur">${mtEsc(x.duracao)}</span>` : ''}</div><div class="txt"><h3>${mtEsc(x.titulo)}</h3></div></a>`).join('')}</div>` : ''}
+  </div></section>
+  ${mtRodape()}`;
+  desenharVideo(a);
+}
+function desenharVideo(a) {
+  const area = document.getElementById('area-video');
+  if (!liberado()) {
+    area.innerHTML = `<div class="trava">${capaDe(a) ? `<img src="${mtEsc(capaDe(a))}" alt="">` : ''}<div class="card" style="background:#fff;color:var(--texto);">
+      <h3 style="font-size:20px;margin:0 0 4px;">🎁 Assista grátis agora</h3><p style="margin:0 0 12px;">Só precisamos saber quem você é — leva 10 segundos.</p>
+      <form class="form" onsubmit="liberar(event, '${mtEsc(a.slug)}')"><label>Seu nome<input name="nome" required autocomplete="name"></label><label>WhatsApp (com DDD)<input name="whatsapp" required inputmode="tel"></label><label>Seu cargo<input name="cargo" placeholder="Ex.: Supervisor de armazém"></label><input class="hp" name="site" tabindex="-1" autocomplete="off"><div class="msg-area"></div><button class="bt ambar cheio" type="submit">▶ Assistir a aula</button></form></div></div>`;
+    return;
+  }
+  const yt = ytId(a.video), vm = vimeoId(a.video);
+  if (yt) area.innerHTML = `<div class="player"><iframe src="https://www.youtube-nocookie.com/embed/${yt}?rel=0&modestbranding=1" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen title="${mtEsc(a.titulo)}"></iframe></div>`;
+  else if (vm) area.innerHTML = `<div class="player"><iframe src="https://player.vimeo.com/video/${vm}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="${mtEsc(a.titulo)}"></iframe></div>`;
+  else area.innerHTML = `<div class="player"><video id="vid" src="${mtEsc(a.video)}" controls playsinline preload="metadata" ${capaDe(a) ? `poster="${mtEsc(capaDe(a))}"` : ''}></video></div>`;
+  if (yt || vm) { mtEvento('video', a.slug, { p: 0 }); setTimeout(() => document.getElementById('cta-fim').classList.add('on'), 60000); return; }
+  const v = document.getElementById('vid'), marcos = new Set();
+  v.addEventListener('play', () => { if (!marcos.has(0)) { marcos.add(0); mtEvento('video', a.slug, { p: 0 }); } });
+  v.addEventListener('timeupdate', () => { if (!v.duration) return; const p = v.currentTime / v.duration * 100; [25, 50, 90].forEach(m => { if (p >= m && !marcos.has(m)) { marcos.add(m); mtEvento('video', a.slug, { p: m }); if (m === 90) document.getElementById('cta-fim').classList.add('on'); } }); });
+  v.addEventListener('ended', () => document.getElementById('cta-fim').classList.add('on'));
+}
+async function liberar(ev, slug) {
   ev.preventDefault(); const f = ev.target;
-  try {
-    const j = await mtEnviar(f, '/api/public/mentoria/lead', { tipo: 'aula', origem: 'pagina-aula' });
-    f.innerHTML = `<div class="msg ok" style="font-size:16px;">✅ Inscrição feita! Você recebe o link da aula no WhatsApp.</div>
-      ${j.linkAula ? `<a class="bt ambar cheio" style="margin-top:12px;" href="${mtEsc(j.linkAula)}" target="_blank" rel="noopener">Abrir o link da aula</a>` : ''}
-      ${j.whatsappGrupo ? `<a class="bt escuro cheio" style="margin-top:10px;" href="${mtEsc(j.whatsappGrupo)}" target="_blank" rel="noopener">💬 Entrar no grupo de avisos</a>` : ''}
-      <a class="bt claro cheio" style="margin-top:10px;" href="/raio-x">Enquanto isso, faça o Raio-X do Líder</a>`;
-  } catch (e) {}
+  try { await mtEnviar(f, '/api/public/mentoria/lead', { tipo: 'aula', origem: 'aula-gravada', aula: slug }); try { localStorage.setItem('mt_aula_ok', '1'); } catch (e) {} mtEvento('cadastro', 'aula: ' + slug); desenharVideo(AULAS.find(x => x.slug === slug)); }
+  catch (e) {}
 }
 </script>
 </body>

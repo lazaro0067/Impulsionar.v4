@@ -13181,7 +13181,7 @@ app.put('/api/admin/mentoria/leads/:id', requireRole('admin'), async (req, res) 
     try { await mtRun(`UPDATE mentoria_leads SET ${campos.map(k => k + ' = ?').join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [...campos.map(k => k === 'valor' ? Number(b[k]) || 0 : mtTxt(b[k], k === 'notas' || k === 'mensagem' ? 4000 : 200)), req.params.id]); res.json({ ok: true }); }
     catch (e) { res.status(500).json({ error: e.message }); }
 });
-app.delete('/api/admin/mentoria/leads/:id', requireRole('admin'), async (req, res) => { await mtRun(`DELETE FROM mentoria_leads WHERE id = ?`, [req.params.id]).catch(() => {}); res.json({ ok: true }); });
+app.delete('/api/admin/mentoria/leads/:id', requireRole('admin'), async (req, res) => { await mtRun(`DELETE FROM mentoria_leads WHERE id = ?`, [req.params.id]).catch(() => {}); mtRun(`UPDATE site_eventos SET lead_id = NULL WHERE lead_id = ?`, [req.params.id]).catch(() => {}); res.json({ ok: true }); });
 app.get('/api/admin/mentoria/turmas', requireRole('admin'), async (req, res) => {
     const turmas = await dbAll(`SELECT * FROM mentoria_turmas ORDER BY id DESC`).catch(() => []), alunos = await dbAll(`SELECT * FROM mentoria_alunos ORDER BY id`).catch(() => []);
     const pres = await dbAll(`SELECT aluno_id, encontro FROM mentoria_presencas`).catch(() => []); alunos.forEach(x => { x.presencas = pres.filter(p => p.aluno_id === x.id).map(p => Number(p.encontro)); x.temAcesso = !!x.acesso_token; });
@@ -13239,12 +13239,13 @@ app.post('/api/public/mentoria/lead', async (req, res) => {
     if (mtTxt(b.nome).length < 2 || (mtTxt(b.whatsapp).replace(/\D/g, '').length < 10 && !/@/.test(mtTxt(b.email)))) return res.status(400).json({ error: 'Informe seu nome e um WhatsApp (com DDD) ou e-mail.' });
     if (b.site) return res.json({ ok: true }); // armadilha anti-robô
     try {
-        const extra = { participantes: mtTxt(b.participantes, 40), data: mtTxt(b.data, 40), formato: mtTxt(b.formato, 60), pessoas: mtTxt(b.pessoas, 40), tema: mtTxt(b.tema, 140), evento: mtTxt(b.evento, 80), modalidade: mtTxt(b.modalidade, 40), problemas: mtTxt(b.problemas, 400), dataIso: /^\d{4}-\d{2}-\d{2}$/.test(b.dataIso || '') ? b.dataIso : '', hora: /^\d{2}:\d{2}$/.test(b.hora || '') ? b.hora : '' };
+        const extra = { participantes: mtTxt(b.participantes, 40), data: mtTxt(b.data, 40), formato: mtTxt(b.formato, 60), pessoas: mtTxt(b.pessoas, 40), tema: mtTxt(b.tema, 140), evento: mtTxt(b.evento, 80), modalidade: mtTxt(b.modalidade, 40), problemas: mtTxt(b.problemas, 400), dataIso: /^\d{4}-\d{2}-\d{2}$/.test(b.dataIso || '') ? b.dataIso : '', hora: /^\d{2}:\d{2}$/.test(b.hora || '') ? b.hora : '', aula: mtTxt(b.aula, 80) };
         const r = await mtRun(`INSERT INTO mentoria_leads (tipo, nome, email, whatsapp, empresa, cargo, cidade, mensagem, origem, etapa, valor, dados) VALUES (?,?,?,?,?,?,?,?,?,'novo',?,?)`,
             [tipo, mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.empresa, 160), mtTxt(b.cargo, 120), mtTxt(b.cidade, 120), mtTxt(b.mensagem, 2000), mtTxt(b.origem || 'site', 60), tipo === 'empresa' ? 6000 : 0, JSON.stringify(extra)]);
         const rot = { aluno: 'Novo interessado na mentoria', empresa: 'Empresa pediu palestra/treinamento', aula: 'Nova inscrição na aula gratuita', raiox: 'Novo Raio-X do Líder', contato: 'Novo contato' }[tipo];
         try { mtNotificar('🚀 ' + rot, `${mtTxt(b.nome, 80)}${b.empresa ? ' · ' + mtTxt(b.empresa, 80) : ''}${b.whatsapp ? ' · ' + mtTxt(b.whatsapp, 30) : ''}`); } catch (e) {}
         waAuto(tipo === 'empresa' ? 'palestra' : tipo === 'aula' ? 'aula' : 'mentoria', b.whatsapp, b.nome, tipo === 'empresa' ? [mtTxt(b.empresa, 80) || 'sua empresa'] : []);
+        rsLigarVisitante(mtTxt(b.visitante, 40), r.lastID);
         const d = await mtLer();
         res.json({ ok: true, id: r.lastID, whatsappGrupo: tipo === 'aula' ? d.links.whatsappGrupo : '', linkAula: tipo === 'aula' ? d.links.proximaAula.link : '' });
     } catch (e) { res.status(500).json({ error: 'Não consegui registrar agora. Tente de novo.' }); }
@@ -13261,7 +13262,7 @@ app.post('/api/public/mentoria/raio-x', async (req, res) => {
     if (mtTxt(b.nome).length >= 2 && (mtTxt(b.whatsapp).replace(/\D/g, '').length >= 10 || /@/.test(mtTxt(b.email)))) {
         const r = await mtRun(`INSERT INTO mentoria_leads (tipo, nome, email, whatsapp, cargo, empresa, origem, etapa, mensagem, dados) VALUES ('raiox',?,?,?,?,?, 'raio-x', 'novo', ?, ?)`,
             [mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.cargo, 120), mtTxt(b.empresa, 160), `Raio-X: ${geral}% · ponto mais fraco: ${fraco}`, JSON.stringify({ nota, geral, fraco, respostas: resp })]).catch(() => null);
-        id = r && r.lastID;
+        id = r && r.lastID; if (id) rsLigarVisitante(mtTxt(b.visitante, 40), id);
         try { mtNotificar('🚀 Novo Raio-X do Líder', `${mtTxt(b.nome, 80)} · ${geral}% · mais fraco em ${fraco}`); } catch (e) {}
         { const pm = (d.metodo || []).find(m => m.letra === fraco); waAuto('raiox', b.whatsapp, b.nome, [geral + '%', pm ? pm.nome : fraco]); }
     }
@@ -13278,6 +13279,7 @@ app.post('/api/public/mentoria/inscricao', async (req, res) => {
             [mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.cargo, 120), mtTxt(b.empresa, 160), mtTxt(b.mensagem, 2000), t ? t.preco : 0, JSON.stringify({ pessoas: mtTxt(b.pessoas, 40) })]);
         try { mtNotificar('🚀 Inscrição na mentoria', `${mtTxt(b.nome, 80)} · ${mtTxt(b.whatsapp, 30)}${t ? ' · ' + t.nome : ''}`); } catch (e) {}
         waAuto('inscricao', b.whatsapp, b.nome);
+        rsLigarVisitante(mtTxt(b.visitante, 40), lead.lastID);
         if (!t || !d.pagamentoOnline || !mpPreference) return res.json({ ok: true, semPagamento: true, mensagem: t ? 'Recebemos sua inscrição! O Lázaro vai te chamar no WhatsApp para confirmar a vaga.' : 'Recebemos seu interesse! Você será avisado em primeira mão quando a próxima turma abrir.' });
         if (t.restantes <= 0) return res.json({ ok: true, semPagamento: true, mensagem: 'As vagas desta turma acabaram. Você entrou na lista de espera da próxima turma.' });
         const al = await mtRun(`INSERT INTO mentoria_alunos (turma_id, lead_id, nome, email, whatsapp, cargo, empresa, produto, valor, pagamento) VALUES (?,?,?,?,?,?,?, 'grupo', ?, 'pendente')`,
@@ -13411,6 +13413,7 @@ app.post('/api/public/presenca/:codigo', async (req, res) => {
     const r = await mtRun(`INSERT OR IGNORE INTO mentoria_presencas (turma_id, aluno_id, encontro, via) VALUES (?,?,?, 'qr')`, [c.turma_id, a.id, c.encontro]);
     res.json({ ok: true, jaRegistrada: !r.changes, nome: String(a.nome || '').split(' ')[0], encontro: c.encontro, token });
 });
+app.get('/aula/:slug', (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'aula.html')));
 app.get(['/aluno', '/aluno/:token'], (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'aluno.html')));
 app.get('/presenca/:codigo', (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'presenca.html')));
 // páginas públicas com endereço curto
@@ -13882,13 +13885,14 @@ const WA_EVENTOS = {
     palestra: { rotulo: 'Pedido de proposta de palestra', modelo: 'impulsionar_palestra_pedido', texto: 'Olá, {{1}}! Recebemos o pedido de proposta de palestra da {{2}}. O consultor Lázaro Neto, da Impulsionar V4, enviará a proposta por esta conversa em até 1 dia útil.' },
     inscricao: { rotulo: 'Inscrição na mentoria (pagamento)', modelo: 'impulsionar_inscricao_mentoria', texto: 'Olá, {{1}}! Recebemos sua inscrição na mentoria Do Chão à Gestão. Assim que o pagamento for confirmado, você receberá por esta conversa o acesso à Área do Aluno e o link do grupo da turma. Impulsionar V4.' },
     candidato: { rotulo: 'Cadastro de currículo (banco de talentos)', modelo: 'impulsionar_cadastro_candidato', texto: 'Olá, {{1}}! Confirmamos o seu cadastro no banco de talentos da Impulsionar V4. Seu currículo foi registrado com sucesso.' },
+    retorno: { rotulo: 'Contato voltou ao site (retorno automático)', modelo: 'impulsionar_retorno_contato', texto: 'Olá, {{1}}! Aqui é o Lázaro Neto, da Impulsionar V4. Vi que você acessou a nossa página de {{2}}. Posso te ajudar a seguir com o atendimento por aqui?' },
     candidatura: { rotulo: 'Candidatura a uma vaga', modelo: 'impulsionar_candidatura_vaga', texto: 'Olá, {{1}}! Sua candidatura para a vaga {{2}} foi recebida pela Impulsionar V4. Se o seu perfil avançar, a empresa entra em contato. Você pode acompanhar pelo portal.' }
 };
 async function waCfg() {
     const rows = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN ('wa_phone_id','wa_token','wa_regras','wa_ativo')`).catch(() => []);
     const m = Object.fromEntries(rows.map(r => [r.key, r.value]));
     let regras = {}; try { regras = JSON.parse(m.wa_regras || '{}') || {}; } catch (e) { regras = {}; }
-    Object.keys(WA_EVENTOS).forEach(k => { regras[k] = Object.assign({ ativo: true, modelo: WA_EVENTOS[k].modelo, idioma: 'pt_BR' }, regras[k] || {}); });
+    Object.keys(WA_EVENTOS).forEach(k => { regras[k] = Object.assign({ ativo: k !== 'retorno', modelo: WA_EVENTOS[k].modelo, idioma: 'pt_BR' }, regras[k] || {}); });
     return { phoneId: m.wa_phone_id || process.env.WHATSAPP_PHONE_ID || '', token: m.wa_token || process.env.WHATSAPP_TOKEN || '', ativo: m.wa_ativo !== '0', regras };
 }
 const waSalvarChave = (k, v) => new Promise(r => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => r()));
@@ -13961,6 +13965,119 @@ app.post('/api/admin/whatsapp-auto/teste', requireRole('admin'), async (req, res
         res.json({ message: 'Mensagem de teste enviada! Confira o WhatsApp ' + b.numero + '.' });
     } catch (e) { res.status(400).json({ error: 'Não enviou: ' + e.message }); }
 });
+
+// ======================================================================
+// RASTREIO DAS PÁGINAS PÚBLICAS + AULAS GRAVADAS
+//  • Cada visita e clique nas páginas (bio, mentoria, palestra, aula, Raio-X)
+//    vira um evento com a origem (Instagram, WhatsApp, Google…).
+//  • Quando a pessoa preenche um formulário, as visitas anteriores dela são
+//    ligadas ao contato (lead) — dá para ver o "caminho" e chamar quem voltou.
+//  • Link rastreado por contato (?l=código): ao abrir, sabemos quem é.
+//  • Aulas gratuitas gravadas, assistidas após um cadastro rápido.
+// ======================================================================
+db.run(`CREATE TABLE IF NOT EXISTS site_eventos (id INTEGER PRIMARY KEY AUTOINCREMENT, visitante TEXT, lead_id INTEGER, tipo TEXT, pagina TEXT, alvo TEXT, origem TEXT, referrer TEXT, dispositivo TEXT, dados TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+db.run(`CREATE INDEX IF NOT EXISTS idx_site_eventos_data ON site_eventos (criado_em)`);
+db.run(`CREATE INDEX IF NOT EXISTS idx_site_eventos_vis ON site_eventos (visitante)`);
+db.run(`ALTER TABLE mentoria_leads ADD COLUMN visitante TEXT`, () => {});
+db.run(`ALTER TABLE mentoria_leads ADD COLUMN retorno_em DATETIME`, () => {});
+db.run(`CREATE TABLE IF NOT EXISTS mentoria_aulas (id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT UNIQUE, titulo TEXT NOT NULL, descricao TEXT, video_url TEXT, capa_url TEXT, duracao TEXT, cta_texto TEXT, cta_link TEXT, publicada INTEGER DEFAULT 0, ordem INTEGER DEFAULT 0, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+const RS_LIMITE = new Map();
+function rsLimite(req) { const ip = String(req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim(), agora = Date.now(), l = (RS_LIMITE.get(ip) || []).filter(t => agora - t < 3600000); if (l.length >= 400) return false; l.push(agora); RS_LIMITE.set(ip, l); if (RS_LIMITE.size > 5000) RS_LIMITE.clear(); return true; }
+const rsTxt = (v, n) => String(v === undefined || v === null ? '' : v).slice(0, n || 200);
+// código curto e assinado do contato para o link rastreado (?l=)
+function mtCodigoLead(id) { const b = Number(id).toString(36); return b + '-' + crypto.createHmac('sha256', JWT_SECRET).update('lead:' + id).digest('hex').slice(0, 6); }
+function mtLeadDoCodigo(c) { const m = String(c || '').match(/^([0-9a-z]+)-([0-9a-f]{6})$/); if (!m) return null; const id = parseInt(m[1], 36); return mtCodigoLead(id) === c ? id : null; }
+function rsOrigem(b, referrer) {
+    const o = String(b.origem || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40); if (o) return o;
+    const r = String(referrer || '').toLowerCase();
+    if (!r) return 'direto';
+    if (/instagram|l\.instagram/.test(r)) return 'instagram'; if (/facebook|fb\.|l\.facebook/.test(r)) return 'facebook'; if (/whatsapp|wa\.me/.test(r)) return 'whatsapp';
+    if (/linkedin|lnkd/.test(r)) return 'linkedin'; if (/google\./.test(r)) return 'google'; if (/youtube|youtu\.be/.test(r)) return 'youtube'; if (/tiktok/.test(r)) return 'tiktok';
+    if (/impulsionarv4/.test(r)) return 'site'; return 'outro';
+}
+// liga as visitas anônimas de um visitante ao contato que ele virou
+async function rsLigarVisitante(visitante, leadId) {
+    if (!visitante || !leadId || !/^[a-z0-9]{8,40}$/i.test(visitante)) return;
+    await mtRun(`UPDATE site_eventos SET lead_id = ? WHERE visitante = ? AND lead_id IS NULL`, [leadId, visitante]).catch(() => {});
+    await mtRun(`UPDATE mentoria_leads SET visitante = COALESCE(visitante, ?) WHERE id = ?`, [visitante, leadId]).catch(() => {});
+}
+app.post('/api/public/ev', async (req, res) => {
+    res.json({ ok: true });
+    try {
+        if (!rsLimite(req)) return;
+        const b = typeof req.body === 'object' && req.body ? req.body : {}, v = rsTxt(b.v, 40);
+        if (!/^[a-z0-9]{8,40}$/i.test(v) || !['visita', 'clique', 'video', 'cadastro'].includes(b.tipo)) return;
+        const ua = String(req.headers['user-agent'] || ''); if (/bot|crawler|spider|preview|facebookexternalhit|whatsapp\//i.test(ua)) return;
+        let lead = mtLeadDoCodigo(b.l);
+        if (!lead) { const x = await dbGet(`SELECT lead_id FROM site_eventos WHERE visitante = ? AND lead_id IS NOT NULL ORDER BY id DESC LIMIT 1`, [v]).catch(() => null); lead = x ? x.lead_id : null; }
+        await mtRun(`INSERT INTO site_eventos (visitante, lead_id, tipo, pagina, alvo, origem, referrer, dispositivo, dados) VALUES (?,?,?,?,?,?,?,?,?)`,
+            [v, lead, b.tipo, rsTxt(b.pagina, 120), rsTxt(b.alvo, 200), rsOrigem(b, b.ref), rsTxt(b.ref, 200), /mobile|android|iphone/i.test(ua) ? 'celular' : 'computador', b.dados ? rsTxt(JSON.stringify(b.dados), 400) : null]);
+        if (lead && mtLeadDoCodigo(b.l)) await rsLigarVisitante(v, lead);
+    } catch (e) { /* rastreio nunca derruba nada */ }
+});
+// ---------- painel de acessos (Master) ----------
+app.get('/api/admin/mentoria/acessos', requireRole('admin'), async (req, res) => {
+    try {
+        const dias = Math.min(180, Math.max(1, Number(req.query.dias) || 30)), desde = `-${dias} days`;
+        const q = (sql, p = []) => dbAll(sql, [desde, ...p]).catch(() => []);
+        const [tot] = await q(`SELECT COUNT(CASE WHEN tipo='visita' THEN 1 END) visitas, COUNT(DISTINCT CASE WHEN tipo='visita' THEN visitante END) visitantes, COUNT(CASE WHEN tipo='clique' THEN 1 END) cliques, COUNT(DISTINCT CASE WHEN tipo='video' THEN visitante END) assistiram FROM site_eventos WHERE criado_em >= datetime('now', ?)`);
+        const [leads] = await q(`SELECT COUNT(*) n FROM mentoria_leads WHERE created_at >= datetime('now', ?) AND visitante IS NOT NULL`);
+        const porDia = await q(`SELECT date(criado_em, '-3 hours') dia, COUNT(*) visitas, COUNT(DISTINCT visitante) pessoas FROM site_eventos WHERE tipo='visita' AND criado_em >= datetime('now', ?) GROUP BY dia ORDER BY dia`);
+        const paginas = await q(`SELECT pagina, COUNT(*) visitas, COUNT(DISTINCT visitante) pessoas FROM site_eventos WHERE tipo='visita' AND criado_em >= datetime('now', ?) GROUP BY pagina ORDER BY visitas DESC LIMIT 15`);
+        const origens = await q(`SELECT origem, COUNT(*) visitas, COUNT(DISTINCT visitante) pessoas FROM site_eventos WHERE tipo='visita' AND criado_em >= datetime('now', ?) GROUP BY origem ORDER BY visitas DESC`);
+        const cliques = await q(`SELECT pagina, alvo, COUNT(*) n FROM site_eventos WHERE tipo='clique' AND criado_em >= datetime('now', ?) GROUP BY pagina, alvo ORDER BY n DESC LIMIT 20`);
+        const dispositivos = await q(`SELECT dispositivo, COUNT(DISTINCT visitante) pessoas FROM site_eventos WHERE criado_em >= datetime('now', ?) GROUP BY dispositivo`);
+        // contatos que voltaram ao site: pontuação por atividade recente
+        const quentes = await q(`SELECT l.id, l.nome, l.whatsapp, l.tipo, l.etapa, l.empresa, l.retorno_em, COUNT(e.id) eventos, COUNT(CASE WHEN e.tipo='visita' THEN 1 END) visitas, COUNT(CASE WHEN e.tipo='video' THEN 1 END) videos, COUNT(CASE WHEN e.tipo='clique' THEN 1 END) cliques, MAX(e.criado_em) ultimo,
+            GROUP_CONCAT(DISTINCT e.pagina) paginas FROM site_eventos e JOIN mentoria_leads l ON l.id = e.lead_id WHERE e.criado_em >= datetime('now', ?) AND COALESCE(l.etapa,'novo') NOT IN ('fechado','perdido') GROUP BY l.id ORDER BY ultimo DESC LIMIT 40`);
+        quentes.forEach(x => { x.pontos = x.visitas * 2 + x.cliques * 3 + x.videos * 4 + (/mentoria|inscric/.test(x.paginas || '') ? 5 : 0); x.codigo = mtCodigoLead(x.id); });
+        quentes.sort((a, b) => b.pontos - a.pontos || String(b.ultimo).localeCompare(String(a.ultimo)));
+        const aulas = await dbAll(`SELECT a.id, a.titulo, a.slug, (SELECT COUNT(DISTINCT visitante) FROM site_eventos e WHERE e.tipo='video' AND e.alvo = a.slug AND e.dados LIKE '%"p":0%') iniciaram,
+            (SELECT COUNT(DISTINCT visitante) FROM site_eventos e WHERE e.tipo='video' AND e.alvo = a.slug AND e.dados LIKE '%"p":90%') terminaram FROM mentoria_aulas a ORDER BY a.ordem, a.id`).catch(() => []);
+        res.json({ dias, total: Object.assign({ visitas: 0, visitantes: 0, cliques: 0, assistiram: 0 }, tot || {}, { cadastros: (leads || {}).n || 0 }), porDia, paginas, origens, cliques, dispositivos, quentes, aulas });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.get('/api/admin/mentoria/leads/:id/caminho', requireRole('admin'), async (req, res) => {
+    const l = await dbAll(`SELECT tipo, pagina, alvo, origem, dispositivo, dados, criado_em FROM site_eventos WHERE lead_id = ? ORDER BY id DESC LIMIT 80`, [req.params.id]).catch(() => []);
+    res.json({ eventos: l, codigo: mtCodigoLead(req.params.id) });
+});
+app.post('/api/admin/mentoria/leads/:id/retorno', requireRole('admin'), async (req, res) => {
+    await mtRun(`UPDATE mentoria_leads SET retorno_em = CURRENT_TIMESTAMP, etapa = CASE WHEN COALESCE(etapa,'novo') = 'novo' THEN 'conversa' ELSE etapa END WHERE id = ?`, [req.params.id]).catch(() => {});
+    res.json({ ok: true });
+});
+app.get('/api/admin/mentoria/leads/:id/link', requireRole('admin'), (req, res) => res.json({ codigo: mtCodigoLead(req.params.id) }));
+// ---------- aulas gravadas ----------
+const rsSlug = t => String(t || 'aula').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'aula';
+function rsAulaPublica(a) { return { slug: a.slug, titulo: a.titulo, descricao: a.descricao || '', video: a.video_url || '', capa: a.capa_url || '', duracao: a.duracao || '', ctaTexto: a.cta_texto || '', ctaLink: a.cta_link || '' }; }
+app.get('/api/public/aulas', async (req, res) => { const l = await dbAll(`SELECT * FROM mentoria_aulas WHERE publicada = 1 ORDER BY ordem, id`).catch(() => []); res.json(l.map(rsAulaPublica)); });
+app.get('/api/admin/mentoria/aulas', requireRole('admin'), async (req, res) => res.json(await dbAll(`SELECT * FROM mentoria_aulas ORDER BY ordem, id`).catch(() => [])));
+app.post('/api/admin/mentoria/aulas', requireRole('admin'), async (req, res) => {
+    try {
+        const b = req.body || {}, id = Number(b.id) || 0, titulo = rsTxt(b.titulo, 160).trim(); if (!titulo) return res.status(400).json({ error: 'Dê um título para a aula.' });
+        const video = rsTxt(b.video_url, 600).trim(); if (b.publicada && !video) return res.status(400).json({ error: 'Para publicar, coloque o vídeo da aula (envie o arquivo, escolha do Estúdio ou cole o link do YouTube).' });
+        const campos = [titulo, rsTxt(b.descricao, 3000), video, rsTxt(b.capa_url, 600), rsTxt(b.duracao, 30), rsTxt(b.cta_texto, 80), rsTxt(b.cta_link, 300), b.publicada ? 1 : 0, Number(b.ordem) || 0];
+        if (id) { await mtRun(`UPDATE mentoria_aulas SET titulo=?, descricao=?, video_url=?, capa_url=?, duracao=?, cta_texto=?, cta_link=?, publicada=?, ordem=? WHERE id = ?`, [...campos, id]); return res.json({ message: 'Aula salva!', id }); }
+        let slug = rsSlug(titulo), n = 1; while (await dbGet(`SELECT id FROM mentoria_aulas WHERE slug = ?`, [slug])) slug = rsSlug(titulo) + '-' + (++n);
+        const r = await mtRun(`INSERT INTO mentoria_aulas (slug, titulo, descricao, video_url, capa_url, duracao, cta_texto, cta_link, publicada, ordem) VALUES (?,?,?,?,?,?,?,?,?,?)`, [slug, ...campos]);
+        res.json({ message: 'Aula criada!', id: r.lastID, slug });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.delete('/api/admin/mentoria/aulas/:id', requireRole('admin'), async (req, res) => { await mtRun(`DELETE FROM mentoria_aulas WHERE id = ?`, [req.params.id]).catch(() => {}); res.json({ message: 'Aula excluída.' }); });
+// ---------- retorno automático (opcional, pelo WhatsApp oficial) ----------
+// Contato identificado que voltou ao site (2+ visitas nas últimas 24 h, sem retorno ainda) recebe o modelo "retorno".
+setInterval(async () => {
+    try {
+        const cfg = typeof waCfg === 'function' ? await waCfg() : null; if (!cfg || !cfg.ativo || !cfg.regras.retorno || !cfg.regras.retorno.ativo || !cfg.phoneId || !cfg.token) return;
+        const l = await dbAll(`SELECT l.id, l.nome, l.whatsapp, MAX(e.criado_em) ultimo, COUNT(*) n, GROUP_CONCAT(DISTINCT e.pagina) paginas FROM site_eventos e JOIN mentoria_leads l ON l.id = e.lead_id
+            WHERE e.tipo = 'visita' AND e.criado_em >= datetime('now', '-24 hours') AND l.retorno_em IS NULL AND COALESCE(l.etapa,'novo') NOT IN ('fechado','perdido') AND l.whatsapp IS NOT NULL AND l.whatsapp <> ''
+            GROUP BY l.id HAVING n >= 2 AND ultimo <= datetime('now', '-30 minutes') LIMIT 10`).catch(() => []);
+        for (const x of l) {
+            const pg = /mentoria/.test(x.paginas || '') ? 'mentoria' : /palestra/.test(x.paginas || '') ? 'palestras' : /aula/.test(x.paginas || '') ? 'aulas gratuitas' : 'conteúdos';
+            await mtRun(`UPDATE mentoria_leads SET retorno_em = CURRENT_TIMESTAMP WHERE id = ?`, [x.id]);
+            await waAuto('retorno', x.whatsapp, x.nome, [pg]);
+        }
+    } catch (e) { /* silencioso */ }
+}, 10 * 60 * 1000);
 
 app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res, arq) => { if (/\.html$/.test(arq)) res.setHeader('Cache-Control', 'no-cache, must-revalidate'); } }));
 // Acesso só ao Estúdio de Vídeo (celular): mesmo sistema, abre direto nas abas de criar/editar vídeo.

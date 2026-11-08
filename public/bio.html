@@ -22,7 +22,7 @@
 </head>
 <body>
 <div class="bio" id="app">Carregando…</div>
-<script src="/mentoria-comum.js?v=2"></script>
+<script src="/mentoria-comum.js?v=3"></script>
 <script>
 (async () => {
   let d; try { d = await mtCarregar(); } catch (e) { return mtErroPagina(e); }
@@ -32,7 +32,7 @@
     <h1>${mtEsc(m.mentor)}</h1><p>${mtEsc(m.titulo)}\nDe ajudante de distribuição a gerente corporativo</p>
     <a class="lk dest" href="/mentoria"><span>🚀</span><div><b>Mentoria ${mtEsc(m.nome)}</b><small>${t ? `${mtEsc(t.nome)}${t.inicio ? ' · começa ' + mtEsc(mtData(t.inicio)) : ''} · ${t.restantes} vagas` : '12 semanas para líderes de operação'}</small></div></a>
     <a class="lk" href="/raio-x"><span>🩻</span><div><b>Raio-X do Líder (grátis)</b><small>Descubra seu ponto fraco como líder em 5 minutos</small></div></a>
-    <a class="lk" href="/aula"><span>🔴</span><div><b>Aula gratuita${aulaQuando ? ' · ' + aulaQuando : ''}</b><small>${mtEsc(a.tema || 'Ao vivo, para líderes de operação')}</small></div></a>
+    <a class="lk" href="/aula"><span>🎥</span><div><b>Aulas gratuitas (gravadas)</b><small>Assista agora, quando quiser</small></div></a>
     <a class="lk" href="/palestra"><span>🎤</span><div><b>Palestras e treinamento para empresas</b><small>${mtEsc(d.palestra.titulo)}</small></div></a>
     ${mtWhats() ? `<a class="lk" href="${mtWhats('Olá, Lázaro! Vim pelo Instagram.')}" target="_blank" rel="noopener"><span>💬</span><div><b>Falar no WhatsApp</b><small>Tire suas dúvidas</small></div></a>` : ''}
     ${ig ? `<a class="lk" href="https://instagram.com/${mtEsc(ig)}" target="_blank" rel="noopener"><span>📸</span><div><b>@${mtEsc(ig)}</b><small>Conteúdo de liderança toda semana</small></div></a>` : ''}`;
