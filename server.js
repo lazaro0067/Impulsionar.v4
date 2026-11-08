@@ -3102,6 +3102,7 @@ app.post('/api/portal/register', async (req, res) => {
             db.run(`INSERT INTO candidate_profiles (user_id, phone, desired_role, city, status, cep, neighborhood, state, first_job, lgpd_at, origem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [userId, phone || '', desired_role || '', city || '', aprovacaoAutomatica ? 'approved' : 'pending', String(b.cep || '').replace(/\D/g, '').slice(0, 8), String(b.neighborhood || '').slice(0, 120), city ? city.split('/')[1] || '' : '', b.first_job ? 1 : 0, b.lgpd ? new Date().toISOString() : null, String(b.origem || '').slice(0, 40)], (e2) => {
                     if (e2) return res.status(500).json({ error: 'Erro ao criar o perfil de candidato.' });
+                    if (phone) waAuto('candidato', phone, name);
                     res.json({ message: aprovacaoAutomatica
                         ? 'Cadastro realizado! Seu currículo já está aprovado — complete-o para aparecer melhor posicionado para as empresas.'
                         : 'Cadastro realizado! Faça login para completar seu currículo — ele passa por uma aprovação do Master antes de aparecer para as empresas.' });
@@ -3211,6 +3212,7 @@ app.post('/api/portal/vagas/:id/apply', requireRole('candidate'), async (req, re
         db.run(`INSERT INTO job_applications (job_posting_id, candidate_user_id) VALUES (?, ?)`, [req.params.id, req.user.userId], (err) => {
             if (err) return res.status(400).json({ error: 'Você já se candidatou a esta vaga.' });
             notificarPorCompanyAdmins(vaga.company_id, 'Nova candidatura 📄', `Novo currículo para "${vaga.title}". Abra em Vagas Ofertadas → Ver currículos.`, 'jobPostings');
+            dbGet(`SELECT u.name, cp.phone FROM users u LEFT JOIN candidate_profiles cp ON cp.user_id = u.id WHERE u.id = ?`, [req.user.userId]).then(c => { if (c && c.phone) waAuto('candidatura', c.phone, c.name, [vaga.title]); }).catch(() => {});
             res.json({ message: 'Candidatura enviada!' });
         });
     } catch (e) { res.status(500).json({ error: 'Erro ao se candidatar.' }); }
@@ -13241,6 +13243,7 @@ app.post('/api/public/mentoria/lead', async (req, res) => {
             [tipo, mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.empresa, 160), mtTxt(b.cargo, 120), mtTxt(b.cidade, 120), mtTxt(b.mensagem, 2000), mtTxt(b.origem || 'site', 60), tipo === 'empresa' ? 6000 : 0, JSON.stringify(extra)]);
         const rot = { aluno: 'Novo interessado na mentoria', empresa: 'Empresa pediu palestra/treinamento', aula: 'Nova inscrição na aula gratuita', raiox: 'Novo Raio-X do Líder', contato: 'Novo contato' }[tipo];
         try { mtNotificar('🚀 ' + rot, `${mtTxt(b.nome, 80)}${b.empresa ? ' · ' + mtTxt(b.empresa, 80) : ''}${b.whatsapp ? ' · ' + mtTxt(b.whatsapp, 30) : ''}`); } catch (e) {}
+        waAuto(tipo === 'empresa' ? 'palestra' : tipo === 'aula' ? 'aula' : 'mentoria', b.whatsapp, b.nome, tipo === 'empresa' ? [mtTxt(b.empresa, 80) || 'sua empresa'] : []);
         const d = await mtLer();
         res.json({ ok: true, id: r.lastID, whatsappGrupo: tipo === 'aula' ? d.links.whatsappGrupo : '', linkAula: tipo === 'aula' ? d.links.proximaAula.link : '' });
     } catch (e) { res.status(500).json({ error: 'Não consegui registrar agora. Tente de novo.' }); }
@@ -13259,6 +13262,7 @@ app.post('/api/public/mentoria/raio-x', async (req, res) => {
             [mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.cargo, 120), mtTxt(b.empresa, 160), `Raio-X: ${geral}% · ponto mais fraco: ${fraco}`, JSON.stringify({ nota, geral, fraco, respostas: resp })]).catch(() => null);
         id = r && r.lastID;
         try { mtNotificar('🚀 Novo Raio-X do Líder', `${mtTxt(b.nome, 80)} · ${geral}% · mais fraco em ${fraco}`); } catch (e) {}
+        { const pm = (d.metodo || []).find(m => m.letra === fraco); waAuto('raiox', b.whatsapp, b.nome, [geral + '%', pm ? pm.nome : fraco]); }
     }
     res.json({ nota, geral, fraco, id });
 });
@@ -13272,6 +13276,7 @@ app.post('/api/public/mentoria/inscricao', async (req, res) => {
         const lead = await mtRun(`INSERT INTO mentoria_leads (tipo, nome, email, whatsapp, cargo, empresa, origem, etapa, mensagem, valor, dados) VALUES ('aluno',?,?,?,?,?, 'inscricao', 'proposta', ?, ?, ?)`,
             [mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.cargo, 120), mtTxt(b.empresa, 160), mtTxt(b.mensagem, 2000), t ? t.preco : 0, JSON.stringify({ pessoas: mtTxt(b.pessoas, 40) })]);
         try { mtNotificar('🚀 Inscrição na mentoria', `${mtTxt(b.nome, 80)} · ${mtTxt(b.whatsapp, 30)}${t ? ' · ' + t.nome : ''}`); } catch (e) {}
+        waAuto('inscricao', b.whatsapp, b.nome);
         if (!t || !d.pagamentoOnline || !mpPreference) return res.json({ ok: true, semPagamento: true, mensagem: t ? 'Recebemos sua inscrição! O Lázaro vai te chamar no WhatsApp para confirmar a vaga.' : 'Recebemos seu interesse! Você será avisado em primeira mão quando a próxima turma abrir.' });
         if (t.restantes <= 0) return res.json({ ok: true, semPagamento: true, mensagem: 'As vagas desta turma acabaram. Você entrou na lista de espera da próxima turma.' });
         const al = await mtRun(`INSERT INTO mentoria_alunos (turma_id, lead_id, nome, email, whatsapp, cargo, empresa, produto, valor, pagamento) VALUES (?,?,?,?,?,?,?, 'grupo', ?, 'pendente')`,
@@ -13859,6 +13864,102 @@ async function agCicloAlertas() {
     } finally { AG_RODANDO = false; }
 }
 setInterval(() => agCicloAlertas().catch(e => console.warn('Agenda:', e.message)), 60 * 1000);
+
+// ======================================================================
+// WHATSAPP AUTOMÁTICO — API oficial do WhatsApp Business (Meta Cloud API)
+// Quando alguém preenche um formulário (mentoria, aula, Raio-X, palestra,
+// inscrição, cadastro de currículo, candidatura a vaga), o sistema manda na
+// hora uma mensagem do seu WhatsApp Business para a pessoa.
+// Fora da janela de 24 h a Meta só aceita MODELOS aprovados (templates) — por
+// isso cada gatilho usa um modelo criado no WhatsApp Manager.
+// ======================================================================
+db.run(`CREATE TABLE IF NOT EXISTS wa_envios (id INTEGER PRIMARY KEY AUTOINCREMENT, evento TEXT, para TEXT, nome TEXT, modelo TEXT, status TEXT, erro TEXT, msg_id TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+const WA_EVENTOS = {
+    mentoria: { rotulo: 'Interesse na mentoria / contato', modelo: 'impulsionar_mentoria_contato', texto: 'Olá, {{1}}! Aqui é o Lázaro Neto, consultor da Impulsionar V4. Recebi seu contato sobre a mentoria Do Chão à Gestão e em breve falo com você por aqui. Para adiantar: quantas pessoas você lidera hoje e qual é o maior desafio com o seu time?' },
+    aula: { rotulo: 'Inscrição na aula gratuita', modelo: 'impulsionar_aula_inscricao', texto: 'Olá, {{1}}! Sua vaga na aula gratuita para líderes de operação está garantida. Aqui é o Lázaro Neto, consultor da Impulsionar V4: vou enviar o link por esta conversa antes da aula. Até lá!' },
+    raiox: { rotulo: 'Raio-X do Líder concluído', modelo: 'impulsionar_raiox_resultado', texto: 'Olá, {{1}}! Aqui é o Lázaro Neto, consultor da Impulsionar V4. Recebi o seu Raio-X do Líder: sua nota foi {{2}} e o pilar que mais precisa de atenção é {{3}}. Quer que eu te passe o primeiro passo para melhorar isso? É só responder esta mensagem.' },
+    palestra: { rotulo: 'Pedido de proposta de palestra', modelo: 'impulsionar_palestra_pedido', texto: 'Olá, {{1}}! Aqui é o Lázaro Neto, consultor da Impulsionar V4. Recebi o pedido de proposta de palestra da {{2}} e retorno em até 1 dia útil. Se preferir, responda com o melhor horário para conversarmos 15 minutos.' },
+    inscricao: { rotulo: 'Inscrição na mentoria (pagamento)', modelo: 'impulsionar_inscricao_mentoria', texto: 'Olá, {{1}}! Recebemos sua inscrição na mentoria Do Chão à Gestão. Assim que o pagamento for confirmado, envio por aqui o seu acesso à Área do Aluno e o link do grupo da turma. Lázaro Neto, Impulsionar V4.' },
+    candidato: { rotulo: 'Cadastro de currículo (banco de talentos)', modelo: 'impulsionar_cadastro_candidato', texto: 'Olá, {{1}}! Recebemos seu cadastro no banco de talentos da Impulsionar V4. Mantenha seu currículo completo no portal para ser encontrado pelas empresas parceiras. Boa sorte!' },
+    candidatura: { rotulo: 'Candidatura a uma vaga', modelo: 'impulsionar_candidatura_vaga', texto: 'Olá, {{1}}! Sua candidatura para a vaga {{2}} foi recebida pela Impulsionar V4. Se o seu perfil avançar, a empresa entra em contato. Você pode acompanhar pelo portal.' }
+};
+async function waCfg() {
+    const rows = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN ('wa_phone_id','wa_token','wa_regras','wa_ativo')`).catch(() => []);
+    const m = Object.fromEntries(rows.map(r => [r.key, r.value]));
+    let regras = {}; try { regras = JSON.parse(m.wa_regras || '{}') || {}; } catch (e) { regras = {}; }
+    Object.keys(WA_EVENTOS).forEach(k => { regras[k] = Object.assign({ ativo: true, modelo: WA_EVENTOS[k].modelo, idioma: 'pt_BR' }, regras[k] || {}); });
+    return { phoneId: m.wa_phone_id || process.env.WHATSAPP_PHONE_ID || '', token: m.wa_token || process.env.WHATSAPP_TOKEN || '', ativo: m.wa_ativo !== '0', regras };
+}
+const waSalvarChave = (k, v) => new Promise(r => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => r()));
+function waNumero(n) { let d = String(n || '').replace(/\D/g, ''); if (d.startsWith('0')) d = d.replace(/^0+/, ''); if (d.length >= 10 && d.length <= 11) d = '55' + d; return d.length >= 12 && d.length <= 15 ? d : ''; }
+async function waEnviarModelo(cfg, para, modelo, idioma, params) {
+    const r = await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(cfg.phoneId)}/messages`, {
+        method: 'POST', headers: { Authorization: 'Bearer ' + cfg.token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messaging_product: 'whatsapp', to: para, type: 'template', template: { name: modelo, language: { code: idioma || 'pt_BR' }, components: params.length ? [{ type: 'body', parameters: params.map(t => ({ type: 'text', text: String(t || '-').slice(0, 300) })) }] : [] } })
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+        const e = j.error || {}, cod = e.code, det = (e.error_data && e.error_data.details) || e.message || ('erro ' + r.status);
+        const dica = cod === 132001 ? 'o modelo "' + modelo + '" não existe ou ainda não foi aprovado no WhatsApp Manager (confira o nome e o idioma pt_BR)'
+            : cod === 132000 ? 'o número de variáveis do modelo não bate — o modelo precisa ter exatamente ' + params.length + ' variável(is) {{n}}'
+            : cod === 190 || r.status === 401 ? 'o token expirou ou é inválido — gere um token permanente (Usuário do sistema)'
+            : cod === 131030 ? 'esse número não está na lista de teste do app (no modo de desenvolvimento, adicione o número em "Para")'
+            : cod === 131026 ? 'a pessoa não tem WhatsApp nesse número'
+            : cod === 131047 ? 'fora da janela de 24 h — só modelos aprovados podem ser enviados' : '';
+        throw new Error((dica ? dica + ' — ' : '') + det);
+    }
+    return (j.messages && j.messages[0] && j.messages[0].id) || '';
+}
+// Dispara a mensagem automática de um evento. Nunca derruba quem chamou.
+async function waAuto(evento, numero, nome, extras = []) {
+    try {
+        const cfg = await waCfg(), rg = cfg.regras[evento];
+        if (!cfg.ativo || !cfg.phoneId || !cfg.token || !rg || !rg.ativo || !rg.modelo) return;
+        const para = waNumero(numero); if (!para) return;
+        const primeiro = String(nome || '').trim().split(/\s+/)[0] || 'tudo bem';
+        const nVars = (String(WA_EVENTOS[evento].texto).match(/\{\{\d\}\}/g) || []).length, params = [primeiro, ...extras].slice(0, nVars);
+        while (params.length < nVars) params.push('-');
+        try { const id = await waEnviarModelo(cfg, para, rg.modelo, rg.idioma, params); await mtRun(`INSERT INTO wa_envios (evento, para, nome, modelo, status, msg_id) VALUES (?,?,?,?, 'enviado', ?)`, [evento, para, String(nome || '').slice(0, 120), rg.modelo, id]); }
+        catch (e) { await mtRun(`INSERT INTO wa_envios (evento, para, nome, modelo, status, erro) VALUES (?,?,?,?, 'erro', ?)`, [evento, para, String(nome || '').slice(0, 120), rg.modelo, String(e.message).slice(0, 400)]); console.warn('WhatsApp automático:', e.message); }
+    } catch (e) { console.warn('WhatsApp automático:', e.message); }
+}
+app.get('/api/admin/whatsapp-auto', requireRole('admin'), async (req, res) => {
+    const c = await waCfg(), envios = await dbAll(`SELECT * FROM wa_envios ORDER BY id DESC LIMIT 30`).catch(() => []);
+    res.json({ ativo: c.ativo, phoneId: c.phoneId, tokenPreview: c.token ? '••••' + c.token.slice(-6) : '', conectado: !!(c.phoneId && c.token), regras: c.regras, eventos: WA_EVENTOS, envios });
+});
+app.put('/api/admin/whatsapp-auto', requireRole('admin'), async (req, res) => {
+    try {
+        const b = req.body || {}, c = await waCfg();
+        if (typeof b.phoneId === 'string') { const v = b.phoneId.trim(); if (v && !/^\d{14,20}$/.test(v)) return res.status(400).json({ error: 'O "ID do número de telefone" é só números (ex.: 123456789012345) — fica em WhatsApp › Configuração da API, no app da Meta. Não é o seu número de celular.' }); await waSalvarChave('wa_phone_id', v); }
+        if (typeof b.token === 'string' && b.token.trim()) await waSalvarChave('wa_token', b.token.trim());
+        if (b.removerToken) await waSalvarChave('wa_token', '');
+        if (typeof b.ativo === 'boolean') await waSalvarChave('wa_ativo', b.ativo ? '1' : '0');
+        if (b.regras && typeof b.regras === 'object') {
+            const r = c.regras; Object.keys(WA_EVENTOS).forEach(k => { const x = b.regras[k]; if (!x) return; if (typeof x.ativo === 'boolean') r[k].ativo = x.ativo; if (typeof x.modelo === 'string') r[k].modelo = x.modelo.trim().toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 80) || WA_EVENTOS[k].modelo; if (typeof x.idioma === 'string' && /^[a-z]{2}(_[A-Z]{2})?$/.test(x.idioma)) r[k].idioma = x.idioma; });
+            await waSalvarChave('wa_regras', JSON.stringify(r));
+        }
+        const n = await waCfg();
+        if (n.phoneId && n.token && (b.phoneId || b.token)) {
+            const r = await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(n.phoneId)}?fields=display_phone_number,verified_name,quality_rating`, { headers: { Authorization: 'Bearer ' + n.token } }).catch(e => ({ ok: false, json: async () => ({ error: { message: e.message } }) }));
+            const j = await r.json().catch(() => ({}));
+            if (!r.ok) return res.status(400).json({ error: 'Salvo, mas a Meta recusou: ' + ((j.error && j.error.message) || 'erro') + '. Confira o ID do número e o token.' });
+            return res.json({ message: `WhatsApp conectado: ${j.verified_name || ''} ${j.display_phone_number || ''}`.trim() });
+        }
+        res.json({ message: 'Configuração salva.' });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/admin/whatsapp-auto/teste', requireRole('admin'), async (req, res) => {
+    try {
+        const b = req.body || {}, c = await waCfg(), ev = WA_EVENTOS[b.evento] ? b.evento : 'mentoria', rg = c.regras[ev], para = waNumero(b.numero);
+        if (!c.phoneId || !c.token) return res.status(400).json({ error: 'Salve o ID do número e o token primeiro.' });
+        if (!para) return res.status(400).json({ error: 'Informe um WhatsApp com DDD.' });
+        const nVars = (WA_EVENTOS[ev].texto.match(/\{\{\d\}\}/g) || []).length, params = ['Lázaro', '82%', 'Vínculo com o time', 'Analista de Logística'].slice(0, nVars);
+        if (ev === 'palestra' && nVars > 1) params[1] = 'Empresa Teste';
+        const id = await waEnviarModelo(c, para, rg.modelo, rg.idioma, params);
+        await mtRun(`INSERT INTO wa_envios (evento, para, nome, modelo, status, msg_id) VALUES (?,?,?,?, 'teste', ?)`, [ev, para, 'Teste', rg.modelo, id]);
+        res.json({ message: 'Mensagem de teste enviada! Confira o WhatsApp ' + b.numero + '.' });
+    } catch (e) { res.status(400).json({ error: 'Não enviou: ' + e.message }); }
+});
 
 app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res, arq) => { if (/\.html$/.test(arq)) res.setHeader('Cache-Control', 'no-cache, must-revalidate'); } }));
 // Acesso só ao Estúdio de Vídeo (celular): mesmo sistema, abre direto nas abas de criar/editar vídeo.

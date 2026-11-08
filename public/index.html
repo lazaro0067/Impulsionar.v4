@@ -1795,6 +1795,8 @@
   .mtq-lista .mtq-feito { background:#f59e0b !important; color:#0f172a !important; font-weight:800; text-align:center; margin-top:10px; }
   @media (max-width:900px) { .mtq-corpo { grid-template-columns:1fr; text-align:center; } .mtq-esq ol { text-align:left; display:inline-block; } .mtq-qr img { width:70vw; height:70vw; } }
   .ch-ms-grade { display:grid; grid-template-columns:1fr 1fr; gap:4px 8px; margin:10px 0 8px; } .ch-ms-l { font-size:12px; font-weight:700; color:#334155; margin-top:4px; } .ch-ms-l small { display:block; font-weight:500; color:#64748b; font-size:11px; } .ch-ms-grade input { width:100%; } .ch-ms-erro { background:#fef2f2; border:1px solid #fecaca; color:#991b1b; border-radius:10px; padding:9px 11px; font-size:13px; margin-bottom:8px; } .ch-ms-ok { background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; border-radius:10px; padding:9px 11px; font-size:13px; margin-bottom:8px; } @media (max-width:600px) { .ch-ms-grade { grid-template-columns:1fr; } }
+  .ch-largo { grid-column:1 / -1; } .ch-wa-tab { margin-top:12px; border-top:1px solid #e2e8f0; padding-top:10px; } .ch-wa-l { display:grid; grid-template-columns:1.2fr 1fr auto; gap:8px; align-items:center; padding:5px 0; } .ch-wa-l.cab span { font-size:12px; font-weight:800; color:#64748b; } .ch-wa-l input:not([type=checkbox]) { width:100%; font-size:13px; } .ch-wa-sw { display:flex !important; align-items:center; gap:8px; font-size:13.5px; font-weight:600; } .ch-wa-sw input { width:auto !important; margin:0; flex:0 0 auto !important; } .ch-linha .ch-wa-sw { flex:0 0 auto; margin-left:8px; }
+  .ch-wa-teste { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px; background:#f8fafc; border-radius:10px; padding:10px; } .ch-wa-teste select, .ch-wa-teste input { width:auto; flex:1 1 180px; } .ch-wa-log { margin-top:10px; font-size:13px; } .ch-wa-log div { padding:6px 0; border-bottom:1px solid #f1f5f9; } .ch-wa-log div.erro { color:#991b1b; } .ch-wa-log small { display:block; color:#64748b; } @media (max-width:700px) { .ch-wa-l { grid-template-columns:1fr; } .ch-wa-l.cab { display:none; } }
   .mtn-chk { display:flex !important; align-items:center; gap:8px; } .mtn-chk input { width:auto; }
   .mtn-turma { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:14px 16px; margin-bottom:14px; } .mtn-turma-cab { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; } .mtn-turma-cab h3 { margin:0; }
   .mtn-st { font-size:12px; border-radius:99px; padding:3px 10px; background:#e2e8f0; margin-left:6px; vertical-align:middle; } .mtn-st.aberta { background:#dcfce7; color:#166534; } .mtn-st.andamento { background:#dbeafe; color:#1e40af; }
@@ -14774,9 +14776,9 @@ async function mtnEnviarFoto(inp) {
 }
 async function renderChavesIntegracoes() {
   const cont = document.getElementById('conteudo'); cont.innerHTML = '<h1>🔑 Chaves e integrações</h1><p>Carregando…</p>';
-  try { CHAVES_ST = await api('/api/admin/chaves'); CHAVES_ST.ms365 = await api('/api/admin/dpo/ms365').catch(() => ({})); } catch (e) { cont.innerHTML = `<h1>🔑 Chaves e integrações</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
-  const st = CHAVES_ST, ms = st.ms365 || {}, n = CHAVES_SERVICOS.filter(s => (st[s.k] || {}).ok).length + (st.instagram.ok ? 1 : 0) + (ms.ativo ? 1 : 0);
-  cont.innerHTML = `<h1>🔑 Chaves e integrações</h1><p class="plano-meta">Todas as chaves do sistema num lugar só. Elas ficam guardadas no servidor (ninguém mais vê) e valem para todos os vídeos e agentes. <b>${n} de ${CHAVES_SERVICOS.length + 2}</b> conectadas.</p>
+  try { CHAVES_ST = await api('/api/admin/chaves'); CHAVES_ST.ms365 = await api('/api/admin/dpo/ms365').catch(() => ({})); CHAVES_ST.wa = await api('/api/admin/whatsapp-auto').catch(() => ({})); } catch (e) { cont.innerHTML = `<h1>🔑 Chaves e integrações</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
+  const st = CHAVES_ST, ms = st.ms365 || {}, n = CHAVES_SERVICOS.filter(s => (st[s.k] || {}).ok).length + (st.instagram.ok ? 1 : 0) + (ms.ativo ? 1 : 0) + ((st.wa || {}).conectado ? 1 : 0);
+  cont.innerHTML = `<h1>🔑 Chaves e integrações</h1><p class="plano-meta">Todas as chaves do sistema num lugar só. Elas ficam guardadas no servidor (ninguém mais vê) e valem para todos os vídeos e agentes. <b>${n} de ${CHAVES_SERVICOS.length + 3}</b> conectadas.</p>
     <div class="ch-grade">${CHAVES_SERVICOS.map(s => { const x = st[s.k] || {}; return `<div class="ch-card ${x.ok ? 'ok' : ''}"><div class="ch-cab"><span class="ch-ico">${s.ico}</span><div><b>${s.nome}</b><small>${s.para}</small></div><span class="ch-st">${x.ok ? '✅ conectada' : x.recusada ? '⚠️ recusada' : '⚪ não conectada'}</span></div>
       ${x.ok ? `<div class="ch-atual">Chave atual: <code>${escapeHtml(x.preview || '')}</code>${x.origem ? ` · ${escapeHtml(x.origem)}` : ''}${x.provedor ? ` · ${escapeHtml(x.provedor)}` : ''}</div>` : ''}
       <details ${x.ok ? '' : 'open'}><summary>Como pegar a chave</summary><ol>${s.passos.map(p => `<li>${p}</li>`).join('')}</ol></details>
@@ -14796,7 +14798,49 @@ async function renderChavesIntegracoes() {
           <label class="ch-ms-l">Valor do segredo<small>coluna "Valor", não o "ID do segredo"</small></label><label class="ch-ms-l">E-mail organizador<small>conta Microsoft 365 da empresa</small></label><input id="chms-secret" name="ms-client-secret" type="password" autocomplete="new-password" data-lpignore="true" placeholder="${ms.secretPreview ? 'Valor salvo ' + escapeHtml(ms.secretPreview) + ' (vazio = manter)' : 'Valor do segredo do cliente'}"><input id="chms-org" name="ms-organizer" type="email" autocomplete="off" data-lpignore="true" placeholder="E-mail organizador (Microsoft 365 da empresa)" value="${escapeHtml(ms.organizador || '')}"></div>
         <div id="chms-msg"></div>
         <div class="ch-linha"><button class="btn-primario btn-sm" style="width:auto;" id="chms-bt" onclick="chSalvarMs365()">💾 Salvar e testar</button>${ms.ativo || ms.tenant ? '<button class="btn-secundario btn-sm" onclick="chSalvarMs365(true)">Remover</button>' : ''}</div></div>
+      ${chCardWhats(st.wa || {})}
     </div>`;
+}
+function chCardWhats(w) {
+  const ev = w.eventos || {}, rg = w.regras || {};
+  return `<div class="ch-card ch-largo ${w.conectado ? 'ok' : ''}" id="ch-card-wa"><div class="ch-cab"><span class="ch-ico">💬</span><div><b>WhatsApp Business — mensagens automáticas</b><small>Quando alguém preenche um formulário (mentoria, aula, Raio-X, palestra, inscrição, currículo ou vaga), a pessoa recebe na hora uma mensagem do seu WhatsApp Business.</small></div><span class="ch-st">${w.conectado ? (w.ativo ? '✅ conectado' : '⏸️ pausado') : '⚪ não conectado'}</span></div>
+    <details ${w.conectado ? '' : 'open'}><summary>Como conectar (API oficial da Meta)</summary><ol>
+      <li>Em <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener">developers.facebook.com › Meus apps</a>, abra o app <b>Impulsionar v4</b> › <b>Adicionar produto</b> › <b>WhatsApp</b>.</li>
+      <li>Em <b>WhatsApp › Configuração da API</b>, adicione o número da Impulsionar. <b>Importante:</b> um número que já está no app WhatsApp Business só entra na API pela "coexistência" (feita por um parceiro da Meta); o caminho mais simples é usar <b>um chip só para a API</b> e manter o seu número no app.</li>
+      <li>Copie o <b>ID do número de telefone</b> (só números) e cole abaixo.</li>
+      <li>Token permanente: <a href="https://business.facebook.com/settings/system-users" target="_blank" rel="noopener">Configurações do negócio › Usuários do sistema</a> › Adicionar (Admin) › <b>Gerar token</b> com as permissões <b>whatsapp_business_messaging</b> e <b>whatsapp_business_management</b>.</li>
+      <li>No <a href="https://business.facebook.com/wa/manage/message-templates/" target="_blank" rel="noopener">WhatsApp Manager › Modelos de mensagem</a>, crie cada modelo da lista abaixo (categoria <b>Utilidade</b>, idioma <b>Português (BR)</b>) com o nome e o texto exatos — use o botão "Copiar texto". A Meta aprova em minutos.</li></ol></details>
+    <div class="ch-ms-grade"><label class="ch-ms-l">ID do número de telefone<small>WhatsApp › Configuração da API</small></label><label class="ch-ms-l">Token de acesso permanente<small>Usuário do sistema › Gerar token</small></label>
+      <input id="chwa-phone" name="wa-phone-id" autocomplete="off" inputmode="numeric" placeholder="ex.: 123456789012345" value="${escapeHtml(w.phoneId || '')}"><input id="chwa-token" name="wa-token" type="password" autocomplete="new-password" placeholder="${w.tokenPreview ? 'Token salvo ' + escapeHtml(w.tokenPreview) + ' (vazio = manter)' : 'EAAG…'}"></div>
+    <div id="chwa-msg"></div>
+    <div class="ch-linha"><button class="btn-primario btn-sm" style="width:auto;" id="chwa-bt" onclick="chSalvarWhats()">💾 Salvar e conectar</button>${w.conectado ? `<label class="ch-wa-sw"><input type="checkbox" ${w.ativo ? 'checked' : ''} onchange="chWhatsAtivo(this.checked)"> Envio automático ligado</label>` : ''}</div>
+    <div class="ch-wa-tab"><div class="ch-wa-l cab"><span>Enviar quando…</span><span>Nome do modelo na Meta</span><span></span></div>
+      ${Object.entries(ev).map(([k, e]) => `<div class="ch-wa-l"><label class="ch-wa-sw"><input type="checkbox" data-wa-ativo="${k}" ${(rg[k] || {}).ativo !== false ? 'checked' : ''}> ${escapeHtml(e.rotulo)}</label><input data-wa-modelo="${k}" value="${escapeHtml((rg[k] || {}).modelo || e.modelo)}"><button class="btn-secundario btn-sm" onclick="chWhatsTexto('${k}')">📋 Copiar texto</button></div>`).join('')}
+      <div class="ch-linha" style="margin-top:8px;"><button class="btn-secundario btn-sm" onclick="chSalvarWhatsRegras()">Salvar mensagens</button></div></div>
+    ${w.conectado ? `<div class="ch-wa-teste"><b>Testar</b><select id="chwa-ev">${Object.entries(ev).map(([k, e]) => `<option value="${k}">${escapeHtml(e.rotulo)}</option>`).join('')}</select><input id="chwa-num" inputmode="tel" placeholder="Seu WhatsApp (com DDD)"><button class="btn-secundario btn-sm" onclick="chTesteWhats()">Enviar teste</button></div>` : ''}
+    ${(w.envios || []).length ? `<details class="ch-wa-log"><summary>Últimos envios (${w.envios.length})</summary>${w.envios.map(x => `<div class="${x.status === 'erro' ? 'erro' : ''}"><span>${x.status === 'erro' ? '⚠️' : '✅'} ${escapeHtml(x.nome || '')} · ${escapeHtml(x.para || '')}</span><small>${escapeHtml((ev[x.evento] || {}).rotulo || x.evento)} · ${escapeHtml(String(x.criado_em || '').slice(0, 16))}${x.erro ? '<br>' + escapeHtml(x.erro) : ''}</small></div>`).join('')}</details>` : ''}
+  </div>`;
+}
+function chWhatsTexto(k) {
+  const e = ((CHAVES_ST.wa || {}).eventos || {})[k]; if (!e) return;
+  const nome = (document.querySelector(`[data-wa-modelo="${k}"]`) || {}).value || e.modelo;
+  mtnModal(`<h3 style="margin-top:0;">📋 Modelo: ${escapeHtml(nome)}</h3><p class="plano-meta">No WhatsApp Manager › Criar modelo: categoria <b>Utilidade</b>, nome <b>${escapeHtml(nome)}</b>, idioma <b>Português (BR)</b>. No corpo, cole o texto abaixo (as variáveis {{1}}, {{2}}… o sistema preenche com o nome da pessoa etc.). Ao pedir exemplos, use: {{1}} = Maria${/\{\{2\}\}/.test(e.texto) ? ', {{2}} = ' + (k === 'raiox' ? '72%' : k === 'palestra' ? 'Empresa X' : 'Auxiliar de logística') : ''}${/\{\{3\}\}/.test(e.texto) ? ', {{3}} = Vínculo com o time' : ''}.</p>
+    <textarea rows="6" readonly onclick="this.select()">${escapeHtml(e.texto)}</textarea>
+    <div class="acoes-form"><button class="btn-primario" style="width:auto;" onclick="mtnCopiar(${escapeHtml(JSON.stringify(e.texto))})">Copiar texto</button><button class="btn-secundario" onclick="mtnModal('')">Fechar</button></div>`);
+}
+async function chSalvarWhats() {
+  const bt = document.getElementById('chwa-bt'), m = document.getElementById('chwa-msg'); if (bt) { bt.disabled = true; bt.textContent = 'Conectando…'; }
+  try { const r = await api('/api/admin/whatsapp-auto', { method: 'PUT', body: JSON.stringify({ phoneId: document.getElementById('chwa-phone').value.trim(), token: document.getElementById('chwa-token').value.trim() }) });
+    mostrarToast('✅ ' + r.message); await renderChavesIntegracoes(); const m2 = document.getElementById('chwa-msg'); if (m2) m2.innerHTML = `<div class="ch-ms-ok">✅ ${escapeHtml(r.message)}</div>`; }
+  catch (e) { if (m) m.innerHTML = `<div class="ch-ms-erro">⚠️ ${escapeHtml(e.message)}</div>`; if (bt) { bt.disabled = false; bt.textContent = '💾 Salvar e conectar'; } }
+}
+async function chSalvarWhatsRegras() {
+  const regras = {}; document.querySelectorAll('[data-wa-ativo]').forEach(x => { const k = x.dataset.waAtivo; regras[k] = { ativo: x.checked, modelo: (document.querySelector(`[data-wa-modelo="${k}"]`) || {}).value || '' }; });
+  try { await api('/api/admin/whatsapp-auto', { method: 'PUT', body: JSON.stringify({ regras }) }); mostrarToast('✅ Mensagens automáticas salvas.'); renderChavesIntegracoes(); } catch (e) { mostrarToast(e.message, true); }
+}
+async function chWhatsAtivo(on) { try { await api('/api/admin/whatsapp-auto', { method: 'PUT', body: JSON.stringify({ ativo: on }) }); mostrarToast(on ? '✅ Envio automático ligado.' : '⏸️ Envio automático pausado.'); } catch (e) { mostrarToast(e.message, true); } }
+async function chTesteWhats() {
+  try { const r = await api('/api/admin/whatsapp-auto/teste', { method: 'POST', body: JSON.stringify({ evento: document.getElementById('chwa-ev').value, numero: document.getElementById('chwa-num').value }) }); mostrarToast('✅ ' + r.message); renderChavesIntegracoes(); } catch (e) { mostrarToast(e.message, true); }
 }
 async function chSalvarMs365(limpar) {
   if (limpar && !confirm('Remover a integração Microsoft 365? Os convites voltam a ir por e-mail (.ics).')) return;
