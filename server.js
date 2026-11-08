@@ -7003,7 +7003,7 @@ app.delete('/api/admin/dpo/consultants/:id', requireRole('admin'), async (req, r
 //    Microsoft Graph com reunião do Teams gerada automaticamente; a própria
 //    Microsoft envia os convites e as atualizações/cancelamentos.
 // ======================================================================
-const MS365_CHAVES = ['ms365_tenant', 'ms365_client_id', 'ms365_client_secret', 'ms365_organizador'];
+const MS365_CHAVES = ['ms365_falhou', 'ms365_tenant', 'ms365_client_id', 'ms365_client_secret', 'ms365_organizador'];
 async function lerConfigMs365() {
     const rows = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN (${MS365_CHAVES.map(() => '?').join(',')})`, MS365_CHAVES);
     const m = Object.fromEntries(rows.map(r => [r.key, r.value]));
@@ -7011,10 +7011,11 @@ async function lerConfigMs365() {
         tenant: m.ms365_tenant || process.env.MS365_TENANT_ID || '',
         clientId: m.ms365_client_id || process.env.MS365_CLIENT_ID || '',
         secret: m.ms365_client_secret || process.env.MS365_CLIENT_SECRET || '',
-        organizador: m.ms365_organizador || process.env.MS365_ORGANIZER || ''
+        organizador: m.ms365_organizador || process.env.MS365_ORGANIZER || '',
+        falhou: m.ms365_falhou === '1'
     };
 }
-function ms365Ativo(c) { return !!(c && c.tenant && c.clientId && c.secret && c.organizador); }
+function ms365Ativo(c) { return !!(c && c.tenant && c.clientId && c.secret && c.organizador && !c.falhou); } // só fica ativo se o último teste passou
 let CACHE_TOKEN_MS365 = { token: '', expira: 0, chave: '' };
 async function tokenMs365(c) {
     const chave = c.tenant + '|' + c.clientId;
@@ -7206,12 +7207,14 @@ app.put('/api/admin/dpo/ms365', requireRole('admin'), async (req, res) => {
         if (req.body.limpar) Object.keys(novo).forEach(k => novo[k] = '');
         for (const [k, v] of Object.entries(novo)) await new Promise(r => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => r()));
         CACHE_TOKEN_MS365 = { token: '', expira: 0, chave: '' };
+        const marcarFalha = v => new Promise(r => db.run(`INSERT INTO integration_settings (key, value) VALUES ('ms365_falhou', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [v ? '1' : ''], () => r()));
+        await marcarFalha(false);
         const c = await lerConfigMs365();
         if (!req.body.limpar) {
             const guid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-            if (c.clientId && !guid.test(c.clientId)) return res.status(400).json({ error: 'Salvo, mas o "ID do aplicativo (Client ID)" não parece certo: é um código no formato xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx, na página Visão geral do app no Azure.' });
-            if (c.tenant && !guid.test(c.tenant) && !/\./.test(c.tenant)) return res.status(400).json({ error: 'Salvo, mas o "ID do diretório (Tenant ID)" não parece certo: é um código xxxxxxxx-xxxx-… na Visão geral do app (ou o domínio da empresa, ex.: suaempresa.onmicrosoft.com).' });
-            if (/@(outlook|hotmail|live|msn)\.com(\.br)?$/i.test(c.organizador)) return res.status(400).json({ error: 'Salvo, mas o e-mail ' + c.organizador + ' é uma conta PESSOAL da Microsoft — a integração pelo Azure só funciona com e-mail de empresa no Microsoft 365 (ex.: voce@impulsionarv4.com.br com licença). Para ver o calendário do Outlook pessoal na Minha Agenda, use "Pelo link do calendário publicado" em 📅 Minha Agenda › ⚙️ Configurar.' });
+            if (c.clientId && !guid.test(c.clientId)) { await marcarFalha(true); return res.status(400).json({ error: 'Salvo, mas o "ID do aplicativo (Client ID)" não parece certo: é um código no formato xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx, na página Visão geral do app no Azure.' }); }
+            if (c.tenant && !guid.test(c.tenant) && !/\./.test(c.tenant)) { await marcarFalha(true); return res.status(400).json({ error: 'Salvo, mas o "ID do diretório (Tenant ID)" não parece certo: é um código xxxxxxxx-xxxx-… na Visão geral do app (ou o domínio da empresa, ex.: suaempresa.onmicrosoft.com).' }); }
+            if (/@(outlook|hotmail|live|msn)\.com(\.br)?$/i.test(c.organizador)) { await marcarFalha(true); return res.status(400).json({ error: 'Salvo, mas o e-mail ' + c.organizador + ' é uma conta PESSOAL da Microsoft — a integração pelo Azure só funciona com e-mail de empresa no Microsoft 365 (ex.: voce@impulsionarv4.com.br com licença). Para ver o calendário do Outlook pessoal na Minha Agenda, use "Pelo link do calendário publicado" em 📅 Minha Agenda › ⚙️ Configurar.' }); }
             if (!ms365Ativo(c)) return res.json({ message: 'Salvo. Preencha os 4 campos (Tenant, Client ID, Segredo e e-mail organizador) para conectar.' });
         }
         if (ms365Ativo(c) && req.body.testar !== false) {
@@ -7223,7 +7226,7 @@ app.put('/api/admin/dpo/ms365', requireRole('admin'), async (req, res) => {
                     : /AADSTS7000222|expired/i.test(m) ? 'O segredo expirou: crie um segredo novo em Certificados e segredos.'
                     : /403|Access is denied|Authorization_RequestDenied|ErrorAccessDenied/i.test(m) ? 'Falta permissão: em Permissões de API adicione Microsoft Graph › Permissões de APLICATIVO › Calendars.ReadWrite e clique em "Conceder consentimento do administrador".'
                     : /ResourceNotFound|ErrorItemNotFound|MailboxNotEnabledForRESTAPI|not found|invalid user/i.test(m) ? 'O e-mail organizador não existe nesse Microsoft 365 ou não tem caixa de e-mail (licença Exchange/Teams).' : '';
-                return res.status(400).json({ error: 'Salvo, mas o teste falhou. ' + (dica ? dica + ' ' : '') + '(Detalhe: ' + m.replace(/^Microsoft 365: /, '').slice(0, 220) + ')' });
+                { await marcarFalha(true); return res.status(400).json({ error: 'Salvo, mas o teste falhou. ' + (dica ? dica + ' ' : '') + '(Detalhe: ' + m.replace(/^Microsoft 365: /, '').slice(0, 220) + ')' }); }
             }
             return res.json({ message: 'Microsoft 365 conectado! Os agendamentos vão direto para o Outlook com link do Teams.' });
         }
