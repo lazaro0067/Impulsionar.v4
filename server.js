@@ -7207,9 +7207,24 @@ app.put('/api/admin/dpo/ms365', requireRole('admin'), async (req, res) => {
         for (const [k, v] of Object.entries(novo)) await new Promise(r => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => r()));
         CACHE_TOKEN_MS365 = { token: '', expira: 0, chave: '' };
         const c = await lerConfigMs365();
+        if (!req.body.limpar) {
+            const guid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (c.clientId && !guid.test(c.clientId)) return res.status(400).json({ error: 'Salvo, mas o "ID do aplicativo (Client ID)" não parece certo: é um código no formato xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx, na página Visão geral do app no Azure.' });
+            if (c.tenant && !guid.test(c.tenant) && !/\./.test(c.tenant)) return res.status(400).json({ error: 'Salvo, mas o "ID do diretório (Tenant ID)" não parece certo: é um código xxxxxxxx-xxxx-… na Visão geral do app (ou o domínio da empresa, ex.: suaempresa.onmicrosoft.com).' });
+            if (/@(outlook|hotmail|live|msn)\.com(\.br)?$/i.test(c.organizador)) return res.status(400).json({ error: 'Salvo, mas o e-mail ' + c.organizador + ' é uma conta PESSOAL da Microsoft — a integração pelo Azure só funciona com e-mail de empresa no Microsoft 365 (ex.: voce@impulsionarv4.com.br com licença). Para ver o calendário do Outlook pessoal na Minha Agenda, use "Pelo link do calendário publicado" em 📅 Minha Agenda › ⚙️ Configurar.' });
+            if (!ms365Ativo(c)) return res.json({ message: 'Salvo. Preencha os 4 campos (Tenant, Client ID, Segredo e e-mail organizador) para conectar.' });
+        }
         if (ms365Ativo(c) && req.body.testar !== false) {
             try { await graphMs365(c, 'GET', `/users/${encodeURIComponent(c.organizador)}/calendar`); }
-            catch (e) { return res.status(400).json({ error: 'Salvo, mas o teste falhou: ' + e.message }); }
+            catch (e) {
+                const m = String(e.message), dica = /AADSTS7000215|invalid client secret/i.test(m) ? 'O segredo está errado: copie a coluna "Valor" do segredo (não o "ID do segredo"). Se não aparecer mais, crie um segredo novo.'
+                    : /AADSTS90002|AADSTS900023|tenant/i.test(m) && /AADSTS/.test(m) ? 'O Tenant ID está errado: copie o "ID do diretório (locatário)" da Visão geral do app.'
+                    : /AADSTS700016|application with identifier/i.test(m) ? 'O Client ID está errado ou o app é de outro diretório: copie o "ID do aplicativo (cliente)" da Visão geral.'
+                    : /AADSTS7000222|expired/i.test(m) ? 'O segredo expirou: crie um segredo novo em Certificados e segredos.'
+                    : /403|Access is denied|Authorization_RequestDenied|ErrorAccessDenied/i.test(m) ? 'Falta permissão: em Permissões de API adicione Microsoft Graph › Permissões de APLICATIVO › Calendars.ReadWrite e clique em "Conceder consentimento do administrador".'
+                    : /ResourceNotFound|ErrorItemNotFound|MailboxNotEnabledForRESTAPI|not found|invalid user/i.test(m) ? 'O e-mail organizador não existe nesse Microsoft 365 ou não tem caixa de e-mail (licença Exchange/Teams).' : '';
+                return res.status(400).json({ error: 'Salvo, mas o teste falhou. ' + (dica ? dica + ' ' : '') + '(Detalhe: ' + m.replace(/^Microsoft 365: /, '').slice(0, 220) + ')' });
+            }
             return res.json({ message: 'Microsoft 365 conectado! Os agendamentos vão direto para o Outlook com link do Teams.' });
         }
         res.json({ message: req.body.limpar ? 'Integração removida — convites seguem por e-mail (.ics).' : 'Configuração salva.' });

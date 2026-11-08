@@ -1794,6 +1794,7 @@
   .mtq-lista button { display:block; width:100%; text-align:left; border:none; background:rgba(255,255,255,.05); color:#cbd5e1; border-radius:10px; padding:8px 10px; margin-bottom:6px; font:inherit; font-size:14px; cursor:pointer; } .mtq-lista button.ok { background:rgba(34,197,94,.18); color:#fff; font-weight:700; }
   .mtq-lista .mtq-feito { background:#f59e0b !important; color:#0f172a !important; font-weight:800; text-align:center; margin-top:10px; }
   @media (max-width:900px) { .mtq-corpo { grid-template-columns:1fr; text-align:center; } .mtq-esq ol { text-align:left; display:inline-block; } .mtq-qr img { width:70vw; height:70vw; } }
+  .ch-ms-grade { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0 8px; } .ch-ms-grade input { width:100%; } .ch-ms-erro { background:#fef2f2; border:1px solid #fecaca; color:#991b1b; border-radius:10px; padding:9px 11px; font-size:13px; margin-bottom:8px; } .ch-ms-ok { background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; border-radius:10px; padding:9px 11px; font-size:13px; margin-bottom:8px; } @media (max-width:600px) { .ch-ms-grade { grid-template-columns:1fr; } }
   .mtn-chk { display:flex !important; align-items:center; gap:8px; } .mtn-chk input { width:auto; }
   .mtn-turma { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:14px 16px; margin-bottom:14px; } .mtn-turma-cab { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; } .mtn-turma-cab h3 { margin:0; }
   .mtn-st { font-size:12px; border-radius:99px; padding:3px 10px; background:#e2e8f0; margin-left:6px; vertical-align:middle; } .mtn-st.aberta { background:#dcfce7; color:#166534; } .mtn-st.andamento { background:#dbeafe; color:#1e40af; }
@@ -8314,7 +8315,7 @@ async function salvarConfigMs365(limpar) {
   const b = document.getElementById('ms-salvar'); if (b) { b.disabled = true; b.textContent = 'Testando...'; }
   try {
     const r = await api('/api/admin/dpo/ms365', { method: 'PUT', body: JSON.stringify(limpar ? { limpar: true } : { tenant: document.getElementById('ms-tenant').value, clientId: document.getElementById('ms-client').value, secret: document.getElementById('ms-secret').value, organizador: document.getElementById('ms-org').value }) });
-    mostrarToast(r.message); document.getElementById('modal-area').innerHTML = ''; carregarSessoesDpoMaster();
+    mostrarToast(r.message); document.getElementById('modal-area').innerHTML = ''; if (document.getElementById('dpo-sessoes-master') || AGD.sessoes) carregarSessoesDpoMaster();
   } catch (e) { mostrarToast(e.message, true); if (b) { b.disabled = false; b.textContent = 'Salvar e testar'; } }
 }
 // Empresa: próximas consultorias no topo do DPO Ambev.
@@ -14773,9 +14774,9 @@ async function mtnEnviarFoto(inp) {
 }
 async function renderChavesIntegracoes() {
   const cont = document.getElementById('conteudo'); cont.innerHTML = '<h1>🔑 Chaves e integrações</h1><p>Carregando…</p>';
-  try { CHAVES_ST = await api('/api/admin/chaves'); } catch (e) { cont.innerHTML = `<h1>🔑 Chaves e integrações</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
-  const st = CHAVES_ST, n = CHAVES_SERVICOS.filter(s => (st[s.k] || {}).ok).length + (st.instagram.ok ? 1 : 0);
-  cont.innerHTML = `<h1>🔑 Chaves e integrações</h1><p class="plano-meta">Todas as chaves do sistema num lugar só. Elas ficam guardadas no servidor (ninguém mais vê) e valem para todos os vídeos e agentes. <b>${n} de ${CHAVES_SERVICOS.length + 1}</b> conectadas.</p>
+  try { CHAVES_ST = await api('/api/admin/chaves'); CHAVES_ST.ms365 = await api('/api/admin/dpo/ms365').catch(() => ({})); } catch (e) { cont.innerHTML = `<h1>🔑 Chaves e integrações</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
+  const st = CHAVES_ST, ms = st.ms365 || {}, n = CHAVES_SERVICOS.filter(s => (st[s.k] || {}).ok).length + (st.instagram.ok ? 1 : 0) + (ms.ativo ? 1 : 0);
+  cont.innerHTML = `<h1>🔑 Chaves e integrações</h1><p class="plano-meta">Todas as chaves do sistema num lugar só. Elas ficam guardadas no servidor (ninguém mais vê) e valem para todos os vídeos e agentes. <b>${n} de ${CHAVES_SERVICOS.length + 2}</b> conectadas.</p>
     <div class="ch-grade">${CHAVES_SERVICOS.map(s => { const x = st[s.k] || {}; return `<div class="ch-card ${x.ok ? 'ok' : ''}"><div class="ch-cab"><span class="ch-ico">${s.ico}</span><div><b>${s.nome}</b><small>${s.para}</small></div><span class="ch-st">${x.ok ? '✅ conectada' : x.recusada ? '⚠️ recusada' : '⚪ não conectada'}</span></div>
       ${x.ok ? `<div class="ch-atual">Chave atual: <code>${escapeHtml(x.preview || '')}</code>${x.origem ? ` · ${escapeHtml(x.origem)}` : ''}${x.provedor ? ` · ${escapeHtml(x.provedor)}` : ''}</div>` : ''}
       <details ${x.ok ? '' : 'open'}><summary>Como pegar a chave</summary><ol>${s.passos.map(p => `<li>${p}</li>`).join('')}</ol></details>
@@ -14783,7 +14784,32 @@ async function renderChavesIntegracoes() {
       <div class="ch-card ${st.instagram.ok ? 'ok' : ''}"><div class="ch-cab"><span class="ch-ico">📸</span><div><b>App do Instagram (Meta)</b><small>Entrar com Instagram, postar e agendar, ler o perfil e responder comentários.</small></div><span class="ch-st">${st.instagram.ok ? '✅ conectado' : '⚪ não conectado'}</span></div>
         <details ${st.instagram.ok ? '' : 'open'}><summary>Como pegar</summary><ol><li><a href="https://developers.facebook.com/apps" target="_blank" rel="noopener">developers.facebook.com › Meus apps</a> › app <b>Impulsionar v4</b> › <b>Casos de uso</b> › API do Instagram com login do Instagram</li><li>Em <b>URIs de redirecionamento OAuth</b> cole: <code>${escapeHtml(st.instagram.redirect)}</code></li><li>Copie o <b>ID do app do Instagram</b> e a <b>Chave secreta do app do Instagram</b></li></ol></details>
         <div class="ch-linha"><input id="ch-ig-id" placeholder="ID do app do Instagram (só números)" value="${escapeHtml(st.instagram.appId || '')}"><input type="password" id="ch-ig-sec" placeholder="Chave secreta do app" autocomplete="off"><button class="btn-primario btn-sm" style="width:auto;" onclick="chSalvarIg()">💾 Salvar</button></div></div>
+      <div class="ch-card ${ms.ativo ? 'ok' : ''}" id="ch-card-ms365"><div class="ch-cab"><span class="ch-ico">🪟</span><div><b>Microsoft 365 — Outlook e Teams (Azure)</b><small>Consultorias DPO com reunião do Teams criada no Outlook, e a Minha Agenda lendo/criando eventos no Outlook da empresa.</small></div><span class="ch-st">${ms.ativo ? '✅ conectada' : '⚪ não conectada'}</span></div>
+        ${ms.ativo ? `<div class="ch-atual">Organizador: <code>${escapeHtml(ms.organizador || '')}</code> · segredo <code>${escapeHtml(ms.secretPreview || '')}</code></div>` : ''}
+        <details ${ms.ativo ? '' : 'open'}><summary>Como pegar (feito uma vez no Azure)</summary><ol>
+          <li><a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener">portal.azure.com › Registros de aplicativo</a> › <b>Novo registro</b> (nome: Impulsionar Agenda).</li>
+          <li>Na <b>Visão geral</b>, copie o <b>ID do diretório (locatário)</b> e o <b>ID do aplicativo (cliente)</b>.</li>
+          <li><b>Certificados e segredos</b> › <b>Novo segredo do cliente</b> › copie a coluna <b>Valor</b> (não o "ID do segredo").</li>
+          <li><b>Permissões de API</b> › Microsoft Graph › <b>Permissões de aplicativo</b> › <b>Calendars.ReadWrite</b> › <b>Conceder consentimento do administrador</b>.</li>
+          <li>O e-mail organizador precisa ser de <b>empresa no Microsoft 365</b> (ex.: voce@impulsionarv4.com.br). E-mail pessoal @outlook.com/@hotmail.com não funciona por aqui — para ele use o link publicado na 📅 Minha Agenda.</li></ol></details>
+        <div class="ch-ms-grade"><input id="chms-tenant" placeholder="ID do diretório (Tenant ID)" value="${escapeHtml(ms.tenant || '')}"><input id="chms-client" placeholder="ID do aplicativo (Client ID)" value="${escapeHtml(ms.clientId || '')}">
+          <input id="chms-secret" type="password" autocomplete="off" placeholder="${ms.secretPreview ? 'Segredo salvo ' + escapeHtml(ms.secretPreview) + ' (vazio = manter)' : 'Valor do segredo do cliente'}"><input id="chms-org" placeholder="E-mail organizador (Microsoft 365 da empresa)" value="${escapeHtml(ms.organizador || '')}"></div>
+        <div id="chms-msg"></div>
+        <div class="ch-linha"><button class="btn-primario btn-sm" style="width:auto;" id="chms-bt" onclick="chSalvarMs365()">💾 Salvar e testar</button>${ms.ativo || ms.tenant ? '<button class="btn-secundario btn-sm" onclick="chSalvarMs365(true)">Remover</button>' : ''}</div></div>
     </div>`;
+}
+async function chSalvarMs365(limpar) {
+  if (limpar && !confirm('Remover a integração Microsoft 365? Os convites voltam a ir por e-mail (.ics).')) return;
+  const g = id => (document.getElementById(id) || {}).value || '', bt = document.getElementById('chms-bt'), m = document.getElementById('chms-msg');
+  if (bt) { bt.disabled = true; bt.textContent = 'Testando…'; }
+  try {
+    const r = await api('/api/admin/dpo/ms365', { method: 'PUT', body: JSON.stringify(limpar ? { limpar: true } : { tenant: g('chms-tenant').trim(), clientId: g('chms-client').trim(), secret: g('chms-secret').trim(), organizador: g('chms-org').trim() }) });
+    mostrarToast('✅ ' + r.message); await renderChavesIntegracoes();
+    const m2 = document.getElementById('chms-msg'); if (m2) m2.innerHTML = `<div class="ch-ms-ok">✅ ${escapeHtml(r.message)}</div>`;
+  } catch (e) {
+    if (m) m.innerHTML = `<div class="ch-ms-erro">⚠️ ${escapeHtml(e.message)}</div>`;
+    if (bt) { bt.disabled = false; bt.textContent = '💾 Salvar e testar'; }
+  }
 }
 async function chSalvar(k) {
   const s = CHAVES_SERVICOS.find(x => x.k === k), i = document.getElementById('ch-' + k), v = (i.value || '').trim(); if (!v) return mostrarToast('Cole a chave no campo.', true);
