@@ -17,7 +17,7 @@ function mtTopo(ativo) {
 }
 function mtRodape() {
   const m = MT.dados.marca;
-  return `<footer class="rodape"><div class="cx"><div><b style="color:#fff">${mtEsc(m.mentor)}</b> · ${mtEsc(m.titulo)}<br>Mentoria ${mtEsc(m.nome)}</div>
+  return `<footer class="rodape"><div class="cx"><div><b style="color:#fff">${mtEsc(m.mentor)}</b> · Consultor ${mtEsc(m.empresa || 'Impulsionar V4')}<br>${mtEsc(m.titulo)} · Mentoria ${mtEsc(m.nome)}<br><a href="https://instagram.com/${mtEsc(String(m.instagramEmpresa || 'impulsionarv4').replace(/^@/, ''))}" target="_blank" rel="noopener">@${mtEsc(String(m.instagramEmpresa || 'impulsionarv4').replace(/^@/, ''))}</a> · <a href="https://instagram.com/${mtEsc(String(m.instagram || 'lazaroneto.oficial').replace(/^@/, ''))}" target="_blank" rel="noopener">@${mtEsc(String(m.instagram || 'lazaroneto.oficial').replace(/^@/, ''))}</a></div>
     <div>${m.instagram ? `<a href="https://instagram.com/${mtEsc(String(m.instagram).replace(/^@/, ''))}" target="_blank" rel="noopener">Instagram</a>` : ''}${m.linkedin ? `<a href="${mtEsc(m.linkedin)}" target="_blank" rel="noopener">LinkedIn</a>` : ''}${mtWhats() ? `<a href="${mtWhats('Olá, Lázaro! Vim pelo site.')}" target="_blank" rel="noopener">WhatsApp</a>` : ''}${m.email ? `<a href="mailto:${mtEsc(m.email)}">${mtEsc(m.email)}</a>` : ''}</div></div></footer>
     ${mtWhats() ? `<a class="flutuante" href="${mtWhats('Olá, Lázaro! Vim pelo site e quero saber mais.')}" target="_blank" rel="noopener" title="Falar no WhatsApp">💬</a>` : ''}`;
 }

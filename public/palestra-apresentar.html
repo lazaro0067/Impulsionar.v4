@@ -33,6 +33,14 @@
   .ctl { position:fixed; right:14px; top:12px; z-index:7; display:flex; gap:8px; opacity:.25; transition:opacity .2s; } .ctl:hover { opacity:1; }
   .ctl button { font:inherit; font-size:13px; font-weight:700; border:none; border-radius:999px; padding:8px 12px; background:rgba(255,255,255,.12); color:#fff; cursor:pointer; }
   .relogio { position:fixed; left:14px; top:12px; z-index:7; font-size:13px; font-weight:700; color:#94a3b8; font-variant-numeric:tabular-nums; }
+  .slide { padding-top:9%; }
+  .logo { position:absolute; left:8%; top:4.5%; display:flex; align-items:center; gap:.6em; z-index:2; }
+  .logo .v4 { position:relative; width:2.6em; height:2.6em; border-radius:.7em; display:grid; place-items:center; background:linear-gradient(145deg,#0b1329,#13284a); box-shadow:0 0 0 .14em #22c55e, 0 .4em 1.4em rgba(34,197,94,.35); }
+  .logo .v4 b { color:#fff; font-weight:900; font-size:1.15em; letter-spacing:-.05em; } .logo .v4 i { position:absolute; top:.08em; right:.22em; font-style:normal; color:#4ade80; font-weight:900; font-size:.8em; }
+  .logo span { font-weight:900; letter-spacing:.22em; font-size:.95em; line-height:1.15; } .logo small { display:block; font-weight:700; letter-spacing:.24em; font-size:.62em; color:#4ade80; }
+  .claro .logo span { color:var(--navy); } .claro .logo small { color:#16a34a; }
+  .qrs { display:flex; gap:2.4em; margin-top:.4em; } .qrs div { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); border-radius:1.2em; padding:1.2em 1.6em; text-align:center; }
+  .qrs img { width:8em; height:8em; background:#fff; border-radius:.6em; padding:.4em; display:block; margin:0 auto .7em; } .qrs b { display:block; font-size:1.45em; } .qrs small { color:#94a3b8; font-size:1em; }
 </style>
 </head>
 <body>
@@ -47,7 +55,10 @@ const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']
 (async () => {
   let d; try { d = await (await fetch('/api/public/mentoria/palestra-completa', { cache: 'no-store' })).json(); } catch (e) { document.body.innerHTML = '<p style="padding:40px">Não consegui carregar a apresentação.</p>'; return; }
   const p = d.palestra, m = d.marca, r = p.roteiro, bloco = i => r[i] || {}, f = p.frases || [];
-  const rod = `<div class="rod"><span>${esc(m.mentor)} · ${esc(m.titulo)}</span><span>${esc(location.host)}/mentoria</span></div>`;
+  const igE = String(m.instagramEmpresa || 'impulsionarv4').replace(/^@/, ''), igL = String(m.instagram || 'lazaroneto.oficial').replace(/^@/, ''), emp = m.empresa || 'Impulsionar V4';
+  const logo = `<div class="logo"><div class="v4"><b>V4</b><i>↗</i></div><span>IMPULSIONAR<small>GESTÃO &amp; PESSOAS</small></span></div>`;
+  const rod = `${logo}<div class="rod"><span>${esc(m.mentor)} · Consultor ${esc(emp)}</span><span>@${esc(igE)} · @${esc(igL)}</span></div>`;
+  const qr = u => `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=8&data=${encodeURIComponent(u)}`;
   AP.slides = [
     { html: `${m.fotoUrl ? `<img src="${esc(m.fotoUrl)}" alt="" style="position:absolute;right:0;bottom:0;height:100%;width:42%;object-fit:cover;object-position:top;-webkit-mask-image:linear-gradient(90deg,transparent,#000 35%);mask-image:linear-gradient(90deg,transparent,#000 35%);">` : ''}<div style="position:relative;max-width:62%"><div class="k">Palestra</div><h1>${esc(p.titulo).replace(/,\s*/, ',<br>').replace(/(Move Resultados)/i, '<em>$1</em>')}</h1><div class="sub">${esc(m.mentor)} · do chão à gestão</div></div>${rod}`, notas: 'Entre sem falar por 3 segundos. Olhe a plateia. Avance para "2013" e comece a abertura.' },
     { html: `<div class="gig">2013</div><div class="sub">Ajudante de distribuição. Antes do sol nascer.</div>${rod}`, notas: `<b>${esc(bloco(0).tempo)} · ${esc(bloco(0).bloco)}</b><br>${esc(p.abertura)}` },
@@ -61,7 +72,8 @@ const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']
     { html: `<div class="k">E + R · ${esc(bloco(5).bloco)}</div><div class="frase">${esc(f[3] || 'O melhor líder é aquele que, quando sai de férias, a operação continua rodando.')}</div>${rod}`, notas: `<b>${esc(bloco(5).tempo)}</b><br>${esc(bloco(5).acontece)}` },
     { html: `<div class="k">${esc(bloco(6).bloco || 'Compromisso')}</div><h2>Escreva 1 atitude que você vai mudar na segunda-feira.</h2><div class="cron" data-seg="300">05:00</div>${rod}`, notas: `<b>${esc(bloco(6).tempo)}</b><br>${esc(bloco(6).acontece)} Inicie o cronômetro com T.`, cron: 300 },
     { html: `<div class="frase">${esc(f[0] || 'Liderança não é cargo. É quantas pessoas você fez crescer.')}</div>${rod}`, notas: 'Pausa de 3 segundos depois de ler a frase.' },
-    { html: `<div class="k">${esc(bloco(7).bloco || 'Fechamento')}</div><h1>Quem move pessoas,<br><em>move resultados.</em></h1><div class="sub">Mentoria ${esc(m.nome)} · palestras e treinamento in-company<br><b style="color:#fff">${esc(location.host)}/mentoria</b> · ${esc(location.host)}/palestra</div>${rod}`, notas: `<b>${esc(bloco(7).tempo)}</b><br>${esc(p.fechamento)}<br><br>Convide para a mentoria e ofereça o treinamento in-company para o RH.` }
+    { html: `<div class="k">${esc(bloco(7).bloco || 'Fechamento')}</div><h1>Quem move pessoas,<br><em>move resultados.</em></h1><div class="sub">Mentoria ${esc(m.nome)} · palestras e treinamento in-company<br><b style="color:#fff">${esc(location.host)}/mentoria</b> · ${esc(location.host)}/palestra</div>${rod}`, notas: `<b>${esc(bloco(7).tempo)}</b><br>${esc(p.fechamento)}<br><br>Convide para a mentoria e ofereça o treinamento in-company para o RH.` },
+    { html: `<div class="k">Obrigado! Vamos continuar juntos</div><h2>Aponte a câmera do celular e siga</h2><div class="qrs"><div><img src="${qr('https://instagram.com/' + igE)}" alt=""><b>@${esc(igE)}</b><small>${esc(emp)} · gestão e pessoas</small></div><div><img src="${qr('https://instagram.com/' + igL)}" alt=""><b>@${esc(igL)}</b><small>${esc(m.mentor)} · consultor</small></div></div><div class="sub" style="font-size:1.25em;margin-top:1.2em;">🌐 impulsionarv4.com.br${m.whatsapp ? ' · 💬 ' + esc(m.whatsapp) : ''}</div>${rod}`, notas: 'Deixe este slide na tela enquanto as pessoas saem: peça para todos apontarem a câmera e seguirem. Agradeça a empresa e o RH pelo nome.' }
   ];
   document.getElementById('palco').innerHTML = AP.slides.map((s, i) => `<section class="slide" data-i="${i}">${s.html}</section>`).join('');
   document.querySelectorAll('.cron').forEach(c => c.onclick = () => cronometro(c));

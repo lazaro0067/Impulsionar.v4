@@ -567,6 +567,7 @@
   @keyframes mtRec { 50% { box-shadow:0 0 0 6px rgba(220,38,38,.25); } }
   .mt-grav-grade { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:12px; }
   .mt-grav { border:1px solid var(--cinza-200); border-radius:12px; padding:8px; } .mt-grav video { width:100%; border-radius:8px; background:#000; aspect-ratio:16/9; }
+  .mt-fim-qrs.tres { gap:1.2em; flex-wrap:nowrap; } .mt-fim-qrs.tres .mt-fim-qr { min-width:0; padding:.8em 1em; font-size:1.1em; } .mt-fim-qrs.tres .mt-fim-qr img { width:7em; height:7em; }
   .mt-fim-qrs { display:flex; gap:2.2em; justify-content:center; flex-wrap:wrap; }
   .mt-fim-qr { background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.18); border-radius:1em; padding:1em 1.4em; display:flex; flex-direction:column; align-items:center; gap:.5em; font-size:1.3em; min-width:12em; }
   .mt-fim-qr img { width:9em; height:9em; background:#fff; border-radius:.5em; padding:.3em; }
@@ -643,6 +644,8 @@
   .mt-dica { background:#eef2ff; border:1px solid #c7d2fe; border-radius:10px; padding:8px 12px; font-size:13px; margin-bottom:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .mt-arq-prev { border:1px solid var(--cinza-200); border-radius:10px; overflow:hidden; aspect-ratio:16/9; background:#0f172a; }
   /* slide */
+  .mt-v4 { display:inline-grid; place-items:center; position:relative; width:1.9em; height:1.9em; border-radius:.5em; background:linear-gradient(145deg,#0b1329,#13284a); box-shadow:0 0 0 .12em #22c55e; margin-right:.5em; vertical-align:middle; } .mt-v4 b { color:#fff; font-weight:900; font-size:.85em; letter-spacing:-.04em; } .mt-v4 i { position:absolute; top:.05em; right:.15em; font-style:normal; color:#4ade80; font-size:.6em; font-weight:900; }
+  .mt-capa-marca { display:flex; align-items:center; gap:.2em; opacity:1 !important; } .mt-capa-marca small { display:block; font-size:.5em; letter-spacing:.2em; color:#16a34a; font-weight:700; } .mt-v4.grande { width:2.4em; height:2.4em; } .mt-v4.grande b { font-size:1em; }
   .mt-sl { position:relative; aspect-ratio:16/9; width:100%; background:#fff; color:#0f172a; overflow:hidden; font-family:inherit; }
   .mt-sl-barra { position:absolute; left:0; top:0; bottom:0; width:1.1em; background:var(--c); }
   .mt-sl-tit { padding:2.2em 3em 0.6em 3.6em; font-size:2.6em; font-weight:800; line-height:1.15; color:#0f172a; min-height:1.2em; }
@@ -11610,7 +11613,7 @@ function mtSlideHtml(s, cor, mini) {
     <div class="mt-sl-barra"></div>
     <div class="mt-sl-tit" data-campo="titulo">${escapeHtml(s.titulo || '') || (mini ? '<span style="opacity:.35">Título</span>' : '')}</div>
     <div class="mt-sl-corpo ${s.imagem ? 'com-img' : ''}"><div class="mt-sl-txt" data-campo="texto">${mtTextoHtml(s.texto)}</div>${s.imagem ? `<div class="mt-sl-fig${s.imgTam ? ' tam' : ''}"${s.imgTam ? ` style="width:${Number(s.imgTam)}em"` : ''}><img src="${escapeHtml(s.imagem)}" alt=""></div>` : ''}</div>
-    <div class="mt-sl-rod">Impulsionar V4${MT.doc && MT.doc.divulgacao && MT.doc.divulgacao.instagram ? ' · ' + escapeHtml(MT.doc.divulgacao.instagram) : ''}</div>
+    <div class="mt-sl-rod"><span class="mt-v4"><b>V4</b><i>↗</i></span>Impulsionar V4${MT.doc && MT.doc.divulgacao ? ' · ' + escapeHtml(MT.doc.divulgacao.instagram || '@impulsionarv4') : ''}</div>
   </div>`;
 }
 function mtArquivoHtml(a, prev) {
@@ -11675,7 +11678,7 @@ function mtConteudoDeck(it) {
       <div class="mt-capa-tit">${escapeHtml(d.titulo)}</div>
       ${d.objetivo ? `<div class="mt-capa-obj">${escapeHtml(d.objetivo)}</div>` : ''}
       ${d.instrutor ? `<div class="mt-capa-meta">🎙️ ${escapeHtml(d.instrutor)}</div>` : ''}
-      <div class="mt-capa-marca">Impulsionar V4</div></div>`;
+      <div class="mt-capa-marca"><span class="mt-v4 grande"><b>V4</b><i>↗</i></span><span>IMPULSIONAR<small>Gestão &amp; Pessoas</small></span></div></div>`;
   if (it.tipo === 'modulo') { const m = d.modulos[it.mi]; return `<div class="mt-sl mt-sl-mod" style="--c:${cor}"><div class="mt-mod-num">MÓDULO ${it.mi + 1}</div><div class="mt-mod-nome">${escapeHtml(m.titulo || '')}</div><div class="mt-mod-de">${it.mi + 1} de ${d.modulos.length}</div></div>`; }
   if (it.tipo === 'slide') return mtSlideHtml(d.modulos[it.mi].slides[it.si], cor);
   if (it.tipo === 'extraido') return mtSlideHtml({ ...d.modulos[it.mi].arquivo.slidesExtraidos[it.xi], layout: 'padrao' }, cor);
@@ -11697,9 +11700,11 @@ function mtConteudoDeck(it) {
   const temRedes = dv.instagramLink || dv.whatsappLink;
   return `<div class="mt-sl mt-sl-fim" style="--c:${cor}">
     <div class="mt-fim-tit">Obrigado! 🎉</div>
-    ${temRedes ? `<div class="mt-fim-sub" style="margin-bottom:.8em;">SIGA A IMPULSIONAR</div>
-    <div class="mt-fim-qrs">
-      ${dv.instagramLink ? `<div class="mt-fim-qr"><img src="${qr(dv.instagramLink)}" alt=""><div class="mt-rede"><span class="mt-rede-ico insta">${icoInsta}</span><span>${escapeHtml(dv.instagram || 'Instagram')}</span></div><div class="mt-fim-qr-s">Instagram</div></div>` : ''}
+    ${temRedes ? `<div class="mt-fim-sub" style="margin-bottom:.8em;">SIGA A IMPULSIONAR V4 E O CONSULTOR</div>
+    <div class="mt-fim-qrs ${[dv.instagramLink, dv.consultorLink, dv.whatsappLink].filter(Boolean).length > 2 ? 'tres' : ''}">
+
+      ${dv.instagramLink ? `<div class="mt-fim-qr"><img src="${qr(dv.instagramLink)}" alt=""><div class="mt-rede"><span class="mt-rede-ico insta">${icoInsta}</span><span>${escapeHtml(dv.instagram || 'Instagram')}</span></div><div class="mt-fim-qr-s">Impulsionar V4</div></div>` : ''}
+      ${dv.consultorLink ? `<div class="mt-fim-qr"><img src="${qr(dv.consultorLink)}" alt=""><div class="mt-rede"><span class="mt-rede-ico insta">${icoInsta}</span><span>${escapeHtml(dv.consultor)}</span></div><div class="mt-fim-qr-s">Lázaro Neto · Consultor</div></div>` : ''}
       ${dv.whatsappLink ? `<div class="mt-fim-qr"><img src="${qr(dv.whatsappLink)}" alt=""><div class="mt-rede"><span class="mt-rede-ico zap">${icoZap}</span><span>${escapeHtml(dv.whatsapp || 'WhatsApp')}</span></div><div class="mt-fim-qr-s">WhatsApp</div></div>` : ''}
     </div>
     ${dv.site ? `<div class="mt-fim-site">🌐 ${escapeHtml(dv.site)}</div>` : ''}`
@@ -14389,7 +14394,7 @@ function mtnCartaoPedido(l) {
 }
 function mtnNum(l) { const n = String(l.whatsapp || '').replace(/\D/g, ''); return n.length <= 11 ? '55' + n : n; }
 function mtnTextoResposta(l) {
-  const x = mtnDadosLead(l), nome = String(l.nome || '').split(' ')[0], eu = MTN.d.marca.mentor || 'Lázaro', pal = MTN.d.palestra.titulo;
+  const x = mtnDadosLead(l), nome = String(l.nome || '').split(' ')[0], eu = `${MTN.d.marca.mentor || 'Lázaro Neto'}, consultor da ${MTN.d.marca.empresa || 'Impulsionar V4'}`, pal = MTN.d.palestra.titulo;
   if (l.tipo === 'empresa') return `Olá, ${nome}! Aqui é o ${eu}. Recebi seu pedido de proposta da palestra${x.tema ? ' sobre "' + x.tema.replace(/ \(.*\)$/, '') + '"' : ' "' + pal + '"'}${l.empresa ? ' para a ' + l.empresa : ''}${x.formato ? ` (${[x.evento, x.formato, x.participantes ? x.participantes + ' participantes' : '', x.data].filter(Boolean).join(', ')})` : ''}. Obrigado pelo contato!${x.problemas ? ` Vi que hoje o maior desafio é ${x.problemas.toLowerCase().replace(/, ([^,]*)$/, ' e $1')} — vou montar o conteúdo em cima disso.` : ''} Consegue falar 15 minutos hoje ou amanhã para eu entender melhor o cenário e fechar a proposta?`;
   if (l.tipo === 'raiox') return `Olá, ${nome}! Aqui é o ${eu}. Vi o seu Raio-X do Líder${x.geral != null ? ` (${x.geral}%, ponto mais fraco: ${x.fraco})` : ''}. Posso te fazer 3 perguntas rápidas sobre o seu time e te passar o primeiro passo para melhorar isso?`;
   if (l.tipo === 'aula') return `Olá, ${nome}! Aqui é o ${eu}. Sua vaga na aula gratuita está garantida 🙌 Me conta: quantas pessoas você lidera hoje e qual o maior desafio com o time?`;
@@ -14398,7 +14403,7 @@ function mtnTextoResposta(l) {
 function mtnWhatsResposta(l) { return `https://wa.me/${mtnNum(l)}?text=${encodeURIComponent(mtnTextoResposta(l))}`; }
 function mtnEmailResposta(l) {
   const assunto = l.tipo === 'empresa' ? `Proposta — palestra "${MTN.d.palestra.titulo}"${l.empresa ? ' · ' + l.empresa : ''}` : `Mentoria ${MTN.d.marca.nome}`;
-  return `mailto:${encodeURIComponent(l.email || '')}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(mtnTextoResposta(l) + `\n\nAbraço,\n${MTN.d.marca.mentor}${MTN.d.marca.whatsapp ? '\nWhatsApp: ' + MTN.d.marca.whatsapp : ''}`)}`;
+  return `mailto:${encodeURIComponent(l.email || '')}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(mtnTextoResposta(l) + `\n\nAbraço,\n${MTN.d.marca.mentor}\nConsultor · ${MTN.d.marca.empresa || 'Impulsionar V4'}${MTN.d.marca.whatsapp ? '\nWhatsApp: ' + MTN.d.marca.whatsapp : ''}\nInstagram: @${String(MTN.d.marca.instagramEmpresa || 'impulsionarv4').replace(/^@/, '')} · @${String(MTN.d.marca.instagram || 'lazaroneto.oficial').replace(/^@/, '')}`)}`;
 }
 // ao responder uma solicitação nova, ela passa sozinha para "Em conversa"
 function mtnAoResponder(id) { const l = MTN.leads.find(x => x.id === id); if (l && (l.etapa || 'novo') === 'novo') setTimeout(() => mtnMover(id, 'conversa'), 400); }
@@ -14407,7 +14412,8 @@ function mtnProposta(id) {
   const l = MTN.leads.find(x => x.id === id), x = mtnDadosLead(l), d = MTN.d, p = d.palestra;
   const of = (d.ofertas || []).find(o => o.codigo === (/in-company|treinamento/i.test(x.formato || '') ? 'incompany' : 'palestra')) || {};
   const valor = Number(l.valor) || Number(of.valor) || 6000;
-  const txt = `PROPOSTA — ${/in-company|treinamento/i.test(x.formato || '') ? 'TREINAMENTO IN-COMPANY' : 'PALESTRA'}
+  const txt = `IMPULSIONAR V4 · Gestão & Pessoas
+PROPOSTA — ${/in-company|treinamento/i.test(x.formato || '') ? 'TREINAMENTO IN-COMPANY' : 'PALESTRA'}
 "${x.tema && !x.tema.startsWith(p.titulo) && !/sob medida/i.test(x.tema) ? x.tema : p.titulo}"
 Para: ${l.empresa || l.nome}${l.nome && l.empresa ? ' · A/C ' + l.nome + (l.cargo ? ' (' + l.cargo + ')' : '') : ''}
 
@@ -14420,7 +14426,7 @@ O QUE SERÁ TRABALHADO
 ${(p.roteiro || []).map(r => `• ${r.bloco}`).join('\n')}
 
 QUEM CONDUZ
-${d.marca.mentor} — ${d.marca.titulo}. Começou como ajudante de distribuição e hoje é gerente corporativo de operações, com mais de 12 anos liderando times de até 250 pessoas.
+${d.marca.mentor}, consultor da ${d.marca.empresa || 'Impulsionar V4'} — ${d.marca.titulo}. Começou como ajudante de distribuição e hoje é gerente corporativo de operações, com mais de 12 anos liderando times de até 250 pessoas.
 
 INVESTIMENTO
 R$ ${valor.toLocaleString('pt-BR')}${/in-company|treinamento/i.test(x.formato || '') ? '' : ' (palestra)'}
@@ -14429,7 +14435,7 @@ Deslocamento e hospedagem fora de Rio Verde por conta do contratante.
 Pagamento: 50% na confirmação da data e 50% no dia do evento.
 Validade da proposta: 15 dias.
 
-${d.marca.mentor}${d.marca.whatsapp ? ' · WhatsApp ' + d.marca.whatsapp : ''}${d.marca.email ? ' · ' + d.marca.email : ''}`;
+${d.marca.mentor} · Consultor ${d.marca.empresa || 'Impulsionar V4'}${d.marca.whatsapp ? '\nWhatsApp ' + d.marca.whatsapp : ''}${d.marca.email ? ' · ' + d.marca.email : ''}\nInstagram @${String(d.marca.instagramEmpresa || 'impulsionarv4').replace(/^@/, '')} · @${String(d.marca.instagram || 'lazaroneto.oficial').replace(/^@/, '')} · impulsionarv4.com.br`;
   mtnModal(`<h3 style="margin-top:0;">📄 Proposta — ${escapeHtml(l.empresa || l.nome)}</h3>
     <div class="mtn-form"><label>Valor da proposta (R$)<input id="mtp-valor" type="number" value="${valor}" oninput="mtnPropostaValor(this.value)"></label><label>Referência<input disabled value="${escapeHtml(of.produto ? of.produto + ': ' + of.preco : '')}"></label></div>
     <label>Texto da proposta (pode editar)<textarea id="mtp-texto" rows="16" style="font-family:inherit;font-size:13px;">${escapeHtml(txt)}</textarea></label>
@@ -14465,9 +14471,9 @@ async function mtnSalvarConversa(id) {
 function mtnWhatsLead(l) {
   const n = String(l.whatsapp || '').replace(/\D/g, ''), num = n.length <= 11 ? '55' + n : n, nome = String(l.nome || '').split(' ')[0];
   const txt = l.tipo === 'empresa' ? MTN.d.funil.scriptEmpresa.replace('[nome]', nome).replace('[empresa]', l.empresa || 'sua empresa')
-    : l.tipo === 'raiox' ? `Olá, ${nome}! Aqui é o Lázaro. Vi seu Raio-X do Líder${l.mensagem ? ' (' + l.mensagem.replace(/^Raio-X:\s*/, '') + ')' : ''}. Posso te fazer 3 perguntas rápidas sobre o seu time?`
-    : l.tipo === 'aula' ? `Olá, ${nome}! Aqui é o Lázaro. Sua vaga na aula gratuita está garantida. Me conta: quantas pessoas você lidera hoje?`
-    : `Olá, ${nome}! Aqui é o Lázaro. Vi seu interesse na mentoria ${MTN.d.marca.nome}. Me conta da sua operação: quantas pessoas você lidera?`;
+    : l.tipo === 'raiox' ? `Olá, ${nome}! Aqui é o Lázaro Neto, consultor da Impulsionar V4. Vi seu Raio-X do Líder${l.mensagem ? ' (' + l.mensagem.replace(/^Raio-X:\s*/, '') + ')' : ''}. Posso te fazer 3 perguntas rápidas sobre o seu time?`
+    : l.tipo === 'aula' ? `Olá, ${nome}! Aqui é o Lázaro Neto, consultor da Impulsionar V4. Sua vaga na aula gratuita está garantida. Me conta: quantas pessoas você lidera hoje?`
+    : `Olá, ${nome}! Aqui é o Lázaro Neto, consultor da Impulsionar V4. Vi seu interesse na mentoria ${MTN.d.marca.nome}. Me conta da sua operação: quantas pessoas você lidera?`;
   return `https://wa.me/${num}?text=${encodeURIComponent(txt)}`;
 }
 async function mtnMover(id, etapa) { try { await api('/api/admin/mentoria/leads/' + id, { method: 'PUT', body: JSON.stringify({ etapa }) }); const l = MTN.leads.find(x => x.id === id); if (l) { l.etapa = etapa; l.updated_at = new Date().toISOString().replace('T', ' ').slice(0, 19); } mtnDesenhar(); } catch (e) { mostrarToast(e.message, true); } }
@@ -14640,7 +14646,7 @@ function mtnPalestra() {
 // ---------- ⚙️ Configurações ----------
 function mtnConfig() {
   const d = MTN.d, m = d.marca, a = d.links.proximaAula || {}, c = (k, r, ph) => `<label>${r}<input id="mtc-${k}" value="${escapeHtml(m[k] || '')}" placeholder="${escapeHtml(ph || '')}"></label>`;
-  return `<div class="mtn-bloco"><h3>👤 Você e a marca</h3><div class="mtn-form">${c('nome', 'Nome da mentoria')}${c('mentor', 'Seu nome público')}${c('titulo', 'Título curto', 'Liderança que move operações')}${c('whatsapp', 'WhatsApp (com DDD)', '64999990000')}${c('instagram', 'Instagram', '@seuperfil')}${c('email', 'E-mail de contato')}${c('linkedin', 'LinkedIn (link)')}
+  return `<div class="mtn-bloco"><h3>👤 Você e a marca</h3><div class="mtn-form">${c('nome', 'Nome da mentoria')}${c('mentor', 'Seu nome público')}${c('titulo', 'Título curto', 'Liderança que move operações')}${c('empresa', 'Empresa (aparece nas mensagens e slides)', 'Impulsionar V4')}${c('whatsapp', 'WhatsApp (com DDD)', '(61) 9396-4750')}${c('instagram', 'Seu Instagram', '@lazaroneto.oficial')}${c('instagramEmpresa', 'Instagram da empresa', '@impulsionarv4')}${c('email', 'E-mail de contato')}${c('linkedin', 'LinkedIn (link)')}
       <label>Vídeo da página da mentoria (link)<input id="mtc-videoUrl" value="${escapeHtml(m.videoUrl || '')}" placeholder="Preenchido sozinho pela aba Gravações"></label><label>Vídeo da página da palestra (link)<input id="mtc-videoPalestra" value="${escapeHtml(m.videoPalestra || '')}"></label>
       </div>
       <div class="mtn-foto"><div class="mtn-foto-prev" id="mtc-foto-prev">${m.fotoUrl ? `<img src="${escapeHtml(m.fotoUrl)}" alt="">` : '<span>📷</span>'}</div>
@@ -14660,7 +14666,7 @@ function mtnConfig() {
     <div class="mtn-bloco"><h3>↩️ Voltar textos ao modelo original</h3><p class="plano-meta">Se quiser recomeçar alguma parte com o conteúdo do plano original:</p><div class="mtn-link-bt">${[['metodo', 'Método'], ['semanas', '12 semanas'], ['instagram', 'Instagram e reels'], ['gravacoes', 'Roteiros de gravação'], ['palestra', 'Palestra'], ['plano90', 'Plano de 90 dias'], ['raioX', 'Raio-X']].map(([k, r]) => `<button class="btn-secundario btn-sm" onclick="mtnRestaurar('${k}')">${r}</button>`).join('')}</div></div>`;
 }
 const mtnV = id => (document.getElementById(id) || {}).value;
-async function mtnSalvarMarca() { const m = Object.assign({}, MTN.d.marca); ['nome', 'mentor', 'titulo', 'whatsapp', 'instagram', 'email', 'linkedin', 'fotoUrl', 'videoUrl', 'videoPalestra', 'frase'].forEach(k => m[k] = String(mtnV('mtc-' + k) || '').trim()); if (await mtnSalvarDados({ marca: m })) mtnDesenhar(); }
+async function mtnSalvarMarca() { const m = Object.assign({}, MTN.d.marca); ['nome', 'mentor', 'titulo', 'empresa', 'whatsapp', 'instagram', 'instagramEmpresa', 'email', 'linkedin', 'fotoUrl', 'videoUrl', 'videoPalestra', 'frase'].forEach(k => m[k] = String(mtnV('mtc-' + k) || '').trim()); if (await mtnSalvarDados({ marca: m })) mtnDesenhar(); }
 async function mtnSalvarLinks() { const l = Object.assign({}, MTN.d.links, { whatsappGrupo: String(mtnV('mtc-grupo') || '').trim(), proximaAula: { data: mtnV('mtc-aula-data') || '', tema: String(mtnV('mtc-aula-tema') || '').trim(), link: String(mtnV('mtc-aula-link') || '').trim() } }); if (await mtnSalvarDados({ links: l })) mtnDesenhar(); }
 async function mtnSalvarPrecos() { const of = MTN.d.ofertas.map((o, i) => Object.assign({}, o, { preco: mtnV('mto-p-' + i), valor: Number(String(mtnV('mto-v-' + i)).replace(/\D/g, '')) || 0 })); if (await mtnSalvarDados({ ofertas: of, metaMensal: Number(mtnV('mtc-meta')) || 50000, pagamentoOnline: document.getElementById('mtc-pg').checked })) mtnDesenhar(); }
 async function mtnRestaurar(campo) { if (!confirm('Voltar esta parte ao texto original do plano? O que você editou nela será substituído.')) return; try { const r = await api('/api/admin/mentoria/restaurar-padrao', { method: 'POST', body: JSON.stringify({ campo }) }); MTN.d = r.dados; mostrarToast('↩️ Restaurado.'); mtnDesenhar(); } catch (e) { mostrarToast(e.message, true); } }

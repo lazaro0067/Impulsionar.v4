@@ -9318,11 +9318,11 @@ function gerarCheckLocalMt(modulos, qtd, abertas) {
 }
 
 // Configurações do Ministrar Treinamento: redes da Impulsionar (aparecem no fim) e chave da IA.
-const CHAVES_CFG_MT = ['impulsionar_instagram', 'impulsionar_whatsapp', 'impulsionar_site', 'impulsionar_instagram_link', 'impulsionar_whatsapp_link', 'anthropic_api_key', 'anthropic_model'];
+const CHAVES_CFG_MT = ['consultor_instagram', 'impulsionar_instagram', 'impulsionar_whatsapp', 'impulsionar_site', 'impulsionar_instagram_link', 'impulsionar_whatsapp_link', 'anthropic_api_key', 'anthropic_model'];
 function divulgacaoMt(cfg) {
-    const insta = cfg.impulsionar_instagram || '', zap = cfg.impulsionar_whatsapp || '';
+    const insta = cfg.impulsionar_instagram || '@impulsionarv4', zap = cfg.impulsionar_whatsapp || '(61) 9396-4750', consultor = cfg.consultor_instagram || '@lazaroneto.oficial';
     const dig = zap.replace(/\D/g, '');
-    return { instagram: insta, whatsapp: zap, site: cfg.impulsionar_site || '',
+    return { instagram: insta, whatsapp: zap, site: cfg.impulsionar_site || 'impulsionarv4.com.br', consultor, consultorLink: 'https://instagram.com/' + consultor.replace(/^@/, ''),
         instagramLink: cfg.impulsionar_instagram_link || (insta ? 'https://instagram.com/' + insta.replace(/^@/, '') : ''),
         whatsappLink: cfg.impulsionar_whatsapp_link || (dig ? 'https://wa.me/' + (dig.length <= 11 ? '55' + dig : dig) : '') };
 }
@@ -12871,7 +12871,7 @@ const MT_PADRAO = {
         frase: 'Eu comecei carregando caixa em 2013. Hoje lidero operações com centenas de pessoas. Eu ensino líderes a fazer o time render, sem gritar e sem perder o controle da operação.',
         promessa: 'Transformar líderes de operação em líderes que entregam resultado através das pessoas.',
         central: 'Quem move pessoas, move resultados.',
-        instagram: '', whatsapp: '', email: '', linkedin: '', fotoUrl: '/mentoria-foto.jpg', videoUrl: '', videoPalestra: ''
+        instagram: 'lazaroneto.oficial', instagramEmpresa: 'impulsionarv4', empresa: 'Impulsionar V4', cargo: 'Consultor', whatsapp: '(61) 9396-4750', email: '', linkedin: '', fotoUrl: '/mentoria-foto.jpg', videoUrl: '', videoPalestra: ''
     },
     historia: [
         { fase: '2013', cargo: 'Ajudante de distribuição', licao: 'Como o time da ponta enxerga o líder' },
@@ -12956,7 +12956,7 @@ const MT_PADRAO = {
     funil: {
         alunos: ['Atração: reels e carrosséis trazem seguidores que são líderes.', 'Captura: a chamada "comenta LÍDER" ou o link na bio leva para o grupo de WhatsApp ou para a aula gratuita mensal.', 'Aula gratuita (live de 60 min): você ensina um tema prático e, no fim, apresenta a mentoria com prazo de inscrição.', 'Conversa de diagnóstico (20 min, por vídeo ou WhatsApp): você entende a dor da pessoa e mostra como a mentoria resolve.', 'Fechamento: link de pagamento (Mercado Pago, parcelado).', 'Pós-venda: resultado do aluno vira depoimento, que vira conteúdo, que traz o próximo aluno.'],
         empresas: ['Lista de 50 empresas: fornecedores, transportadoras, indústrias e redes de varejo da região de Rio Verde e do agro de Goiás.', 'Contato: mensagem no LinkedIn ou WhatsApp para RH e gerentes de operação, oferecendo uma palestra para os líderes.', 'Primeiras 2 palestras com preço de entrada (ou gratuitas): em troca de gravação, fotos e depoimento do RH.', 'Proposta: depois da palestra, ofereça o treinamento in-company para a turma de líderes.', 'Indicação: peça ao RH duas indicações de outras empresas.'],
-        scriptEmpresa: 'Olá, [nome]. Sou o Lázaro, gestor de operações há mais de 12 anos, hoje responsável por 3 unidades. Desenvolvi uma palestra sobre como líderes de operação motivam o time e melhoram indicadores. Faz sentido conversarmos 15 minutos sobre levar isso para os líderes da [empresa]?',
+        scriptEmpresa: 'Olá, [nome]! Aqui é o Lázaro Neto, consultor da Impulsionar V4. Há mais de 12 anos lidero operações (hoje 3 unidades) e levo para as empresas a palestra "Quem Move Pessoas, Move Resultados", sobre como os líderes de operação engajam o time e melhoram os indicadores. Faz sentido conversarmos 15 minutos sobre levar isso para os líderes da [empresa]?',
         scriptDiagnostico: ['Me conta da sua operação: quantas pessoas você lidera?', 'Qual é hoje o maior problema com o seu time?', 'O que acontece se isso continuar assim nos próximos 6 meses?', 'Se em 12 semanas você tivesse rotina, time engajado e indicador melhorando, o que mudaria para você?', 'Apresente a mentoria, o preço e o prazo. Pergunte: "Faz sentido para você?"']
     },
     palestra: {
@@ -13105,6 +13105,8 @@ async function mtLer() {
     Object.keys(d).forEach(k => { if (d[k] !== undefined && d[k] !== null) out[k] = (typeof d[k] === 'object' && !Array.isArray(d[k]) && typeof out[k] === 'object' && !Array.isArray(out[k])) ? Object.assign(out[k], d[k]) : d[k]; });
     if (!out.marca.fotoUrl) out.marca.fotoUrl = MT_PADRAO.marca.fotoUrl;
     if (out.marca.mentor === 'Lázaro Salles') out.marca.mentor = 'Lázaro Neto'; // nome público escolhido
+    ['instagram', 'instagramEmpresa', 'empresa', 'cargo', 'whatsapp'].forEach(k => { if (!out.marca[k]) out.marca[k] = MT_PADRAO.marca[k]; }); // marca Impulsionar V4
+    if (out.funil && /^Olá, \[nome\]\. Sou o Lázaro, gestor/.test(out.funil.scriptEmpresa || '')) out.funil.scriptEmpresa = MT_PADRAO.funil.scriptEmpresa;
     if (out.instagram && typeof out.instagram.bio === 'string') out.instagram.bio = out.instagram.bio.replace('Lázaro Salles', 'Lázaro Neto'); // sem foto escolhida: usa a foto oficial
     return out;
 }
