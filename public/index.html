@@ -1726,6 +1726,27 @@
   .mtn-vazio { color:#94a3b8; text-align:center; padding:10px; } .mtn-vazio-grande { background:#fff; border:2px dashed #cbd5e1; border-radius:14px; padding:22px; text-align:center; color:#475569; }
   .mtn-det { margin-top:14px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px 14px; } .mtn-det summary { font-weight:800; cursor:pointer; }
   .mtn-form { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-bottom:10px; } .mtn-form label, .mtn-bloco label { font-size:13px; font-weight:700; display:grid; gap:4px; }
+  /* ---- Minha Agenda ---- */
+  .agd { max-width:1100px; } .mag-topo { display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; align-items:flex-start; margin-bottom:14px; } .mag-topo h1 { margin:0; } .mag-sub { color:#64748b; margin:4px 0 0; }
+  .mag-acoes { display:flex; gap:8px; flex-wrap:wrap; } .mag-acoes button { width:auto; } .mag-acoes .mag-on { background:#dcfce7 !important; color:#166534 !important; border-color:#86efac !important; }
+  .mag-aviso { background:#eff6ff; border:1px solid #bfdbfe; color:#1e3a8a; border-radius:12px; padding:12px 14px; margin-bottom:12px; font-size:14px; } .mag-aviso.erro { background:#fef2f2; border-color:#fecaca; color:#991b1b; } .mag-aviso.ok { background:#f0fdf4; border-color:#bbf7d0; color:#166534; }
+  .mag-resumo { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:14px; } .mag-card { background:#0b1329; color:#fff; border-radius:16px; padding:14px 16px; min-width:0; } .mag-card small { color:#94a3b8; font-weight:800; font-size:11px; letter-spacing:.08em; display:block; } .mag-card b { font-size:28px; display:block; line-height:1.2; } .mag-card span { color:#cbd5e1; font-size:13px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .mag-prox { background:linear-gradient(135deg,#16a34a,#0d9488); } .mag-prox span { color:#ecfdf5; }
+  .mag-vistas { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; } .mag-vistas button { border:1px solid #cbd5e1; background:#fff; color:#0b1329; border-radius:99px; padding:8px 14px; font-weight:700; cursor:pointer; } .mag-vistas button.on { background:#0b1329; color:#fff; border-color:#0b1329; }
+  .mag-dia { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:10px 12px; margin-bottom:10px; } .mag-dia.hoje { border-color:#16a34a; box-shadow:0 0 0 2px #16a34a22; }
+  .mag-dia-t { display:flex; align-items:center; gap:8px; font-weight:800; padding:2px 2px 8px; } .mag-dia-t small { color:#94a3b8; font-weight:600; } .mag-dia-t button { margin:0 0 0 auto !important; border:none; background:#f1f5f9; color:#0b1329; border-radius:10px; width:32px !important; height:32px; min-height:0; font-size:18px; line-height:1; padding:0 !important; display:grid; place-items:center; cursor:pointer; }
+  .mag-item { display:grid; grid-template-columns:62px 1fr auto; gap:10px; align-items:center; border-left:4px solid var(--c); background:#f8fafc; border-radius:10px; padding:10px; margin-top:6px; }
+  .mag-hora b { display:block; font-size:16px; } .mag-hora small { color:#64748b; font-size:12px; } .mag-info { min-width:0; } .mag-info b { display:block; font-size:14.5px; } .mag-info small { color:#64748b; font-size:12px; } .mag-info p { margin:4px 0 0; color:#475569; font-size:12.5px; }
+  .mag-tag { border-radius:99px; padding:1px 8px; font-weight:700; font-size:11px; } .mag-bts { display:flex; gap:6px; } .mag-bt { border:1px solid #cbd5e1; background:#fff; color:#0b1329; border-radius:8px; padding:6px 10px; font-weight:700; font-size:12.5px; cursor:pointer; text-decoration:none; } .mag-bt.entrar { background:#16a34a; border-color:#16a34a; color:#fff; }
+  .mag-vazio { color:#94a3b8; font-size:13px; margin:4px 2px 6px; } .mag-legenda { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:12px; color:#64748b; font-size:12px; } .mag-legenda i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+  .mag-mes-topo { display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:8px; font-size:17px; } .mag-mes-topo button { border:1px solid #cbd5e1; background:#fff; border-radius:10px; width:36px; height:36px; font-size:20px; cursor:pointer; }
+  .mag-grade { display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; } .mag-sem { text-align:center; font-weight:800; color:#64748b; font-size:12px; padding:4px 0; }
+  .mag-cel { background:#fff; border:1px solid #e2e8f0; border-radius:10px; min-height:84px; padding:4px; text-align:left; cursor:pointer; font:inherit; overflow:hidden; min-width:0; } .mag-cel > span { font-weight:800; font-size:13px; } .mag-cel.fora { opacity:.45; } .mag-cel.hoje > span { background:#16a34a; color:#fff; border-radius:99px; padding:0 6px; } .mag-cel.sel { outline:2px solid #0b1329; }
+  .mag-cel em { display:block; font-style:normal; color:#fff; font-size:10.5px; border-radius:4px; padding:1px 4px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .mag-cel i { font-size:10.5px; color:#64748b; font-style:normal; }
+  .mag-sec { border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-bottom:10px; } .mag-sec > b { display:block; margin-bottom:6px; } .mag-chk { display:flex !important; align-items:center; gap:8px; font-weight:600 !important; font-size:14px; margin:6px 0; } .mag-chk input { width:auto !important; margin:0; } .mag-chk small { color:#64748b; font-weight:500; }
+  .mag-sub-sec { background:#f8fafc; border-radius:10px; padding:10px; margin-top:6px; } .mag-passos { font-size:13px; color:#334155; padding-left:20px; line-height:1.6; } .mag-dica { color:#64748b; font-size:12.5px; margin:6px 0; display:block; }
+  .mag-link { display:flex; gap:6px; } .mag-link input { flex:1; font-size:12px; } .mag-link button { border:none; background:#0b1329; color:#fff; border-radius:8px; padding:0 14px; font-weight:700; cursor:pointer; }
+  .mag-aparelhos div { display:flex; align-items:center; gap:8px; font-size:14px; padding:6px 0; border-bottom:1px solid #f1f5f9; } .mag-aparelhos small { color:#94a3b8; } .mag-aparelhos button { margin-left:auto; border:none; background:none; color:#dc2626; cursor:pointer; font-weight:700; }
+  @media (max-width:700px) { .mag-acoes { width:100%; } .mag-acoes button { flex:1 1 auto; } .mag-resumo { grid-template-columns:1fr 1fr; } .mag-resumo .mag-card:last-child { grid-column:1 / -1; } .mag-item { grid-template-columns:52px 1fr; } .mag-bts { grid-column:1 / -1; justify-content:flex-end; } .mag-cel { min-height:56px; } .mag-cel em { font-size:0; height:6px; padding:0; } }
   .mtn-chk { display:flex !important; align-items:center; gap:8px; } .mtn-chk input { width:auto; }
   .mtn-turma { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:14px 16px; margin-bottom:14px; } .mtn-turma-cab { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; } .mtn-turma-cab h3 { margin:0; }
   .mtn-st { font-size:12px; border-radius:99px; padding:3px 10px; background:#e2e8f0; margin-left:6px; vertical-align:middle; } .mtn-st.aberta { background:#dcfce7; color:#166534; } .mtn-st.andamento { background:#dbeafe; color:#1e40af; }
@@ -2197,7 +2218,7 @@ function sair(silencioso) {
 // { group: 'Rótulo do Grupo', items: [['chave','Rótulo'], ...] } (pasta que expande/recolhe).
 const MENU_POR_PERFIL = {
   admin: [
-    ['dashboard', 'Dashboard'], ['meuPerfilImpulsionar', 'Meu Perfil'], ['agenteRelatorios', '🤖 Agente de Relatórios'],
+    ['dashboard', 'Dashboard'], ['agenda', '📅 Minha Agenda'], ['meuPerfilImpulsionar', 'Meu Perfil'], ['agenteRelatorios', '🤖 Agente de Relatórios'],
     { group: 'Empresas & Consultoria', items: [
         ['consulting', 'Consultoria'], ['companies', 'Empresas']
     ]},
@@ -2587,7 +2608,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    chavesIntegracoes: renderChavesIntegracoes, mentoriaNegocio: renderMentoriaNegocio,
+    chavesIntegracoes: renderChavesIntegracoes, mentoriaNegocio: renderMentoriaNegocio, agenda: renderAgenda,
     dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento, traineePrograma: renderTrainee, agenteRelatorios: renderAgenteRelatorios, estudioVideo: () => renderEstudioVideo('projetos'), estudioAcessos: () => renderEstudioVideo('acessos'), estudioAgente: () => renderEstudioVideo('agente'), estudioAgenda: () => renderEstudioVideo('agenda'),
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster, acessosCandidatos: renderAcessosCandidatos, creditosVagas: renderCreditosVagas
   };
@@ -14348,7 +14369,7 @@ function mtnTurmas() {
         <td><button class="btn-secundario btn-sm" onclick="mtnExcluirAluno(${a.id})">🗑️</button></td></tr>`; }).join('') || '<tr><td colspan="7" class="plano-meta">Nenhum aluno ainda. As inscrições pagas pela página entram aqui sozinhas.</td></tr>'}</tbody></table></div></div>`; }).join('')}`;
 }
 function mtnEditarTurma(id) {
-  const t = MTN.turmas.find(x => x.id === id) || { nome: MTN.turmas.length ? `Turma ${MTN.turmas.length + 1}` : 'Turma piloto', preco: MTN.turmas.length ? 2997 : 1497, vagas: 8, horario: 'Terças, 20h', status: 'aberta' };
+  const t = MTN.turmas.find(x => x.id === id) || { nome: MTN.turmas.length ? `Turma ${MTN.turmas.length + 1}` : 'Turma Fundadora', preco: MTN.turmas.length ? 2997 : 1497, vagas: 8, horario: 'Terças, 20h', status: 'aberta' };
   mtnModal(`<h3 style="margin-top:0;">${id ? '✏️ Turma' : '＋ Nova turma'}</h3><div class="mtn-form">
     <label>Nome<input id="mtt-nome" value="${escapeHtml(t.nome || '')}"></label><label>Situação<select id="mtt-status">${[['aberta', 'Inscrições abertas'], ['andamento', 'Em andamento'], ['encerrada', 'Encerrada']].map(([k, r]) => `<option value="${k}" ${t.status === k ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
     <label>Primeiro encontro<input id="mtt-inicio" type="date" value="${escapeHtml(t.inicio || '')}"></label><label>Dia e horário<input id="mtt-horario" value="${escapeHtml(t.horario || '')}"></label>
@@ -28142,6 +28163,171 @@ async function evAgConversar() {
 /* ==========================================================
    APP NO CELULAR: instalar (Android/Chrome/Edge) ou adicionar à tela de início (iPhone)
    ========================================================== */
+/* ==========================================================
+   📅 MINHA AGENDA — compromissos do sistema + meus + Outlook,
+   com resumo diário e lembretes no celular
+   ========================================================== */
+const MAG = { vista: 'lista', mes: '', dados: null, diaSel: '' };
+const MAG_TIPOS = { manual: ['#2563eb', 'Meu compromisso'], consultoria: ['#16a34a', 'Consultoria DPO'], pedido: ['#f59e0b', 'Pedido de consultoria'], mentoria: ['#7c3aed', 'Mentoria'], evento: ['#db2777', 'Evento / aula'], treinamento: ['#0891b2', 'Treinamento'], prazo: ['#dc2626', 'Prazo'], post: ['#e1306c', 'Post agendado'], outlook: ['#0078d4', 'Outlook'] };
+const MAG_SEM = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const magCor = i => (MAG_TIPOS[i.origem === 'manual' ? 'manual' : i.origem === 'outlook' ? 'outlook' : i.tipo] || MAG_TIPOS.manual)[0];
+const magRot = i => (MAG_TIPOS[i.origem === 'manual' ? 'manual' : i.origem === 'outlook' ? 'outlook' : i.tipo] || MAG_TIPOS.manual)[1];
+const magSoma = (d, n) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+function magDiaTxt(d, hoje) {
+  if (d === hoje) return 'Hoje'; if (d === magSoma(hoje, 1)) return 'Amanhã'; if (d === magSoma(hoje, -1)) return 'Ontem';
+  const x = new Date(d + 'T12:00:00Z'), t = `${MAG_SEM[x.getUTCDay()]}, ${x.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', timeZone: 'UTC' })}`; return t[0].toUpperCase() + t.slice(1);
+}
+async function renderAgenda() {
+  const c = document.getElementById('conteudo');
+  c.innerHTML = `<div class="agd"><div class="mag-topo"><div><h1>📅 Minha Agenda</h1><p class="mag-sub">Seus compromissos, os do Impulsionar e os do Outlook num lugar só — com alerta no celular.</p></div>
+    <div class="mag-acoes"><button class="btn-primario" onclick="magEditar()">＋ Novo compromisso</button><button class="btn-secundario" id="mag-bt-push" onclick="magAtivarPush()">🔔 Ativar alertas no celular</button><button class="btn-secundario" onclick="magConfig()">⚙️ Configurar</button></div></div>
+    <div id="mag-corpo"><p style="color:#64748b;">Carregando…</p></div></div><div id="modal-area"></div>`;
+  await magCarregar();
+}
+async function magCarregar(atualizar) {
+  try {
+    const hoje = (MAG.dados && MAG.dados.hoje) || new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+    let de, ate;
+    if (MAG.vista === 'mes') { if (!MAG.mes) MAG.mes = hoje.slice(0, 7); const p = new Date(MAG.mes + '-01T12:00:00Z'); de = magSoma(MAG.mes + '-01', -p.getUTCDay()); ate = magSoma(de, 41); }
+    else { de = hoje; ate = magSoma(hoje, 30); }
+    MAG.dados = await api(`/api/admin/agenda?de=${de}&ate=${ate}${atualizar ? '&atualizar=1' : ''}`);
+    magDesenhar();
+  } catch (e) { const el = document.getElementById('mag-corpo'); if (el) el.innerHTML = `<div class="mag-aviso erro">${escapeHtml(e.message)}</div>`; }
+}
+function magDesenhar() {
+  const el = document.getElementById('mag-corpo'); if (!el || !MAG.dados) return;
+  const d = MAG.dados, hoje = d.hoje, cfg = d.config || {};
+  const bt = document.getElementById('mag-bt-push');
+  if (bt) { const aqui = localStorage.getItem('agd_push_ok') === '1' && 'Notification' in window && Notification.permission === 'granted'; bt.textContent = aqui ? '🔔 Alertas ativos neste aparelho' : '🔔 Ativar alertas no celular'; bt.classList.toggle('mag-on', aqui); }
+  const deHoje = d.itens.filter(i => i.data === hoje);
+  const prox = deHoje.find(i => i.hora_inicio && i.hora_inicio >= new Date(Date.now() - 3 * 3600e3).toISOString().slice(11, 16));
+  const avisos = [];
+  if (d.outlookErro) avisos.push(`<div class="mag-aviso erro">Outlook: ${escapeHtml(d.outlookErro)} <a href="#" onclick="magConfig();return false;">Configurar</a></div>`);
+  if (!d.aparelhos.length) avisos.push(`<div class="mag-aviso">📲 Para receber o <b>resumo do dia às ${escapeHtml(cfg.resumoHora || '07:00')}</b> e os lembretes, abra o Impulsionar <b>no celular</b> e toque em <b>🔔 Ativar alertas no celular</b>.${appEhIos() && !appInstalado() ? ' No iPhone, instale o app primeiro (Compartilhar › Adicionar à Tela de Início) e ative por ele.' : ''}</div>`);
+  el.innerHTML = `${avisos.join('')}
+    <div class="mag-resumo"><div class="mag-card"><small>HOJE</small><b>${deHoje.length}</b><span>compromisso${deHoje.length === 1 ? '' : 's'}</span></div>
+      <div class="mag-card mag-prox"><small>PRÓXIMO</small>${prox ? `<b>${escapeHtml(prox.hora_inicio)}</b><span>${escapeHtml(prox.titulo)}</span>` : '<b>—</b><span>nada mais hoje</span>'}</div>
+      <div class="mag-card"><small>ALERTAS</small><b>${d.aparelhos.length}</b><span>aparelho${d.aparelhos.length === 1 ? '' : 's'} · resumo ${cfg.resumoAtivo ? 'às ' + escapeHtml(cfg.resumoHora) : 'desligado'}</span></div></div>
+    <div class="mag-vistas"><button class="${MAG.vista === 'lista' ? 'on' : ''}" onclick="MAG.vista='lista'; magCarregar()">📋 Próximos dias</button><button class="${MAG.vista === 'mes' ? 'on' : ''}" onclick="MAG.vista='mes'; magCarregar()">🗓️ Mês</button><button onclick="magCarregar(true)" title="Atualizar (inclui o Outlook)">↻ Atualizar</button></div>
+    ${MAG.vista === 'mes' ? magMes() : magLista(d.itens)}
+    <div class="mag-legenda">${Object.values(MAG_TIPOS).map(([cor, r]) => `<span><i style="background:${cor}"></i>${r}</span>`).join('')}</div>`;
+}
+function magItem(i) {
+  const cor = magCor(i);
+  return `<div class="mag-item" style="--c:${cor}"><div class="mag-hora">${i.hora_inicio ? `<b>${escapeHtml(i.hora_inicio)}</b>${i.hora_fim ? `<small>${escapeHtml(i.hora_fim)}</small>` : ''}` : '<small>dia todo</small>'}</div>
+    <div class="mag-info"><b>${escapeHtml(i.titulo)}</b><small><span class="mag-tag" style="background:${cor}1a;color:${cor}">${escapeHtml(magRot(i))}</span>${i.local ? ' 📍 ' + escapeHtml(i.local) : ''}${i.repetir ? ' 🔁' : ''}${i.outlook ? ' · no Outlook' : ''}</small>${i.descricao ? `<p>${escapeHtml(String(i.descricao).slice(0, 160))}</p>` : ''}</div>
+    <div class="mag-bts">${i.link ? `<a class="mag-bt entrar" href="${escapeHtml(i.link)}" target="_blank" rel="noopener">Entrar</a>` : ''}${i.origem === 'manual' ? `<button class="mag-bt" onclick="magEditar(${i.eventoId})">Editar</button>` : i.abrir ? `<button class="mag-bt" onclick="irPara('${escapeHtml(i.abrir)}')">Abrir</button>` : ''}</div></div>`;
+}
+function magLista(itens) {
+  const hoje = MAG.dados.hoje, grupos = {};
+  itens.forEach(i => { (grupos[i.data] = grupos[i.data] || []).push(i); });
+  if (!grupos[hoje]) grupos[hoje] = [];
+  const dias = Object.keys(grupos).sort();
+  return `<div class="mag-lista">${dias.map(dia => `<div class="mag-dia ${dia === hoje ? 'hoje' : ''}"><div class="mag-dia-t">${escapeHtml(magDiaTxt(dia, hoje))}<small>${dia.split('-').reverse().slice(0, 2).join('/')}</small><button onclick="magEditar(0, '${dia}')" title="Novo neste dia">＋</button></div>
+    ${grupos[dia].length ? grupos[dia].map(magItem).join('') : '<p class="mag-vazio">Nada marcado. Dia livre para focar no que importa.</p>'}</div>`).join('')}</div>`;
+}
+function magMes() {
+  const d = MAG.dados, hoje = d.hoje, p = new Date(MAG.mes + '-01T12:00:00Z'), por = {};
+  d.itens.forEach(i => { (por[i.data] = por[i.data] || []).push(i); });
+  if (!MAG.diaSel || MAG.diaSel.slice(0, 7) !== MAG.mes) MAG.diaSel = hoje.slice(0, 7) === MAG.mes ? hoje : MAG.mes + '-01';
+  const mudar = n => { const x = new Date(MAG.mes + '-01T12:00:00Z'); x.setUTCMonth(x.getUTCMonth() + n); return x.toISOString().slice(0, 7); };
+  let cel = ''; for (let k = 0; k < 42; k++) { const dia = magSoma(d.de, k), l = por[dia] || []; cel += `<button class="mag-cel ${dia.slice(0, 7) !== MAG.mes ? 'fora' : ''} ${dia === hoje ? 'hoje' : ''} ${dia === MAG.diaSel ? 'sel' : ''}" onclick="MAG.diaSel='${dia}'; magDesenhar()"><span>${Number(dia.slice(8))}</span><div>${l.slice(0, 3).map(i => `<em style="background:${magCor(i)}" title="${escapeHtml(i.titulo)}">${escapeHtml((i.hora_inicio ? i.hora_inicio + ' ' : '') + i.titulo)}</em>`).join('')}${l.length > 3 ? `<i>+${l.length - 3}</i>` : ''}</div></button>`; }
+  const sel = por[MAG.diaSel] || [];
+  return `<div class="mag-mes-topo"><button onclick="MAG.mes='${mudar(-1)}'; magCarregar()">‹</button><b>${(t => t[0].toUpperCase() + t.slice(1))(p.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' }))}</b><button onclick="MAG.mes='${mudar(1)}'; magCarregar()">›</button></div>
+    <div class="mag-grade">${['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map(x => `<div class="mag-sem">${x}</div>`).join('')}${cel}</div>
+    <div class="mag-dia" style="margin-top:14px;"><div class="mag-dia-t">${escapeHtml(magDiaTxt(MAG.diaSel, hoje))}<small>${MAG.diaSel.split('-').reverse().join('/')}</small><button onclick="magEditar(0, '${MAG.diaSel}')">＋</button></div>${sel.length ? sel.map(magItem).join('') : '<p class="mag-vazio">Nada marcado neste dia.</p>'}</div>`;
+}
+function magEditar(id, dia) {
+  const base = id ? (MAG.dados.itens.find(i => i.origem === 'manual' && i.eventoId === id) || {}) : {};
+  const e = id ? Object.assign({}, base, { data: base.dataOriginal || base.data }) : { data: dia || MAG.dados.hoje, hora_inicio: '', lembrete_min: (MAG.dados.config || {}).lembreteMin ?? 30, categoria: 'compromisso', repetir: '' };
+  const v = k => escapeHtml(e[k] ?? ''), cfg = MAG.dados.config || {};
+  mtnModal(`<h3 style="margin-top:0;">${id ? '✏️ Compromisso' : '＋ Novo compromisso'}</h3>
+    <label>O que é<input id="mag-titulo" value="${v('titulo')}" placeholder="Ex.: Reunião com os gerentes das 3 unidades"></label>
+    <div class="mtn-form"><label>Data<input id="mag-data" type="date" value="${v('data')}"></label><label>Lembrete no celular<select id="mag-lembrete_min">${[[-1, 'Sem lembrete'], [0, 'Na hora'], [5, '5 min antes'], [10, '10 min antes'], [15, '15 min antes'], [30, '30 min antes'], [60, '1 hora antes'], [120, '2 horas antes'], [1440, '1 dia antes']].map(([n, r]) => `<option value="${n}" ${Number(e.lembrete_min) === n ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
+    <label>Início<input id="mag-hora_inicio" type="time" value="${v('hora_inicio')}"></label><label>Fim<input id="mag-hora_fim" type="time" value="${v('hora_fim')}"></label>
+    <label>Repetir<select id="mag-repetir">${[['', 'Não repete'], ['diario', 'Todo dia'], ['util', 'Dias úteis (seg a sex)'], ['semanal', 'Toda semana'], ['mensal', 'Todo mês']].map(([k, r]) => `<option value="${k}" ${(e.repetir || '') === k ? 'selected' : ''}>${r}</option>`).join('')}</select></label><label>Repetir até (opcional)<input id="mag-repetir_ate" type="date" value="${v('repetir_ate')}"></label>
+    <label>Local<input id="mag-local" value="${v('local')}" placeholder="Ex.: CDD Rio Verde"></label><label>Link da reunião<input id="mag-link" value="${v('link')}" placeholder="Teams, Meet, Zoom…"></label></div>
+    <label>Anotações<textarea id="mag-descricao" rows="3">${v('descricao')}</textarea></label>
+    <p class="mag-dica">Sem horário = compromisso de dia todo.${cfg.enviarOutlook && cfg.outlookModo === 'ms365' ? ' Este compromisso também vai para o seu Outlook.' : ''}</p>
+    <div class="acoes-form"><button class="btn-primario" style="width:auto;" onclick="magSalvar(${id || 0})">Salvar</button>${id ? `<button class="btn-perigo" onclick="magExcluir(${id})">Excluir</button>` : ''}<button class="btn-secundario" onclick="mtnModal('')">Cancelar</button></div>`);
+  setTimeout(() => { const t = document.getElementById('mag-titulo'); if (t && !id) t.focus(); }, 50);
+}
+async function magSalvar(id) {
+  const b = {}; ['titulo', 'data', 'hora_inicio', 'hora_fim', 'local', 'link', 'descricao', 'lembrete_min', 'repetir', 'repetir_ate'].forEach(k => b[k] = (document.getElementById('mag-' + k) || {}).value);
+  try { const r = await api('/api/admin/agenda/eventos' + (id ? '/' + id : ''), { method: id ? 'PUT' : 'POST', body: JSON.stringify(b) }); mtnModal(''); mostrarToast(r.aviso ? '✅ Salvo. ' + r.aviso : '✅ ' + r.message, !!r.aviso); await magCarregar(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function magExcluir(id) {
+  const ev = MAG.dados.itens.find(i => i.eventoId === id) || {};
+  if (!confirm(ev.repetir ? 'Excluir este compromisso e todas as repetições?' : 'Excluir este compromisso?')) return;
+  try { const r = await api('/api/admin/agenda/eventos/' + id, { method: 'DELETE' }); mtnModal(''); mostrarToast(r.aviso || r.message, !!r.aviso); await magCarregar(); } catch (e) { mostrarToast(e.message, true); }
+}
+function magConfig() {
+  const d = MAG.dados || {}, c = d.config || {}, f = c.fontes || {}, ms = d.ms365 || {};
+  const fontes = [['consultorias', 'Consultorias DPO agendadas'], ['solicitacoes', 'Pedidos de consultoria aguardando resposta'], ['mentorias', 'Mentorias (executivos)'], ['eventos', 'Eventos da comunidade'], ['treinamentos', 'Treinamentos que vou ministrar'], ['prazos', 'Prazos: follow-ups e marcos da consultoria'], ['mentoriaNegocio', 'Turmas e aula gratuita (Do Chão à Gestão)'], ['estudio', 'Posts agendados no Estúdio']];
+  mtnModal(`<h3 style="margin-top:0;">⚙️ Configurar a agenda</h3>
+    <div class="mag-sec"><b>🔔 Alertas no celular</b>
+      <label class="mag-chk"><input type="checkbox" id="agc-resumoAtivo" ${c.resumoAtivo ? 'checked' : ''}> Resumo do dia todo dia</label>
+      <div class="mtn-form"><label>Horário do resumo<input type="time" id="agc-resumoHora" value="${escapeHtml(c.resumoHora || '07:00')}"></label><label>Lembrete dos compromissos automáticos<select id="agc-lembreteMin">${[[-1, 'Sem lembrete'], [0, 'Na hora'], [10, '10 min antes'], [15, '15 min antes'], [30, '30 min antes'], [60, '1 hora antes']].map(([n, r]) => `<option value="${n}" ${Number(c.lembreteMin) === n ? 'selected' : ''}>${r}</option>`).join('')}</select></label></div>
+      ${(d.aparelhos || []).length ? `<div class="mag-aparelhos">${d.aparelhos.map(a => `<div>📱 ${escapeHtml(a.aparelho || 'Aparelho')} <small>desde ${escapeHtml(String(a.criado_em || '').slice(0, 10).split('-').reverse().join('/'))}</small><button onclick="magRemoverAparelho(${a.id})">remover</button></div>`).join('')}</div><button class="btn-secundario" style="width:auto;" onclick="magTestarPush()">Enviar o resumo de hoje agora (teste)</button>` : '<p class="mag-dica">Nenhum aparelho ainda: abra o Impulsionar no celular e toque em 🔔 Ativar alertas no celular.</p>'}
+    </div>
+    <div class="mag-sec"><b>⚡ Puxar automaticamente do Impulsionar</b>${fontes.map(([k, r]) => `<label class="mag-chk"><input type="checkbox" data-fonte="${k}" ${f[k] !== false ? 'checked' : ''}> ${r}</label>`).join('')}</div>
+    <div class="mag-sec"><b>📧 Outlook</b>
+      <label class="mag-chk"><input type="radio" name="agc-modo" value="nenhum" ${c.outlookModo === 'nenhum' || !c.outlookModo ? 'checked' : ''} onchange="magModoOutlook()"> Não conectar</label>
+      <label class="mag-chk"><input type="radio" name="agc-modo" value="ics" ${c.outlookModo === 'ics' ? 'checked' : ''} onchange="magModoOutlook()"> Pelo link do calendário publicado <small>(mais simples — só leitura)</small></label>
+      <label class="mag-chk"><input type="radio" name="agc-modo" value="ms365" ${c.outlookModo === 'ms365' ? 'checked' : ''} onchange="magModoOutlook()"> Pelo Microsoft 365 da empresa <small>(${ms.ativo ? '✅ integração configurada' : 'precisa do app no Azure em 🔑 Chaves e integrações'})</small></label>
+      <div id="agc-ics" class="mag-sub-sec"><label>Link ICS do seu calendário<input id="agc-outlookIcs" value="${escapeHtml(c.outlookIcs || '')}" placeholder="https://outlook.office365.com/owa/calendar/…/calendar.ics"></label>
+        <ol class="mag-passos"><li>Abra o <b>Outlook na web</b> (outlook.office.com) › ⚙️ <b>Configurações</b> › <b>Calendário</b> › <b>Calendários compartilhados</b>.</li><li>Em <b>Publicar um calendário</b>, escolha <b>Calendário</b> e <b>Pode ver todos os detalhes</b> › <b>Publicar</b>.</li><li>Copie o link <b>ICS</b> e cole acima.</li></ol>
+        <p class="mag-dica">Se a opção estiver bloqueada, a TI da empresa desativou a publicação; use o Microsoft 365.</p></div>
+      <div id="agc-ms365" class="mag-sub-sec"><label>E-mail do Outlook a ler<input id="agc-outlookEmail" value="${escapeHtml(c.outlookEmail || '')}" placeholder="${escapeHtml(ms.organizador || 'seu.email@empresa.com.br')}"></label>
+        <label class="mag-chk"><input type="checkbox" id="agc-enviarOutlook" ${c.enviarOutlook ? 'checked' : ''}> Criar no Outlook os compromissos que eu fizer aqui</label>
+        <p class="mag-dica">Usa o mesmo app do Azure da Agenda de Consultorias, com a permissão de aplicativo <b>Calendars.ReadWrite</b>.</p></div>
+    </div>
+    <div class="mag-sec"><b>📲 Ver esta agenda no Outlook / Google / celular</b>
+      <p class="mag-dica">Assine este link: no Outlook, <b>Adicionar calendário › Assinar da Web</b>; no Google Agenda, <b>Outras agendas › Do URL</b>. Ele atualiza sozinho.</p>
+      <div class="mag-link"><input readonly value="${escapeHtml(d.feedUrl || '')}" onclick="this.select()"><button onclick="navigator.clipboard.writeText('${escapeHtml(d.feedUrl || '')}').then(() => mostrarToast('Link copiado!'))">Copiar</button></div>
+      <a href="#" class="mag-dica" onclick="magNovoFeed(); return false;">Gerar um link novo (o antigo para de funcionar)</a></div>
+    <div id="agc-teste"></div>
+    <div class="acoes-form"><button class="btn-primario" style="width:auto;" onclick="magSalvarConfig()">Salvar</button><button class="btn-secundario" onclick="mtnModal('')">Fechar</button></div>`);
+  magModoOutlook();
+}
+function magModoOutlook() { const m = (document.querySelector('input[name="agc-modo"]:checked') || {}).value; const a = document.getElementById('agc-ics'), b = document.getElementById('agc-ms365'); if (a) a.style.display = m === 'ics' ? '' : 'none'; if (b) b.style.display = m === 'ms365' ? '' : 'none'; }
+async function magSalvarConfig(extra) {
+  const g = id => document.getElementById(id), fontes = {};
+  document.querySelectorAll('[data-fonte]').forEach(x => fontes[x.dataset.fonte] = x.checked);
+  const b = Object.assign({ resumoAtivo: g('agc-resumoAtivo').checked, resumoHora: g('agc-resumoHora').value, lembreteMin: Number(g('agc-lembreteMin').value), fontes, outlookModo: (document.querySelector('input[name="agc-modo"]:checked') || {}).value || 'nenhum', outlookIcs: g('agc-outlookIcs').value, outlookEmail: g('agc-outlookEmail').value, enviarOutlook: g('agc-enviarOutlook').checked }, extra || {});
+  try {
+    const r = await api('/api/admin/agenda/config', { method: 'PUT', body: JSON.stringify(b) });
+    mostrarToast('✅ ' + r.message); await magCarregar(true);
+    if (r.teste) { magConfig(); const t = document.getElementById('agc-teste'); if (t) t.innerHTML = `<div class="mag-aviso ${/^⚠️/.test(r.teste) ? 'erro' : 'ok'}">${escapeHtml(r.teste)}</div>`; } else if (!extra) mtnModal('');
+    else magConfig();
+  } catch (e) { mostrarToast(e.message, true); }
+}
+function magNovoFeed() { if (confirm('Gerar um link novo? Quem assinou o link antigo deixa de ver a agenda.')) magSalvarConfig({ novoFeed: true }); }
+async function magRemoverAparelho(id) { await api('/api/admin/agenda/push/inscricoes/' + id, { method: 'DELETE' }).catch(() => {}); try { localStorage.removeItem('agd_push_ok'); } catch (e) {} await magCarregar(); magConfig(); }
+async function magTestarPush() { try { const r = await api('/api/admin/agenda/push/teste', { method: 'POST' }); mostrarToast(r.message); } catch (e) { mostrarToast(e.message, true); } }
+function magChaveBytes(b64) { const p = '='.repeat((4 - b64.length % 4) % 4), s = atob((b64 + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...s].map(ch => ch.charCodeAt(0))); }
+async function magAtivarPush() {
+  try {
+    if (appEhIos() && !appInstalado()) { mostrarToast('No iPhone, os alertas só funcionam pelo app instalado. Instale primeiro e abra pelo ícone.', true); return appInstalar(); }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return mostrarToast('Este navegador não aceita notificações. No celular, use o Chrome (Android) ou o app instalado (iPhone).', true);
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return mostrarToast('As notificações foram bloqueadas. Libere em Configurações do navegador › Notificações › impulsionarv4.com.br e tente de novo.', true);
+    const reg = (await navigator.serviceWorker.getRegistration()) || (await navigator.serviceWorker.register('/sw.js'));
+    await navigator.serviceWorker.ready;
+    const { publicKey } = await api('/api/admin/agenda/push/chave');
+    let sub = await reg.pushManager.getSubscription();
+    if (sub && sub.options && sub.options.applicationServerKey) { const atual = btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); if (atual !== publicKey) { await sub.unsubscribe(); sub = null; } }
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: magChaveBytes(publicKey) });
+    const ua = navigator.userAgent, aparelho = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? ('Android' + ((ua.match(/Android [\d.]+; ([^;)]+)/) || [])[1] ? ' · ' + ua.match(/Android [\d.]+; ([^;)]+)/)[1] : '')) : /Windows/.test(ua) ? 'Computador Windows' : /Mac/.test(ua) ? 'Mac' : 'Navegador';
+    const r = await api('/api/admin/agenda/push/inscrever', { method: 'POST', body: JSON.stringify({ inscricao: sub.toJSON(), aparelho }) });
+    try { localStorage.setItem('agd_push_ok', '1'); } catch (e) {}
+    mostrarToast('🔔 ' + r.message); await magCarregar();
+  } catch (e) { mostrarToast('Não foi possível ativar: ' + e.message, true); }
+}
+// clique numa notificação com o app aberto: vai para a agenda
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', ev => { if (ev.data && ev.data.tipo === 'abrir' && ESTADO.token && /ir=agenda/.test(ev.data.url || '')) irPara('agenda'); });
+
 const APP = { prompt: null };
 const appInstalado = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const appEhIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -28150,6 +28336,7 @@ window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); APP.pr
 window.addEventListener('appinstalled', () => { APP.prompt = null; appAtualizarBotao(); const b = document.getElementById('app-banner'); if (b) b.remove(); mostrarToast('📲 Impulsionar instalado! Abra pelo ícone na tela do celular.'); });
 function appAtualizarBotao() { const oculto = appInstalado() || !(APP.prompt || appEhIos() || evCelularAquiApp()); ['btn-instalar-app', 'btn-app-login'].forEach(id => { const b = document.getElementById(id); if (b) b.hidden = oculto; }); }
 function evCelularAquiApp() { return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent); }
+appAtualizarBotao(); window.addEventListener('load', appAtualizarBotao); // mostra o "Instalar o app" já na tela de login
 const appNavegadorInterno = () => /Instagram|FBAN|FBAV|FB_IAB|Line\/|LinkedInApp|TikTok|musical_ly|Snapchat|; wv\)/i.test(navigator.userAgent);
 async function appInstalar() {
   if (appNavegadorInterno()) {

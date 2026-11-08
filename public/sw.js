@@ -12,3 +12,18 @@ self.addEventListener('fetch', e => {
 <div><img src="/assets/app-icone-192.png" width="96" height="96" style="border-radius:22px" alt=""><h2>Sem conexão com a internet</h2><p style="color:#cbd5e1">Assim que a internet voltar, o Impulsionar abre normalmente.</p>
 <button onclick="location.reload()" style="border:none;border-radius:12px;padding:12px 22px;font-weight:800;background:#22c55e;color:#0b1329;font-size:15px">Tentar de novo</button></div></body></html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })));
 });
+
+// Alertas da agenda (resumo do dia e lembretes) — chegam mesmo com o app fechado.
+self.addEventListener('push', e => {
+  let d = {}; try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: 'Impulsionar', body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Impulsionar', { body: d.body || '', icon: '/assets/app-icone-192.png', badge: '/assets/app-icone-192.png', tag: d.tag || 'impulsionar', renotify: true, vibrate: [120, 60, 120], data: { url: d.url || '/?app=1#ir=agenda' } }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/?app=1#ir=agenda';
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(lista => {
+    const aberta = lista.find(c => new URL(c.url).origin === self.location.origin);
+    if (aberta) { aberta.postMessage({ tipo: 'abrir', url }); return aberta.focus(); }
+    return self.clients.openWindow(url);
+  }));
+});

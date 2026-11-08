@@ -13260,6 +13260,446 @@ async function mtConfirmarPagamento(alunoId, pagamentoId) {
 [['/mentoria', 'mentoria.html'], ['/palestra', 'palestra.html'], ['/aula', 'aula.html'], ['/raio-x', 'raio-x.html'], ['/bio', 'bio.html'], ['/palestra/apresentar', 'palestra-apresentar.html']]
     .forEach(([rota, arq]) => app.get(rota, (req, res) => res.sendFile(path.join(__dirname, 'public', arq))));
 
+// ======================================================================
+// MINHA AGENDA — agenda pessoal do Master
+//  • Puxa sozinha os compromissos do sistema (consultorias DPO, pedidos de
+//    consultoria, mentorias, eventos, treinamentos, prazos, turmas/aulas da
+//    mentoria e posts agendados no Estúdio).
+//  • Eventos próprios (com repetição e lembrete).
+//  • Outlook: lê pelo Microsoft 365 (mesma integração Azure da agenda DPO) ou
+//    por um link .ics publicado; cria no Outlook os eventos feitos aqui (365);
+//    e oferece um link .ics para assinar esta agenda no Outlook / celular.
+//  • Alertas no celular (Web Push, sem biblioteca externa): resumo diário na
+//    hora escolhida + lembrete antes de cada compromisso.
+// ======================================================================
+db.run(`CREATE TABLE IF NOT EXISTS agenda_eventos (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, titulo TEXT NOT NULL, descricao TEXT, data TEXT NOT NULL,
+    hora_inicio TEXT, hora_fim TEXT, local TEXT, link TEXT, categoria TEXT DEFAULT 'compromisso', lembrete_min INTEGER DEFAULT 30, repetir TEXT DEFAULT '', repetir_ate TEXT,
+    outlook_id TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP, atualizado_em DATETIME)`);
+db.run(`CREATE TABLE IF NOT EXISTS agenda_config (user_id INTEGER PRIMARY KEY, dados TEXT)`);
+db.run(`CREATE TABLE IF NOT EXISTS push_inscricoes (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, endpoint TEXT UNIQUE NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL,
+    aparelho TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP, ultimo_ok DATETIME)`);
+db.run(`CREATE TABLE IF NOT EXISTS agenda_avisos (chave TEXT PRIMARY KEY, enviado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+
+const agRun = (sql, p = []) => new Promise((ok, erro) => db.run(sql, p, function (e) { if (e) erro(e); else ok(this); }));
+const AG_DATA = /^\d{4}-\d{2}-\d{2}$/, AG_HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
+const AG_PADRAO = {
+    resumoAtivo: true, resumoHora: '07:00', lembreteMin: 30,
+    fontes: { consultorias: true, solicitacoes: true, mentorias: true, eventos: true, treinamentos: true, prazos: true, mentoriaNegocio: true, estudio: true },
+    outlookModo: 'nenhum', outlookEmail: '', outlookIcs: '', enviarOutlook: false, feedToken: ''
+};
+// Brasil (America/Sao_Paulo) é fixo em UTC-3.
+const agAgoraBr = () => new Date(Date.now() - 3 * 3600 * 1000);
+const agHoje = () => agAgoraBr().toISOString().slice(0, 10);
+const agSomarDias = (d, n) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+const agHm = h => { const m = String(h || '').match(/(\d{1,2}):(\d{2})/); return m ? m[1].padStart(2, '0') + ':' + m[2] : ''; };
+const agMin = hm => { const [h, m] = String(hm).split(':').map(Number); return h * 60 + m; };
+// "2026-11-10T14:00" / "2026-11-10 14:00:00" (hora local) ou ISO com Z → { data, hora } no horário de Brasília
+function agQuebrarDataHora(v) {
+    const s = String(v || '').trim(); if (!s) return null;
+    if (/Z$|[+-]\d{2}:?\d{2}$/.test(s) && s.length > 10) { const d = new Date(s); if (isNaN(d)) return null; const b = new Date(d.getTime() - 3 * 3600 * 1000).toISOString(); return { data: b.slice(0, 10), hora: b.slice(11, 16) }; }
+    const m = s.match(/^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2}))?/); if (m) return { data: m[1], hora: m[2] || '' };
+    const br = s.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}:\d{2}))?/); if (br) return { data: `${br[3]}-${br[2]}-${br[1]}`, hora: br[4] || '' };
+    return null;
+}
+async function agCfg(uid) {
+    const r = await dbGet(`SELECT dados FROM agenda_config WHERE user_id = ?`, [uid]).catch(() => null);
+    let d = {}; try { d = JSON.parse((r && r.dados) || '{}'); } catch (e) { d = {}; }
+    const out = Object.assign({}, AG_PADRAO, d, { fontes: Object.assign({}, AG_PADRAO.fontes, d.fontes || {}) });
+    if (!out.feedToken) { out.feedToken = crypto.randomBytes(18).toString('hex'); await agSalvarCfg(uid, out); }
+    return out;
+}
+async function agSalvarCfg(uid, cfg) { await agRun(`INSERT INTO agenda_config (user_id, dados) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET dados = excluded.dados`, [uid, JSON.stringify(cfg)]); }
+
+// ---------- eventos próprios (com repetição) ----------
+async function agManuais(uid, de, ate) {
+    const rows = await dbAll(`SELECT * FROM agenda_eventos WHERE user_id = ? AND data <= ? AND (data >= ? OR (repetir <> '' AND (repetir_ate IS NULL OR repetir_ate = '' OR repetir_ate >= ?)))`, [uid, ate, de, de]).catch(() => []);
+    const out = [];
+    rows.forEach(e => {
+        const base = { origem: 'manual', tipo: e.categoria || 'compromisso', titulo: e.titulo, descricao: e.descricao || '', hora_inicio: e.hora_inicio || '', hora_fim: e.hora_fim || '', local: e.local || '', link: e.link || '', lembrete_min: e.lembrete_min, eventoId: e.id, repetir: e.repetir || '', repetir_ate: e.repetir_ate || '', outlook: !!e.outlook_id, dataOriginal: e.data };
+        if (!e.repetir) { if (e.data >= de && e.data <= ate) out.push(Object.assign({ id: 'm:' + e.id, data: e.data }, base)); return; }
+        let d = e.data, n = 0; const fim = e.repetir_ate && e.repetir_ate < ate ? e.repetir_ate : ate;
+        const dia0 = Number(e.data.slice(8, 10));
+        while (d <= fim && n < 800) {
+            if (d >= de) out.push(Object.assign({ id: `m:${e.id}:${d}`, data: d }, base));
+            n++;
+            if (e.repetir === 'diario') d = agSomarDias(d, 1);
+            else if (e.repetir === 'util') { d = agSomarDias(d, 1); while ([0, 6].includes(new Date(d + 'T12:00:00Z').getUTCDay())) d = agSomarDias(d, 1); }
+            else if (e.repetir === 'semanal') d = agSomarDias(d, 7);
+            else if (e.repetir === 'mensal') { let k = n, x; do { x = new Date(Date.UTC(Number(e.data.slice(0, 4)), Number(e.data.slice(5, 7)) - 1 + k, 1, 12)); x.setUTCDate(dia0); k++; } while (x.getUTCDate() !== dia0 && k < n + 12); n = k - 1; d = x.toISOString().slice(0, 10); } // mês sem o dia (ex.: 31) é pulado
+            else break;
+        }
+    });
+    return out;
+}
+
+// ---------- compromissos automáticos do sistema ----------
+async function agAutomaticos(de, ate, cfg) {
+    const f = cfg.fontes || {}, out = [], seguro = async fn => { try { await fn(); } catch (e) { /* módulo sem a tabela/coluna: ignora */ } };
+    const add = o => { if (o.data && o.data >= de && o.data <= ate) out.push(Object.assign({ origem: 'auto', hora_inicio: '', hora_fim: '', local: '', link: '', descricao: '' }, o)); };
+    if (f.consultorias) await seguro(async () => {
+        (await dbAll(`SELECT s.id, s.titulo, s.data, s.hora_inicio, s.hora_fim, s.formato, s.local, s.teams_link, s.status, c.name AS empresa FROM dpo_sessoes s LEFT JOIN companies c ON c.id = s.company_id WHERE s.data BETWEEN ? AND ? AND COALESCE(s.status,'') NOT IN ('cancelada','cancelado')`, [de, ate]))
+            .forEach(s => add({ id: 'dpo:' + s.id, tipo: 'consultoria', titulo: `Consultoria · ${s.empresa || ''}${s.titulo ? ' — ' + s.titulo : ''}`, data: s.data, hora_inicio: agHm(s.hora_inicio), hora_fim: agHm(s.hora_fim), local: s.formato === 'presencial' ? (s.local || 'Presencial') : 'Teams', link: s.teams_link || '', abrir: 'dpoAgenda' }));
+    });
+    if (f.solicitacoes) await seguro(async () => {
+        (await dbAll(`SELECT q.id, q.data_sugerida, q.hora_sugerida, q.hora_fim_sugerida, q.assunto, c.name AS empresa FROM dpo_sessao_solicitacoes q LEFT JOIN companies c ON c.id = q.company_id WHERE q.status = 'pendente' AND q.data_sugerida BETWEEN ? AND ?`, [de, ate]))
+            .forEach(q => add({ id: 'sol:' + q.id, tipo: 'pedido', titulo: `⏳ Pedido de consultoria · ${q.empresa || ''} (responder)`, data: q.data_sugerida, hora_inicio: agHm(q.hora_sugerida), hora_fim: agHm(q.hora_fim_sugerida), descricao: q.assunto || '', abrir: 'dpoAgenda' }));
+    });
+    if (f.mentorias) await seguro(async () => {
+        (await dbAll(`SELECT m.id, m.meeting_date, m.topics, m.duration_minutes, m.status, e.name AS executivo, COALESCE(m.mentor_name, t.name) AS mentor FROM mentorships m LEFT JOIN employees e ON e.id = m.employee_id LEFT JOIN mentors t ON t.id = m.mentor_id WHERE substr(m.meeting_date,1,10) BETWEEN ? AND ? AND COALESCE(m.status,'Agendada') IN ('Agendada','agendada','Confirmada')`, [de, ate]))
+            .forEach(m => { const q = agQuebrarDataHora(m.meeting_date); if (!q) return; const fim = q.hora ? (() => { const t = agMin(q.hora) + Number(m.duration_minutes || 60); return t < 1440 ? String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0') : ''; })() : '';
+                add({ id: 'ment:' + m.id, tipo: 'mentoria', titulo: `Mentoria · ${m.executivo || ''}${m.mentor ? ' com ' + m.mentor : ''}`, data: q.data, hora_inicio: q.hora, hora_fim: fim, descricao: m.topics || '', abrir: 'mentorships' }); });
+    });
+    if (f.eventos) await seguro(async () => {
+        (await dbAll(`SELECT id, title, description, event_date, event_time, is_online, location, link FROM events WHERE substr(event_date,1,10) BETWEEN ? AND ?`, [de, ate]))
+            .forEach(e => { const q = agQuebrarDataHora(e.event_date) || {}; add({ id: 'ev:' + e.id, tipo: 'evento', titulo: `Evento · ${e.title}`, data: q.data, hora_inicio: agHm(e.event_time) || q.hora || '', local: e.is_online ? 'Online' : (e.location || ''), link: e.link || '', descricao: e.description || '', abrir: 'events' }); });
+    });
+    if (f.treinamentos) await seguro(async () => {
+        (await dbAll(`SELECT t.id, t.titulo, t.data_treinamento, t.duracao_min, t.local, t.status, c.name AS empresa FROM treinamentos_mt t LEFT JOIN companies c ON c.id = t.company_id WHERE substr(t.data_treinamento,1,10) BETWEEN ? AND ? AND COALESCE(t.status,'') NOT IN ('cancelado','cancelada')`, [de, ate]))
+            .forEach(t => { const q = agQuebrarDataHora(t.data_treinamento); if (!q) return; add({ id: 'tr:' + t.id, tipo: 'treinamento', titulo: `Treinamento · ${t.titulo}${t.empresa ? ' (' + t.empresa + ')' : ''}`, data: q.data, hora_inicio: q.hora, local: t.local || '', abrir: 'ministrarTreinamento' }); });
+    });
+    if (f.prazos) {
+        await seguro(async () => {
+            (await dbAll(`SELECT f.id, f.numero, f.texto, f.data_prevista, c.name AS empresa FROM dpo_follow_ups f LEFT JOIN dpo_action_plans a ON a.id = f.action_plan_id LEFT JOIN dpo_audit_cycles y ON y.id = a.cycle_id LEFT JOIN companies c ON c.id = y.company_id WHERE COALESCE(f.status,'pendente') = 'pendente' AND substr(f.data_prevista,1,10) BETWEEN ? AND ?`, [de, ate]))
+                .forEach(x => add({ id: 'fu:' + x.id, tipo: 'prazo', titulo: `Prazo · follow-up ${x.numero || ''} do plano de ação${x.empresa ? ' — ' + x.empresa : ''}`, data: String(x.data_prevista).slice(0, 10), descricao: x.texto || '', abrir: 'dpoAcompanhamentos' }));
+        });
+        await seguro(async () => {
+            (await dbAll(`SELECT m.id, m.title, m.due_date, c.name AS empresa FROM consulting_milestones m LEFT JOIN consulting_plans p ON p.id = m.plan_id LEFT JOIN companies c ON c.id = p.company_id WHERE COALESCE(m.status,'Pendente') NOT IN ('Concluído','Concluido','Concluída','concluido') AND substr(m.due_date,1,10) BETWEEN ? AND ?`, [de, ate]))
+                .forEach(x => add({ id: 'ms:' + x.id, tipo: 'prazo', titulo: `Prazo · ${x.title}${x.empresa ? ' — ' + x.empresa : ''}`, data: String(x.due_date).slice(0, 10), abrir: 'consulting' }));
+        });
+    }
+    if (f.mentoriaNegocio) await seguro(async () => {
+        (await dbAll(`SELECT id, nome, inicio, horario, status FROM mentoria_turmas WHERE inicio BETWEEN ? AND ?`, [de, ate]))
+            .forEach(t => add({ id: 'turma:' + t.id, tipo: 'mentoria', titulo: `🚀 Início da ${t.nome || 'turma'} (Do Chão à Gestão)`, data: String(t.inicio).slice(0, 10), hora_inicio: agHm(t.horario), abrir: 'mentoriaNegocio' }));
+        const d = typeof mtLer === 'function' ? await mtLer() : null, a = d && d.links && d.links.proximaAula;
+        if (a && a.data) { const q = agQuebrarDataHora(a.data); if (q) add({ id: 'aula:' + q.data, tipo: 'evento', titulo: `🔴 Aula gratuita · ${a.tema || 'ao vivo'}`, data: q.data, hora_inicio: q.hora, link: a.link || '', local: 'Online', abrir: 'mentoriaNegocio' }); }
+    });
+    if (f.estudio) await seguro(async () => {
+        (await dbAll(`SELECT id, titulo, agendado_para FROM estudio_projetos WHERE agendado_para IS NOT NULL AND agendado_para <> '' AND COALESCE(status,'') <> 'publicado' AND (created_by IS NULL OR created_by NOT IN (SELECT id FROM users WHERE role = 'estudio'))`))
+            .forEach(p => { const q = agQuebrarDataHora(p.agendado_para); if (q) add({ id: 'post:' + p.id, tipo: 'post', titulo: `📸 Post agendado · ${p.titulo}`, data: q.data, hora_inicio: q.hora, abrir: 'estudioAgenda' }); });
+    });
+    return out;
+}
+
+// ---------- Outlook ----------
+const AG_CACHE_OUTLOOK = new Map(); // chave → { t, itens, erro }
+function agIcsDesdobrar(txt) { return String(txt || '').replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '').split(/\r?\n/); }
+function agIcsValor(v) { return String(v || '').replace(/\\n/gi, '\n').replace(/\\([,;\\])/g, '$1'); }
+function agIcsData(prop, valor) { // → { data, hora, diaTodo }
+    const v = String(valor || '').trim();
+    if (/VALUE=DATE(?!-)/i.test(prop) || /^\d{8}$/.test(v)) return { data: `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}`, hora: '', diaTodo: true };
+    const m = v.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})?(Z)?$/); if (!m) return null;
+    if (m[7]) { const q = agQuebrarDataHora(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00Z`); return q && { data: q.data, hora: q.hora, diaTodo: false }; }
+    return { data: `${m[1]}-${m[2]}-${m[3]}`, hora: `${m[4]}:${m[5]}`, diaTodo: false }; // TZID: tratado como horário de Brasília
+}
+function agLerIcs(txt, de, ate) {
+    const linhas = agIcsDesdobrar(txt), evs = []; let cur = null;
+    for (const l of linhas) {
+        if (l === 'BEGIN:VEVENT') { cur = { exdates: [] }; continue; }
+        if (l === 'END:VEVENT') { if (cur) evs.push(cur); cur = null; continue; }
+        if (!cur) continue;
+        const i = l.indexOf(':'); if (i < 0) continue;
+        const prop = l.slice(0, i), nome = prop.split(';')[0].toUpperCase(), val = l.slice(i + 1);
+        if (nome === 'SUMMARY') cur.titulo = agIcsValor(val);
+        else if (nome === 'LOCATION') cur.local = agIcsValor(val);
+        else if (nome === 'DESCRIPTION') cur.descricao = agIcsValor(val).slice(0, 600);
+        else if (nome === 'UID') cur.uid = val;
+        else if (nome === 'DTSTART') cur.ini = agIcsData(prop, val);
+        else if (nome === 'DTEND') cur.fim = agIcsData(prop, val);
+        else if (nome === 'RRULE') cur.rrule = val;
+        else if (nome === 'RECURRENCE-ID') cur.recId = agIcsData(prop, val);
+        else if (nome === 'EXDATE') val.split(',').forEach(x => { const q = agIcsData(prop, x); if (q) cur.exdates.push(q.data); });
+        else if (nome === 'STATUS') cur.status = val;
+        else if (nome === 'X-MICROSOFT-CDO-BUSYSTATUS') cur.livre = /FREE/i.test(val) && !/TENTATIVE/i.test(val);
+    }
+    const alterados = new Set(evs.filter(e => e.recId).map(e => e.uid + '|' + e.recId.data));
+    const out = [], DIAS = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+    evs.forEach(e => {
+        if (!e.ini || /CANCELLED/i.test(e.status || '')) return;
+        const dur = e.fim && !e.ini.diaTodo && e.fim.data === e.ini.data ? e.fim.hora : '';
+        const item = d => ({ id: 'ol:' + (e.uid || '').slice(-40) + ':' + d, origem: 'outlook', tipo: 'outlook', titulo: e.titulo || '(sem título)', data: d, hora_inicio: e.ini.hora, hora_fim: dur, local: e.local || '', descricao: e.descricao || '', link: ((e.descricao || '') + ' ' + (e.local || '')).match(/https:\/\/teams\.microsoft\.com\/[^\s>"]+|https:\/\/[\w.-]*zoom\.us\/[^\s>"]+|https:\/\/meet\.google\.com\/[^\s>"]+/)?.[0] || '' });
+        if (!e.rrule) { if (e.ini.data >= de && e.ini.data <= ate) out.push(item(e.ini.data)); return; }
+        const r = Object.fromEntries(e.rrule.split(';').map(p => p.split('=')));
+        const freq = r.FREQ, intervalo = Math.max(1, Number(r.INTERVAL || 1)), ate2 = r.UNTIL ? (agIcsData('', r.UNTIL) || {}).data || ate : ate, max = r.COUNT ? Number(r.COUNT) : 5000;
+        const byday = (r.BYDAY || '').split(',').filter(Boolean).map(x => DIAS[x.slice(-2)]).filter(x => x !== undefined);
+        let d = e.ini.data, cont = 0, passos = 0; const limite = ate2 < ate ? ate2 : ate;
+        const ok = dd => { if (dd >= de && dd <= limite && !e.exdates.includes(dd) && !alterados.has(e.uid + '|' + dd)) out.push(item(dd)); };
+        if (freq === 'WEEKLY' && byday.length) {
+            const ini = new Date(e.ini.data + 'T12:00:00Z'), semana0 = agSomarDias(e.ini.data, -ini.getUTCDay());
+            for (let s = semana0; s <= limite && cont < max && passos < 2000; s = agSomarDias(s, 7 * intervalo), passos++)
+                for (const dw of byday.sort()) { const dd = agSomarDias(s, dw); if (dd < e.ini.data || dd > limite || cont >= max) continue; cont++; ok(dd); }
+        } else {
+            while (d <= limite && cont < max && passos < 3000) {
+                cont++; passos++; ok(d);
+                if (freq === 'DAILY') d = agSomarDias(d, intervalo);
+                else if (freq === 'WEEKLY') d = agSomarDias(d, 7 * intervalo);
+                else if (freq === 'MONTHLY') { const x = new Date(e.ini.data + 'T12:00:00Z'); x.setUTCMonth(x.getUTCMonth() + cont * intervalo); d = x.toISOString().slice(0, 10); }
+                else if (freq === 'YEARLY') { const x = new Date(e.ini.data + 'T12:00:00Z'); x.setUTCFullYear(x.getUTCFullYear() + cont * intervalo); d = x.toISOString().slice(0, 10); }
+                else break;
+            }
+        }
+    });
+    return out;
+}
+async function agOutlook(cfg, de, ate, forcar) {
+    if (cfg.outlookModo !== 'ms365' && cfg.outlookModo !== 'ics') return { itens: [] };
+    const chave = [cfg.outlookModo, cfg.outlookEmail, cfg.outlookIcs, de, ate].join('|'), c0 = AG_CACHE_OUTLOOK.get(chave);
+    if (!forcar && c0 && Date.now() - c0.t < 5 * 60 * 1000) return c0;
+    let res;
+    try {
+        if (cfg.outlookModo === 'ms365') {
+            const c = await lerConfigMs365();
+            if (!ms365Ativo(c)) throw new Error('A integração Microsoft 365 ainda não está configurada (🔑 Chaves e integrações).');
+            const email = cfg.outlookEmail || c.organizador, itens = [];
+            let url = `/users/${encodeURIComponent(email)}/calendarView?startDateTime=${de}T00:00:00-03:00&endDateTime=${ate}T23:59:59-03:00&$top=250&$orderby=start/dateTime&$select=id,subject,start,end,isAllDay,location,onlineMeeting,bodyPreview,isCancelled,showAs`;
+            for (let pag = 0; url && pag < 4; pag++) {
+                const j = await graphMs365(c, 'GET', url);
+                (j.value || []).forEach(e => { if (e.isCancelled) return; const i = agQuebrarDataHora(e.start && e.start.dateTime), f = agQuebrarDataHora(e.end && e.end.dateTime); if (!i) return;
+                    itens.push({ id: 'ol:' + e.id.slice(-40), outlookId: e.id, origem: 'outlook', tipo: 'outlook', titulo: e.subject || '(sem título)', data: i.data, hora_inicio: e.isAllDay ? '' : i.hora, hora_fim: e.isAllDay || !f || f.data !== i.data ? '' : f.hora, local: (e.location && e.location.displayName) || '', link: (e.onlineMeeting && e.onlineMeeting.joinUrl) || '', descricao: e.bodyPreview || '' }); });
+                url = j['@odata.nextLink'] ? j['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0', '') : '';
+            }
+            res = { t: Date.now(), itens };
+        } else {
+            const link = String(cfg.outlookIcs || '').trim().replace(/^webcal:\/\//i, 'https://');
+            if (!/^https:\/\//i.test(link)) throw new Error('Cole o link .ics do calendário publicado do Outlook.');
+            const ctrl = new AbortController(), to = setTimeout(() => ctrl.abort(), 15000);
+            const r = await fetch(link, { signal: ctrl.signal, headers: { 'User-Agent': 'ImpulsionarV4-Agenda' } }).finally(() => clearTimeout(to));
+            if (!r.ok) throw new Error('O Outlook recusou o link do calendário (erro ' + r.status + '). Confira se ele foi publicado.');
+            const txt = await r.text(); if (!/BEGIN:VCALENDAR/.test(txt)) throw new Error('O link não é de um calendário (.ics).');
+            res = { t: Date.now(), itens: agLerIcs(txt, de, ate) };
+        }
+    } catch (e) { res = { t: Date.now(), itens: (c0 && c0.itens) || [], erro: e.message }; }
+    AG_CACHE_OUTLOOK.set(chave, res);
+    if (AG_CACHE_OUTLOOK.size > 60) AG_CACHE_OUTLOOK.delete(AG_CACHE_OUTLOOK.keys().next().value);
+    return res;
+}
+async function agEnviarOutlook(cfg, ev, apagar) { // cria/atualiza/apaga no Outlook (Microsoft 365) o evento feito aqui
+    if (!cfg.enviarOutlook || cfg.outlookModo !== 'ms365') return null;
+    const c = await lerConfigMs365(); if (!ms365Ativo(c)) return 'Microsoft 365 não configurado — o compromisso ficou só no Impulsionar.';
+    const email = encodeURIComponent(cfg.outlookEmail || c.organizador);
+    try {
+        if (apagar) { if (ev.outlook_id) await graphMs365(c, 'DELETE', `/users/${email}/events/${encodeURIComponent(ev.outlook_id)}`); return null; }
+        const diaTodo = !ev.hora_inicio, fimHora = ev.hora_fim || (ev.hora_inicio ? (() => { const t = Math.min(agMin(ev.hora_inicio) + 60, 1439); return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); })() : '');
+        const corpo = { subject: ev.titulo, body: { contentType: 'text', content: [ev.descricao, ev.link].filter(Boolean).join('\n\n') }, location: { displayName: ev.local || '' }, isAllDay: diaTodo,
+            start: { dateTime: `${ev.data}T${diaTodo ? '00:00' : ev.hora_inicio}:00`, timeZone: 'America/Sao_Paulo' }, end: { dateTime: `${diaTodo ? agSomarDias(ev.data, 1) : ev.data}T${diaTodo ? '00:00' : fimHora}:00`, timeZone: 'America/Sao_Paulo' },
+            isReminderOn: Number(ev.lembrete_min) >= 0, reminderMinutesBeforeStart: Math.max(0, Number(ev.lembrete_min) || 0) };
+        const rr = { diario: { type: 'daily', interval: 1 }, semanal: { type: 'weekly', interval: 1, daysOfWeek: [['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][new Date(ev.data + 'T12:00:00Z').getUTCDay()]] }, util: { type: 'weekly', interval: 1, daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] }, mensal: { type: 'absoluteMonthly', interval: 1, dayOfMonth: Number(ev.data.slice(8, 10)) } }[ev.repetir];
+        if (rr) corpo.recurrence = { pattern: rr, range: ev.repetir_ate ? { type: 'endDate', startDate: ev.data, endDate: ev.repetir_ate } : { type: 'noEnd', startDate: ev.data } };
+        if (ev.outlook_id) await graphMs365(c, 'PATCH', `/users/${email}/events/${encodeURIComponent(ev.outlook_id)}`, corpo);
+        else { const j = await graphMs365(c, 'POST', `/users/${email}/events`, corpo); if (j.id) await agRun(`UPDATE agenda_eventos SET outlook_id = ? WHERE id = ?`, [j.id, ev.id]); }
+        return null;
+    } catch (e) { return 'Não foi possível atualizar o Outlook: ' + e.message; }
+}
+
+async function agTudo(uid, de, ate, cfg, forcarOutlook) {
+    const [man, auto, ol] = await Promise.all([agManuais(uid, de, ate), agAutomaticos(de, ate, cfg), agOutlook(cfg, de, ate, forcarOutlook)]);
+    const meus = new Set((await dbAll(`SELECT outlook_id FROM agenda_eventos WHERE user_id = ? AND outlook_id IS NOT NULL`, [uid]).catch(() => [])).map(r => String(r.outlook_id).slice(-40)));
+    const itens = man.concat(auto, (ol.itens || []).filter(i => !meus.has(String(i.id).slice(3)))) // não duplica o que foi enviado daqui
+        .sort((a, b) => (a.data + (a.hora_inicio || '00:00')).localeCompare(b.data + (b.hora_inicio || '00:00')));
+    return { itens, outlookErro: ol.erro || '' };
+}
+
+// ---------- Web Push (RFC 8291 / 8292) com o crypto do Node ----------
+const b64u = b => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const deB64u = s => Buffer.from(String(s).replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+let AG_VAPID = null;
+async function agVapid() {
+    if (AG_VAPID) return AG_VAPID;
+    const r = await dbGet(`SELECT value FROM integration_settings WHERE key = 'webpush_vapid'`).catch(() => null);
+    let v = null; try { v = JSON.parse((r && r.value) || 'null'); } catch (e) { v = null; }
+    if (!v || !v.privado || !v.publico) {
+        const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+        const jwk = publicKey.export({ format: 'jwk' });
+        v = { privado: privateKey.export({ format: 'pem', type: 'pkcs8' }), publico: b64u(Buffer.concat([Buffer.from([4]), deB64u(jwk.x), deB64u(jwk.y)])) };
+        await agRun(`INSERT INTO integration_settings (key, value) VALUES ('webpush_vapid', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [JSON.stringify(v)]);
+    }
+    AG_VAPID = { publico: v.publico, chave: crypto.createPrivateKey(v.privado) };
+    return AG_VAPID;
+}
+function agHkdf(salt, ikm, info, tam) { const prk = crypto.createHmac('sha256', salt).update(ikm).digest(); return crypto.createHmac('sha256', prk).update(Buffer.concat([info, Buffer.from([1])])).digest().subarray(0, tam); }
+function agCriptografarPush(inscricao, texto) {
+    const uaPub = deB64u(inscricao.p256dh), auth = deB64u(inscricao.auth);
+    const ecdh = crypto.createECDH('prime256v1'); ecdh.generateKeys(); const asPub = ecdh.getPublicKey();
+    const segredo = ecdh.computeSecret(uaPub), salt = crypto.randomBytes(16);
+    const ikm = agHkdf(auth, segredo, Buffer.concat([Buffer.from('WebPush: info\0'), uaPub, asPub]), 32);
+    const cek = agHkdf(salt, ikm, Buffer.from('Content-Encoding: aes128gcm\0'), 16), nonce = agHkdf(salt, ikm, Buffer.from('Content-Encoding: nonce\0'), 12);
+    const c = crypto.createCipheriv('aes-128-gcm', cek, nonce);
+    const cifrado = Buffer.concat([c.update(Buffer.concat([Buffer.from(texto, 'utf8'), Buffer.from([2])])), c.final(), c.getAuthTag()]);
+    const rs = Buffer.alloc(4); rs.writeUInt32BE(4096);
+    return Buffer.concat([salt, rs, Buffer.from([asPub.length]), asPub, cifrado]);
+}
+async function agEnviarPushInscricao(insc, dados) {
+    const v = await agVapid(), aud = new URL(insc.endpoint).origin;
+    const cab = b64u(JSON.stringify({ typ: 'JWT', alg: 'ES256' })), corpoJwt = b64u(JSON.stringify({ aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: 'mailto:contato@impulsionarv4.com.br' }));
+    const ass = crypto.sign('sha256', Buffer.from(cab + '.' + corpoJwt), { key: v.chave, dsaEncoding: 'ieee-p1363' });
+    const r = await fetch(insc.endpoint, { method: 'POST', headers: { Authorization: `vapid t=${cab}.${corpoJwt}.${b64u(ass)}, k=${v.publico}`, 'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream', TTL: '86400', Urgency: 'high' }, body: agCriptografarPush(insc, JSON.stringify(dados)) });
+    if (r.status === 404 || r.status === 410) { await agRun(`DELETE FROM push_inscricoes WHERE id = ?`, [insc.id]).catch(() => {}); return 'expirada'; }
+    if (!r.ok) throw new Error('Serviço de notificação respondeu ' + r.status + ' ' + (await r.text().catch(() => '')).slice(0, 160));
+    agRun(`UPDATE push_inscricoes SET ultimo_ok = CURRENT_TIMESTAMP WHERE id = ?`, [insc.id]).catch(() => {});
+    return 'ok';
+}
+async function agPushUsuario(uid, dados) {
+    const lista = await dbAll(`SELECT * FROM push_inscricoes WHERE user_id = ?`, [uid]).catch(() => []);
+    let ok = 0; const erros = [];
+    for (const i of lista) { try { if (await agEnviarPushInscricao(i, dados) === 'ok') ok++; } catch (e) { erros.push(e.message); } }
+    return { ok, total: lista.length, erros };
+}
+
+// ---------- rotas ----------
+const agUid = req => Number(req.user.userId);
+app.get('/api/admin/agenda', requireRole('admin'), async (req, res) => {
+    try {
+        const de = AG_DATA.test(req.query.de) ? req.query.de : agHoje(), ate0 = AG_DATA.test(req.query.ate) ? req.query.ate : agSomarDias(de, 30);
+        const ate = ate0 < de ? de : (ate0 > agSomarDias(de, 400) ? agSomarDias(de, 400) : ate0);
+        const cfg = await agCfg(agUid(req)), r = await agTudo(agUid(req), de, ate, cfg, req.query.atualizar === '1');
+        const c = await lerConfigMs365().catch(() => ({}));
+        const aparelhos = await dbAll(`SELECT id, aparelho, criado_em, ultimo_ok FROM push_inscricoes WHERE user_id = ? ORDER BY id DESC`, [agUid(req)]).catch(() => []);
+        res.json({ de, ate, hoje: agHoje(), itens: r.itens, outlookErro: r.outlookErro, config: cfg, ms365: { ativo: ms365Ativo(c), organizador: c.organizador || '' }, aparelhos,
+            feedUrl: `${String((typeof appBaseUrlAtiva === 'string' && /^https:\/\//.test(appBaseUrlAtiva) && appBaseUrlAtiva) || 'https://www.impulsionarv4.com.br').replace(/\/+$/, '')}/api/public/agenda/${cfg.feedToken}.ics` });
+    } catch (e) { console.error('Agenda:', e); res.status(500).json({ error: 'Não foi possível carregar a agenda.' }); }
+});
+function agValidarEvento(b) {
+    const ev = { titulo: String(b.titulo || '').trim().slice(0, 200), descricao: String(b.descricao || '').slice(0, 4000), data: String(b.data || ''), hora_inicio: String(b.hora_inicio || ''), hora_fim: String(b.hora_fim || ''),
+        local: String(b.local || '').slice(0, 300), link: String(b.link || '').trim().slice(0, 1000), categoria: String(b.categoria || 'compromisso').slice(0, 30), lembrete_min: Number.isFinite(Number(b.lembrete_min)) ? Number(b.lembrete_min) : 30,
+        repetir: ['', 'diario', 'util', 'semanal', 'mensal'].includes(b.repetir) ? b.repetir : '', repetir_ate: AG_DATA.test(b.repetir_ate || '') ? b.repetir_ate : '' };
+    if (!ev.titulo) throw new Error('Dê um nome ao compromisso.');
+    if (!AG_DATA.test(ev.data)) throw new Error('Escolha a data.');
+    if (ev.hora_inicio && !AG_HORA.test(ev.hora_inicio)) throw new Error('Horário de início inválido.');
+    if (ev.hora_fim && (!AG_HORA.test(ev.hora_fim) || !ev.hora_inicio || ev.hora_fim <= ev.hora_inicio)) throw new Error('O horário de fim precisa ser depois do início.');
+    if (ev.link && !/^https?:\/\//i.test(ev.link)) ev.link = 'https://' + ev.link;
+    return ev;
+}
+app.post('/api/admin/agenda/eventos', requireRole('admin'), async (req, res) => {
+    try {
+        const ev = agValidarEvento(req.body || {}), uid = agUid(req);
+        const r = await agRun(`INSERT INTO agenda_eventos (user_id, titulo, descricao, data, hora_inicio, hora_fim, local, link, categoria, lembrete_min, repetir, repetir_ate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+            [uid, ev.titulo, ev.descricao, ev.data, ev.hora_inicio, ev.hora_fim, ev.local, ev.link, ev.categoria, ev.lembrete_min, ev.repetir, ev.repetir_ate]);
+        const aviso = await agEnviarOutlook(await agCfg(uid), Object.assign({ id: r.lastID }, ev));
+        res.json({ message: 'Compromisso criado!', id: r.lastID, aviso });
+    } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.put('/api/admin/agenda/eventos/:id', requireRole('admin'), async (req, res) => {
+    try {
+        const uid = agUid(req), atual = await dbGet(`SELECT * FROM agenda_eventos WHERE id = ? AND user_id = ?`, [req.params.id, uid]);
+        if (!atual) return res.status(404).json({ error: 'Compromisso não encontrado.' });
+        const ev = agValidarEvento(req.body || {});
+        await agRun(`UPDATE agenda_eventos SET titulo=?, descricao=?, data=?, hora_inicio=?, hora_fim=?, local=?, link=?, categoria=?, lembrete_min=?, repetir=?, repetir_ate=?, atualizado_em=CURRENT_TIMESTAMP WHERE id = ?`,
+            [ev.titulo, ev.descricao, ev.data, ev.hora_inicio, ev.hora_fim, ev.local, ev.link, ev.categoria, ev.lembrete_min, ev.repetir, ev.repetir_ate, atual.id]);
+        const aviso = await agEnviarOutlook(await agCfg(uid), Object.assign({ id: atual.id, outlook_id: atual.outlook_id }, ev));
+        res.json({ message: 'Compromisso atualizado!', aviso });
+    } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.delete('/api/admin/agenda/eventos/:id', requireRole('admin'), async (req, res) => {
+    try {
+        const uid = agUid(req), atual = await dbGet(`SELECT * FROM agenda_eventos WHERE id = ? AND user_id = ?`, [req.params.id, uid]);
+        if (!atual) return res.status(404).json({ error: 'Compromisso não encontrado.' });
+        await agRun(`DELETE FROM agenda_eventos WHERE id = ?`, [atual.id]);
+        const aviso = await agEnviarOutlook(await agCfg(uid), atual, true);
+        res.json({ message: 'Compromisso excluído.', aviso });
+    } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.put('/api/admin/agenda/config', requireRole('admin'), async (req, res) => {
+    try {
+        const uid = agUid(req), cfg = await agCfg(uid), b = req.body || {};
+        if (typeof b.resumoAtivo === 'boolean') cfg.resumoAtivo = b.resumoAtivo;
+        if (AG_HORA.test(b.resumoHora || '')) cfg.resumoHora = b.resumoHora;
+        if (Number.isFinite(Number(b.lembreteMin))) cfg.lembreteMin = Math.max(-1, Math.min(1440, Number(b.lembreteMin)));
+        if (b.fontes && typeof b.fontes === 'object') Object.keys(AG_PADRAO.fontes).forEach(k => { if (typeof b.fontes[k] === 'boolean') cfg.fontes[k] = b.fontes[k]; });
+        if (['nenhum', 'ms365', 'ics'].includes(b.outlookModo)) cfg.outlookModo = b.outlookModo;
+        if (typeof b.outlookEmail === 'string') cfg.outlookEmail = b.outlookEmail.trim().slice(0, 200);
+        if (typeof b.outlookIcs === 'string') cfg.outlookIcs = b.outlookIcs.trim().slice(0, 1500);
+        if (typeof b.enviarOutlook === 'boolean') cfg.enviarOutlook = b.enviarOutlook;
+        if (b.novoFeed) cfg.feedToken = crypto.randomBytes(18).toString('hex');
+        await agSalvarCfg(uid, cfg);
+        let teste = '';
+        if (cfg.outlookModo !== 'nenhum') { const r = await agOutlook(cfg, agHoje(), agSomarDias(agHoje(), 30), true); teste = r.erro ? '⚠️ ' + r.erro : `✅ Outlook conectado: ${r.itens.length} compromisso(s) nos próximos 30 dias.`; }
+        res.json({ message: 'Configurações salvas!', teste, config: cfg });
+    } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.get('/api/admin/agenda/push/chave', requireRole('admin'), async (req, res) => { try { res.json({ publicKey: (await agVapid()).publico }); } catch (e) { res.status(500).json({ error: 'Não foi possível preparar as notificações.' }); } });
+app.post('/api/admin/agenda/push/inscrever', requireRole('admin'), async (req, res) => {
+    const s = (req.body || {}).inscricao || {}, k = s.keys || {};
+    if (!/^https:\/\//.test(s.endpoint || '') || !k.p256dh || !k.auth) return res.status(400).json({ error: 'Inscrição de notificação inválida.' });
+    try {
+        await agRun(`INSERT INTO push_inscricoes (user_id, endpoint, p256dh, auth, aparelho) VALUES (?,?,?,?,?) ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth, aparelho = excluded.aparelho`,
+            [agUid(req), s.endpoint, k.p256dh, k.auth, String((req.body || {}).aparelho || '').slice(0, 80)]);
+        const r = await agPushUsuario(agUid(req), { title: '🔔 Alertas da agenda ativados', body: 'Pronto! Você vai receber o resumo do dia e os lembretes aqui.', url: '/?app=1#ir=agenda', tag: 'agenda-teste' });
+        res.json({ message: r.ok ? 'Alertas ativados neste aparelho! Chegou uma notificação de teste.' : 'Aparelho cadastrado, mas a notificação de teste falhou: ' + (r.erros[0] || '') });
+    } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.post('/api/admin/agenda/push/teste', requireRole('admin'), async (req, res) => {
+    try {
+        const uid = agUid(req), cfg = await agCfg(uid), hoje = agHoje(), { itens } = await agTudo(uid, hoje, hoje, cfg);
+        const r = await agPushUsuario(uid, agMontarResumo(itens));
+        if (!r.total) return res.status(400).json({ error: 'Nenhum celular com alertas ativos. Toque em "🔔 Ativar alertas" no celular.' });
+        res.json({ message: `Resumo enviado para ${r.ok} de ${r.total} aparelho(s).${r.erros.length ? ' Erro: ' + r.erros[0] : ''}` });
+    } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.delete('/api/admin/agenda/push/inscricoes/:id', requireRole('admin'), async (req, res) => {
+    await agRun(`DELETE FROM push_inscricoes WHERE id = ? AND user_id = ?`, [req.params.id, agUid(req)]).catch(() => {});
+    res.json({ message: 'Aparelho removido dos alertas.' });
+});
+// Link para assinar esta agenda no Outlook / Google / celular (somente leitura)
+app.get('/api/public/agenda/:arquivo', async (req, res) => {
+    try {
+        const token = String(req.params.arquivo || '').replace(/\.ics$/i, '');
+        const linhas = await dbAll(`SELECT user_id, dados FROM agenda_config`).catch(() => []);
+        const dono = linhas.find(l => { try { return JSON.parse(l.dados || '{}').feedToken === token; } catch (e) { return false; } });
+        if (!dono || !/^[a-f0-9]{36}$/.test(token)) return res.status(404).send('Agenda não encontrada.');
+        const cfg = await agCfg(dono.user_id), de = agSomarDias(agHoje(), -30), ate = agSomarDias(agHoje(), 180);
+        const [man, auto] = await Promise.all([agManuais(dono.user_id, de, ate), agAutomaticos(de, ate, cfg)]);
+        const agora = icsData(new Date()), L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Impulsionar V4//Agenda//PT', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Agenda Impulsionar', 'X-WR-TIMEZONE:America/Sao_Paulo', 'REFRESH-INTERVAL;VALUE=DURATION:PT1H', 'X-PUBLISHED-TTL:PT1H'];
+        man.concat(auto).forEach(i => {
+            L.push('BEGIN:VEVENT', `UID:${String(i.id).replace(/[^\w:.-]/g, '')}@impulsionarv4`, `DTSTAMP:${agora}`);
+            if (i.hora_inicio) { const ini = dataHoraUtcDpo(i.data, i.hora_inicio), fim = i.hora_fim ? dataHoraUtcDpo(i.data, i.hora_fim) : new Date(ini.getTime() + 3600 * 1000); L.push(`DTSTART:${icsData(ini)}`, `DTEND:${icsData(fim)}`); }
+            else L.push(`DTSTART;VALUE=DATE:${i.data.replace(/-/g, '')}`, `DTEND;VALUE=DATE:${agSomarDias(i.data, 1).replace(/-/g, '')}`);
+            L.push(icsDobrar('SUMMARY:' + icsTexto(i.titulo)));
+            if (i.local) L.push(icsDobrar('LOCATION:' + icsTexto(i.local)));
+            const desc = [i.descricao, i.link].filter(Boolean).join('\n'); if (desc) L.push(icsDobrar('DESCRIPTION:' + icsTexto(desc)));
+            if (i.link) L.push(icsDobrar('URL:' + i.link));
+            L.push('END:VEVENT');
+        });
+        L.push('END:VCALENDAR');
+        res.set('Cache-Control', 'no-cache').type('text/calendar; charset=utf-8').send(L.join('\r\n'));
+    } catch (e) { res.status(500).send('Erro ao gerar a agenda.'); }
+});
+
+// ---------- alertas automáticos (resumo diário + lembretes) ----------
+function agMontarResumo(itens) {
+    const n = itens.length, lista = itens.slice(0, 5).map(i => `${i.hora_inicio || 'Dia todo'} · ${i.titulo}`).join('\n');
+    return { title: n ? `📅 Bom dia! ${n} compromisso${n > 1 ? 's' : ''} hoje` : '📅 Bom dia! Agenda livre hoje', body: n ? lista + (n > 5 ? `\n+ ${n - 5} na agenda` : '') : 'Nenhum compromisso marcado. Bom dia de trabalho!', url: '/?app=1#ir=agenda', tag: 'agenda-resumo' };
+}
+async function agMarcarAviso(chave) { const r = await agRun(`INSERT OR IGNORE INTO agenda_avisos (chave) VALUES (?)`, [chave]).catch(() => ({ changes: 0 })); return r.changes > 0; }
+let AG_RODANDO = false;
+async function agCicloAlertas() {
+    if (AG_RODANDO) return; AG_RODANDO = true;
+    try {
+        const usuarios = await dbAll(`SELECT DISTINCT user_id FROM push_inscricoes`).catch(() => []);
+        const agora = agAgoraBr(), hoje = agora.toISOString().slice(0, 10), minAgora = agora.getUTCHours() * 60 + agora.getUTCMinutes();
+        for (const { user_id: uid } of usuarios) {
+            try {
+                const cfg = await agCfg(uid), amanha = agSomarDias(hoje, 1), { itens } = await agTudo(uid, hoje, amanha, cfg);
+                // 1) resumo do dia, na hora escolhida (janela de 3 h para o caso de o servidor ter reiniciado)
+                if (cfg.resumoAtivo && minAgora >= agMin(cfg.resumoHora) && minAgora < agMin(cfg.resumoHora) + 180 && await agMarcarAviso(`resumo:${uid}:${hoje}`)) {
+                    const deHoje = itens.filter(i => i.data === hoje);
+                    await agPushUsuario(uid, agMontarResumo(deHoje));
+                }
+                // 2) lembrete antes de cada compromisso com horário
+                for (const i of itens) {
+                    if (!i.hora_inicio) continue;
+                    const antes = i.origem === 'manual' ? Number(i.lembrete_min) : Number(cfg.lembreteMin); if (!(antes >= 0)) continue;
+                    const inicio = (i.data === hoje ? 0 : 1440) + agMin(i.hora_inicio), falta = inicio - minAgora;
+                    if (falta < 0 || falta > antes) continue;
+                    if (!await agMarcarAviso(`lemb:${uid}:${i.id}:${i.data}:${i.hora_inicio}`)) continue;
+                    const quando = falta <= 1 ? 'Agora' : falta < 60 ? `Em ${falta} min` : `Em ${Math.floor(falta / 60)}h${falta % 60 ? String(falta % 60).padStart(2, '0') : ''}`;
+                    await agPushUsuario(uid, { title: `⏰ ${quando}: ${i.titulo}`, body: [`${i.hora_inicio}${i.hora_fim ? '–' + i.hora_fim : ''}`, i.local].filter(Boolean).join(' · ') + (i.link ? '\nToque para abrir a agenda e entrar na reunião' : ''), url: '/?app=1#ir=agenda', tag: 'agenda-' + i.id });
+                }
+            } catch (e) { console.warn('Agenda (alertas):', e.message); }
+        }
+        if (minAgora < 5 && await agMarcarAviso('limpeza:' + hoje)) agRun(`DELETE FROM agenda_avisos WHERE enviado_em < datetime('now', '-40 days')`).catch(() => {});
+    } finally { AG_RODANDO = false; }
+}
+setInterval(() => agCicloAlertas().catch(e => console.warn('Agenda:', e.message)), 60 * 1000);
+
 app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res, arq) => { if (/\.html$/.test(arq)) res.setHeader('Cache-Control', 'no-cache, must-revalidate'); } }));
 // Acesso só ao Estúdio de Vídeo (celular): mesmo sistema, abre direto nas abas de criar/editar vídeo.
 // Pode ser instalado na tela inicial do celular (PWA) e sincroniza com o computador pelo servidor.
