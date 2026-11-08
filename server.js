@@ -13194,6 +13194,11 @@ app.get('/api/public/mentoria', async (req, res) => {
 });
 // apresentação da palestra (roteiro completo, para o Lázaro apresentar)
 app.get('/api/public/mentoria/palestra-completa', async (req, res) => { const d = await mtLer(); res.json({ marca: d.marca, palestra: d.palestra, historia: d.historia, metodo: d.metodo }); });
+// Aviso de nova solicitação: sininho do sistema + notificação no celular (alertas da Minha Agenda)
+function mtNotificar(titulo, msg) {
+    try { notificarMasters(titulo, msg, 'mentoriaNegocio'); } catch (e) {}
+    dbAll(`SELECT DISTINCT p.user_id FROM push_inscricoes p JOIN users u ON u.id = p.user_id WHERE u.role = 'admin'`).then(l => l.forEach(a => agPushUsuario(a.user_id, { title: titulo, body: msg + '\nToque para abrir as solicitações', url: '/?app=1#ir=mentoriaNegocio', tag: 'mentoria-' + Date.now() }).catch(() => {}))).catch(() => {});
+}
 app.post('/api/public/mentoria/lead', async (req, res) => {
     if (!mtLimite(req)) return res.status(429).json({ error: 'Muitas tentativas. Tente de novo em instantes.' });
     const b = req.body || {}, tipo = ['aluno', 'empresa', 'aula', 'raiox', 'contato'].includes(b.tipo) ? b.tipo : 'contato';
@@ -13204,7 +13209,7 @@ app.post('/api/public/mentoria/lead', async (req, res) => {
         const r = await mtRun(`INSERT INTO mentoria_leads (tipo, nome, email, whatsapp, empresa, cargo, cidade, mensagem, origem, etapa, valor, dados) VALUES (?,?,?,?,?,?,?,?,?,'novo',?,?)`,
             [tipo, mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.empresa, 160), mtTxt(b.cargo, 120), mtTxt(b.cidade, 120), mtTxt(b.mensagem, 2000), mtTxt(b.origem || 'site', 60), tipo === 'empresa' ? 6000 : 0, JSON.stringify(extra)]);
         const rot = { aluno: 'Novo interessado na mentoria', empresa: 'Empresa pediu palestra/treinamento', aula: 'Nova inscrição na aula gratuita', raiox: 'Novo Raio-X do Líder', contato: 'Novo contato' }[tipo];
-        try { notificarMasters('🚀 ' + rot, `${mtTxt(b.nome, 80)}${b.empresa ? ' · ' + mtTxt(b.empresa, 80) : ''}${b.whatsapp ? ' · ' + mtTxt(b.whatsapp, 30) : ''}`, 'mentoriaNegocio'); } catch (e) {}
+        try { mtNotificar('🚀 ' + rot, `${mtTxt(b.nome, 80)}${b.empresa ? ' · ' + mtTxt(b.empresa, 80) : ''}${b.whatsapp ? ' · ' + mtTxt(b.whatsapp, 30) : ''}`); } catch (e) {}
         const d = await mtLer();
         res.json({ ok: true, id: r.lastID, whatsappGrupo: tipo === 'aula' ? d.links.whatsappGrupo : '', linkAula: tipo === 'aula' ? d.links.proximaAula.link : '' });
     } catch (e) { res.status(500).json({ error: 'Não consegui registrar agora. Tente de novo.' }); }
@@ -13222,7 +13227,7 @@ app.post('/api/public/mentoria/raio-x', async (req, res) => {
         const r = await mtRun(`INSERT INTO mentoria_leads (tipo, nome, email, whatsapp, cargo, empresa, origem, etapa, mensagem, dados) VALUES ('raiox',?,?,?,?,?, 'raio-x', 'novo', ?, ?)`,
             [mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.cargo, 120), mtTxt(b.empresa, 160), `Raio-X: ${geral}% · ponto mais fraco: ${fraco}`, JSON.stringify({ nota, geral, fraco, respostas: resp })]).catch(() => null);
         id = r && r.lastID;
-        try { notificarMasters('🚀 Novo Raio-X do Líder', `${mtTxt(b.nome, 80)} · ${geral}% · mais fraco em ${fraco}`, 'mentoriaNegocio'); } catch (e) {}
+        try { mtNotificar('🚀 Novo Raio-X do Líder', `${mtTxt(b.nome, 80)} · ${geral}% · mais fraco em ${fraco}`); } catch (e) {}
     }
     res.json({ nota, geral, fraco, id });
 });
@@ -13235,7 +13240,7 @@ app.post('/api/public/mentoria/inscricao', async (req, res) => {
         const d = await mtLer(), t = await mtTurmaAberta();
         const lead = await mtRun(`INSERT INTO mentoria_leads (tipo, nome, email, whatsapp, cargo, empresa, origem, etapa, mensagem, valor, dados) VALUES ('aluno',?,?,?,?,?, 'inscricao', 'proposta', ?, ?, ?)`,
             [mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.cargo, 120), mtTxt(b.empresa, 160), mtTxt(b.mensagem, 2000), t ? t.preco : 0, JSON.stringify({ pessoas: mtTxt(b.pessoas, 40) })]);
-        try { notificarMasters('🚀 Inscrição na mentoria', `${mtTxt(b.nome, 80)} · ${mtTxt(b.whatsapp, 30)}${t ? ' · ' + t.nome : ''}`, 'mentoriaNegocio'); } catch (e) {}
+        try { mtNotificar('🚀 Inscrição na mentoria', `${mtTxt(b.nome, 80)} · ${mtTxt(b.whatsapp, 30)}${t ? ' · ' + t.nome : ''}`); } catch (e) {}
         if (!t || !d.pagamentoOnline || !mpPreference) return res.json({ ok: true, semPagamento: true, mensagem: t ? 'Recebemos sua inscrição! O Lázaro vai te chamar no WhatsApp para confirmar a vaga.' : 'Recebemos seu interesse! Você será avisado em primeira mão quando a próxima turma abrir.' });
         if (t.restantes <= 0) return res.json({ ok: true, semPagamento: true, mensagem: 'As vagas desta turma acabaram. Você entrou na lista de espera da próxima turma.' });
         const al = await mtRun(`INSERT INTO mentoria_alunos (turma_id, lead_id, nome, email, whatsapp, cargo, empresa, produto, valor, pagamento) VALUES (?,?,?,?,?,?,?, 'grupo', ?, 'pendente')`,
@@ -13254,7 +13259,7 @@ async function mtConfirmarPagamento(alunoId, pagamentoId) {
     const a = await dbGet(`SELECT * FROM mentoria_alunos WHERE id = ?`, [alunoId]).catch(() => null); if (!a || a.pagamento === 'pago') return;
     await mtRun(`UPDATE mentoria_alunos SET pagamento = 'pago', mp_payment_id = ? WHERE id = ?`, [pagamentoId, alunoId]);
     if (a.lead_id) await mtRun(`UPDATE mentoria_leads SET etapa = 'fechado', valor = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [a.valor || 0, a.lead_id]).catch(() => {});
-    try { notificarMasters('💰 Pagamento da mentoria confirmado', `${a.nome} · R$ ${Number(a.valor || 0).toLocaleString('pt-BR')}`, 'mentoriaNegocio'); } catch (e) {}
+    try { mtNotificar('💰 Pagamento da mentoria confirmado', `${a.nome} · R$ ${Number(a.valor || 0).toLocaleString('pt-BR')}`); } catch (e) {}
 }
 // páginas públicas com endereço curto
 [['/mentoria', 'mentoria.html'], ['/palestra', 'palestra.html'], ['/aula', 'aula.html'], ['/raio-x', 'raio-x.html'], ['/bio', 'bio.html'], ['/palestra/apresentar', 'palestra-apresentar.html']]

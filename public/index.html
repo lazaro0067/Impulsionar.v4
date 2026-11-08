@@ -1749,6 +1749,16 @@
   .mag-link { display:flex; gap:6px; } .mag-link input { flex:1; font-size:12px; } .mag-link button { border:none; background:#0b1329; color:#fff; border-radius:8px; padding:0 14px; font-weight:700; cursor:pointer; }
   .mag-aparelhos div { display:flex; align-items:center; gap:8px; font-size:14px; padding:6px 0; border-bottom:1px solid #f1f5f9; } .mag-aparelhos small { color:#94a3b8; } .mag-aparelhos button { margin-left:auto; border:none; background:none; color:#dc2626; cursor:pointer; font-weight:700; }
   @media (max-width:700px) { .mag-acoes { width:100%; } .mag-acoes button { flex:1 1 auto; } .mag-resumo { grid-template-columns:1fr 1fr; } .mag-resumo .mag-card:last-child { grid-column:1 / -1; } .mag-item { grid-template-columns:52px 1fr; } .mag-bts { grid-column:1 / -1; justify-content:flex-end; } .mag-cel { min-height:56px; } .mag-cel em { font-size:0; height:6px; padding:0; } }
+  .mtn-badge { display:inline-block; min-width:20px; padding:0 6px; border-radius:99px; background:#dc2626; color:#fff; font-style:normal; font-size:12px; line-height:20px; margin-left:4px; }
+  .mtn-ped-topo { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+  .mtn-ped-alerta { background:#fef3c7; border:1px solid #fcd34d; color:#78350f; border-radius:12px; padding:10px 14px; margin-bottom:12px; font-size:14px; }
+  .mtn-ped-lista { display:grid; gap:12px; margin-top:12px; } .mtn-ped { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:14px 16px; } .mtn-ped.novo { border-color:#f59e0b; box-shadow:0 0 0 3px #f59e0b22; }
+  .mtn-ped-cab { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px; } .mtn-ped-cab small { color:#94a3b8; margin-left:auto; }
+  .mtn-ped-et { font-size:12px; font-weight:700; border-radius:99px; padding:2px 10px; background:#e2e8f0; color:#334155; } .mtn-ped-et.et-novo { background:#fef3c7; color:#92400e; } .mtn-ped-et.et-conversa { background:#dbeafe; color:#1e40af; } .mtn-ped-et.et-proposta { background:#ede9fe; color:#5b21b6; } .mtn-ped-et.et-fechado { background:#dcfce7; color:#166534; } .mtn-ped-et.et-perdido { background:#fee2e2; color:#991b1b; }
+  .mtn-ped-nome { font-size:17px; display:block; } .mtn-ped-nome span { color:#475569; font-weight:600; } .mtn-ped-contato { color:#64748b; font-size:13px; margin:2px 0 8px; word-break:break-word; }
+  .mtn-ped-det { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; margin:8px 0; } .mtn-ped-det div { background:#f8fafc; border-radius:10px; padding:8px 10px; } .mtn-ped-det small { display:block; color:#64748b; font-size:11.5px; } .mtn-ped-det b { font-size:14px; }
+  .mtn-ped-msg { background:#f8fafc; border-left:3px solid #cbd5e1; padding:8px 12px; border-radius:8px; color:#334155; margin:8px 0; font-style:italic; white-space:pre-line; } .mtn-ped-notas { color:#475569; font-size:13px; white-space:pre-line; margin:6px 0; } .mtn-ped-valor { margin:6px 0; color:#166534; }
+  .mtn-ped-bts { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; } .mtn-bt { border:1px solid #cbd5e1; background:#fff; color:#0b1329; border-radius:10px; padding:8px 12px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; text-decoration:none; width:auto; } .mtn-bt.zap { background:#16a34a; border-color:#16a34a; color:#fff; } select.mtn-bt { padding:7px 8px; }
   .mtn-chk { display:flex !important; align-items:center; gap:8px; } .mtn-chk input { width:auto; }
   .mtn-turma { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:14px 16px; margin-bottom:14px; } .mtn-turma-cab { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; } .mtn-turma-cab h3 { margin:0; }
   .mtn-st { font-size:12px; border-radius:99px; padding:3px 10px; background:#e2e8f0; margin-left:6px; vertical-align:middle; } .mtn-st.aberta { background:#dcfce7; color:#166534; } .mtn-st.andamento { background:#dbeafe; color:#1e40af; }
@@ -14250,15 +14260,17 @@ async function renderMentoriaNegocio() {
   try {
     const [r, leads, turmas] = await Promise.all([api('/api/admin/mentoria'), api('/api/admin/mentoria/leads'), api('/api/admin/mentoria/turmas')]);
     Object.assign(MTN, { d: r.dados, resumo: r.resumo || {}, base: r.base, mp: r.mp, turma: r.turma, leads, turmas });
+    if (!MTN.jaAbriu) { MTN.jaAbriu = true; if (leads.some(l => (l.etapa || 'novo') === 'novo')) MTN.aba = 'pedidos'; }
   } catch (e) { cont.innerHTML = `<h1>🚀 Projeto da Mentoria</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
   mtnDesenhar();
 }
 function mtnDesenhar() {
-  const cont = document.getElementById('conteudo'), d = MTN.d, abas = [['painel', '🏁 Painel'], ['gravar', '🎬 Gravações'], ['funil', '🧲 Funil de vendas'], ['turmas', '🎓 Turmas'], ['conteudo', '📚 Método e conteúdo'], ['palestra', '🎤 Palestra'], ['config', '⚙️ Configurações']];
+  const novasPed = MTN.leads.filter(l => (l.etapa || 'novo') === 'novo').length;
+  const cont = document.getElementById('conteudo'), d = MTN.d, abas = [['pedidos', `📥 Solicitações${novasPed ? ` <i class="mtn-badge">${novasPed}</i>` : ''}`], ['painel', '🏁 Painel'], ['gravar', '🎬 Gravações'], ['funil', '🧲 Funil de vendas'], ['turmas', '🎓 Turmas'], ['conteudo', '📚 Método e conteúdo'], ['palestra', '🎤 Palestra'], ['config', '⚙️ Configurações']];
   cont.innerHTML = `<div class="mtn"><div class="mtn-cab"><div><h1 style="margin:0;">🚀 ${escapeHtml(d.marca.nome)}</h1><p class="plano-meta" style="margin:4px 0 0;">${escapeHtml(d.marca.mentor)} · ${escapeHtml(d.marca.titulo)} — mentoria, palestras e o plano de 90 dias num lugar só.</p></div>
     <div class="mtn-acoes"><a class="btn-secundario" href="/mentoria" target="_blank" rel="noopener">👁️ Ver página de venda</a><a class="btn-primario" style="width:auto;" href="/palestra/apresentar" target="_blank" rel="noopener">▶️ Apresentar palestra</a></div></div>
     <nav class="mtn-abas">${abas.map(([k, r]) => `<button class="${MTN.aba === k ? 'on' : ''}" onclick="MTN.aba='${k}'; mtnDesenhar()">${r}</button>`).join('')}</nav>
-    <div id="mtn-corpo">${({ painel: mtnPainel, gravar: mtnGravacoes, funil: mtnFunil, turmas: mtnTurmas, conteudo: mtnConteudo, palestra: mtnPalestra, config: mtnConfig }[MTN.aba] || mtnPainel)()}</div></div>`;
+    <div id="mtn-corpo">${({ pedidos: mtnPedidos, painel: mtnPainel, gravar: mtnGravacoes, funil: mtnFunil, turmas: mtnTurmas, conteudo: mtnConteudo, palestra: mtnPalestra, config: mtnConfig }[MTN.aba] || mtnPainel)()}</div></div>`;
 }
 // ---------- 🏁 Painel ----------
 function mtnPainel() {
@@ -14313,6 +14325,123 @@ function mtnFunil() {
         ${l.mensagem ? `<p>${escapeHtml(String(l.mensagem).slice(0, 140))}</p>` : ''}${Number(l.valor) ? `<em>${mtnMoeda(l.valor)}</em>` : ''}
         <div class="mtn-lead-bt">${l.whatsapp ? `<a href="${mtnWhatsLead(l)}" target="_blank" rel="noopener" title="WhatsApp com o script pronto">💬</a>` : ''}<select onchange="mtnMover(${l.id}, this.value)">${MTN_ETAPAS.map(([k, rr]) => `<option value="${k}" ${k === (l.etapa || 'novo') ? 'selected' : ''}>${rr}</option>`).join('')}</select><button onclick="mtnEditarLead(${l.id})" title="Editar">✏️</button>${l.tipo !== 'empresa' && MTN.turmas.length ? `<button onclick="mtnMatricular(${l.id})" title="Matricular numa turma">🎓</button>` : ''}</div></div>`).join('') || '<div class="mtn-vazio">—</div>'}</div>`; }).join('')}</div>
     <details class="mtn-det"><summary>📜 Scripts de abordagem</summary><p><b>Empresas:</b> ${escapeHtml(MTN.d.funil.scriptEmpresa)} <button class="btn-secundario btn-sm" onclick="mtnCopiar(MTN.d.funil.scriptEmpresa)">Copiar</button></p><p><b>Conversa de diagnóstico (alunos):</b></p><ol>${MTN.d.funil.scriptDiagnostico.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ol></details>`;
+}
+// ---------- 📥 Solicitações (tudo o que chega pelas páginas: palestra, mentoria, aula, Raio-X) ----------
+const MTN_ABERTAS = ['novo', 'conversa', 'proposta'];
+function mtnDadosLead(l) { try { return JSON.parse(l.dados || '{}') || {}; } catch (e) { return {}; } }
+function mtnQuando(dt) {
+  if (!dt) return ''; const d = new Date(String(dt).replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d$/.test(dt) ? '' : 'Z')); if (isNaN(d)) return '';
+  const min = Math.round((Date.now() - d) / 60000);
+  if (min < 1) return 'agora'; if (min < 60) return `há ${min} min`; if (min < 1440) return `há ${Math.round(min / 60)} h`;
+  return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+function mtnPedidos() {
+  const L = MTN.leads, f = MTN.filtroPed || 'abertas';
+  const filtros = [['abertas', '📬 Em aberto', l => MTN_ABERTAS.includes(l.etapa || 'novo')], ['novo', '🆕 Novas', l => (l.etapa || 'novo') === 'novo'], ['empresa', '🎤 Palestras e empresas', l => l.tipo === 'empresa'], ['aluno', '🎓 Mentoria', l => l.tipo === 'aluno'], ['aula', '🔴 Aula', l => l.tipo === 'aula'], ['raiox', '🩻 Raio-X', l => l.tipo === 'raiox'], ['todas', 'Todas', () => true]];
+  const fn = (filtros.find(x => x[0] === f) || filtros[0])[2];
+  const lista = L.filter(fn).sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')) || b.id - a.id);
+  const novas = L.filter(l => (l.etapa || 'novo') === 'novo').length;
+  return `<div class="mtn-ped-topo"><div><h2 class="mtn-h2" style="margin:0;">📥 Solicitações recebidas</h2><p class="plano-meta" style="margin:4px 0 0;">Tudo o que chega pelas suas páginas (palestra, mentoria, aula e Raio-X) cai aqui na hora — e avisa no sininho e no seu celular.</p></div>
+      <button class="btn-secundario btn-sm" onclick="mtnRecarregarLeads()">↻ Atualizar</button></div>
+    ${novas ? `<div class="mtn-ped-alerta">🔔 Você tem <b>${novas}</b> ${novas > 1 ? 'solicitações novas' : 'solicitação nova'} esperando resposta. Responder em até 1 hora aumenta muito a chance de fechar.</div>` : ''}
+    <div class="mtn-filtros">${filtros.map(([k, r, ff]) => `<button class="${f === k ? 'on' : ''}" onclick="MTN.filtroPed='${k}'; mtnDesenhar()">${r} <small>${L.filter(ff).length}</small></button>`).join('')}</div>
+    ${lista.length ? `<div class="mtn-ped-lista">${lista.map(mtnCartaoPedido).join('')}</div>` : `<div class="mtn-vazio-grande">Nenhuma solicitação aqui ainda.<br><small>Quando alguém pedir proposta em <b>/palestra</b>, se inscrever em <b>/mentoria</b>, na <b>/aula</b> ou fizer o <b>/raio-x</b>, aparece nesta tela.</small></div>`}`;
+}
+function mtnCartaoPedido(l) {
+  const x = mtnDadosLead(l), et = l.etapa || 'novo', etRot = (MTN_ETAPAS.find(e => e[0] === et) || [])[1] || et;
+  const det = [['🎤 Formato', x.formato], ['👥 Participantes', x.participantes], ['📅 Data desejada', x.data], ['👥 Lidera', x.pessoas], ['📊 Raio-X', x.geral != null ? `${x.geral}% · mais fraco em ${x.fraco}` : '']].filter(d => d[1]);
+  return `<div class="mtn-ped ${et === 'novo' ? 'novo' : ''}">
+    <div class="mtn-ped-cab"><span class="mtn-tipo">${MTN_TIPOS[l.tipo] || l.tipo}</span><span class="mtn-ped-et et-${et}">${etRot}</span><small>${escapeHtml(mtnQuando(l.created_at))}${l.origem ? ' · ' + escapeHtml(l.origem) : ''}</small></div>
+    <b class="mtn-ped-nome">${escapeHtml(l.nome || '(sem nome)')}${l.empresa ? ` <span>· ${escapeHtml(l.empresa)}</span>` : ''}</b>
+    <div class="mtn-ped-contato">${[l.cargo, l.cidade].filter(Boolean).map(escapeHtml).join(' · ')}${l.whatsapp ? ` · 📱 ${escapeHtml(l.whatsapp)}` : ''}${l.email ? ` · ✉️ ${escapeHtml(l.email)}` : ''}</div>
+    ${det.length ? `<div class="mtn-ped-det">${det.map(([k, v]) => `<div><small>${k}</small><b>${escapeHtml(String(v))}</b></div>`).join('')}</div>` : ''}
+    ${l.mensagem && l.tipo !== 'raiox' ? `<p class="mtn-ped-msg">"${escapeHtml(l.mensagem)}"</p>` : ''}
+    ${l.notas ? `<p class="mtn-ped-notas">📝 ${escapeHtml(l.notas)}</p>` : ''}
+    ${Number(l.valor) && l.tipo === 'empresa' ? `<p class="mtn-ped-valor">💰 ${et === 'fechado' ? 'Fechado' : 'Valor em negociação'}: <b>${mtnMoeda(l.valor)}</b></p>` : ''}
+    <div class="mtn-ped-bts">
+      ${l.whatsapp ? `<a class="mtn-bt zap" href="${mtnWhatsResposta(l)}" target="_blank" rel="noopener" onclick="mtnAoResponder(${l.id})">💬 Responder no WhatsApp</a>` : ''}
+      ${l.email ? `<a class="mtn-bt" href="${mtnEmailResposta(l)}" onclick="mtnAoResponder(${l.id})">✉️ E-mail</a>` : ''}
+      ${l.tipo === 'empresa' ? `<button class="mtn-bt" onclick="mtnProposta(${l.id})">📄 Montar proposta</button>` : ''}
+      <button class="mtn-bt" onclick="mtnAgendarConversa(${l.id})">📅 Agendar conversa</button>
+      ${l.tipo !== 'empresa' && MTN.turmas.length && et !== 'fechado' ? `<button class="mtn-bt" onclick="mtnMatricular(${l.id})">🎓 Matricular</button>` : ''}
+      <select class="mtn-bt" onchange="mtnMover(${l.id}, this.value)" title="Etapa da negociação">${MTN_ETAPAS.map(([k, r]) => `<option value="${k}" ${k === et ? 'selected' : ''}>${r}</option>`).join('')}</select>
+      <button class="mtn-bt" onclick="mtnEditarLead(${l.id})" title="Anotações e dados">✏️ Anotar</button>
+    </div></div>`;
+}
+function mtnNum(l) { const n = String(l.whatsapp || '').replace(/\D/g, ''); return n.length <= 11 ? '55' + n : n; }
+function mtnTextoResposta(l) {
+  const x = mtnDadosLead(l), nome = String(l.nome || '').split(' ')[0], eu = MTN.d.marca.mentor || 'Lázaro', pal = MTN.d.palestra.titulo;
+  if (l.tipo === 'empresa') return `Olá, ${nome}! Aqui é o ${eu}. Recebi seu pedido de proposta da palestra "${pal}"${l.empresa ? ' para a ' + l.empresa : ''}${x.formato ? ` (${x.formato}${x.participantes ? ', ' + x.participantes + ' participantes' : ''}${x.data ? ', ' + x.data : ''})` : ''}. Obrigado pelo contato! Para eu montar a proposta do jeito certo, consegue falar 15 minutos hoje ou amanhã? Quero entender o objetivo do evento e o momento dos líderes.`;
+  if (l.tipo === 'raiox') return `Olá, ${nome}! Aqui é o ${eu}. Vi o seu Raio-X do Líder${x.geral != null ? ` (${x.geral}%, ponto mais fraco: ${x.fraco})` : ''}. Posso te fazer 3 perguntas rápidas sobre o seu time e te passar o primeiro passo para melhorar isso?`;
+  if (l.tipo === 'aula') return `Olá, ${nome}! Aqui é o ${eu}. Sua vaga na aula gratuita está garantida 🙌 Me conta: quantas pessoas você lidera hoje e qual o maior desafio com o time?`;
+  return `Olá, ${nome}! Aqui é o ${eu}. Recebi seu interesse na mentoria ${MTN.d.marca.nome}. Me conta da sua operação: quantas pessoas você lidera e qual é hoje o maior desafio com o time?`;
+}
+function mtnWhatsResposta(l) { return `https://wa.me/${mtnNum(l)}?text=${encodeURIComponent(mtnTextoResposta(l))}`; }
+function mtnEmailResposta(l) {
+  const assunto = l.tipo === 'empresa' ? `Proposta — palestra "${MTN.d.palestra.titulo}"${l.empresa ? ' · ' + l.empresa : ''}` : `Mentoria ${MTN.d.marca.nome}`;
+  return `mailto:${encodeURIComponent(l.email || '')}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(mtnTextoResposta(l) + `\n\nAbraço,\n${MTN.d.marca.mentor}${MTN.d.marca.whatsapp ? '\nWhatsApp: ' + MTN.d.marca.whatsapp : ''}`)}`;
+}
+// ao responder uma solicitação nova, ela passa sozinha para "Em conversa"
+function mtnAoResponder(id) { const l = MTN.leads.find(x => x.id === id); if (l && (l.etapa || 'novo') === 'novo') setTimeout(() => mtnMover(id, 'conversa'), 400); }
+async function mtnRecarregarLeads() { try { MTN.leads = await api('/api/admin/mentoria/leads'); mtnDesenhar(); } catch (e) { mostrarToast(e.message, true); } }
+function mtnProposta(id) {
+  const l = MTN.leads.find(x => x.id === id), x = mtnDadosLead(l), d = MTN.d, p = d.palestra;
+  const of = (d.ofertas || []).find(o => o.codigo === (/in-company|treinamento/i.test(x.formato || '') ? 'incompany' : 'palestra')) || {};
+  const valor = Number(l.valor) || Number(of.valor) || 6000;
+  const txt = `PROPOSTA — ${/in-company|treinamento/i.test(x.formato || '') ? 'TREINAMENTO IN-COMPANY' : 'PALESTRA'}
+"${p.titulo}"
+Para: ${l.empresa || l.nome}${l.nome && l.empresa ? ' · A/C ' + l.nome + (l.cargo ? ' (' + l.cargo + ')' : '') : ''}
+
+FORMATO: ${x.formato || 'Palestra de 60 min'}${x.participantes ? ' · ' + x.participantes + ' participantes' : ''}${x.data ? ' · ' + x.data : ''}${l.cidade ? ' · ' + l.cidade : ''}
+
+OBJETIVO
+${p.mensagem}
+
+O QUE SERÁ TRABALHADO
+${(p.roteiro || []).map(r => `• ${r.bloco}`).join('\n')}
+
+QUEM CONDUZ
+${d.marca.mentor} — ${d.marca.titulo}. Começou como ajudante de distribuição e hoje é gerente corporativo de operações, com mais de 12 anos liderando times de até 250 pessoas.
+
+INVESTIMENTO
+R$ ${valor.toLocaleString('pt-BR')}${/in-company|treinamento/i.test(x.formato || '') ? '' : ' (palestra)'}
+Inclui: preparação personalizada com o RH, material de apoio e compromisso individual de ação para cada participante.
+Deslocamento e hospedagem fora de Rio Verde por conta do contratante.
+Pagamento: 50% na confirmação da data e 50% no dia do evento.
+Validade da proposta: 15 dias.
+
+${d.marca.mentor}${d.marca.whatsapp ? ' · WhatsApp ' + d.marca.whatsapp : ''}${d.marca.email ? ' · ' + d.marca.email : ''}`;
+  mtnModal(`<h3 style="margin-top:0;">📄 Proposta — ${escapeHtml(l.empresa || l.nome)}</h3>
+    <div class="mtn-form"><label>Valor da proposta (R$)<input id="mtp-valor" type="number" value="${valor}" oninput="mtnPropostaValor(this.value)"></label><label>Referência<input disabled value="${escapeHtml(of.produto ? of.produto + ': ' + of.preco : '')}"></label></div>
+    <label>Texto da proposta (pode editar)<textarea id="mtp-texto" rows="16" style="font-family:inherit;font-size:13px;">${escapeHtml(txt)}</textarea></label>
+    <div class="acoes-form" style="flex-wrap:wrap;"><button class="btn-primario" style="width:auto;" onclick="mtnEnviarProposta(${id}, 'zap')">💬 Enviar pelo WhatsApp</button>${l.email ? `<button class="btn-secundario" onclick="mtnEnviarProposta(${id}, 'email')">✉️ Enviar por e-mail</button>` : ''}<button class="btn-secundario" onclick="mtnEnviarProposta(${id}, 'copiar')">📋 Copiar</button><button class="btn-secundario" onclick="mtnModal('')">Fechar</button></div>
+    <p class="plano-meta">Ao enviar, a solicitação vai para "📄 Proposta" com este valor — e entra no painel de faturamento quando você marcar como ✅ Fechado.</p>`);
+}
+function mtnPropostaValor(v) { const t = document.getElementById('mtp-texto'); if (t) t.value = t.value.replace(/R\$ [\d.,]+/, 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR')); }
+async function mtnEnviarProposta(id, como) {
+  const l = MTN.leads.find(x => x.id === id), txt = document.getElementById('mtp-texto').value, valor = Number(document.getElementById('mtp-valor').value) || 0;
+  if (como === 'zap') { if (!l.whatsapp) return mostrarToast('Esta solicitação não tem WhatsApp.', true); window.open(`https://wa.me/${mtnNum(l)}?text=${encodeURIComponent(txt)}`, '_blank'); }
+  else if (como === 'email') location.href = `mailto:${encodeURIComponent(l.email)}?subject=${encodeURIComponent('Proposta — ' + MTN.d.palestra.titulo + (l.empresa ? ' · ' + l.empresa : ''))}&body=${encodeURIComponent(txt)}`;
+  else { try { await navigator.clipboard.writeText(txt); mostrarToast('📋 Proposta copiada.'); } catch (e) { mostrarToast('Não consegui copiar — selecione o texto e copie.', true); } }
+  try { await api('/api/admin/mentoria/leads/' + id, { method: 'PUT', body: JSON.stringify({ etapa: ['fechado', 'perdido'].includes(l.etapa) ? l.etapa : 'proposta', valor, notas: ((l.notas ? l.notas + '\n' : '') + `Proposta enviada em ${new Date().toLocaleDateString('pt-BR')}: R$ ${valor.toLocaleString('pt-BR')}`).slice(0, 3900) }) }); await mtnRecarregarLeads(); } catch (e) { mostrarToast(e.message, true); }
+}
+function mtnAgendarConversa(id) {
+  const l = MTN.leads.find(x => x.id === id), amanha = new Date(Date.now() - 3 * 3600e3 + 864e5).toISOString().slice(0, 10);
+  mtnModal(`<h3 style="margin-top:0;">📅 Agendar conversa — ${escapeHtml(l.empresa || l.nome)}</h3>
+    <div class="mtn-form"><label>Data<input id="mtc-data" type="date" value="${amanha}"></label><label>Horário<input id="mtc-hora" type="time" value="10:00"></label><label>Duração<select id="mtc-dur"><option value="15">15 min</option><option value="30" selected>30 min</option><option value="60">1 hora</option></select></label><label>Link (Meet, Teams…) — opcional<input id="mtc-link"></label></div>
+    <p class="plano-meta">Vai para a 📅 Minha Agenda, com lembrete no celular 15 minutos antes.</p>
+    <div class="acoes-form"><button class="btn-primario" style="width:auto;" onclick="mtnSalvarConversa(${id})">Agendar</button><button class="btn-secundario" onclick="mtnModal('')">Cancelar</button></div>`);
+}
+async function mtnSalvarConversa(id) {
+  const l = MTN.leads.find(x => x.id === id), g = k => document.getElementById('mtc-' + k).value, ini = g('hora'), dur = Number(g('dur')) || 30;
+  const fimMin = Math.min(1439, Number(ini.slice(0, 2)) * 60 + Number(ini.slice(3, 5)) + dur), fim = String(Math.floor(fimMin / 60)).padStart(2, '0') + ':' + String(fimMin % 60).padStart(2, '0');
+  const x = mtnDadosLead(l), tipo = { empresa: 'palestra', aluno: 'mentoria', raiox: 'Raio-X', aula: 'aula' }[l.tipo] || 'contato';
+  try {
+    await api('/api/admin/agenda/eventos', { method: 'POST', body: JSON.stringify({ titulo: `Conversa ${tipo} · ${l.empresa || l.nome}`, data: g('data'), hora_inicio: ini, hora_fim: fim, link: g('link'), lembrete_min: 15,
+      descricao: [`${l.nome}${l.cargo ? ' (' + l.cargo + ')' : ''}${l.empresa ? ' — ' + l.empresa : ''}`, l.whatsapp ? 'WhatsApp: ' + l.whatsapp : '', l.email ? 'E-mail: ' + l.email : '', x.formato ? 'Formato: ' + x.formato : '', x.participantes ? 'Participantes: ' + x.participantes : '', x.data ? 'Data desejada: ' + x.data : '', l.mensagem || ''].filter(Boolean).join('\n') }) });
+    if ((l.etapa || 'novo') === 'novo') await api('/api/admin/mentoria/leads/' + id, { method: 'PUT', body: JSON.stringify({ etapa: 'conversa' }) });
+    mtnModal(''); mostrarToast('📅 Conversa agendada na Minha Agenda.'); await mtnRecarregarLeads();
+  } catch (e) { mostrarToast(e.message, true); }
 }
 function mtnWhatsLead(l) {
   const n = String(l.whatsapp || '').replace(/\D/g, ''), num = n.length <= 11 ? '55' + n : n, nome = String(l.nome || '').split(' ')[0];
