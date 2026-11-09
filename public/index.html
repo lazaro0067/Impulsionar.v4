@@ -2012,7 +2012,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 09/11 (4)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 09/11 (5)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -14354,6 +14354,23 @@ async function renderMentoriaNegocio() {
   } catch (e) { cont.innerHTML = `<h1>🚀 Projeto da Mentoria</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
   mtnDesenhar();
 }
+// 🔄 Aviso de nova versão publicada (evita ficar usando a tela antiga sem saber)
+(function () {
+  let base = null;
+  async function checar() {
+    try { const j = await (await fetch('/api/public/versao', { cache: 'no-store' })).json(); if (!j || !j.v) return; if (!base) { base = j.v; return; } if (j.v !== base) avisar(); } catch (e) {}
+  }
+  function avisar() {
+    if (document.getElementById('nova-versao')) return;
+    const d = document.createElement('div'); d.id = 'nova-versao';
+    d.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;background:#0b1329;color:#fff;border:2px solid #22c55e;border-radius:14px;padding:12px 16px;display:flex;gap:12px;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.35);font-weight:700;max-width:92vw;';
+    d.innerHTML = '<span>🔄 Saiu uma nova versão do Impulsionar.</span><button style="width:auto;margin:0;border:none;border-radius:10px;padding:8px 14px;background:#22c55e;color:#0b1329;font-weight:800;cursor:pointer;" onclick="location.reload()">Atualizar agora</button>';
+    document.body.appendChild(d);
+  }
+  checar(); setInterval(checar, 90000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checar(); });
+  window.addEventListener('focus', checar);
+})();
 const mtnModo = () => (MTN.modo && MTN.modo !== 'do-chao' && (MTN.d.programas || []).some(p => p.id === MTN.modo)) ? MTN.modo : 'do-chao';
 function mtnDesenharPrograma() {
   const p = MTN.d.programas.find(x => x.id === mtnModo()), cont = document.getElementById('conteudo'), nT = MTN.turmas.filter(t => mtnProgT(t).id === p.id).length;

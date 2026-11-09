@@ -14233,6 +14233,9 @@ app.get(['/estudio', '/estudio/'], (req, res) => {
     });
 });
 // App do sistema (Impulsionar V4) para instalar no celular/computador
+// Versão do sistema: o app compara e avisa "Nova versão disponível" depois de cada publicação
+const APP_VERSAO = (() => { try { return require('crypto').createHash('md5').update(fs.readFileSync(path.join(__dirname, 'public', 'index.html'))).digest('hex').slice(0, 12); } catch (e) { return String(Date.now()); } })();
+app.get('/api/public/versao', (req, res) => res.set('Cache-Control', 'no-store').json({ v: APP_VERSAO }));
 app.get(['/app', '/instalar', '/baixar'], (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'app.html')));
 app.get('/manifest.webmanifest', (req, res) => {
     res.set('Cache-Control', 'no-cache').type('application/manifest+json').send(JSON.stringify({ id: '/', name: 'Impulsionar V4 — Gestão & Pessoas', short_name: 'Impulsionar', description: 'Gestão de processos e desenvolvimento de pessoas', start_url: '/?app=1', scope: '/', display: 'standalone', related_applications: [{ platform: 'webapp', url: `https://${req.get('host') || 'www.impulsionarv4.com.br'}/manifest.webmanifest` }], prefer_related_applications: false, orientation: 'any', background_color: '#0b1329', theme_color: '#0b1329', lang: 'pt-BR',
