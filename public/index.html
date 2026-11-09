@@ -2012,7 +2012,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 09/11 (2)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 09/11 (3)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -2333,7 +2333,7 @@ const MENU_POR_PERFIL = {
         ['mentors', 'Mentores'], ['mentorships', 'Mentorias']
     ]},
     { group: '🚀 Minha Mentoria & Palestras', items: [
-        ['mentoriaNegocio', 'Do Chão à Gestão']
+        ['mentoriaNegocio', 'Do Chão à Gestão'], ['mentoriaProgramas', '🎙️ Comunicação de Impacto']
     ]},
     { group: 'Comunidade & Eventos', items: [
         ['community', 'Comunidade'], ['events', 'Eventos'], ['ranking', 'Ranking']
@@ -2709,7 +2709,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    chavesIntegracoes: renderChavesIntegracoes, mentoriaNegocio: renderMentoriaNegocio, agenda: renderAgenda,
+    chavesIntegracoes: renderChavesIntegracoes, mentoriaNegocio: () => { if (MTN.aba === 'programas') MTN.aba = 'painel'; return renderMentoriaNegocio(); }, mentoriaProgramas: () => { MTN.aba = 'programas'; MTN.jaAbriu = true; return renderMentoriaNegocio(); }, agenda: renderAgenda,
     dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento, traineePrograma: renderTrainee, agenteRelatorios: renderAgenteRelatorios, estudioVideo: () => renderEstudioVideo('projetos'), estudioAcessos: () => renderEstudioVideo('acessos'), estudioAgente: () => renderEstudioVideo('agente'), estudioAgenda: () => renderEstudioVideo('agenda'),
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster, acessosCandidatos: renderAcessosCandidatos, creditosVagas: renderCreditosVagas
   };
