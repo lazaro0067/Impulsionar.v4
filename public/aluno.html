@@ -60,43 +60,43 @@ function semAcesso(msg) {
 }
 function desenhar() {
   const a = P.aluno, t = P.turma || {}, R = P.resumo, m = P.mentor, px = P.proximo, hoje = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
-  const pct = Math.round(((R.realizados ? R.realizados : 0) / R.total) * 100);
+  const pct = Math.round(((R.realizados ? R.realizados : 0) / R.total) * 100), pg = P.programa || { unidade: 'semana', principal: true }, ENC = pg.unidade === 'encontro', U = ENC ? 'Encontro' : 'Semana', Us = ENC ? 'encontros' : 'semanas', ind = pg.indicador || {};
   document.title = `Área do Aluno · ${a.primeiroNome}`;
   document.getElementById('app').innerHTML = `<header class="topo"><div class="cx"><a class="marca" href="#"><i>V4</i>Área do Aluno</a>
       <nav><a href="#jornada">Minha jornada</a><a href="#indicador">Meu indicador</a><a href="#kit">Kit</a></nav>${t.grupo ? `<a class="bt ambar peq" href="${esc(t.grupo)}" target="_blank" rel="noopener">💬 Grupo da turma</a>` : ''}</div></header>
     <section class="hero"><div class="cx"><div>
       <span class="selo">🎓 ${esc(m.mentoria)} · ${esc(t.nome || 'Mentoria')}</span>
       <h1>Olá, ${esc(a.primeiroNome)}! 👋</h1>
-      <p class="sub" style="margin-bottom:0;">Aqui você acompanha sua jornada de 12 semanas: encontros, presença, tarefas e a evolução do seu indicador.</p>
+      <p class="sub" style="margin-bottom:0;">Aqui você acompanha sua jornada de ${R.total} ${Us}: encontros, presença, tarefas e a evolução do seu indicador.</p>
       <div class="kpis"><div><b>${R.presencas}/${R.realizados || 0}</b><small>presenças</small></div><div><b>${R.entregas}/${R.total}</b><small>tarefas entregues</small></div><div><b>${R.presencaPct}%</b><small>frequência</small></div></div>
-    </div><div><div class="anel" style="--p:${pct}"><div><span><b>${R.realizados}</b><small>de ${R.total} semanas</small></span></div></div></div></div></section>
+    </div><div><div class="anel" style="--p:${pct}"><div><span><b>${R.realizados}</b><small>de ${R.total} ${Us}</small></span></div></div></div></div></section>
     <div class="cx">
       ${px ? (() => { const x = dt(px.data); return `<div class="prox"><div class="dia"><small>${esc(x.s)}</small><b>${x.d}</b><small>${esc(x.m)}</small></div>
-        <div><small style="color:var(--ambar);font-weight:800;letter-spacing:1px;">${px.data === hoje ? '🔴 ENCONTRO HOJE' : 'PRÓXIMO ENCONTRO'} · SEMANA ${px.n}</small><h3>${esc(px.modulo)}</h3><p>${esc(px.tema)}${t.horario ? ` · ⏰ ${esc(t.horario)}` : ''}</p>
+        <div><small style="color:var(--ambar);font-weight:800;letter-spacing:1px;">${px.data === hoje ? '🔴 ENCONTRO HOJE' : 'PRÓXIMO ENCONTRO'} · ${U.toUpperCase()} ${px.n}</small><h3>${esc(px.modulo)}</h3><p>${esc(px.tema)}${t.horario ? ` · ⏰ ${esc(t.horario)}` : ''}</p>
         <div class="bts">${t.sala ? `<a class="bt ambar peq" href="${esc(t.sala)}" target="_blank" rel="noopener">🎥 Entrar na sala</a>` : ''}${t.grupo ? `<a class="bt claro peq" href="${esc(t.grupo)}" target="_blank" rel="noopener">💬 Grupo</a>` : ''}</div></div></div>`; })()
-        : `<div class="prox"><div class="dia"><b>🏁</b></div><div><h3>${R.realizados >= R.total ? 'Jornada concluída! Parabéns.' : 'Datas dos encontros em breve'}</h3><p>${R.realizados >= R.total ? 'Você completou as 12 semanas. Continue aplicando o método no seu time.' : 'Assim que a turma tiver a data de início, os encontros aparecem aqui.'}</p></div></div>`}
+        : `<div class="prox"><div class="dia"><b>🏁</b></div><div><h3>${R.realizados >= R.total ? 'Jornada concluída! Parabéns.' : 'Datas dos encontros em breve'}</h3><p>${R.realizados >= R.total ? `Você completou ${ENC ? 'os' : 'as'} ${R.total} ${Us}. Continue aplicando o método no seu time.` : 'Assim que a turma tiver a data de início, os encontros aparecem aqui.'}</p></div></div>`}
       <div class="qrdica"><span>📷</span><p><b>Presença:</b> no fim de cada encontro o mentor mostra um <b>QR code</b>. Aponte a câmera do celular para ele e sua presença é registrada na hora.</p></div>
     </div>
-    <section id="jornada"><div class="cx"><div class="titulo"><small>Minha jornada</small><h2>As 12 semanas</h2><p>${esc(P.regraOuro)}</p></div>
+    <section id="jornada"><div class="cx"><div class="titulo"><small>Minha jornada</small><h2>${ENC ? 'Os' : 'As'} ${R.total} ${Us}</h2><p>${esc(P.regraOuro)}</p></div>
       <div class="jornada">${P.encontros.map(e => { const st = e.presente ? 'presente' : e.realizado ? 'falta' : px && px.n === e.n ? 'proximo' : 'futuro', x = e.data ? dt(e.data) : null;
         return `<div class="enc ${st}"><div class="num">${e.presente ? '✓' : e.n}</div><div>
-          <div class="top"><b>Semana ${e.n} · ${esc(e.modulo)}</b>${e.presente ? '<span class="tag ok">✅ Presente</span>' : e.realizado ? '<span class="tag no">Faltou</span>' : st === 'proximo' ? '<span class="tag prox">Próximo</span>' : ''}${x ? `<span class="tag">${x.br}</span>` : ''}</div>
+          <div class="top"><b>${U} ${e.n} · ${esc(e.modulo)}</b>${e.presente ? '<span class="tag ok">✅ Presente</span>' : e.realizado ? '<span class="tag no">Faltou</span>' : st === 'proximo' ? '<span class="tag prox">Próximo</span>' : ''}${x ? `<span class="tag">${x.br}</span>` : ''}</div>
           <p>${esc(e.tema)}</p>
           <div class="tarefa"><label><input type="checkbox" ${e.entregue ? 'checked' : ''} onchange="salvarTarefa(${e.n}, this.checked)"><span>📎 Tarefa: ${esc(e.entregavel)}</span></label>
             <textarea placeholder="Como foi aplicar no seu time? (o mentor lê antes do próximo encontro)" onchange="salvarNota(${e.n}, this.value, this)">${esc(e.nota)}</textarea><small class="salvo" id="salvo-${e.n}"></small></div>
         </div></div>`; }).join('')}</div>
     </div></section>
-    <section class="alt" id="indicador"><div class="cx"><div class="titulo"><small>Resultado</small><h2>Meu indicador</h2><p>Escolha o principal indicador do seu time (ex.: produtividade, absenteísmo, devoluções). Anote como estava no começo e como está agora.</p></div>
-      <div class="card"><div class="ind"><label>Indicador<input id="i-nome" value="${esc(P.indicador.nome)}" placeholder="Ex.: Produtividade (caixas/h)"></label><label>Antes da mentoria<input id="i-antes" value="${esc(P.indicador.antes)}" placeholder="Ex.: 180"></label><label>Hoje<input id="i-depois" value="${esc(P.indicador.depois)}" placeholder="Ex.: 215"></label></div>
+    <section class="alt" id="indicador"><div class="cx"><div class="titulo"><small>Resultado</small><h2>Meu indicador</h2><p>${esc(ind.dica || 'Escolha o principal indicador do seu time (ex.: produtividade, absenteísmo, devoluções). Anote como estava no começo e como está agora.')}</p></div>
+      <div class="card"><div class="ind"><label>Indicador<input id="i-nome" value="${esc(P.indicador.nome)}" placeholder="${esc(ind.nome ? 'Ex.: ' + ind.nome : 'Ex.: Produtividade (caixas/h)')}"></label><label>${ENC ? 'No 1º encontro' : 'Antes da mentoria'}<input id="i-antes" value="${esc(P.indicador.antes)}" placeholder="${esc(ind.antes || 'Ex.: 180')}"></label><label>Hoje<input id="i-depois" value="${esc(P.indicador.depois)}" placeholder="${esc(ind.depois || 'Ex.: 215')}"></label></div>
       <div style="margin-top:12px;display:flex;gap:10px;align-items:center;"><button class="bt escuro peq" onclick="salvarIndicador(this)">Salvar indicador</button><small id="i-ok" style="color:var(--verde);font-weight:700;"></small></div></div>
     </div></section>
     <section id="kit"><div class="cx"><div class="grade g2">
-      <div class="card"><h3>🧰 Seu kit de ferramentas</h3><ul class="kit">${P.kit.map(k => `<li>${esc(k)}</li>`).join('')}</ul><p style="font-size:13px;">Os arquivos são enviados no grupo da turma, semana a semana.</p></div>
+      <div class="card"><h3>🧰 Seu kit de ferramentas</h3><ul class="kit">${P.kit.map(k => `<li>${esc(k)}</li>`).join('')}</ul><p style="font-size:13px;">Os arquivos são enviados no grupo da turma, encontro a encontro.</p></div>
       <div class="card"><div class="mentor">${m.foto ? `<img src="${esc(m.foto === '/mentoria-foto.jpg' ? '/mentoria-foto-perfil.jpg' : m.foto)}" alt="">` : ''}<div><h3 style="margin:0;">${esc(m.nome)}</h3><p>Consultor · ${esc(m.empresa || 'Impulsionar V4')}</p></div></div>
         <p style="margin:14px 0;">Dúvida sobre uma tarefa ou uma situação com o time? Me chama.</p>
         ${wa(m.whatsapp) ? `<a class="bt ambar peq" href="${wa(m.whatsapp, `Olá, Lázaro! Sou ${a.nome}, da ${t.nome || 'mentoria'}.`)}" target="_blank" rel="noopener">💬 Falar com o mentor</a>` : ''}</div>
     </div></div></section>
-    <footer class="rodape"><div class="cx"><div><b style="color:#fff">${esc(m.nome)}</b> · Consultor ${esc(m.empresa || 'Impulsionar V4')}<br>Mentoria ${esc(m.mentoria)}</div>
+    <footer class="rodape"><div class="cx"><div><b style="color:#fff">${esc(m.nome)}</b> · Consultor ${esc(m.empresa || 'Impulsionar V4')}<br>${pg.principal === false ? 'Programa' : 'Mentoria'} ${esc(m.mentoria)}</div>
       <div><a href="https://instagram.com/${esc(String(m.instagramEmpresa || 'impulsionarv4').replace(/^@/, ''))}" target="_blank" rel="noopener">@${esc(String(m.instagramEmpresa || 'impulsionarv4').replace(/^@/, ''))}</a><a href="https://instagram.com/${esc(String(m.instagram || 'lazaroneto.oficial').replace(/^@/, ''))}" target="_blank" rel="noopener">@${esc(String(m.instagram || 'lazaroneto.oficial').replace(/^@/, ''))}</a></div></div></footer>`;
 }
 async function enviar(corpo) { const r = await fetch('/api/public/aluno/' + TOKEN + '/progresso', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }); if (!r.ok) throw new Error('Não salvou'); }

@@ -30,7 +30,7 @@ const C = document.getElementById('c'); let INFO = null;
   const r = await fetch('/api/public/presenca/' + COD, { cache: 'no-store' }), j = await r.json().catch(() => ({}));
   if (!r.ok) return C.innerHTML = `<h1>😕 QR code inválido</h1><p class="sub">${esc(j.error || 'Não encontrei este QR code.')}</p>`;
   INFO = j;
-  const cab = `<span class="sel">📍 ${esc(j.turma)} · Semana ${j.encontro}</span><h1>Registrar presença</h1><p class="sub">${esc(j.modulo)}${j.tema ? ' — ' + esc(j.tema) : ''}</p>`;
+  const cab = `<span class="sel">📍 ${esc(j.turma)} · ${j.unidade === 'encontro' ? 'Encontro' : 'Semana'} ${j.encontro}</span><h1>Registrar presença</h1><p class="sub">${esc(j.modulo)}${j.tema ? ' — ' + esc(j.tema) : ''}</p>`;
   if (!j.valido) return C.innerHTML = cab + `<p style="color:#991b1b;font-weight:700;">⏰ Este QR code já expirou. Fale com o mentor para registrar sua presença.</p>`;
   if (TOKEN) return registrar({ token: TOKEN }, cab);
   C.innerHTML = cab + `<form class="form" onsubmit="event.preventDefault(); registrar({ whatsapp: this.whatsapp.value })"><label>Seu WhatsApp (o mesmo da inscrição)<input name="whatsapp" required inputmode="tel" autocomplete="tel" placeholder="(64) 9 9999-9999"></label><div id="m"></div><button class="bt ambar cheio" type="submit">✅ Confirmar minha presença</button></form>`;
@@ -44,7 +44,7 @@ async function registrar(corpo, cab) {
       throw new Error(j.error || 'Não consegui registrar.');
     }
     try { localStorage.setItem('mt_aluno_token', j.token); } catch (e) {}
-    C.innerHTML = `<div class="ok"><div class="gr">✓</div><h1>${j.jaRegistrada ? 'Presença já registrada' : 'Presença confirmada!'}</h1><p class="sub">${esc(j.nome)}, sua presença na <b>semana ${j.encontro}</b> está registrada. 💪<br>Não esqueça a tarefa da semana.</p><a class="bt ambar cheio" href="/aluno/${esc(j.token)}">Abrir minha Área do Aluno</a></div>`;
+    C.innerHTML = `<div class="ok"><div class="gr">✓</div><h1>${j.jaRegistrada ? 'Presença já registrada' : 'Presença confirmada!'}</h1><p class="sub">${esc(j.nome)}, sua presença ${(INFO || {}).unidade === 'encontro' ? 'no <b>encontro' : 'na <b>semana'} ${j.encontro}</b> está registrada. 💪<br>Não esqueça a tarefa de casa.</p><a class="bt ambar cheio" href="/aluno/${esc(j.token)}">Abrir minha Área do Aluno</a></div>`;
   } catch (e) { const m = document.getElementById('m'); if (m) m.innerHTML = `<div class="msg erro">${esc(e.message)}</div>`; if (bt) { bt.disabled = false; bt.textContent = '✅ Confirmar minha presença'; } }
 }
 </script>

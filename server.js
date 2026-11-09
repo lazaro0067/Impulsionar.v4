@@ -12940,6 +12940,61 @@ const MT_PADRAO = {
         { n: 11, modulo: 'R — Replicar líderes', tema: 'PDI do time', entregavel: 'PDI de 2 pessoas-chave' },
         { n: 12, modulo: 'Fechamento', tema: 'Apresentação do resultado: indicador antes e depois', entregavel: 'Case do aluno (vira depoimento)' }
     ],
+    // Outros programas (separados da mentoria principal), cada um com suas turmas, área do aluno e presença
+    programas: [{
+        id: 'comunicacao-impacto', nome: 'Comunicação de Impacto para Líderes', curto: 'Comunicação de Impacto', icone: '🎙️',
+        subtitulo: 'Programa de 5 encontros para líderes prepararem, apresentarem e responderem dúvidas do time com segurança.',
+        objetivo: 'Em 5 encontros semanais de 2 horas, o líder sai lendo menos slides, preparando melhor o material, ocupando o palco com segurança e respondendo às dúvidas do time.',
+        publico: 'Líderes e multiplicadores que apresentam para o time: DDS, reuniões de resultado, treinamentos internos e convenções.',
+        formato: '5 encontros presenciais semanais de 2 h · turma de 6 a 10 pessoas · todos apresentam em todo encontro.',
+        entrega: 'Apresentação final de 7 minutos com rodada de perguntas, avaliada pela mesma régua do primeiro encontro.',
+        regraOuro: 'Todo encontro termina com você apresentando de verdade e recebendo feedback. A tarefa de casa prepara a próxima apresentação.',
+        gaps: [
+            { n: 1, nome: 'Revisão do material', principal: 1, reforco: '2 e 5' },
+            { n: 2, nome: 'Preparação para apresentação', principal: 2, reforco: '5' },
+            { n: 3, nome: 'Posicionamento no palco', principal: 3, reforco: '4 e 5' },
+            { n: 4, nome: 'Passar confiança para o time', principal: 3, reforco: 'todos' },
+            { n: 5, nome: 'Ficar lendo slides', principal: 2, reforco: '3 e 5' },
+            { n: 6, nome: 'Tirar dúvidas do time', principal: 4, reforco: '5' }
+        ],
+        roteiro: [['Abertura', '10 min', 'Retomada da tarefa de casa e 1 aprendizado de cada um'], ['Teoria', '30 min', 'Conceito do dia, com exemplos bons e ruins'], ['Demonstração', '10 min', 'O condutor faz ao vivo o que acabou de ensinar'], ['Prática', '55 min', 'Cada participante apresenta de 3 a 5 minutos e recebe feedback'], ['Fechamento', '15 min', 'Régua do dia, tarefa de casa e QR code de presença']],
+        regras: ['Todo mundo apresenta em todo encontro. Ninguém só assiste.', 'Feedback no formato 1 ponto forte + 1 ajuste + 1 dica prática.', 'As apresentações são gravadas no celular do próprio participante, que assiste antes do próximo encontro.', 'O tema da prática é real: um assunto que a pessoa precisa apresentar no trabalho nas próximas semanas.', 'Errar na sala é o objetivo. O que se fala na sala fica na sala.', 'Celular só para gravar e para o QR de presença.'],
+        encontros: [
+            { n: 1, modulo: 'Revisão do material e diagnóstico', tema: 'Ponto de partida de cada um e como revisar o material antes de subir no palco', entregavel: 'Assistir à própria gravação (2 coisas a manter, 2 a mudar) e trazer o material da apresentação final revisado', gaps: '1 · linha de base de todos',
+                teoria: ['Por que a apresentação falha antes de começar: o material não foi revisado com o público em mente.', 'As 4 perguntas da revisão: Para quem? O que eles precisam saber? O que devem fazer depois? O que pode sair?', 'Regra do 1 slide = 1 mensagem. Se o título não diz a mensagem, o slide não está pronto.', 'Revisão em 3 passes: conteúdo (está certo?), clareza (dá para entender em 5 segundos?), forma (letra, cor, excesso de texto).'],
+                demonstracao: 'O condutor pega um slide real, com muito texto, e revisa ao vivo usando os 3 passes.',
+                pratica: ['Diagnóstico de 3 minutos: cada participante apresenta um tema do dia a dia sem preparo extra. O condutor preenche a régua.', 'Em duplas, cada um revisa 3 slides do material que vai usar de verdade, com o checklist de revisão.'],
+                tarefa: ['Assistir à própria gravação e anotar 2 coisas a manter e 2 a mudar.', 'Trazer o material real da apresentação final, já revisado pelos 3 passes.'] },
+            { n: 2, modulo: 'Preparação e slides que não se leem', tema: 'Preparar a fala separada do slide: o slide mostra, a pessoa explica', entregavel: 'Ensaiar 3 vezes em voz alta a abertura e o fechamento (gravar a última) e cortar 30% do texto dos slides', gaps: '2 e 5',
+                teoria: ['Roteiro em 3 atos: abertura com gancho, no máximo 3 pontos-chave, fechamento com ação.', 'Slide é apoio, não teleprompter: no máximo 6 linhas, palavras-chave, números grandes e imagens.', 'O texto completo vai nas notas do apresentador ou num cartão, nunca na tela.', 'Ensaio de verdade: em voz alta, em pé, cronometrado, 3 vezes. Ensaio mental não conta.', 'Técnica Olha, Pausa, Fala: olhar o slide, virar para o público, só então falar.'],
+                demonstracao: 'O condutor apresenta o mesmo slide duas vezes: lendo e usando Olha, Pausa, Fala. A turma diz a diferença.',
+                pratica: ['15 min: cada um reescreve 3 slides do próprio material em palavras-chave e monta o roteiro de 3 atos.', '40 min: cada um apresenta 3 minutos. Se ler mais de uma frase da tela, a turma levanta a mão e ele recomeça o slide.'],
+                tarefa: ['Ensaiar em voz alta 3 vezes a abertura e o fechamento da apresentação final, gravando a última.', 'Cortar pelo menos 30% do texto dos slides.'] },
+            { n: 3, modulo: 'Palco, corpo e confiança', tema: 'Onde ficar, o que fazer com as mãos e como a voz soa', entregavel: 'Assistir à gravação sem som e só com som (1 ajuste em cada) e ensaiar em pé num espaço parecido com o real', gaps: '3 e 4',
+                teoria: ['Mapa do palco em 3 pontos: centro para abrir e fechar, lado da tela para explicar o slide, frente do público para perguntas e histórias.', 'Nunca dar as costas para o time nem ficar entre o projetor e a tela.', 'Postura base: pés na largura do quadril, peso distribuído, mãos na altura da cintura, visíveis.', 'Olhar: uma frase completa para uma pessoa, depois outra pessoa em outro ponto da sala.', 'Voz: volume para a última fileira, pausas de 2 segundos, trocar "ééé" por silêncio.', 'Confiança = domínio do conteúdo + postura + assumir o que não sabe.'],
+                demonstracao: 'O condutor faz uma abertura usando os 3 pontos do palco e depois exagera os erros (balançar, mão no bolso, olhar no chão). A turma aponta cada erro.',
+                pratica: ['Aquecimento de 5 min: voz e postura, todos juntos.', 'Marcar com fita os 3 pontos no chão da sala.', 'Cada um apresenta 4 minutos do próprio material usando os 3 pontos. Feedback em postura, olhar e voz.'],
+                tarefa: ['Assistir à gravação sem som (só corpo) e depois só com som (só voz). Anotar 1 ajuste em cada.', 'Ensaiar a apresentação final em pé, num espaço parecido com o real.'] },
+            { n: 4, modulo: 'Tirar dúvidas do time', tema: 'Método OPRC e banco de perguntas difíceis', entregavel: 'Responder por escrito as 2 piores perguntas e fazer o ensaio geral de 7 minutos, cronometrado e gravado', gaps: '6 e 4',
+                teoria: ['Antecipar é metade do trabalho: listar as 5 perguntas mais prováveis e as 2 mais difíceis.', 'Método OPRC: Ouvir até o fim, Parafrasear, Responder em até 3 frases, Checar se respondeu.', 'Quando não sabe: "Não tenho esse dado agora. Vou confirmar com [área] e te retorno até [dia]." E cumprir.', 'Pergunta fora do tema: "Boa pergunta, vamos falar disso logo depois, só nós dois."', 'Pergunta hostil: reconhecer o sentimento, voltar ao fato, oferecer o próximo passo. Nunca discutir na frente do time.', 'Silêncio do time: fazer uma pergunta direta e fácil para alguém.'],
+                demonstracao: 'A turma faz 5 perguntas difíceis ao condutor, que responde usando o OPRC.',
+                pratica: ['10 min: cada um escreve as 5 perguntas mais prováveis e as 2 piores sobre o próprio tema.', '45 min: cada um apresenta 2 minutos e responde 3 minutos de perguntas, com cartas sorteadas: chefe cético, colega que reclama, quem não entendeu nada.'],
+                tarefa: ['Escrever a resposta das 2 piores perguntas e ensaiar em voz alta.', 'Ensaio geral da apresentação final de 7 minutos, cronometrado e gravado.'] },
+            { n: 5, modulo: 'Apresentação final avaliada', tema: 'Prova prática com banca e plano dos próximos 30 dias', entregavel: 'Compromisso: qual apresentação real vai fazer nos próximos 30 dias e qual ponto vai treinar', gaps: 'todos',
+                teoria: ['Revisão rápida: 3 passes, roteiro de 3 atos, Olha-Pausa-Fala, mapa do palco e OPRC.', 'Sorteio da ordem e 5 minutos de aquecimento de voz e postura.'],
+                demonstracao: 'Banca: condutor, gestor da área e 2 colegas sorteados. Todos preenchem a régua.',
+                pratica: ['7 minutos de apresentação e 3 minutos de perguntas por participante.', 'Feedback escrito, entregue no fim.', 'Cada um compara a própria régua do Encontro 1 com a de hoje.'],
+                tarefa: ['Fazer a apresentação real nos próximos 30 dias e contar como foi na sessão de continuidade.'] }
+        ],
+        kit: ['Checklist de revisão do material (24 h antes)', 'Roteiro de 3 atos', 'Régua de avaliação (nota de 1 a 5)', 'Método OPRC para responder perguntas', 'Banco de perguntas difíceis'],
+        checklist: ['Sei para quem vou falar e o que eles precisam fazer depois', 'Cada slide tem 1 mensagem, e o título diz essa mensagem', 'Nenhum slide passa de 6 linhas', 'Números e datas conferidos com a fonte', 'Letra legível do fundo da sala (mínimo 24 pt)', 'Texto completo nas notas, não na tela', 'Ensaiei em voz alta e em pé 3 vezes, dentro do tempo', 'Listei as 5 perguntas prováveis e as 2 piores, com resposta', 'Testei projetor, cabo e arquivo no local'],
+        atos: [['Abertura', '1 min', 'Gancho: um número, uma pergunta ou um caso real. Por que isso importa para o time'], ['Desenvolvimento', '5 min', 'Até 3 pontos-chave, cada um com um exemplo da operação'], ['Fechamento', '1 min', 'Resumo em 1 frase e a ação: o que cada um faz a partir de amanhã']],
+        regua: [['Material revisado', '1', 'Slides com erros e excesso de texto', 'Mensagens claras, alguns slides carregados', 'Cada slide com 1 mensagem, limpo e sem erro'], ['Preparação e estrutura', '2', 'Sem começo, meio e fim; estoura o tempo', 'Estrutura visível, tempo perto do combinado', 'Abertura com gancho, 3 pontos e ação no fim, no tempo'], ['Posicionamento no palco', '3', 'Parado atrás da mesa ou de costas para o time', 'Usa parte do espaço, às vezes na frente da tela', 'Usa os 3 pontos com intenção, sempre de frente'], ['Confiança', '4', 'Voz baixa, olhar no chão, muitos vícios', 'Voz firme na maior parte, alguns vícios', 'Voz e postura firmes, pausas e olhar distribuído'], ['Uso do slide', '5', 'Lê a tela a maior parte do tempo', 'Lê em alguns momentos', 'Só olha para se guiar e fala para o time'], ['Resposta a dúvidas', '6', 'Trava, foge ou discute', 'Responde, mas longo ou sem checar', 'Usa OPRC, admite o que não sabe e marca retorno']],
+        perguntas: ['Isso já foi tentado antes e não funcionou. Por que agora seria diferente?', 'Quem vai fazer isso? A gente já está sem gente.', 'De onde saiu esse número?', 'Isso vale para o turno da noite também?', 'O que acontece com quem não seguir?', 'A diretoria sabe disso?', 'Não entendi nada, pode explicar de novo?', 'Por que ninguém perguntou para a gente antes de decidir?'],
+        medicao: [['Nota média na régua (1 a 5)', 'Média dos 6 critérios', '+1,5 ponto'], ['Tempo lendo slide', 'Cronômetro na gravação', 'menos de 10% do tempo'], ['Perguntas respondidas com OPRC', 'Contagem na rodada de perguntas', '3 de 3'], ['Autoconfiança declarada (1 a 10)', 'Pergunta no início e no fim', '+3 pontos'], ['Presença', 'QR code de presença', '80% ou mais'], ['Avaliação do gestor (1 a 5)', 'Régua em apresentação real, 30 dias depois', '4 ou mais']],
+        aprovacao: 'O piloto é aprovado se a média da turma na régua subir pelo menos 1,5 ponto entre o Encontro 1 e o Encontro 5, com presença mínima de 80%.',
+        indicador: { nome: 'Nota na régua de apresentação (1 a 5)', dica: 'Use a nota média da régua: a do Encontro 1 é o "antes" e a da apresentação final é o "hoje".', antes: 'Ex.: 2,3', depois: 'Ex.: 4,1' }
+    }],
     kit: ['Raio-X do Líder (questionário de 30 perguntas)', 'Painel de indicadores (planilha modelo)', 'Roteiros de feedback, reconhecimento e conversa difícil', 'Modelo de reunião de 15 minutos de início de turno', 'Plano de ação 5W2H e quadro PDCA', 'Mapa de talentos (9 box) e modelo de PDI'],
     regraOuro: 'Toda semana termina com uma tarefa prática aplicada no time real. O aluno traz o resultado no encontro seguinte. É isso que gera depoimento e venda das próximas turmas.',
     ofertas: [
@@ -13133,6 +13188,7 @@ async function mtLer() {
     // completa com o padrão o que ainda não existe (sem apagar o que o Lázaro editou)
     const out = JSON.parse(JSON.stringify(MT_PADRAO));
     Object.keys(d).forEach(k => { if (d[k] !== undefined && d[k] !== null) out[k] = (typeof d[k] === 'object' && !Array.isArray(d[k]) && typeof out[k] === 'object' && !Array.isArray(out[k])) ? Object.assign(out[k], d[k]) : d[k]; });
+    if (!Array.isArray(out.programas)) out.programas = []; MT_PADRAO.programas.forEach(p => { if (!out.programas.some(x => x && x.id === p.id)) out.programas.push(JSON.parse(JSON.stringify(p))); }); // programa novo do padrão sempre aparece
     if (!out.marca.fotoUrl) out.marca.fotoUrl = MT_PADRAO.marca.fotoUrl;
     if (out.marca.mentor === 'Lázaro Salles') out.marca.mentor = 'Lázaro Neto'; // nome público escolhido
     if (out.marca.whatsapp === '(61) 9396-4750') out.marca.whatsapp = '(61) 99396-4750'; // número com o 9
@@ -13142,8 +13198,16 @@ async function mtLer() {
     return out;
 }
 async function mtSalvar(d) { await mtRun(`INSERT INTO mentoria_negocio (id, dados, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET dados = excluded.dados, updated_at = CURRENT_TIMESTAMP`, [JSON.stringify(d)]); }
+// Programas: a mentoria principal (12 semanas) + programas separados (ex.: Comunicação de Impacto)
+const MT_PRINCIPAL = 'do-chao';
+function mtProgramas(d) {
+    return [{ id: MT_PRINCIPAL, nome: d.marca.nome, curto: d.marca.nome, icone: '🚀', unidade: 'semana', encontros: d.semanas, regraOuro: d.regraOuro, kit: d.kit, formato: d.formato }]
+        .concat((Array.isArray(d.programas) ? d.programas : []).filter(p => p && p.id && Array.isArray(p.encontros)).map(p => Object.assign({ unidade: 'encontro' }, p)));
+}
+function mtProgramaDe(d, t) { const id = t ? mtJson(t.dados).programa : ''; const L = mtProgramas(d); return L.find(p => p.id === id) || L[0]; }
 async function mtTurmaAberta() {
-    const t = await dbGet(`SELECT * FROM mentoria_turmas WHERE status = 'aberta' ORDER BY COALESCE(inicio, '9999') ASC, id DESC LIMIT 1`).catch(() => null);
+    // só turmas da mentoria principal aparecem na página de venda
+    const t = (await dbAll(`SELECT * FROM mentoria_turmas WHERE status = 'aberta' ORDER BY COALESCE(inicio, '9999') ASC, id DESC`).catch(() => [])).find(x => !mtJson(x.dados).programa || mtJson(x.dados).programa === MT_PRINCIPAL);
     if (!t) return null;
     const n = await dbGet(`SELECT COUNT(*) AS n FROM mentoria_alunos WHERE turma_id = ? AND pagamento = 'pago'`, [t.id]).catch(() => ({ n: 0 }));
     return Object.assign(t, { inscritos: n.n, restantes: Math.max(0, (t.vagas || 0) - n.n) });
@@ -13190,7 +13254,7 @@ app.get('/api/admin/mentoria/turmas', requireRole('admin'), async (req, res) => 
 app.post('/api/admin/mentoria/turmas', requireRole('admin'), async (req, res) => {
     const b = req.body || {};
     try { const r = await mtRun(`INSERT INTO mentoria_turmas (nome, inicio, horario, preco, vagas, status, link_encontro, whatsapp_grupo, dados) VALUES (?,?,?,?,?,?,?,?,?)`,
-        [mtTxt(b.nome || 'Turma piloto', 120), mtTxt(b.inicio, 20), mtTxt(b.horario || '20:00', 20), Number(b.preco) || 1497, Number(b.vagas) || 8, mtTxt(b.status || 'aberta', 20), mtTxt(b.link_encontro, 300), mtTxt(b.whatsapp_grupo, 300), JSON.stringify(b.dados || {})]);
+        [mtTxt(b.nome || 'Turma piloto', 120), mtTxt(b.inicio, 20), mtTxt(b.horario || '20:00', 20), (b.preco === '' || b.preco == null || !Number.isFinite(Number(b.preco))) ? 1497 : Number(b.preco), Number(b.vagas) || 8, mtTxt(b.status || 'aberta', 20), mtTxt(b.link_encontro, 300), mtTxt(b.whatsapp_grupo, 300), JSON.stringify(b.dados || {})]);
         res.json({ id: r.lastID }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.put('/api/admin/mentoria/turmas/:id', requireRole('admin'), async (req, res) => {
@@ -13320,8 +13384,8 @@ async function mtAlunoPorToken(token) {
 async function mtPainelAluno(a) {
     const d = await mtLer(), t = a.turma_id ? await dbGet(`SELECT * FROM mentoria_turmas WHERE id = ?`, [a.turma_id]).catch(() => null) : null;
     const pres = new Set((await dbAll(`SELECT encontro FROM mentoria_presencas WHERE aluno_id = ?`, [a.id]).catch(() => [])).map(r => Number(r.encontro)));
-    const pr = mtJson(a.progresso), feitos = (t ? mtJson(t.dados).feitos : {}) || {}, hoje = mtHojeBr();
-    const encontros = d.semanas.map((s, i) => { const data = t ? mtDataEncontro(t, i) : ''; return { n: s.n, modulo: s.modulo, tema: s.tema, entregavel: s.entregavel, data, realizado: !!feitos[s.n] || !!(data && data < hoje) || pres.has(Number(s.n)), presente: pres.has(Number(s.n)), entregue: !!(pr.entregas || {})[s.n], nota: (pr.notas || {})[s.n] || '' }; });
+    const pr = mtJson(a.progresso), feitos = (t ? mtJson(t.dados).feitos : {}) || {}, hoje = mtHojeBr(), prog = mtProgramaDe(d, t);
+    const encontros = prog.encontros.map((s, i) => { const data = t ? mtDataEncontro(t, i) : ''; return { n: s.n, modulo: s.modulo, tema: s.tema, entregavel: s.entregavel, data, realizado: !!feitos[s.n] || !!(data && data < hoje) || pres.has(Number(s.n)), presente: pres.has(Number(s.n)), entregue: !!(pr.entregas || {})[s.n], nota: (pr.notas || {})[s.n] || '' }; });
     const proximo = encontros.find(e => e.data && e.data >= hoje && !feitos[e.n] && !e.presente) || null;
     const realizados = encontros.filter(e => e.realizado);
     return {
@@ -13330,8 +13394,9 @@ async function mtPainelAluno(a) {
         encontros, proximo,
         resumo: { presencas: pres.size, realizados: realizados.length, presencaPct: realizados.length ? Math.round(realizados.filter(e => e.presente).length / realizados.length * 100) : 100, entregas: Object.keys(pr.entregas || {}).length, total: encontros.length },
         indicador: { nome: pr.indicadorNome || '', antes: pr.antes || '', depois: pr.depois || '' },
-        kit: d.kit, regraOuro: d.regraOuro, metodo: d.metodo.map(m => ({ letra: m.letra, nome: m.nome })),
-        mentor: { nome: d.marca.mentor, empresa: d.marca.empresa, foto: d.marca.fotoUrl, whatsapp: d.marca.whatsapp, instagram: d.marca.instagram, instagramEmpresa: d.marca.instagramEmpresa, mentoria: d.marca.nome }
+        kit: prog.kit || d.kit, regraOuro: prog.regraOuro || d.regraOuro, metodo: d.metodo.map(m => ({ letra: m.letra, nome: m.nome })),
+        programa: { id: prog.id, nome: prog.nome, unidade: prog.unidade, principal: prog.id === MT_PRINCIPAL, indicador: prog.indicador || null },
+        mentor: { nome: d.marca.mentor, empresa: d.marca.empresa, foto: d.marca.fotoUrl, whatsapp: d.marca.whatsapp, instagram: d.marca.instagram, instagramEmpresa: d.marca.instagramEmpresa, mentoria: prog.nome }
     };
 }
 // ---- Master: acesso do aluno ----
@@ -13385,14 +13450,14 @@ app.post('/api/public/aluno/:token/progresso', async (req, res) => {
     }
     ['antes', 'depois', 'indicadorNome'].forEach(k => { if (typeof b[k] === 'string') pr[k] = mtTxt(b[k], 120); });
     await mtRun(`UPDATE mentoria_alunos SET progresso = ? WHERE id = ?`, [JSON.stringify(pr), a.id]);
-    if (b.entregue && n) try { mtNotificar('📎 Tarefa entregue na mentoria', `${a.nome} concluiu a tarefa da semana ${n}`); } catch (e) {}
+    if (b.entregue && n) try { const t = a.turma_id ? await dbGet(`SELECT dados FROM mentoria_turmas WHERE id = ?`, [a.turma_id]).catch(() => null) : null, pg = mtProgramaDe(await mtLer(), t); mtNotificar('📎 Tarefa entregue · ' + pg.curto, `${a.nome} concluiu a tarefa do ${pg.unidade} ${n}`); } catch (e) {}
     res.json({ ok: true });
 });
 app.get('/api/public/presenca/:codigo', async (req, res) => {
-    const c = await dbGet(`SELECT c.*, t.nome AS turma FROM mentoria_checkins c JOIN mentoria_turmas t ON t.id = c.turma_id WHERE c.codigo = ?`, [String(req.params.codigo)]).catch(() => null);
+    const c = await dbGet(`SELECT c.*, t.nome AS turma, t.dados AS turma_dados FROM mentoria_checkins c JOIN mentoria_turmas t ON t.id = c.turma_id WHERE c.codigo = ?`, [String(req.params.codigo)]).catch(() => null);
     if (!c) return res.status(404).json({ error: 'QR code de presença não encontrado.' });
-    const d = await mtLer(), s = d.semanas.find(x => Number(x.n) === Number(c.encontro)) || {};
-    res.json({ turma: c.turma, encontro: c.encontro, modulo: s.modulo || '', tema: s.tema || '', valido: new Date(c.expira.replace(' ', 'T') + 'Z') > new Date(), mentor: d.marca.mentor, empresa: d.marca.empresa });
+    const d = await mtLer(), prog = mtProgramaDe(d, { dados: c.turma_dados }), s = prog.encontros.find(x => Number(x.n) === Number(c.encontro)) || {};
+    res.json({ turma: c.turma, programa: prog.nome, unidade: prog.unidade, encontro: c.encontro, modulo: s.modulo || '', tema: s.tema || '', valido: new Date(c.expira.replace(' ', 'T') + 'Z') > new Date(), mentor: d.marca.mentor, empresa: d.marca.empresa });
 });
 app.post('/api/public/presenca/:codigo', async (req, res) => {
     if (!mtLimite(req)) return res.status(429).json({ error: 'Muitas tentativas. Tente de novo em instantes.' });
