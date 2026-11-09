@@ -13291,6 +13291,7 @@ app.get('/api/public/mentoria', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // apresentação da palestra (roteiro completo, para o Lázaro apresentar)
+app.get('/api/public/mentoria/programa/:id', async (req, res) => { const d = await mtLer(), p = (d.programas || []).find(x => x.id === req.params.id); if (!p) return res.status(404).json({ error: 'Programa não encontrado.' }); res.json({ programa: p, marca: d.marca }); });
 app.get('/api/public/mentoria/palestra-completa', async (req, res) => { const d = await mtLer(); res.json({ marca: d.marca, palestra: d.palestra, historia: d.historia, metodo: d.metodo }); });
 // Aviso de nova solicitação: sininho do sistema + notificação no celular (alertas da Minha Agenda)
 function mtNotificar(titulo, msg) {
@@ -13482,7 +13483,7 @@ app.get('/aula/:slug', (req, res) => res.set('Cache-Control', 'no-cache').sendFi
 app.get(['/aluno', '/aluno/:token'], (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'aluno.html')));
 app.get('/presenca/:codigo', (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'presenca.html')));
 // páginas públicas com endereço curto
-[['/mentoria', 'mentoria.html'], ['/palestra', 'palestra.html'], ['/aula', 'aula.html'], ['/raio-x', 'raio-x.html'], ['/bio', 'bio.html'], ['/palestra/apresentar', 'palestra-apresentar.html']]
+[['/mentoria', 'mentoria.html'], ['/palestra', 'palestra.html'], ['/aula', 'aula.html'], ['/raio-x', 'raio-x.html'], ['/bio', 'bio.html'], ['/palestra/apresentar', 'palestra-apresentar.html'], ['/programa/apresentar', 'programa-apresentar.html']]
     .forEach(([rota, arq]) => app.get(rota, (req, res) => res.sendFile(path.join(__dirname, 'public', arq))));
 
 // ======================================================================

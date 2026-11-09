@@ -1792,6 +1792,10 @@
   .magn-atalhos { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px; } .magn-atalhos button { width:auto; margin:0; border:1px solid #cbd5e1; background:#fff; border-radius:20px; padding:5px 11px; font:inherit; font-size:13px; cursor:pointer; }
   .mag-bt.nota { padding:4px 8px; } .mag-seg button { white-space:nowrap; } @media (max-width:420px) { .mag-seg button { padding:8px 3px; font-size:13px; } }
   .magn-cap-l .ditado-wrap { flex:1; }
+  .mpg-play { margin-left:auto !important; width:auto !important; border:none; border-radius:999px; padding:7px 14px; background:#0b1329; color:#fff; font:inherit; font-size:13px; font-weight:800; cursor:pointer; white-space:nowrap; }
+  .mpg-escolha { display:grid; gap:8px; } .mpg-escolha button { display:flex; gap:12px; align-items:center; text-align:left; width:100%; margin:0; border:1px solid #e2e8f0; background:#fff; border-radius:12px; padding:10px 12px; font:inherit; cursor:pointer; }
+  .mpg-escolha button i { flex:0 0 34px; height:34px; border-radius:50%; display:grid; place-items:center; background:#e2e8f0; font-style:normal; font-weight:800; } .mpg-escolha button.prox { border-color:#f59e0b; background:#fffbeb; } .mpg-escolha button.prox i { background:#f59e0b; color:#0b1329; } .mpg-escolha button.feito i { background:#dcfce7; color:#16a34a; }
+  .mpg-escolha small { display:block; color:#64748b; } .mpg-slbt { background:#0b1329 !important; color:#fff !important; margin-top:4px !important; }
   .mpg-capa { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:flex-end; background:linear-gradient(135deg,#0b1329,#1e3a8a); color:#fff; border-radius:16px; padding:22px; margin-bottom:14px; }
   .mpg-capa small { letter-spacing:2px; font-size:11px; color:#fbbf24; font-weight:800; } .mpg-capa h2 { margin:6px 0; font-size:26px; color:#fff; } .mpg-capa p { margin:0 0 8px; color:#cbd5e1; max-width:640px; } .mpg-capa span { font-size:13px; color:#93c5fd; }
   .mpg-bts { display:flex; gap:8px; flex-wrap:wrap; } .mpg-bts button { margin:0 !important; }
@@ -2012,7 +2016,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 09/11 (5)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 09/11 (6)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -14376,7 +14380,7 @@ function mtnDesenharPrograma() {
   const p = MTN.d.programas.find(x => x.id === mtnModo()), cont = document.getElementById('conteudo'), nT = MTN.turmas.filter(t => mtnProgT(t).id === p.id).length;
   if (!['programa', 'turmas'].includes(MTN.abaP)) MTN.abaP = 'programa';
   cont.innerHTML = `<div class="mtn"><div class="mtn-cab"><div><h1 style="margin:0;">${p.icone || '🎙️'} ${escapeHtml(p.nome)}</h1><p class="plano-meta" style="margin:4px 0 0;">${escapeHtml(MTN.d.marca.mentor)} · ${escapeHtml(p.encontros.length + ' encontros')} · ${escapeHtml(p.publico || '')}</p></div>
-    <div class="mtn-acoes"><button class="btn-secundario" onclick="mtnProgramaImprimir('${p.id}')">🖨️ Imprimir / PDF</button><button class="btn-primario" style="width:auto;" onclick="mtnEditarTurma(0, '${p.id}')">＋ Nova turma</button></div></div>
+    <div class="mtn-acoes"><button class="btn-secundario" onclick="mtnApresentarEscolher('${p.id}')">▶️ Apresentar slides</button><button class="btn-secundario" onclick="mtnProgramaImprimir('${p.id}')">🖨️ Imprimir / PDF</button><button class="btn-primario" style="width:auto;" onclick="mtnEditarTurma(0, '${p.id}')">＋ Nova turma</button></div></div>
     <nav class="mtn-abas">${[['programa', '📘 Conteúdo do programa'], ['turmas', `🎓 Turmas e alunos${nT ? ` <i class="mtn-badge" style="background:#64748b">${nT}</i>` : ''}`]].map(([k, r]) => `<button class="${MTN.abaP === k ? 'on' : ''}" onclick="MTN.abaP='${k}'; mtnDesenhar()">${r}</button>`).join('')}</nav>
     <div id="mtn-corpo">${MTN.abaP === 'turmas' ? mtnTurmas() : mtnProgramaHtml(p)}</div></div>`;
 }
@@ -14786,7 +14790,7 @@ function mtnTurmas() {
         <small>${t.inicio ? 'Início ' + new Date(t.inicio + 'T12:00:00').toLocaleDateString('pt-BR') : 'sem data'}${t.horario ? ' · ' + escapeHtml(t.horario) : ''} · ${mtnMoeda(t.preco)} · ${pagos.length}/${t.vagas} pagos · ${mtnMoeda(pagos.reduce((s, a) => s + (Number(a.valor) || 0), 0))}</small></div>
         <div class="mtn-link-bt">${t.link_encontro ? `<a class="btn-secundario btn-sm" href="${escapeHtml(t.link_encontro)}" target="_blank" rel="noopener">🎥 Sala</a>` : ''}${t.whatsapp_grupo ? `<a class="btn-secundario btn-sm" href="${escapeHtml(t.whatsapp_grupo)}" target="_blank" rel="noopener">💬 Grupo</a>` : ''}<button class="btn-secundario btn-sm" onclick="mtnEditarTurma(${t.id})">✏️</button><button class="btn-secundario btn-sm" onclick="mtnNovoAluno(${t.id})">＋ Aluno</button><button class="btn-primario btn-sm" style="width:auto;" onclick="mtnAcessosTurma(${t.id})">🔑 Enviar acessos</button></div></div>
       <p class="plano-meta" style="margin:8px 0 0;">📷 No fim de cada encontro, toque em <b>QR presença</b> no ${pg.unidade} e mostre a tela (ou compartilhe na reunião online). A lista de presentes atualiza sozinha.</p>
-      <div class="mtn-encontros">${pg.encontros.map((s, i) => `<label class="mtn-enc ${feitos[s.n] ? 'ok' : ''}"><input type="checkbox" ${feitos[s.n] ? 'checked' : ''} onchange="mtnEncontro(${t.id}, ${s.n}, this.checked)"><b>${sg}${s.n}${datas[i] ? ' · ' + datas[i].toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''}</b><span>${escapeHtml(s.modulo)}</span><small>${escapeHtml(s.entregavel)}</small><button class="mtn-qrbt" onclick="event.preventDefault(); event.stopPropagation(); mtnQrPresenca(${t.id}, ${s.n})">📷 QR presença · ${t.alunos.filter(a => (a.presencas || []).includes(s.n)).length}/${t.alunos.length}</button></label>`).join('')}</div>
+      <div class="mtn-encontros">${pg.encontros.map((s, i) => `<label class="mtn-enc ${feitos[s.n] ? 'ok' : ''}"><input type="checkbox" ${feitos[s.n] ? 'checked' : ''} onchange="mtnEncontro(${t.id}, ${s.n}, this.checked)"><b>${sg}${s.n}${datas[i] ? ' · ' + datas[i].toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''}</b><span>${escapeHtml(s.modulo)}</span><small>${escapeHtml(s.entregavel)}</small><button class="mtn-qrbt" onclick="event.preventDefault(); event.stopPropagation(); mtnQrPresenca(${t.id}, ${s.n})">📷 QR presença · ${t.alunos.filter(a => (a.presencas || []).includes(s.n)).length}/${t.alunos.length}</button>${pg.id === 'do-chao' ? '' : `<button class="mtn-qrbt mpg-slbt" onclick="event.preventDefault(); mtnApresentar('${pg.id}', ${s.n}, ${t.id})">▶️ Slides</button>`}</label>`).join('')}</div>
       <div class="tabela-rolagem"><table class="mtn-tab"><thead><tr><th>Aluno</th><th>WhatsApp</th><th>Pagamento</th><th>Área do aluno</th><th>Presença</th><th>Entregas</th><th>Indicador antes</th><th>Indicador depois</th><th></th></tr></thead><tbody>
       ${t.alunos.map(a => { const pr = a.progresso || {}, ent = Object.keys(pr.entregas || {}).length; return `<tr><td><b>${escapeHtml(a.nome)}</b><br><small>${escapeHtml([a.cargo, a.empresa].filter(Boolean).join(' · '))}</small></td>
         <td>${a.whatsapp ? `<a href="https://wa.me/${(d => d.length <= 11 ? '55' + d : d)(String(a.whatsapp).replace(/\D/g, ''))}" target="_blank" rel="noopener">${escapeHtml(a.whatsapp)}</a>` : ''}</td>
@@ -14853,7 +14857,7 @@ function mtnProgramaHtml(p, imprimir) {
     <h3 class="mtn-h2">Roteiro de todo encontro (2 h)</h3>${tab(['Bloco', 'Tempo', 'O que acontece'], p.roteiro || [])}
     <div class="mtn-bloco"><b>Regras da turma</b>${lista(p.regras)}</div>
     <h3 class="mtn-h2">Os ${p.encontros.length} encontros</h3>
-    ${p.encontros.map(e => `<details class="mpg-enc" ${imprimir ? 'open' : ''}><summary><i>${e.n}</i><span><b>${escapeHtml(e.modulo)}</b><small>${escapeHtml(e.tema)} · dificuldades ${escapeHtml(e.gaps || '')}</small></span></summary>
+    ${p.encontros.map(e => `<details class="mpg-enc" ${imprimir ? 'open' : ''}><summary><i>${e.n}</i><span><b>${escapeHtml(e.modulo)}</b><small>${escapeHtml(e.tema)} · dificuldades ${escapeHtml(e.gaps || '')}</small></span>${imprimir ? '' : `<button class="mpg-play" onclick="event.preventDefault(); mtnApresentar('${p.id}', ${e.n})">▶️ Apresentar</button>`}</summary>
       <div class="mpg-enc-c"><div><h4>📘 Teoria (30 min)</h4>${lista(e.teoria)}<h4>🎬 Demonstração (10 min)</h4><p>${escapeHtml(e.demonstracao || '')}</p></div>
         <div><h4>🎤 Prática (55 min)</h4>${lista(e.pratica)}<h4>🏠 Tarefa de casa</h4>${lista(e.tarefa)}</div></div></details>`).join('')}
     <h3 class="mtn-h2">Ferramentas</h3>
@@ -14863,6 +14867,20 @@ function mtnProgramaHtml(p, imprimir) {
     <h4 class="mpg-h4">Régua de avaliação (nota de 1 a 5)</h4>${tab(['Critério', 'Dificuldade', '1 — Iniciante', '3 — Em desenvolvimento', '5 — Referência'], p.regua || [])}
     <h3 class="mtn-h2">Medição antes e depois</h3><p class="plano-meta">${escapeHtml(p.aprovacao || '')}</p>${tab(['Indicador', 'Como medir', 'Meta'], p.medicao || [])}
   </div>`;
+}
+// ▶️ Slides do encontro (já com o QR de presença da turma ativa no último slide)
+async function mtnApresentar(progId, n, tid) {
+  const w = window.open('about:blank', '_blank'), T = MTN.turmas.filter(t => mtnProgT(t).id === progId);
+  const t = tid ? MTN.turmas.find(x => x.id === tid) : (T.find(x => x.status === 'andamento') || T.find(x => x.status !== 'encerrada') || null);
+  let q = ''; if (t) try { q = (await api(`/api/admin/mentoria/turmas/${t.id}/checkin`, { method: 'POST', body: JSON.stringify({ encontro: n }) })).codigo || ''; } catch (e) {}
+  const url = `/programa/apresentar?p=${encodeURIComponent(progId)}&e=${n}${t ? '&t=' + encodeURIComponent(t.nome) : ''}${q ? '&q=' + q : ''}`;
+  if (w) w.location.href = url; else location.href = url;
+}
+function mtnApresentarEscolher(progId) {
+  const p = mtnProgramas().find(x => x.id === progId), T = MTN.turmas.filter(t => mtnProgT(t).id === progId && t.status !== 'encerrada');
+  const t = T.find(x => x.status === 'andamento') || T[0], feitos = t ? ((t.dados || {}).feitos || {}) : {}, prox = (p.encontros.find(e => !feitos[e.n]) || p.encontros[0]).n;
+  mtnModal(`<h3 style="margin-top:0;">▶️ Qual encontro vai apresentar?</h3><p class="plano-meta">${t ? `Turma <b>${escapeHtml(t.nome)}</b> — o último slide já mostra o QR de presença.` : 'Sem turma ativa: os slides abrem sem o QR de presença.'} Use ← → para passar, N para notas e F para tela cheia.</p>
+    <div class="mpg-escolha">${p.encontros.map(e => `<button class="${e.n === prox ? 'prox' : ''} ${feitos[e.n] ? 'feito' : ''}" onclick="mtnModal(''); mtnApresentar('${p.id}', ${e.n}, ${t ? t.id : 0})"><i>${feitos[e.n] ? '✓' : e.n}</i><span><b>Encontro ${e.n}${e.n === prox ? ' · próximo' : ''}</b><small>${escapeHtml(e.modulo)}</small></span></button>`).join('')}</div>`);
 }
 function mtnProgramasAba() {
   const L = MTN.d.programas || []; if (!L.length) return '<div class="msg-vazio">Nenhum programa extra cadastrado.</div>';

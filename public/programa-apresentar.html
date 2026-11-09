@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Apresentação · Programa Impulsionar V4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root { --navy:#0b1329; --navy2:#1e3a8a; --ambar:#f59e0b; --verde:#22c55e; --creme:#f8f5ee; }
+  * { box-sizing:border-box; } html, body { margin:0; height:100%; background:#000; font-family:'Montserrat', system-ui, sans-serif; overflow:hidden; color:#fff; }
+  .palco { position:fixed; inset:0; display:grid; place-items:center; }
+  .slide { position:absolute; width:min(100vw, 177.78vh); height:min(56.25vw, 100vh); font-size:min(1.25vw, 2.22vh); background:radial-gradient(900px 500px at 88% -10%, rgba(245,158,11,.20), transparent 60%), linear-gradient(160deg, var(--navy), var(--navy2)); display:flex; flex-direction:column; justify-content:center; padding:9% 8% 7%; opacity:0; transform:scale(.985); transition:opacity .4s, transform .4s; pointer-events:none; overflow:hidden; }
+  .slide.on { opacity:1; transform:none; pointer-events:auto; }
+  .slide.claro { background:var(--creme); color:var(--navy); }
+  .k { color:var(--ambar); font-weight:800; letter-spacing:.2em; text-transform:uppercase; font-size:1.05em; margin-bottom:1em; }
+  h1 { font-size:4.4em; line-height:1.03; margin:0; font-weight:900; letter-spacing:-.02em; } h1 em, h2 em { font-style:normal; color:var(--ambar); }
+  h2 { font-size:3.2em; line-height:1.1; margin:0 0 .45em; font-weight:900; letter-spacing:-.01em; }
+  .sub { font-size:1.7em; color:#cbd5e1; margin-top:.7em; max-width:82%; line-height:1.4; } .claro .sub { color:#475569; }
+  .grande { font-size:3.6em; font-weight:900; line-height:1.12; max-width:92%; letter-spacing:-.01em; }
+  .rod { position:absolute; left:8%; right:8%; bottom:4%; display:flex; justify-content:space-between; font-size:.95em; color:#94a3b8; } .claro .rod { color:#64748b; }
+  .logo { position:absolute; left:8%; top:4.5%; display:flex; align-items:center; gap:.6em; }
+  .logo .v4 { position:relative; width:2.6em; height:2.6em; border-radius:.7em; display:grid; place-items:center; background:linear-gradient(145deg,#0b1329,#13284a); box-shadow:0 0 0 .14em var(--verde), 0 .4em 1.4em rgba(34,197,94,.35); }
+  .logo .v4 b { color:#fff; font-weight:900; font-size:1.15em; letter-spacing:-.05em; } .logo .v4 i { position:absolute; top:.08em; right:.22em; font-style:normal; color:#4ade80; font-weight:900; font-size:.8em; }
+  .logo span { font-weight:900; letter-spacing:.22em; font-size:.95em; line-height:1.15; } .logo small { display:block; font-weight:700; letter-spacing:.24em; font-size:.62em; color:#4ade80; }
+  .claro .logo span { color:var(--navy); } .claro .logo small { color:#16a34a; }
+  .selo { position:absolute; right:8%; top:5%; font-size:.95em; font-weight:800; letter-spacing:.12em; color:#94a3b8; text-transform:uppercase; } .claro .selo { color:#64748b; }
+  /* jornada */
+  .jorn { display:grid; grid-template-columns:repeat(5, 1fr); gap:1em; margin-top:1.2em; }
+  .jorn div { border-top:.35em solid rgba(255,255,255,.18); padding-top:.9em; opacity:.55; } .jorn div.on { border-color:var(--ambar); opacity:1; } .jorn div.feito { border-color:var(--verde); opacity:.8; }
+  .jorn b { display:block; color:var(--ambar); font-size:1.05em; letter-spacing:.1em; } .jorn span { display:block; font-size:1.35em; font-weight:800; margin-top:.3em; line-height:1.2; }
+  /* tabela de blocos */
+  .blocos { display:grid; grid-template-columns:repeat(5, 1fr); gap:1em; margin-top:1em; }
+  .blocos div { background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); border-radius:1em; padding:1.2em; }
+  .blocos b { display:block; font-size:1.5em; } .blocos i { font-style:normal; color:var(--ambar); font-weight:900; font-size:2em; display:block; margin:.2em 0; } .blocos small { font-size:1.1em; color:#cbd5e1; line-height:1.35; display:block; }
+  .lista { list-style:none; padding:0; margin:.6em 0 0; display:grid; gap:.7em; max-width:90%; }
+  .lista li { font-size:1.75em; font-weight:700; padding-left:1.4em; position:relative; line-height:1.3; } .lista li::before { content:''; position:absolute; left:0; top:.45em; width:.6em; height:.6em; border-radius:.15em; background:var(--ambar); }
+  .claro .lista li { color:var(--navy); }
+  .num { display:inline-grid; place-items:center; width:1.7em; height:1.7em; border-radius:.45em; background:var(--ambar); color:var(--navy); font-weight:900; margin-right:.4em; }
+  .cards { display:grid; gap:1.2em; margin-top:1.2em; } .cards.c3 { grid-template-columns:repeat(3, 1fr); } .cards.c4 { grid-template-columns:repeat(4, 1fr); } .cards.c6 { grid-template-columns:repeat(3, 1fr); gap:.8em; } .cards.c6 div { padding:.9em 1.1em; display:flex; gap:.8em; align-items:center; } .cards.c6 i { font-size:1.4em; margin:0; flex:0 0 2em; } .cards.c6 b { font-size:1.3em; margin:0; }
+  .cards div { background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); border-radius:1.1em; padding:1.4em; }
+  .claro .cards div { background:#fff; border-color:#e2e8f0; }
+  .cards i { font-style:normal; display:grid; place-items:center; width:2em; height:2em; border-radius:.5em; background:var(--ambar); color:var(--navy); font-weight:900; font-size:2em; margin-bottom:.45em; }
+  .cards b { display:block; font-size:1.45em; margin-bottom:.3em; } .cards small { font-size:1.15em; color:#cbd5e1; line-height:1.4; display:block; } .claro .cards small { color:#475569; }
+  /* mapa do palco */
+  .mapa { position:relative; height:46%; margin-top:1em; border-radius:1.2em; background:rgba(255,255,255,.05); border:2px dashed rgba(255,255,255,.2); }
+  .mapa .tela { position:absolute; right:6%; top:8%; width:26%; height:22%; background:#fff; color:var(--navy); border-radius:.4em; display:grid; place-items:center; font-weight:900; font-size:1.3em; }
+  .mapa .pt { position:absolute; text-align:center; transform:translate(-50%, -50%); } .mapa .pt i { display:grid; place-items:center; width:3em; height:3em; margin:0 auto .4em; border-radius:50%; background:var(--ambar); color:var(--navy); font-style:normal; font-weight:900; font-size:1.6em; box-shadow:0 0 0 .4em rgba(245,158,11,.25); }
+  .mapa .pt b { font-size:1.3em; display:block; } .mapa .pt small { font-size:1.05em; color:#cbd5e1; }
+  .mapa .publico { position:absolute; left:0; right:0; bottom:-2.6em; text-align:center; color:#94a3b8; font-weight:800; letter-spacing:.3em; font-size:1em; }
+  .cron { font-size:7.5em; font-weight:900; color:var(--ambar); font-variant-numeric:tabular-nums; margin-top:.15em; cursor:pointer; line-height:1; } .cron small { display:block; font-size:.16em; color:#94a3b8; letter-spacing:.15em; font-weight:700; margin-top:.6em; }
+  .tab { width:100%; border-collapse:collapse; margin-top:.8em; font-size:1.2em; } .tab.compacta { font-size:1.02em; } .tab.compacta td { padding:.45em .7em; } .tab th { text-align:left; color:var(--ambar); font-size:.85em; letter-spacing:.12em; text-transform:uppercase; padding:.5em .7em; } .tab td { padding:.65em .7em; border-top:1px solid rgba(255,255,255,.14); vertical-align:top; line-height:1.3; } .tab td:first-child { font-weight:800; }
+  .qrbox { display:flex; gap:2.6em; align-items:center; margin-top:.6em; } .qrbox img { width:15em; height:15em; background:#fff; border-radius:.8em; padding:.6em; }
+  .qrs { display:flex; gap:2.4em; margin-top:.6em; } .qrs div { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); border-radius:1.2em; padding:1.2em 1.6em; text-align:center; }
+  .qrs img { width:8.5em; height:8.5em; background:#fff; border-radius:.6em; padding:.4em; display:block; margin:0 auto .7em; } .qrs b { display:block; font-size:1.4em; } .qrs small { color:#94a3b8; font-size:1em; }
+  .fb { display:grid; grid-template-columns:repeat(3, 1fr); gap:1.2em; margin-top:1.2em; } .fb div { border-radius:1.1em; padding:1.5em; background:rgba(255,255,255,.07); border-top:.35em solid var(--verde); } .fb div:nth-child(2) { border-color:var(--ambar); } .fb div:nth-child(3) { border-color:#60a5fa; }
+  .fb b { display:block; font-size:1.7em; } .fb small { font-size:1.2em; color:#cbd5e1; }
+  .prog { position:fixed; left:0; top:0; height:4px; background:var(--ambar); transition:width .3s; z-index:5; }
+  .notas { position:fixed; left:0; right:0; bottom:0; z-index:6; background:rgba(2,6,23,.95); border-top:2px solid var(--ambar); padding:16px 22px 18px; font-size:17px; line-height:1.45; color:#e2e8f0; max-height:42vh; overflow:auto; display:none; }
+  .notas.on { display:block; } .notas b { color:var(--ambar); }
+  .ctl { position:fixed; right:14px; top:12px; z-index:7; display:flex; gap:8px; opacity:.25; transition:opacity .2s; } .ctl:hover { opacity:1; }
+  .ctl button, .ctl select { font:inherit; font-size:13px; font-weight:700; border:none; border-radius:999px; padding:8px 12px; background:rgba(255,255,255,.14); color:#fff; cursor:pointer; } .ctl select option { color:#000; }
+  .relogio { position:fixed; left:14px; top:12px; z-index:7; font-size:13px; font-weight:700; color:#94a3b8; font-variant-numeric:tabular-nums; }
+  @media (max-width:700px) { .ctl { opacity:.6; } }
+</style>
+</head>
+<body>
+<div class="prog" id="prog"></div>
+<div class="relogio" id="relogio">00:00</div>
+<div class="ctl"><select id="sel-enc" onchange="trocarEncontro(this.value)" title="Encontro"></select><button onclick="ir(-1)">←</button><button onclick="ir(1)">→</button><button onclick="alternarNotas()">📝 Notas (N)</button><button onclick="telaCheia()">⛶ Tela cheia (F)</button></div>
+<div class="palco" id="palco"></div>
+<div class="notas" id="notas"></div>
+<script>
+const AP = { i: 0, slides: [], inicio: null, cron: null };
+const Q = new URLSearchParams(location.search);
+const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const qr = u => `https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=8&data=${encodeURIComponent(u)}`;
+// "Título. Resto" → manchete + complemento (o slide mostra a ideia, o líder explica)
+function partir(t) {
+  t = String(t || ''); const m = t.match(/^(.{6,90}?)(?::\s|\.\s)(.+)$/);
+  return m ? { h: cap(m[1].replace(/\.$/, '')), s: cap(m[2]) } : { h: cap(t), s: '' };
+}
+const cap = t => { t = String(t || ''); return t.charAt(0).toUpperCase() + t.slice(1); };
+const minutos = t => { const m = String(t || '').match(/(\d+)\s*min/); return m ? Number(m[1]) : 0; };
+(async () => {
+  let d; try { d = await (await fetch('/api/public/mentoria/programa/' + encodeURIComponent(Q.get('p') || 'comunicacao-impacto'), { cache: 'no-store' })).json(); if (d.error) throw new Error(d.error); }
+  catch (e) { document.body.innerHTML = '<p style="padding:40px;font-family:sans-serif">Não consegui carregar a apresentação.</p>'; return; }
+  const p = d.programa, m = d.marca, n = Math.min(p.encontros.length, Math.max(1, Number(Q.get('e')) || 1)), e = p.encontros[n - 1], ant = p.encontros[n - 2], prox = p.encontros[n];
+  document.title = `Encontro ${n} · ${p.nome}`;
+  document.getElementById('sel-enc').innerHTML = p.encontros.map(x => `<option value="${x.n}" ${x.n === n ? 'selected' : ''}>Encontro ${x.n}</option>`).join('');
+  const igE = String(m.instagramEmpresa || 'impulsionarv4').replace(/^@/, ''), igL = String(m.instagram || 'lazaroneto.oficial').replace(/^@/, ''), emp = m.empresa || 'Impulsionar V4', turma = Q.get('t') || '';
+  const logo = `<div class="logo"><div class="v4"><b>V4</b><i>↗</i></div><span>IMPULSIONAR<small>GESTÃO &amp; PESSOAS</small></span></div>`;
+  const selo = `<div class="selo">Encontro ${n} de ${p.encontros.length}</div>`;
+  const rod = `${logo}${selo}<div class="rod"><span>${esc(p.nome)}${turma ? ' · ' + esc(turma) : ''}</span><span>${esc(m.mentor)} · Consultor ${esc(emp)}</span></div>`;
+  const gapsDia = (p.gaps || []).filter(g => String(e.gaps || '').includes('todos') || String(e.gaps || '').split(/\D+/).includes(String(g.n)) || Number(g.principal) === n);
+  const S = [];
+  // 1. Capa
+  S.push({ html: `<div class="k">${esc(p.nome)}${turma ? ' · ' + esc(turma) : ''}</div><div style="font-size:1.6em;font-weight:800;color:#cbd5e1;margin-bottom:.4em">Encontro ${n}</div><h1>${esc(e.modulo)}</h1><div class="sub">${esc(e.tema)}</div>${logo}<div class="rod"><span>${esc(m.mentor)} · Consultor ${esc(emp)}</span><span>@${esc(igE)} · @${esc(igL)}</span></div>`,
+    notas: `Boas-vindas. Diga em 1 frase o que eles vão conseguir fazer no fim de hoje: <b>${esc(e.tema)}</b>. Lembre de pedir que deixem o celular pronto para gravar a própria apresentação.` });
+  // 2. Jornada
+  S.push({ html: `<div class="k">Nossa jornada</div><h2>${p.encontros.length} encontros, <em>1 apresentação de verdade</em> no final</h2><div class="jorn">${p.encontros.map(x => `<div class="${x.n === n ? 'on' : x.n < n ? 'feito' : ''}"><b>${x.n < n ? '✓ ' : ''}ENCONTRO ${x.n}</b><span>${esc(x.modulo)}</span></div>`).join('')}</div>${rod}`,
+    notas: n === 1 ? 'Mostre o caminho completo. A entrega final é uma apresentação de 7 minutos com perguntas, avaliada pela mesma régua de hoje.' : `Mostre onde estamos. Recapitule em 1 frase o que foi visto no encontro ${n - 1}.` });
+  // 3. Roteiro de hoje
+  S.push({ html: `<div class="k">Como funciona o encontro</div><h2>2 horas: <em>mais prática do que teoria</em></h2><div class="blocos">${(p.roteiro || []).map(r => `<div><b>${esc(r[0])}</b><i>${esc(r[1])}</i><small>${esc(r[2])}</small></div>`).join('')}</div>${rod}`,
+    notas: 'Reforce: todo mundo apresenta hoje. A teoria é curta para sobrar tempo de prática.' });
+  // 4. Regras (só no 1º) ou retomada da tarefa
+  if (n === 1) S.push({ html: `<div class="k">Combinados da turma</div><h2>Aqui errar <em>é o objetivo</em></h2><ul class="lista">${(p.regras || []).map(r => `<li>${esc(r)}</li>`).join('')}</ul>${rod}`, notas: 'Leia só a primeira regra em voz alta e peça para alguém ler as outras. Peça um "combinado?" da turma.' });
+  else S.push({ html: `<div class="k">Retomada · 10 minutos</div><h2>Como foi a tarefa de casa?</h2><ul class="lista">${(ant.tarefa || []).map(r => `<li>${esc(r)}</li>`).join('')}</ul><div class="sub">Cada um compartilha <b style="color:#fff">1 aprendizado</b> em até 1 minuto.</div><div class="cron" data-seg="600">10:00<small>TOQUE PARA INICIAR (T)</small></div>${rod}`,
+    notas: 'Rodada rápida: 1 aprendizado por pessoa. Valorize quem fez a tarefa e pergunte o que travou para quem não fez.' });
+  // 5. Objetivo + dificuldades do dia
+  S.push({ html: `<div class="k">O foco de hoje</div><h2>${esc(e.modulo)}</h2><div class="cards ${gapsDia.length > 3 ? 'c6' : 'c3'}">${gapsDia.map(g => `<div><i>${g.n}</i><b>${esc(g.nome)}</b><small>${Number(g.principal) === n ? 'Foco principal hoje' : 'Reforço'}</small></div>`).join('')}</div>${rod}`,
+    notas: 'Pergunte: "De 0 a 10, quanto isso te atrapalha hoje?" e peça 2 respostas em voz alta. Isso conecta a teoria à dor real.' });
+  // 6. Teoria — 1 ideia por slide
+  (e.teoria || []).forEach((t, i) => { const x = partir(t); S.push({ html: `<div class="k">Teoria · ${i + 1} de ${e.teoria.length}</div><div class="grande">${esc(x.h)}</div>${x.s ? `<div class="sub">${esc(x.s)}</div>` : ''}${rod}`, notas: `<b>Ideia completa:</b> ${esc(t)}<br>Dê um exemplo da operação e pergunte se alguém já viveu isso.` }); });
+  // 7. Ferramenta do dia
+  const ferr = {
+    1: { html: `<div class="k">Ferramenta do dia</div><h2>Revisão em <em>3 passes</em></h2><div class="cards c3"><div><i>1</i><b>Conteúdo</b><small>Está certo? Números e datas conferidos com a fonte.</small></div><div><i>2</i><b>Clareza</b><small>Dá para entender em 5 segundos? 1 slide = 1 mensagem.</small></div><div><i>3</i><b>Forma</b><small>Letra, cor e excesso de texto. Máximo de 6 linhas.</small></div></div><div class="sub">Antes de tudo: <b style="color:#fff">Para quem? O que precisam saber? O que devem fazer depois? O que pode sair?</b></div>${rod}`, notas: 'Use o slide real que você trouxe para mostrar os 3 passes na demonstração.' },
+    2: { html: `<div class="k">Ferramenta do dia</div><h2>Roteiro de <em>3 atos</em> · Olha, Pausa, Fala</h2><table class="tab"><thead><tr><th>Ato</th><th>Tempo (em 7 min)</th><th>O que dizer</th></tr></thead><tbody>${(p.atos || []).map(a => `<tr><td>${esc(a[0])}</td><td>${esc(a[1])}</td><td>${esc(a[2])}</td></tr>`).join('')}</tbody></table>${rod}`, notas: 'Mostre Olha-Pausa-Fala com o corpo: olhe para a tela, vire para a turma, pause, fale.' },
+    3: { html: `<div class="k">Ferramenta do dia</div><h2>Mapa do palco em <em>3 pontos</em></h2><div class="mapa"><div class="tela">TELA</div><div class="pt" style="left:50%;top:52%"><i>1</i><b>Centro</b><small>abrir e fechar</small></div><div class="pt" style="left:72%;top:62%"><i>2</i><b>Lado da tela</b><small>explicar o slide</small></div><div class="pt" style="left:24%;top:72%"><i>3</i><b>Frente do público</b><small>perguntas e histórias</small></div><div class="publico">▲ ▲ ▲ PÚBLICO ▲ ▲ ▲</div></div>${rod}`, notas: 'Marque os 3 pontos no chão com fita antes da prática. Ande com intenção e pare para falar.' },
+    4: { html: `<div class="k">Ferramenta do dia</div><h2>Método <em>OPRC</em> para responder</h2><div class="cards c4"><div><i>O</i><b>Ouvir</b><small>Até o fim, sem interromper.</small></div><div><i>P</i><b>Parafrasear</b><small>"Se entendi, você quer saber…"</small></div><div><i>R</i><b>Responder</b><small>Em até 3 frases.</small></div><div><i>C</i><b>Checar</b><small>"Respondi o que você precisava?"</small></div></div><div class="sub">Não sabe? <b style="color:#fff">"Vou confirmar com [área] e te retorno até [dia]."</b> E cumpra.</div>${rod}`, notas: 'Faça a demonstração com 5 perguntas difíceis da turma usando o OPRC.' },
+    5: { html: `<div class="k">Como você será avaliado</div><h2>Régua de apresentação <em>(1 a 5)</em></h2><table class="tab compacta"><thead><tr><th>Critério</th><th>1</th><th>5 — Referência</th></tr></thead><tbody>${(p.regua || []).map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[2])}</td><td>${esc(r[4])}</td></tr>`).join('')}</tbody></table>${rod}`, notas: 'Entregue a régua impressa para a banca: você, o gestor e 2 colegas sorteados.' }
+  }[n];
+  if (ferr) S.push(ferr);
+  // 8. Demonstração
+  S.push({ html: `<div class="k">Demonstração ao vivo · 10 minutos</div><div class="grande">${esc(e.demonstracao)}</div>${rod}`, notas: 'Faça você primeiro. Depois pergunte à turma o que mudou de uma versão para a outra.' });
+  // 9. Prática
+  (e.pratica || []).forEach((t, i) => { const mi = minutos(t), x = partir(t); S.push({ html: `<div class="k">Prática${e.pratica.length > 1 ? ` · parte ${i + 1}` : ''}</div>${/^\d+\s*min$/i.test(x.h) ? `<div style="font-size:1.4em;font-weight:800;color:#cbd5e1;margin-bottom:.3em">${esc(x.h)}</div><h2>${esc(x.s)}</h2>` : `<h2>${esc(x.h)}</h2>${x.s ? `<div class="sub">${esc(x.s)}</div>` : ''}`}${mi ? `<div class="cron" data-seg="${mi * 60}">${String(mi).padStart(2, '0')}:00<small>TOQUE PARA INICIAR (T)</small></div>` : ''}${rod}`, notas: `<b>${esc(t)}</b><br>Grave cada apresentação no celular do próprio participante.` }); });
+  // 10. Feedback
+  S.push({ html: `<div class="k">Feedback depois de cada apresentação</div><h2>Sempre no formato <em>1 + 1 + 1</em></h2><div class="fb"><div><b>✅ 1 ponto forte</b><small>O que manter exatamente como fez.</small></div><div><b>🔧 1 ajuste</b><small>A mudança que mais vai fazer diferença.</small></div><div><b>💡 1 dica prática</b><small>Como treinar isso até o próximo encontro.</small></div></div><div class="sub">"Foi bom" não vale. Diga o quê.</div>${rod}`, notas: 'Deixe este slide na tela durante toda a prática.' });
+  // 11. Tarefa de casa
+  S.push({ html: `<div class="k">Tarefa de casa</div><h2>${n < p.encontros.length ? `Para o encontro ${n + 1}` : 'Próximos 30 dias'}</h2><ul class="lista">${(e.tarefa || []).map(r => `<li>${esc(r)}</li>`).join('')}</ul><div class="sub">Marque como feita na sua <b style="color:#fff">Área do Aluno</b>.</div>${rod}`, notas: 'Peça que cada um diga quando vai fazer a tarefa (dia e hora).' });
+  // 12. Presença
+  const cod = Q.get('q');
+  S.push({ html: `<div class="k">Antes de sair</div><h2>Registre sua <em>presença</em></h2><div class="qrbox">${cod ? `<img src="${qr(location.origin + '/presenca/' + cod)}" alt="">` : ''}<div><ul class="lista" style="max-width:none"><li>Abra a câmera do celular</li><li>Aponte para o QR code</li><li>Toque em Confirmar presença</li></ul>${cod ? `<div class="sub" style="font-size:1.2em">ou acesse <b style="color:#fff">${esc(location.host)}/presenca/${esc(cod)}</b></div>` : `<div class="sub">Abra o <b style="color:#fff">QR presença</b> da turma no Impulsionar.</div>`}</div></div>${rod}`,
+    notas: cod ? 'Deixe o QR na tela até todos registrarem. A lista de presentes atualiza no sistema.' : 'Esta apresentação foi aberta sem turma. Abra o QR de presença pela tela da turma.' });
+  // 13. Encerramento
+  S.push({ html: `<div class="k">${prox ? `Próximo encontro · ${esc(prox.modulo)}` : 'Parabéns pela jornada'}</div><h2>${prox ? esc(prox.tema) : 'Agora é apresentar de verdade.'}</h2><div class="qrs"><div><img src="${qr('https://instagram.com/' + igE)}" alt=""><b>@${esc(igE)}</b><small>${esc(emp)} · gestão e pessoas</small></div><div><img src="${qr('https://instagram.com/' + igL)}" alt=""><b>@${esc(igL)}</b><small>${esc(m.mentor)}</small></div></div>${rod}`,
+    notas: prox ? 'Feche com o compromisso da tarefa e convide para seguir a Impulsionar.' : 'Agradeça, entregue os certificados e combine a sessão de continuidade em 30 dias.' });
+  AP.slides = S;
+  document.getElementById('palco').innerHTML = S.map((s, i) => `<section class="slide" data-i="${i}">${s.html}</section>`).join('');
+  document.querySelectorAll('.cron').forEach(c => c.onclick = () => cronometro(c));
+  const h = Number(location.hash.replace('#', '')); mostrar(Number.isFinite(h) && h > 0 ? h - 1 : 0);
+  setInterval(() => { if (!AP.inicio) return; const s = Math.floor((Date.now() - AP.inicio) / 1000); document.getElementById('relogio').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }, 500);
+})();
+function trocarEncontro(v) { Q.set('e', v); location.href = location.pathname + '?' + Q.toString(); }
+function mostrar(i) {
+  AP.i = Math.max(0, Math.min(AP.slides.length - 1, i)); if (AP.i > 0 && !AP.inicio) AP.inicio = Date.now();
+  document.querySelectorAll('.slide').forEach((s, k) => s.classList.toggle('on', k === AP.i));
+  document.getElementById('prog').style.width = ((AP.i + 1) / AP.slides.length * 100) + '%';
+  document.getElementById('notas').innerHTML = `<b>Slide ${AP.i + 1} de ${AP.slides.length}</b> · ${AP.slides[AP.i].notas || ''}`;
+  history.replaceState(null, '', location.pathname + location.search + '#' + (AP.i + 1));
+}
+function ir(n) { mostrar(AP.i + n); }
+function alternarNotas() { document.getElementById('notas').classList.toggle('on'); }
+function telaCheia() { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); else document.exitFullscreen(); }
+function cronometro(el) {
+  el = el || document.querySelector('.slide.on .cron'); if (!el) return;
+  clearInterval(AP.cron); const s = Number(el.dataset.seg) || 180, fim = Date.now() + s * 1000;
+  AP.cron = setInterval(() => { const r = Math.max(0, Math.round((fim - Date.now()) / 1000)); el.innerHTML = String(Math.floor(r / 60)).padStart(2, '0') + ':' + String(r % 60).padStart(2, '0'); if (!r) { clearInterval(AP.cron); el.textContent = 'Tempo!'; } }, 250);
+}
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'SELECT') return;
+  if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); ir(1); }
+  else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); ir(-1); }
+  else if (e.key.toLowerCase() === 'n') alternarNotas(); else if (e.key.toLowerCase() === 'f') telaCheia(); else if (e.key.toLowerCase() === 't') cronometro();
+  else if (e.key === 'Home') mostrar(0); else if (e.key === 'End') mostrar(AP.slides.length - 1);
+});
+let toqueX = null;
+document.addEventListener('touchstart', e => { toqueX = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => { if (toqueX === null) return; const dx = e.changedTouches[0].clientX - toqueX; if (Math.abs(dx) > 50) ir(dx < 0 ? 1 : -1); toqueX = null; });
+</script>
+</body>
+</html>
