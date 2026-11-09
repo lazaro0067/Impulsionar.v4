@@ -2012,7 +2012,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 09/11 (3)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 09/11 (4)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -2709,7 +2709,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    chavesIntegracoes: renderChavesIntegracoes, mentoriaNegocio: () => { if (MTN.aba === 'programas') MTN.aba = 'painel'; return renderMentoriaNegocio(); }, mentoriaProgramas: () => { MTN.aba = 'programas'; MTN.jaAbriu = true; return renderMentoriaNegocio(); }, agenda: renderAgenda,
+    chavesIntegracoes: renderChavesIntegracoes, mentoriaNegocio: () => { MTN.modo = 'do-chao'; return renderMentoriaNegocio(); }, mentoriaProgramas: () => { MTN.modo = 'comunicacao-impacto'; MTN.abaP = 'programa'; return renderMentoriaNegocio(); }, agenda: renderAgenda,
     dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento, traineePrograma: renderTrainee, agenteRelatorios: renderAgenteRelatorios, estudioVideo: () => renderEstudioVideo('projetos'), estudioAcessos: () => renderEstudioVideo('acessos'), estudioAgente: () => renderEstudioVideo('agente'), estudioAgenda: () => renderEstudioVideo('agenda'),
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster, acessosCandidatos: renderAcessosCandidatos, creditosVagas: renderCreditosVagas
   };
@@ -14354,13 +14354,23 @@ async function renderMentoriaNegocio() {
   } catch (e) { cont.innerHTML = `<h1>🚀 Projeto da Mentoria</h1><div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
   mtnDesenhar();
 }
+const mtnModo = () => (MTN.modo && MTN.modo !== 'do-chao' && (MTN.d.programas || []).some(p => p.id === MTN.modo)) ? MTN.modo : 'do-chao';
+function mtnDesenharPrograma() {
+  const p = MTN.d.programas.find(x => x.id === mtnModo()), cont = document.getElementById('conteudo'), nT = MTN.turmas.filter(t => mtnProgT(t).id === p.id).length;
+  if (!['programa', 'turmas'].includes(MTN.abaP)) MTN.abaP = 'programa';
+  cont.innerHTML = `<div class="mtn"><div class="mtn-cab"><div><h1 style="margin:0;">${p.icone || '🎙️'} ${escapeHtml(p.nome)}</h1><p class="plano-meta" style="margin:4px 0 0;">${escapeHtml(MTN.d.marca.mentor)} · ${escapeHtml(p.encontros.length + ' encontros')} · ${escapeHtml(p.publico || '')}</p></div>
+    <div class="mtn-acoes"><button class="btn-secundario" onclick="mtnProgramaImprimir('${p.id}')">🖨️ Imprimir / PDF</button><button class="btn-primario" style="width:auto;" onclick="mtnEditarTurma(0, '${p.id}')">＋ Nova turma</button></div></div>
+    <nav class="mtn-abas">${[['programa', '📘 Conteúdo do programa'], ['turmas', `🎓 Turmas e alunos${nT ? ` <i class="mtn-badge" style="background:#64748b">${nT}</i>` : ''}`]].map(([k, r]) => `<button class="${MTN.abaP === k ? 'on' : ''}" onclick="MTN.abaP='${k}'; mtnDesenhar()">${r}</button>`).join('')}</nav>
+    <div id="mtn-corpo">${MTN.abaP === 'turmas' ? mtnTurmas() : mtnProgramaHtml(p)}</div></div>`;
+}
 function mtnDesenhar() {
+  if (mtnModo() !== 'do-chao') return mtnDesenharPrograma();
   const novasPed = MTN.leads.filter(l => (l.etapa || 'novo') === 'novo').length;
-  const cont = document.getElementById('conteudo'), d = MTN.d, abas = [['pedidos', `📥 Solicitações${novasPed ? ` <i class="mtn-badge">${novasPed}</i>` : ''}`], ['painel', '🏁 Painel'], ['acessos', '📊 Acessos'], ['aulas', '🎥 Aulas gratuitas'], ['gravar', '🎬 Gravações'], ['funil', '🧲 Funil de vendas'], ['turmas', '🎓 Turmas'], ['programas', `${((MTN.d.programas || [])[0] || {}).icone || '🎙️'} ${(MTN.d.programas || []).length === 1 ? escapeHtml(MTN.d.programas[0].curto) : 'Programas'}`], ['conteudo', '📚 Método e conteúdo'], ['palestra', '🎤 Palestra'], ['config', '⚙️ Configurações']];
+  const cont = document.getElementById('conteudo'), d = MTN.d, abas = [['pedidos', `📥 Solicitações${novasPed ? ` <i class="mtn-badge">${novasPed}</i>` : ''}`], ['painel', '🏁 Painel'], ['acessos', '📊 Acessos'], ['aulas', '🎥 Aulas gratuitas'], ['gravar', '🎬 Gravações'], ['funil', '🧲 Funil de vendas'], ['turmas', '🎓 Turmas'], ['conteudo', '📚 Método e conteúdo'], ['palestra', '🎤 Palestra'], ['config', '⚙️ Configurações']];
   cont.innerHTML = `<div class="mtn"><div class="mtn-cab"><div><h1 style="margin:0;">🚀 ${escapeHtml(d.marca.nome)}</h1><p class="plano-meta" style="margin:4px 0 0;">${escapeHtml(d.marca.mentor)} · ${escapeHtml(d.marca.titulo)} — mentoria, palestras e o plano de 90 dias num lugar só.</p></div>
     <div class="mtn-acoes"><a class="btn-secundario" href="/mentoria" target="_blank" rel="noopener">👁️ Ver página de venda</a><a class="btn-primario" style="width:auto;" href="/palestra/apresentar" target="_blank" rel="noopener">▶️ Apresentar palestra</a></div></div>
     <nav class="mtn-abas">${abas.map(([k, r]) => `<button class="${MTN.aba === k ? 'on' : ''}" onclick="MTN.aba='${k}'; mtnDesenhar()">${r}</button>`).join('')}</nav>
-    <div id="mtn-corpo">${({ pedidos: mtnPedidos, painel: mtnPainel, acessos: mtnAcessos, aulas: mtnAulas, gravar: mtnGravacoes, funil: mtnFunil, turmas: mtnTurmas, programas: mtnProgramasAba, conteudo: mtnConteudo, palestra: mtnPalestra, config: mtnConfig }[MTN.aba] || mtnPainel)()}</div></div>`;
+    <div id="mtn-corpo">${({ pedidos: mtnPedidos, painel: mtnPainel, acessos: mtnAcessos, aulas: mtnAulas, gravar: mtnGravacoes, funil: mtnFunil, turmas: mtnTurmas, conteudo: mtnConteudo, palestra: mtnPalestra, config: mtnConfig }[MTN.aba] || mtnPainel)()}</div></div>`;
 }
 // ---------- 🏁 Painel ----------
 function mtnPainel() {
@@ -14751,9 +14761,9 @@ async function mtnSalvarAula(id) {
 async function mtnExcluirAula(id) { if (!confirm('Excluir esta aula? O link dela para de funcionar.')) return; try { await api('/api/admin/mentoria/aulas/' + id, { method: 'DELETE' }); mtnModal(''); mtnCarregarAulas(); } catch (e) { mostrarToast(e.message, true); } }
 function mtnDatasEncontros(t) { if (!t.inicio) return []; const base = new Date(t.inicio + 'T12:00:00'); return mtnProgT(t).encontros.map((s, i) => { const x = new Date(base); x.setDate(x.getDate() + i * 7); return x; }); }
 function mtnTurmas() {
-  const T = MTN.turmas;
-  return `<div class="mtn-filtros"><b>${T.length} turma(s)</b><span style="flex:1"></span><button class="btn-primario btn-sm" style="width:auto;" onclick="mtnEditarTurma()">＋ Nova turma</button></div>
-    ${!T.length ? `<div class="mtn-vazio-grande">Crie a <b>turma piloto</b> (preço de lançamento R$ 1.497, até 8 alunos). Enquanto houver uma turma <b>aberta</b>, a página da mentoria mostra a data, as vagas e o botão de pagamento.</div>` : ''}
+  const modo = mtnModo(), T = MTN.turmas.filter(t => mtnProgT(t).id === modo);
+  return `<div class="mtn-filtros"><b>${T.length} turma(s)</b><span style="flex:1"></span><button class="btn-primario btn-sm" style="width:auto;" onclick="mtnEditarTurma(0, '${modo}')">＋ Nova turma</button></div>
+    ${!T.length ? (modo === 'do-chao' ? `<div class="mtn-vazio-grande">Crie a <b>turma piloto</b> (preço de lançamento R$ 1.497, até 8 alunos). Enquanto houver uma turma <b>aberta</b>, a página da mentoria mostra a data, as vagas e o botão de pagamento.</div>` : `<div class="mtn-vazio-grande">Nenhuma turma ainda. Toque em <b>＋ Nova turma</b>, coloque a data do 1º encontro e cadastre os participantes. Depois é só enviar os acessos pelo WhatsApp.</div>`) : ''}
     ${T.map(t => { const datas = mtnDatasEncontros(t), feitos = (t.dados || {}).feitos || {}, pagos = t.alunos.filter(a => a.pagamento === 'pago'), pg = mtnProgT(t), sg = mtnSig(pg); return `<div class="mtn-turma ${pg.id === 'do-chao' ? '' : 'outro-prog'}">
       <div class="mtn-turma-cab"><div><span class="mtn-prog-tag">${pg.icone || '🎓'} ${escapeHtml(pg.curto || pg.nome)}</span><h3>${escapeHtml(t.nome)} <span class="mtn-st ${t.status}">${{ aberta: 'Inscrições abertas', andamento: 'Em andamento', encerrada: 'Encerrada' }[t.status] || t.status}</span></h3>
         <small>${t.inicio ? 'Início ' + new Date(t.inicio + 'T12:00:00').toLocaleDateString('pt-BR') : 'sem data'}${t.horario ? ' · ' + escapeHtml(t.horario) : ''} · ${mtnMoeda(t.preco)} · ${pagos.length}/${t.vagas} pagos · ${mtnMoeda(pagos.reduce((s, a) => s + (Number(a.valor) || 0), 0))}</small></div>
@@ -14800,7 +14810,7 @@ function mtnNovoAluno(tid, lead) {
     <label>Valor pago (R$)<input id="mta-valor" type="number" value="${escapeHtml((MTN.turmas.find(t => t.id === tid) || {}).preco || '')}"></label><label>Pagamento<select id="mta-pagamento"><option>pago</option><option>pendente</option><option>cortesia</option></select></label></div>
     <div class="acoes-form"><button class="btn-primario" style="width:auto;" onclick="mtnSalvarAluno(${tid}, ${l.id || 0})">Adicionar</button><button class="btn-secundario" onclick="mtnModal('')">Cancelar</button></div>`);
 }
-function mtnMatricular(leadId) { const l = MTN.leads.find(x => x.id === leadId), t = MTN.turmas.find(x => x.status !== 'encerrada') || MTN.turmas[0]; if (!t) return mostrarToast('Crie uma turma primeiro.', true); mtnNovoAluno(t.id, l); }
+function mtnMatricular(leadId) { const l = MTN.leads.find(x => x.id === leadId), pr = MTN.turmas.filter(x => mtnProgT(x).id === mtnModo()), t = pr.find(x => x.status !== 'encerrada') || pr[0]; if (!t) return mostrarToast('Crie uma turma primeiro.', true); mtnNovoAluno(t.id, l); }
 async function mtnSalvarAluno(tid, leadId) {
   const b = { turma_id: tid, lead_id: leadId || null }; ['nome', 'whatsapp', 'email', 'cargo', 'empresa', 'valor', 'pagamento'].forEach(k => b[k] = (document.getElementById('mta-' + k) || {}).value);
   try { await api('/api/admin/mentoria/alunos', { method: 'POST', body: JSON.stringify(b) }); mtnModal(''); MTN.leads = await api('/api/admin/mentoria/leads'); await mtnRecarregarTurmas(); mostrarToast('✅ Aluno adicionado.'); } catch (e) { mostrarToast(e.message, true); }
@@ -14820,7 +14830,7 @@ function mtnProgramaHtml(p, imprimir) {
   const tab = (cab, linhas) => `<div class="tabela-rolagem"><table class="mtn-tab"><thead><tr>${cab.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas.map(l => `<tr>${l.map((c, i) => `<td>${i === 0 ? '<b>' + escapeHtml(c) + '</b>' : escapeHtml(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   return `<div class="mpg">
     <div class="mpg-capa"><div><small>PROGRAMA ${escapeHtml((MTN.d.marca.empresa || 'Impulsionar V4').toUpperCase())}</small><h2>${p.icone || '🎙️'} ${escapeHtml(p.nome)}</h2><p>${escapeHtml(p.subtitulo || '')}</p><span>${escapeHtml(MTN.d.marca.mentor)} · ${escapeHtml(MTN.d.marca.cargo || 'Consultor')} ${escapeHtml(MTN.d.marca.empresa || 'Impulsionar V4')}</span></div>
-      ${imprimir ? '' : `<div class="mpg-bts"><button class="btn-primario" style="width:auto;" onclick="mtnEditarTurma(0, '${p.id}')">＋ Criar turma deste programa</button>${turmas.length ? `<button class="btn-secundario" onclick="MTN.aba='turmas'; mtnDesenhar()">🎓 Ver turmas (${turmas.length})</button>` : ''}<button class="btn-secundario" onclick="mtnProgramaImprimir('${p.id}')">🖨️ Imprimir / PDF</button></div>`}</div>
+      ${imprimir || mtnModo() === p.id ? '' : `<div class="mpg-bts"><button class="btn-primario" style="width:auto;" onclick="mtnEditarTurma(0, '${p.id}')">＋ Criar turma deste programa</button>${turmas.length ? `<button class="btn-secundario" onclick="MTN.aba='turmas'; mtnDesenhar()">🎓 Ver turmas (${turmas.length})</button>` : ''}<button class="btn-secundario" onclick="mtnProgramaImprimir('${p.id}')">🖨️ Imprimir / PDF</button></div>`}</div>
     <div class="mpg-fatos"><div><b>🎯 Objetivo</b><p>${escapeHtml(p.objetivo || '')}</p></div><div><b>👥 Para quem</b><p>${escapeHtml(p.publico || '')}</p></div><div><b>🗓️ Formato</b><p>${escapeHtml(p.formato || '')}</p></div><div><b>🏁 Entrega final</b><p>${escapeHtml(p.entrega || '')}</p></div></div>
     <h3 class="mtn-h2">Onde cada dificuldade do time é trabalhada</h3>${tab(['Dificuldade', 'Encontro principal', 'Reforço em'], (p.gaps || []).map(g => [g.n + '. ' + g.nome, String(g.principal), g.reforco]))}
     <h3 class="mtn-h2">Roteiro de todo encontro (2 h)</h3>${tab(['Bloco', 'Tempo', 'O que acontece'], p.roteiro || [])}
