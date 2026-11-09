@@ -1767,6 +1767,31 @@
   .mag-ic { position:relative; border:1px solid #cbd5e1; background:#fff; color:#0b1329; border-radius:12px; height:42px; min-width:42px; padding:0 12px; font:inherit; font-weight:800; font-size:16px; cursor:pointer; width:auto !important; margin:0 !important; }
   .mag-ic.prim { background:#0b1329; color:#fff; border-color:#0b1329; } .mag-ic.peq { height:36px; min-width:36px; padding:0 10px; }
   .mag-ponto { position:absolute; top:6px; right:6px; width:9px; height:9px; border-radius:50%; background:#f59e0b; border:2px solid #fff; } .mag-ponto.ok { background:#16a34a; } .mag-ponto[hidden] { display:none; }
+ .magn-nova { width:100%; margin:4px 0 10px; padding:13px; border:2px dashed #93c5fd; background:#eff6ff; color:#1d4ed8; font:inherit; font-weight:800; border-radius:12px; cursor:pointer; }
+  .magn-filtros { display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; } .magn-filtros button { width:auto; margin:0; border:1px solid #cbd5e1; background:#fff; border-radius:20px; padding:6px 12px; font:inherit; font-size:13px; font-weight:700; color:#475569; cursor:pointer; } .magn-filtros button.on { background:#0b1329; color:#fff; border-color:#0b1329; } .magn-filtros i { font-style:normal; opacity:.7; margin-left:2px; }
+  .magn-busca { margin:0 0 10px !important; }
+  .magn-card { background:#fff; border:1px solid #e2e8f0; border-left:4px solid #2563eb; border-radius:12px; padding:10px 12px; margin-bottom:8px; } .magn-card.ok { border-left-color:#16a34a; opacity:.85; }
+  .magn-card-t { cursor:pointer; } .magn-card-t b { display:block; color:#0b1329; } .magn-card-t small { color:#64748b; }
+  .magn-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; } .magn-tags span { font-size:12px; background:#f1f5f9; color:#334155; border-radius:8px; padding:2px 8px; } .magn-tags .pend { background:#fef3c7; color:#92400e; } .magn-tags .fol { background:#ffedd5; color:#9a3412; } .magn-tags .atras { background:#fee2e2; color:#b91c1c; font-weight:700; }
+  .magn-bts { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; } .magn-bts button { width:auto; margin:0; border:1px solid #e2e8f0; background:#f8fafc; border-radius:8px; padding:5px 9px; font:inherit; font-size:13px; cursor:pointer; color:#0f172a; } .magn-bts button.exc { margin-left:auto; }
+  @media (max-width:560px) { .magn-bts button span { display:none; } .magn-bts button { font-size:16px; padding:6px 11px; } }
+  .modal-caixa.magn-caixa { max-width:760px !important; } @media (max-width:640px) { .modal-caixa.magn-caixa { width:100%; max-width:none !important; min-height:100%; border-radius:0; margin:0; } }
+  .magn-ed-topo { display:flex; align-items:center; gap:8px; } .magn-tit { font-size:18px !important; font-weight:800; border:none !important; border-bottom:2px solid #e2e8f0 !important; border-radius:0 !important; padding:6px 2px !important; margin:0 !important; flex:1; }
+  .magn-salvo { font-size:12px; color:#16a34a; white-space:nowrap; }
+  .magn-ed-meta { display:flex; gap:8px; margin:8px 0; } .magn-ed-meta input { margin:0 !important; } .magn-ed-meta input[type=date] { width:auto; flex:0 0 150px; }
+  .magn-cap { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:8px; position:sticky; top:0; z-index:2; }
+  .magn-tipo { display:flex; gap:6px; margin-bottom:6px; } .magn-tipo button { width:auto; margin:0; flex:1; border:1px solid #cbd5e1; background:#fff; border-radius:8px; padding:6px; font:inherit; font-weight:700; cursor:pointer; color:#475569; } .magn-tipo button.on { background:#2563eb; border-color:#2563eb; color:#fff; } #magn-t-acao.on { background:#16a34a; border-color:#16a34a; }
+  .magn-cap-l { display:flex; gap:6px; align-items:flex-end; } .magn-cap-l textarea { margin:0 !important; resize:none; min-height:42px; font-size:16px; } .magn-add { width:46px !important; height:42px; margin:0 !important; border:none; border-radius:10px; background:#2563eb; color:#fff; font-size:18px; cursor:pointer; }
+  .magn-itens { margin:8px 0; max-height:48vh; overflow:auto; } @media (max-width:640px) { .magn-itens { max-height:none; } }
+  .magn-it { display:flex; gap:8px; align-items:flex-start; padding:6px 4px; border-bottom:1px solid #f1f5f9; } .magn-it > input[type=checkbox] { width:20px; height:20px; margin:8px 0 0 !important; flex:0 0 auto; } .magn-pin { padding-top:7px; }
+  .magn-it-c { flex:1; min-width:0; } .magn-it-c textarea { margin:0 !important; border:1px solid transparent !important; background:transparent; resize:none; padding:6px !important; font:inherit; overflow:hidden; } .magn-it-c textarea:focus { border-color:#cbd5e1 !important; background:#fff; }
+  .magn-it.acao .magn-it-c textarea { font-weight:600; } .magn-it.feito .magn-it-c textarea { text-decoration:line-through; color:#94a3b8; }
+  .magn-it-m { display:flex; gap:6px; } .magn-it-m input { margin:0 !important; font-size:13px; padding:5px 8px !important; } .magn-it-m input[type=date] { flex:0 0 140px; }
+  .magn-it-b { display:flex; flex-direction:column; gap:2px; } .magn-it-b button { width:30px; height:28px; margin:0; border:none; background:none; cursor:pointer; color:#94a3b8; font-size:14px; border-radius:6px; } .magn-it-b button:hover { background:#f1f5f9; color:#0f172a; }
+  .magn-ed-rod { display:flex; flex-wrap:wrap; gap:6px; border-top:1px solid #e2e8f0; padding-top:10px; } .magn-ed-rod button { width:auto !important; margin:0 !important; }
+  .magn-atalhos { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px; } .magn-atalhos button { width:auto; margin:0; border:1px solid #cbd5e1; background:#fff; border-radius:20px; padding:5px 11px; font:inherit; font-size:13px; cursor:pointer; }
+  .mag-bt.nota { padding:4px 8px; } .mag-seg button { white-space:nowrap; } @media (max-width:420px) { .mag-seg button { padding:8px 3px; font-size:13px; } }
+  .magn-cap-l .ditado-wrap { flex:1; }
   .mag-barra { display:flex; align-items:center; gap:8px; margin-bottom:8px; } .mag-seg { display:flex; flex:1; background:#e2e8f0; border-radius:12px; padding:3px; } .mag-seg button { flex:1; border:none; background:none; border-radius:9px; padding:8px 6px; font:inherit; font-weight:700; color:#475569; cursor:pointer; width:auto; margin:0; } .mag-seg button.on { background:#fff; color:#0b1329; box-shadow:0 1px 3px rgba(0,0,0,.12); }
   .mag-hoje-linha { font-size:13.5px; color:#475569; margin:0 2px 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .mag-hoje-linha span { color:#16a34a; }
   .mag-aviso.mini { padding:8px 12px; font-size:13px; }
@@ -1977,7 +2002,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 08/11 (5)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 09/11 (1)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -28601,33 +28626,35 @@ async function evAgConversar() {
    com resumo diário e lembretes no celular
    ========================================================== */
 const MAG = { vista: 'lista', mes: '', dados: null, diaSel: '' };
-const MAG_TIPOS = { manual: ['#2563eb', 'Meu compromisso'], consultoria: ['#16a34a', 'Consultoria DPO'], pedido: ['#f59e0b', 'Pedido de consultoria'], mentoria: ['#7c3aed', 'Mentoria'], evento: ['#db2777', 'Evento / aula'], treinamento: ['#0891b2', 'Treinamento'], prazo: ['#dc2626', 'Prazo'], post: ['#e1306c', 'Post agendado'], outlook: ['#0078d4', 'Outlook'] };
+const MAG_TIPOS = { manual: ['#2563eb', 'Meu compromisso'], consultoria: ['#16a34a', 'Consultoria DPO'], pedido: ['#f59e0b', 'Pedido de consultoria'], mentoria: ['#7c3aed', 'Mentoria'], evento: ['#db2777', 'Evento / aula'], treinamento: ['#0891b2', 'Treinamento'], prazo: ['#dc2626', 'Prazo'], followup: ['#ea580c', 'Follow-up de reunião'], post: ['#e1306c', 'Post agendado'], outlook: ['#0078d4', 'Outlook'] };
 const MAG_SEM = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
-const magCor = i => (MAG_TIPOS[i.origem === 'manual' ? 'manual' : i.origem === 'outlook' ? 'outlook' : i.tipo] || MAG_TIPOS.manual)[0];
-const magRot = i => (MAG_TIPOS[i.origem === 'manual' ? 'manual' : i.origem === 'outlook' ? 'outlook' : i.tipo] || MAG_TIPOS.manual)[1];
+const magTipoK = i => i.origem === 'manual' ? (i.tipo === 'followup' ? 'followup' : 'manual') : i.origem === 'outlook' ? 'outlook' : i.tipo;
+const magCor = i => (MAG_TIPOS[magTipoK(i)] || MAG_TIPOS.manual)[0];
+const magRot = i => (MAG_TIPOS[magTipoK(i)] || MAG_TIPOS.manual)[1];
 const magSoma = (d, n) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 function magDiaTxt(d, hoje) {
   if (d === hoje) return 'Hoje'; if (d === magSoma(hoje, 1)) return 'Amanhã'; if (d === magSoma(hoje, -1)) return 'Ontem';
   const x = new Date(d + 'T12:00:00Z'), t = `${MAG_SEM[x.getUTCDay()]}, ${x.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', timeZone: 'UTC' })}`; return t[0].toUpperCase() + t.slice(1);
 }
 async function renderAgenda() {
-  try { const v = localStorage.getItem('mag_vista'); if (['lista', 'semana', 'mes'].includes(v)) MAG.vista = v; } catch (e) {}
+  try { const v = localStorage.getItem('mag_vista'); if (['lista', 'semana', 'mes', 'notas'].includes(v)) MAG.vista = v; } catch (e) {}
   const c = document.getElementById('conteudo');
   c.innerHTML = `<div class="agd"><div class="mag-topo"><h1>📅 Minha Agenda</h1>
-    <div class="mag-acoes"><button class="mag-ic prim" onclick="magEditar()" title="Novo compromisso">＋<span> Novo</span></button><button class="mag-ic" id="mag-bt-sino" onclick="magConfig('alertas')" title="Alertas no celular">🔔<i class="mag-ponto" hidden></i></button><button class="mag-ic" onclick="magConfig()" title="Configurar">⚙️<span> Configurar</span></button></div></div>
+    <div class="mag-acoes"><button class="mag-ic prim" onclick="magEditar()" title="Novo compromisso">＋<span> Novo</span></button><button class="mag-ic" onclick="magNotaNova()" title="Anotar reunião">📝<span> Anotar</span></button><button class="mag-ic" id="mag-bt-sino" onclick="magConfig('alertas')" title="Alertas no celular">🔔<i class="mag-ponto" hidden></i></button><button class="mag-ic" onclick="magConfig()" title="Configurar">⚙️<span> Configurar</span></button></div></div>
     <div id="mag-corpo"><p style="color:#64748b;">Carregando…</p></div></div><div id="modal-area"></div>`;
   await magCarregar();
 }
 function magSegunda(d) { return magSoma(d, -new Date(d + 'T12:00:00Z').getUTCDay()); } // semana de domingo a sábado, como o mês
 async function magCarregar(atualizar) {
   try {
+    if (MAG.vista === 'notas') { await magNotasCarregar(); magDesenhar(); magEstadoAlertas(); return; }
     const hoje = (MAG.dados && MAG.dados.hoje) || new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
     let de, ate;
     if (MAG.vista === 'mes') { if (!MAG.mes) MAG.mes = hoje.slice(0, 7); const p = new Date(MAG.mes + '-01T12:00:00Z'); de = magSoma(MAG.mes + '-01', -p.getUTCDay()); ate = magSoma(de, 41); }
     else if (MAG.vista === 'semana') { if (!MAG.semana) MAG.semana = magSegunda(hoje); de = MAG.semana; ate = magSoma(de, 6); if (!MAG.diaSel || MAG.diaSel < de || MAG.diaSel > ate) MAG.diaSel = hoje >= de && hoje <= ate ? hoje : de; }
     else { de = hoje; ate = magSoma(hoje, 30); }
     MAG.dados = await api(`/api/admin/agenda?de=${de}&ate=${ate}${atualizar ? '&atualizar=1' : ''}`);
-    magDesenhar(); magEstadoAlertas();
+    magDesenhar(); magEstadoAlertas(); magNotasCarregar().catch(() => {});
   } catch (e) { const el = document.getElementById('mag-corpo'); if (el) el.innerHTML = `<div class="mag-aviso erro">${escapeHtml(e.message)}</div>`; }
 }
 // este aparelho está mesmo cadastrado no servidor? (compara a inscrição do navegador com a lista)
@@ -28645,7 +28672,8 @@ function magDesenhar() {
   const d = MAG.dados, hoje = d.hoje;
   const deHoje = d.itens.filter(i => i.data === hoje), agoraHm = new Date(Date.now() - 3 * 3600e3).toISOString().slice(11, 16);
   const prox = deHoje.find(i => i.hora_inicio && i.hora_inicio >= agoraHm);
-  const vis = [['lista', 'Próximos'], ['semana', 'Semana'], ['mes', 'Mês']];
+  const vis = [['lista', 'Próximos'], ['semana', 'Semana'], ['mes', 'Mês'], ['notas', '📝 Notas']];
+  if (MAG.vista === 'notas') { el.innerHTML = `<div class="mag-barra"><div class="mag-seg">${vis.map(([k, r]) => `<button class="${MAG.vista === k ? 'on' : ''}" onclick="magVista('${k}')">${r}</button>`).join('')}</div></div>${magNotasHtml()}`; return; }
   el.innerHTML = `${d.outlookErro ? `<div class="mag-aviso erro mini">Outlook: ${escapeHtml(d.outlookErro)} <a href="#" onclick="magConfig('outlook');return false;">ajustar</a></div>` : ''}
     <div class="mag-barra"><div class="mag-seg">${vis.map(([k, r]) => `<button class="${MAG.vista === k ? 'on' : ''}" onclick="magVista('${k}')">${r}</button>`).join('')}</div><button class="mag-ic peq" onclick="magCarregar(true)" title="Atualizar (inclui o Outlook)">↻</button></div>
     <div class="mag-hoje-linha"><b>Hoje:</b> ${deHoje.length ? `${deHoje.length} compromisso${deHoje.length > 1 ? 's' : ''}` : 'livre'}${prox ? ` · <span>próximo <b>${escapeHtml(prox.hora_inicio)}</b> ${escapeHtml(prox.titulo)}</span>` : ''}</div>
@@ -28673,7 +28701,7 @@ function magItem(i) {
   const cor = magCor(i);
   return `<div class="mag-item" style="--c:${cor}"><div class="mag-hora">${i.hora_inicio ? `<b>${escapeHtml(i.hora_inicio)}</b>${i.hora_fim ? `<small>${escapeHtml(i.hora_fim)}</small>` : ''}` : '<small>dia todo</small>'}</div>
     <div class="mag-info"><b>${escapeHtml(i.titulo)}</b><small><span class="mag-tag" style="background:${cor}1a;color:${cor}">${escapeHtml(magRot(i))}</span>${i.local ? ' 📍 ' + escapeHtml(i.local) : ''}${i.repetir ? ' 🔁' : ''}${i.outlook ? ' · no Outlook' : ''}</small>${i.descricao ? `<p>${escapeHtml(String(i.descricao).slice(0, 160))}</p>` : ''}</div>
-    <div class="mag-bts">${i.link ? `<a class="mag-bt entrar" href="${escapeHtml(i.link)}" target="_blank" rel="noopener">Entrar</a>` : ''}${i.origem === 'manual' ? `<button class="mag-bt" onclick="magEditar(${i.eventoId})">Editar</button>` : i.abrir ? `<button class="mag-bt" onclick="irPara('${escapeHtml(i.abrir)}')">Abrir</button>` : ''}</div></div>`;
+    <div class="mag-bts"><button class="mag-bt nota" onclick="magNotaDoEvento('${escapeHtml(String(i.id))}')" title="Anotar pontos desta reunião">📝</button>${i.link ? `<a class="mag-bt entrar" href="${escapeHtml(i.link)}" target="_blank" rel="noopener">Entrar</a>` : ''}${i.origem === 'manual' ? `<button class="mag-bt" onclick="magEditar(${i.eventoId})">Editar</button>` : i.abrir ? `<button class="mag-bt" onclick="irPara('${escapeHtml(i.abrir)}')">Abrir</button>` : ''}</div></div>`;
 }
 function magLista(itens) {
   const hoje = MAG.dados.hoje, grupos = {};
@@ -28718,6 +28746,147 @@ async function magExcluir(id) {
   const ev = MAG.dados.itens.find(i => i.eventoId === id) || {};
   if (!confirm(ev.repetir ? 'Excluir este compromisso e todas as repetições?' : 'Excluir este compromisso?')) return;
   try { const r = await api('/api/admin/agenda/eventos/' + id, { method: 'DELETE' }); mtnModal(''); mostrarToast(r.aviso || r.message, !!r.aviso); await magCarregar(); } catch (e) { mostrarToast(e.message, true); }
+}
+/* ---------- 📝 Anotações e planos de reunião ---------- */
+const MAGN = { lista: [], filtro: 'abertas', busca: '', nota: null, tipo: 'ponto', timer: null, salvando: false };
+const magDataBr = d => d ? d.split('-').reverse().join('/') : '';
+async function magNotasCarregar() {
+  const r = await api('/api/admin/agenda/notas'); MAGN.lista = r.notas || []; MAGN.hoje = r.hoje;
+  if (!MAG.dados) MAG.dados = { hoje: r.hoje, itens: [], config: {} };
+}
+function magNotasHtml() {
+  const L = MAGN.lista, hoje = MAGN.hoje || MAG.dados.hoje;
+  const cont = { abertas: L.filter(n => n.status !== 'concluida').length, follow: L.filter(n => n.follow_data && n.status !== 'concluida').length, concluidas: L.filter(n => n.status === 'concluida').length };
+  const b = MAGN.busca.toLowerCase();
+  const vis = L.filter(n => MAGN.filtro === 'concluidas' ? n.status === 'concluida' : MAGN.filtro === 'follow' ? (n.follow_data && n.status !== 'concluida') : n.status !== 'concluida')
+    .filter(n => !b || (n.titulo + ' ' + (n.participantes || '') + ' ' + n.itens.map(i => i.texto + ' ' + i.responsavel).join(' ')).toLowerCase().includes(b));
+  if (MAGN.filtro === 'follow') vis.sort((a, c) => (a.follow_data + (a.follow_hora || '')).localeCompare(c.follow_data + (c.follow_hora || '')));
+  const card = n => {
+    const ac = n.itens.filter(i => i.tipo === 'acao'), feitas = ac.filter(i => i.feito).length, pts = n.itens.length - ac.length;
+    const atras = n.follow_data && n.status !== 'concluida' && n.follow_data < hoje;
+    return `<div class="magn-card ${n.status === 'concluida' ? 'ok' : ''}"><div class="magn-card-t" onclick="magNotaAbrir(${n.id})"><b>${n.status === 'concluida' ? '✅ ' : ''}${escapeHtml(n.titulo)}</b>
+      <small>📅 ${magDataBr(n.data)}${n.participantes ? ' · 👥 ' + escapeHtml(n.participantes) : ''}</small>
+      <div class="magn-tags"><span>📌 ${pts} ponto${pts === 1 ? '' : 's'}</span><span class="${ac.length && feitas < ac.length ? 'pend' : ''}">✅ ${feitas}/${ac.length} ações</span>${n.follow_data ? `<span class="fol ${atras ? 'atras' : ''}">🔁 ${magDataBr(n.follow_data).slice(0, 5)}${n.follow_hora ? ' ' + n.follow_hora : ''}${atras ? ' · atrasado' : ''}</span>` : ''}</div></div>
+      <div class="magn-bts"><button onclick="magNotaAbrir(${n.id})" title="Editar">✏️<span> Editar</span></button><button onclick="magNotaFollow(${n.id})" title="Follow-up">🔁<span> Follow</span></button><button onclick="magNotaWhats(${n.id})" title="Enviar pelo WhatsApp">💬<span> WhatsApp</span></button>
+        <button onclick="magNotaStatus(${n.id}, ${n.status !== 'concluida'})" title="${n.status === 'concluida' ? 'Reabrir' : 'Concluir'}">${n.status === 'concluida' ? '↩️<span> Reabrir</span>' : '✔️<span> Concluir</span>'}</button><button class="exc" onclick="magNotaExcluir(${n.id})" title="Excluir">🗑️</button></div></div>`;
+  };
+  return `<div class="magn"><button class="magn-nova" onclick="magNotaNova()">＋ Nova anotação de reunião</button>
+    <div class="magn-filtros">${[['abertas', 'Abertas'], ['follow', '🔁 Follow-up'], ['concluidas', 'Concluídas']].map(([k, r]) => `<button class="${MAGN.filtro === k ? 'on' : ''}" onclick="MAGN.filtro='${k}'; magDesenhar()">${r} <i>${cont[k]}</i></button>`).join('')}</div>
+    <input class="magn-busca" placeholder="🔎 Buscar por reunião, pessoa ou ponto…" value="${escapeHtml(MAGN.busca)}" oninput="MAGN.busca=this.value; clearTimeout(MAGN.tb); MAGN.tb=setTimeout(()=>{magDesenhar(); const i=document.querySelector('.magn-busca'); if(i){i.focus(); i.setSelectionRange(i.value.length,i.value.length);}},250)">
+    ${vis.length ? vis.map(card).join('') : `<p class="mag-vazio">${MAGN.filtro === 'abertas' ? 'Nenhuma anotação aberta. Em reunião? Toque em “＋ Nova anotação” e vá anotando.' : MAGN.filtro === 'follow' ? 'Nenhum follow-up marcado.' : 'Nada concluído ainda.'}</p>`}</div>`;
+}
+function magNotaNova(base) {
+  const hoje = MAGN.hoje || (MAG.dados && MAG.dados.hoje);
+  MAGN.nota = Object.assign({ id: 0, titulo: '', data: hoje, participantes: '', itens: [], status: 'aberta' }, base || {}); MAGN.tipo = 'ponto';
+  magNotaEditor(true);
+}
+function magNotaDoEvento(id) {
+  const i = MAG.dados.itens.find(x => String(x.id) === id); if (!i) return magNotaNova();
+  const ja = MAGN.lista.find(n => n.evento_ref === String(i.id) && n.status !== 'concluida');
+  if (ja) return magNotaAbrir(ja.id);
+  magNotaNova({ titulo: i.titulo, data: i.data, evento_ref: String(i.id) });
+}
+async function magNotaAbrir(id) {
+  if (!MAGN.lista.length) await magNotasCarregar();
+  const n = MAGN.lista.find(x => x.id === id); if (!n) return mostrarToast('Anotação não encontrada.', true);
+  MAGN.nota = JSON.parse(JSON.stringify(n)); MAGN.tipo = 'ponto'; magNotaEditor(false);
+}
+function magNotaEditor(nova) {
+  const n = MAGN.nota;
+  mtnModal(`<div class="magn-ed"><div class="magn-ed-topo"><input id="magn-titulo" class="magn-tit" placeholder="Reunião de quê? (ex.: Resultado semanal com supervisores)" value="${escapeHtml(n.titulo)}" oninput="MAGN.nota.titulo=this.value; magNotaAuto()"><span id="magn-salvo" class="magn-salvo">${n.id ? 'Salvo ✓' : ''}</span></div>
+    <div class="magn-ed-meta"><input id="magn-data" type="date" value="${escapeHtml(n.data || '')}" onchange="MAGN.nota.data=this.value; magNotaAuto()"><input id="magn-part" placeholder="👥 Participantes" value="${escapeHtml(n.participantes || '')}" oninput="MAGN.nota.participantes=this.value; magNotaAuto()"></div>
+    <div class="magn-cap"><div class="magn-tipo"><button id="magn-t-ponto" class="${MAGN.tipo === 'ponto' ? 'on' : ''}" onclick="magNotaTipo('ponto')">📌 Ponto</button><button id="magn-t-acao" class="${MAGN.tipo === 'acao' ? 'on' : ''}" onclick="magNotaTipo('acao')">✅ Ação</button></div>
+      <div class="magn-cap-l"><textarea id="magn-novo" rows="1" placeholder="Novo ponto… (Enter anota)" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); magNotaAdd();}" oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px'"></textarea><button class="magn-add" onclick="magNotaAdd()" title="Anotar">➤</button></div></div>
+    <div id="magn-itens" class="magn-itens" data-sem-ditado></div>
+    <div class="magn-ed-rod"><button class="btn-primario" style="width:auto;" onclick="magNotaFechar()">💾 Salvar e fechar</button><button class="btn-secundario" onclick="magNotaSalvarAgora().then(ok=>ok&&magNotaFollow(MAGN.nota.id))">🔁 Follow-up</button><button class="btn-secundario" onclick="magNotaSalvarAgora().then(ok=>ok&&magNotaWhats(MAGN.nota.id))">💬 WhatsApp</button>${n.id ? `<button class="btn-secundario" onclick="magNotaSalvarAgora().then(ok=>ok&&magNotaStatus(MAGN.nota.id, ${n.status !== 'concluida'}))">${n.status === 'concluida' ? '↩️ Reabrir' : '✔️ Concluir'}</button><button class="btn-perigo" onclick="magNotaExcluir(MAGN.nota.id)">🗑️</button>` : ''}</div></div>`);
+  const cx = document.querySelector('#modal-area .modal-caixa'); if (cx) cx.classList.add('magn-caixa');
+  magNotaItens();
+  setTimeout(() => { const t = document.getElementById(nova && !n.titulo ? 'magn-titulo' : 'magn-novo'); if (t) t.focus(); }, 60);
+}
+function magNotaTipo(t) { MAGN.tipo = t; ['ponto', 'acao'].forEach(k => { const b = document.getElementById('magn-t-' + k); if (b) b.classList.toggle('on', k === t); }); const i = document.getElementById('magn-novo'); if (i) { i.placeholder = t === 'acao' ? 'Nova ação… (Enter anota)' : 'Novo ponto… (Enter anota)'; i.focus(); } }
+function magNotaAdd() {
+  const i = document.getElementById('magn-novo'), t = (i.value || '').trim(); if (!t) return;
+  MAGN.nota.itens.push({ texto: t, tipo: MAGN.tipo, responsavel: '', prazo: '', feito: false });
+  i.value = ''; i.style.height = 'auto'; magNotaItens(); magNotaAuto(); i.focus();
+  const l = document.getElementById('magn-itens'); if (l) l.scrollTop = l.scrollHeight;
+}
+function magNotaItens() {
+  const el = document.getElementById('magn-itens'); if (!el) return; const it = MAGN.nota.itens;
+  el.innerHTML = it.length ? it.map((i, k) => `<div class="magn-it ${i.tipo} ${i.feito ? 'feito' : ''}">
+      ${i.tipo === 'acao' ? `<input type="checkbox" ${i.feito ? 'checked' : ''} onchange="magNotaCampo(${k},'feito',this.checked); this.closest('.magn-it').classList.toggle('feito', this.checked)" title="Feito">` : '<span class="magn-pin">📌</span>'}
+      <div class="magn-it-c"><textarea rows="1" oninput="magNotaCampo(${k},'texto',this.value); this.style.height='auto'; this.style.height=this.scrollHeight+'px'">${escapeHtml(i.texto)}</textarea>
+        ${i.tipo === 'acao' ? `<div class="magn-it-m"><input placeholder="👤 Responsável" value="${escapeHtml(i.responsavel)}" oninput="magNotaCampo(${k},'responsavel',this.value)"><input type="date" title="Prazo" value="${escapeHtml(i.prazo)}" onchange="magNotaCampo(${k},'prazo',this.value)"></div>` : ''}</div>
+      <div class="magn-it-b"><button onclick="magNotaVirar(${k})" title="${i.tipo === 'acao' ? 'Virar ponto' : 'Virar ação'}">${i.tipo === 'acao' ? '📌' : '✅'}</button><button onclick="magNotaTirar(${k})" title="Apagar">✕</button></div></div>`).join('')
+    : '<p class="mag-vazio" style="margin:6px 0;">📌 <b>Ponto</b> = algo importante que foi dito. ✅ <b>Ação</b> = tarefa com responsável e prazo, que entra no plano.</p>';
+  el.querySelectorAll('textarea').forEach(t => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; });
+}
+function magNotaCampo(k, c, v) { MAGN.nota.itens[k][c] = v; magNotaAuto(); }
+function magNotaVirar(k) { const i = MAGN.nota.itens[k]; i.tipo = i.tipo === 'acao' ? 'ponto' : 'acao'; magNotaItens(); magNotaAuto(); }
+function magNotaTirar(k) { MAGN.nota.itens.splice(k, 1); magNotaItens(); magNotaAuto(); }
+function magNotaAuto() { const s = document.getElementById('magn-salvo'); if (s) s.textContent = 'digitando…'; clearTimeout(MAGN.timer); MAGN.timer = setTimeout(magNotaSalvarAgora, 1200); }
+// salva já (cria na primeira vez). Devolve true se ficou salvo.
+async function magNotaSalvarAgora() {
+  clearTimeout(MAGN.timer); const n = MAGN.nota; if (!n) return false;
+  if (!n.id && !n.titulo.trim() && !n.itens.length) return false;
+  if (MAGN.salvando) { await new Promise(r => setTimeout(r, 300)); return magNotaSalvarAgora(); }
+  MAGN.salvando = true; const s = document.getElementById('magn-salvo'); if (s) s.textContent = 'salvando…';
+  try {
+    const corpo = JSON.stringify({ titulo: n.titulo, data: n.data, participantes: n.participantes, itens: n.itens.filter(i => (i.texto || '').trim()), evento_ref: n.evento_ref || '' });
+    if (n.id) await api('/api/admin/agenda/notas/' + n.id, { method: 'PUT', body: corpo });
+    else { const r = await api('/api/admin/agenda/notas', { method: 'POST', body: corpo }); n.id = r.id; }
+    if (s) s.textContent = 'Salvo ✓';
+    const i = MAGN.lista.findIndex(x => x.id === n.id), copia = JSON.parse(JSON.stringify(n)); if (!copia.titulo.trim()) copia.titulo = 'Reunião sem título';
+    if (i >= 0) MAGN.lista[i] = Object.assign(MAGN.lista[i], copia); else MAGN.lista.unshift(copia);
+    return true;
+  } catch (e) { if (s) s.textContent = '⚠️ não salvou'; mostrarToast(e.message, true); return false; }
+  finally { MAGN.salvando = false; }
+}
+async function magNotaFechar() { const ok = await magNotaSalvarAgora(); mtnModal(''); if (ok) mostrarToast('✅ Anotação salva.'); MAGN.nota = null; magNotasRecarregar(); }
+async function magNotasRecarregar() { try { await magNotasCarregar(); if (MAG.vista === 'notas') magDesenhar(); } catch (e) {} }
+async function magNotaStatus(id, concluir) {
+  try { const r = await api(`/api/admin/agenda/notas/${id}/status`, { method: 'POST', body: JSON.stringify({ concluida: concluir }) }); mtnModal(''); MAGN.nota = null; mostrarToast(r.message); await magNotasRecarregar(); } catch (e) { mostrarToast(e.message, true); }
+}
+async function magNotaExcluir(id) {
+  const n = MAGN.lista.find(x => x.id === id) || MAGN.nota || {};
+  if (!confirm(`Excluir a anotação "${n.titulo || 'sem título'}"?${n.follow_data ? ' O follow-up marcado na agenda também sai.' : ''}`)) return;
+  try { clearTimeout(MAGN.timer); const r = await api('/api/admin/agenda/notas/' + id, { method: 'DELETE' }); mtnModal(''); MAGN.nota = null; mostrarToast(r.message); await magNotasRecarregar(); } catch (e) { mostrarToast(e.message, true); }
+}
+function magNotaFollow(id) {
+  const n = MAGN.lista.find(x => x.id === id); if (!n) return mostrarToast('Escreva algo na anotação antes de marcar o follow-up.', true);
+  const hoje = MAGN.hoje || MAG.dados.hoje, sug = n.follow_data || magSoma(hoje, 7);
+  const atalhos = [[1, 'Amanhã'], [3, '3 dias'], [7, '1 semana'], [15, '15 dias'], [30, '1 mês']];
+  mtnModal(`<h3 style="margin-top:0;">🔁 Follow-up</h3><p class="mag-dica" style="font-size:14px;margin-top:-4px;">${escapeHtml(n.titulo)} — entra na sua agenda com lembrete no celular e a lista de ações em aberto.</p>
+    <div class="magn-atalhos">${atalhos.map(([d, r]) => `<button onclick="document.getElementById('magf-data').value='${magSoma(hoje, d)}'">${r}</button>`).join('')}</div>
+    <div class="mtn-form"><label>Data<input id="magf-data" type="date" value="${sug}"></label><label>Hora (opcional)<input id="magf-hora" type="time" value="${escapeHtml(n.follow_hora || '09:00')}"></label></div>
+    <label>Observação (opcional)<textarea id="magf-obs" rows="2" placeholder="Ex.: cobrar o plano de redução de avarias"></textarea></label>
+    <div class="acoes-form"><button class="btn-primario" style="width:auto;" onclick="magNotaFollowSalvar(${id})">Marcar na agenda</button>${n.follow_data ? `<button class="btn-perigo" onclick="magNotaFollowTirar(${id})">Remover follow-up</button>` : ''}<button class="btn-secundario" onclick="mtnModal('')">Cancelar</button></div>`);
+}
+async function magNotaFollowSalvar(id) {
+  const b = { data: document.getElementById('magf-data').value, hora: document.getElementById('magf-hora').value, obs: document.getElementById('magf-obs').value };
+  try { const r = await api(`/api/admin/agenda/notas/${id}/follow`, { method: 'POST', body: JSON.stringify(b) }); mtnModal(''); MAGN.nota = null; mostrarToast(r.aviso ? r.message + ' ' + r.aviso : r.message, !!r.aviso); await magNotasRecarregar(); } catch (e) { mostrarToast(e.message, true); }
+}
+async function magNotaFollowTirar(id) { try { const r = await api(`/api/admin/agenda/notas/${id}/follow`, { method: 'DELETE' }); mtnModal(''); mostrarToast(r.message); await magNotasRecarregar(); } catch (e) { mostrarToast(e.message, true); } }
+function magNotaPlanoTexto(n) {
+  const pts = n.itens.filter(i => i.tipo !== 'acao'), ac = n.itens.filter(i => i.tipo === 'acao');
+  const L = [`*📋 ${n.titulo}*`, `📅 ${magDataBr(n.data)}${n.participantes ? ' · 👥 ' + n.participantes : ''}`];
+  if (pts.length) L.push('', '*Pontos importantes*', ...pts.map(i => '• ' + i.texto));
+  if (ac.length) L.push('', '*Plano de ação*', ...ac.map((i, k) => `${i.feito ? '✅' : '◻️'} ${k + 1}. ${i.texto}${i.responsavel ? ' — *' + i.responsavel + '*' : ''}${i.prazo ? ' (até ' + magDataBr(i.prazo).slice(0, 5) + ')' : ''}`));
+  if (n.follow_data) L.push('', `🔁 Próximo alinhamento: ${magDataBr(n.follow_data)}${n.follow_hora ? ' às ' + n.follow_hora : ''}`);
+  return L.join('\n');
+}
+function magNotaWhats(id) {
+  const n = MAGN.lista.find(x => x.id === id); if (!n) return mostrarToast('Escreva algo na anotação antes de enviar.', true);
+  let ult = ''; try { ult = localStorage.getItem('magn_whats') || ''; } catch (e) {}
+  mtnModal(`<h3 style="margin-top:0;">💬 Enviar plano pelo WhatsApp</h3>
+    <label>Texto (pode ajustar antes de enviar)<textarea id="magw-txt" rows="12" style="font-family:inherit;">${escapeHtml(magNotaPlanoTexto(n))}</textarea></label>
+    <label>Número (opcional — em branco, o WhatsApp deixa você escolher o contato ou grupo)<input id="magw-num" inputmode="tel" placeholder="(61) 99999-9999" value="${escapeHtml(ult)}"></label>
+    <div class="acoes-form"><button class="btn-primario" style="width:auto;background:#25d366;border-color:#25d366;" onclick="magNotaWhatsAbrir()">Abrir no WhatsApp</button><button class="btn-secundario" onclick="navigator.clipboard.writeText(document.getElementById('magw-txt').value).then(()=>mostrarToast('📋 Copiado!'))">📋 Copiar</button><button class="btn-secundario" onclick="mtnModal('')">Fechar</button></div>`);
+}
+function magNotaWhatsAbrir() {
+  const t = document.getElementById('magw-txt').value; let num = document.getElementById('magw-num').value.replace(/\D/g, '');
+  if (num && num.length <= 11) num = '55' + num;
+  try { localStorage.setItem('magn_whats', document.getElementById('magw-num').value.trim()); } catch (e) {}
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(t)}`, '_blank', 'noopener');
 }
 function magConfig(foco) {
   const d = MAG.dados || {}, c = d.config || {}, f = c.fontes || {}, ms = d.ms365 || {}, aqui = MAG.aqui;

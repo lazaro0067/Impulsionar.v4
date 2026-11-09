@@ -13759,6 +13759,84 @@ app.delete('/api/admin/agenda/eventos/:id', requireRole('admin'), async (req, re
         res.json({ message: 'Compromisso excluído.', aviso });
     } catch (e) { res.status(400).json({ error: e.message }); }
 });
+// ---------- 📝 Anotações e planos de reunião ----------
+// Anota os pontos durante a reunião (salva sozinho), depois: concluir, marcar
+// follow-up (vira compromisso na agenda com lembrete), editar, excluir e
+// enviar o plano pelo WhatsApp.
+db.run(`CREATE TABLE IF NOT EXISTS agenda_notas (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, titulo TEXT NOT NULL, data TEXT, participantes TEXT, itens TEXT DEFAULT '[]',
+    status TEXT DEFAULT 'aberta', follow_data TEXT, follow_hora TEXT, follow_evento_id INTEGER, evento_ref TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP, atualizado_em DATETIME, concluida_em DATETIME)`);
+function agNotaValidar(b) {
+    const n = { titulo: String(b.titulo || '').trim().slice(0, 200) || 'Reunião sem título', data: AG_DATA.test(b.data || '') ? b.data : agHoje(),
+        participantes: String(b.participantes || '').slice(0, 500), evento_ref: String(b.evento_ref || '').slice(0, 120) };
+    const itens = Array.isArray(b.itens) ? b.itens : [];
+    n.itens = itens.slice(0, 300).map(i => ({ texto: String(i.texto || '').trim().slice(0, 1500), tipo: i.tipo === 'acao' ? 'acao' : 'ponto', responsavel: String(i.responsavel || '').slice(0, 100),
+        prazo: AG_DATA.test(i.prazo || '') ? i.prazo : '', feito: !!i.feito })).filter(i => i.texto);
+    return n;
+}
+const agNotaSaida = r => { let itens = []; try { itens = JSON.parse(r.itens || '[]'); } catch (e) {} return Object.assign({}, r, { itens }); };
+async function agNotaDoUsuario(req) { return dbGet(`SELECT * FROM agenda_notas WHERE id = ? AND user_id = ?`, [req.params.id, agUid(req)]); }
+app.get('/api/admin/agenda/notas', requireRole('admin'), async (req, res) => {
+    try { const rows = await dbAll(`SELECT * FROM agenda_notas WHERE user_id = ? ORDER BY CASE status WHEN 'aberta' THEN 0 ELSE 1 END, COALESCE(data, '') DESC, id DESC LIMIT 500`, [agUid(req)]); res.json({ hoje: agHoje(), notas: rows.map(agNotaSaida) }); }
+    catch (e) { res.status(500).json({ error: 'Não foi possível carregar as anotações.' }); }
+});
+app.post('/api/admin/agenda/notas', requireRole('admin'), async (req, res) => {
+    try { const n = agNotaValidar(req.body || {}); const r = await agRun(`INSERT INTO agenda_notas (user_id, titulo, data, participantes, itens, evento_ref, atualizado_em) VALUES (?,?,?,?,?,?,CURRENT_TIMESTAMP)`, [agUid(req), n.titulo, n.data, n.participantes, JSON.stringify(n.itens), n.evento_ref]);
+        res.json({ message: 'Anotação criada.', id: r.lastID }); } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.put('/api/admin/agenda/notas/:id', requireRole('admin'), async (req, res) => {
+    try { const a = await agNotaDoUsuario(req); if (!a) return res.status(404).json({ error: 'Anotação não encontrada.' });
+        const n = agNotaValidar(Object.assign({ evento_ref: a.evento_ref }, req.body || {}));
+        await agRun(`UPDATE agenda_notas SET titulo=?, data=?, participantes=?, itens=?, atualizado_em=CURRENT_TIMESTAMP WHERE id = ?`, [n.titulo, n.data, n.participantes, JSON.stringify(n.itens), a.id]);
+        res.json({ message: 'Salvo.' }); } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.post('/api/admin/agenda/notas/:id/status', requireRole('admin'), async (req, res) => {
+    try { const a = await agNotaDoUsuario(req); if (!a) return res.status(404).json({ error: 'Anotação não encontrada.' });
+        const fim = !!(req.body || {}).concluida;
+        await agRun(`UPDATE agenda_notas SET status=?, concluida_em=${fim ? 'CURRENT_TIMESTAMP' : 'NULL'}, atualizado_em=CURRENT_TIMESTAMP WHERE id = ?`, [fim ? 'concluida' : 'aberta', a.id]);
+        res.json({ message: fim ? '✅ Reunião concluída.' : 'Reaberta.' }); } catch (e) { res.status(400).json({ error: e.message }); }
+});
+function agNotaTextoFollow(nota) {
+    const pend = nota.itens.filter(i => i.tipo === 'acao' && !i.feito);
+    return [`Follow-up da reunião "${nota.titulo}" (${String(nota.data || '').split('-').reverse().join('/')})`, nota.participantes ? 'Participantes: ' + nota.participantes : '',
+        pend.length ? '\nAções em aberto:\n' + pend.map(i => `• ${i.texto}${i.responsavel ? ' — ' + i.responsavel : ''}${i.prazo ? ' (até ' + i.prazo.split('-').reverse().join('/') + ')' : ''}`).join('\n') : ''].filter(Boolean).join('\n');
+}
+app.post('/api/admin/agenda/notas/:id/follow', requireRole('admin'), async (req, res) => {
+    try {
+        const a = await agNotaDoUsuario(req); if (!a) return res.status(404).json({ error: 'Anotação não encontrada.' });
+        const b = req.body || {}, uid = agUid(req), cfg = await agCfg(uid), nota = agNotaSaida(a);
+        if (!AG_DATA.test(b.data || '')) throw new Error('Escolha a data do follow-up.');
+        const hora = AG_HORA.test(b.hora || '') ? b.hora : '';
+        const ev = { titulo: '🔁 Follow-up: ' + nota.titulo.slice(0, 180), descricao: (b.obs ? String(b.obs).slice(0, 800) + '\n\n' : '') + agNotaTextoFollow(nota), data: b.data, hora_inicio: hora, hora_fim: hora ? (m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`)(Math.min(agMin(hora) + 30, 23 * 60 + 59)) : '',
+            local: '', link: '', categoria: 'followup', lembrete_min: hora ? (Number.isFinite(Number(b.lembrete_min)) ? Number(b.lembrete_min) : 30) : -1, repetir: '', repetir_ate: '' };
+        if (ev.hora_fim && ev.hora_fim <= ev.hora_inicio) ev.hora_fim = '';
+        const existe = a.follow_evento_id ? await dbGet(`SELECT * FROM agenda_eventos WHERE id = ? AND user_id = ?`, [a.follow_evento_id, uid]) : null;
+        let evId, aviso;
+        if (existe) {
+            await agRun(`UPDATE agenda_eventos SET titulo=?, descricao=?, data=?, hora_inicio=?, hora_fim=?, categoria=?, lembrete_min=?, atualizado_em=CURRENT_TIMESTAMP WHERE id = ?`, [ev.titulo, ev.descricao, ev.data, ev.hora_inicio, ev.hora_fim, ev.categoria, ev.lembrete_min, existe.id]);
+            evId = existe.id; aviso = await agEnviarOutlook(cfg, Object.assign({ id: existe.id, outlook_id: existe.outlook_id }, ev));
+        } else {
+            const r = await agRun(`INSERT INTO agenda_eventos (user_id, titulo, descricao, data, hora_inicio, hora_fim, local, link, categoria, lembrete_min, repetir, repetir_ate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+                [uid, ev.titulo, ev.descricao, ev.data, ev.hora_inicio, ev.hora_fim, '', '', ev.categoria, ev.lembrete_min, '', '']);
+            evId = r.lastID; aviso = await agEnviarOutlook(cfg, Object.assign({ id: evId }, ev));
+        }
+        await agRun(`UPDATE agenda_notas SET follow_data=?, follow_hora=?, follow_evento_id=?, atualizado_em=CURRENT_TIMESTAMP WHERE id = ?`, [ev.data, hora, evId, a.id]);
+        res.json({ message: `🔁 Follow-up marcado para ${ev.data.split('-').reverse().join('/')}${hora ? ' às ' + hora : ''} — já está na sua agenda.`, aviso });
+    } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.delete('/api/admin/agenda/notas/:id/follow', requireRole('admin'), async (req, res) => {
+    try { const a = await agNotaDoUsuario(req); if (!a) return res.status(404).json({ error: 'Anotação não encontrada.' });
+        await agNotaApagarFollow(req, a); await agRun(`UPDATE agenda_notas SET follow_data=NULL, follow_hora=NULL, follow_evento_id=NULL WHERE id = ?`, [a.id]);
+        res.json({ message: 'Follow-up removido da agenda.' }); } catch (e) { res.status(400).json({ error: e.message }); }
+});
+async function agNotaApagarFollow(req, a) {
+    if (!a.follow_evento_id) return; const uid = agUid(req), ev = await dbGet(`SELECT * FROM agenda_eventos WHERE id = ? AND user_id = ?`, [a.follow_evento_id, uid]).catch(() => null);
+    if (!ev) return; await agRun(`DELETE FROM agenda_eventos WHERE id = ?`, [ev.id]); await agEnviarOutlook(await agCfg(uid), ev, true).catch(() => {});
+}
+app.delete('/api/admin/agenda/notas/:id', requireRole('admin'), async (req, res) => {
+    try { const a = await agNotaDoUsuario(req); if (!a) return res.status(404).json({ error: 'Anotação não encontrada.' });
+        await agNotaApagarFollow(req, a); await agRun(`DELETE FROM agenda_notas WHERE id = ?`, [a.id]);
+        res.json({ message: 'Anotação excluída.' }); } catch (e) { res.status(400).json({ error: e.message }); }
+});
 app.put('/api/admin/agenda/config', requireRole('admin'), async (req, res) => {
     try {
         const uid = agUid(req), cfg = await agCfg(uid), b = req.body || {};
