@@ -14033,11 +14033,11 @@ const WA_EVENTOS = {
     candidatura: { rotulo: 'Candidatura a uma vaga', modelo: 'impulsionar_candidatura_vaga', texto: 'Olá, {{1}}! Sua candidatura para a vaga {{2}} foi recebida pela Impulsionar V4. Se o seu perfil avançar, a empresa entra em contato. Você pode acompanhar pelo portal.' }
 };
 async function waCfg() {
-    const rows = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN ('wa_phone_id','wa_token','wa_regras','wa_ativo')`).catch(() => []);
+    const rows = await dbAll(`SELECT key, value FROM integration_settings WHERE key IN ('wa_phone_id','wa_token','wa_regras','wa_ativo','wa_waba_id')`).catch(() => []);
     const m = Object.fromEntries(rows.map(r => [r.key, r.value]));
     let regras = {}; try { regras = JSON.parse(m.wa_regras || '{}') || {}; } catch (e) { regras = {}; }
     Object.keys(WA_EVENTOS).forEach(k => { regras[k] = Object.assign({ ativo: k !== 'retorno', modelo: WA_EVENTOS[k].modelo, idioma: 'pt_BR' }, regras[k] || {}); });
-    return { phoneId: m.wa_phone_id || process.env.WHATSAPP_PHONE_ID || '', token: m.wa_token || process.env.WHATSAPP_TOKEN || '', ativo: m.wa_ativo !== '0', regras };
+    return { wabaId: m.wa_waba_id || process.env.WHATSAPP_WABA_ID || '', phoneId: m.wa_phone_id || process.env.WHATSAPP_PHONE_ID || '', token: m.wa_token || process.env.WHATSAPP_TOKEN || '', ativo: m.wa_ativo !== '0', regras };
 }
 const waSalvarChave = (k, v) => new Promise(r => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], () => r()));
 function waNumero(n) { let d = String(n || '').replace(/\D/g, ''); if (d.startsWith('0')) d = d.replace(/^0+/, ''); if (d.length >= 10 && d.length <= 11) d = '55' + d; return d.length >= 12 && d.length <= 15 ? d : ''; }
@@ -14074,12 +14074,13 @@ async function waAuto(evento, numero, nome, extras = []) {
 }
 app.get('/api/admin/whatsapp-auto', requireRole('admin'), async (req, res) => {
     const c = await waCfg(), envios = await dbAll(`SELECT * FROM wa_envios ORDER BY id DESC LIMIT 30`).catch(() => []);
-    res.json({ ativo: c.ativo, phoneId: c.phoneId, tokenPreview: c.token ? '••••' + c.token.slice(-6) : '', conectado: !!(c.phoneId && c.token), regras: c.regras, eventos: WA_EVENTOS, envios });
+    res.json({ ativo: c.ativo, wabaId: c.wabaId, phoneId: c.phoneId, tokenPreview: c.token ? '••••' + c.token.slice(-6) : '', conectado: !!(c.phoneId && c.token), regras: c.regras, eventos: WA_EVENTOS, envios });
 });
 app.put('/api/admin/whatsapp-auto', requireRole('admin'), async (req, res) => {
     try {
         const b = req.body || {}, c = await waCfg();
         if (typeof b.phoneId === 'string') { const v = b.phoneId.trim(); if (v && !/^\d{14,20}$/.test(v)) return res.status(400).json({ error: 'O "ID do número de telefone" é só números (ex.: 123456789012345) — fica em WhatsApp › Configuração da API, no app da Meta. Não é o seu número de celular.' }); await waSalvarChave('wa_phone_id', v); }
+        if (typeof b.wabaId === 'string') { const v = b.wabaId.trim(); if (v && !/^\d{10,20}$/.test(v)) return res.status(400).json({ error: 'O "ID da conta do WhatsApp" é só números — aparece como "Messaging Account ID" / "Identificação da conta do WhatsApp Business".' }); await waSalvarChave('wa_waba_id', v); }
         if (typeof b.token === 'string' && b.token.trim()) await waSalvarChave('wa_token', b.token.trim());
         if (b.removerToken) await waSalvarChave('wa_token', '');
         if (typeof b.ativo === 'boolean') await waSalvarChave('wa_ativo', b.ativo ? '1' : '0');
@@ -14096,6 +14097,36 @@ app.put('/api/admin/whatsapp-auto', requireRole('admin'), async (req, res) => {
         }
         res.json({ message: 'Configuração salva.' });
     } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// Modelos de mensagem: confere o status na Meta e cria os que faltam (na conta do WhatsApp do número de produção)
+const WA_EXEMPLOS = { mentoria: ['Maria'], aula: ['Maria'], raiox: ['Maria', '7,5', 'Vínculo com o time'], palestra: ['Maria', 'Empresa X'], inscricao: ['Maria'], candidato: ['Maria'], retorno: ['Maria', 'mentoria'], candidatura: ['Maria', 'Auxiliar de logística'] };
+const WA_CATEGORIA = k => (k === 'aula' || k === 'retorno') ? 'MARKETING' : 'UTILITY';
+async function waModelosMeta(c) {
+    if (!c.wabaId || !c.token) throw new Error('Preencha o ID da conta do WhatsApp e o token.');
+    const r = await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(c.wabaId)}/message_templates?fields=name,status,language,category,rejected_reason&limit=200`, { headers: { Authorization: 'Bearer ' + c.token } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { const e = j.error || {}; throw new Error((e.code === 100 || e.code === 200 || r.status === 403) ? 'A Meta não liberou essa conta para o token. Em Configurações do negócio › Contas do WhatsApp, atribua esta conta ao usuário do sistema (controle total) e tente de novo.' : (e.message || 'erro ' + r.status)); }
+    return j.data || [];
+}
+app.get('/api/admin/whatsapp-auto/modelos', requireRole('admin'), async (req, res) => {
+    try { const c = await waCfg(), L = await waModelosMeta(c); res.json({ modelos: Object.fromEntries(Object.keys(WA_EVENTOS).map(k => { const nome = c.regras[k].modelo, m = L.find(x => x.name === nome && String(x.language || '').startsWith('pt')); return [k, m ? { status: m.status, categoria: m.category, motivo: m.rejected_reason || '' } : null]; })) }); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.post('/api/admin/whatsapp-auto/modelos', requireRole('admin'), async (req, res) => {
+    try {
+        const c = await waCfg(), L = await waModelosMeta(c), out = [];
+        for (const k of Object.keys(WA_EVENTOS)) {
+            const nome = c.regras[k].modelo;
+            if (L.some(x => x.name === nome && String(x.language || '').startsWith('pt'))) { out.push({ k, nome, ok: true, ja: true }); continue; }
+            const ex = (WA_EXEMPLOS[k] || ['Maria']).slice(0, (String(WA_EVENTOS[k].texto).match(/\{\{\d\}\}/g) || []).length);
+            const r = await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(c.wabaId)}/message_templates`, { method: 'POST', headers: { Authorization: 'Bearer ' + c.token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: nome, language: 'pt_BR', category: WA_CATEGORIA(k), components: [{ type: 'BODY', text: WA_EVENTOS[k].texto, example: { body_text: [ex] } }] }) });
+            const j = await r.json().catch(() => ({}));
+            out.push(r.ok ? { k, nome, ok: true, status: j.status || 'PENDING' } : { k, nome, ok: false, erro: ((j.error || {}).error_user_msg || (j.error || {}).message || 'erro ' + r.status) });
+        }
+        const criados = out.filter(x => x.ok && !x.ja).length, erros = out.filter(x => !x.ok);
+        res.json({ resultado: out, message: `${criados} modelo(s) enviado(s) para aprovação${out.some(x => x.ja) ? ', ' + out.filter(x => x.ja).length + ' já existia(m)' : ''}${erros.length ? ' · ' + erros.length + ' com erro' : ''}.` });
+    } catch (e) { res.status(400).json({ error: e.message }); }
 });
 app.post('/api/admin/whatsapp-auto/teste', requireRole('admin'), async (req, res) => {
     try {
