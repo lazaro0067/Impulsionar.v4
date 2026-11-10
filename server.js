@@ -13609,6 +13609,41 @@ async function agAutomaticos(de, ate, cfg) {
 
 // ---------- Outlook ----------
 const AG_CACHE_OUTLOOK = new Map(); // chave → { t, itens, erro }
+// Calendário .ics do Outlook "sempre conectado": guarda a última cópia boa (memória + banco), tenta de novo quando o
+// Outlook demora e atualiza sozinho em segundo plano. Só avisa erro se ficar mais de 1 dia sem conseguir atualizar.
+db.run(`CREATE TABLE IF NOT EXISTS agenda_ics_cache (link TEXT PRIMARY KEY, txt TEXT, ok_em INTEGER, erro TEXT, erro_em INTEGER)`);
+const AG_ICS_MEM = new Map(); // link → { txt, t, tentou }
+const agEspera = ms => new Promise(r => setTimeout(r, ms));
+async function agIcsBaixar(link, forcar) {
+    let m = AG_ICS_MEM.get(link);
+    if (!m) { const c = await dbGet(`SELECT txt, ok_em FROM agenda_ics_cache WHERE link = ?`, [link]).catch(() => null); if (c && c.txt) { m = { txt: c.txt, t: Number(c.ok_em) || 0, tentou: 0 }; AG_ICS_MEM.set(link, m); } }
+    if (m && !forcar && Date.now() - m.t < 10 * 60 * 1000) return { txt: m.txt, t: m.t };
+    if (m && !forcar && Date.now() - (m.tentou || 0) < 2 * 60 * 1000) return { txt: m.txt, t: m.t, velho: true, erro: m.erro }; // falhou agora há pouco: não insiste a cada clique
+    let erro;
+    for (let i = 0; i < 3; i++) {
+        try {
+            const ctrl = new AbortController(), to = setTimeout(() => ctrl.abort(), 25000);
+            const r = await fetch(link, { signal: ctrl.signal, headers: { 'User-Agent': 'ImpulsionarV4-Agenda', Accept: 'text/calendar,*/*' } }).finally(() => clearTimeout(to));
+            if (!r.ok) { const e = new Error('O Outlook recusou o link do calendário (erro ' + r.status + '). Confira se ele continua publicado.'); e.definitivo = r.status === 404 || r.status === 403 || r.status === 410; throw e; }
+            const txt = await r.text(); if (!/BEGIN:VCALENDAR/.test(txt)) { const e = new Error('O link não é de um calendário (.ics).'); e.definitivo = true; throw e; }
+            const t = Date.now(); AG_ICS_MEM.set(link, { txt, t, tentou: t });
+            db.run(`INSERT INTO agenda_ics_cache (link, txt, ok_em, erro, erro_em) VALUES (?, ?, ?, NULL, NULL) ON CONFLICT(link) DO UPDATE SET txt = excluded.txt, ok_em = excluded.ok_em, erro = NULL, erro_em = NULL`, [link, txt, t]);
+            return { txt, t };
+        } catch (e) { erro = e; if (e.definitivo) break; if (i < 2) await agEspera(2000 * (i + 1)); }
+    }
+    const msg = /fetch failed|abort|ENOTFOUND|ECONN|ETIMEDOUT|socket/i.test(erro.message + (erro.cause ? ' ' + erro.cause.code : '')) ? 'o Outlook não respondeu' : erro.message;
+    db.run(`UPDATE agenda_ics_cache SET erro = ?, erro_em = ? WHERE link = ?`, [msg, Date.now(), link]);
+    if (m && m.txt) { m.tentou = Date.now(); m.erro = msg; return { txt: m.txt, t: m.t, velho: true, erro: msg }; }
+    throw new Error(msg === 'o Outlook não respondeu' ? 'não foi possível acessar o calendário do Outlook agora (link fora do ar ou incorreto).' : msg);
+}
+// atualização em segundo plano a cada 10 min: quando você abre a agenda, os compromissos já estão prontos
+async function agIcsCiclo() {
+    const rows = await dbAll(`SELECT dados FROM agenda_config`).catch(() => []), links = new Set();
+    rows.forEach(r => { try { const d = JSON.parse(r.dados || '{}'); if (d.outlookModo === 'ics' && d.outlookIcs) links.add(String(d.outlookIcs).trim().replace(/^webcal:\/\//i, 'https://')); } catch (e) {} });
+    for (const l of links) if (/^https:\/\//i.test(l)) await agIcsBaixar(l, true).catch(() => {});
+}
+setTimeout(() => agIcsCiclo().catch(() => {}), 20 * 1000);
+setInterval(() => agIcsCiclo().catch(() => {}), 10 * 60 * 1000);
 function agIcsDesdobrar(txt) { return String(txt || '').replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '').split(/\r?\n/); }
 function agIcsValor(v) { return String(v || '').replace(/\\n/gi, '\n').replace(/\\([,;\\])/g, '$1'); }
 function agIcsData(prop, valor) { // → { data, hora, diaTodo }
@@ -13688,11 +13723,10 @@ async function agOutlook(cfg, de, ate, forcar) {
         } else {
             const link = String(cfg.outlookIcs || '').trim().replace(/^webcal:\/\//i, 'https://');
             if (!/^https:\/\//i.test(link)) throw new Error('Cole o link .ics do calendário publicado do Outlook.');
-            const ctrl = new AbortController(), to = setTimeout(() => ctrl.abort(), 15000);
-            const r = await fetch(link, { signal: ctrl.signal, headers: { 'User-Agent': 'ImpulsionarV4-Agenda' } }).finally(() => clearTimeout(to));
-            if (!r.ok) throw new Error('O Outlook recusou o link do calendário (erro ' + r.status + '). Confira se ele foi publicado.');
-            const txt = await r.text(); if (!/BEGIN:VCALENDAR/.test(txt)) throw new Error('O link não é de um calendário (.ics).');
-            res = { t: Date.now(), itens: agLerIcs(txt, de, ate) };
+            const b = await agIcsBaixar(link, forcar), horas = (Date.now() - b.t) / 3600e3;
+            const quando = new Date(b.t - 3 * 3600e3).toISOString().replace(/^\d{4}-(\d{2})-(\d{2})T(\d{2}:\d{2}).*/, '$2/$1 às $3');
+            res = { t: b.velho ? Date.now() - 4 * 60 * 1000 : Date.now(), itens: agLerIcs(b.txt, de, ate), atualizadoEm: b.t,
+                erro: b.velho && horas > 24 ? `${b.erro || 'o Outlook não respondeu'} há mais de 1 dia — mostrando a última cópia (${quando}).` : '' };
         }
     } catch (e) { res = { t: Date.now(), itens: (c0 && c0.itens) || [], erro: /fetch failed|abort|ENOTFOUND|ECONN/i.test(e.message + (e.cause ? ' ' + e.cause.code : '')) ? 'não foi possível acessar o calendário do Outlook agora (link fora do ar ou incorreto).' : e.message }; }
     AG_CACHE_OUTLOOK.set(chave, res);
@@ -13722,7 +13756,7 @@ async function agTudo(uid, de, ate, cfg, forcarOutlook) {
     const meus = new Set((await dbAll(`SELECT outlook_id FROM agenda_eventos WHERE user_id = ? AND outlook_id IS NOT NULL`, [uid]).catch(() => [])).map(r => String(r.outlook_id).slice(-40)));
     const itens = man.concat(auto, (ol.itens || []).filter(i => !meus.has(String(i.id).slice(3)))) // não duplica o que foi enviado daqui
         .sort((a, b) => (a.data + (a.hora_inicio || '00:00')).localeCompare(b.data + (b.hora_inicio || '00:00')));
-    return { itens, outlookErro: ol.erro || '' };
+    return { itens, outlookErro: ol.erro || '', outlookAtualizado: ol.atualizadoEm || null };
 }
 
 // ---------- Web Push (RFC 8291 / 8292) com o crypto do Node ----------
@@ -13781,7 +13815,7 @@ app.get('/api/admin/agenda', requireRole('admin'), async (req, res) => {
         const cfg = await agCfg(agUid(req)), r = await agTudo(agUid(req), de, ate, cfg, req.query.atualizar === '1');
         const c = await lerConfigMs365().catch(() => ({}));
         const aparelhos = await dbAll(`SELECT id, aparelho, criado_em, ultimo_ok, ultimo_erro, substr(endpoint, -24) AS fim FROM push_inscricoes WHERE user_id = ? ORDER BY id DESC`, [agUid(req)]).catch(() => []);
-        res.json({ de, ate, hoje: agHoje(), itens: r.itens, outlookErro: r.outlookErro, config: cfg, ms365: { ativo: ms365Ativo(c), organizador: c.organizador || '' }, aparelhos,
+        res.json({ de, ate, hoje: agHoje(), itens: r.itens, outlookErro: r.outlookErro, outlookAtualizado: r.outlookAtualizado, config: cfg, ms365: { ativo: ms365Ativo(c), organizador: c.organizador || '' }, aparelhos,
             feedUrl: `${String((typeof appBaseUrlAtiva === 'string' && /^https:\/\//.test(appBaseUrlAtiva) && appBaseUrlAtiva) || 'https://www.impulsionarv4.com.br').replace(/\/+$/, '')}/api/public/agenda/${cfg.feedToken}.ics` });
     } catch (e) { console.error('Agenda:', e); res.status(500).json({ error: 'Não foi possível carregar a agenda.' }); }
 });
