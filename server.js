@@ -13511,7 +13511,7 @@ const agRun = (sql, p = []) => new Promise((ok, erro) => db.run(sql, p, function
 const AG_DATA = /^\d{4}-\d{2}-\d{2}$/, AG_HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 const AG_PADRAO = {
     resumoAtivo: true, resumoHora: '07:00', lembreteMin: 30,
-    fontes: { consultorias: true, solicitacoes: true, mentorias: true, eventos: true, treinamentos: true, prazos: true, mentoriaNegocio: true, estudio: true },
+    fontes: { consultorias: true, solicitacoes: true, mentorias: true, eventos: true, treinamentos: true, prazos: true, mentoriaNegocio: true, estudio: true, tarefas: true },
     outlookModo: 'nenhum', outlookEmail: '', outlookIcs: '', enviarOutlook: false, feedToken: ''
 };
 // Brasil (America/Sao_Paulo) é fixo em UTC-3.
@@ -13752,11 +13752,106 @@ async function agEnviarOutlook(cfg, ev, apagar) { // cria/atualiza/apaga no Outl
 }
 
 async function agTudo(uid, de, ate, cfg, forcarOutlook) {
-    const [man, auto, ol] = await Promise.all([agManuais(uid, de, ate), agAutomaticos(de, ate, cfg), agOutlook(cfg, de, ate, forcarOutlook)]);
+    const [man, auto, ol, tf] = await Promise.all([agManuais(uid, de, ate), agAutomaticos(de, ate, cfg), agOutlook(cfg, de, ate, forcarOutlook), agTarefas(uid, de, ate, cfg).catch(() => [])]);
     const meus = new Set((await dbAll(`SELECT outlook_id FROM agenda_eventos WHERE user_id = ? AND outlook_id IS NOT NULL`, [uid]).catch(() => [])).map(r => String(r.outlook_id).slice(-40)));
-    const itens = man.concat(auto, (ol.itens || []).filter(i => !meus.has(String(i.id).slice(3)))) // não duplica o que foi enviado daqui
+    const itens = man.concat(auto, tf, (ol.itens || []).filter(i => !meus.has(String(i.id).slice(3)))) // não duplica o que foi enviado daqui
         .sort((a, b) => (a.data + (a.hora_inicio || '00:00')).localeCompare(b.data + (b.hora_inicio || '00:00')));
     return { itens, outlookErro: ol.erro || '', outlookAtualizado: ol.atualizadoEm || null };
+}
+
+// ======================================================================
+// ✅ MINHAS TAREFAS — tarefas pessoais com prazo, prioridade e follow-ups (aparecem na agenda e no resumo do dia)
+// ======================================================================
+db.run(`CREATE TABLE IF NOT EXISTS tarefas (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, titulo TEXT NOT NULL, descricao TEXT, prazo TEXT, prazo_hora TEXT,
+    prioridade TEXT DEFAULT 'media', etiqueta TEXT, com_quem TEXT, com_quem_whats TEXT, status TEXT DEFAULT 'aberta', proximo_follow TEXT, proximo_follow_hora TEXT, follows TEXT DEFAULT '[]',
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP, atualizado_em DATETIME, concluida_em DATETIME)`);
+const TF_STATUS = ['aberta', 'andamento', 'aguardando', 'concluida'], TF_PRIOR = ['alta', 'media', 'baixa'];
+const tfTxt = (v, n) => String(v === undefined || v === null ? '' : v).trim().slice(0, n);
+function tfLimpar(b, atual) {
+    const a = atual || {}, o = {};
+    o.titulo = b.titulo !== undefined ? tfTxt(b.titulo, 240) : a.titulo; if (!o.titulo) throw new Error('Escreva o que precisa ser feito.');
+    o.descricao = b.descricao !== undefined ? tfTxt(b.descricao, 4000) : (a.descricao || '');
+    o.prazo = b.prazo !== undefined ? (AG_DATA.test(b.prazo || '') ? b.prazo : '') : (a.prazo || '');
+    o.prazo_hora = b.prazo_hora !== undefined ? (AG_HORA.test(b.prazo_hora || '') ? b.prazo_hora : '') : (a.prazo_hora || ''); if (!o.prazo) o.prazo_hora = '';
+    o.prioridade = b.prioridade !== undefined ? (TF_PRIOR.includes(b.prioridade) ? b.prioridade : 'media') : (a.prioridade || 'media');
+    o.etiqueta = b.etiqueta !== undefined ? tfTxt(b.etiqueta, 40) : (a.etiqueta || '');
+    o.com_quem = b.com_quem !== undefined ? tfTxt(b.com_quem, 120) : (a.com_quem || '');
+    o.com_quem_whats = b.com_quem_whats !== undefined ? tfTxt(b.com_quem_whats, 30).replace(/[^\d()+\- ]/g, '') : (a.com_quem_whats || '');
+    o.status = b.status !== undefined ? (TF_STATUS.includes(b.status) ? b.status : 'aberta') : (a.status || 'aberta');
+    o.proximo_follow = b.proximo_follow !== undefined ? (AG_DATA.test(b.proximo_follow || '') ? b.proximo_follow : '') : (a.proximo_follow || '');
+    o.proximo_follow_hora = b.proximo_follow_hora !== undefined ? (AG_HORA.test(b.proximo_follow_hora || '') ? b.proximo_follow_hora : '') : (a.proximo_follow_hora || ''); if (!o.proximo_follow) o.proximo_follow_hora = '';
+    return o;
+}
+const tfSaida = r => { let f = []; try { f = JSON.parse(r.follows || '[]'); } catch (e) {} return Object.assign({}, r, { follows: Array.isArray(f) ? f : [] }); };
+async function tfDoUsuario(req) { return dbGet(`SELECT * FROM tarefas WHERE id = ? AND user_id = ?`, [req.params.id, agUid(req)]); }
+app.get('/api/admin/tarefas', requireRole('admin'), async (req, res) => {
+    try { const rows = await dbAll(`SELECT * FROM tarefas WHERE user_id = ? AND (status <> 'concluida' OR concluida_em >= datetime('now', '-90 days')) ORDER BY id DESC LIMIT 1500`, [agUid(req)]); res.json({ hoje: agHoje(), tarefas: rows.map(tfSaida) }); }
+    catch (e) { res.status(500).json({ error: 'Não foi possível carregar as tarefas.' }); }
+});
+app.post('/api/admin/tarefas', requireRole('admin'), async (req, res) => {
+    try { const o = tfLimpar(req.body || {});
+        const r = await agRun(`INSERT INTO tarefas (user_id, titulo, descricao, prazo, prazo_hora, prioridade, etiqueta, com_quem, com_quem_whats, status, proximo_follow, proximo_follow_hora, atualizado_em) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`,
+            [agUid(req), o.titulo, o.descricao, o.prazo, o.prazo_hora, o.prioridade, o.etiqueta, o.com_quem, o.com_quem_whats, o.status === 'concluida' ? 'aberta' : o.status, o.proximo_follow, o.proximo_follow_hora]);
+        res.json({ message: 'Tarefa criada.', tarefa: tfSaida(await dbGet(`SELECT * FROM tarefas WHERE id = ?`, [r.lastID])) }); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.put('/api/admin/tarefas/:id', requireRole('admin'), async (req, res) => {
+    try { const a = await tfDoUsuario(req); if (!a) return res.status(404).json({ error: 'Tarefa não encontrada.' });
+        const o = tfLimpar(req.body || {}, a), fim = o.status === 'concluida';
+        await agRun(`UPDATE tarefas SET titulo=?, descricao=?, prazo=?, prazo_hora=?, prioridade=?, etiqueta=?, com_quem=?, com_quem_whats=?, status=?, proximo_follow=?, proximo_follow_hora=?, atualizado_em=CURRENT_TIMESTAMP,
+            concluida_em=${fim ? (a.status === 'concluida' ? 'concluida_em' : 'CURRENT_TIMESTAMP') : 'NULL'} WHERE id = ?`,
+            [o.titulo, o.descricao, o.prazo, o.prazo_hora, o.prioridade, o.etiqueta, o.com_quem, o.com_quem_whats, o.status, fim ? '' : o.proximo_follow, fim ? '' : o.proximo_follow_hora, a.id]);
+        res.json({ message: fim && a.status !== 'concluida' ? '✅ Tarefa concluída.' : 'Salvo.', tarefa: tfSaida(await dbGet(`SELECT * FROM tarefas WHERE id = ?`, [a.id])) }); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+// registra um follow (o que aconteceu) e já marca o próximo
+app.post('/api/admin/tarefas/:id/follow', requireRole('admin'), async (req, res) => {
+    try { const a = await tfDoUsuario(req); if (!a) return res.status(404).json({ error: 'Tarefa não encontrada.' });
+        const b = req.body || {}, texto = tfTxt(b.texto, 2000); if (!texto) throw new Error('Escreva o que aconteceu neste follow.');
+        const f = tfSaida(a).follows; f.push({ id: Date.now().toString(36), em: new Date().toISOString(), texto });
+        const prox = AG_DATA.test(b.proximo_follow || '') ? b.proximo_follow : '', hora = prox && AG_HORA.test(b.proximo_follow_hora || '') ? b.proximo_follow_hora : '';
+        const st = TF_STATUS.includes(b.status) ? b.status : a.status, fim = st === 'concluida';
+        await agRun(`UPDATE tarefas SET follows=?, proximo_follow=?, proximo_follow_hora=?, status=?, atualizado_em=CURRENT_TIMESTAMP, concluida_em=${fim ? 'COALESCE(concluida_em, CURRENT_TIMESTAMP)' : 'NULL'} WHERE id = ?`,
+            [JSON.stringify(f.slice(-300)), fim ? '' : prox, fim ? '' : hora, st, a.id]);
+        res.json({ message: fim ? '✅ Follow registrado e tarefa concluída.' : prox ? `🔁 Follow registrado. Próximo: ${prox.split('-').reverse().join('/')}${hora ? ' às ' + hora : ''}.` : '🔁 Follow registrado.', tarefa: tfSaida(await dbGet(`SELECT * FROM tarefas WHERE id = ?`, [a.id])) }); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.delete('/api/admin/tarefas/:id/follow/:fid', requireRole('admin'), async (req, res) => {
+    try { const a = await tfDoUsuario(req); if (!a) return res.status(404).json({ error: 'Tarefa não encontrada.' });
+        const f = tfSaida(a).follows.filter(x => x.id !== req.params.fid); await agRun(`UPDATE tarefas SET follows=?, atualizado_em=CURRENT_TIMESTAMP WHERE id = ?`, [JSON.stringify(f), a.id]);
+        res.json({ message: 'Follow apagado.', tarefa: tfSaida(await dbGet(`SELECT * FROM tarefas WHERE id = ?`, [a.id])) }); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.delete('/api/admin/tarefas/:id', requireRole('admin'), async (req, res) => {
+    try { const a = await tfDoUsuario(req); if (!a) return res.status(404).json({ error: 'Tarefa não encontrada.' });
+        await agRun(`DELETE FROM tarefas WHERE id = ?`, [a.id]); res.json({ message: 'Tarefa excluída.', tarefa: tfSaida(a) }); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+// desfazer exclusão: recria com os mesmos dados
+app.post('/api/admin/tarefas/restaurar', requireRole('admin'), async (req, res) => {
+    try { const t = req.body || {}, o = tfLimpar(t);
+        const r = await agRun(`INSERT INTO tarefas (user_id, titulo, descricao, prazo, prazo_hora, prioridade, etiqueta, com_quem, com_quem_whats, status, proximo_follow, proximo_follow_hora, follows, atualizado_em) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`,
+            [agUid(req), o.titulo, o.descricao, o.prazo, o.prazo_hora, o.prioridade, o.etiqueta, o.com_quem, o.com_quem_whats, o.status, o.proximo_follow, o.proximo_follow_hora, JSON.stringify(Array.isArray(t.follows) ? t.follows.slice(-300) : [])]);
+        res.json({ message: 'Tarefa restaurada.', id: r.lastID }); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+// tarefas na agenda: prazo, próximo follow e (no dia de hoje) as atrasadas
+async function agTarefas(uid, de, ate, cfg) {
+    if ((cfg.fontes || {}).tarefas === false) return [];
+    const hoje = agHoje(), out = [], rows = await dbAll(`SELECT * FROM tarefas WHERE user_id = ? AND status <> 'concluida' AND ((prazo <> '' AND prazo <= ?) OR (proximo_follow <> '' AND proximo_follow <= ?))`, [uid, ate, ate]).catch(() => []);
+    const verHoje = de <= hoje && hoje <= ate, br = d => d.split('-').reverse().join('/').slice(0, 5), pr = t => t.prioridade === 'alta' ? '🔴 ' : '';
+    rows.forEach(t => {
+        const base = { origem: 'auto', local: t.com_quem ? 'Com ' + t.com_quem : '', link: '', descricao: t.descricao || '', abrir: 'minhasTarefas', hora_fim: '' };
+        if (t.prazo) {
+            if (t.prazo >= de) out.push(Object.assign({}, base, { id: 'tf:' + t.id, tipo: 'tarefa', titulo: `${pr(t)}✅ ${t.titulo}`, data: t.prazo, hora_inicio: t.prazo_hora || '' }));
+            else if (verHoje) out.push(Object.assign({}, base, { id: 'tfa:' + t.id, tipo: 'atrasada', titulo: `⚠️ Atrasada desde ${br(t.prazo)} · ${t.titulo}`, data: hoje, hora_inicio: '' }));
+        }
+        if (t.proximo_follow) {
+            if (t.proximo_follow >= de) out.push(Object.assign({}, base, { id: 'tff:' + t.id, tipo: 'follow', titulo: `🔁 Follow · ${t.titulo}`, data: t.proximo_follow, hora_inicio: t.proximo_follow_hora || '' }));
+            else if (verHoje) out.push(Object.assign({}, base, { id: 'tffa:' + t.id, tipo: 'atrasada', titulo: `🔁 Follow pendente desde ${br(t.proximo_follow)} · ${t.titulo}`, data: hoje, hora_inicio: '' }));
+        }
+    });
+    return out;
 }
 
 // ---------- Web Push (RFC 8291 / 8292) com o crypto do Node ----------
@@ -14302,11 +14397,12 @@ app.get(['/estudio', '/estudio/'], (req, res) => {
 // Versão do sistema: o app compara e avisa "Nova versão disponível" depois de cada publicação
 const APP_VERSAO = (() => { try { return require('crypto').createHash('md5').update(fs.readFileSync(path.join(__dirname, 'public', 'index.html'))).digest('hex').slice(0, 12); } catch (e) { return String(Date.now()); } })();
 app.get('/api/public/versao', (req, res) => res.set('Cache-Control', 'no-store').json({ v: APP_VERSAO }));
+app.get(['/tarefas', '/tarefa'], (req, res) => res.redirect('/?app=1&nova_tarefa=1#ir=minhasTarefas'));
 app.get(['/app', '/instalar', '/baixar'], (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'app.html')));
 app.get('/manifest.webmanifest', (req, res) => {
     res.set('Cache-Control', 'no-cache').type('application/manifest+json').send(JSON.stringify({ id: '/', name: 'Impulsionar V4 — Gestão & Pessoas', short_name: 'Impulsionar', description: 'Gestão de processos e desenvolvimento de pessoas', start_url: '/?app=1', scope: '/', display: 'standalone', related_applications: [{ platform: 'webapp', url: `https://${req.get('host') || 'www.impulsionarv4.com.br'}/manifest.webmanifest` }], prefer_related_applications: false, orientation: 'any', background_color: '#0b1329', theme_color: '#0b1329', lang: 'pt-BR',
         icons: [192, 512].map(t => ({ src: `/assets/app-icone-${t}.png?v=1`, sizes: `${t}x${t}`, type: 'image/png', purpose: 'any' })).concat([{ src: '/assets/app-icone-maskable-512.png?v=1', sizes: '512x512', type: 'image/png', purpose: 'maskable' }]),
-        shortcuts: [{ name: 'Agente de Relatórios', url: '/?app=1#ir=agenteRelatorios', icons: [{ src: '/assets/app-icone-192.png?v=1', sizes: '192x192' }] }, { name: 'Estúdio de Vídeo', url: '/estudio', icons: [{ src: '/assets/estudio-icone-192.png?v=2', sizes: '192x192' }] }] }));
+        shortcuts: [{ name: 'Minhas Tarefas', short_name: 'Tarefas', description: 'Anotar uma tarefa rápida', url: '/?app=1&nova_tarefa=1#ir=minhasTarefas', icons: [{ src: '/assets/app-icone-192.png?v=1', sizes: '192x192' }] }, { name: 'Minha Agenda', short_name: 'Agenda', url: '/?app=1#ir=agenda', icons: [{ src: '/assets/app-icone-192.png?v=1', sizes: '192x192' }] }, { name: 'Agente de Relatórios', url: '/?app=1#ir=agenteRelatorios', icons: [{ src: '/assets/app-icone-192.png?v=1', sizes: '192x192' }] }, { name: 'Estúdio de Vídeo', url: '/estudio', icons: [{ src: '/assets/estudio-icone-192.png?v=2', sizes: '192x192' }] }] }));
 });
 app.get('/estudio.webmanifest', (req, res) => {
     res.set('Cache-Control', 'no-cache').type('application/manifest+json').send(JSON.stringify({ id: '/estudio', name: 'Impulsionar Estúdio de Vídeo', short_name: 'Estúdio V4', start_url: '/estudio', scope: '/', display: 'standalone', orientation: 'portrait', background_color: '#070b18', theme_color: '#070b18',

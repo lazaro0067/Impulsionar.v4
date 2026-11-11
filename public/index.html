@@ -1794,6 +1794,43 @@
   .magn-cap-l .ditado-wrap { flex:1; }
   .ch-wa-mods { display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 12px; margin:10px 0; font-size:14px; } .ch-wa-mods i { font-style:normal; }
   .chwa-st { font-style:normal; font-size:11px; font-weight:700; border-radius:6px; padding:1px 6px; margin-left:4px; white-space:nowrap; } .chwa-st.ok { background:#dcfce7; color:#166534; } .chwa-st.pend { background:#fef3c7; color:#92400e; } .chwa-st.erro { background:#fee2e2; color:#b91c1c; }
+  .mtf { max-width:980px; margin:0 auto; }
+  .mtf-topo { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; } .mtf-topo h1 { margin:0; } .mtf-topo-bts { display:flex; gap:6px; }
+  .mtf-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 0; } .mtf-kpis button { margin:0; width:auto; border:1px solid #e2e8f0; background:#fff; border-radius:12px; padding:10px; cursor:pointer; font:inherit; text-align:left; color:#0f172a; }
+  .mtf-kpis b { display:block; font-size:24px; line-height:1; } .mtf-kpis span { font-size:12px; color:#64748b; font-weight:600; } .mtf-kpis .vermelho { border-color:#fecaca; background:#fef2f2; } .mtf-kpis .vermelho b { color:#b91c1c; } .mtf-kpis .laranja { border-color:#fed7aa; background:#fff7ed; } .mtf-kpis .laranja b { color:#c2410c; } .mtf-kpis .verde b { color:#16a34a; }
+  .mtf-rapido { background:#fff; border:2px solid #2563eb; border-radius:14px; padding:10px; position:sticky; top:0; z-index:3; box-shadow:0 6px 18px rgba(37,99,235,.12); }
+  .mtf-rapido-l { display:flex; gap:8px; } .mtf-rapido-l input { margin:0 !important; font-size:16px !important; padding:12px !important; border:none !important; background:#f8fafc; border-radius:10px !important; } .mtf-add { width:48px !important; margin:0 !important; border:none; border-radius:10px; background:#2563eb; color:#fff; font-size:24px; font-weight:800; cursor:pointer; }
+  .mtf-chips { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:8px; font-size:13px; } .mtf-chips > span { color:#64748b; font-weight:700; } .mtf-chips button { width:auto; margin:0; border:1px solid #cbd5e1; background:#fff; border-radius:20px; padding:5px 11px; font:inherit; font-size:13px; font-weight:600; cursor:pointer; color:#334155; }
+  .mtf-chips button.on { background:#2563eb; color:#fff; border-color:#2563eb; } .mtf-chips button.alta.on { background:#dc2626; border-color:#dc2626; } .mtf-chips input[type=date], .mtf-chips input[type=time] { width:auto !important; margin:0 !important; padding:5px 8px !important; font-size:13px; }
+  .mtf-data-chip { position:relative; border:1px solid #cbd5e1; border-radius:20px; padding:4px 10px; cursor:pointer; } .mtf-data-chip.on { background:#2563eb; border-color:#2563eb; } .mtf-data-chip input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100% !important; }
+  .mtf-dica { display:block; margin-top:6px; color:#64748b; font-size:12px; }
+  .mtf-abas { display:flex; gap:4px; margin:14px 0 8px; overflow-x:auto; border-bottom:1px solid #e2e8f0; } .mtf-abas button { width:auto; margin:0; border:none; background:none; padding:9px 12px; font:inherit; font-weight:700; color:#64748b; cursor:pointer; white-space:nowrap; border-bottom:3px solid transparent; } .mtf-abas button.on { color:#0f172a; border-color:#2563eb; } .mtf-abas i { font-style:normal; font-size:12px; background:#f1f5f9; border-radius:10px; padding:1px 7px; margin-left:3px; }
+  .mtf-busca { margin:0 0 8px !important; } .mtf-etqs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; } .mtf-etqs button { width:auto; margin:0; border:1px solid #e2e8f0; background:#fff; border-radius:8px; padding:4px 9px; font:inherit; font-size:12px; font-weight:700; color:#475569; cursor:pointer; } .mtf-etqs button.on { background:#0f766e; color:#fff; border-color:#0f766e; }
+  .mtf-grupo h4 { margin:14px 0 6px; font-size:14px; color:#334155; } .mtf-grupo h4 i { font-style:normal; color:#94a3b8; font-weight:600; } .mtf-grupo.atrasadas h4 { color:#b91c1c; }
+  .mtf-card { display:flex; gap:10px; align-items:flex-start; background:#fff; border:1px solid #e2e8f0; border-left:4px solid #cbd5e1; border-radius:12px; padding:10px; margin-bottom:6px; transition:opacity .28s, transform .28s; }
+  .mtf-card.pr-alta { border-left-color:#dc2626; } .mtf-card.pr-baixa { border-left-color:#22c55e; } .mtf-card.fim { opacity:.7; } .mtf-card.fim .mtf-card-c b { text-decoration:line-through; color:#64748b; } .mtf-card.saindo { opacity:0; transform:translateX(30px); } .mtf-card.novo { animation:mtfNovo 1.2s; }
+  @keyframes mtfNovo { from { background:#dbeafe; } to { background:#fff; } }
+  .mtf-check { flex:0 0 26px; width:26px !important; height:26px; margin:2px 0 0 !important; border-radius:50%; border:2px solid #94a3b8; background:#fff; cursor:pointer; color:#fff; font-weight:900; display:grid; place-items:center; padding:0; } .mtf-check:hover { border-color:#16a34a; background:#dcfce7; } .mtf-card.fim .mtf-check { background:#16a34a; border-color:#16a34a; }
+  .mtf-card-c { flex:1; min-width:0; cursor:pointer; } .mtf-card-c b { color:#0f172a; line-height:1.3; } .mtf-urg { font-size:10px; background:#dc2626; color:#fff; border-radius:4px; padding:1px 5px; vertical-align:2px; }
+  .mtf-meta { display:flex; flex-wrap:wrap; gap:4px 10px; margin-top:4px; font-size:12px; color:#64748b; } .mtf-meta .atras { color:#b91c1c; font-weight:800; } .mtf-meta .hoje { color:#1d4ed8; font-weight:800; } .mtf-meta .fol { color:#c2410c; font-weight:700; } .mtf-meta .etq { color:#0f766e; font-weight:700; }
+  .mtf-ult { display:block; margin-top:4px; color:#475569; font-size:12px; background:#f8fafc; border-radius:6px; padding:3px 7px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mtf-card-b { display:flex; gap:2px; } .mtf-card-b button { width:34px !important; height:34px; margin:0 !important; border:none; background:none; border-radius:8px; cursor:pointer; font-size:16px; } .mtf-card-b button:hover { background:#f1f5f9; }
+  .mtf-vazio { text-align:center; padding:30px 10px; color:#64748b; } .mtf-vazio b { display:block; font-size:20px; color:#0f172a; margin-bottom:4px; }
+  .mtf-snack { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:99998; background:#0f172a; color:#fff; border-radius:12px; padding:10px 14px; display:flex; gap:14px; align-items:center; box-shadow:0 10px 30px rgba(0,0,0,.3); font-weight:600; }
+  .mtf-snack button { width:auto; margin:0; border:none; background:none; color:#fbbf24; font:inherit; font-weight:800; cursor:pointer; }
+  .mtf-pop { position:fixed; z-index:100001; background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 12px 30px rgba(0,0,0,.18); padding:8px; width:210px; display:flex; flex-direction:column; gap:2px; } .mtf-pop b { font-size:12px; color:#64748b; padding:2px 6px; }
+  .mtf-pop button { width:100%; margin:0; text-align:left; border:none; background:none; border-radius:8px; padding:8px; font:inherit; cursor:pointer; display:flex; justify-content:space-between; } .mtf-pop button:hover { background:#f1f5f9; } .mtf-pop small { color:#94a3b8; } .mtf-pop label { padding:4px 6px; display:flex; gap:6px; align-items:center; } .mtf-pop input { margin:0 !important; }
+  .modal-caixa.mtf-caixa { max-width:760px !important; } @media (max-width:640px) { .modal-caixa.mtf-caixa { width:100%; max-width:none !important; min-height:100%; border-radius:0; margin:0; } }
+  .mtf-ed-tit { font-size:19px !important; font-weight:800; border:none !important; border-bottom:2px solid #e2e8f0 !important; border-radius:0 !important; padding:6px 2px !important; }
+  .mtf-ed-grade { display:grid; grid-template-columns:repeat(3,1fr); gap:8px 10px; margin:8px 0; } .mtf-ed-grade label { font-size:13px; font-weight:700; color:#475569; } .mtf-ed-grade input, .mtf-ed-grade select { margin-top:3px !important; }
+  .mtf-dupla { display:flex; gap:4px; } .mtf-dupla input[type=time] { flex:0 0 96px; } .mtf-ed-grade label, .mtf-ed-grade input, .mtf-ed-grade select { min-width:0; } .mtf-ed { min-width:0; max-width:100%; } @media (max-width:640px) { .mtf-ed-grade { grid-template-columns:1fr 1fr; } .mtf-ed-grade > label:first-child { grid-column:1 / -1; } .mtf-kpis { grid-template-columns:repeat(2,1fr); } .mtf-topo-bts span { display:none; } }
+  .mtf-fol { border:1px solid #fed7aa; background:#fffbf5; border-radius:12px; padding:10px; margin:8px 0; } .mtf-fol h4 { margin:0 0 6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .mtf-fol h4 i { font-style:normal; color:#94a3b8; }
+  .mtf-prox { margin-left:auto; font-size:12px; background:#ffedd5; color:#9a3412; border-radius:8px; padding:2px 8px; } .mtf-prox button { width:auto; margin:0; border:none; background:none; cursor:pointer; color:#9a3412; }
+  .mtf-fol-novo textarea { margin:0 !important; } .mtf-chk { display:flex; gap:5px; align-items:center; font-size:13px; font-weight:600; color:#334155; } .mtf-chk input { width:auto !important; margin:0 !important; }
+  .mtf-linha { margin-top:10px; max-height:260px; overflow:auto; } .mtf-fol-it { display:flex; gap:10px; padding:6px 0; border-top:1px dashed #fed7aa; } .mtf-fol-it > i { flex:0 0 10px; height:10px; border-radius:50%; background:#ea580c; margin-top:5px; }
+  .mtf-fol-it div { flex:1; } .mtf-fol-it small { color:#9a3412; font-weight:700; } .mtf-fol-it p { margin:2px 0 0; white-space:pre-wrap; } .mtf-fol-it button { width:auto; margin:0; border:none; background:none; color:#cbd5e1; cursor:pointer; } .mtf-fol-it button:hover { color:#dc2626; }
+  .mtf-ed-rod { display:flex; flex-wrap:wrap; gap:6px; border-top:1px solid #e2e8f0; padding-top:10px; margin-top:6px; } .mtf-ed-rod button { width:auto !important; margin:0 !important; }
+  .mtf-at { display:flex; gap:16px; align-items:flex-start; } .mtf-at img { width:160px; height:160px; border:1px solid #e2e8f0; border-radius:10px; padding:6px; background:#fff; } @media (max-width:560px) { .mtf-at { flex-direction:column; align-items:center; } }
   .mpg-play { margin-left:auto !important; width:auto !important; border:none; border-radius:999px; padding:7px 14px; background:#0b1329; color:#fff; font:inherit; font-size:13px; font-weight:800; cursor:pointer; white-space:nowrap; }
   .mpg-escolha { display:grid; gap:8px; } .mpg-escolha button { display:flex; gap:12px; align-items:center; text-align:left; width:100%; margin:0; border:1px solid #e2e8f0; background:#fff; border-radius:12px; padding:10px 12px; font:inherit; cursor:pointer; }
   .mpg-escolha button i { flex:0 0 34px; height:34px; border-radius:50%; display:grid; place-items:center; background:#e2e8f0; font-style:normal; font-weight:800; } .mpg-escolha button.prox { border-color:#f59e0b; background:#fffbeb; } .mpg-escolha button.prox i { background:#f59e0b; color:#0b1329; } .mpg-escolha button.feito i { background:#dcfce7; color:#16a34a; }
@@ -2018,7 +2055,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 10/11 (2)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 10/11 (3)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -2325,7 +2362,7 @@ function sair(silencioso) {
 // { group: 'Rótulo do Grupo', items: [['chave','Rótulo'], ...] } (pasta que expande/recolhe).
 const MENU_POR_PERFIL = {
   admin: [
-    ['dashboard', 'Dashboard'], ['agenda', '📅 Minha Agenda'], ['meuPerfilImpulsionar', 'Meu Perfil'], ['agenteRelatorios', '🤖 Agente de Relatórios'],
+    ['dashboard', 'Dashboard'], ['agenda', '📅 Minha Agenda'], ['minhasTarefas', '✅ Minhas Tarefas'], ['meuPerfilImpulsionar', 'Meu Perfil'], ['agenteRelatorios', '🤖 Agente de Relatórios'],
     { group: 'Empresas & Consultoria', items: [
         ['consulting', 'Consultoria'], ['companies', 'Empresas']
     ]},
@@ -2530,7 +2567,7 @@ function iniciarApp() {
   tratarVagaPendenteAposLogin();
   // link "Editar no Estúdio" (vem da tela de gravação): abre o projeto direto no editor
   igRetornoLogin(); appConvidar();
-  const mIr = (location.hash || '').match(/^#ir=(\w+)/); if (mIr) { try { history.replaceState(null, '', location.pathname); } catch (e) {} setTimeout(() => irPara(mIr[1]), 600); }
+  window.__novaTarefa = /[?&]nova_tarefa=1/.test(location.search); const mIr = (location.hash || '').match(/^#ir=(\w+)/); if (mIr) { try { history.replaceState(null, '', location.pathname); } catch (e) {} setTimeout(() => irPara(mIr[1]), 600); }
   const mEst = (location.hash || '').match(/^#estudio=(\d+)/);
   if (mEst) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} setTimeout(() => { if (typeof evAbrirEditor === 'function') evAbrirEditor(Number(mEst[1])); }, 700); }
 }
@@ -2715,7 +2752,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    chavesIntegracoes: renderChavesIntegracoes, mentoriaNegocio: () => { MTN.modo = 'do-chao'; return renderMentoriaNegocio(); }, mentoriaProgramas: () => { MTN.modo = 'comunicacao-impacto'; MTN.abaP = 'programa'; return renderMentoriaNegocio(); }, agenda: renderAgenda,
+    chavesIntegracoes: renderChavesIntegracoes, mentoriaNegocio: () => { MTN.modo = 'do-chao'; return renderMentoriaNegocio(); }, mentoriaProgramas: () => { MTN.modo = 'comunicacao-impacto'; MTN.abaP = 'programa'; return renderMentoriaNegocio(); }, agenda: renderAgenda, minhasTarefas: renderMinhasTarefas,
     dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento, traineePrograma: renderTrainee, agenteRelatorios: renderAgenteRelatorios, estudioVideo: () => renderEstudioVideo('projetos'), estudioAcessos: () => renderEstudioVideo('acessos'), estudioAgente: () => renderEstudioVideo('agente'), estudioAgenda: () => renderEstudioVideo('agenda'),
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster, acessosCandidatos: renderAcessosCandidatos, creditosVagas: renderCreditosVagas
   };
@@ -28744,7 +28781,7 @@ async function evAgConversar() {
    com resumo diário e lembretes no celular
    ========================================================== */
 const MAG = { vista: 'lista', mes: '', dados: null, diaSel: '' };
-const MAG_TIPOS = { manual: ['#2563eb', 'Meu compromisso'], consultoria: ['#16a34a', 'Consultoria DPO'], pedido: ['#f59e0b', 'Pedido de consultoria'], mentoria: ['#7c3aed', 'Mentoria'], evento: ['#db2777', 'Evento / aula'], treinamento: ['#0891b2', 'Treinamento'], prazo: ['#dc2626', 'Prazo'], followup: ['#ea580c', 'Follow-up de reunião'], post: ['#e1306c', 'Post agendado'], outlook: ['#0078d4', 'Outlook'] };
+const MAG_TIPOS = { manual: ['#2563eb', 'Meu compromisso'], consultoria: ['#16a34a', 'Consultoria DPO'], pedido: ['#f59e0b', 'Pedido de consultoria'], mentoria: ['#7c3aed', 'Mentoria'], evento: ['#db2777', 'Evento / aula'], treinamento: ['#0891b2', 'Treinamento'], prazo: ['#dc2626', 'Prazo'], followup: ['#ea580c', 'Follow-up de reunião'], post: ['#e1306c', 'Post agendado'], outlook: ['#0078d4', 'Outlook'], tarefa: ['#0f766e', 'Minhas tarefas'], follow: ['#c2410c', 'Follow de tarefa'], atrasada: ['#b91c1c', 'Tarefa atrasada'] };
 const MAG_SEM = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 const magTipoK = i => i.origem === 'manual' ? (i.tipo === 'followup' ? 'followup' : 'manual') : i.origem === 'outlook' ? 'outlook' : i.tipo;
 const magCor = i => (MAG_TIPOS[magTipoK(i)] || MAG_TIPOS.manual)[0];
@@ -28754,6 +28791,201 @@ function magDiaTxt(d, hoje) {
   if (d === hoje) return 'Hoje'; if (d === magSoma(hoje, 1)) return 'Amanhã'; if (d === magSoma(hoje, -1)) return 'Ontem';
   const x = new Date(d + 'T12:00:00Z'), t = `${MAG_SEM[x.getUTCDay()]}, ${x.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', timeZone: 'UTC' })}`; return t[0].toUpperCase() + t.slice(1);
 }
+/* ==================== ✅ MINHAS TAREFAS ==================== */
+const MTF = { lista: [], hoje: '', aba: 'abertas', busca: '', etq: '', rapido: { prazo: '', alta: false }, sel: null };
+const mtfSoma = (d, n) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+const mtfDiaSem = d => new Date(d + 'T12:00:00Z').getUTCDay();
+const mtfProx = (d, dow) => { let x = mtfSoma(d, 1); while (mtfDiaSem(x) !== dow) x = mtfSoma(x, 1); return x; };
+const mtfBr = d => d ? d.split('-').reverse().join('/') : '';
+function mtfQuando(d) {
+  if (!d) return ''; const h = MTF.hoje, dif = Math.round((new Date(d + 'T12:00:00Z') - new Date(h + 'T12:00:00Z')) / 864e5);
+  if (dif === 0) return 'Hoje'; if (dif === 1) return 'Amanhã'; if (dif === -1) return 'Ontem';
+  if (dif < 0) return `${-dif} dias atrás`; if (dif < 7) return ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][mtfDiaSem(d)] + ' ' + mtfBr(d).slice(0, 5);
+  return mtfBr(d).slice(0, 5);
+}
+const MTF_ATALHOS = () => { const h = MTF.hoje; return [['Hoje', h], ['Amanhã', mtfSoma(h, 1)], ['Sexta', mtfDiaSem(h) === 5 ? h : mtfProx(h, 5)], ['Segunda', mtfProx(h, 1)], ['+1 semana', mtfSoma(h, 7)]]; };
+const MTF_ST = { aberta: ['Aberta', '#64748b'], andamento: ['Em andamento', '#2563eb'], aguardando: ['Aguardando alguém', '#d97706'], concluida: ['Concluída', '#16a34a'] };
+
+async function renderMinhasTarefas() {
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = '<div class="mtf"><p class="plano-meta">Carregando tarefas…</p></div>';
+  try { await mtfCarregar(); } catch (e) { cont.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
+  mtfDesenhar();
+  if (window.__novaTarefa || /[?&]nova_tarefa=1/.test(location.search)) { window.__novaTarefa = false; setTimeout(() => { const i = document.getElementById('mtf-novo'); if (i) { i.focus(); i.scrollIntoView({ block: 'center' }); } }, 250); }
+}
+async function mtfCarregar() { const r = await api('/api/admin/tarefas'); MTF.lista = r.tarefas || []; MTF.hoje = r.hoje; }
+function mtfGrupos(L) {
+  const h = MTF.hoje, sem = mtfSoma(h, 7), G = [['atrasadas', '⚠️ Atrasadas', []], ['hoje', '📌 Hoje', []], ['amanha', 'Amanhã', []], ['semana', 'Próximos 7 dias', []], ['depois', 'Mais para frente', []], ['sem', 'Sem prazo', []]];
+  const g = k => G.find(x => x[0] === k)[2];
+  L.forEach(t => { const p = t.prazo; if (!p) g('sem').push(t); else if (p < h) g('atrasadas').push(t); else if (p === h) g('hoje').push(t); else if (p === mtfSoma(h, 1)) g('amanha').push(t); else if (p <= sem) g('semana').push(t); else g('depois').push(t); });
+  const pr = { alta: 0, media: 1, baixa: 2 };
+  G.forEach(x => x[2].sort((a, b) => (a.prazo || '9').localeCompare(b.prazo || '9') || (pr[a.prioridade] - pr[b.prioridade]) || (a.prazo_hora || '99').localeCompare(b.prazo_hora || '99') || b.id - a.id));
+  return G.filter(x => x[2].length);
+}
+function mtfFiltrar(L) {
+  const b = MTF.busca.toLowerCase();
+  return L.filter(t => (!MTF.etq || t.etiqueta === MTF.etq) && (!b || [t.titulo, t.descricao, t.com_quem, t.etiqueta, ...t.follows.map(f => f.texto)].join(' ').toLowerCase().includes(b)));
+}
+function mtfDesenhar() {
+  const cont = document.getElementById('conteudo'); if (!cont) return;
+  const h = MTF.hoje, L = MTF.lista, abertas = L.filter(t => t.status !== 'concluida');
+  const n = { atras: abertas.filter(t => t.prazo && t.prazo < h).length, hoje: abertas.filter(t => t.prazo === h).length, follow: abertas.filter(t => t.proximo_follow && t.proximo_follow <= h).length,
+    feitas: L.filter(t => t.status === 'concluida' && String(t.concluida_em || '').slice(0, 10) >= mtfSoma(h, -7)).length };
+  const etqs = [...new Set(L.map(t => t.etiqueta).filter(Boolean))].sort();
+  const abas = [['abertas', 'Abertas', abertas.length], ['follow', '🔁 Follow-ups', abertas.filter(t => t.proximo_follow).length], ['aguardando', '⏳ Aguardando', abertas.filter(t => t.status === 'aguardando').length], ['concluidas', '✅ Concluídas', L.length - abertas.length]];
+  let corpo = '';
+  if (MTF.aba === 'abertas') { const G = mtfGrupos(mtfFiltrar(abertas)); corpo = G.length ? G.map(([k, r, ts]) => `<div class="mtf-grupo ${k}"><h4>${r} <i>${ts.length}</i></h4>${ts.map(mtfCartao).join('')}</div>`).join('') : mtfVazio(); }
+  else if (MTF.aba === 'follow') { const ts = mtfFiltrar(abertas.filter(t => t.proximo_follow)).sort((a, b) => (a.proximo_follow + (a.proximo_follow_hora || '')).localeCompare(b.proximo_follow + (b.proximo_follow_hora || ''))); corpo = ts.length ? ts.map(mtfCartao).join('') : '<p class="mag-vazio">Nenhum follow-up marcado. Abra uma tarefa e registre um follow com a próxima data.</p>'; }
+  else if (MTF.aba === 'aguardando') { const ts = mtfFiltrar(abertas.filter(t => t.status === 'aguardando')); corpo = ts.length ? ts.map(mtfCartao).join('') : '<p class="mag-vazio">Nada aguardando outra pessoa. Marque o status "Aguardando alguém" quando a bola estiver com outra pessoa.</p>'; }
+  else { const ts = mtfFiltrar(L.filter(t => t.status === 'concluida')).sort((a, b) => String(b.concluida_em || '').localeCompare(String(a.concluida_em || ''))); corpo = ts.length ? ts.map(mtfCartao).join('') : '<p class="mag-vazio">Nenhuma tarefa concluída nos últimos 90 dias.</p>'; }
+  cont.innerHTML = `<div class="mtf">
+    <div class="mtf-topo"><div><h1>✅ Minhas Tarefas</h1><p class="plano-meta">Anote tudo aqui. Prazos e follow-ups entram na sua agenda e no aviso do celular.</p></div>
+      <div class="mtf-topo-bts"><button class="mag-ic" onclick="irPara('agenda')" title="Minha Agenda">📅<span> Agenda</span></button><button class="mag-ic" onclick="mtfAtalho()" title="Atalho no celular">📲<span> Atalho</span></button></div></div>
+    <div class="mtf-kpis"><button class="${n.atras ? 'vermelho' : ''}" onclick="MTF.aba='abertas'; mtfDesenhar(); document.querySelector('.mtf-grupo.atrasadas')?.scrollIntoView({behavior:'smooth'})"><b>${n.atras}</b><span>Atrasadas</span></button><button onclick="MTF.aba='abertas'; mtfDesenhar()"><b>${n.hoje}</b><span>Para hoje</span></button><button class="${n.follow ? 'laranja' : ''}" onclick="MTF.aba='follow'; mtfDesenhar()"><b>${n.follow}</b><span>Follow hoje</span></button><button class="verde" onclick="MTF.aba='concluidas'; mtfDesenhar()"><b>${n.feitas}</b><span>Feitas em 7 dias</span></button></div>
+    <div class="mtf-rapido"><div class="mtf-rapido-l"><input id="mtf-novo" placeholder="O que precisa ser feito? (Enter para anotar)" autocomplete="off" enterkeyhint="done" onkeydown="if(event.key==='Enter'){event.preventDefault(); mtfCriarRapido();}" oninput="mtfDica(this.value)"><button class="mtf-add" onclick="mtfCriarRapido()" title="Anotar">＋</button></div>
+      <div class="mtf-chips"><span>Prazo:</span>${MTF_ATALHOS().map(([r, d]) => `<button class="${MTF.rapido.prazo === d ? 'on' : ''}" onclick="MTF.rapido.prazo = MTF.rapido.prazo === '${d}' ? '' : '${d}'; mtfDesenhar(); document.getElementById('mtf-novo').focus()">${r}</button>`).join('')}<label class="mtf-data-chip ${MTF.rapido.prazo && !MTF_ATALHOS().some(a => a[1] === MTF.rapido.prazo) ? 'on' : ''}">📅<input type="date" value="${MTF.rapido.prazo}" onchange="MTF.rapido.prazo=this.value; mtfDesenhar()"></label><button class="alta ${MTF.rapido.alta ? 'on' : ''}" onclick="MTF.rapido.alta=!MTF.rapido.alta; mtfDesenhar(); document.getElementById('mtf-novo').focus()">🔴 Urgente</button></div>
+      <small id="mtf-dica" class="mtf-dica">Dica: escreva <b>#etiqueta</b>, <b>@pessoa</b>, <b>hoje</b> ou <b>amanhã</b> e o sistema entende sozinho. Ex.: <i>Cobrar inventário @João #Formosa amanhã</i></small></div>
+    <nav class="mtf-abas">${abas.map(([k, r, c]) => `<button class="${MTF.aba === k ? 'on' : ''}" onclick="MTF.aba='${k}'; mtfDesenhar()">${r} <i>${c}</i></button>`).join('')}</nav>
+    <div class="mtf-filtros"><input class="mtf-busca" placeholder="🔎 Buscar tarefa, pessoa ou follow…" value="${escapeHtml(MTF.busca)}" oninput="MTF.busca=this.value; clearTimeout(MTF.tb); MTF.tb=setTimeout(()=>{mtfDesenhar(); const i=document.querySelector('.mtf-busca'); if(i){i.focus(); i.setSelectionRange(i.value.length,i.value.length);}},250)">
+      ${etqs.length ? `<div class="mtf-etqs"><button class="${!MTF.etq ? 'on' : ''}" onclick="MTF.etq=''; mtfDesenhar()">Todas</button>${etqs.map(e => `<button class="${MTF.etq === e ? 'on' : ''}" onclick="MTF.etq=MTF.etq==='${escapeHtml(e)}'?'':'${escapeHtml(e)}'; mtfDesenhar()">#${escapeHtml(e)}</button>`).join('')}</div>` : ''}</div>
+    <div class="mtf-lista">${corpo}</div></div>`;
+}
+function mtfVazio() { return MTF.busca || MTF.etq ? '<p class="mag-vazio">Nada encontrado com esse filtro.</p>' : '<div class="mtf-vazio"><b>🎉 Tudo em dia!</b><span>Escreva uma tarefa no campo acima e aperte Enter.</span></div>'; }
+function mtfCartao(t) {
+  const h = MTF.hoje, fim = t.status === 'concluida', atras = !fim && t.prazo && t.prazo < h, folAtras = !fim && t.proximo_follow && t.proximo_follow <= h;
+  const ult = t.follows[t.follows.length - 1];
+  return `<div class="mtf-card pr-${t.prioridade} ${fim ? 'fim' : ''}" id="mtf-c-${t.id}">
+    <button class="mtf-check" onclick="mtfConcluir(${t.id}, ${!fim})" title="${fim ? 'Reabrir' : 'Concluir'}">${fim ? '✓' : ''}</button>
+    <div class="mtf-card-c" onclick="mtfAbrir(${t.id})"><b>${t.prioridade === 'alta' && !fim ? '<span class="mtf-urg">URGENTE</span> ' : ''}${escapeHtml(t.titulo)}</b>
+      <div class="mtf-meta">${t.prazo ? `<span class="${atras ? 'atras' : t.prazo === h ? 'hoje' : ''}">📅 ${mtfQuando(t.prazo)}${t.prazo_hora ? ' ' + t.prazo_hora : ''}</span>` : ''}${t.proximo_follow && !fim ? `<span class="fol ${folAtras ? 'atras' : ''}">🔁 ${mtfQuando(t.proximo_follow)}${t.proximo_follow_hora ? ' ' + t.proximo_follow_hora : ''}</span>` : ''}${t.status === 'aguardando' || t.status === 'andamento' ? `<span style="color:${MTF_ST[t.status][1]}">● ${MTF_ST[t.status][0]}</span>` : ''}${t.com_quem ? `<span>👤 ${escapeHtml(t.com_quem)}</span>` : ''}${t.etiqueta ? `<span class="etq">#${escapeHtml(t.etiqueta)}</span>` : ''}${t.follows.length ? `<span>💬 ${t.follows.length} follow${t.follows.length > 1 ? 's' : ''}</span>` : ''}${fim && t.concluida_em ? `<span>Concluída ${mtfBr(String(t.concluida_em).slice(0, 10)).slice(0, 5)}</span>` : ''}</div>
+      ${ult && !fim ? `<small class="mtf-ult">Último follow: ${escapeHtml(ult.texto.slice(0, 120))}</small>` : ''}</div>
+    ${fim ? `<div class="mtf-card-b"><button onclick="mtfExcluir(${t.id})" title="Excluir">🗑️</button></div>` : `<div class="mtf-card-b"><button onclick="mtfFollow(${t.id})" title="Registrar follow">🔁</button><button onclick="mtfAdiarMenu(${t.id}, this)" title="Adiar">⏰</button><button onclick="mtfAbrir(${t.id})" title="Editar">✏️</button></div>`}</div>`;
+}
+function mtfDica(v) {
+  const el = document.getElementById('mtf-dica'); if (!el) return; const p = mtfInterpretar(v);
+  const partes = [p.prazo && '📅 ' + mtfQuando(p.prazo), p.alta && '🔴 urgente', p.com_quem && '👤 ' + p.com_quem, p.etiqueta && '#' + p.etiqueta].filter(Boolean);
+  el.innerHTML = partes.length && v.trim() ? `Vou anotar: <b>${escapeHtml(p.titulo || '…')}</b> · ${partes.map(escapeHtml).join(' · ')}` : 'Dica: escreva <b>#etiqueta</b>, <b>@pessoa</b>, <b>hoje</b> ou <b>amanhã</b> e o sistema entende sozinho. Ex.: <i>Cobrar inventário @João #Formosa amanhã</i>';
+}
+function mtfInterpretar(v) {
+  let t = ' ' + String(v || '') + ' ', prazo = MTF.rapido.prazo, alta = MTF.rapido.alta, com = '', etq = '';
+  t = t.replace(/\s#([\wÀ-ú-]{2,40})/g, (m, e) => { etq = e; return ' '; });
+  t = t.replace(/\s@([\wÀ-ú.-]{2,40})/g, (m, e) => { com = e; return ' '; });
+  if (/\s!\s|\surgente\s/i.test(t)) { alta = true; t = t.replace(/\s!\s/g, ' ').replace(/\surgente\s/i, ' '); }
+  const h = MTF.hoje, dias = { domingo: 0, segunda: 1, 'terça': 2, terca: 2, quarta: 3, quinta: 4, sexta: 5, 'sábado': 6, sabado: 6 };
+  t = t.replace(/\s(hoje|amanhã|amanha|depois de amanhã)\s/i, (m, w) => { w = w.toLowerCase(); prazo = w === 'hoje' ? h : w.startsWith('depois') ? mtfSoma(h, 2) : mtfSoma(h, 1); return ' '; });
+  t = t.replace(/\s(?:na |no |até )?(domingo|segunda|terça|terca|quarta|quinta|sexta|sábado|sabado)(?:-feira)?\s/i, (m, w) => { prazo = mtfProx(h, dias[w.toLowerCase()]); return ' '; });
+  t = t.replace(/\s(?:dia |até )?(\d{1,2})\/(\d{1,2})\s/, (m, d, mm) => { let y = Number(h.slice(0, 4)); let x = `${y}-${String(mm).padStart(2, '0')}-${String(d).padStart(2, '0')}`; if (x < h) x = `${y + 1}-${x.slice(5)}`; if (!isNaN(new Date(x + 'T12:00:00Z'))) prazo = x; return ' '; });
+  return { titulo: t.replace(/\s+/g, ' ').trim(), prazo, alta, com_quem: com, etiqueta: etq };
+}
+async function mtfCriarRapido() {
+  const i = document.getElementById('mtf-novo'); if (!i || !i.value.trim()) return;
+  const p = mtfInterpretar(i.value); if (!p.titulo) return;
+  try {
+    const r = await api('/api/admin/tarefas', { method: 'POST', body: JSON.stringify({ titulo: p.titulo, prazo: p.prazo, prioridade: p.alta ? 'alta' : 'media', com_quem: p.com_quem, etiqueta: p.etiqueta }) });
+    MTF.lista.unshift(r.tarefa); MTF.rapido = { prazo: '', alta: false }; if (MTF.aba !== 'abertas') MTF.aba = 'abertas';
+    mtfDesenhar(); const n = document.getElementById('mtf-novo'); if (n) n.focus();
+    const c = document.getElementById('mtf-c-' + r.tarefa.id); if (c) { c.classList.add('novo'); c.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  } catch (e) { mostrarToast(e.message, true); }
+}
+function mtfAtualizar(t) { const k = MTF.lista.findIndex(x => x.id === t.id); if (k >= 0) MTF.lista[k] = t; else MTF.lista.unshift(t); }
+async function mtfSalvar(id, campos, msg) {
+  const r = await api('/api/admin/tarefas/' + id, { method: 'PUT', body: JSON.stringify(campos) }); mtfAtualizar(r.tarefa); if (msg !== false) mostrarToast(msg || r.message); return r.tarefa;
+}
+async function mtfConcluir(id, concluir) {
+  const t = MTF.lista.find(x => x.id === id); if (!t) return; const antes = t.status;
+  const c = document.getElementById('mtf-c-' + id); if (c && concluir) c.classList.add('saindo');
+  try { await mtfSalvar(id, { status: concluir ? 'concluida' : 'aberta' }, false); setTimeout(() => { mtfDesenhar(); mtfDesfazer(concluir ? '✅ Tarefa concluída' : 'Tarefa reaberta', async () => { await mtfSalvar(id, { status: antes }, false); mtfDesenhar(); }); }, concluir ? 280 : 0); }
+  catch (e) { if (c) c.classList.remove('saindo'); mostrarToast(e.message, true); }
+}
+async function mtfExcluir(id) {
+  const t = MTF.lista.find(x => x.id === id); if (!t || !confirm(`Excluir a tarefa "${t.titulo}"?`)) return;
+  try { const r = await api('/api/admin/tarefas/' + id, { method: 'DELETE' }); MTF.lista = MTF.lista.filter(x => x.id !== id); mtnModal(''); mtfDesenhar();
+    mtfDesfazer('🗑️ Tarefa excluída', async () => { await api('/api/admin/tarefas/restaurar', { method: 'POST', body: JSON.stringify(r.tarefa) }); await mtfCarregar(); mtfDesenhar(); }); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+function mtfDesfazer(msg, fn) {
+  let el = document.getElementById('mtf-snack'); if (el) el.remove();
+  el = document.createElement('div'); el.id = 'mtf-snack'; el.className = 'mtf-snack'; el.innerHTML = `<span>${escapeHtml(msg)}</span><button>Desfazer</button>`;
+  el.querySelector('button').onclick = async () => { el.remove(); try { await fn(); mostrarToast('↩️ Desfeito.'); } catch (e) { mostrarToast(e.message, true); } };
+  document.body.appendChild(el); clearTimeout(MTF.snackT); MTF.snackT = setTimeout(() => el.remove(), 6000);
+}
+function mtfAdiarMenu(id, bt) {
+  document.querySelectorAll('.mtf-pop').forEach(x => x.remove());
+  const t = MTF.lista.find(x => x.id === id), base = t.prazo && t.prazo > MTF.hoje ? t.prazo : MTF.hoje, h = MTF.hoje;
+  const ops = [['Amanhã', mtfSoma(h, 1)], ['Em 3 dias', mtfSoma(h, 3)], ['Próxima segunda', mtfProx(h, 1)], ['+1 semana', mtfSoma(base, 7)], ['Tirar prazo', '']];
+  const p = document.createElement('div'); p.className = 'mtf-pop'; p.innerHTML = `<b>Adiar para…</b>${ops.map(([r, d]) => `<button onclick="mtfAdiar(${id}, '${d}')">${r}${d ? ` <small>${mtfBr(d).slice(0, 5)}</small>` : ''}</button>`).join('')}<label>📅 <input type="date" onchange="mtfAdiar(${id}, this.value)"></label>`;
+  const r = bt.getBoundingClientRect(); p.style.top = Math.min(window.innerHeight - 250, r.bottom + 4) + 'px'; p.style.left = Math.max(8, Math.min(window.innerWidth - 220, r.right - 210)) + 'px';
+  document.body.appendChild(p); setTimeout(() => document.addEventListener('click', function f(e) { if (!p.contains(e.target)) { p.remove(); document.removeEventListener('click', f); } }), 0);
+}
+async function mtfAdiar(id, d) { document.querySelectorAll('.mtf-pop').forEach(x => x.remove()); try { await mtfSalvar(id, { prazo: d }, d ? '⏰ Novo prazo: ' + mtfBr(d) : 'Prazo removido.'); mtfDesenhar(); if (MTF.sel === id) mtfAbrir(id); } catch (e) { mostrarToast(e.message, true); } }
+function mtfAbrir(id) {
+  const t = id ? MTF.lista.find(x => x.id === id) : { id: 0, titulo: '', descricao: '', prazo: '', prazo_hora: '', prioridade: 'media', etiqueta: '', com_quem: '', com_quem_whats: '', status: 'aberta', proximo_follow: '', proximo_follow_hora: '', follows: [] };
+  if (!t) return; MTF.sel = id; const fim = t.status === 'concluida', etqs = [...new Set(MTF.lista.map(x => x.etiqueta).filter(Boolean))];
+  mtnModal(`<div class="mtf-ed">
+    <input id="mtfe-titulo" class="mtf-ed-tit" value="${escapeHtml(t.titulo)}" placeholder="O que precisa ser feito?">
+    <div class="mtf-ed-grade">
+      <label>Prazo<span class="mtf-dupla"><input id="mtfe-prazo" type="date" value="${escapeHtml(t.prazo || '')}"><input id="mtfe-hora" type="time" value="${escapeHtml(t.prazo_hora || '')}" title="Hora (opcional, gera aviso no celular)"></span></label>
+      <label>Prioridade<select id="mtfe-prior">${[['alta', '🔴 Urgente'], ['media', '🟡 Normal'], ['baixa', '🟢 Pode esperar']].map(([k, r]) => `<option value="${k}" ${t.prioridade === k ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
+      <label>Situação<select id="mtfe-status">${Object.entries(MTF_ST).map(([k, [r]]) => `<option value="${k}" ${t.status === k ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
+      <label>Etiqueta<input id="mtfe-etq" list="mtfe-etqs" value="${escapeHtml(t.etiqueta || '')}" placeholder="ex.: Formosa, RH, Mentoria"><datalist id="mtfe-etqs">${etqs.map(e => `<option value="${escapeHtml(e)}">`).join('')}</datalist></label>
+      <label>Com quem / responsável<input id="mtfe-quem" value="${escapeHtml(t.com_quem || '')}" placeholder="Nome"></label>
+      <label>WhatsApp da pessoa<input id="mtfe-whats" inputmode="tel" value="${escapeHtml(t.com_quem_whats || '')}" placeholder="(61) 99999-9999"></label>
+    </div>
+    <label>Detalhes<textarea id="mtfe-desc" rows="3" placeholder="Contexto, números, links…">${escapeHtml(t.descricao || '')}</textarea></label>
+    ${id ? `<div class="mtf-fol">
+      <h4>🔁 Follow-ups <i>${t.follows.length}</i>${t.proximo_follow && !fim ? `<span class="mtf-prox">Próximo: ${mtfQuando(t.proximo_follow)}${t.proximo_follow_hora ? ' ' + t.proximo_follow_hora : ''} <button onclick="mtfTirarFollow(${t.id})" title="Remover próximo follow">✕</button></span>` : ''}</h4>
+      ${fim ? '' : `<div class="mtf-fol-novo"><textarea id="mtff-txt" rows="2" placeholder="O que aconteceu? Ex.: Falei com o João, ele vai mandar a planilha."></textarea>
+        <div class="mtf-chips"><span>Próximo follow:</span>${[['Amanhã', 1], ['3 dias', 3], ['1 semana', 7], ['15 dias', 15]].map(([r, n]) => `<button onclick="document.getElementById('mtff-data').value='${mtfSoma(MTF.hoje, n)}'; this.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on')); this.classList.add('on')">${r}</button>`).join('')}<input id="mtff-data" type="date"><input id="mtff-hora" type="time" title="Hora do lembrete (opcional)"></div>
+        <div class="mtf-chips"><label class="mtf-chk"><input type="checkbox" id="mtff-aguard" ${t.status === 'aguardando' ? 'checked' : ''}> Aguardando a outra pessoa</label><label class="mtf-chk"><input type="checkbox" id="mtff-fim"> Resolvido, concluir tarefa</label><button class="btn-primario" style="width:auto;margin-left:auto !important;" onclick="mtfRegistrarFollow(${t.id})">Registrar follow</button></div></div>`}
+      <div class="mtf-linha">${t.follows.length ? t.follows.slice().reverse().map(f => `<div class="mtf-fol-it"><i></i><div><small>${new Date(f.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</small><p>${escapeHtml(f.texto)}</p></div><button onclick="mtfApagarFollow(${t.id}, '${f.id}')" title="Apagar">✕</button></div>`).join('') : '<p class="mag-vazio" style="margin:4px 0">Nenhum follow ainda. Cada contato ou avanço vira um registro com data.</p>'}</div></div>` : ''}
+    <div class="mtf-ed-rod"><button class="btn-primario" style="width:auto;" onclick="mtfSalvarEditor(${t.id})">💾 Salvar</button>
+      ${id ? `<button class="btn-secundario" onclick="mtfConcluir(${t.id}, ${!fim}); mtnModal('')">${fim ? '↩️ Reabrir' : '✔️ Concluir'}</button><button class="btn-secundario" onclick="mtfWhats(${t.id})">💬 WhatsApp</button><button class="btn-secundario" onclick="mtfAdiarMenu(${t.id}, this)">⏰ Adiar</button><button class="btn-secundario" onclick="mtfDuplicar(${t.id})" title="Duplicar">⧉</button><button class="btn-perigo" onclick="mtfExcluir(${t.id})">🗑️</button>` : ''}
+      <button class="btn-secundario" onclick="mtnModal(''); MTF.sel=null">Fechar</button></div></div>`);
+  const cx = document.querySelector('#modal-area .modal-caixa'); if (cx) cx.classList.add('mtf-caixa');
+  if (!id) setTimeout(() => { const i = document.getElementById('mtfe-titulo'); if (i) i.focus(); }, 60);
+}
+function mtfLerEditor() {
+  const v = k => (document.getElementById(k) || {}).value || '';
+  return { titulo: v('mtfe-titulo'), prazo: v('mtfe-prazo'), prazo_hora: v('mtfe-hora'), prioridade: v('mtfe-prior'), status: v('mtfe-status'), etiqueta: v('mtfe-etq').replace(/^#/, ''), com_quem: v('mtfe-quem'), com_quem_whats: v('mtfe-whats'), descricao: v('mtfe-desc') };
+}
+async function mtfSalvarEditor(id) {
+  try { const b = mtfLerEditor();
+    if (id) await mtfSalvar(id, b); else { const r = await api('/api/admin/tarefas', { method: 'POST', body: JSON.stringify(b) }); mtfAtualizar(r.tarefa); mostrarToast('✅ Tarefa criada.'); }
+    mtnModal(''); MTF.sel = null; mtfDesenhar(); } catch (e) { mostrarToast(e.message, true); }
+}
+function mtfFollow(id) { mtfAbrir(id); setTimeout(() => { const i = document.getElementById('mtff-txt'); if (i) { i.focus(); i.scrollIntoView({ block: 'center' }); } }, 80); }
+async function mtfRegistrarFollow(id) {
+  const txt = document.getElementById('mtff-txt').value.trim(); if (!txt) return mostrarToast('Escreva o que aconteceu neste follow.', true);
+  const fim = document.getElementById('mtff-fim').checked, ag = document.getElementById('mtff-aguard').checked, t = MTF.lista.find(x => x.id === id);
+  try { const b = mtfLerEditor(); await mtfSalvar(id, b, false); // guarda também o que foi editado na tela
+    const r = await api(`/api/admin/tarefas/${id}/follow`, { method: 'POST', body: JSON.stringify({ texto: txt, proximo_follow: document.getElementById('mtff-data').value, proximo_follow_hora: document.getElementById('mtff-hora').value, status: fim ? 'concluida' : ag ? 'aguardando' : (t.status === 'aguardando' ? 'andamento' : b.status) }) });
+    mtfAtualizar(r.tarefa); mostrarToast(r.message); mtfDesenhar(); if (fim) { mtnModal(''); MTF.sel = null; } else mtfAbrir(id);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function mtfTirarFollow(id) { try { await mtfSalvar(id, { proximo_follow: '' }, 'Próximo follow removido.'); mtfDesenhar(); mtfAbrir(id); } catch (e) { mostrarToast(e.message, true); } }
+async function mtfApagarFollow(id, fid) { if (!confirm('Apagar este registro de follow?')) return; try { const r = await api(`/api/admin/tarefas/${id}/follow/${fid}`, { method: 'DELETE' }); mtfAtualizar(r.tarefa); mtfDesenhar(); mtfAbrir(id); } catch (e) { mostrarToast(e.message, true); } }
+async function mtfDuplicar(id) {
+  const t = MTF.lista.find(x => x.id === id); if (!t) return;
+  try { const r = await api('/api/admin/tarefas', { method: 'POST', body: JSON.stringify({ titulo: t.titulo + ' (cópia)', descricao: t.descricao, prazo: t.prazo, prazo_hora: t.prazo_hora, prioridade: t.prioridade, etiqueta: t.etiqueta, com_quem: t.com_quem, com_quem_whats: t.com_quem_whats }) });
+    mtfAtualizar(r.tarefa); mtfDesenhar(); mtfAbrir(r.tarefa.id); mostrarToast('⧉ Tarefa duplicada.'); } catch (e) { mostrarToast(e.message, true); }
+}
+function mtfWhats(id) {
+  const t = MTF.lista.find(x => x.id === id); if (!t) return; const ult = t.follows[t.follows.length - 1];
+  const nome = (t.com_quem || '').split(' ')[0];
+  const txt = `${nome ? 'Olá, ' + nome + '! ' : 'Olá! '}Passando para alinhar: *${t.titulo}*${t.prazo ? ` (prazo ${mtfBr(t.prazo)})` : ''}.${ult ? `\nÚltimo combinado: ${ult.texto}` : ''}\nConsegue me dar um retorno?`;
+  let n = String(t.com_quem_whats || '').replace(/\D/g, ''); if (n && n.length <= 11) n = '55' + n;
+  window.open(`https://wa.me/${n}?text=${encodeURIComponent(txt)}`, '_blank', 'noopener');
+}
+function mtfAtalho() {
+  const link = location.origin + '/tarefas', qr = `https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=6&data=${encodeURIComponent(link)}`;
+  mtnModal(`<h3 style="margin-top:0;">📲 Atalho das tarefas no celular</h3>
+    <div class="mtf-at"><img src="${qr}" alt="QR code"><div>
+      <p><b>Android (app instalado):</b> segure o dedo no ícone do <b>Impulsionar</b> na tela inicial → aparece <b>"Minhas Tarefas"</b>. Arraste para a tela inicial e vira um atalho próprio.</p>
+      <p><b>Qualquer celular:</b> aponte a câmera para o QR (ou abra <b>${escapeHtml(link.replace(/^https?:\/\//, ''))}</b>) e no navegador toque em <b>⋮ → Adicionar à tela inicial</b> (no iPhone: <b>Compartilhar → Adicionar à Tela de Início</b>).</p>
+      <p class="plano-meta">O atalho já abre com o campo pronto para anotar.</p></div></div>
+    <div class="acoes-form"><button class="btn-primario" style="width:auto;" onclick="navigator.clipboard.writeText('${link}').then(()=>mostrarToast('📋 Link copiado!'))">📋 Copiar link</button><button class="btn-secundario" onclick="mtnModal('')">Fechar</button></div>`);
+}
+
 async function renderAgenda() {
   try { const v = localStorage.getItem('mag_vista'); if (['lista', 'semana', 'mes', 'notas'].includes(v)) MAG.vista = v; } catch (e) {}
   const c = document.getElementById('conteudo');
@@ -29008,7 +29240,7 @@ function magNotaWhatsAbrir() {
 }
 function magConfig(foco) {
   const d = MAG.dados || {}, c = d.config || {}, f = c.fontes || {}, ms = d.ms365 || {}, aqui = MAG.aqui;
-  const fontes = [['consultorias', 'Consultorias DPO agendadas'], ['solicitacoes', 'Pedidos de consultoria aguardando resposta'], ['mentorias', 'Mentorias (executivos)'], ['eventos', 'Eventos da comunidade'], ['treinamentos', 'Treinamentos que vou ministrar'], ['prazos', 'Prazos: follow-ups e marcos da consultoria'], ['mentoriaNegocio', 'Turmas e aula gratuita (Do Chão à Gestão)'], ['estudio', 'Posts agendados no Estúdio']];
+  const fontes = [['tarefas', 'Minhas tarefas (prazos, follow-ups e atrasadas)'], ['consultorias', 'Consultorias DPO agendadas'], ['solicitacoes', 'Pedidos de consultoria aguardando resposta'], ['mentorias', 'Mentorias (executivos)'], ['eventos', 'Eventos da comunidade'], ['treinamentos', 'Treinamentos que vou ministrar'], ['prazos', 'Prazos: follow-ups e marcos da consultoria'], ['mentoriaNegocio', 'Turmas e aula gratuita (Do Chão à Gestão)'], ['estudio', 'Posts agendados no Estúdio']];
   mtnModal(`<h3 style="margin-top:0;">⚙️ Configurar a agenda</h3>
     <div class="mag-sec" id="agc-sec-alertas"><b>🔔 Alertas no celular</b>
       <div class="mag-este ${aqui ? (aqui.ultimo_erro ? 'erro' : 'ok') : ''}">${aqui ? (aqui.ultimo_erro ? `⚠️ Este aparelho está cadastrado, mas o último envio falhou: ${escapeHtml(aqui.ultimo_erro)}` : '✅ Alertas ativos neste aparelho.') : '📱 Este aparelho ainda não recebe os alertas.'}
