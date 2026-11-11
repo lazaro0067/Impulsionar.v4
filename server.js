@@ -14029,9 +14029,144 @@ async function agNotaApagarFollow(req, a) {
 }
 app.delete('/api/admin/agenda/notas/:id', requireRole('admin'), async (req, res) => {
     try { const a = await agNotaDoUsuario(req); if (!a) return res.status(404).json({ error: 'Anotação não encontrada.' });
-        await agNotaApagarFollow(req, a); await agRun(`DELETE FROM agenda_notas WHERE id = ?`, [a.id]);
+        await agNotaApagarFollow(req, a); await agRun(`DELETE FROM agenda_notas WHERE id = ?`, [a.id]); try { fs.rmSync(grPasta(a.id), { recursive: true, force: true }); } catch (e) {}
         res.json({ message: 'Anotação excluída.' }); } catch (e) { res.status(400).json({ error: e.message }); }
 });
+// ---------- 🎙️ Gravar reunião: o celular envia o áudio em partes (a cada 30 s), o servidor transcreve
+// enquanto a reunião acontece e a IA vai anotando os principais pontos, decisões e ações ----------
+db.run(`ALTER TABLE agenda_notas ADD COLUMN gravacao TEXT`, () => {});
+db.run(`ALTER TABLE agenda_notas ADD COLUMN transcricao TEXT`, () => {});
+db.run(`ALTER TABLE agenda_notas ADD COLUMN resumo_ia TEXT`, () => {});
+const GR_PASTA = path.join(PASTA_UPLOADS, '.reunioes');
+const grPasta = id => path.join(GR_PASTA, String(Number(id)));
+const grJson = (v, d) => { try { return JSON.parse(v || '') || d; } catch (e) { return d; } };
+const GR_FILA = new Map(); // nota → promessa (um processamento por vez em cada reunião)
+async function grEstado(id) { const r = await dbGet(`SELECT * FROM agenda_notas WHERE id = ?`, [id]); return r ? Object.assign(r, { _g: grJson(r.gravacao, {}) }) : null; }
+async function grSalvarG(id, g) { await agRun(`UPDATE agenda_notas SET gravacao = ? WHERE id = ?`, [JSON.stringify(g), id]); }
+const grMmss = s => `${String(Math.floor(s / 3600) ? Math.floor(s / 3600) + ':' : '')}${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function grAgendar(id, final) {
+    const ant = GR_FILA.get(id) || Promise.resolve();
+    const p = ant.then(() => grProcessar(id, final)).catch(e => console.warn('Reunião ' + id + ':', e.message));
+    GR_FILA.set(id, p); p.finally(() => { if (GR_FILA.get(id) === p) GR_FILA.delete(id); });
+    return p;
+}
+async function grProcessar(id, final) {
+    const n = await grEstado(id); if (!n) return; const g = n._g, pasta = grPasta(id);
+    if (!fs.existsSync(pasta)) return;
+    const cfgT = await cfgTranscricaoEst();
+    if (!cfgT.chave) { g.status = 'erro'; g.erro = 'Conecte a transcrição (chave da Groq ou OpenAI) em 🔑 Chaves e integrações › Legendas da fala.'; return grSalvarG(id, g); }
+    if (!(await ffmpegDisponivel())) { g.status = 'erro'; g.erro = 'O servidor está sem o ffmpeg para ler o áudio.'; return grSalvarG(id, g); }
+    // monta o áudio inteiro: partes da gravação ao vivo (um único arquivo contínuo) ou o arquivo enviado
+    let fonte;
+    if (g.arquivo) fonte = path.join(pasta, g.arquivo);
+    else {
+        const partes = fs.readdirSync(pasta).filter(f => /^p\d+\.bin$/.test(f)).sort();
+        if (!partes.length) { if (final) { g.status = 'pronta'; await grSalvarG(id, g); } return; }
+        fonte = path.join(pasta, 'tudo.' + (/mp4|m4a|aac/.test(g.mime || '') ? 'mp4' : /ogg/.test(g.mime || '') ? 'ogg' : 'webm'));
+        fs.writeFileSync(fonte, Buffer.concat(partes.map(f => fs.readFileSync(path.join(pasta, f)))));
+    }
+    let feito = Number(g.seg) || 0, texto = n.transcricao || '', voltas = 0, novo = 0;
+    while (voltas++ < 40) {
+        const saida = path.join(pasta, 'trecho.mp3');
+        try { fs.unlinkSync(saida); } catch (e) {}
+        await rodarFfmpeg(['-hide_banner', '-loglevel', 'error', '-y', '-i', fonte, '-ss', String(feito), '-t', '600', '-vn', '-ac', '1', '-ar', '16000', '-b:a', '32k', saida], 10 * 60 * 1000).catch(() => {});
+        if (!fs.existsSync(saida) || fs.statSync(saida).size < 2000) break;
+        const dur = fs.statSync(saida).size / 4000; // 32 kbit/s ≈ 4000 bytes por segundo
+        if (!final && dur < 75) break; // espera juntar pelo menos ~1 min de fala nova
+        const usar = final || dur >= 590 ? dur : Math.max(0, dur - 3); // ao vivo deixa os últimos segundos para a próxima rodada
+        let r, tent = 0; while (true) { try { r = await transcreverEst(fs.readFileSync(saida), 'trecho.mp3', cfgT, 'audio/mpeg'); break; } catch (e) { if (++tent >= 3) throw e; await new Promise(z => setTimeout(z, 3000 * tent)); } }
+        const palavras = (r.palavras || []).filter(p => p.ini < usar), t = (final || dur >= 590 ? r.texto : palavras.map(p => p.w).join(' ')).trim();
+        if (t) { texto += (texto ? '\n' : '') + `[${grMmss(feito)}] ${t}`; novo += t.length; }
+        feito += usar; g.seg = feito;
+        await agRun(`UPDATE agenda_notas SET transcricao = ?, gravacao = ? WHERE id = ?`, [texto, JSON.stringify(g), id]);
+        if (dur < 590) break;
+    }
+    try { if (!g.arquivo) fs.unlinkSync(fonte); } catch (e) {}
+    // a IA reorganiza os pontos quando entra bastante fala nova (ou no fim)
+    const desdeIa = texto.length - (Number(g.iaChars) || 0);
+    if (texto && (final || desdeIa > 2500)) {
+        try { await grAnalisar(id, texto, final); const g2 = (await grEstado(id))._g; Object.assign(g, { iaChars: texto.length, iaEm: Date.now(), iaErro: '' }, { titulo: g2.titulo }); }
+        catch (e) { g.iaErro = e.message; }
+    }
+    if (final) {
+        g.status = texto ? 'pronta' : 'erro'; if (!texto) g.erro = 'Não foi possível entender fala na gravação. Confira se o microfone estava liberado.';
+        g.fim = g.fim || Date.now();
+        if (texto) { try { fs.rmSync(pasta, { recursive: true, force: true }); } catch (e) {} } // áudio apagado: fica só a transcrição e a ata
+        if (n.user_id) agPushUsuario(n.user_id, { title: '📝 Ata da reunião pronta', body: (n.titulo || 'Reunião') + ' — pontos, decisões e ações já estão nas suas anotações.', url: '/?app=1#ir=agenda', tag: 'reuniao-' + id }).catch(() => {});
+    }
+    await grSalvarG(id, g);
+}
+async function grAnalisar(id, texto, final) {
+    const n = await grEstado(id); if (!n) return;
+    const hoje = agHoje(), trecho = texto.length > 90000 ? '[…início resumido…]\n' + texto.slice(-90000) : texto;
+    const sis = 'Você é o secretário de reuniões de um gerente de operações logísticas no Brasil. Recebe a transcrição automática (pode ter erros de reconhecimento) e escreve a ata em português do Brasil, objetiva, sem inventar nada que não foi dito. Responda SÓ com JSON válido.';
+    const ped = `Data de hoje: ${hoje}. Reunião: "${n.titulo || ''}". Participantes informados: ${n.participantes || 'não informado'}.
+${final ? 'A reunião TERMINOU: faça a ata final.' : 'A reunião AINDA ESTÁ ACONTECENDO: atualize a ata parcial com o que já foi dito.'}
+Devolva exatamente: {"titulo":"título curto e claro da reunião (máx. 60 caracteres)","resumo":"2 a 4 frases com o essencial","pontos":["ponto importante dito na reunião", ...],"decisoes":["decisão tomada", ...],"acoes":[{"texto":"o que fazer","responsavel":"nome ou vazio","prazo":"AAAA-MM-DD ou vazio"}],"pendencias":["dúvida ou assunto que ficou em aberto", ...]}
+Regras: pontos com no máximo 8 itens, cada um com até 25 palavras e com números quando houver; só coloque prazo se a data foi dita (converta "sexta", "dia 15" etc. a partir de hoje); use listas vazias quando não houver.
+
+TRANSCRIÇÃO:
+${trecho}`;
+    const resp = await perguntarIA(sis, ped, 2500), ini = resp.indexOf('{'), fim = resp.lastIndexOf('}');
+    let j; try { j = JSON.parse(resp.slice(ini, fim + 1)); } catch (e) { throw new Error('A IA respondeu fora do formato.'); }
+    const L = (a, m) => (Array.isArray(a) ? a : []).map(x => String(x || '').trim()).filter(Boolean).slice(0, m);
+    const out = { titulo: String(j.titulo || '').slice(0, 80), resumo: String(j.resumo || '').slice(0, 1500), pontos: L(j.pontos, 12), decisoes: L(j.decisoes, 10), pendencias: L(j.pendencias, 10),
+        acoes: (Array.isArray(j.acoes) ? j.acoes : []).slice(0, 15).map(a => ({ texto: String(a.texto || '').slice(0, 400), responsavel: String(a.responsavel || '').slice(0, 80), prazo: AG_DATA.test(a.prazo || '') ? a.prazo : '' })).filter(a => a.texto), final: !!final, em: Date.now() };
+    const g = n._g;
+    if (g.tituloAuto && out.titulo) { await agRun(`UPDATE agenda_notas SET titulo = ? WHERE id = ?`, [out.titulo, id]); g.titulo = out.titulo; }
+    await agRun(`UPDATE agenda_notas SET resumo_ia = ?, gravacao = ? WHERE id = ?`, [JSON.stringify(out), JSON.stringify(g), id]);
+}
+app.post('/api/admin/agenda/notas/:id/gravacao/iniciar', requireRole('admin'), async (req, res) => {
+    try { const a = await agNotaDoUsuario(req); if (!a) return res.status(404).json({ error: 'Anotação não encontrada.' });
+        const g = grJson(a.gravacao, {}); if (g.status === 'pronta' || g.status === 'erro' || g.arquivo) { try { fs.rmSync(grPasta(a.id), { recursive: true, force: true }); } catch (e) {} }
+        const cont = g.status === 'gravando' || g.status === 'pausada';
+        fs.mkdirSync(grPasta(a.id), { recursive: true });
+        const ng = cont ? Object.assign(g, { status: 'gravando' }) : { status: 'gravando', mime: String((req.body || {}).mime || 'audio/webm').slice(0, 60), inicio: Date.now(), seg: 0, partes: 0, tituloAuto: !!(req.body || {}).tituloAuto, segAntes: (g.segTotal || 0) };
+        await grSalvarG(a.id, ng); const cfgT = await cfgTranscricaoEst();
+        res.json({ ok: true, continuando: cont, semTranscricao: !cfgT.chave, semIa: !ANTHROPIC_API_KEY }); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.post('/api/admin/agenda/notas/:id/gravacao/parte', requireRole('admin'), express.raw({ type: () => true, limit: '12mb' }), async (req, res) => {
+    try { const a = await agNotaDoUsuario(req); if (!a) return res.status(404).json({ error: 'Anotação não encontrada.' });
+        const seq = Number(req.query.seq); if (!Number.isInteger(seq) || seq < 0 || seq > 99999) return res.status(400).json({ error: 'Parte inválida.' });
+        if (!Buffer.isBuffer(req.body) || !req.body.length) return res.json({ ok: true, vazio: true });
+        const pasta = grPasta(a.id); fs.mkdirSync(pasta, { recursive: true });
+        fs.writeFileSync(path.join(pasta, 'p' + String(seq).padStart(5, '0') + '.bin'), req.body);
+        const g = grJson(a.gravacao, {}); g.partes = Math.max(Number(g.partes) || 0, seq + 1); g.ultimaParte = Date.now(); if (g.status !== 'finalizando') g.status = 'gravando';
+        await grSalvarG(a.id, g);
+        if (!GR_FILA.has(a.id) && seq % 2 === 1) grAgendar(a.id, false); // a cada ~1 min de áudio tenta transcrever o que chegou
+        res.json({ ok: true }); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.post('/api/admin/agenda/notas/:id/gravacao/parar', requireRole('admin'), async (req, res) => {
+    try { const a = await agNotaDoUsuario(req); if (!a) return res.status(404).json({ error: 'Anotação não encontrada.' });
+        const g = grJson(a.gravacao, {}); g.status = 'finalizando'; g.fim = Date.now(); await grSalvarG(a.id, g);
+        grAgendar(a.id, true); res.json({ ok: true, message: '⏳ Gravação encerrada. A ata fica pronta em instantes.' }); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+const uploadReuniao = multer({ storage: multer.diskStorage({ destination: (req, f, cb) => { const d = path.join(GR_PASTA, 'entrada'); fs.mkdirSync(d, { recursive: true }); cb(null, d); }, filename: (req, f, cb) => cb(null, Date.now() + '-' + crypto.randomBytes(4).toString('hex')) }), limits: { fileSize: 400 * 1024 * 1024 } });
+app.post('/api/admin/agenda/notas/:id/gravacao/arquivo', requireRole('admin'), (req, res) => {
+    uploadReuniao.single('audio')(req, res, async err => {
+        try { if (err) throw new Error(err.code === 'LIMIT_FILE_SIZE' ? 'Arquivo grande demais (máx. 400 MB).' : err.message);
+            const a = await agNotaDoUsuario(req); if (!a || !req.file) { try { req.file && fs.unlinkSync(req.file.path); } catch (e) {} return res.status(404).json({ error: a ? 'Envie o arquivo de áudio.' : 'Anotação não encontrada.' }); }
+            const pasta = grPasta(a.id); try { fs.rmSync(pasta, { recursive: true, force: true }); } catch (e) {} fs.mkdirSync(pasta, { recursive: true });
+            const ext = (path.extname(req.file.originalname || '').toLowerCase().replace(/[^.a-z0-9]/g, '') || '.m4a').slice(0, 6);
+            fs.renameSync(req.file.path, path.join(pasta, 'arquivo' + ext));
+            const tituloAuto = (req.body || {}).tituloAuto === '1';
+            await agRun(`UPDATE agenda_notas SET transcricao = '', resumo_ia = NULL, gravacao = ? WHERE id = ?`, [JSON.stringify({ status: 'finalizando', arquivo: 'arquivo' + ext, inicio: Date.now(), seg: 0, tituloAuto }), a.id]);
+            grAgendar(a.id, true); res.json({ ok: true, message: '⏳ Áudio recebido. Transcrevendo e montando a ata…' });
+        } catch (e) { res.status(400).json({ error: e.message }); }
+    });
+});
+app.get('/api/admin/agenda/notas/:id', requireRole('admin'), async (req, res) => {
+    const a = await agNotaDoUsuario(req).catch(() => null); if (!a) return res.status(404).json({ error: 'Anotação não encontrada.' });
+    res.json({ nota: agNotaSaida(a) });
+});
+// se o servidor reiniciar no meio, retoma as reuniões que estavam sendo finalizadas
+setTimeout(async () => { const L = await dbAll(`SELECT id, gravacao FROM agenda_notas WHERE gravacao LIKE '%finalizando%'`).catch(() => []); L.forEach(r => grAgendar(r.id, true)); }, 30 * 1000);
+// gravação ao vivo que parou de mandar partes há 20 min (celular desligou / app foi fechado): fecha a ata com o que chegou
+setInterval(async () => { const L = await dbAll(`SELECT id, gravacao FROM agenda_notas WHERE gravacao LIKE '%"gravando"%'`).catch(() => []);
+    for (const r of L) { const g = grJson(r.gravacao, {}); if (Date.now() - (g.ultimaParte || g.inicio || 0) > 20 * 60 * 1000) { g.status = 'finalizando'; g.fim = g.ultimaParte || Date.now(); await grSalvarG(r.id, g); grAgendar(r.id, true); } } }, 5 * 60 * 1000);
 app.put('/api/admin/agenda/config', requireRole('admin'), async (req, res) => {
     try {
         const uid = agUid(req), cfg = await agCfg(uid), b = req.body || {};

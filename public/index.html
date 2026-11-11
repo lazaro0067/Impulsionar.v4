@@ -1831,6 +1831,22 @@
   .mtf-fol-it div { flex:1; } .mtf-fol-it small { color:#9a3412; font-weight:700; } .mtf-fol-it p { margin:2px 0 0; white-space:pre-wrap; } .mtf-fol-it button { width:auto; margin:0; border:none; background:none; color:#cbd5e1; cursor:pointer; } .mtf-fol-it button:hover { color:#dc2626; }
   .mtf-ed-rod { display:flex; flex-wrap:wrap; gap:6px; border-top:1px solid #e2e8f0; padding-top:10px; margin-top:6px; } .mtf-ed-rod button { width:auto !important; margin:0 !important; }
   .mtf-at { display:flex; gap:16px; align-items:flex-start; } .mtf-at img { width:160px; height:160px; border:1px solid #e2e8f0; border-radius:10px; padding:6px; background:#fff; } @media (max-width:560px) { .mtf-at { flex-direction:column; align-items:center; } }
+  .mgr-pill { position:fixed; right:14px; bottom:84px; z-index:99990; display:flex; align-items:center; gap:10px; background:#0f172a; color:#fff; border:2px solid #ef4444; border-radius:999px; padding:8px 8px 8px 14px; box-shadow:0 10px 30px rgba(0,0,0,.35); max-width:calc(100vw - 28px); }
+  .mgr-pill b { cursor:pointer; font-variant-numeric:tabular-nums; white-space:nowrap; } .mgr-pill small { color:#94a3b8; font-size:11px; white-space:nowrap; } .mgr-pill button { width:auto; margin:0; border:none; border-radius:999px; background:#ef4444; color:#fff; font:inherit; font-weight:800; padding:7px 12px; cursor:pointer; white-space:nowrap; }
+  .mgr-pill.pisca { animation:mgrPisca .4s 3; } @keyframes mgrPisca { 50% { transform:scale(1.06); } }
+  @media (max-width:520px) { .mgr-pill small { display:none; } .mgr-pill { bottom:74px; } }
+  .mgr-ponto { width:11px; height:11px; border-radius:50%; background:#ef4444; flex:0 0 11px; animation:mgrRec 1.2s infinite; } @keyframes mgrRec { 50% { opacity:.25; } }
+  .mgr-giro { width:14px; height:14px; border-radius:50%; border:3px solid #fde68a; border-top-color:#d97706; animation:mgrGiro 1s linear infinite; flex:0 0 14px; } @keyframes mgrGiro { to { transform:rotate(360deg); } }
+  .mgr-b { display:flex; align-items:center; gap:10px; flex-wrap:wrap; border:1px solid #e2e8f0; background:#f8fafc; border-radius:12px; padding:8px 10px; margin:6px 0 8px; } .mgr-b small { color:#64748b; flex:1 1 200px; } .mgr-b button, .mgr-b label { width:auto !important; margin:0 !important; }
+  .mgr-b.rec { border-color:#fecaca; background:#fef2f2; } .mgr-b.rec b { color:#b91c1c; font-variant-numeric:tabular-nums; } .mgr-b.proc { border-color:#fde68a; background:#fffbeb; } .mgr-b.erro { border-color:#fecaca; background:#fef2f2; color:#991b1b; }
+  .mgr-bt-rec { border:none; border-radius:10px; background:#dc2626; color:#fff; font:inherit; font-weight:800; padding:9px 14px; cursor:pointer; } .mgr-bt-rec:disabled { opacity:.5; }
+  .mgr-bt-up { position:relative; border:1px solid #cbd5e1; border-radius:10px; background:#fff; padding:8px 12px; font-weight:700; cursor:pointer; font-size:14px; } .mgr-bt-up input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100% !important; }
+  .mgr-ata { border:1px solid #c7d2fe; background:#f5f7ff; border-radius:12px; padding:10px 12px; margin:8px 0; } .mgr-ata-cab { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:center; } .mgr-ata-cab i { font-weight:500; color:#6366f1; font-size:12px; } .mgr-ata-cab button { width:auto !important; margin:0 !important; }
+  .mgr-resumo { margin:8px 0; color:#1e293b; } .mgr-ata h5 { margin:10px 0 4px; font-size:13px; color:#3730a3; } .mgr-ata ul { margin:0; padding-left:18px; } .mgr-ata li { margin:4px 0; }
+  .mgr-ata li button { width:auto; margin:0 0 0 4px; border:1px solid #c7d2fe; background:#fff; border-radius:6px; padding:0 6px; font:inherit; font-size:12px; cursor:pointer; color:#4338ca; }
+  .mgr-tr { margin-top:10px; } .mgr-tr summary { cursor:pointer; font-weight:700; color:#475569; } .mgr-tr pre { white-space:pre-wrap; font:inherit; font-size:13px; max-height:260px; overflow:auto; background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:8px; color:#334155; }
+  .mag-ic.gravar { color:#dc2626; } .magn-novas { display:flex; gap:8px; } .magn-novas .magn-nova { flex:1; } .magn-nova.rec { border-color:#fca5a5; background:#fef2f2; color:#b91c1c; }
+  .magn-tags .rec { background:#fee2e2; color:#b91c1c; font-weight:700; } .magn-tags .ata { background:#e0e7ff; color:#3730a3; font-weight:700; }
   .mpg-play { margin-left:auto !important; width:auto !important; border:none; border-radius:999px; padding:7px 14px; background:#0b1329; color:#fff; font:inherit; font-size:13px; font-weight:800; cursor:pointer; white-space:nowrap; }
   .mpg-escolha { display:grid; gap:8px; } .mpg-escolha button { display:flex; gap:12px; align-items:center; text-align:left; width:100%; margin:0; border:1px solid #e2e8f0; background:#fff; border-radius:12px; padding:10px 12px; font:inherit; cursor:pointer; }
   .mpg-escolha button i { flex:0 0 34px; height:34px; border-radius:50%; display:grid; place-items:center; background:#e2e8f0; font-style:normal; font-weight:800; } .mpg-escolha button.prox { border-color:#f59e0b; background:#fffbeb; } .mpg-escolha button.prox i { background:#f59e0b; color:#0b1329; } .mpg-escolha button.feito i { background:#dcfce7; color:#16a34a; }
@@ -2055,7 +2071,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 10/11 (3)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 10/11 (4)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -28990,7 +29006,7 @@ async function renderAgenda() {
   try { const v = localStorage.getItem('mag_vista'); if (['lista', 'semana', 'mes', 'notas'].includes(v)) MAG.vista = v; } catch (e) {}
   const c = document.getElementById('conteudo');
   c.innerHTML = `<div class="agd"><div class="mag-topo"><h1>📅 Minha Agenda</h1>
-    <div class="mag-acoes"><button class="mag-ic prim" onclick="magEditar()" title="Novo compromisso">＋<span> Novo</span></button><button class="mag-ic" onclick="magNotaNova()" title="Anotar reunião">📝<span> Anotar</span></button><button class="mag-ic" id="mag-bt-sino" onclick="magConfig('alertas')" title="Alertas no celular">🔔<i class="mag-ponto" hidden></i></button><button class="mag-ic" onclick="magConfig()" title="Configurar">⚙️<span> Configurar</span></button></div></div>
+    <div class="mag-acoes"><button class="mag-ic prim" onclick="magEditar()" title="Novo compromisso">＋<span> Novo</span></button><button class="mag-ic" onclick="magNotaNova()" title="Anotar reunião">📝<span> Anotar</span></button><button class="mag-ic gravar" onclick="mgrNovaReuniao()" title="Gravar reunião agora">🎙️<span> Gravar</span></button><button class="mag-ic" id="mag-bt-sino" onclick="magConfig('alertas')" title="Alertas no celular">🔔<i class="mag-ponto" hidden></i></button><button class="mag-ic" onclick="magConfig()" title="Configurar">⚙️<span> Configurar</span></button></div></div>
     <div id="mag-corpo"><p style="color:#64748b;">Carregando…</p></div></div><div id="modal-area"></div>`;
   await magCarregar();
 }
@@ -29116,11 +29132,11 @@ function magNotasHtml() {
     const atras = n.follow_data && n.status !== 'concluida' && n.follow_data < hoje;
     return `<div class="magn-card ${n.status === 'concluida' ? 'ok' : ''}"><div class="magn-card-t" onclick="magNotaAbrir(${n.id})"><b>${n.status === 'concluida' ? '✅ ' : ''}${escapeHtml(n.titulo)}</b>
       <small>📅 ${magDataBr(n.data)}${n.participantes ? ' · 👥 ' + escapeHtml(n.participantes) : ''}</small>
-      <div class="magn-tags"><span>📌 ${pts} ponto${pts === 1 ? '' : 's'}</span><span class="${ac.length && feitas < ac.length ? 'pend' : ''}">✅ ${feitas}/${ac.length} ações</span>${n.follow_data ? `<span class="fol ${atras ? 'atras' : ''}">🔁 ${magDataBr(n.follow_data).slice(0, 5)}${n.follow_hora ? ' ' + n.follow_hora : ''}${atras ? ' · atrasado' : ''}</span>` : ''}</div></div>
+      <div class="magn-tags">${(() => { const g = mgrG(n); return g.status === 'gravando' ? '<span class="rec">🔴 gravando</span>' : g.status === 'finalizando' ? '<span>⏳ montando ata</span>' : mgrIA(n) ? '<span class="ata">✨ ata da gravação</span>' : ''; })()}<span>📌 ${pts} ponto${pts === 1 ? '' : 's'}</span><span class="${ac.length && feitas < ac.length ? 'pend' : ''}">✅ ${feitas}/${ac.length} ações</span>${n.follow_data ? `<span class="fol ${atras ? 'atras' : ''}">🔁 ${magDataBr(n.follow_data).slice(0, 5)}${n.follow_hora ? ' ' + n.follow_hora : ''}${atras ? ' · atrasado' : ''}</span>` : ''}</div></div>
       <div class="magn-bts"><button onclick="magNotaAbrir(${n.id})" title="Editar">✏️<span> Editar</span></button><button onclick="magNotaFollow(${n.id})" title="Follow-up">🔁<span> Follow</span></button><button onclick="magNotaWhats(${n.id})" title="Enviar pelo WhatsApp">💬<span> WhatsApp</span></button>
         <button onclick="magNotaStatus(${n.id}, ${n.status !== 'concluida'})" title="${n.status === 'concluida' ? 'Reabrir' : 'Concluir'}">${n.status === 'concluida' ? '↩️<span> Reabrir</span>' : '✔️<span> Concluir</span>'}</button><button class="exc" onclick="magNotaExcluir(${n.id})" title="Excluir">🗑️</button></div></div>`;
   };
-  return `<div class="magn"><button class="magn-nova" onclick="magNotaNova()">＋ Nova anotação de reunião</button>
+  return `<div class="magn"><div class="magn-novas"><button class="magn-nova" onclick="magNotaNova()">＋ Nova anotação</button><button class="magn-nova rec" onclick="mgrNovaReuniao()">🎙️ Gravar reunião agora</button></div>
     <div class="magn-filtros">${[['abertas', 'Abertas'], ['follow', '🔁 Follow-up'], ['concluidas', 'Concluídas']].map(([k, r]) => `<button class="${MAGN.filtro === k ? 'on' : ''}" onclick="MAGN.filtro='${k}'; magDesenhar()">${r} <i>${cont[k]}</i></button>`).join('')}</div>
     <input class="magn-busca" placeholder="🔎 Buscar por reunião, pessoa ou ponto…" value="${escapeHtml(MAGN.busca)}" oninput="MAGN.busca=this.value; clearTimeout(MAGN.tb); MAGN.tb=setTimeout(()=>{magDesenhar(); const i=document.querySelector('.magn-busca'); if(i){i.focus(); i.setSelectionRange(i.value.length,i.value.length);}},250)">
     ${vis.length ? vis.map(card).join('') : `<p class="mag-vazio">${MAGN.filtro === 'abertas' ? 'Nenhuma anotação aberta. Em reunião? Toque em “＋ Nova anotação” e vá anotando.' : MAGN.filtro === 'follow' ? 'Nenhum follow-up marcado.' : 'Nada concluído ainda.'}</p>`}</div>`;
@@ -29145,14 +29161,139 @@ function magNotaEditor(nova) {
   const n = MAGN.nota;
   mtnModal(`<div class="magn-ed"><div class="magn-ed-topo"><input id="magn-titulo" class="magn-tit" placeholder="Reunião de quê? (ex.: Resultado semanal com supervisores)" value="${escapeHtml(n.titulo)}" oninput="MAGN.nota.titulo=this.value; magNotaAuto()"><span id="magn-salvo" class="magn-salvo">${n.id ? 'Salvo ✓' : ''}</span></div>
     <div class="magn-ed-meta"><input id="magn-data" type="date" value="${escapeHtml(n.data || '')}" onchange="MAGN.nota.data=this.value; magNotaAuto()"><input id="magn-part" placeholder="👥 Participantes" value="${escapeHtml(n.participantes || '')}" oninput="MAGN.nota.participantes=this.value; magNotaAuto()"></div>
+    <div id="mgr-barra"></div>
     <div class="magn-cap"><div class="magn-tipo"><button id="magn-t-ponto" class="${MAGN.tipo === 'ponto' ? 'on' : ''}" onclick="magNotaTipo('ponto')">📌 Ponto</button><button id="magn-t-acao" class="${MAGN.tipo === 'acao' ? 'on' : ''}" onclick="magNotaTipo('acao')">✅ Ação</button></div>
       <div class="magn-cap-l"><textarea id="magn-novo" rows="1" placeholder="Novo ponto… (Enter anota)" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); magNotaAdd();}" oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px'"></textarea><button class="magn-add" onclick="magNotaAdd()" title="Anotar">➤</button></div></div>
     <div id="magn-itens" class="magn-itens" data-sem-ditado></div>
+    <div id="mgr-ata"></div>
     <div class="magn-ed-rod"><button class="btn-primario" style="width:auto;" onclick="magNotaFechar()">💾 Salvar e fechar</button><button class="btn-secundario" onclick="magNotaSalvarAgora().then(ok=>ok&&magNotaFollow(MAGN.nota.id))">🔁 Follow-up</button><button class="btn-secundario" onclick="magNotaSalvarAgora().then(ok=>ok&&magNotaWhats(MAGN.nota.id))">💬 WhatsApp</button>${n.id ? `<button class="btn-secundario" onclick="magNotaSalvarAgora().then(ok=>ok&&magNotaStatus(MAGN.nota.id, ${n.status !== 'concluida'}))">${n.status === 'concluida' ? '↩️ Reabrir' : '✔️ Concluir'}</button><button class="btn-perigo" onclick="magNotaExcluir(MAGN.nota.id)">🗑️</button>` : ''}</div></div>`);
   const cx = document.querySelector('#modal-area .modal-caixa'); if (cx) cx.classList.add('magn-caixa');
-  magNotaItens();
+  magNotaItens(); mgrBarra(); mgrAta();
+  const gEd = mgrG(n); if (n.id && (gEd.status === 'gravando' || gEd.status === 'finalizando') && MGR.notaId !== n.id) mgrPollar(n.id); else if (n.id && MGR.notaId === n.id && !MGR.poll) mgrPollar(n.id);
   setTimeout(() => { const t = document.getElementById(nova && !n.titulo ? 'magn-titulo' : 'magn-novo'); if (t) t.focus(); }, 60);
 }
+/* ---------- 🎙️ Gravar reunião (continua gravando fora da tela, em segundo plano no Android) ---------- */
+const MGR = { rec: null, stream: null, notaId: 0, seq: 0, fila: [], enviando: false, inicio: 0, timer: null, wake: null, poll: null, parando: false, enviados: 0 };
+const mgrTempo = ms => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 3600) ? Math.floor(s / 3600) + ':' : ''}${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
+async function mgrNovaReuniao() {
+  if (MGR.rec) return mgrPill(true);
+  const agora = new Date(), titulo = `Reunião ${agora.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+  try { const hoje = (MAG.dados && MAG.dados.hoje) || MAGN.hoje || new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+    const r = await api('/api/admin/agenda/notas', { method: 'POST', body: JSON.stringify({ titulo, data: hoje, itens: [] }) });
+    await magNotasCarregar(); await mgrIniciar(r.id, true); magNotaAbrir(r.id);
+  } catch (e) { mostrarToast(e.message, true); }
+}
+async function mgrIniciar(notaId, tituloAuto) {
+  if (MGR.rec) return mostrarToast('Já existe uma reunião sendo gravada.', true);
+  if (!navigator.mediaDevices || !window.MediaRecorder) return mostrarToast('Este navegador não grava áudio. Use o Chrome no celular ou no computador.', true);
+  let stream; try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+  catch (e) { return mostrarToast('Libere o microfone para o Impulsionar (ícone de cadeado ao lado do endereço) e tente de novo.', true); }
+  const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'].find(m => MediaRecorder.isTypeSupported(m)) || '';
+  let ini; try { ini = await api(`/api/admin/agenda/notas/${notaId}/gravacao/iniciar`, { method: 'POST', body: JSON.stringify({ mime, tituloAuto: !!tituloAuto }) }); }
+  catch (e) { stream.getTracks().forEach(t => t.stop()); return mostrarToast(e.message, true); }
+  if (ini.semTranscricao) mostrarToast('⚠️ A gravação vai funcionar, mas falta conectar a transcrição (🔑 Chaves › Legendas da fala) para virar ata.', true);
+  const rec = new MediaRecorder(stream, Object.assign({ audioBitsPerSecond: 32000 }, mime ? { mimeType: mime } : {}));
+  Object.assign(MGR, { rec, stream, notaId, seq: ini.continuando ? MGR.seq : 0, inicio: Date.now(), parando: false, enviados: 0, fila: [] });
+  rec.ondataavailable = e => { if (e.data && e.data.size) { MGR.fila.push({ seq: MGR.seq++, blob: e.data, tent: 0 }); mgrEnviar(); } };
+  rec.onstop = () => { MGR.stream && MGR.stream.getTracks().forEach(t => t.stop()); mgrFinalizar(); };
+  stream.getAudioTracks()[0].onended = () => { if (MGR.rec && MGR.rec.state !== 'inactive') { mostrarToast('🎙️ O microfone foi interrompido (ligação ou outro app). A gravação foi encerrada e a ata será montada.', true); mgrParar(); } };
+  rec.start(window.__mgrFatia || 30000); // uma parte a cada 30 s: o que já foi enviado nunca se perde
+  try { if ('wakeLock' in navigator) MGR.wake = await navigator.wakeLock.request('screen'); } catch (e) {}
+  if ('mediaSession' in navigator) try { navigator.mediaSession.metadata = new MediaMetadata({ title: '🔴 Gravando reunião', artist: 'Impulsionar V4' }); } catch (e) {}
+  clearInterval(MGR.timer); MGR.timer = setInterval(mgrPill, 1000); mgrPill(); mgrPollar();
+  mostrarToast('🔴 Gravando. Pode bloquear a tela ou usar outros apps: a gravação continua.');
+}
+async function mgrEnviar() {
+  if (MGR.enviando) return; MGR.enviando = true;
+  try {
+    while (MGR.fila.length) {
+      const p = MGR.fila[0];
+      try { await api(`/api/admin/agenda/notas/${MGR.notaId}/gravacao/parte?seq=${p.seq}`, { method: 'POST', body: p.blob, headers: { 'Content-Type': p.blob.type || 'application/octet-stream' } }); MGR.fila.shift(); MGR.enviados++; }
+      catch (e) { p.tent++; await new Promise(r => setTimeout(r, Math.min(30000, 2000 * p.tent))); if (p.tent > 40) { MGR.fila.shift(); } } // sem internet: tenta de novo e segue
+    }
+  } finally { MGR.enviando = false; mgrPill(); }
+}
+function mgrParar() {
+  if (!MGR.rec || MGR.parando) return; MGR.parando = true;
+  try { if (MGR.rec.state !== 'inactive') MGR.rec.stop(); else mgrFinalizar(); } catch (e) { mgrFinalizar(); }
+}
+async function mgrFinalizar() {
+  clearInterval(MGR.timer); try { MGR.wake && MGR.wake.release(); } catch (e) {} MGR.wake = null;
+  mgrPill(); const id = MGR.notaId;
+  for (let i = 0; i < 120 && (MGR.fila.length || MGR.enviando); i++) await new Promise(r => setTimeout(r, 500)); // espera enviar as últimas partes
+  try { const r = await api(`/api/admin/agenda/notas/${id}/gravacao/parar`, { method: 'POST', body: '{}' }); mostrarToast(r.message); } catch (e) { mostrarToast(e.message, true); }
+  Object.assign(MGR, { rec: null, stream: null }); mgrPill(); mgrPollar(id);
+}
+function mgrPill(destacar) {
+  let el = document.getElementById('mgr-pill');
+  if (!MGR.rec) { if (el) el.remove(); const b = document.getElementById('mgr-barra'); if (b && MAGN.nota) mgrBarra(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'mgr-pill'; el.className = 'mgr-pill'; document.body.appendChild(el); }
+  const fila = MGR.fila.length;
+  el.innerHTML = `<span class="mgr-ponto"></span><b onclick="mgrAbrirNota()">${MGR.parando ? 'Encerrando…' : 'Gravando reunião'} ${mgrTempo(Date.now() - MGR.inicio)}</b><small>${fila ? `⏳ ${fila} parte(s) aguardando internet` : '☁️ salvo'}</small>${MGR.parando ? '' : '<button onclick="mgrParar()">⏹ Parar</button>'}`;
+  if (destacar) { el.classList.add('pisca'); setTimeout(() => el.classList.remove('pisca'), 1200); }
+  const b = document.getElementById('mgr-barra'); if (b) mgrBarra();
+}
+function mgrAbrirNota() { if (MGR.notaId) { irPara('agenda'); setTimeout(() => magNotaAbrir(MGR.notaId), 700); } }
+// acompanha a ata sendo montada enquanto a reunião acontece e até ficar pronta
+function mgrPollar(id) {
+  clearInterval(MGR.poll); const nid = id || MGR.notaId; if (!nid) return;
+  const ir = async () => {
+    try { const r = await api('/api/admin/agenda/notas/' + nid), n = r.nota, i = MAGN.lista.findIndex(x => x.id === nid);
+      if (i >= 0) Object.assign(MAGN.lista[i], { gravacao: n.gravacao, transcricao: n.transcricao, resumo_ia: n.resumo_ia, titulo: n.titulo });
+      if (MAGN.nota && MAGN.nota.id === nid) { Object.assign(MAGN.nota, { gravacao: n.gravacao, transcricao: n.transcricao, resumo_ia: n.resumo_ia }); if (n.titulo !== MAGN.nota.titulo && !document.activeElement?.matches('#magn-titulo')) { MAGN.nota.titulo = n.titulo; const t = document.getElementById('magn-titulo'); if (t) t.value = n.titulo; } mgrBarra(); mgrAta(); }
+      const g = mgrG(n); if (!MGR.rec && (g.status === 'pronta' || g.status === 'erro' || !g.status)) { clearInterval(MGR.poll); if (g.status === 'pronta') mostrarToast('📝 Ata pronta: ' + n.titulo); if (MAG.vista === 'notas') magDesenhar(); }
+    } catch (e) {}
+  };
+  ir(); MGR.poll = setInterval(ir, 12000);
+}
+const mgrG = n => { try { return typeof n.gravacao === 'string' ? JSON.parse(n.gravacao || '{}') || {} : (n.gravacao || {}); } catch (e) { return {}; } };
+const mgrIA = n => { try { return typeof n.resumo_ia === 'string' ? JSON.parse(n.resumo_ia || 'null') : n.resumo_ia; } catch (e) { return null; } };
+function mgrBarra() {
+  const el = document.getElementById('mgr-barra'), n = MAGN.nota; if (!el || !n) return;
+  const g = mgrG(n), aqui = MGR.rec && MGR.notaId === n.id;
+  if (aqui) el.innerHTML = `<div class="mgr-b rec"><span class="mgr-ponto"></span><b>Gravando ${mgrTempo(Date.now() - MGR.inicio)}</b><small>A IA vai anotando os pontos a cada poucos minutos. Pode sair do app.</small><button class="btn-perigo" onclick="mgrParar()">⏹ Parar e gerar ata</button></div>`;
+  else if (g.status === 'finalizando' || (g.status === 'gravando' && !MGR.rec)) el.innerHTML = `<div class="mgr-b proc"><span class="mgr-giro"></span><b>${g.status === 'gravando' ? 'Gravação em andamento em outro aparelho…' : 'Montando a ata…'}</b><small>${g.seg ? 'Transcrito até ' + mgrTempo(g.seg * 1000) + '. ' : ''}Você pode fechar; avisamos no celular quando ficar pronta.</small></div>`;
+  else if (g.status === 'erro') el.innerHTML = `<div class="mgr-b erro"><b>⚠️ ${escapeHtml(g.erro || 'Não foi possível montar a ata.')}</b><button class="btn-secundario" onclick="mgrIniciar(${n.id})">🎙️ Gravar de novo</button></div>`;
+  else el.innerHTML = `<div class="mgr-b"><button class="mgr-bt-rec" ${MGR.rec ? 'disabled title="Já existe uma gravação em andamento"' : ''} onclick="magNotaSalvarAgora().then(ok => ok !== false && MAGN.nota.id ? mgrIniciar(MAGN.nota.id, !MAGN.nota.titulo || /^Reunião \\d/.test(MAGN.nota.titulo)) : mostrarToast('Dê um título à reunião antes de gravar.', true))">🎙️ ${g.status === 'pronta' ? 'Gravar mais' : 'Gravar reunião'}</button><label class="mgr-bt-up">📤 Enviar áudio<input type="file" accept="audio/*,video/*,.m4a,.mp3,.ogg,.opus,.wav,.aac,.amr" onchange="mgrUpload(this)"></label><small>${g.status === 'pronta' ? '✅ Ata gerada pela gravação.' : 'Grava e a IA anota os principais pontos, decisões e ações.'}</small></div>`;
+}
+async function mgrUpload(inp) {
+  const f = inp.files && inp.files[0]; inp.value = ''; if (!f) return;
+  if (!(await magNotaSalvarAgora()) && !MAGN.nota.id) return mostrarToast('Dê um título à reunião antes de enviar o áudio.', true);
+  const fd = new FormData(); fd.append('audio', f); fd.append('tituloAuto', !MAGN.nota.titulo || /^Reunião \d/.test(MAGN.nota.titulo) ? '1' : '0');
+  const el = document.getElementById('mgr-barra'); if (el) el.innerHTML = `<div class="mgr-b proc"><span class="mgr-giro"></span><b>Enviando ${escapeHtml(f.name)}…</b></div>`;
+  try { const r = await fetch(`/api/admin/agenda/notas/${MAGN.nota.id}/gravacao/arquivo`, { method: 'POST', body: fd, headers: ESTADO.token ? { Authorization: 'Bearer ' + ESTADO.token } : {} }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Falha no envio.');
+    mostrarToast(j.message); MAGN.nota.gravacao = { status: 'finalizando' }; mgrBarra(); mgrPollar(MAGN.nota.id); } catch (e) { mostrarToast(e.message, true); mgrBarra(); }
+}
+function mgrAta() {
+  const el = document.getElementById('mgr-ata'), n = MAGN.nota; if (!el || !n) return;
+  const ia = mgrIA(n), tr = n.transcricao || '';
+  if (!ia && !tr) { el.innerHTML = ''; return; }
+  const sec = (t, L, f) => L && L.length ? `<h5>${t}</h5><ul>${L.map(f).join('')}</ul>` : '';
+  el.innerHTML = `<div class="mgr-ata">${ia ? `<div class="mgr-ata-cab"><b>✨ Ata automática ${ia.final ? '' : '<i>(parcial — atualiza durante a reunião)</i>'}</b><button class="btn-secundario btn-sm" onclick="mgrTrazerTudo()">⬇️ Trazer tudo para as anotações</button></div>
+      ${ia.resumo ? `<p class="mgr-resumo">${escapeHtml(ia.resumo)}</p>` : ''}
+      ${sec('📌 Principais pontos', ia.pontos, (p, k) => `<li>${escapeHtml(p)} <button title="Trazer para minhas anotações" onclick="mgrTrazer('ponto', ${k})">＋</button></li>`)}
+      ${sec('🤝 Decisões', ia.decisoes, (p, k) => `<li>${escapeHtml(p)} <button title="Trazer para minhas anotações" onclick="mgrTrazer('decisao', ${k})">＋</button></li>`)}
+      ${sec('✅ Ações', ia.acoes, (a, k) => `<li><b>${escapeHtml(a.texto)}</b>${a.responsavel ? ` — ${escapeHtml(a.responsavel)}` : ''}${a.prazo ? ` <small>(até ${a.prazo.split('-').reverse().join('/').slice(0, 5)})</small>` : ''} <button title="Trazer para minhas anotações" onclick="mgrTrazer('acao', ${k})">＋</button><button title="Criar em Minhas Tarefas" onclick="mgrTarefa(${k})">📋 Tarefa</button></li>`)}
+      ${sec('❓ Ficou em aberto', ia.pendencias, p => `<li>${escapeHtml(p)}</li>`)}` : '<p class="plano-meta">A ata aparece aqui assim que juntar alguns minutos de fala.</p>'}
+    ${tr ? `<details class="mgr-tr"><summary>📜 Transcrição completa (${Math.max(1, Math.round(tr.split(/\s+/).length / 140))} min de fala)</summary><pre>${escapeHtml(tr)}</pre><button class="btn-secundario btn-sm" onclick="navigator.clipboard.writeText(MAGN.nota.transcricao || '').then(()=>mostrarToast('📋 Transcrição copiada'))">📋 Copiar</button></details>` : ''}</div>`;
+}
+function mgrTrazer(tipo, k, silencioso) {
+  const ia = mgrIA(MAGN.nota); if (!ia) return;
+  const it = tipo === 'acao' ? { texto: ia.acoes[k].texto, tipo: 'acao', responsavel: ia.acoes[k].responsavel || '', prazo: ia.acoes[k].prazo || '', feito: false } : { texto: (tipo === 'decisao' ? 'Decisão: ' : '') + (tipo === 'decisao' ? ia.decisoes[k] : ia.pontos[k]), tipo: 'ponto', responsavel: '', prazo: '', feito: false };
+  if (MAGN.nota.itens.some(x => x.texto === it.texto)) { if (!silencioso) mostrarToast('Esse item já está nas suas anotações.'); return; }
+  MAGN.nota.itens.push(it); magNotaItens(); magNotaAuto(); if (!silencioso) mostrarToast('⬇️ Trazido para as anotações.');
+}
+function mgrTrazerTudo() {
+  const ia = mgrIA(MAGN.nota); if (!ia) return;
+  (ia.pontos || []).forEach((x, k) => mgrTrazer('ponto', k, true)); (ia.decisoes || []).forEach((x, k) => mgrTrazer('decisao', k, true)); (ia.acoes || []).forEach((x, k) => mgrTrazer('acao', k, true));
+  mostrarToast('⬇️ Pontos, decisões e ações trazidos para as anotações.');
+}
+async function mgrTarefa(k) {
+  const a = (mgrIA(MAGN.nota) || {}).acoes[k]; if (!a) return;
+  try { await api('/api/admin/tarefas', { method: 'POST', body: JSON.stringify({ titulo: a.texto, com_quem: a.responsavel || '', prazo: a.prazo || '', etiqueta: 'Reunião', descricao: 'Da reunião: ' + MAGN.nota.titulo }) }); mostrarToast('📋 Criada em Minhas Tarefas.'); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+window.addEventListener('beforeunload', e => { if (MGR.rec && MGR.rec.state === 'recording') { e.preventDefault(); e.returnValue = 'Há uma reunião sendo gravada.'; } });
 function magNotaTipo(t) { MAGN.tipo = t; ['ponto', 'acao'].forEach(k => { const b = document.getElementById('magn-t-' + k); if (b) b.classList.toggle('on', k === t); }); const i = document.getElementById('magn-novo'); if (i) { i.placeholder = t === 'acao' ? 'Nova ação… (Enter anota)' : 'Novo ponto… (Enter anota)'; i.focus(); } }
 function magNotaAdd() {
   const i = document.getElementById('magn-novo'), t = (i.value || '').trim(); if (!t) return;
@@ -29219,7 +29360,11 @@ async function magNotaFollowTirar(id) { try { const r = await api(`/api/admin/ag
 function magNotaPlanoTexto(n) {
   const pts = n.itens.filter(i => i.tipo !== 'acao'), ac = n.itens.filter(i => i.tipo === 'acao');
   const L = [`*📋 ${n.titulo}*`, `📅 ${magDataBr(n.data)}${n.participantes ? ' · 👥 ' + n.participantes : ''}`];
+  const ia = mgrIA(n); if (ia && ia.resumo) L.push('', '*Resumo*', ia.resumo);
   if (pts.length) L.push('', '*Pontos importantes*', ...pts.map(i => '• ' + i.texto));
+  else if (ia && ia.pontos && ia.pontos.length) L.push('', '*Pontos importantes*', ...ia.pontos.map(p => '• ' + p));
+  if (ia && ia.decisoes && ia.decisoes.length && !pts.some(i => /^Decisão:/.test(i.texto))) L.push('', '*Decisões*', ...ia.decisoes.map(p => '• ' + p));
+  if (!ac.length && ia && ia.acoes && ia.acoes.length) L.push('', '*Plano de ação*', ...ia.acoes.map((a, k) => `◻️ ${k + 1}. ${a.texto}${a.responsavel ? ' — *' + a.responsavel + '*' : ''}${a.prazo ? ' (até ' + magDataBr(a.prazo).slice(0, 5) + ')' : ''}`));
   if (ac.length) L.push('', '*Plano de ação*', ...ac.map((i, k) => `${i.feito ? '✅' : '◻️'} ${k + 1}. ${i.texto}${i.responsavel ? ' — *' + i.responsavel + '*' : ''}${i.prazo ? ' (até ' + magDataBr(i.prazo).slice(0, 5) + ')' : ''}`));
   if (n.follow_data) L.push('', `🔁 Próximo alinhamento: ${magDataBr(n.follow_data)}${n.follow_hora ? ' às ' + n.follow_hora : ''}`);
   return L.join('\n');
