@@ -2071,7 +2071,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 10/11 (4)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 10/11 (5)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -24692,6 +24692,7 @@ async function evAbrirCamera() {
       <label class="ev-campo"><span>Câmera</span><select id="ev-cam-sel" onchange="evCamLigar()"></select></label>
       <label class="ev-campo"><span>Microfone</span><select id="ev-mic-sel" onchange="evCamLigar()"></select></label>
       <div class="ev-medidor"><i id="ev-cam-nivel"></i></div>
+      <label class="ev-chk2"><input type="checkbox" id="ev-mic-pro" ${(() => { try { return localStorage.getItem('ev_mic_pro') === '1'; } catch (e) { return false; } })() ? 'checked' : ''} onchange="try{localStorage.setItem('ev_mic_pro', this.checked ? '1' : '0')}catch(e){} evCamLigar()"> 🎚️ Microfone profissional <small style="opacity:.7">(lapela ou USB: som puro, sem os filtros do navegador; o ruído sai depois com a IA)</small></label>
       <label class="ev-campo"><span>Qualidade</span><select id="ev-cam-res" onchange="evCamLigar()"><option value="2160">4K (se a câmera tiver)</option><option value="1080" selected>Full HD 1080p (recomendado)</option><option value="720">HD 720p (mais leve)</option></select></label>
       <div class="ev-sub" id="evc-info"></div>
       <label class="ev-chk2"><input type="checkbox" id="ev-cam-espelho" checked onchange="evCamDesenharLoop()"> Espelhar a minha imagem na prévia</label>
@@ -24755,7 +24756,9 @@ async function evCamLigar(primeira) {
   // câmera "normal": pede a resolução cheia do sensor (16:9) e deixa o aparelho girar sozinho; o recorte para o formato é feito no desenho
   // câmera igual à do celular: em pé no aparelho = imagem em pé, campo de visão inteiro (sem aquele corte "de perto")
   const base = camSel ? { deviceId: { exact: camSel } } : { facingMode: { ideal: EVCAM.traseira ? 'environment' : 'user' } };
-  const audio = Object.assign({ echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 }, v('ev-mic-sel') ? { deviceId: { exact: v('ev-mic-sel') } } : {});
+  // 🎚️ microfone profissional (lapela/USB): som puro, sem os filtros do navegador (a limpeza fica para o servidor, com IA)
+  let micPro = false; try { micPro = localStorage.getItem('ev_mic_pro') === '1'; } catch (e) {}
+  const audio = Object.assign(micPro ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1, sampleRate: 48000 } : { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 }, v('ev-mic-sel') ? { deviceId: { exact: v('ev-mic-sel') } } : {});
   const cel = evCelularAqui(), retrato = cel && window.innerHeight >= window.innerWidth;
   try { const r = await CameraCerta.abrir({ base, audio, retrato, alt }); EVCAM.stream = r.stream; EVCAM.dims = { w: r.w, h: r.h }; }
   catch (e) {
@@ -24920,7 +24923,7 @@ async function evCamGravar() {
   } catch (e) { EVCAM.stream.getAudioTracks().forEach(t => fluxo.addTrack(t)); }
   const mime = ['video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
   EVCAM.partes = []; EVCAM.tamLocal = 0; const altG = direto && EVCAM.gravDims ? Math.min(EVCAM.gravDims.w || 0, EVCAM.gravDims.h || 0) : 1080;
-  EVCAM.rec = new MediaRecorder(fluxo, mime ? { mimeType: mime, videoBitsPerSecond: EVCAM.modo === 'camera' ? (direto ? (altG >= 1800 ? 16000000 : altG >= 1000 ? 8000000 : 5000000) : 6000000) : 4000000, audioBitsPerSecond: 192000 } : undefined);
+  EVCAM.rec = new MediaRecorder(fluxo, mime ? { mimeType: mime, videoBitsPerSecond: EVCAM.modo === 'camera' ? (direto ? (altG >= 1800 ? 16000000 : altG >= 1000 ? 10000000 : 5000000) : 10000000) : 6000000, audioBitsPerSecond: 192000 } : undefined);
   // envio contínuo: a gravação vai subindo para o servidor enquanto você grava (aulas de até 2 h sem estourar a memória)
   EVCAM.mime = EVCAM.rec.mimeType || mime || 'video/webm';
   EVCAM.envio = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), i: 0, fila: [], enviando: false, enviado: 0, total: 0, resposta: null, todas: [] };
@@ -26403,7 +26406,8 @@ async function evDecodificarAudio(url) {
   const r = await off.startRendering();
   return { amostras: r.getChannelData(0), taxa: 16000, duracao: dec.duration };
 }
-function evDetectarFala(a) {
+function evDetectarFala(a, pausaMin) {
+  const PAUSA = Math.max(0.3, Math.min(1.5, Number(pausaMin) || 0.45));
   const jan = Math.round(a.taxa * 0.02), n = Math.floor(a.amostras.length / jan), rms = new Float32Array(n);
   for (let i = 0; i < n; i++) { let s = 0; for (let k = i * jan; k < (i + 1) * jan; k++) s += a.amostras[k] * a.amostras[k]; rms[i] = Math.sqrt(s / jan); }
   const ord = Array.from(rms).sort((x, y) => x - y), piso = ord[Math.floor(n * 0.15)] || 0, pico = ord[Math.floor(n * 0.95)] || 0;
@@ -26413,8 +26417,8 @@ function evDetectarFala(a) {
   if (ini >= 0) segs.push([ini * 0.02, n * 0.02]);
   // junta pausas curtas (respiração) e descarta estalos
   const juntos = [];
-  segs.forEach(sg => { const u = juntos[juntos.length - 1]; if (u && sg[0] - u[1] < 0.45) u[1] = sg[1]; else juntos.push(sg.slice()); });
-  const PAD = 0.12;
+  segs.forEach(sg => { const u = juntos[juntos.length - 1]; if (u && sg[0] - u[1] < PAUSA) u[1] = sg[1]; else juntos.push(sg.slice()); });
+  const PAD = PAUSA >= 0.7 ? 0.2 : 0.12; // aula: respiro um pouco maior antes/depois da fala
   return juntos.filter(sg => sg[1] - sg[0] >= 0.3).map(sg => [Math.max(0, sg[0] - PAD), Math.min(a.duracao, sg[1] + PAD)]);
 }
 function evWav(a) {
@@ -26430,7 +26434,7 @@ async function evConectarTranscricao() {
 }
 async function evEdicaoCompleta() {
   const v = id => { const e = document.getElementById(id); return !!(e && e.checked && !e.disabled); };
-  const op = { silencio: v('ec-silencio'), legendas: v('ec-legendas'), trechos: v('ec-trechos'), voz: v('ec-voz'), zoom: v('ec-zoom'), texto: v('ec-texto'), cor: v('ec-cor'), marca: v('ec-marca'), broll: v('ec-broll') };
+  const op = { ritmo: Number((document.getElementById('ec-ritmo') || {}).value) || (ES.p.formato === '16:9' ? 0.8 : 0.45), silencio: v('ec-silencio'), legendas: v('ec-legendas'), trechos: v('ec-trechos'), voz: v('ec-voz'), zoom: v('ec-zoom'), texto: v('ec-texto'), cor: v('ec-cor'), marca: v('ec-marca'), broll: v('ec-broll') };
   const max = Number((document.getElementById('ec-max') || {}).value) || 0;
   const pid = (document.getElementById('ec-principal') || {}).value;
   document.getElementById('ev-modal').innerHTML = '';
@@ -26443,7 +26447,7 @@ async function evEdicaoCompleta() {
   try {
     evCarregando('🎧 Analisando o áudio do vídeo...');
     const a = await evDecodificarAudio(evSrc(m));
-    let segs = op.silencio ? evDetectarFala(a) : [[0, a.duracao]];
+    let segs = op.silencio ? evDetectarFala(a, op.ritmo) : [[0, a.duracao]];
     if (!segs.length) segs = [[0, a.duracao]];
     // transcrição com tempo de cada palavra
     let palavras = [];
@@ -27070,11 +27074,13 @@ async function evAbrirEdicaoCompleta() {
       ${op('ec-silencio', '✂️ Cortar pausas e silêncios', 'Tira as pausas longas entre as falas (jump cut).', !!videos.length, false)}
       ${op('ec-trechos', '🧠 Tirar repetições e erros', 'A IA remove frases repetidas, erradas e "é…", "tipo".', ia && tr && !!videos.length, false)}
     </div>
+    <label class="ev-campo" id="ec-ritmo-box" style="display:none;"><span>Ritmo dos cortes</span><select id="ec-ritmo"><option value="0.45" ${ES.p.formato === '16:9' ? '' : 'selected'}>⚡ Reels — corta pausas acima de 0,45 s (dinâmico)</option><option value="0.8" ${ES.p.formato === '16:9' ? 'selected' : ''}>🎓 Aula — corta só pausas acima de 0,8 s (natural)</option><option value="1.2">🗣️ Palestra — só pausas longas, acima de 1,2 s</option></select></label>
     <label class="ev-campo" id="ec-max-box" style="display:none;"><span>Duração máxima (segundos)</span><input id="ec-max" type="number" min="5" max="180" placeholder="Ex.: 45"></label>
     ${!tr ? `<button class="ev-btn" style="width:100%;" onclick="evPedirTranscricao(() => evAbrirEdicaoCompleta())">💬 Conectar legendas automáticas</button>` : ''}
     <button class="ev-btn ia grande" onclick="evEdicaoViral()">✨ Editar agora</button>
     <div class="ev-sub">Pode desfazer tudo com Ctrl+Z.</div>
   </div></div>`;
+  { const sil = document.getElementById('ec-silencio'), rb = document.getElementById('ec-ritmo-box'); if (sil && rb) { const at = () => { rb.style.display = sil.checked ? '' : 'none'; }; sil.addEventListener('change', at); at(); } }
   ['ec-silencio', 'ec-trechos'].forEach(id => { const e = document.getElementById(id); if (e) e.addEventListener('change', () => { document.getElementById('ec-max-box').style.display = (document.getElementById('ec-silencio').checked || (document.getElementById('ec-trechos') || {}).checked) ? '' : 'none'; }); });
 }
 // ---------- Versões salvas: antes de cada edição grande da IA guarda uma cópia (dá para voltar a qualquer momento) ----------
@@ -27168,7 +27174,7 @@ function evHtmlVersoes() {
 }
 async function evEdicaoViral() {
   const v = id => { const e = document.getElementById(id); return !!(e && e.checked && !e.disabled); };
-  const op = { musica: v('ec-musica'), legendas: v('ec-legendas'), zoom: v('ec-zoom'), texto: v('ec-texto'), pesquisa: v('ec-pesquisa'), voz: v('ec-voz'), cor: v('ec-cor'), marca: v('ec-marca'), broll: v('ec-broll'), silencio: v('ec-silencio'), trechos: v('ec-trechos') };
+  const op = { ritmo: Number((document.getElementById('ec-ritmo') || {}).value) || (ES.p.formato === '16:9' ? 0.8 : 0.45), musica: v('ec-musica'), legendas: v('ec-legendas'), zoom: v('ec-zoom'), texto: v('ec-texto'), pesquisa: v('ec-pesquisa'), voz: v('ec-voz'), cor: v('ec-cor'), marca: v('ec-marca'), broll: v('ec-broll'), silencio: v('ec-silencio'), trechos: v('ec-trechos') };
   const max = Number((document.getElementById('ec-max') || {}).value) || 0, pid = (document.getElementById('ec-principal') || {}).value;
   document.getElementById('ev-modal').innerHTML = '';
   const d = ES.p.dados, seq = pid === '__seq' ? d.clips.map(c => Object.assign({}, c)) : null;
@@ -27191,7 +27197,7 @@ async function evEdicaoViral() {
       for (const c of seq) {
         const mm = evMidia(c.midia); if (!mm || mm.tipo !== 'video') { lista.push({ id: ++idn, fixo: true, clip: c, dur: evClipDur(c), texto: '' }); continue; }
         const a = mm.__audio || await evDecodificarAudio(evSrc(mm)); const c0 = c.ini || 0, c1 = c.fim || a.duracao;
-        let segs = op.silencio ? evDetectarFala(a) : [[c0, c1]];
+        let segs = op.silencio ? evDetectarFala(a, op.ritmo) : [[c0, c1]];
         if (op.trechos && temFala) { const fr = evFrasesDaFala(mm.transcricao || []); if (fr.length) segs = fr.map(f => [Math.max(0, f.ini - 0.12), Math.min(a.duracao, f.fim + 0.15)]); }
         segs.map(sg => [Math.max(c0, sg[0]), Math.min(c1, sg[1])]).filter(sg => sg[1] - sg[0] > 0.25).forEach(sg => lista.push({ id: ++idn, midia: mm.id, base: c, ini: sg[0], fim: sg[1], dur: sg[1] - sg[0], texto: (mm.transcricao || []).filter(p => p.ini >= sg[0] - 0.05 && p.fim <= sg[1] + 0.05).map(p => p.w).join(' ') }));
       }
@@ -27203,7 +27209,7 @@ async function evEdicaoViral() {
     } else if (op.silencio || op.trechos) {
       evCarregando('✂️ Fazendo os cortes que você pediu...');
       const a = m.__audio || await evDecodificarAudio(evSrc(m));
-      let segs = op.silencio ? evDetectarFala(a) : [[0, a.duracao]];
+      let segs = op.silencio ? evDetectarFala(a, op.ritmo) : [[0, a.duracao]];
       if (op.trechos && temFala) { // quebra por frases para a IA escolher
         const fr = evFrasesDaFala(m.transcricao); if (fr.length) segs = fr.map(f => [Math.max(0, f.ini - 0.12), Math.min(a.duracao, f.fim + 0.15)]);
       }

@@ -17139,12 +17139,19 @@ app.post('/api/admin/estudio/projetos/:id/render-rapido', requireRole('admin', '
             let saidaA = '[ac]'; const extras = [];
             (d.audios || []).forEach(a => { const m = midias[a.midia]; const arq = m && arquivoDaUrlEst(m.url); if (!arq || !(a.dur > 0)) return; args.push('-i', arq); const k = n++, vol = a.vol !== undefined ? Number(a.vol) : 0.5;
                 fil.push(`[${k}:a]atrim=start=${(Number(a.corte) || 0).toFixed(3)}:duration=${Number(a.dur).toFixed(3)},asetpts=PTS-STARTPTS,aresample=48000,aformat=channel_layouts=stereo,volume=${vol.toFixed(3)},adelay=${Math.round((Number(a.ini) || 0) * 1000)}|${Math.round((Number(a.ini) || 0) * 1000)}[m${k}]`); extras.push(`[m${k}]`); });
-            if (extras.length) { fil.push(`[ac]${extras.join('')}amix=inputs=${extras.length + 1}:duration=first:normalize=0[am]`); saidaA = '[am]'; }
+            // 🎙️ voz limpa (mesmo ajuste da tela "Tirar ruído") aplicada só na fala, antes de entrar a música
+            const ex = d.extras || {};
+            if (ex.vozLimpa) { const lp = Object.assign({ ia: 1, reducao: 24, graves: 100, zumbido: 0, chiado: 9000, realce: 2.5, silencio: true, nivelar: true, ganho: 0, isolar: true }, ex.limpeza || {}); fil.push(`[ac]${filtroLimpezaAudio(lp)}[acl]`); saidaA = '[acl]'; }
+            if (extras.length) { fil.push(`${saidaA}${extras.join('')}amix=inputs=${extras.length + 1}:duration=first:normalize=0[am]`); saidaA = '[am]'; }
+            // 🔊 volume no padrão das redes (Instagram/Reels -14 LUFS; aula horizontal -16 LUFS), sem estourar
+            fil.push(`${saidaA}loudnorm=I=${p.formato === '16:9' ? -16 : -14}:TP=-1.0:LRA=11,aresample=48000[afin]`); saidaA = '[afin]';
             let saidaV = '[vc]';
             if (await ffmpegTemLegendas()) { const assArq = path.join(tmpDir, 'leg.ass'); fs.writeFileSync(assArq, montarAssEst(d.textos, W, H)); fil.push(`[vc]subtitles=${assArq.replace(/\\/g, '/').replace(/:/g, '\\:')}[vs]`); saidaV = '[vs]'; }
             else job.aviso = 'O ffmpeg do servidor não tem o módulo de legendas: o vídeo saiu sem os textos.';
             const nome = 'rapido-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + '.mp4', out = path.join(PASTA_UPLOADS, nome), tmpOut = path.join(tmpDir, 'saida.mp4');
-            args.push('-filter_complex', fil.join(';'), '-map', saidaV, '-map', saidaA, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p', '-r', '30', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', '-t', total.toFixed(3), tmpOut);
+            // 🎬 padrão profissional: H.264 High, 30 fps constantes (sem travadas), 15–20 Mbps; vídeo curto sai no capricho, aula longa um pouco mais rápido
+            const curto = total <= 240, qual = curto ? ['-preset', 'medium', '-crf', '18'] : ['-preset', 'faster', '-crf', '19'];
+            args.push('-filter_complex', fil.join(';'), '-map', saidaV, '-map', saidaA, '-c:v', 'libx264', ...qual, '-profile:v', 'high', '-level:v', '4.2', '-maxrate', '20M', '-bufsize', '40M', '-g', '60', '-pix_fmt', 'yuv420p', '-r', '30', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', '-t', total.toFixed(3), tmpOut);
             job.status = 'processando'; job.total = total;
             await rodarFfmpeg(args, 60 * 60 * 1000);
             try { await fs.promises.rename(tmpOut, out); } catch (e) { await fs.promises.copyFile(tmpOut, out); }
