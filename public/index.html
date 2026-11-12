@@ -1847,6 +1847,9 @@
   .mgr-tr { margin-top:10px; } .mgr-tr summary { cursor:pointer; font-weight:700; color:#475569; } .mgr-tr pre { white-space:pre-wrap; font:inherit; font-size:13px; max-height:260px; overflow:auto; background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:8px; color:#334155; }
   .mag-ic.gravar { color:#dc2626; } .magn-novas { display:flex; gap:8px; } .magn-novas .magn-nova { flex:1; } .magn-nova.rec { border-color:#fca5a5; background:#fef2f2; color:#b91c1c; }
   .magn-tags .rec { background:#fee2e2; color:#b91c1c; font-weight:700; } .magn-tags .ata { background:#e0e7ff; color:#3730a3; font-weight:700; }
+  .mt-baixar-ops { display:grid; gap:8px; margin:10px 0; } .mt-baixar-ops button { width:100%; margin:0; text-align:left; border:1px solid #e2e8f0; background:#fff; border-radius:12px; padding:12px 14px; cursor:pointer; font:inherit; color:#0f172a; } .mt-baixar-ops button:hover { border-color:#2563eb; background:#eff6ff; } .mt-baixar-ops button:disabled { opacity:.6; }
+  .mt-baixar-ops b { display:block; font-size:15px; } .mt-baixar-ops small { color:#64748b; font-size:13px; }
+  .mt-baixar-anexos { border-top:1px solid #e2e8f0; padding-top:10px; display:flex; flex-direction:column; gap:6px; } .mt-baixar-anexos a { color:#1d4ed8; font-weight:600; text-decoration:none; } .mt-baixar-anexos a:hover { text-decoration:underline; }
   .mpg-play { margin-left:auto !important; width:auto !important; border:none; border-radius:999px; padding:7px 14px; background:#0b1329; color:#fff; font:inherit; font-size:13px; font-weight:800; cursor:pointer; white-space:nowrap; }
   .mpg-escolha { display:grid; gap:8px; } .mpg-escolha button { display:flex; gap:12px; align-items:center; text-align:left; width:100%; margin:0; border:1px solid #e2e8f0; background:#fff; border-radius:12px; padding:10px 12px; font:inherit; cursor:pointer; }
   .mpg-escolha button i { flex:0 0 34px; height:34px; border-radius:50%; display:grid; place-items:center; background:#e2e8f0; font-style:normal; font-weight:800; } .mpg-escolha button.prox { border-color:#f59e0b; background:#fffbeb; } .mpg-escolha button.prox i { background:#f59e0b; color:#0b1329; } .mpg-escolha button.feito i { background:#dcfce7; color:#16a34a; }
@@ -2071,7 +2074,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 10/11 (5)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 11/11 (1)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -11463,6 +11466,7 @@ function mtCardHtml(t) {
       <button class="btn-secundario btn-sm" onclick="mtAbrirEditor(${t.id})">✏️ Editar</button>
       <button class="btn-secundario btn-sm" onclick="mtAbrirCheckId(${t.id})">🧠 Check</button>
       <button class="btn-secundario btn-sm" onclick="mtAbrirAtaId(${t.id})">✍️ Ata</button>
+      <button class="btn-secundario btn-sm" title="Baixar PDF, PowerPoint ou arquivos" onclick="mtBaixarId(${t.id})" ${t.qtdModulos ? '' : 'disabled'}>⬇️ Baixar</button>
       <button class="btn-secundario btn-sm" title="Duplicar" onclick="mtDuplicar(${t.id})">⧉</button>
       <button class="btn-perigo btn-sm" title="Excluir" onclick="mtExcluir(${t.id})">🗑</button>
     </div>
@@ -11532,6 +11536,7 @@ function mtDesenharEditor() {
         <button class="btn-secundario btn-sm" style="width:auto;" onclick="mtAbrirCheck()">🧠 Check de retenção${d.check ? ' (' + d.check.respostas + ')' : ''}</button>
         <button class="btn-secundario btn-sm" style="width:auto;" onclick="mtAbrirAta()">✍️ Ata de presença${d.ata && d.ata.assinaturas ? ' (' + d.ata.assinaturas + ')' : ''}</button>
         <button class="btn-secundario btn-sm" style="width:auto;" onclick="mtAbrirGravacoes()">🎬 Gravações${d.gravacoes ? ' (' + d.gravacoes + ')' : ''}</button>
+        <button class="btn-secundario btn-sm" style="width:auto;" onclick="mtSalvar(true).catch(()=>{}).then(mtBaixarMenu)" ${d.modulos.length ? '' : 'disabled'}>⬇️ Baixar</button>
         <button class="btn-primario btn-sm mt-btn-play" style="width:auto;" onclick="mtApresentar(0)" ${d.modulos.length ? '' : 'disabled'}>▶ Apresentar</button>
       </div>
     </div>
@@ -11748,6 +11753,115 @@ function mtArquivoHtml(a, prev) {
   if (/^image\//.test(a.mime)) return `<img class="mt-arq-img" src="${escapeHtml(a.url)}" alt="">`;
   if (/^video\//.test(a.mime)) return `<video class="mt-arq-vid" src="${escapeHtml(a.url)}" controls></video>`;
   return `<div class="mt-sl-vazio"><div style="font-size:44px;">📎</div><div>${escapeHtml(a.nome || '')}</div><a class="btn-primario" style="width:auto;margin-top:10px;" href="${escapeHtml(a.url)}" target="_blank" rel="noopener">Abrir arquivo</a></div>`;
+}
+
+// ---------- ⬇️ Baixar treinamento: PDF dos slides, PowerPoint editável e materiais anexos ----------
+async function mtBaixarId(id) {
+  try { if (!MT.doc || MT.doc.id !== id) { if (MT.sujo && MT.doc && MT.doc.id) await mtSalvar(true).catch(() => {}); MT.doc = await api('/api/admin/treinamentos-mt/' + id); MT.sujo = false; } mtBaixarMenu(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+function mtBaixarMenu() {
+  const d = MT.doc; if (!d) return; const deck = mtMontarDeck().filter(x => ['capa', 'modulo', 'slide', 'extraido', 'arquivo'].includes(x.tipo));
+  const anexos = d.modulos.filter(m => m.arquivo && m.arquivo.url).map(m => m.arquivo).concat(d.modulos.filter(m => m.origem && m.origem.url).map(m => m.origem));
+  const temNotas = d.modulos.some(m => (m.slides || []).some(s => (s.notas || '').trim()));
+  let area = document.getElementById('modal-area'); if (!area) { area = document.createElement('div'); area.id = 'modal-area'; document.body.appendChild(area); }
+  area.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="modal-caixa" style="max-width:560px;">
+    <h3 style="margin-top:0;">⬇️ Baixar "${escapeHtml(d.titulo)}"</h3>
+    <p class="plano-meta" style="margin-top:-4px;">${deck.length} tela(s) em ${d.modulos.filter(m => !m.oculto).length} módulo(s). Slides ocultos ficam de fora.</p>
+    <div class="mt-baixar-ops">
+      <button onclick="mtBaixarPdf(false)"><b>📄 PDF dos slides</b><small>Para enviar ao time, imprimir ou usar sem internet. Na janela que abrir, escolha <b>Salvar como PDF</b>.</small></button>
+      ${temNotas ? `<button onclick="mtBaixarPdf(true)"><b>🎙️ PDF com as anotações do instrutor</b><small>Cada slide com as suas notas embaixo, para estudar antes de apresentar.</small></button>` : ''}
+      <button onclick="mtBaixarPptx(this)"><b>📊 PowerPoint (.pptx) editável</b><small>Abre no PowerPoint, Google Slides ou Keynote, com a marca Impulsionar V4.</small></button>
+    </div>
+    ${anexos.length ? `<div class="mt-baixar-anexos"><b>📎 Arquivos originais anexados</b>${anexos.map(a => `<a href="${escapeHtml(a.url)}" download="${escapeHtml(a.nome || '')}" target="_blank" rel="noopener">⬇️ ${escapeHtml(a.nome || 'Arquivo')}</a>${a.pdfUrl && a.pdfUrl !== a.url ? `<a href="${escapeHtml(a.pdfUrl)}" target="_blank" rel="noopener">⬇️ ${escapeHtml((a.nome || 'Arquivo').replace(/\.[^.]+$/, ''))} (PDF)</a>` : ''}`).join('')}</div>` : ''}
+    <div class="acoes-form"><button class="btn-secundario" onclick="document.getElementById('modal-area').innerHTML=''">Fechar</button></div></div></div>`;
+}
+function mtNomeArquivo(ext) { return (MT.doc.titulo || 'treinamento').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').slice(0, 60).toLowerCase() + '.' + ext; }
+async function mtBaixarPdf(comNotas) {
+  const d = MT.doc, deck = mtMontarDeck().filter(x => ['capa', 'modulo', 'slide', 'extraido', 'arquivo'].includes(x.tipo));
+  const w = window.open('', '_blank'); if (!w) return mostrarToast('Libere os pop-ups do navegador para gerar o PDF.', true);
+  w.document.write('<p style="font:16px system-ui;padding:24px">⏳ Preparando o PDF do treinamento…</p>');
+  // as imagens vão embutidas no PDF (funciona em qualquer aparelho, mesmo sem internet depois)
+  const urls = new Set(); deck.forEach(it => { if (it.tipo === 'slide' && d.modulos[it.mi].slides[it.si].imagem) urls.add(d.modulos[it.mi].slides[it.si].imagem); if (it.tipo === 'arquivo') { const a = d.modulos[it.mi].arquivo || {}; if (/^image\//.test(a.mime || '') && a.url) urls.add(a.url); } });
+  const mapa = {}; await Promise.all([...urls].map(async u => { const r = await mtImgDataUrl(u); if (r) mapa[u] = 'data:' + r.du; }));
+  const css = [...document.querySelectorAll('style')].map(x => x.textContent).join('\n');
+  const pag = it => {
+    let html;
+    if (it.tipo === 'arquivo') { const a = d.modulos[it.mi].arquivo || {}; html = /^image\//.test(a.mime || '') ? `<div class="mt-sl mt-sl-arq"><img class="mt-arq-img" src="${escapeHtml(a.url)}" alt=""></div>` : `<div class="mt-sl mt-sl-mod" style="--c:${mtPub(d.publico).cor}"><div class="mt-mod-num">MATERIAL DO MÓDULO ${it.mi + 1}</div><div class="mt-mod-nome">📎 ${escapeHtml(a.nome || 'Arquivo')}</div><div class="mt-mod-de">Arquivo anexo — baixe separado em ⬇️ Baixar</div></div>`; }
+    else html = mtConteudoDeck(it);
+    const notas = comNotas && it.tipo === 'slide' ? (d.modulos[it.mi].slides[it.si].notas || '').trim() : '';
+    return `<section class="pg">${html}${comNotas ? `<div class="nt">${notas ? '<b>🎙️ Notas do instrutor:</b> ' + escapeHtml(notas).replace(/\n/g, '<br>') : ''}</div>` : ''}</section>`;
+  };
+  let corpo = deck.map(pag).join(''); Object.entries(mapa).forEach(([u, du]) => { corpo = corpo.split(escapeHtml(u)).join(du); });
+  w.document.open(); w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><base href="${location.origin}/"><title>${escapeHtml(d.titulo)}</title><style>${css}
+    @page { size: A4 landscape; margin: 8mm; } html, body { background:#fff !important; margin:0; padding:0; }
+    .pg { width:277mm; margin:0 auto; font-size:calc(277mm / 60); break-after:page; page-break-after:always; ${comNotas ? 'height:190mm; display:flex; flex-direction:column; gap:3mm;' : 'display:flex; align-items:center; height:190mm;'} }
+    .pg > .mt-sl { width:${comNotas ? '220mm' : '277mm'}; ${comNotas ? 'font-size:calc(220mm / 60); margin:0 auto;' : ''} box-shadow:none; border:1px solid #e2e8f0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .nt { font: 11pt/1.45 system-ui, sans-serif; color:#334155; padding:0 1mm; overflow:hidden; } .nt b { color:#0f172a; }
+    .pg:last-child { break-after:auto; } .aviso { font:14px system-ui; background:#fffbeb; border:1px solid #fde68a; padding:10px 14px; margin:10px; border-radius:8px; } @media print { .aviso { display:none; } }
+  </style></head><body><div class="aviso">⏳ Preparando… na janela de impressão, em <b>Destino</b> escolha <b>Salvar como PDF</b>. Ative "Gráficos de plano de fundo" se as cores não aparecerem.</div>${corpo}</body></html>`);
+  w.document.close();
+  const pronto = () => { try { mtAutoAjustar(w.document); } catch (e) {} setTimeout(() => { w.focus(); w.print(); }, 400); };
+  const imgs = [...w.document.images]; let falta = imgs.filter(i => !i.complete).length;
+  if (!falta) setTimeout(pronto, 300); else { const t = setTimeout(pronto, 8000); imgs.forEach(i => { if (!i.complete) i.onload = i.onerror = () => { if (--falta <= 0) { clearTimeout(t); setTimeout(pronto, 200); } }; }); }
+}
+async function mtCarregarPptx() {
+  if (window.PptxGenJS) return;
+  await new Promise((ok, erro) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js'; s.onload = ok; s.onerror = () => erro(new Error('Não consegui carregar o gerador de PowerPoint. Confira a internet.')); document.head.appendChild(s); });
+}
+async function mtImgDataUrl(url) {
+  try { const r = await fetch(url); if (!r.ok) return null; const b = await r.blob(); if (!/^image\//.test(b.type)) return null;
+    const du = await new Promise(ok => { const f = new FileReader(); f.onload = () => ok(f.result); f.readAsDataURL(b); });
+    const dim = await new Promise(ok => { const i = new Image(); i.onload = () => ok([i.naturalWidth, i.naturalHeight]); i.onerror = () => ok([16, 9]); i.src = du; });
+    return { du: du.replace(/^data:/, ''), w: dim[0], h: dim[1] }; } catch (e) { return null; } // o PowerPoint quer 'image/png;base64,...'
+}
+async function mtBaixarPptx(bt) {
+  const d = MT.doc, cor = mtPub(d.publico).cor.replace('#', '').toUpperCase(), deck = mtMontarDeck().filter(x => ['capa', 'modulo', 'slide', 'extraido', 'arquivo'].includes(x.tipo));
+  const rot = bt ? bt.innerHTML : ''; if (bt) { bt.disabled = true; bt.innerHTML = '<b>⏳ Montando o PowerPoint…</b>'; }
+  try {
+    await mtCarregarPptx();
+    const pp = new PptxGenJS(); pp.layout = 'LAYOUT_WIDE'; pp.title = d.titulo; pp.company = 'Impulsionar V4'; pp.author = d.instrutor || 'Impulsionar V4';
+    const W = 13.333, H = 7.5, rod = s => { s.addText('Impulsionar V4' + (d.divulgacao && d.divulgacao.instagram ? ' · ' + d.divulgacao.instagram : ''), { x: 0.5, y: H - 0.5, w: 8, h: 0.3, fontSize: 10, color: '64748B', fontFace: 'Arial' }); };
+    const linhas = t => String(t || '').split('\n').map(l => l.trim()).filter(Boolean).map(l => { const b = l.match(/^[•\-\*–]\s*(.*)$/); return { text: b ? b[1] : l, options: b ? { bullet: { indent: 18 }, breakLine: true } : { breakLine: true } }; });
+    const fit = (img, bx, by, bw, bh) => { const r = Math.min(bw / img.w, bh / img.h), w = img.w * r, h = img.h * r; return { data: img.du, x: bx + (bw - w) / 2, y: by + (bh - h) / 2, w, h }; };
+    for (const it of deck) {
+      const s = pp.addSlide();
+      if (it.tipo === 'capa') {
+        s.background = { color: cor };
+        s.addText(`Treinamento · ${mtPub(d.publico).rot}`.toUpperCase(), { x: 0.7, y: 1.2, w: 12, h: 0.4, fontSize: 14, bold: true, color: 'FFFFFF', charSpacing: 3, fontFace: 'Arial' });
+        s.addText(d.titulo, { x: 0.7, y: 1.8, w: 11.9, h: 2.2, fontSize: 44, bold: true, color: 'FFFFFF', fontFace: 'Arial', valign: 'top', fit: 'shrink' });
+        if (d.objetivo) s.addText(d.objetivo, { x: 0.7, y: 4.1, w: 11.5, h: 1.3, fontSize: 18, color: 'F1F5F9', fontFace: 'Arial', valign: 'top', fit: 'shrink' });
+        s.addText((d.instrutor ? '🎙️ ' + d.instrutor + '   ·   ' : '') + 'IMPULSIONAR V4 · Gestão & Pessoas', { x: 0.7, y: 6.4, w: 12, h: 0.4, fontSize: 14, bold: true, color: 'FFFFFF', fontFace: 'Arial' });
+      } else if (it.tipo === 'modulo') {
+        const m = d.modulos[it.mi]; s.background = { color: '0B1329' };
+        s.addShape(pp.ShapeType.rect, { x: 0, y: 0, w: 0.25, h: H, fill: { color: cor } });
+        s.addText(`MÓDULO ${it.mi + 1}`, { x: 0.9, y: 2.3, w: 11, h: 0.5, fontSize: 18, bold: true, color: cor, charSpacing: 4, fontFace: 'Arial' });
+        s.addText(m.titulo || '', { x: 0.9, y: 2.9, w: 11.5, h: 1.8, fontSize: 40, bold: true, color: 'FFFFFF', fontFace: 'Arial', valign: 'top', fit: 'shrink' });
+        s.addText(`${it.mi + 1} de ${d.modulos.length}`, { x: 0.9, y: 5.2, w: 4, h: 0.4, fontSize: 14, color: '94A3B8', fontFace: 'Arial' });
+      } else if (it.tipo === 'slide' || it.tipo === 'extraido') {
+        const sl = it.tipo === 'slide' ? d.modulos[it.mi].slides[it.si] : Object.assign({ layout: 'padrao' }, d.modulos[it.mi].arquivo.slidesExtraidos[it.xi]);
+        const img = sl.imagem ? await mtImgDataUrl(sl.imagem) : null;
+        if (sl.layout === 'imagem' && img) { s.background = { color: '000000' }; s.addImage(fit(img, 0, 0, W, H)); if (sl.titulo) s.addText(sl.titulo, { x: 0.5, y: H - 1.3, w: W - 1, h: 0.8, fontSize: 26, bold: true, color: 'FFFFFF', fill: { color: '000000', transparency: 40 }, fontFace: 'Arial' }); }
+        else if (sl.layout === 'destaque') { s.background = { color: cor }; s.addText(sl.titulo || '', { x: 0.8, y: 1.2, w: W - 1.6, h: 2.2, fontSize: 44, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fit: 'shrink', fontFace: 'Arial' }); if (sl.texto) s.addText(linhas(sl.texto), { x: 1.2, y: 3.6, w: W - 2.4, h: 2.8, fontSize: 22, color: 'FFFFFF', align: 'center', valign: 'top', fit: 'shrink', fontFace: 'Arial' }); }
+        else {
+          s.background = { color: 'FFFFFF' }; s.addShape(pp.ShapeType.rect, { x: 0, y: 0, w: W, h: 0.12, fill: { color: cor } });
+          s.addText(sl.titulo || '', { x: 0.6, y: 0.4, w: W - 1.2, h: 1.1, fontSize: 32, bold: true, color: '0F172A', fontFace: 'Arial', valign: 'middle', fit: 'shrink' });
+          const tw = img ? 7.2 : W - 1.2;
+          if (sl.texto) s.addText(linhas(sl.texto), { x: 0.6, y: 1.7, w: tw, h: 5.0, fontSize: 20, color: '1E293B', fontFace: 'Arial', valign: 'top', fit: 'shrink', paraSpaceAfter: 6 });
+          if (img) s.addImage(fit(img, 8.1, 1.7, 4.7, 5.0));
+          rod(s);
+        }
+        if (it.tipo === 'slide' && (sl.notas || '').trim()) s.addNotes(sl.notas);
+      } else if (it.tipo === 'arquivo') {
+        const a = d.modulos[it.mi].arquivo || {}, img = /^image\//.test(a.mime || '') ? await mtImgDataUrl(a.url) : null;
+        if (img) { s.background = { color: '000000' }; s.addImage(fit(img, 0, 0, W, H)); }
+        else { s.background = { color: '0B1329' }; s.addText(`MATERIAL DO MÓDULO ${it.mi + 1}`, { x: 0.9, y: 2.5, w: 11, h: 0.5, fontSize: 16, bold: true, color: cor, fontFace: 'Arial' }); s.addText('📎 ' + (a.nome || 'Arquivo anexo'), { x: 0.9, y: 3.1, w: 11.5, h: 1.2, fontSize: 30, bold: true, color: 'FFFFFF', fontFace: 'Arial', fit: 'shrink' }); s.addText('Arquivo anexo — baixe pelo Impulsionar em ⬇️ Baixar › Arquivos originais.', { x: 0.9, y: 4.4, w: 11.5, h: 0.5, fontSize: 14, color: '94A3B8', fontFace: 'Arial' }); }
+      }
+    }
+    await pp.writeFile({ fileName: mtNomeArquivo('pptx') });
+    mostrarToast('📊 PowerPoint baixado.');
+  } catch (e) { mostrarToast(e.message || 'Não consegui gerar o PowerPoint.', true); }
+  if (bt) { bt.disabled = false; bt.innerHTML = rot; }
 }
 
 // ---------- Apresentação ----------
@@ -14945,7 +15059,7 @@ function mtnProgramasAba() {
 function mtnProgramaImprimir(id) {
   const p = (MTN.d.programas || []).find(x => x.id === id); if (!p) return;
   const css = [...document.querySelectorAll('style')].map(x => x.textContent).join('\n'), w = window.open('', '_blank'); if (!w) return mostrarToast('Libere os pop-ups para imprimir.', true);
-  w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${escapeHtml(p.nome)}</title><style>${css} body{background:#fff;padding:24px;} details summary{list-style:none;} .tabela-rolagem{overflow:visible;} @media print{ .mpg-enc,.mtn-bloco,table{break-inside:avoid;} }</style></head><body>${mtnProgramaHtml(p, true)}<script>setTimeout(()=>print(),400)<\/script></body></html>`); w.document.close();
+  w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><base href="${location.origin}/"><title>${escapeHtml(p.nome)}</title><style>${css} body{background:#fff;padding:24px;} details summary{list-style:none;} .tabela-rolagem{overflow:visible;} @media print{ .mpg-enc,.mtn-bloco,table{break-inside:avoid;} }</style></head><body>${mtnProgramaHtml(p, true)}<script>setTimeout(()=>print(),400)<\/script></body></html>`); w.document.close();
 }
 // ---------- 📚 Método e conteúdo ----------
 function mtnConteudo() {
