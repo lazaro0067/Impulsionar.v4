@@ -668,6 +668,8 @@
   .mt-sl-dest-t { font-size:4em; font-weight:800; line-height:1.1; }
   .mt-sl-dest-x { font-size:1.9em; margin-top:.8em; opacity:.92; line-height:1.4; } .mt-sl-dest-x ul { padding-left:1.1em; }
   .mt-sl-img { background-size:cover; background-position:center; background-color:#0f172a; }
+  .mt-sl-img[style*="/slides-mentoria/"] .mt-sl-legenda, .mt-sl-img[style*="mentoria-palestrante"] .mt-sl-legenda { display:none; } /* exemplos prontos: o título já está na imagem */
+  .mt-sl-img[style*="/slides-mentoria/"] { background-size:contain; background-repeat:no-repeat; background-color:#f8fafc; }
   .mt-sl-legenda { position:absolute; left:0; right:0; bottom:0; padding:1.4em 3em; background:linear-gradient(transparent, rgba(0,0,0,.75)); color:#fff; font-size:2.4em; font-weight:800; }
   .mt-sl-capa { background:radial-gradient(circle at 85% 15%, color-mix(in srgb, var(--c) 55%, #0b1324), #0b1324 60%); color:#fff; display:flex; flex-direction:column; justify-content:center; padding:4em 6em; }
   .mt-capa-pub { font-size:1.6em; font-weight:700; color:color-mix(in srgb, var(--c) 45%, #fff); }
@@ -2148,7 +2150,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 12/11 (10)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 12/11 (11)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
