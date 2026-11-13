@@ -9677,52 +9677,85 @@ app.post('/api/admin/programa-controle', requireRole('admin'), async (req, res) 
 // ----- Slides de cada encontro dos programas, abertos DENTRO do sistema (apresentação do Ministrar Treinamento:
 // gravar, notas e passar os slides pelo celular). Os slides são gerados a partir do programa a cada vez que abre.
 function deckEncontroProgramaMt(p, n, presenca, base) {
+    // Slide = pouco texto + foto. A explicação de COMO conduzir (onde ficar, o que falar, o que fazer, tempo)
+    // vai nas notas, que aparecem no celular quando você passa os slides pelo "Controle pelo celular".
     const e = p.encontros[n - 1], ant = p.encontros[n - 2], prox = p.encontros[n];
     const B = (e.blocos || [['Abertura', 5], ['Conceito', 15], ['Demonstração', 5], ['Prática', 30], ['Fechamento', 5]]).map(b => ({ nome: b[0], min: Number(b[1]) || 5 }));
     let t = 0; B.forEach(b => { b.ini = t; b.fim = t + b.min; t = b.fim; });
     const mm = v => String(v).padStart(2, '0'), faixa = nome => { const b = B.find(x => x.nome === nome); return b ? `${mm(b.ini)}–${mm(b.fim)} min` : ''; };
-    const bl = a => (a || []).filter(Boolean).map(x => '• ' + x).join('\n');
-    const partir = x => { const m = String(x || '').match(/^(.{6,90}?)(?::\s|\.\s|\s·\s)(.+)$/); return m ? [m[1].replace(/\.$/, ''), m[2].charAt(0).toUpperCase() + m[2].slice(1)] : [String(x || ''), '']; };
-    const sl = (titulo, texto, notas, layout, extra) => Object.assign({ titulo, texto: texto || '', notas: notas || '', layout: layout || 'padrao', imagem: '' }, extra || {});
+    const bl = a => (a || []).filter(Boolean).slice(0, 4).map(x => '• ' + x).join('\n');
+    const curto = (x, n2) => { x = String(x || '').replace(/\s+/g, ' ').trim(); return x.length > (n2 || 70) ? x.slice(0, (n2 || 70) - 1).replace(/\s\S*$/, '') + '…' : x; };
+    const partir = x => { const m = String(x || '').match(/^(.{3,80}?)(?::\s|\.\s|\s·\s)(.+)$/); return m ? [m[1].replace(/\.$/, ''), m[2].charAt(0).toUpperCase() + m[2].slice(1)] : [String(x || ''), '']; };
+    // notas estruturadas: é o "roteiro" que você lê no celular
+    const guia = g => [g.objetivo && '🎯 OBJETIVO: ' + g.objetivo, g.onde && '📍 ONDE FICAR: ' + g.onde, g.fale && '🗣️ FALE: "' + g.fale + '"', g.faca && g.faca.length ? '🎬 FAÇA:\n' + g.faca.map(x => '• ' + x).join('\n') : '', g.pergunte && '❓ PERGUNTE: "' + g.pergunte + '"', g.tempo && '⏱️ TEMPO: ' + g.tempo].filter(Boolean).join('\n');
+    const sl = (titulo, texto, g, busca, extra) => Object.assign({ titulo, texto: texto || '', notas: guia(g || {}), layout: 'padrao', imagem: '', busca: busca || '' }, extra || {});
+    const fotos = { 1: ['presentation slides laptop', 'business documents review', 'team reviewing papers', 'checklist clipboard'], 2: ['speaker rehearsal notes', 'presentation cue cards', 'man presenting screen', 'microphone stage speaker'], 3: ['confident speaker stage', 'public speaking audience', 'body language presentation', 'leader talking to team'], 4: ['audience raising hand', 'meeting questions discussion', 'manager answering team', 'warehouse team meeting'], 5: ['conference applause', 'presentation evaluation panel', 'success celebration office', 'team achievement'] }[n] || ['team meeting'];
+    const foto = i => fotos[i % fotos.length];
+    const dinamica = { 1: ['Slide sobrevivente', ['Em duplas, mostre 1 slide do seu material', 'O colega tem 5 segundos para dizer a mensagem', 'Não conseguiu? Esse slide vai para a revisão'], 'Forme duplas. Cada um mostra 1 slide real no celular; o colega diz a mensagem em 5 segundos. Quem não conseguir já sabe qual slide revisar hoje.'],
+        2: ['Fala sem tela', ['Em pé, de costas para a tela', 'Explique 1 slide em 30 segundos', 'Só com palavras-chave, sem ler'], 'Chame 3 voluntários. Cada um explica 1 slide de costas para a tela, em 30 segundos. Mostre que dá para falar sem ler.'],
+        3: ['Corpo e voz', ['Todos em pé, 3 respirações fundas', 'A mesma frase em 3 volumes', 'Caminhe até um ponto, pare e fale'], 'Todos em pé. Respirem juntos 3 vezes, falem "Bom dia, time!" baixo, normal e para a última fileira. Depois cada um caminha até um ponto, para e fala.'],
+        4: ['Pergunta surpresa', ['Faça 1 pergunta difícil para quem está ao lado', 'A pessoa responde em até 3 frases', 'Use o OPRC: ouvir, parafrasear, responder, checar'], 'Rodada rápida em duplas: cada um faz 1 pergunta difícil sobre o tema do colega, que responde em 3 frases.'],
+        5: ['Aquecimento da banca', ['1 minuto de voz e postura, todos juntos', 'Sorteio da ordem das apresentações', 'Régua na mão de cada avaliador'], 'Aqueça a turma por 1 minuto (respiração, voz, postura) e sorteie a ordem.'] }[n];
     const gapsDia = (p.gaps || []).filter(g => String(e.gaps || '').includes('todos') || String(e.gaps || '').split(/\D+/).includes(String(g.n)) || Number(g.principal) === n);
     const mod = (nome, slides) => ({ titulo: `${nome} · ${faixa(nome)}`, tipo: 'slides', slides });
     const abertura = [
-        // abertura de palestrante: foto, nome e trajetória (a legenda embaixo mostra o encontro do dia)
-        sl('', '', 'DIGA: "Boa noite! Eu sou o Lázaro…" Apresente-se em 30 segundos com a sua trajetória e diga o que eles vão conseguir fazer no fim desta hora.', 'imagem', { imagem: String(base || '').replace(/\/$/, '') + '/mentoria-palestrante.jpg?v=4' }),
-        sl('No fim desta hora, você vai', bl(e.objetivo || [e.tema]), 'DIGA: "No fim desta hora, cada um de vocês vai…" e leia os itens.\nFAÇA: peça para alguém repetir o 1º item com as próprias palavras.', 'destaque'),
-        sl('Agenda de hoje · 60 minutos', B.map(b => `• ${mm(b.ini)}–${mm(b.fim)}  ${b.nome} (${b.min} min)`).join('\n'), 'DIGA: "Esse é o nosso relógio de hoje. Começamos e terminamos no horário."\nSe atrasar, corte do Conceito, nunca da Prática.')
+        sl('', '', { objetivo: 'Criar conexão e autoridade nos primeiros 30 segundos.', onde: 'Centro da sala, de frente para a turma, sem nada nas mãos.', fale: 'Boa noite! Eu sou o Lázaro. Comecei no chão da operação e hoje cuido da gestão de pessoas e processos. Hoje vocês vão sair daqui apresentando melhor.', faca: ['Sorria e olhe para 3 pessoas diferentes enquanto fala', 'Diga o tema do encontro em 1 frase'], tempo: '1 min' }, '', { layout: 'imagem', imagem: String(base || '').replace(/\/$/, '') + '/mentoria-palestrante.jpg?v=4' }),
+        sl('Hoje, em 1 hora', bl((e.objetivo || [e.tema]).map(x => curto(x, 60))), { objetivo: 'Mostrar o que eles levam no fim.', onde: 'Lado da tela, apontando para cada item.', fale: 'No fim desta hora, cada um de vocês vai…', faca: ['Leia os itens em voz alta, um por vez', 'Peça para alguém repetir o 1º item com as próprias palavras'], tempo: '1 min' }, 'workshop leaders training'),
+        sl('Agenda · 60 minutos', B.map(b => `• ${b.nome} · ${b.min} min`).join('\n'), { objetivo: 'Combinar o relógio do encontro.', onde: 'Lado da tela.', fale: 'Esse é o nosso relógio. Começamos e terminamos no horário.', faca: ['Mostre que a maior parte é prática', 'Se algo atrasar, corte do Conceito, nunca da Prática'], tempo: '30 s' }, 'clock schedule planning')
     ];
-    if (n === 1) abertura.push(sl('A sua apresentação real', bl(['Qual apresentação você precisa fazer nas próximas semanas?', 'Para quem ela é e o que eles precisam fazer depois?', 'De 0 a 10, quanto você se sente seguro para apresentar hoje?']), 'FAÇA: rodada de 20 segundos por pessoa. Anote a apresentação real e a nota de cada um: é o ponto de partida do piloto.'));
-    else if (ant) abertura.push(sl('Como foi a tarefa de casa?', bl((ant.tarefa || []).concat(['Cada um diz 1 aprendizado em até 30 segundos'])), 'FAÇA: rodada rápida, 30 s por pessoa. Valorize quem fez. Para quem não fez: "O que travou?" — sem bronca.'));
+    if (n === 1) abertura.push(sl('Sua apresentação real', bl(['Qual apresentação você precisa fazer?', 'Para quem é?', 'Sua segurança hoje, de 0 a 10']), { objetivo: 'Registrar o ponto de partida de cada um.', onde: 'Frente do público, circulando pela sala.', faca: ['Rodada de 20 segundos por pessoa', 'Anote a apresentação real e a nota de cada um (é a linha de base do piloto)'], pergunte: 'Qual apresentação real você precisa fazer nas próximas semanas?', tempo: '3 min' }, 'team circle conversation'));
+    else if (ant) abertura.push(sl('E a tarefa de casa?', bl((ant.tarefa || []).map(x => curto(x, 60)).concat(['1 aprendizado em 30 segundos'])), { objetivo: 'Retomar o encontro anterior e cobrar a prática.', onde: 'Frente do público.', faca: ['Rodada rápida: 30 segundos por pessoa', 'Valorize quem fez', 'Para quem não fez: "O que travou?" — sem bronca'], pergunte: 'Qual foi o seu maior aprendizado ao fazer a tarefa?', tempo: '3 min' }, 'team circle conversation'));
+    if (dinamica) abertura.push(sl('Dinâmica: ' + dinamica[0], bl(dinamica[1]), { objetivo: 'Tirar a turma da cadeira e quebrar o gelo.', onde: 'No meio da turma.', fale: dinamica[2], faca: ['Explique em 20 segundos e já comece', 'Cronometre e encerre no tempo'], tempo: '2 min' }, 'team activity workshop fun'));
     const mods = [];
     if (e.blocos && B.some(b => b.nome === 'Apresentações')) {
-        abertura.push(sl('Como funciona hoje', bl(['Sorteio da ordem', '4 minutos de apresentação + 1 pergunta da banca', 'A banca preenche a régua de 1 a 5', 'No fim, compare a régua de hoje com a do Encontro 1']), 'FAÇA: sorteie a ordem e faça 2 minutos de aquecimento de voz e postura com todos.'));
         mods.push(mod('Abertura', abertura));
         mods.push(mod('Apresentações', [
-            sl('Régua de apresentação (1 a 5)', (p.regua || []).map(r => `• ${r[0]}: ${r[4]}`).join('\n'), 'FAÇA: entregue a régua impressa para a banca (você, o gestor e 2 colegas).'),
-            sl('Sua vez: 4 minutos', bl(['Abertura com gancho', '3 pontos-chave, sem ler a tela', 'Fechamento com a ação', '1 pergunta da banca (OPRC)']), 'FAÇA: cronometre 4 minutos por pessoa e grave no celular do participante.', 'destaque')]));
+            sl('A régua de hoje', (p.regua || []).slice(0, 6).map(r => '• ' + r[0]).join('\n'), { objetivo: 'Mostrar como cada um será avaliado.', onde: 'Lado da tela.', faca: ['Entregue a régua impressa à banca (você, o gestor e 2 colegas)', 'Explique: nota de 1 a 5 em cada critério'], tempo: '2 min' }, foto(1)),
+            sl('Sua vez: 4 minutos', bl(['Abertura com gancho', '3 pontos, sem ler a tela', 'Fechamento com ação', '1 pergunta da banca']), { objetivo: 'Conduzir as apresentações finais no tempo.', onde: 'Sente com a banca, de frente para quem apresenta.', faca: ['Cronometre 4 minutos por pessoa', 'Faça 1 pergunta do banco de perguntas difíceis', 'Grave no celular do participante', 'Feedback 1 + 1 + 1 no final de cada um'], tempo: '45 min (4 min + 1 pergunta por pessoa)' }, foto(0))]));
         mods.push(mod('Fechamento', [
-            sl('Encontro 1 × hoje', bl(['Pegue a sua régua do Encontro 1', 'Veja em qual ponto você mais subiu', 'Escolha 1 ponto para treinar nos próximos 30 dias']), 'PERGUNTE: "Em qual ponto você mais evoluiu?" Peça 3 respostas.'),
-            sl('Próximos 30 dias', bl(e.tarefa), 'Combine a sessão de continuidade em 30 dias e entregue os certificados.')]));
+            sl('Encontro 1 × hoje', bl(['Pegue a régua do Encontro 1', 'Onde você mais subiu?', 'Escolha 1 ponto para os próximos 30 dias']), { objetivo: 'Mostrar a evolução de cada um.', onde: 'Centro.', pergunte: 'Em qual ponto você mais evoluiu?', faca: ['Ouça 3 respostas', 'Entregue os certificados'], tempo: '5 min' }, foto(2)),
+            sl('Próximos 30 dias', bl((e.tarefa || []).map(x => curto(x, 70))), { objetivo: 'Garantir que eles apliquem no trabalho.', onde: 'Centro.', fale: 'Agora é apresentar de verdade. Daqui a 30 dias a gente se encontra para contar como foi.', tempo: '2 min' }, 'road journey sunrise')]));
     } else {
         mods.push(mod('Abertura', abertura));
-        const conc = [sl('O foco de hoje: ' + e.modulo, gapsDia.map(g => `• ${g.nome}${Number(g.principal) === n ? ' (foco principal)' : ' (reforço)'}`).join('\n'), 'PERGUNTE: "De 0 a 10, quanto isso te atrapalha hoje?" Peça 2 respostas.')];
-        (e.teoria || []).forEach((x, i) => { const [h, sub] = partir(x); conc.push(sl(h, sub, `IDEIA COMPLETA: ${x}\nFAÇA: dê 1 exemplo da operação (máx. 1 minuto) e passe.`, 'destaque')); });
-        const ferr = { 1: ['Revisão em 3 passes', ['Conteúdo: está certo? Números e datas conferidos', 'Clareza: dá para entender em 5 segundos? 1 slide = 1 mensagem', 'Forma: letra, cor e excesso de texto (máx. 6 linhas)']],
-            2: ['Roteiro de 3 atos (4 minutos)', (p.atos || []).map(a => `${a[0]} (${a[1]}): ${a[2]}`).concat(['Olha, Pausa, Fala: olhe o slide, vire para o time, só então fale'])],
-            3: ['Mapa do palco em 3 pontos', ['Centro: abrir e fechar', 'Lado da tela: explicar o slide', 'Frente do público: perguntas e histórias', 'Nunca de costas para o time']],
-            4: ['Método OPRC para responder', ['Ouvir até o fim, sem interromper', 'Parafrasear: "Se entendi, você quer saber…"', 'Responder em até 3 frases', 'Checar: "Respondi o que você precisava?"', 'Não sabe? "Vou confirmar com [área] e te retorno até [dia]."']] }[n];
-        if (ferr) conc.push(sl('Ferramenta do dia: ' + ferr[0], bl(ferr[1]), 'DIGA: "Essa é a ferramenta que vocês vão usar na prática daqui a pouco."'));
+        const conc = [sl('O foco de hoje', bl(gapsDia.map(g => g.nome)), { objetivo: 'Ligar o conteúdo à dor real da turma.', onde: 'Frente do público.', pergunte: 'De 0 a 10, quanto isso te atrapalha hoje?', faca: ['Ouça 2 respostas', 'Diga: "Hoje a gente resolve isso na prática"'], tempo: '1 min' }, foto(3))];
+        (e.teoria || []).forEach((x, i) => { const [h, sub] = partir(x); conc.push(sl(curto(h, 60), sub ? '• ' + curto(sub, 110) : '', { objetivo: 'Passar 1 ideia, com 1 exemplo real.', onde: 'Lado da tela para apresentar a ideia, depois um passo à frente para o exemplo.', fale: x, faca: ['Dê 1 exemplo da operação (máx. 1 minuto)', 'Pergunte se alguém já viveu isso'], tempo: `${Math.max(2, Math.round(10 / Math.max(1, e.teoria.length)))} min` }, foto(i))); });
+        const ferr = { 1: ['3 passes de revisão', ['Conteúdo: está certo?', 'Clareza: entende em 5 segundos?', 'Forma: no máximo 6 linhas']],
+            2: ['Roteiro em 3 atos', ['Abertura com gancho (30 s)', 'Até 3 pontos-chave (3 min)', 'Fechamento com ação (30 s)', 'Olha, Pausa, Fala']],
+            3: ['3 pontos do palco', ['Centro: abrir e fechar', 'Lado da tela: explicar', 'Frente: histórias e perguntas']],
+            4: ['Método OPRC', ['Ouvir até o fim', 'Parafrasear', 'Responder em até 3 frases', 'Checar se respondeu']] }[n];
+        if (ferr) conc.push(sl(ferr[0], bl(ferr[1]), { objetivo: 'Entregar a ferramenta que eles vão usar na prática.', onde: 'Lado da tela.', fale: 'Essa é a ferramenta que vocês vão usar daqui a pouco.', faca: ['Leia cada item e dê 1 exemplo rápido'], tempo: '2 min' }, foto(1)));
         mods.push(mod('Conceito', conc));
-        mods.push(mod('Demonstração', [sl('Eu faço primeiro', e.demonstracao, 'FAÇA: demonstre ao vivo (5 min).\nPERGUNTE: "O que mudou de uma versão para a outra?" e ouça 2 respostas.', 'destaque')]));
-        const prat = (e.pratica || []).map((x, i) => { const [h, sub] = partir(x); return sl(`Faça agora: ${h}`, sub || x, `FAÇA: ${x}\nGrave cada apresentação no celular do próprio participante.`, 'destaque'); });
-        prat.push(sl('Feedback 1 + 1 + 1', bl(['1 ponto forte: o que manter', '1 ajuste: a mudança que mais faz diferença', '1 dica prática: como treinar até o próximo encontro', '"Foi bom" não vale. Diga o quê.']), 'Deixe este slide na tela durante a prática. Máximo 1 minuto de feedback por pessoa.'));
+        mods.push(mod('Demonstração', [sl('Eu faço primeiro', '• ' + curto(e.demonstracao, 120), { objetivo: 'Mostrar na prática o que acabou de ensinar.', onde: n === 3 ? 'Use os 3 pontos do palco enquanto demonstra.' : 'Centro da sala.', fale: 'Agora eu faço, e vocês me dizem o que mudou.', faca: [e.demonstracao], pergunte: 'O que mudou de uma versão para a outra?', tempo: '5 min' }, 'coach demonstration training')]));
+        const prat = (e.pratica || []).map((x, i) => { const [h, sub] = partir(x); return sl('Faça agora: ' + curto(h, 40), '• ' + curto(sub || x, 120), { objetivo: 'Todo mundo pratica de verdade.', onde: 'Fundo da sala, para ver a turma e cronometrar.', faca: [x, 'Grave cada apresentação no celular do próprio participante', 'Cronometre e avise quando faltar 30 segundos'], tempo: (x.match(/(\d+)\s*min/) || [])[1] ? (x.match(/(\d+)\s*min/) || [])[1] + ' min' : '' }, i ? 'colleague presenting to team' : 'workshop people practicing'); });
+        prat.push(sl('Feedback 1 + 1 + 1', bl(['1 ponto forte', '1 ajuste', '1 dica prática']), { objetivo: 'Feedback curto e útil depois de cada apresentação.', onde: 'Ao lado de quem apresentou.', fale: '"Foi bom" não vale. Diga o quê.', faca: ['Máximo 1 minuto por pessoa', 'Comece sempre pelo ponto forte'], tempo: 'durante a prática' }, 'feedback conversation colleagues'));
         mods.push(mod('Prática', prat));
-        mods.push(mod('Fechamento', [sl(prox ? `Tarefa para o Encontro ${n + 1}` : 'Próximos 30 dias', bl(e.tarefa), 'PERGUNTE para cada um: "Quando você vai fazer?" (dia e hora).')]));
+        mods.push(mod('Fechamento', [sl(prox ? `Tarefa para o encontro ${n + 1}` : 'Próximos 30 dias', bl((e.tarefa || []).map(x => curto(x, 70))), { objetivo: 'Garantir a prática até o próximo encontro.', onde: 'Centro.', pergunte: 'Quando você vai fazer? (dia e hora)', faca: ['Peça que cada um anote na agenda do celular agora'], tempo: '2 min' }, 'notebook planning desk')]));
     }
     const fim = mods[mods.length - 1].slides;
-    if (presenca) fim.push(sl('Registre sua presença', bl(['Abra a câmera do celular', 'Aponte para o QR code', 'Toque em Confirmar presença', 'ou acesse ' + presenca.link.replace(/^https?:\/\//, '')]), 'Deixe o QR na tela até todos registrarem.', 'padrao', { imagem: 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=8&data=' + encodeURIComponent(presenca.link), imgTam: 16 }));
-    if (prox) fim.push(sl(`Próximo encontro: ${prox.modulo}`, prox.tema, 'Diga a data do próximo encontro e termine no horário.', 'destaque'));
+    if (presenca) fim.push(sl('Registre sua presença', bl(['Abra a câmera do celular', 'Aponte para o QR code', 'Toque em Confirmar presença']), { objetivo: 'Registrar a presença de todos.', onde: 'Ao lado da tela, sem ficar na frente do QR.', faca: ['Deixe o QR na tela até todos registrarem', 'Link: ' + presenca.link.replace(/^https?:\/\//, '')], tempo: '1 min' }, '', { imagem: 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=8&data=' + encodeURIComponent(presenca.link), imgTam: 11 }));
+    if (prox) fim.push(sl(`Próximo: ${prox.modulo}`, '• ' + curto(prox.tema, 100), { objetivo: 'Deixar a turma com vontade de voltar.', onde: 'Centro.', fale: `No próximo encontro: ${prox.tema}. Até lá!`, faca: ['Diga a data e termine no horário'], tempo: '30 s' }, 'road journey sunrise'));
+    return mods;
+}
+// foto real para cada slide (Pexels/Pixabay; sem chave, banco aberto Openverse). Fica em cache: a 2ª vez abre na hora.
+const CACHE_FOTO_SLIDE = new Map();
+async function fotosDosSlidesMt(mods) {
+    const cfg = await cfgBrollEst().catch(() => ({})), usados = new Set(), pedidos = [];
+    mods.forEach(m => m.slides.forEach(s => { if (s.busca && !s.imagem) pedidos.push(s); }));
+    const porBusca = {};
+    pedidos.forEach(s => { (porBusca[s.busca] = porBusca[s.busca] || []).push(s); });
+    const buscar = async q => {
+        let l = CACHE_FOTO_SLIDE.get(q);
+        if (!l) { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = ?`, ['mt_fotos:' + q]).catch(() => null); try { l = JSON.parse((r && r.value) || 'null'); } catch (e) {} }
+        if (!l || !l.length) {
+            l = []; const u2 = new Set();
+            for (let k = 0; k < 3; k++) { const f = await buscarFotoRealEst(cfg, q, { vertical: false, usados: u2 }).catch(() => null); if (!f) break; u2.add(f.id); l.push(f.url); }
+            if (l.length) db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, ['mt_fotos:' + q, JSON.stringify(l)], () => {});
+        }
+        CACHE_FOTO_SLIDE.set(q, l);
+        porBusca[q].forEach((s, i) => { const u = l.find(x => !usados.has(x)) || l[i % Math.max(1, l.length)]; if (u) { s.imagem = u; usados.add(u); } });
+    };
+    const fila = Object.keys(porBusca); await Promise.all([0, 1, 2, 3, 4].map(async () => { while (fila.length) await Promise.race([buscar(fila.shift()), new Promise(r => setTimeout(r, 15000))]).catch(() => {}); }));
+    mods.forEach(m => m.slides.forEach(s => { delete s.busca; }));
     return mods;
 }
 app.post('/api/admin/mentoria/programa/:id/apresentar', requireRole('admin'), async (req, res) => {
@@ -9740,7 +9773,7 @@ app.post('/api/admin/mentoria/programa/:id/apresentar', requireRole('admin'), as
             }
         }
         const e = p.encontros[n - 1];
-        const dados = camposTreinamentoMt({ titulo: `${p.curto || p.nome} · Encontro ${n} — ${e.modulo}`, objetivo: e.tema, publico: 'lideranca', duracao_min: 60, instrutor: (d.marca || {}).mentor || '', modulos: deckEncontroProgramaMt(p, n, presenca, baseUrlPublicaDpo(req)) });
+        const dados = camposTreinamentoMt({ titulo: `${p.curto || p.nome} · Encontro ${n} — ${e.modulo}`, objetivo: e.tema, publico: 'lideranca', duracao_min: 60, instrutor: (d.marca || {}).mentor || '', modulos: await fotosDosSlidesMt(deckEncontroProgramaMt(p, n, presenca, baseUrlPublicaDpo(req))) });
         const doc = Object.assign({ id: 0, status: 'pronto', divulgacao: null, check: null, ata: null }, dados, { modulos: JSON.parse(dados.modulos) });
         try {
         const chave = `mt_prog_trein:${p.id}:${n}`, ref = await dbGet(`SELECT value FROM integration_settings WHERE key = ?`, [chave]).catch(() => null);
