@@ -6,10 +6,24 @@
 <meta name="robots" content="noindex">
 <title>Apresentação · Programa Impulsionar V4</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<style>
-  :root { --navy:#0b1329; --navy2:#1e3a8a; --ambar:#f59e0b; --verde:#22c55e; --creme:#f8f5ee; }
-  * { box-sizing:border-box; } html, body { margin:0; height:100%; background:#000; font-family:'Montserrat', system-ui, sans-serif; overflow:hidden; color:#fff; }
+<style>  * { box-sizing:border-box; } html, body { margin:0; height:100%; background:#000; font-family:'Montserrat', system-ui, sans-serif; overflow:hidden; color:#fff; }
   .palco { position:fixed; inset:0; display:grid; place-items:center; }
+  .prog { position:fixed; left:0; top:0; height:4px; background:var(--ambar); transition:width .3s; z-index:5; }
+  .notas { position:fixed; left:0; right:0; bottom:0; z-index:6; background:rgba(2,6,23,.95); border-top:2px solid var(--ambar); padding:16px 22px 18px; font-size:17px; line-height:1.45; color:#e2e8f0; max-height:42vh; overflow:auto; display:none; }
+  .notas.on { display:block; } .notas b { color:var(--ambar); }
+  .ctl { position:fixed; right:14px; top:12px; z-index:7; display:flex; gap:8px; opacity:.25; transition:opacity .2s; } .ctl:hover { opacity:1; }
+  .ctl button, .ctl select { font:inherit; font-size:13px; font-weight:700; border:none; border-radius:999px; padding:8px 12px; background:rgba(255,255,255,.14); color:#fff; cursor:pointer; } .ctl select option { color:#000; }
+  .relogio { position:fixed; left:14px; top:12px; z-index:7; font-size:13px; font-weight:700; color:#94a3b8; font-variant-numeric:tabular-nums; }
+  @media (max-width:700px) { .ctl { opacity:.6; } }
+  .passa { position:fixed; inset:0; z-index:20; background:rgba(2,6,23,.92); display:none; place-items:center; } .passa.on { display:grid; }
+  .passa > div { background:#0f172a; border:1px solid #334155; border-radius:18px; padding:24px 26px; max-width:420px; text-align:center; color:#e2e8f0; font-size:15px; line-height:1.5; }
+  .passa img { width:230px; height:230px; background:#fff; border-radius:12px; padding:8px; margin:12px auto; display:block; } .passa code { display:block; word-break:break-all; font-size:12px; color:#94a3b8; margin:6px 0 12px; }
+  .passa button { font:inherit; font-weight:800; border:none; border-radius:999px; padding:9px 16px; margin:4px; cursor:pointer; background:#f59e0b; color:#0b1329; } .passa button.sec { background:#1e293b; color:#e2e8f0; }
+  .ctl .cel.on { background:#22c55e; color:#052e16; }
+  .aviso { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:21; background:#22c55e; color:#052e16; font-weight:800; font-size:14px; border-radius:999px; padding:9px 18px; display:none; } .aviso.on { display:block; }
+</style>
+<style id="css-sl">
+  :root { --navy:#0b1329; --navy2:#1e3a8a; --ambar:#f59e0b; --verde:#22c55e; --creme:#f8f5ee; }
   .slide { position:absolute; width:min(100vw, 177.78vh); height:min(56.25vw, 100vh); font-size:min(1.25vw, 2.22vh); background:radial-gradient(900px 500px at 88% -10%, rgba(245,158,11,.20), transparent 60%), linear-gradient(160deg, var(--navy), var(--navy2)); display:flex; flex-direction:column; justify-content:center; padding:9% 8% 7%; opacity:0; transform:scale(.985); transition:opacity .4s, transform .4s; pointer-events:none; overflow:hidden; }
   .slide.on { opacity:1; transform:none; pointer-events:auto; }
   .slide.claro { background:var(--creme); color:var(--navy); }
@@ -55,119 +69,217 @@
   .qrs img { width:8.5em; height:8.5em; background:#fff; border-radius:.6em; padding:.4em; display:block; margin:0 auto .7em; } .qrs b { display:block; font-size:1.4em; } .qrs small { color:#94a3b8; font-size:1em; }
   .fb { display:grid; grid-template-columns:repeat(3, 1fr); gap:1.2em; margin-top:1.2em; } .fb div { border-radius:1.1em; padding:1.5em; background:rgba(255,255,255,.07); border-top:.35em solid var(--verde); } .fb div:nth-child(2) { border-color:var(--ambar); } .fb div:nth-child(3) { border-color:#60a5fa; }
   .fb b { display:block; font-size:1.7em; } .fb small { font-size:1.2em; color:#cbd5e1; }
-  .prog { position:fixed; left:0; top:0; height:4px; background:var(--ambar); transition:width .3s; z-index:5; }
-  .notas { position:fixed; left:0; right:0; bottom:0; z-index:6; background:rgba(2,6,23,.95); border-top:2px solid var(--ambar); padding:16px 22px 18px; font-size:17px; line-height:1.45; color:#e2e8f0; max-height:42vh; overflow:auto; display:none; }
-  .notas.on { display:block; } .notas b { color:var(--ambar); }
-  .ctl { position:fixed; right:14px; top:12px; z-index:7; display:flex; gap:8px; opacity:.25; transition:opacity .2s; } .ctl:hover { opacity:1; }
-  .ctl button, .ctl select { font:inherit; font-size:13px; font-weight:700; border:none; border-radius:999px; padding:8px 12px; background:rgba(255,255,255,.14); color:#fff; cursor:pointer; } .ctl select option { color:#000; }
-  .relogio { position:fixed; left:14px; top:12px; z-index:7; font-size:13px; font-weight:700; color:#94a3b8; font-variant-numeric:tabular-nums; }
-  @media (max-width:700px) { .ctl { opacity:.6; } }
+
+  .slide { padding:10% 8% 15%; }
+  .faixa { position:absolute; left:8%; right:8%; bottom:9.5%; display:flex; gap:.35em; }
+  .faixa div { height:.5em; border-radius:.3em; background:rgba(255,255,255,.16); position:relative; } .faixa div.on { background:var(--ambar); } .faixa div.feito { background:var(--verde); opacity:.8; }
+  .faixa div span { position:absolute; left:0; top:.8em; white-space:nowrap; font-size:.9em; font-weight:700; color:#94a3b8; letter-spacing:.04em; } .faixa div.on span { color:var(--ambar); font-weight:900; }
+  .claro .faixa div { background:#e2e8f0; } .claro .faixa div.on { background:var(--ambar); }
+  .agenda { display:grid; gap:.55em; margin-top:.8em; max-width:94%; }
+  .agenda div { display:grid; grid-template-columns:7.5em 1fr 4.5em; gap:1em; align-items:center; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); border-left:.4em solid var(--ambar); border-radius:.8em; padding:.75em 1.1em; }
+  .agenda b { font-size:1.45em; color:var(--ambar); font-variant-numeric:tabular-nums; } .agenda span { font-size:1.45em; font-weight:800; } .agenda span small { display:block; font-size:.68em; font-weight:500; color:#cbd5e1; margin-top:.15em; } .agenda i { font-style:normal; font-size:1.25em; font-weight:800; color:#94a3b8; text-align:right; }
+  .faca { list-style:none; counter-reset:f; padding:0; margin:.4em 0 0; display:grid; gap:.75em; max-width:92%; }
+  .faca li { counter-increment:f; font-size:1.75em; font-weight:700; line-height:1.3; padding-left:2.2em; position:relative; } .faca li::before { content:counter(f); position:absolute; left:0; top:-.05em; width:1.55em; height:1.55em; border-radius:.4em; background:var(--ambar); color:var(--navy); display:grid; place-items:center; font-weight:900; font-size:.95em; }
+  .lado { display:grid; grid-template-columns:1fr auto; gap:3em; align-items:center; } .lado .cron { margin:0; font-size:6em; text-align:center; }
+  .chip { display:inline-block; align-self:flex-start; background:rgba(245,158,11,.16); color:var(--ambar); border:1px solid rgba(245,158,11,.5); border-radius:999px; padding:.3em .9em; font-weight:800; font-size:1.05em; margin-bottom:.9em; letter-spacing:.06em; }
 </style>
 </head>
 <body>
 <div class="prog" id="prog"></div>
 <div class="relogio" id="relogio">00:00</div>
-<div class="ctl"><select id="sel-enc" onchange="trocarEncontro(this.value)" title="Encontro"></select><button onclick="ir(-1)">←</button><button onclick="ir(1)">→</button><button onclick="alternarNotas()">📝 Notas (N)</button><button onclick="telaCheia()">⛶ Tela cheia (F)</button></div>
+<div class="ctl"><select id="sel-enc" onchange="trocarEncontro(this.value)" title="Encontro"></select><button onclick="ir(-1)">←</button><button onclick="ir(1)">→</button><button class="cel" id="bt-cel" onclick="abrirPassador()">📱 Passador (P)</button><button onclick="alternarNotas()">📝 Notas (N)</button><button onclick="telaCheia()">⛶ Tela cheia (F)</button></div>
 <div class="palco" id="palco"></div>
 <div class="notas" id="notas"></div>
+<div class="passa" id="passa"><div id="passa-c"></div></div>
+<div class="aviso" id="aviso"></div>
 <script>
-const AP = { i: 0, slides: [], inicio: null, cron: null };
+const AP = { i: 0, slides: [], inicio: null, cron: null, cronEl: null };
 const Q = new URLSearchParams(location.search);
 const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const qr = u => `https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=8&data=${encodeURIComponent(u)}`;
-// "Título. Resto" → manchete + complemento (o slide mostra a ideia, o líder explica)
-function partir(t) {
-  t = String(t || ''); const m = t.match(/^(.{6,90}?)(?::\s|\.\s)(.+)$/);
-  return m ? { h: cap(m[1].replace(/\.$/, '')), s: cap(m[2]) } : { h: cap(t), s: '' };
-}
+function partir(t) { t = String(t || ''); const m = t.match(/^(.{6,90}?)(?::\s|\.\s|\s·\s)(.+)$/); return m ? { h: cap(m[1].replace(/\.$/, '')), s: cap(m[2]) } : { h: cap(t), s: '' }; }
 const cap = t => { t = String(t || ''); return t.charAt(0).toUpperCase() + t.slice(1); };
 const minutos = t => { const m = String(t || '').match(/(\d+)\s*min/); return m ? Number(m[1]) : 0; };
+const mm = m => String(m).padStart(2, '0');
+const BLOCOS_PADRAO = [['Abertura', 5], ['Conceito', 15], ['Demonstração', 5], ['Prática', 30], ['Fechamento', 5]];
 (async () => {
   let d; try { d = await (await fetch('/api/public/mentoria/programa/' + encodeURIComponent(Q.get('p') || 'comunicacao-impacto'), { cache: 'no-store' })).json(); if (d.error) throw new Error(d.error); }
   catch (e) { document.body.innerHTML = '<p style="padding:40px;font-family:sans-serif">Não consegui carregar a apresentação.</p>'; return; }
-  const p = d.programa, m = d.marca, n = Math.min(p.encontros.length, Math.max(1, Number(Q.get('e')) || 1)), e = p.encontros[n - 1], ant = p.encontros[n - 2], prox = p.encontros[n];
-  document.title = `Encontro ${n} · ${p.nome}`;
-  document.getElementById('sel-enc').innerHTML = p.encontros.map(x => `<option value="${x.n}" ${x.n === n ? 'selected' : ''}>Encontro ${x.n}</option>`).join('');
+  const p = d.programa, m = d.marca, temPrep = !!p.preparacao;
+  const n = Math.min(p.encontros.length, Math.max(temPrep ? 0 : 1, Q.get('e') === null ? 1 : Number(Q.get('e')) || 0));
+  const prep = n === 0, e = prep ? Object.assign({ n: 0 }, p.preparacao) : p.encontros[n - 1], ant = n > 1 ? p.encontros[n - 2] : null, prox = p.encontros[n];
+  AP.prog = p; AP.n = n;
+  document.title = `${prep ? 'Preparação' : 'Encontro ' + n} · ${p.nome}`;
+  document.getElementById('sel-enc').innerHTML = (temPrep ? [`<option value="0" ${prep ? 'selected' : ''}>Preparação</option>`] : []).concat(p.encontros.map(x => `<option value="${x.n}" ${x.n === n ? 'selected' : ''}>Encontro ${x.n}</option>`)).join('');
   const igE = String(m.instagramEmpresa || 'impulsionarv4').replace(/^@/, ''), igL = String(m.instagram || 'lazaroneto.oficial').replace(/^@/, ''), emp = m.empresa || 'Impulsionar V4', turma = Q.get('t') || '';
+  const nomeEnc = prep ? 'Preparação' : `Encontro ${n}`;
   const logo = `<div class="logo"><div class="v4"><b>V4</b><i>↗</i></div><span>IMPULSIONAR<small>GESTÃO &amp; PESSOAS</small></span></div>`;
-  const selo = `<div class="selo">Encontro ${n} de ${p.encontros.length}</div>`;
-  const rod = `${logo}${selo}<div class="rod"><span>${esc(p.nome)}${turma ? ' · ' + esc(turma) : ''}</span><span>${esc(m.mentor)} · Consultor ${esc(emp)}</span></div>`;
-  const gapsDia = (p.gaps || []).filter(g => String(e.gaps || '').includes('todos') || String(e.gaps || '').split(/\D+/).includes(String(g.n)) || Number(g.principal) === n);
-  const S = [];
-  // 1. Capa
-  S.push({ html: `<div class="k">${esc(p.nome)}${turma ? ' · ' + esc(turma) : ''}</div><div style="font-size:1.6em;font-weight:800;color:#cbd5e1;margin-bottom:.4em">Encontro ${n}</div><h1>${esc(e.modulo)}</h1><div class="sub">${esc(e.tema)}</div>${logo}<div class="rod"><span>${esc(m.mentor)} · Consultor ${esc(emp)}</span><span>@${esc(igE)} · @${esc(igL)}</span></div>`,
-    notas: `Boas-vindas. Diga em 1 frase o que eles vão conseguir fazer no fim de hoje: <b>${esc(e.tema)}</b>. Lembre de pedir que deixem o celular pronto para gravar a própria apresentação.` });
-  // 2. Jornada
-  S.push({ html: `<div class="k">Nossa jornada</div><h2>${p.encontros.length} encontros, <em>1 apresentação de verdade</em> no final</h2><div class="jorn">${p.encontros.map(x => `<div class="${x.n === n ? 'on' : x.n < n ? 'feito' : ''}"><b>${x.n < n ? '✓ ' : ''}ENCONTRO ${x.n}</b><span>${esc(x.modulo)}</span></div>`).join('')}</div>${rod}`,
-    notas: n === 1 ? 'Mostre o caminho completo. A entrega final é uma apresentação de 7 minutos com perguntas, avaliada pela mesma régua de hoje.' : `Mostre onde estamos. Recapitule em 1 frase o que foi visto no encontro ${n - 1}.` });
-  // 3. Roteiro de hoje
-  S.push({ html: `<div class="k">Como funciona o encontro</div><h2>2 horas: <em>mais prática do que teoria</em></h2><div class="blocos">${(p.roteiro || []).map(r => `<div><b>${esc(r[0])}</b><i>${esc(r[1])}</i><small>${esc(r[2])}</small></div>`).join('')}</div>${rod}`,
-    notas: 'Reforce: todo mundo apresenta hoje. A teoria é curta para sobrar tempo de prática.' });
-  // 4. Regras (só no 1º) ou retomada da tarefa
-  if (n === 1) S.push({ html: `<div class="k">Combinados da turma</div><h2>Aqui errar <em>é o objetivo</em></h2><ul class="lista">${(p.regras || []).map(r => `<li>${esc(r)}</li>`).join('')}</ul>${rod}`, notas: 'Leia só a primeira regra em voz alta e peça para alguém ler as outras. Peça um "combinado?" da turma.' });
-  else S.push({ html: `<div class="k">Retomada · 10 minutos</div><h2>Como foi a tarefa de casa?</h2><ul class="lista">${(ant.tarefa || []).map(r => `<li>${esc(r)}</li>`).join('')}</ul><div class="sub">Cada um compartilha <b style="color:#fff">1 aprendizado</b> em até 1 minuto.</div><div class="cron" data-seg="600">10:00<small>TOQUE PARA INICIAR (T)</small></div>${rod}`,
-    notas: 'Rodada rápida: 1 aprendizado por pessoa. Valorize quem fez a tarefa e pergunte o que travou para quem não fez.' });
-  // 5. Objetivo + dificuldades do dia
-  S.push({ html: `<div class="k">O foco de hoje</div><h2>${esc(e.modulo)}</h2><div class="cards ${gapsDia.length > 3 ? 'c6' : 'c3'}">${gapsDia.map(g => `<div><i>${g.n}</i><b>${esc(g.nome)}</b><small>${Number(g.principal) === n ? 'Foco principal hoje' : 'Reforço'}</small></div>`).join('')}</div>${rod}`,
-    notas: 'Pergunte: "De 0 a 10, quanto isso te atrapalha hoje?" e peça 2 respostas em voz alta. Isso conecta a teoria à dor real.' });
-  // 6. Teoria — 1 ideia por slide
-  (e.teoria || []).forEach((t, i) => { const x = partir(t); S.push({ html: `<div class="k">Teoria · ${i + 1} de ${e.teoria.length}</div><div class="grande">${esc(x.h)}</div>${x.s ? `<div class="sub">${esc(x.s)}</div>` : ''}${rod}`, notas: `<b>Ideia completa:</b> ${esc(t)}<br>Dê um exemplo da operação e pergunte se alguém já viveu isso.` }); });
-  // 7. Ferramenta do dia
-  const ferr = {
-    1: { html: `<div class="k">Ferramenta do dia</div><h2>Revisão em <em>3 passes</em></h2><div class="cards c3"><div><i>1</i><b>Conteúdo</b><small>Está certo? Números e datas conferidos com a fonte.</small></div><div><i>2</i><b>Clareza</b><small>Dá para entender em 5 segundos? 1 slide = 1 mensagem.</small></div><div><i>3</i><b>Forma</b><small>Letra, cor e excesso de texto. Máximo de 6 linhas.</small></div></div><div class="sub">Antes de tudo: <b style="color:#fff">Para quem? O que precisam saber? O que devem fazer depois? O que pode sair?</b></div>${rod}`, notas: 'Use o slide real que você trouxe para mostrar os 3 passes na demonstração.' },
-    2: { html: `<div class="k">Ferramenta do dia</div><h2>Roteiro de <em>3 atos</em> · Olha, Pausa, Fala</h2><table class="tab"><thead><tr><th>Ato</th><th>Tempo (em 7 min)</th><th>O que dizer</th></tr></thead><tbody>${(p.atos || []).map(a => `<tr><td>${esc(a[0])}</td><td>${esc(a[1])}</td><td>${esc(a[2])}</td></tr>`).join('')}</tbody></table>${rod}`, notas: 'Mostre Olha-Pausa-Fala com o corpo: olhe para a tela, vire para a turma, pause, fale.' },
-    3: { html: `<div class="k">Ferramenta do dia</div><h2>Mapa do palco em <em>3 pontos</em></h2><div class="mapa"><div class="tela">TELA</div><div class="pt" style="left:50%;top:52%"><i>1</i><b>Centro</b><small>abrir e fechar</small></div><div class="pt" style="left:72%;top:62%"><i>2</i><b>Lado da tela</b><small>explicar o slide</small></div><div class="pt" style="left:24%;top:72%"><i>3</i><b>Frente do público</b><small>perguntas e histórias</small></div><div class="publico">▲ ▲ ▲ PÚBLICO ▲ ▲ ▲</div></div>${rod}`, notas: 'Marque os 3 pontos no chão com fita antes da prática. Ande com intenção e pare para falar.' },
-    4: { html: `<div class="k">Ferramenta do dia</div><h2>Método <em>OPRC</em> para responder</h2><div class="cards c4"><div><i>O</i><b>Ouvir</b><small>Até o fim, sem interromper.</small></div><div><i>P</i><b>Parafrasear</b><small>"Se entendi, você quer saber…"</small></div><div><i>R</i><b>Responder</b><small>Em até 3 frases.</small></div><div><i>C</i><b>Checar</b><small>"Respondi o que você precisava?"</small></div></div><div class="sub">Não sabe? <b style="color:#fff">"Vou confirmar com [área] e te retorno até [dia]."</b> E cumpra.</div>${rod}`, notas: 'Faça a demonstração com 5 perguntas difíceis da turma usando o OPRC.' },
-    5: { html: `<div class="k">Como você será avaliado</div><h2>Régua de apresentação <em>(1 a 5)</em></h2><table class="tab compacta"><thead><tr><th>Critério</th><th>1</th><th>5 — Referência</th></tr></thead><tbody>${(p.regua || []).map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[2])}</td><td>${esc(r[4])}</td></tr>`).join('')}</tbody></table>${rod}`, notas: 'Entregue a régua impressa para a banca: você, o gestor e 2 colegas sorteados.' }
-  }[n];
-  if (ferr) S.push(ferr);
-  // 8. Demonstração
-  S.push({ html: `<div class="k">Demonstração ao vivo · 10 minutos</div><div class="grande">${esc(e.demonstracao)}</div>${rod}`, notas: 'Faça você primeiro. Depois pergunte à turma o que mudou de uma versão para a outra.' });
-  // 9. Prática
-  (e.pratica || []).forEach((t, i) => { const mi = minutos(t), x = partir(t); S.push({ html: `<div class="k">Prática${e.pratica.length > 1 ? ` · parte ${i + 1}` : ''}</div>${/^\d+\s*min$/i.test(x.h) ? `<div style="font-size:1.4em;font-weight:800;color:#cbd5e1;margin-bottom:.3em">${esc(x.h)}</div><h2>${esc(x.s)}</h2>` : `<h2>${esc(x.h)}</h2>${x.s ? `<div class="sub">${esc(x.s)}</div>` : ''}`}${mi ? `<div class="cron" data-seg="${mi * 60}">${String(mi).padStart(2, '0')}:00<small>TOQUE PARA INICIAR (T)</small></div>` : ''}${rod}`, notas: `<b>${esc(t)}</b><br>Grave cada apresentação no celular do próprio participante.` }); });
-  // 10. Feedback
-  S.push({ html: `<div class="k">Feedback depois de cada apresentação</div><h2>Sempre no formato <em>1 + 1 + 1</em></h2><div class="fb"><div><b>✅ 1 ponto forte</b><small>O que manter exatamente como fez.</small></div><div><b>🔧 1 ajuste</b><small>A mudança que mais vai fazer diferença.</small></div><div><b>💡 1 dica prática</b><small>Como treinar isso até o próximo encontro.</small></div></div><div class="sub">"Foi bom" não vale. Diga o quê.</div>${rod}`, notas: 'Deixe este slide na tela durante toda a prática.' });
-  // 11. Tarefa de casa
-  S.push({ html: `<div class="k">Tarefa de casa</div><h2>${n < p.encontros.length ? `Para o encontro ${n + 1}` : 'Próximos 30 dias'}</h2><ul class="lista">${(e.tarefa || []).map(r => `<li>${esc(r)}</li>`).join('')}</ul><div class="sub">Marque como feita na sua <b style="color:#fff">Área do Aluno</b>.</div>${rod}`, notas: 'Peça que cada um diga quando vai fazer a tarefa (dia e hora).' });
-  // 12. Presença
-  const cod = Q.get('q');
-  S.push({ html: `<div class="k">Antes de sair</div><h2>Registre sua <em>presença</em></h2><div class="qrbox">${cod ? `<img src="${qr(location.origin + '/presenca/' + cod)}" alt="">` : ''}<div><ul class="lista" style="max-width:none"><li>Abra a câmera do celular</li><li>Aponte para o QR code</li><li>Toque em Confirmar presença</li></ul>${cod ? `<div class="sub" style="font-size:1.2em">ou acesse <b style="color:#fff">${esc(location.host)}/presenca/${esc(cod)}</b></div>` : `<div class="sub">Abra o <b style="color:#fff">QR presença</b> da turma no Impulsionar.</div>`}</div></div>${rod}`,
-    notas: cod ? 'Deixe o QR na tela até todos registrarem. A lista de presentes atualiza no sistema.' : 'Esta apresentação foi aberta sem turma. Abra o QR de presença pela tela da turma.' });
-  // 13. Encerramento
-  S.push({ html: `<div class="k">${prox ? `Próximo encontro · ${esc(prox.modulo)}` : 'Parabéns pela jornada'}</div><h2>${prox ? esc(prox.tema) : 'Agora é apresentar de verdade.'}</h2><div class="qrs"><div><img src="${qr('https://instagram.com/' + igE)}" alt=""><b>@${esc(igE)}</b><small>${esc(emp)} · gestão e pessoas</small></div><div><img src="${qr('https://instagram.com/' + igL)}" alt=""><b>@${esc(igL)}</b><small>${esc(m.mentor)}</small></div></div>${rod}`,
-    notas: prox ? 'Feche com o compromisso da tarefa e convide para seguir a Impulsionar.' : 'Agradeça, entregue os certificados e combine a sessão de continuidade em 30 dias.' });
+  const selo = `<div class="selo">${prep ? 'Preparação · 1 hora' : `Encontro ${n} de ${p.encontros.length} · 1 hora`}</div>`;
+  // blocos do encontro com os minutos planejados (00–05, 05–20…)
+  const B = (e.blocos || BLOCOS_PADRAO).map(b => ({ nome: b[0], min: Number(b[1]) || 5 })); let t0 = 0; B.forEach(b => { b.ini = t0; b.fim = t0 + b.min; t0 = b.fim; });
+  const bi = nome => Math.max(0, B.findIndex(b => b.nome === nome));
+  const faixa = k => `<div class="faixa">${B.map((b, j) => `<div class="${j === k ? 'on' : j < k ? 'feito' : ''}" style="flex:${b.min}">${j === k ? `<span>▶ ${esc(b.nome)} · ${mm(b.ini)}–${mm(b.fim)} min</span>` : ''}</div>`).join('')}</div>`;
+  const rod = k => `${logo}${selo}${faixa(k)}<div class="rod"><span>${esc(p.curto || p.nome)}${turma ? ' · ' + esc(turma) : ''}</span><span>${esc(m.mentor)} · Consultor ${esc(emp)}</span></div>`;
+  const chip = k => `<div class="chip">${esc(B[k].nome.toUpperCase())} · ${B[k].min} MIN · ${mm(B[k].ini)}–${mm(B[k].fim)}</div>`;
+  const cronH = (min, txt) => `<div class="cron" data-seg="${min * 60}">${mm(min)}:00<small>${txt || 'CONTANDO SOZINHO · T REINICIA'}</small></div>`;
+  const S = [], add = (k, titulo, html, notas, claro) => S.push({ bloco: k, titulo, html: html + rod(k), notas, claro });
+  const gapsDia = prep ? [] : (p.gaps || []).filter(g => String(e.gaps || '').includes('todos') || String(e.gaps || '').split(/\D+/).includes(String(g.n)) || Number(g.principal) === n);
+  // ===== 1. Capa
+  add(0, 'Capa', `<div class="k">${esc(p.nome)}${turma ? ' · ' + esc(turma) : ''}</div><div style="font-size:1.6em;font-weight:800;color:#cbd5e1;margin-bottom:.4em">${nomeEnc} · 1 hora</div><h1>${esc(e.modulo)}</h1><div class="sub">${esc(e.tema)}</div>`,
+    `DIGA: "Bom dia, pessoal. Hoje são 60 minutos e todo mundo vai apresentar." • FAÇA: confira se todos estão com o celular para gravar. Comece no horário.`);
+  // ===== 2. Objetivo do dia (o que eles levam)
+  add(0, 'Objetivo de hoje', `<div class="k">No fim desta hora, você vai</div><ul class="faca">${(e.objetivo || [e.tema]).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`,
+    `DIGA: "No fim desta hora, cada um de vocês vai…" e leia os itens. • FAÇA: peça para alguém repetir o 1º item com as próprias palavras.`);
+  // ===== 3. Agenda de 60 minutos
+  const desc = { 'Abertura': n > 1 ? 'Retomada da tarefa de casa' : 'Combinados e boas-vindas', 'Conceito': 'Uma ideia por slide, com exemplo real', 'Demonstração': 'Eu faço ao vivo', 'Prática': 'Todos apresentam e recebem feedback', 'Fechamento': 'Tarefa, presença e próximo encontro', 'Apresentações': '4 minutos + 1 pergunta da banca', 'Boas-vindas': 'Quem somos e por que estamos aqui', 'O programa': 'Os encontros e a entrega final', 'Combinados': 'Como a turma funciona', 'Ponto de partida': 'Cada um diz a sua apresentação real e a sua nota', 'Próximos passos': 'O que trazer no Encontro 1' };
+  add(0, 'Agenda de hoje', `<div class="k">Agenda de hoje · 60 minutos</div><div class="agenda">${B.map(b => `<div><b>${mm(b.ini)}–${mm(b.fim)}</b><span>${esc(b.nome)}<small>${esc(desc[b.nome] || '')}</small></span><i>${b.min} min</i></div>`).join('')}</div>`,
+    `DIGA: "Esse é o nosso relógio de hoje." • A faixa embaixo de todo slide mostra em que bloco estamos. Se um bloco atrasar, corte do Conceito, nunca da Prática.`);
+  if (prep) {
+    // ===== PREPARAÇÃO (encontro de alinhamento, 1 h)
+    add(bi('Boas-vindas'), 'Por que estamos aqui', `${chip(bi('Boas-vindas'))}<div class="grande">Quem apresenta bem <em style="font-style:normal;color:var(--ambar)">lidera melhor</em>.</div><div class="sub">O time decide em 30 segundos se vai prestar atenção em você. Este programa treina esses 30 segundos — e o resto.</div>`,
+      'DIGA: conte em 1 minuto uma apresentação sua que deu errado e o que aprendeu. • PERGUNTE: "Quem aqui já ficou nervoso antes de apresentar?" (mãos levantadas quebram o gelo).');
+    add(bi('O programa'), 'A jornada', `${chip(bi('O programa'))}<h2>${p.encontros.length} encontros de 1 hora, <em>1 apresentação de verdade</em> no final</h2><div class="jorn" style="grid-template-columns:repeat(${p.encontros.length},1fr)">${p.encontros.map(x => `<div><b>ENCONTRO ${x.n}</b><span>${esc(x.modulo)}</span></div>`).join('')}</div>`,
+      `DIGA: "Cada encontro resolve uma dificuldade. No último: ${p.entrega || ''}"`);
+    add(bi('O programa'), 'As 6 dificuldades', `${chip(bi('O programa'))}<h2>O que vamos <em>resolver</em></h2><div class="cards c6">${(p.gaps || []).map(g => `<div><i>${g.n}</i><b>${esc(g.nome)}</b></div>`).join('')}</div>`,
+      'PERGUNTE: "Qual destas é a sua maior dificuldade hoje?" Peça 3 respostas em voz alta.');
+    add(bi('O programa'), 'Como será avaliado', `${chip(bi('O programa'))}<h2>A régua: <em>de 1 a 5</em> em cada ponto</h2><table class="tab compacta"><thead><tr><th>Critério</th><th>1</th><th>5 — Referência</th></tr></thead><tbody>${(p.regua || []).map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[2])}</td><td>${esc(r[4])}</td></tr>`).join('')}</tbody></table>`,
+      'DIGA: "Essa régua mede vocês no Encontro 1 e de novo no final. A meta é subir 1,5 ponto."');
+    add(bi('Combinados'), 'Combinados', `${chip(bi('Combinados'))}<h2>Aqui errar <em>é o objetivo</em></h2><ul class="lista">${(p.regras || []).map(r => `<li>${esc(r)}</li>`).join('')}</ul>`,
+      'FAÇA: leia a 1ª regra e peça para 3 pessoas lerem as outras. Feche com "Combinado?" e espere o "combinado" da turma.');
+    add(bi('Ponto de partida'), 'Ponto de partida', `${chip(bi('Ponto de partida'))}<div class="lado"><div><h2>Cada um responde <em>em 1 minuto</em></h2><ul class="faca">${(e.perguntas || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>${cronH(25, 'RODADA · 25 MIN')}</div>`,
+      'FAÇA: anote na sua planilha, para cada pessoa: a apresentação real, a nota de confiança (0–10) e a maior dificuldade. Essa é a linha de base do piloto. • Cronômetro de 1 min por pessoa: interrompa com gentileza.');
+    add(bi('Ponto de partida'), 'Escolha da apresentação', `${chip(bi('Ponto de partida'))}<h2>A sua apresentação <em>real</em></h2><div class="cards c3"><div><i>1</i><b>É de verdade</b><small>Um assunto que você vai apresentar no trabalho nas próximas semanas.</small></div><div><i>2</i><b>Tem público</b><small>Você sabe para quem é e o que eles precisam fazer depois.</small></div><div><i>3</i><b>Cabe em 4 min</b><small>É o tamanho da apresentação final avaliada.</small></div></div>`,
+      'DIGA: "Todo o programa vai trabalhar em cima dessa apresentação. Escolha bem."');
+    add(bi('Próximos passos'), 'O que trazer', `${chip(bi('Próximos passos'))}<h2>Para o <em>Encontro 1</em>, traga</h2><ul class="faca">${(e.levar || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`,
+      'FAÇA: confirme a data e o horário do Encontro 1 e peça que coloquem na agenda do celular agora.');
+    add(bi('Próximos passos'), 'Tarefa', `${chip(bi('Próximos passos'))}<h2>Tarefa até o <em>Encontro 1</em></h2><ul class="lista">${(e.tarefa || []).map(r => `<li>${esc(r)}</li>`).join('')}</ul>`, 'PERGUNTE para cada um: "Quando você vai fazer?" (dia e hora).');
+  } else {
+    const kA = bi('Abertura');
+    // ===== Abertura
+    if (n === 1) add(kA, 'Combinados', `${chip(kA)}<h2>Aqui errar <em>é o objetivo</em></h2><ul class="lista">${(p.regras || []).slice(0, 4).map(r => `<li>${esc(r)}</li>`).join('')}</ul>`, 'FAÇA: relembre os combinados em 1 minuto. Pergunte quem trouxe o material da apresentação real.');
+    else if (ant) add(kA, 'Retomada da tarefa', `${chip(kA)}<div class="lado"><div><h2>Como foi a <em>tarefa de casa?</em></h2><ul class="lista">${(ant.tarefa || []).map(r => `<li>${esc(r)}</li>`).join('')}</ul><div class="sub">Cada um diz <b style="color:#fff">1 aprendizado</b> em até 30 segundos.</div></div>${cronH(B[kA].min, 'RETOMADA')}</div>`,
+      'FAÇA: rodada rápida, 30 s por pessoa. Valorize quem fez. Para quem não fez: "O que travou?" — sem bronca.');
+    if (n === 5) {
+      const kP = bi('Apresentações'), kF = bi('Fechamento');
+      add(kA, 'Como funciona hoje', `${chip(kA)}<h2>Hoje é a <em>apresentação final</em></h2><ul class="faca"><li>Sorteio da ordem</li><li>4 minutos de apresentação + 1 pergunta da banca</li><li>A banca preenche a régua de 1 a 5</li><li>No fim, cada um compara a régua de hoje com a do Encontro 1</li></ul>`, 'FAÇA: sorteie a ordem e faça 2 minutos de aquecimento de voz e postura com todos.');
+      add(kP, 'A régua', `${chip(kP)}<h2>Régua de apresentação <em>(1 a 5)</em></h2><table class="tab compacta"><thead><tr><th>Critério</th><th>1</th><th>5 — Referência</th></tr></thead><tbody>${(p.regua || []).map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[2])}</td><td>${esc(r[4])}</td></tr>`).join('')}</tbody></table>`, 'FAÇA: entregue a régua impressa para a banca (você, o gestor e 2 colegas).');
+      add(kP, 'Apresentações', `${chip(kP)}<div class="lado"><div><h2>Sua vez: <em>4 minutos</em></h2><ul class="faca"><li>Abertura com gancho</li><li>3 pontos-chave, sem ler a tela</li><li>Fechamento com a ação</li><li>1 pergunta da banca (OPRC)</li></ul></div>${cronH(4, 'POR PESSOA · T REINICIA')}</div>`, 'FAÇA: aperte T para reiniciar o cronômetro a cada pessoa. Grave no celular do participante. Pergunta da banca: use o banco de perguntas difíceis.');
+      add(kF, 'Antes e depois', `${chip(kF)}<h2>Compare: <em>Encontro 1 × hoje</em></h2><ul class="faca"><li>Pegue a sua régua do Encontro 1</li><li>Veja em qual ponto você mais subiu</li><li>Escolha 1 ponto para treinar nos próximos 30 dias</li></ul>`, 'PERGUNTE: "Em qual ponto você mais evoluiu?" Peça 3 respostas.');
+    } else {
+      const kC = bi('Conceito'), kD = bi('Demonstração'), kP = bi('Prática');
+      add(kC, 'Foco de hoje', `${chip(kC)}<h2>${esc(e.modulo)}</h2><div class="cards ${gapsDia.length > 3 ? 'c6' : 'c3'}">${gapsDia.map(g => `<div><i>${g.n}</i><b>${esc(g.nome)}</b><small>${Number(g.principal) === n ? 'Foco principal hoje' : 'Reforço'}</small></div>`).join('')}</div>`,
+        'PERGUNTE: "De 0 a 10, quanto isso te atrapalha hoje?" Peça 2 respostas. Isso conecta o conceito à dor real.');
+      (e.teoria || []).forEach((t, i) => { const x = partir(t); add(kC, `Conceito ${i + 1}`, `${chip(kC)}<div class="k" style="margin-bottom:.6em">Ideia ${i + 1} de ${e.teoria.length}</div><div class="grande">${esc(x.h)}</div>${x.s ? `<div class="sub">${esc(x.s)}</div>` : ''}`,
+        `IDEIA COMPLETA: ${t} • FAÇA: dê 1 exemplo da operação (máx. 1 minuto) e passe. São ${Math.max(2, Math.round(B[kC].min / Math.max(1, e.teoria.length)))} minutos por ideia.`); });
+      const ferr = {
+        1: `<h2>Revisão em <em>3 passes</em></h2><div class="cards c3"><div><i>1</i><b>Conteúdo</b><small>Está certo? Números e datas conferidos com a fonte.</small></div><div><i>2</i><b>Clareza</b><small>Dá para entender em 5 segundos? 1 slide = 1 mensagem.</small></div><div><i>3</i><b>Forma</b><small>Letra, cor e excesso de texto. Máximo de 6 linhas.</small></div></div>`,
+        2: `<h2>Roteiro de <em>3 atos</em> · Olha, Pausa, Fala</h2><table class="tab"><thead><tr><th>Ato</th><th>Tempo (em 4 min)</th><th>O que dizer</th></tr></thead><tbody>${(p.atos || []).map(a => `<tr><td>${esc(a[0])}</td><td>${esc(a[1])}</td><td>${esc(a[2])}</td></tr>`).join('')}</tbody></table>`,
+        3: `<h2>Mapa do palco em <em>3 pontos</em></h2><div class="mapa"><div class="tela">TELA</div><div class="pt" style="left:50%;top:52%"><i>1</i><b>Centro</b><small>abrir e fechar</small></div><div class="pt" style="left:72%;top:62%"><i>2</i><b>Lado da tela</b><small>explicar o slide</small></div><div class="pt" style="left:24%;top:72%"><i>3</i><b>Frente do público</b><small>perguntas e histórias</small></div><div class="publico">▲ ▲ ▲ PÚBLICO ▲ ▲ ▲</div></div>`,
+        4: `<h2>Método <em>OPRC</em> para responder</h2><div class="cards c4"><div><i>O</i><b>Ouvir</b><small>Até o fim, sem interromper.</small></div><div><i>P</i><b>Parafrasear</b><small>"Se entendi, você quer saber…"</small></div><div><i>R</i><b>Responder</b><small>Em até 3 frases.</small></div><div><i>C</i><b>Checar</b><small>"Respondi o que você precisava?"</small></div></div><div class="sub">Não sabe? <b style="color:#fff">"Vou confirmar com [área] e te retorno até [dia]."</b> E cumpra.</div>`
+      }[n];
+      if (ferr) add(kC, 'Ferramenta do dia', `${chip(kC)}${ferr}`, 'DIGA: "Essa é a ferramenta que vocês vão usar na prática daqui a pouco." Deixe 1 minuto na tela.');
+      add(kD, 'Demonstração', `${chip(kD)}<div class="lado"><div><div class="k">Eu faço primeiro</div><div class="grande" style="font-size:2.8em">${esc(e.demonstracao)}</div></div>${cronH(B[kD].min, 'DEMONSTRAÇÃO')}</div>`,
+        'FAÇA: demonstre ao vivo. Depois PERGUNTE: "O que mudou de uma versão para a outra?" e ouça 2 respostas.');
+      (e.pratica || []).forEach((t, i) => { const mi = minutos(t), x = partir(t), titulo = /^[\wÀ-ú ]{2,30}$/.test(x.h.replace(/\s·.*$/, '')) ? x.h.replace(/\s·.*$/, '') : `Parte ${i + 1}`;
+        add(kP, `Prática: ${titulo}`, `${chip(kP)}<div class="lado"><div><div class="k">Faça agora${e.pratica.length > 1 ? ` · parte ${i + 1} de ${e.pratica.length}` : ''}</div><h2>${esc(titulo)}</h2><div class="sub" style="font-size:1.55em;color:#fff;max-width:100%">${esc(x.s || t)}</div></div>${mi ? cronH(mi, 'PRÁTICA') : ''}</div>`,
+          `FAÇA: ${t} • Grave cada apresentação no celular do próprio participante. Use o slide de feedback 1 + 1 + 1 depois de cada um.`); });
+      add(kP, 'Feedback 1 + 1 + 1', `${chip(kP)}<h2>Feedback em <em>1 + 1 + 1</em></h2><div class="fb"><div><b>✅ 1 ponto forte</b><small>O que manter exatamente como fez.</small></div><div><b>🔧 1 ajuste</b><small>A mudança que mais vai fazer diferença.</small></div><div><b>💡 1 dica prática</b><small>Como treinar isso até o próximo encontro.</small></div></div><div class="sub">"Foi bom" não vale. Diga o quê.</div>`,
+        'Deixe este slide na tela durante a prática. Máximo 1 minuto de feedback por pessoa.');
+    }
+    const kF = bi('Fechamento');
+    add(kF, 'Tarefa de casa', `${chip(kF)}<h2>${n < p.encontros.length ? `Tarefa para o <em>Encontro ${n + 1}</em>` : 'Próximos <em>30 dias</em>'}</h2><ul class="lista">${(e.tarefa || []).map(r => `<li>${esc(r)}</li>`).join('')}</ul><div class="sub">Marque como feita na sua <b style="color:#fff">Área do Aluno</b>.</div>`,
+      'PERGUNTE para cada um: "Quando você vai fazer?" (dia e hora).');
+  }
+  // ===== Presença + encerramento (todos)
+  const kF = B.length - 1, cod = Q.get('q');
+  add(kF, 'Presença', `${chip(kF)}<h2>Registre sua <em>presença</em></h2><div class="qrbox">${cod ? `<img src="${qr(location.origin + '/presenca/' + cod)}" alt="">` : ''}<div><ul class="faca" style="max-width:none"><li>Abra a câmera do celular</li><li>Aponte para o QR code</li><li>Toque em Confirmar presença</li></ul>${cod ? `<div class="sub" style="font-size:1.2em">ou acesse <b style="color:#fff">${esc(location.host)}/presenca/${esc(cod)}</b></div>` : `<div class="sub">Abra o <b style="color:#fff">QR presença</b> da turma no Impulsionar.</div>`}</div></div>`,
+    cod ? 'Deixe o QR na tela até todos registrarem.' : 'Esta apresentação foi aberta sem turma. Abra o QR de presença pela tela da turma.');
+  add(kF, 'Encerramento', `<div class="k">${prox ? `Próximo · Encontro ${prox.n} · ${esc(prox.modulo)}` : 'Parabéns pela jornada'}</div><h2>${prox ? esc(prox.tema) : 'Agora é apresentar de verdade.'}</h2><div class="qrs"><div><img src="${qr('https://instagram.com/' + igE)}" alt=""><b>@${esc(igE)}</b><small>${esc(emp)} · gestão e pessoas</small></div><div><img src="${qr('https://instagram.com/' + igL)}" alt=""><b>@${esc(igL)}</b><small>${esc(m.mentor)}</small></div></div>`,
+    prox ? 'DIGA a data do próximo encontro e termine no horário. Convide para seguir a Impulsionar.' : 'Agradeça, entregue os certificados e combine a sessão de continuidade em 30 dias.');
   AP.slides = S;
-  document.getElementById('palco').innerHTML = S.map((s, i) => `<section class="slide" data-i="${i}">${s.html}</section>`).join('');
-  document.querySelectorAll('.cron').forEach(c => c.onclick = () => cronometro(c));
+  document.getElementById('palco').innerHTML = S.map((s, i) => `<section class="slide${s.claro ? ' claro' : ''}" data-i="${i}">${s.html}</section>`).join('');
+  document.querySelectorAll('.cron').forEach(c => c.onclick = () => cronometro(c, true));
+  ajustarTodos(); window.addEventListener('resize', () => { clearTimeout(AP.tr); AP.tr = setTimeout(ajustarTodos, 200); });
   const h = Number(location.hash.replace('#', '')); mostrar(Number.isFinite(h) && h > 0 ? h - 1 : 0);
-  setInterval(() => { if (!AP.inicio) return; const s = Math.floor((Date.now() - AP.inicio) / 1000); document.getElementById('relogio').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }, 500);
+  setInterval(() => { if (!AP.inicio) return; const s = Math.floor((Date.now() - AP.inicio) / 1000); document.getElementById('relogio').textContent = mm(Math.floor(s / 60)) + ':' + mm(s % 60); }, 500);
+  try { const c = sessionStorage.getItem('pa_passador_' + (Q.get('p') || 'comunicacao-impacto')); if (c) conectarPassador(c); } catch (x) {}
 })();
+// conteúdo grande demais encolhe um pouco até caber (nunca invade o logo nem a faixa de tempo)
+function ajustarTodos() { document.querySelectorAll('.slide').forEach(sl => { sl.style.fontSize = ''; let k = 1; for (let n = 0; n < 12 && sl.scrollHeight > sl.clientHeight + 2 && k > 0.62; n++) { k -= 0.04; sl.style.fontSize = `calc(min(1.25vw, 2.22vh) * ${k.toFixed(2)})`; } }); }
 function trocarEncontro(v) { Q.set('e', v); location.href = location.pathname + '?' + Q.toString(); }
 function mostrar(i) {
   AP.i = Math.max(0, Math.min(AP.slides.length - 1, i)); if (AP.i > 0 && !AP.inicio) AP.inicio = Date.now();
   document.querySelectorAll('.slide').forEach((s, k) => s.classList.toggle('on', k === AP.i));
   document.getElementById('prog').style.width = ((AP.i + 1) / AP.slides.length * 100) + '%';
-  document.getElementById('notas').innerHTML = `<b>Slide ${AP.i + 1} de ${AP.slides.length}</b> · ${AP.slides[AP.i].notas || ''}`;
+  document.getElementById('notas').innerHTML = `<b>Slide ${AP.i + 1} de ${AP.slides.length} · ${esc(AP.slides[AP.i].titulo)}</b><br>${esc(AP.slides[AP.i].notas || '').replace(/ • /g, '<br>• ')}`;
   history.replaceState(null, '', location.pathname + location.search + '#' + (AP.i + 1));
+  // cronômetro do bloco começa sozinho quando o slide aparece (uma vez)
+  const c = document.querySelector('.slide.on .cron'); if (c && !c.dataset.rodou) cronometro(c);
+  enviarEstado();
 }
 function ir(n) { mostrar(AP.i + n); }
 function alternarNotas() { document.getElementById('notas').classList.toggle('on'); }
 function telaCheia() { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); else document.exitFullscreen(); }
-function cronometro(el) {
+function cronometro(el, reiniciar) {
   el = el || document.querySelector('.slide.on .cron'); if (!el) return;
-  clearInterval(AP.cron); const s = Number(el.dataset.seg) || 180, fim = Date.now() + s * 1000;
-  AP.cron = setInterval(() => { const r = Math.max(0, Math.round((fim - Date.now()) / 1000)); el.innerHTML = String(Math.floor(r / 60)).padStart(2, '0') + ':' + String(r % 60).padStart(2, '0'); if (!r) { clearInterval(AP.cron); el.textContent = 'Tempo!'; } }, 250);
+  clearInterval(AP.cron); el.dataset.rodou = '1'; const s = Number(el.dataset.seg) || 180, fim = Date.now() + s * 1000, rot = (el.querySelector('small') || {}).textContent || '';
+  AP.cron = setInterval(() => { const r = Math.max(0, Math.round((fim - Date.now()) / 1000)); el.innerHTML = mm(Math.floor(r / 60)) + ':' + mm(r % 60) + `<small>${esc(rot)}</small>`; el.style.color = r <= 30 ? '#ef4444' : ''; if (!r) { clearInterval(AP.cron); el.innerHTML = `Tempo!<small>${esc(rot)}</small>`; } }, 250);
 }
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'SELECT') return;
   if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); ir(1); }
   else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); ir(-1); }
-  else if (e.key.toLowerCase() === 'n') alternarNotas(); else if (e.key.toLowerCase() === 'f') telaCheia(); else if (e.key.toLowerCase() === 't') cronometro();
+  else if (e.key.toLowerCase() === 'n') alternarNotas(); else if (e.key.toLowerCase() === 'f') telaCheia(); else if (e.key.toLowerCase() === 't') cronometro(null, true); else if (e.key.toLowerCase() === 'p') abrirPassador();
+  else if (e.key === 'Escape') document.getElementById('passa').classList.remove('on');
   else if (e.key === 'Home') mostrar(0); else if (e.key === 'End') mostrar(AP.slides.length - 1);
 });
 let toqueX = null;
 document.addEventListener('touchstart', e => { toqueX = e.touches[0].clientX; }, { passive: true });
 document.addEventListener('touchend', e => { if (toqueX === null) return; const dx = e.changedTouches[0].clientX - toqueX; if (Math.abs(dx) > 50) ir(dx < 0 ? 1 : -1); toqueX = null; });
+// ===== 📱 Passador pelo celular (mesmo link /controle.html do Ministrar Treinamento) =====
+const PS = { socket: null, codigo: null, link: '', conectados: 0 };
+function tokenSistema() { for (const st of [sessionStorage, localStorage]) { try { const t = st.getItem('impulsionar_token'); if (t) return t; } catch (e) {} } return ''; }
+function aviso(t) { const a = document.getElementById('aviso'); a.textContent = t; a.classList.add('on'); clearTimeout(a.t); a.t = setTimeout(() => a.classList.remove('on'), 3500); }
+function desenharPassa() {
+  document.getElementById('passa-c').innerHTML = PS.link ? `<b style="font-size:18px">📱 Passador no celular</b><div>Aponte a câmera do celular para o QR (ou abra o link). Você passa os slides, vê as notas e o próximo slide no celular.</div><img src="${qr(PS.link)}" alt=""><code>${esc(PS.link)}</code><div id="ps-st">${PS.conectados ? `✅ ${PS.conectados} celular(es) conectado(s)` : '⏳ Esperando o celular conectar…'}</div><div style="margin-top:10px"><button onclick="navigator.clipboard && navigator.clipboard.writeText(PS.link); aviso('Link copiado')">Copiar link</button><button class="sec" onclick="document.getElementById('passa').classList.remove('on')">Fechar (Esc)</button></div>` : '<div>Gerando o link…</div>';
+}
+async function abrirPassador() {
+  document.getElementById('passa').classList.add('on'); if (PS.link) return desenharPassa();
+  desenharPassa();
+  const tk = tokenSistema(); if (!tk) { document.getElementById('passa-c').innerHTML = '<b>Entre no Impulsionar primeiro</b><div style="margin:10px 0">Abra esta apresentação pelo sistema (logado como Master) para gerar o passador.</div><button class="sec" onclick="document.getElementById(\'passa\').classList.remove(\'on\')">Fechar</button>'; return; }
+  try {
+    const r = await fetch('/api/admin/programa-controle', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk }, body: JSON.stringify({ programa: Q.get('p') || 'comunicacao-impacto' }) });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error || 'erro');
+    try { sessionStorage.setItem('pa_passador_' + (Q.get('p') || 'comunicacao-impacto'), j.codigo); } catch (x) {}
+    conectarPassador(j.codigo, j.link); desenharPassa();
+  } catch (e) { document.getElementById('passa-c').innerHTML = `<b>Não consegui gerar o passador</b><div style="margin:10px 0">${esc(e.message)}</div><button class="sec" onclick="document.getElementById('passa').classList.remove('on')">Fechar</button>`; }
+}
+function carregarSocket() { return window.io ? Promise.resolve() : new Promise((ok, ko) => { const sc = document.createElement('script'); sc.src = '/socket.io/socket.io.js'; sc.onload = ok; sc.onerror = ko; document.head.appendChild(sc); }); }
+async function conectarPassador(codigo, link) {
+  PS.codigo = codigo; PS.link = link || location.origin + '/controle.html?c=' + codigo;
+  try { await carregarSocket(); } catch (e) { return; }
+  if (PS.socket) PS.socket.disconnect();
+  const sk = PS.socket = io({ transports: ['websocket', 'polling'] });
+  sk.on('connect', () => sk.emit('mt-apresentador', { codigo, token: tokenSistema() }));
+  sk.on('mt-controles', d => { PS.conectados = d.conectados || 0; marcarCel(); if (document.getElementById('passa').classList.contains('on')) desenharPassa(); enviarEstado(); });
+  sk.on('mt-controle-conectou', () => { PS.conectados = Math.max(1, PS.conectados + 1); marcarCel(); aviso('📱 Celular conectado — já pode passar os slides por ele'); document.getElementById('passa').classList.remove('on'); enviarEstado(); });
+  sk.on('mt-comando', ({ cmd, i }) => { if (cmd === 'proximo') ir(1); else if (cmd === 'anterior') ir(-1); else if (cmd === 'ir') mostrar(Number(i) || 0); else enviarEstado(); });
+}
+function marcarCel() { const b = document.getElementById('bt-cel'); if (b) { b.classList.toggle('on', PS.conectados > 0); b.textContent = PS.conectados > 0 ? '📱 Celular conectado' : '📱 Passador (P)'; } }
+let CSS_MINI = '';
+function cssMini() {
+  if (CSS_MINI) return CSS_MINI;
+  const css = (document.getElementById('css-sl').textContent || '').replace(/\/\*[\s\S]*?\*\//g, '');
+  CSS_MINI = css.replace(/([^{}]+)\{/g, (m0, sel) => { const t = sel.trim(); if (!t || t.startsWith('@')) return m0; return t.split(',').map(x => { x = x.trim(); return x === ':root' ? '.pa-mini' : '.pa-mini ' + x; }).join(', ') + ' {'; })
+    + `.pa-mini { position:relative; width:100%; height:100%; overflow:hidden; font-family:Montserrat, system-ui, sans-serif; color:#fff; } .pa-mini .slide { position:absolute; inset:0; width:100%; height:100%; font-size:.75em; opacity:1; transform:none; }`;
+  return CSS_MINI;
+}
+function enviarEstado() {
+  if (!PS.socket || !PS.socket.connected || !AP.slides.length) return;
+  const tela = k => { const s = AP.slides[k]; return s ? { i: k, titulo: s.titulo, html: `<div class="pa-mini"><section class="slide on${s.claro ? ' claro' : ''}">${s.html}</section></div>` } : null; };
+  const s = AP.slides[AP.i], B = s ? s.bloco : 0;
+  PS.socket.emit('mt-estado', { i: AP.i, total: AP.slides.length, titulo: s.titulo, modulo: (document.querySelector('.slide.on .faixa .on span') || {}).textContent || '', notas: String(s.notas || '').replace(/ • /g, '\n• '), proximo: (AP.slides[AP.i + 1] || {}).titulo || '', ini: AP.inicio, css: cssMini(), telas: [tela(AP.i), tela(AP.i + 1), tela(AP.i + 2)] });
+}
 </script>
 </body>
 </html>

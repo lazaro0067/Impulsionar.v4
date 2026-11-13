@@ -2148,7 +2148,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 12/11 (5)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 12/11 (6)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -15098,12 +15098,13 @@ function mtnProgramaHtml(p, imprimir) {
       ${imprimir || mtnModo() === p.id ? '' : `<div class="mpg-bts"><button class="btn-primario" style="width:auto;" onclick="mtnEditarTurma(0, '${p.id}')">＋ Criar turma deste programa</button>${turmas.length ? `<button class="btn-secundario" onclick="MTN.aba='turmas'; mtnDesenhar()">🎓 Ver turmas (${turmas.length})</button>` : ''}<button class="btn-secundario" onclick="mtnProgramaImprimir('${p.id}')">🖨️ Imprimir / PDF</button></div>`}</div>
     <div class="mpg-fatos"><div><b>🎯 Objetivo</b><p>${escapeHtml(p.objetivo || '')}</p></div><div><b>👥 Para quem</b><p>${escapeHtml(p.publico || '')}</p></div><div><b>🗓️ Formato</b><p>${escapeHtml(p.formato || '')}</p></div><div><b>🏁 Entrega final</b><p>${escapeHtml(p.entrega || '')}</p></div></div>
     <h3 class="mtn-h2">Onde cada dificuldade do time é trabalhada</h3>${tab(['Dificuldade', 'Encontro principal', 'Reforço em'], (p.gaps || []).map(g => [g.n + '. ' + g.nome, String(g.principal), g.reforco]))}
-    <h3 class="mtn-h2">Roteiro de todo encontro (2 h)</h3>${tab(['Bloco', 'Tempo', 'O que acontece'], p.roteiro || [])}
+    ${p.preparacao ? `<div class="mtn-bloco"><b>🧭 Preparação (1 h, antes do Encontro 1)</b><p class="plano-meta" style="margin:4px 0 8px;">${escapeHtml(p.preparacao.tema || '')}</p>${tab(['Bloco', 'Tempo'], (p.preparacao.blocos || []).map(b => [b[0], b[1] + ' min']))}${imprimir ? '' : `<button class="btn-primario btn-sm" style="width:auto;margin-top:8px;" onclick="mtnApresentar('${p.id}', 0)">▶ Apresentar a preparação</button>`}</div>` : ''}
+    <h3 class="mtn-h2">Roteiro de todo encontro (${escapeHtml(p.duracaoEncontro || '2 h')})</h3>${tab(['Bloco', 'Tempo', 'O que acontece'], p.roteiro || [])}
     <div class="mtn-bloco"><b>Regras da turma</b>${lista(p.regras)}</div>
     <h3 class="mtn-h2">Os ${p.encontros.length} encontros</h3>
     ${p.encontros.map(e => `<details class="mpg-enc" ${imprimir ? 'open' : ''}><summary><i>${e.n}</i><span><b>${escapeHtml(e.modulo)}</b><small>${escapeHtml(e.tema)} · dificuldades ${escapeHtml(e.gaps || '')}</small></span>${imprimir ? '' : `<button class="mpg-play" onclick="event.preventDefault(); mtnApresentar('${p.id}', ${e.n})">▶️ Apresentar</button>`}</summary>
-      <div class="mpg-enc-c"><div><h4>📘 Teoria (30 min)</h4>${lista(e.teoria)}<h4>🎬 Demonstração (10 min)</h4><p>${escapeHtml(e.demonstracao || '')}</p></div>
-        <div><h4>🎤 Prática (55 min)</h4>${lista(e.pratica)}<h4>🏠 Tarefa de casa</h4>${lista(e.tarefa)}</div></div></details>`).join('')}
+      <div class="mpg-enc-c"><div>${(e.objetivo || []).length ? `<h4>🎯 No fim do encontro</h4>${lista(e.objetivo)}` : ''}<h4>📘 ${e.blocos ? 'Revisão' : 'Conceito'}</h4>${lista(e.teoria)}<h4>🎬 Demonstração</h4><p>${escapeHtml(e.demonstracao || '')}</p></div>
+        <div><h4>🎤 Prática</h4>${lista(e.pratica)}<h4>🏠 Tarefa de casa</h4>${lista(e.tarefa)}</div></div></details>`).join('')}
     <h3 class="mtn-h2">Ferramentas</h3>
     <div class="mpg-grade"><div class="mtn-bloco"><b>✅ Checklist de revisão (24 h antes)</b><ul class="mpg-check">${(p.checklist || []).map(x => `<li>☐ ${escapeHtml(x)}</li>`).join('')}</ul></div>
       <div class="mtn-bloco"><b>❓ Banco de perguntas difíceis</b><ol class="mpg-ul">${(p.perguntas || []).map(x => `<li>"${escapeHtml(x)}"</li>`).join('')}</ol></div></div>
@@ -15116,15 +15117,15 @@ function mtnProgramaHtml(p, imprimir) {
 async function mtnApresentar(progId, n, tid) {
   const w = window.open('about:blank', '_blank'), T = MTN.turmas.filter(t => mtnProgT(t).id === progId);
   const t = tid ? MTN.turmas.find(x => x.id === tid) : (T.find(x => x.status === 'andamento') || T.find(x => x.status !== 'encerrada') || null);
-  let q = ''; if (t) try { q = (await api(`/api/admin/mentoria/turmas/${t.id}/checkin`, { method: 'POST', body: JSON.stringify({ encontro: n }) })).codigo || ''; } catch (e) {}
+  let q = ''; if (t && n > 0) try { q = (await api(`/api/admin/mentoria/turmas/${t.id}/checkin`, { method: 'POST', body: JSON.stringify({ encontro: n }) })).codigo || ''; } catch (e) {}
   const url = `/programa/apresentar?p=${encodeURIComponent(progId)}&e=${n}${t ? '&t=' + encodeURIComponent(t.nome) : ''}${q ? '&q=' + q : ''}`;
   if (w) w.location.href = url; else location.href = url;
 }
 function mtnApresentarEscolher(progId) {
   const p = mtnProgramas().find(x => x.id === progId), T = MTN.turmas.filter(t => mtnProgT(t).id === progId && t.status !== 'encerrada');
   const t = T.find(x => x.status === 'andamento') || T[0], feitos = t ? ((t.dados || {}).feitos || {}) : {}, prox = (p.encontros.find(e => !feitos[e.n]) || p.encontros[0]).n;
-  mtnModal(`<h3 style="margin-top:0;">▶️ Qual encontro vai apresentar?</h3><p class="plano-meta">${t ? `Turma <b>${escapeHtml(t.nome)}</b> — o último slide já mostra o QR de presença.` : 'Sem turma ativa: os slides abrem sem o QR de presença.'} Use ← → para passar, N para notas e F para tela cheia.</p>
-    <div class="mpg-escolha">${p.encontros.map(e => `<button class="${e.n === prox ? 'prox' : ''} ${feitos[e.n] ? 'feito' : ''}" onclick="mtnModal(''); mtnApresentar('${p.id}', ${e.n}, ${t ? t.id : 0})"><i>${feitos[e.n] ? '✓' : e.n}</i><span><b>Encontro ${e.n}${e.n === prox ? ' · próximo' : ''}</b><small>${escapeHtml(e.modulo)}</small></span></button>`).join('')}</div>`);
+  mtnModal(`<h3 style="margin-top:0;">▶️ Qual encontro vai apresentar?</h3><p class="plano-meta">${t ? `Turma <b>${escapeHtml(t.nome)}</b> — o último slide já mostra o QR de presença.` : 'Sem turma ativa: os slides abrem sem o QR de presença.'} Use ← → para passar, N para notas, F para tela cheia e P para passar os slides pelo celular.</p>
+    <div class="mpg-escolha">${p.preparacao ? `<button onclick="mtnModal(''); mtnApresentar('${p.id}', 0, ${t ? t.id : 0})"><i>🧭</i><span><b>Preparação</b><small>${escapeHtml(p.preparacao.tema || '')}</small></span></button>` : ''}${p.encontros.map(e => `<button class="${e.n === prox ? 'prox' : ''} ${feitos[e.n] ? 'feito' : ''}" onclick="mtnModal(''); mtnApresentar('${p.id}', ${e.n}, ${t ? t.id : 0})"><i>${feitos[e.n] ? '✓' : e.n}</i><span><b>Encontro ${e.n}${e.n === prox ? ' · próximo' : ''}</b><small>${escapeHtml(e.modulo)}</small></span></button>`).join('')}</div>`);
 }
 function mtnProgramasAba() {
   const L = MTN.d.programas || []; if (!L.length) return '<div class="msg-vazio">Nenhum programa extra cadastrado.</div>';

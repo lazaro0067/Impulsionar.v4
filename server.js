@@ -9664,6 +9664,15 @@ app.post('/api/admin/treinamentos-mt/:id/controle', requireRole('admin'), async 
     } catch (e) { res.status(500).json({ error: 'Erro ao gerar o controle.' }); }
 });
 
+// passador pelo celular também para os slides dos programas (ex.: Comunicação de Impacto) — usa o mesmo link /controle.html
+app.post('/api/admin/programa-controle', requireRole('admin'), async (req, res) => {
+    const prog = String((req.body || {}).programa || '').slice(0, 60), d = await mtLer(), p = (d.programas || []).find(x => x.id === prog);
+    if (!p) return res.status(404).json({ error: 'Programa não encontrado.' });
+    const agora = Date.now(); for (const [k, v] of CONTROLES_MT) if (agora - v.criado > 12 * 3600 * 1000) CONTROLES_MT.delete(k);
+    let codigo = [...CONTROLES_MT.entries()].find(([k, v]) => v.programa === prog && v.userId === req.user.userId)?.[0];
+    if (!codigo) { codigo = crypto.randomBytes(6).toString('hex'); CONTROLES_MT.set(codigo, { treinamentoId: null, programa: prog, titulo: p.nome, criado: agora, userId: req.user.userId }); }
+    res.json({ codigo, link: `${baseUrlPublicaDpo(req)}/controle.html?c=${codigo}` });
+});
 // ----- Gravações (tela do apresentador e câmera do celular) -----
 const uploadGravacaoMt = multer({
     storage: armazenamentoUpload,
@@ -12942,12 +12951,12 @@ const MT_PADRAO = {
     ],
     // Outros programas (separados da mentoria principal), cada um com suas turmas, área do aluno e presença
     programas: [{
-        id: 'comunicacao-impacto', nome: 'Comunicação de Impacto para Líderes', curto: 'Comunicação de Impacto', icone: '🎙️',
-        subtitulo: 'Programa de 5 encontros para líderes prepararem, apresentarem e responderem dúvidas do time com segurança.',
-        objetivo: 'Em 5 encontros semanais de 2 horas, o líder sai lendo menos slides, preparando melhor o material, ocupando o palco com segurança e respondendo às dúvidas do time.',
+        id: 'comunicacao-impacto', versao: 2, nome: 'Comunicação de Impacto para Líderes', curto: 'Comunicação de Impacto', icone: '🎙️', duracaoEncontro: '1 h',
+        subtitulo: 'Programa de 1 encontro de preparação + 5 encontros de 1 hora para líderes prepararem, apresentarem e responderem dúvidas do time com segurança.',
+        objetivo: 'Em 5 encontros semanais de 1 hora (mais 1 encontro de preparação), o líder sai lendo menos slides, preparando melhor o material, ocupando o palco com segurança e respondendo às dúvidas do time.',
         publico: 'Líderes e multiplicadores que apresentam para o time: DDS, reuniões de resultado, treinamentos internos e convenções.',
-        formato: '5 encontros presenciais semanais de 2 h · turma de 6 a 10 pessoas · todos apresentam em todo encontro.',
-        entrega: 'Apresentação final de 7 minutos com rodada de perguntas, avaliada pela mesma régua do primeiro encontro.',
+        formato: '1 encontro de preparação + 5 encontros presenciais semanais de 1 h · turma de 6 a 10 pessoas · todos apresentam em todo encontro.',
+        entrega: 'Apresentação final de 4 minutos com 1 pergunta da banca, avaliada pela mesma régua do primeiro encontro.',
         regraOuro: 'Todo encontro termina com você apresentando de verdade e recebendo feedback. A tarefa de casa prepara a próxima apresentação.',
         gaps: [
             { n: 1, nome: 'Revisão do material', principal: 1, reforco: '2 e 5' },
@@ -12957,38 +12966,50 @@ const MT_PADRAO = {
             { n: 5, nome: 'Ficar lendo slides', principal: 2, reforco: '3 e 5' },
             { n: 6, nome: 'Tirar dúvidas do time', principal: 4, reforco: '5' }
         ],
-        roteiro: [['Abertura', '10 min', 'Retomada da tarefa de casa e 1 aprendizado de cada um'], ['Teoria', '30 min', 'Conceito do dia, com exemplos bons e ruins'], ['Demonstração', '10 min', 'O condutor faz ao vivo o que acabou de ensinar'], ['Prática', '55 min', 'Cada participante apresenta de 3 a 5 minutos e recebe feedback'], ['Fechamento', '15 min', 'Régua do dia, tarefa de casa e QR code de presença']],
-        regras: ['Todo mundo apresenta em todo encontro. Ninguém só assiste.', 'Feedback no formato 1 ponto forte + 1 ajuste + 1 dica prática.', 'As apresentações são gravadas no celular do próprio participante, que assiste antes do próximo encontro.', 'O tema da prática é real: um assunto que a pessoa precisa apresentar no trabalho nas próximas semanas.', 'Errar na sala é o objetivo. O que se fala na sala fica na sala.', 'Celular só para gravar e para o QR de presença.'],
+        roteiro: [['Abertura', '5 min', 'Retomada da tarefa de casa (1 aprendizado de cada um) ou combinados'], ['Conceito', '15 min', 'A ideia do dia, uma por slide, com exemplo da operação'], ['Demonstração', '5 min', 'O condutor faz ao vivo o que acabou de ensinar'], ['Prática', '30 min', 'Todos apresentam (2 a 3 min) e recebem feedback 1 + 1 + 1'], ['Fechamento', '5 min', 'Tarefa de casa, presença e próximo encontro']],
+        regras: ['Todo mundo apresenta em todo encontro. Ninguém só assiste.', 'Feedback no formato 1 ponto forte + 1 ajuste + 1 dica prática.', 'As apresentações são gravadas no celular do próprio participante, que assiste antes do próximo encontro.', 'O tema da prática é real: um assunto que a pessoa precisa apresentar no trabalho nas próximas semanas.', 'Errar na sala é o objetivo. O que se fala na sala fica na sala.', 'Começamos e terminamos no horário: 1 hora cravada.'],
+        preparacao: { modulo: 'Preparação', tema: 'Alinhar o programa, escolher a apresentação real de cada um e medir o ponto de partida',
+            objetivo: ['Entender o programa e o que se espera de você', 'Escolher a apresentação REAL que você vai treinar', 'Dar a sua nota de partida (confiança de 0 a 10)'],
+            blocos: [['Boas-vindas', 5], ['O programa', 10], ['Combinados', 5], ['Ponto de partida', 30], ['Próximos passos', 10]],
+            perguntas: ['Qual apresentação real você precisa fazer nas próximas semanas?', 'Para quem ela é e o que eles precisam fazer depois?', 'De 0 a 10, quanto você se sente seguro para apresentar hoje?', 'Qual é a sua maior dificuldade: material, preparação, palco, confiança, ler slide ou tirar dúvidas?'],
+            levar: ['O material (slides) da sua apresentação real, como estiver', 'Celular carregado para gravar a sua apresentação', 'Um tema do dia a dia para falar 2 minutos sem preparo'],
+            tarefa: ['Separar o material da apresentação real e trazer no Encontro 1.', 'Assistir a 1 apresentação que você admira e anotar o que a pessoa faz diferente.'] },
         encontros: [
             { n: 1, modulo: 'Revisão do material e diagnóstico', tema: 'Ponto de partida de cada um e como revisar o material antes de subir no palco', entregavel: 'Assistir à própria gravação (2 coisas a manter, 2 a mudar) e trazer o material da apresentação final revisado', gaps: '1 · linha de base de todos',
+                objetivo: ['Saber o seu ponto de partida na régua', 'Revisar slides com os 3 passes', 'Sair com o material da apresentação real revisado'],
                 teoria: ['Por que a apresentação falha antes de começar: o material não foi revisado com o público em mente.', 'As 4 perguntas da revisão: Para quem? O que eles precisam saber? O que devem fazer depois? O que pode sair?', 'Regra do 1 slide = 1 mensagem. Se o título não diz a mensagem, o slide não está pronto.', 'Revisão em 3 passes: conteúdo (está certo?), clareza (dá para entender em 5 segundos?), forma (letra, cor, excesso de texto).'],
                 demonstracao: 'O condutor pega um slide real, com muito texto, e revisa ao vivo usando os 3 passes.',
-                pratica: ['Diagnóstico de 3 minutos: cada participante apresenta um tema do dia a dia sem preparo extra. O condutor preenche a régua.', 'Em duplas, cada um revisa 3 slides do material que vai usar de verdade, com o checklist de revisão.'],
+                pratica: ['Diagnóstico · 20 min: cada participante apresenta 2 minutos um tema do dia a dia, sem preparo. O condutor preenche a régua.', 'Revisão em duplas · 10 min: cada um revisa 3 slides do material real com os 3 passes.'],
                 tarefa: ['Assistir à própria gravação e anotar 2 coisas a manter e 2 a mudar.', 'Trazer o material real da apresentação final, já revisado pelos 3 passes.'] },
             { n: 2, modulo: 'Preparação e slides que não se leem', tema: 'Preparar a fala separada do slide: o slide mostra, a pessoa explica', entregavel: 'Ensaiar 3 vezes em voz alta a abertura e o fechamento (gravar a última) e cortar 30% do texto dos slides', gaps: '2 e 5',
-                teoria: ['Roteiro em 3 atos: abertura com gancho, no máximo 3 pontos-chave, fechamento com ação.', 'Slide é apoio, não teleprompter: no máximo 6 linhas, palavras-chave, números grandes e imagens.', 'O texto completo vai nas notas do apresentador ou num cartão, nunca na tela.', 'Ensaio de verdade: em voz alta, em pé, cronometrado, 3 vezes. Ensaio mental não conta.', 'Técnica Olha, Pausa, Fala: olhar o slide, virar para o público, só então falar.'],
+                objetivo: ['Montar o roteiro de 3 atos da sua apresentação', 'Trocar frases por palavras-chave nos slides', 'Apresentar sem ler a tela (Olha, Pausa, Fala)'],
+                teoria: ['Roteiro em 3 atos: abertura com gancho, no máximo 3 pontos-chave, fechamento com ação.', 'Slide é apoio, não teleprompter: no máximo 6 linhas, palavras-chave, números grandes e imagens.', 'Ensaio de verdade: em voz alta, em pé, cronometrado, 3 vezes. Ensaio mental não conta.', 'Técnica Olha, Pausa, Fala: olhar o slide, virar para o público, só então falar.'],
                 demonstracao: 'O condutor apresenta o mesmo slide duas vezes: lendo e usando Olha, Pausa, Fala. A turma diz a diferença.',
-                pratica: ['15 min: cada um reescreve 3 slides do próprio material em palavras-chave e monta o roteiro de 3 atos.', '40 min: cada um apresenta 3 minutos. Se ler mais de uma frase da tela, a turma levanta a mão e ele recomeça o slide.'],
+                pratica: ['Reescrever · 8 min: cada um reescreve 3 slides do próprio material em palavras-chave e monta o roteiro de 3 atos.', 'Apresentar · 22 min: cada um apresenta 2 minutos. Se ler mais de uma frase da tela, a turma levanta a mão e ele recomeça o slide.'],
                 tarefa: ['Ensaiar em voz alta 3 vezes a abertura e o fechamento da apresentação final, gravando a última.', 'Cortar pelo menos 30% do texto dos slides.'] },
             { n: 3, modulo: 'Palco, corpo e confiança', tema: 'Onde ficar, o que fazer com as mãos e como a voz soa', entregavel: 'Assistir à gravação sem som e só com som (1 ajuste em cada) e ensaiar em pé num espaço parecido com o real', gaps: '3 e 4',
-                teoria: ['Mapa do palco em 3 pontos: centro para abrir e fechar, lado da tela para explicar o slide, frente do público para perguntas e histórias.', 'Nunca dar as costas para o time nem ficar entre o projetor e a tela.', 'Postura base: pés na largura do quadril, peso distribuído, mãos na altura da cintura, visíveis.', 'Olhar: uma frase completa para uma pessoa, depois outra pessoa em outro ponto da sala.', 'Voz: volume para a última fileira, pausas de 2 segundos, trocar "ééé" por silêncio.', 'Confiança = domínio do conteúdo + postura + assumir o que não sabe.'],
+                objetivo: ['Usar os 3 pontos do palco com intenção', 'Postura, olhar e voz que passam confiança', 'Trocar o "ééé" pela pausa'],
+                teoria: ['Mapa do palco em 3 pontos: centro para abrir e fechar, lado da tela para explicar o slide, frente do público para perguntas e histórias.', 'Postura base: pés na largura do quadril, peso distribuído, mãos na altura da cintura, visíveis.', 'Olhar: uma frase completa para uma pessoa, depois outra pessoa em outro ponto da sala.', 'Voz: volume para a última fileira, pausas de 2 segundos, trocar "ééé" por silêncio.'],
                 demonstracao: 'O condutor faz uma abertura usando os 3 pontos do palco e depois exagera os erros (balançar, mão no bolso, olhar no chão). A turma aponta cada erro.',
-                pratica: ['Aquecimento de 5 min: voz e postura, todos juntos.', 'Marcar com fita os 3 pontos no chão da sala.', 'Cada um apresenta 4 minutos do próprio material usando os 3 pontos. Feedback em postura, olhar e voz.'],
+                pratica: ['Aquecimento · 3 min: voz e postura, todos juntos.', 'Palco · 27 min: cada um apresenta 2 minutos do próprio material usando os 3 pontos marcados no chão. Feedback em postura, olhar e voz.'],
                 tarefa: ['Assistir à gravação sem som (só corpo) e depois só com som (só voz). Anotar 1 ajuste em cada.', 'Ensaiar a apresentação final em pé, num espaço parecido com o real.'] },
-            { n: 4, modulo: 'Tirar dúvidas do time', tema: 'Método OPRC e banco de perguntas difíceis', entregavel: 'Responder por escrito as 2 piores perguntas e fazer o ensaio geral de 7 minutos, cronometrado e gravado', gaps: '6 e 4',
-                teoria: ['Antecipar é metade do trabalho: listar as 5 perguntas mais prováveis e as 2 mais difíceis.', 'Método OPRC: Ouvir até o fim, Parafrasear, Responder em até 3 frases, Checar se respondeu.', 'Quando não sabe: "Não tenho esse dado agora. Vou confirmar com [área] e te retorno até [dia]." E cumprir.', 'Pergunta fora do tema: "Boa pergunta, vamos falar disso logo depois, só nós dois."', 'Pergunta hostil: reconhecer o sentimento, voltar ao fato, oferecer o próximo passo. Nunca discutir na frente do time.', 'Silêncio do time: fazer uma pergunta direta e fácil para alguém.'],
-                demonstracao: 'A turma faz 5 perguntas difíceis ao condutor, que responde usando o OPRC.',
-                pratica: ['10 min: cada um escreve as 5 perguntas mais prováveis e as 2 piores sobre o próprio tema.', '45 min: cada um apresenta 2 minutos e responde 3 minutos de perguntas, com cartas sorteadas: chefe cético, colega que reclama, quem não entendeu nada.'],
-                tarefa: ['Escrever a resposta das 2 piores perguntas e ensaiar em voz alta.', 'Ensaio geral da apresentação final de 7 minutos, cronometrado e gravado.'] },
+            { n: 4, modulo: 'Tirar dúvidas do time', tema: 'Método OPRC e banco de perguntas difíceis', entregavel: 'Responder por escrito as 2 piores perguntas e fazer o ensaio geral de 4 minutos, cronometrado e gravado', gaps: '6 e 4',
+                objetivo: ['Antecipar as perguntas do time', 'Responder com o método OPRC', 'Saber o que dizer quando não sabe a resposta'],
+                teoria: ['Antecipar é metade do trabalho: listar as perguntas mais prováveis e as mais difíceis.', 'Método OPRC: Ouvir até o fim, Parafrasear, Responder em até 3 frases, Checar se respondeu.', 'Quando não sabe: "Não tenho esse dado agora. Vou confirmar com [área] e te retorno até [dia]." E cumprir.', 'Pergunta hostil: reconhecer o sentimento, voltar ao fato, oferecer o próximo passo. Nunca discutir na frente do time.'],
+                demonstracao: 'A turma faz 3 perguntas difíceis ao condutor, que responde usando o OPRC.',
+                pratica: ['Banco de perguntas · 5 min: cada um escreve 3 perguntas prováveis e 1 difícil sobre o próprio tema.', 'Rodada OPRC · 25 min: cada um apresenta 1 minuto e responde 2 perguntas sorteadas (chefe cético, colega que reclama, quem não entendeu nada).'],
+                tarefa: ['Escrever a resposta das 2 piores perguntas e ensaiar em voz alta.', 'Ensaio geral da apresentação final de 4 minutos, cronometrado e gravado.'] },
             { n: 5, modulo: 'Apresentação final avaliada', tema: 'Prova prática com banca e plano dos próximos 30 dias', entregavel: 'Compromisso: qual apresentação real vai fazer nos próximos 30 dias e qual ponto vai treinar', gaps: 'todos',
-                teoria: ['Revisão rápida: 3 passes, roteiro de 3 atos, Olha-Pausa-Fala, mapa do palco e OPRC.', 'Sorteio da ordem e 5 minutos de aquecimento de voz e postura.'],
+                objetivo: ['Apresentar 4 minutos para a banca', 'Responder 1 pergunta com o OPRC', 'Comparar a sua régua de hoje com a do Encontro 1'],
+                blocos: [['Abertura', 5], ['Apresentações', 45], ['Fechamento', 10]],
+                teoria: ['Revisão relâmpago: 3 passes, 3 atos, Olha-Pausa-Fala, 3 pontos do palco e OPRC.'],
                 demonstracao: 'Banca: condutor, gestor da área e 2 colegas sorteados. Todos preenchem a régua.',
-                pratica: ['7 minutos de apresentação e 3 minutos de perguntas por participante.', 'Feedback escrito, entregue no fim.', 'Cada um compara a própria régua do Encontro 1 com a de hoje.'],
+                pratica: ['Apresentações · 45 min: cada participante apresenta 4 minutos e responde 1 pergunta da banca.'],
                 tarefa: ['Fazer a apresentação real nos próximos 30 dias e contar como foi na sessão de continuidade.'] }
         ],
-        kit: ['Checklist de revisão do material (24 h antes)', 'Roteiro de 3 atos', 'Régua de avaliação (nota de 1 a 5)', 'Método OPRC para responder perguntas', 'Banco de perguntas difíceis'],
+        kit: ['Checklist de revisão do material (24 h antes)', 'Roteiro de 3 atos (4 minutos)', 'Régua de avaliação (nota de 1 a 5)', 'Método OPRC para responder perguntas', 'Banco de perguntas difíceis'],
         checklist: ['Sei para quem vou falar e o que eles precisam fazer depois', 'Cada slide tem 1 mensagem, e o título diz essa mensagem', 'Nenhum slide passa de 6 linhas', 'Números e datas conferidos com a fonte', 'Letra legível do fundo da sala (mínimo 24 pt)', 'Texto completo nas notas, não na tela', 'Ensaiei em voz alta e em pé 3 vezes, dentro do tempo', 'Listei as 5 perguntas prováveis e as 2 piores, com resposta', 'Testei projetor, cabo e arquivo no local'],
-        atos: [['Abertura', '1 min', 'Gancho: um número, uma pergunta ou um caso real. Por que isso importa para o time'], ['Desenvolvimento', '5 min', 'Até 3 pontos-chave, cada um com um exemplo da operação'], ['Fechamento', '1 min', 'Resumo em 1 frase e a ação: o que cada um faz a partir de amanhã']],
+        atos: [['Abertura', '30 s', 'Gancho: um número, uma pergunta ou um caso real. Por que isso importa para o time'], ['Desenvolvimento', '3 min', 'Até 3 pontos-chave, cada um com um exemplo da operação'], ['Fechamento', '30 s', 'Resumo em 1 frase e a ação: o que cada um faz a partir de amanhã']],
         regua: [['Material revisado', '1', 'Slides com erros e excesso de texto', 'Mensagens claras, alguns slides carregados', 'Cada slide com 1 mensagem, limpo e sem erro'], ['Preparação e estrutura', '2', 'Sem começo, meio e fim; estoura o tempo', 'Estrutura visível, tempo perto do combinado', 'Abertura com gancho, 3 pontos e ação no fim, no tempo'], ['Posicionamento no palco', '3', 'Parado atrás da mesa ou de costas para o time', 'Usa parte do espaço, às vezes na frente da tela', 'Usa os 3 pontos com intenção, sempre de frente'], ['Confiança', '4', 'Voz baixa, olhar no chão, muitos vícios', 'Voz firme na maior parte, alguns vícios', 'Voz e postura firmes, pausas e olhar distribuído'], ['Uso do slide', '5', 'Lê a tela a maior parte do tempo', 'Lê em alguns momentos', 'Só olha para se guiar e fala para o time'], ['Resposta a dúvidas', '6', 'Trava, foge ou discute', 'Responde, mas longo ou sem checar', 'Usa OPRC, admite o que não sabe e marca retorno']],
         perguntas: ['Isso já foi tentado antes e não funcionou. Por que agora seria diferente?', 'Quem vai fazer isso? A gente já está sem gente.', 'De onde saiu esse número?', 'Isso vale para o turno da noite também?', 'O que acontece com quem não seguir?', 'A diretoria sabe disso?', 'Não entendi nada, pode explicar de novo?', 'Por que ninguém perguntou para a gente antes de decidir?'],
         medicao: [['Nota média na régua (1 a 5)', 'Média dos 6 critérios', '+1,5 ponto'], ['Tempo lendo slide', 'Cronômetro na gravação', 'menos de 10% do tempo'], ['Perguntas respondidas com OPRC', 'Contagem na rodada de perguntas', '3 de 3'], ['Autoconfiança declarada (1 a 10)', 'Pergunta no início e no fim', '+3 pontos'], ['Presença', 'QR code de presença', '80% ou mais'], ['Avaliação do gestor (1 a 5)', 'Régua em apresentação real, 30 dias depois', '4 ou mais']],
@@ -13188,7 +13209,7 @@ async function mtLer() {
     // completa com o padrão o que ainda não existe (sem apagar o que o Lázaro editou)
     const out = JSON.parse(JSON.stringify(MT_PADRAO));
     Object.keys(d).forEach(k => { if (d[k] !== undefined && d[k] !== null) out[k] = (typeof d[k] === 'object' && !Array.isArray(d[k]) && typeof out[k] === 'object' && !Array.isArray(out[k])) ? Object.assign(out[k], d[k]) : d[k]; });
-    if (!Array.isArray(out.programas)) out.programas = []; MT_PADRAO.programas.forEach(p => { if (!out.programas.some(x => x && x.id === p.id)) out.programas.push(JSON.parse(JSON.stringify(p))); }); // programa novo do padrão sempre aparece
+    if (!Array.isArray(out.programas)) out.programas = []; MT_PADRAO.programas.forEach(p => { const k = out.programas.findIndex(x => x && x.id === p.id); if (k < 0) out.programas.push(JSON.parse(JSON.stringify(p))); else if ((Number(out.programas[k].versao) || 1) < (Number(p.versao) || 1)) out.programas[k] = JSON.parse(JSON.stringify(p)); }); // programa novo do padrão sempre aparece
     if (!out.marca.fotoUrl) out.marca.fotoUrl = MT_PADRAO.marca.fotoUrl;
     if (out.marca.mentor === 'Lázaro Salles') out.marca.mentor = 'Lázaro Neto'; // nome público escolhido
     if (out.marca.whatsapp === '(61) 9396-4750') out.marca.whatsapp = '(61) 99396-4750'; // número com o 9
