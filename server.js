@@ -9673,6 +9673,85 @@ app.post('/api/admin/programa-controle', requireRole('admin'), async (req, res) 
     if (!codigo) { codigo = crypto.randomBytes(6).toString('hex'); CONTROLES_MT.set(codigo, { treinamentoId: null, programa: prog, titulo: p.nome, criado: agora, userId: req.user.userId }); }
     res.json({ codigo, link: `${baseUrlPublicaDpo(req)}/controle.html?c=${codigo}` });
 });
+
+// ----- Slides de cada encontro dos programas, abertos DENTRO do sistema (apresentação do Ministrar Treinamento:
+// gravar, notas e passar os slides pelo celular). Os slides são gerados a partir do programa a cada vez que abre.
+function deckEncontroProgramaMt(p, n, presenca, base) {
+    const e = p.encontros[n - 1], ant = p.encontros[n - 2], prox = p.encontros[n];
+    const B = (e.blocos || [['Abertura', 5], ['Conceito', 15], ['Demonstração', 5], ['Prática', 30], ['Fechamento', 5]]).map(b => ({ nome: b[0], min: Number(b[1]) || 5 }));
+    let t = 0; B.forEach(b => { b.ini = t; b.fim = t + b.min; t = b.fim; });
+    const mm = v => String(v).padStart(2, '0'), faixa = nome => { const b = B.find(x => x.nome === nome); return b ? `${mm(b.ini)}–${mm(b.fim)} min` : ''; };
+    const bl = a => (a || []).filter(Boolean).map(x => '• ' + x).join('\n');
+    const partir = x => { const m = String(x || '').match(/^(.{6,90}?)(?::\s|\.\s|\s·\s)(.+)$/); return m ? [m[1].replace(/\.$/, ''), m[2].charAt(0).toUpperCase() + m[2].slice(1)] : [String(x || ''), '']; };
+    const sl = (titulo, texto, notas, layout, extra) => Object.assign({ titulo, texto: texto || '', notas: notas || '', layout: layout || 'padrao', imagem: '' }, extra || {});
+    const gapsDia = (p.gaps || []).filter(g => String(e.gaps || '').includes('todos') || String(e.gaps || '').split(/\D+/).includes(String(g.n)) || Number(g.principal) === n);
+    const mod = (nome, slides) => ({ titulo: `${nome} · ${faixa(nome)}`, tipo: 'slides', slides });
+    const abertura = [
+        // abertura de palestrante: foto, nome e trajetória (a legenda embaixo mostra o encontro do dia)
+        sl('', '', 'DIGA: "Boa noite! Eu sou o Lázaro…" Apresente-se em 30 segundos com a sua trajetória e diga o que eles vão conseguir fazer no fim desta hora.', 'imagem', { imagem: String(base || '').replace(/\/$/, '') + '/mentoria-palestrante.jpg?v=2' }),
+        sl('No fim desta hora, você vai', bl(e.objetivo || [e.tema]), 'DIGA: "No fim desta hora, cada um de vocês vai…" e leia os itens.\nFAÇA: peça para alguém repetir o 1º item com as próprias palavras.', 'destaque'),
+        sl('Agenda de hoje · 60 minutos', B.map(b => `• ${mm(b.ini)}–${mm(b.fim)}  ${b.nome} (${b.min} min)`).join('\n'), 'DIGA: "Esse é o nosso relógio de hoje. Começamos e terminamos no horário."\nSe atrasar, corte do Conceito, nunca da Prática.')
+    ];
+    if (n === 1) abertura.push(sl('A sua apresentação real', bl(['Qual apresentação você precisa fazer nas próximas semanas?', 'Para quem ela é e o que eles precisam fazer depois?', 'De 0 a 10, quanto você se sente seguro para apresentar hoje?']), 'FAÇA: rodada de 20 segundos por pessoa. Anote a apresentação real e a nota de cada um: é o ponto de partida do piloto.'));
+    else if (ant) abertura.push(sl('Como foi a tarefa de casa?', bl((ant.tarefa || []).concat(['Cada um diz 1 aprendizado em até 30 segundos'])), 'FAÇA: rodada rápida, 30 s por pessoa. Valorize quem fez. Para quem não fez: "O que travou?" — sem bronca.'));
+    const mods = [];
+    if (e.blocos && B.some(b => b.nome === 'Apresentações')) {
+        abertura.push(sl('Como funciona hoje', bl(['Sorteio da ordem', '4 minutos de apresentação + 1 pergunta da banca', 'A banca preenche a régua de 1 a 5', 'No fim, compare a régua de hoje com a do Encontro 1']), 'FAÇA: sorteie a ordem e faça 2 minutos de aquecimento de voz e postura com todos.'));
+        mods.push(mod('Abertura', abertura));
+        mods.push(mod('Apresentações', [
+            sl('Régua de apresentação (1 a 5)', (p.regua || []).map(r => `• ${r[0]}: ${r[4]}`).join('\n'), 'FAÇA: entregue a régua impressa para a banca (você, o gestor e 2 colegas).'),
+            sl('Sua vez: 4 minutos', bl(['Abertura com gancho', '3 pontos-chave, sem ler a tela', 'Fechamento com a ação', '1 pergunta da banca (OPRC)']), 'FAÇA: cronometre 4 minutos por pessoa e grave no celular do participante.', 'destaque')]));
+        mods.push(mod('Fechamento', [
+            sl('Encontro 1 × hoje', bl(['Pegue a sua régua do Encontro 1', 'Veja em qual ponto você mais subiu', 'Escolha 1 ponto para treinar nos próximos 30 dias']), 'PERGUNTE: "Em qual ponto você mais evoluiu?" Peça 3 respostas.'),
+            sl('Próximos 30 dias', bl(e.tarefa), 'Combine a sessão de continuidade em 30 dias e entregue os certificados.')]));
+    } else {
+        mods.push(mod('Abertura', abertura));
+        const conc = [sl('O foco de hoje: ' + e.modulo, gapsDia.map(g => `• ${g.nome}${Number(g.principal) === n ? ' (foco principal)' : ' (reforço)'}`).join('\n'), 'PERGUNTE: "De 0 a 10, quanto isso te atrapalha hoje?" Peça 2 respostas.')];
+        (e.teoria || []).forEach((x, i) => { const [h, sub] = partir(x); conc.push(sl(h, sub, `IDEIA COMPLETA: ${x}\nFAÇA: dê 1 exemplo da operação (máx. 1 minuto) e passe.`, 'destaque')); });
+        const ferr = { 1: ['Revisão em 3 passes', ['Conteúdo: está certo? Números e datas conferidos', 'Clareza: dá para entender em 5 segundos? 1 slide = 1 mensagem', 'Forma: letra, cor e excesso de texto (máx. 6 linhas)']],
+            2: ['Roteiro de 3 atos (4 minutos)', (p.atos || []).map(a => `${a[0]} (${a[1]}): ${a[2]}`).concat(['Olha, Pausa, Fala: olhe o slide, vire para o time, só então fale'])],
+            3: ['Mapa do palco em 3 pontos', ['Centro: abrir e fechar', 'Lado da tela: explicar o slide', 'Frente do público: perguntas e histórias', 'Nunca de costas para o time']],
+            4: ['Método OPRC para responder', ['Ouvir até o fim, sem interromper', 'Parafrasear: "Se entendi, você quer saber…"', 'Responder em até 3 frases', 'Checar: "Respondi o que você precisava?"', 'Não sabe? "Vou confirmar com [área] e te retorno até [dia]."']] }[n];
+        if (ferr) conc.push(sl('Ferramenta do dia: ' + ferr[0], bl(ferr[1]), 'DIGA: "Essa é a ferramenta que vocês vão usar na prática daqui a pouco."'));
+        mods.push(mod('Conceito', conc));
+        mods.push(mod('Demonstração', [sl('Eu faço primeiro', e.demonstracao, 'FAÇA: demonstre ao vivo (5 min).\nPERGUNTE: "O que mudou de uma versão para a outra?" e ouça 2 respostas.', 'destaque')]));
+        const prat = (e.pratica || []).map((x, i) => { const [h, sub] = partir(x); return sl(`Faça agora: ${h}`, sub || x, `FAÇA: ${x}\nGrave cada apresentação no celular do próprio participante.`, 'destaque'); });
+        prat.push(sl('Feedback 1 + 1 + 1', bl(['1 ponto forte: o que manter', '1 ajuste: a mudança que mais faz diferença', '1 dica prática: como treinar até o próximo encontro', '"Foi bom" não vale. Diga o quê.']), 'Deixe este slide na tela durante a prática. Máximo 1 minuto de feedback por pessoa.'));
+        mods.push(mod('Prática', prat));
+        mods.push(mod('Fechamento', [sl(prox ? `Tarefa para o Encontro ${n + 1}` : 'Próximos 30 dias', bl(e.tarefa), 'PERGUNTE para cada um: "Quando você vai fazer?" (dia e hora).')]));
+    }
+    const fim = mods[mods.length - 1].slides;
+    if (presenca) fim.push(sl('Registre sua presença', bl(['Abra a câmera do celular', 'Aponte para o QR code', 'Toque em Confirmar presença', 'ou acesse ' + presenca.link.replace(/^https?:\/\//, '')]), 'Deixe o QR na tela até todos registrarem.', 'padrao', { imagem: 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=8&data=' + encodeURIComponent(presenca.link), imgTam: 16 }));
+    if (prox) fim.push(sl(`Próximo encontro: ${prox.modulo}`, prox.tema, 'Diga a data do próximo encontro e termine no horário.', 'destaque'));
+    return mods;
+}
+app.post('/api/admin/mentoria/programa/:id/apresentar', requireRole('admin'), async (req, res) => {
+    try {
+        const d = await mtLer(), p = (d.programas || []).find(x => x.id === req.params.id); if (!p) return res.status(404).json({ error: 'Programa não encontrado.' });
+        const n = Number((req.body || {}).encontro); if (!(n >= 1 && n <= p.encontros.length)) return res.status(400).json({ error: 'Encontro inválido.' });
+        let presenca = null; const tid = Number((req.body || {}).turma) || 0;
+        if (tid) {
+            const t = await dbGet(`SELECT id FROM mentoria_turmas WHERE id = ?`, [tid]).catch(() => null);
+            if (t) {
+                const atual = await dbGet(`SELECT codigo FROM mentoria_checkins WHERE turma_id = ? AND encontro = ? AND expira > datetime('now') ORDER BY criado_em DESC LIMIT 1`, [t.id, n]).catch(() => null);
+                let codigo = atual && atual.codigo;
+                if (!codigo) { codigo = crypto.randomBytes(5).toString('hex'); await mtRun(`INSERT INTO mentoria_checkins (codigo, turma_id, encontro, expira) VALUES (?,?,?, datetime('now', '+180 minutes'))`, [codigo, t.id, n]); }
+                presenca = { codigo, link: `${baseUrlPublicaDpo(req)}/presenca/${codigo}` };
+            }
+        }
+        const e = p.encontros[n - 1];
+        const dados = camposTreinamentoMt({ titulo: `${p.curto || p.nome} · Encontro ${n} — ${e.modulo}`, objetivo: e.tema, publico: 'lideranca', duracao_min: 60, instrutor: (d.marca || {}).mentor || '', modulos: deckEncontroProgramaMt(p, n, presenca, baseUrlPublicaDpo(req)) });
+        const chave = `mt_prog_trein:${p.id}:${n}`, ref = await dbGet(`SELECT value FROM integration_settings WHERE key = ?`, [chave]).catch(() => null);
+        let id = ref && Number(ref.value), existe = id ? await dbGet(`SELECT id FROM treinamentos_mt WHERE id = ?`, [id]).catch(() => null) : null;
+        const cols = Object.keys(dados);
+        if (existe) await new Promise((ok, ko) => db.run(`UPDATE treinamentos_mt SET ${cols.map(c => c + ' = ?').join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [...cols.map(c => dados[c]), id], err => err ? ko(err) : ok()));
+        else {
+            id = await new Promise((ok, ko) => db.run(`INSERT INTO treinamentos_mt (${cols.join(', ')}, status, created_by, updated_at) VALUES (${cols.map(() => '?').join(', ')}, 'pronto', ?, CURRENT_TIMESTAMP)`, [...cols.map(c => dados[c]), req.user.userId], function (err) { err ? ko(err) : ok(this.lastID); }));
+            await new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [chave, String(id)], () => ok()));
+        }
+        res.json({ id, presenca: presenca ? presenca.codigo : null });
+    } catch (e) { res.status(500).json({ error: 'Não consegui montar os slides: ' + e.message }); }
+});
 // ----- Gravações (tela do apresentador e câmera do celular) -----
 const uploadGravacaoMt = multer({
     storage: armazenamentoUpload,
@@ -12951,11 +13030,11 @@ const MT_PADRAO = {
     ],
     // Outros programas (separados da mentoria principal), cada um com suas turmas, área do aluno e presença
     programas: [{
-        id: 'comunicacao-impacto', versao: 2, nome: 'Comunicação de Impacto para Líderes', curto: 'Comunicação de Impacto', icone: '🎙️', duracaoEncontro: '1 h',
-        subtitulo: 'Programa de 1 encontro de preparação + 5 encontros de 1 hora para líderes prepararem, apresentarem e responderem dúvidas do time com segurança.',
-        objetivo: 'Em 5 encontros semanais de 1 hora (mais 1 encontro de preparação), o líder sai lendo menos slides, preparando melhor o material, ocupando o palco com segurança e respondendo às dúvidas do time.',
+        id: 'comunicacao-impacto', versao: 3, nome: 'Comunicação de Impacto para Líderes', curto: 'Comunicação de Impacto', icone: '🎙️', duracaoEncontro: '1 h',
+        subtitulo: 'Programa de 5 encontros de 1 hora para líderes prepararem, apresentarem e responderem dúvidas do time com segurança.',
+        objetivo: 'Em 5 encontros semanais de 1 hora, o líder sai lendo menos slides, preparando melhor o material, ocupando o palco com segurança e respondendo às dúvidas do time.',
         publico: 'Líderes e multiplicadores que apresentam para o time: DDS, reuniões de resultado, treinamentos internos e convenções.',
-        formato: '1 encontro de preparação + 5 encontros presenciais semanais de 1 h · turma de 6 a 10 pessoas · todos apresentam em todo encontro.',
+        formato: '5 encontros presenciais semanais de 1 h · turma de 6 a 10 pessoas · todos apresentam em todo encontro.',
         entrega: 'Apresentação final de 4 minutos com 1 pergunta da banca, avaliada pela mesma régua do primeiro encontro.',
         regraOuro: 'Todo encontro termina com você apresentando de verdade e recebendo feedback. A tarefa de casa prepara a próxima apresentação.',
         gaps: [
@@ -12968,12 +13047,6 @@ const MT_PADRAO = {
         ],
         roteiro: [['Abertura', '5 min', 'Retomada da tarefa de casa (1 aprendizado de cada um) ou combinados'], ['Conceito', '15 min', 'A ideia do dia, uma por slide, com exemplo da operação'], ['Demonstração', '5 min', 'O condutor faz ao vivo o que acabou de ensinar'], ['Prática', '30 min', 'Todos apresentam (2 a 3 min) e recebem feedback 1 + 1 + 1'], ['Fechamento', '5 min', 'Tarefa de casa, presença e próximo encontro']],
         regras: ['Todo mundo apresenta em todo encontro. Ninguém só assiste.', 'Feedback no formato 1 ponto forte + 1 ajuste + 1 dica prática.', 'As apresentações são gravadas no celular do próprio participante, que assiste antes do próximo encontro.', 'O tema da prática é real: um assunto que a pessoa precisa apresentar no trabalho nas próximas semanas.', 'Errar na sala é o objetivo. O que se fala na sala fica na sala.', 'Começamos e terminamos no horário: 1 hora cravada.'],
-        preparacao: { modulo: 'Preparação', tema: 'Alinhar o programa, escolher a apresentação real de cada um e medir o ponto de partida',
-            objetivo: ['Entender o programa e o que se espera de você', 'Escolher a apresentação REAL que você vai treinar', 'Dar a sua nota de partida (confiança de 0 a 10)'],
-            blocos: [['Boas-vindas', 5], ['O programa', 10], ['Combinados', 5], ['Ponto de partida', 30], ['Próximos passos', 10]],
-            perguntas: ['Qual apresentação real você precisa fazer nas próximas semanas?', 'Para quem ela é e o que eles precisam fazer depois?', 'De 0 a 10, quanto você se sente seguro para apresentar hoje?', 'Qual é a sua maior dificuldade: material, preparação, palco, confiança, ler slide ou tirar dúvidas?'],
-            levar: ['O material (slides) da sua apresentação real, como estiver', 'Celular carregado para gravar a sua apresentação', 'Um tema do dia a dia para falar 2 minutos sem preparo'],
-            tarefa: ['Separar o material da apresentação real e trazer no Encontro 1.', 'Assistir a 1 apresentação que você admira e anotar o que a pessoa faz diferente.'] },
         encontros: [
             { n: 1, modulo: 'Revisão do material e diagnóstico', tema: 'Ponto de partida de cada um e como revisar o material antes de subir no palco', entregavel: 'Assistir à própria gravação (2 coisas a manter, 2 a mudar) e trazer o material da apresentação final revisado', gaps: '1 · linha de base de todos',
                 objetivo: ['Saber o seu ponto de partida na régua', 'Revisar slides com os 3 passes', 'Sair com o material da apresentação real revisado'],

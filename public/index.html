@@ -2148,7 +2148,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 12/11 (6)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 12/11 (8)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -11942,19 +11942,21 @@ async function mtBaixarPptx(bt) {
 // ---------- Apresentação ----------
 let MTS = null;
 async function mtApresentarId(id) {
-  try { MT.doc = await api('/api/admin/treinamentos-mt/' + id); MT.modSel = 0; MT.sujo = false; MT.__voltarLista = !document.getElementById('mt-editor'); mtApresentar(0); }
+  try { MT.doc = await api('/api/admin/treinamentos-mt/' + id); MT.modSel = 0; MT.sujo = false; MT.__voltarLista = !document.getElementById('mt-editor'); MT.__mentoria = null; mtApresentar(0); }
   catch (e) { mostrarToast(e.message, true); }
 }
 function mtMontarDeck() {
-  const d = MT.doc, deck = [{ tipo: 'capa' }];
+  const d = MT.doc, deck = MT.__mentoria ? [] : [{ tipo: 'capa' }]; // encontro da mentoria abre direto no slide de palestrante
   d.modulos.forEach((m, mi) => {
     if (m.oculto) return;
+    const abre = MT.__mentoria && mi === 0 && m.tipo === 'slides' && (m.slides || [])[0] && m.slides[0].layout === 'imagem'; // mentoria: slide de palestrante vem antes de tudo
+    if (abre) deck.push({ tipo: 'slide', mi, si: 0 });
     deck.push({ tipo: 'modulo', mi });
-    if (m.tipo === 'slides') (m.slides || []).forEach((s, si) => { if (!s.oculto) deck.push({ tipo: 'slide', mi, si }); });
+    if (m.tipo === 'slides') (m.slides || []).forEach((s, si) => { if (!s.oculto && !(abre && si === 0)) deck.push({ tipo: 'slide', mi, si }); });
     else if (m.arquivo && !m.arquivo.pdfUrl && !/^image|^video/.test(m.arquivo.mime || '') && (m.arquivo.slidesExtraidos || []).length) m.arquivo.slidesExtraidos.forEach((s, xi) => { if (!s.oculto) deck.push({ tipo: 'extraido', mi, xi }); });
     else deck.push({ tipo: 'arquivo', mi });
   });
-  deck.push({ tipo: 'fim-check' });
+  if (!MT.__mentoria) deck.push({ tipo: 'fim-check' }); // encontro da mentoria: a presença já está no último slide
   deck.push({ tipo: 'fim-redes' });
   return deck;
 }
@@ -12071,7 +12073,7 @@ function mtTituloDeck(it) {
   const d = MT.doc; if (!it) return '';
   if (it.tipo === 'capa') return 'Capa — ' + d.titulo;
   if (it.tipo === 'modulo') return 'Módulo ' + (it.mi + 1) + ': ' + d.modulos[it.mi].titulo;
-  if (it.tipo === 'slide') return d.modulos[it.mi].slides[it.si].titulo || 'Slide';
+  if (it.tipo === 'slide') return d.modulos[it.mi].slides[it.si].titulo || (d.modulos[it.mi].slides[it.si].layout === 'imagem' ? 'Abertura' : 'Slide');
   if (it.tipo === 'extraido') return d.modulos[it.mi].arquivo.slidesExtraidos[it.xi].titulo || 'Slide';
   if (it.tipo === 'arquivo') return d.modulos[it.mi].arquivo.nome || 'Arquivo';
   if (it.tipo === 'fim-check') return 'Check de retenção e lista de presença';
@@ -12256,6 +12258,7 @@ async function mtFecharShow() {
   const el = document.getElementById('mt-show'); if (el) el.remove();
   MTS = null;
   if (MT.sujo) { try { await mtSalvar(true); } catch (e) {} }
+  if (MT.__mentoria) { MT.__mentoria = null; return; } // volta para a tela do programa da mentoria
   if (MT.__voltarLista) { MT.__voltarLista = false; renderMinistrarTreinamento(); }
   else if (document.getElementById('mt-editor')) mtDesenharEditor();
 }
@@ -15115,16 +15118,20 @@ function mtnProgramaHtml(p, imprimir) {
 }
 // ▶️ Slides do encontro (já com o QR de presença da turma ativa no último slide)
 async function mtnApresentar(progId, n, tid) {
-  const w = window.open('about:blank', '_blank'), T = MTN.turmas.filter(t => mtnProgT(t).id === progId);
+  // abre DENTRO do sistema (mesma apresentação do Ministrar Treinamento: notas, gravar e passar os slides pelo celular)
+  const T = MTN.turmas.filter(t => mtnProgT(t).id === progId);
   const t = tid ? MTN.turmas.find(x => x.id === tid) : (T.find(x => x.status === 'andamento') || T.find(x => x.status !== 'encerrada') || null);
-  let q = ''; if (t && n > 0) try { q = (await api(`/api/admin/mentoria/turmas/${t.id}/checkin`, { method: 'POST', body: JSON.stringify({ encontro: n }) })).codigo || ''; } catch (e) {}
-  const url = `/programa/apresentar?p=${encodeURIComponent(progId)}&e=${n}${t ? '&t=' + encodeURIComponent(t.nome) : ''}${q ? '&q=' + q : ''}`;
-  if (w) w.location.href = url; else location.href = url;
+  mostrarToast('🎬 Montando os slides do encontro…');
+  try {
+    const r = await api(`/api/admin/mentoria/programa/${encodeURIComponent(progId)}/apresentar`, { method: 'POST', body: JSON.stringify({ encontro: n, turma: t ? t.id : 0 }) });
+    MT.doc = await api('/api/admin/treinamentos-mt/' + r.id); MT.modSel = 0; MT.sujo = false; MT.__voltarLista = false; MT.__mentoria = progId;
+    mtApresentar(0);
+  } catch (e) { mostrarToast(e.message, true); }
 }
 function mtnApresentarEscolher(progId) {
   const p = mtnProgramas().find(x => x.id === progId), T = MTN.turmas.filter(t => mtnProgT(t).id === progId && t.status !== 'encerrada');
   const t = T.find(x => x.status === 'andamento') || T[0], feitos = t ? ((t.dados || {}).feitos || {}) : {}, prox = (p.encontros.find(e => !feitos[e.n]) || p.encontros[0]).n;
-  mtnModal(`<h3 style="margin-top:0;">▶️ Qual encontro vai apresentar?</h3><p class="plano-meta">${t ? `Turma <b>${escapeHtml(t.nome)}</b> — o último slide já mostra o QR de presença.` : 'Sem turma ativa: os slides abrem sem o QR de presença.'} Use ← → para passar, N para notas, F para tela cheia e P para passar os slides pelo celular.</p>
+  mtnModal(`<h3 style="margin-top:0;">▶️ Qual encontro vai apresentar?</h3><p class="plano-meta">${t ? `Turma <b>${escapeHtml(t.nome)}</b> — o último slide já mostra o QR de presença.` : 'Sem turma ativa: os slides abrem sem o QR de presença.'} Abre aqui no sistema: use ← → para passar, N para notas, F para tela cheia e 📱 Controle pelo celular para passar os slides pelo celular.</p>
     <div class="mpg-escolha">${p.preparacao ? `<button onclick="mtnModal(''); mtnApresentar('${p.id}', 0, ${t ? t.id : 0})"><i>🧭</i><span><b>Preparação</b><small>${escapeHtml(p.preparacao.tema || '')}</small></span></button>` : ''}${p.encontros.map(e => `<button class="${e.n === prox ? 'prox' : ''} ${feitos[e.n] ? 'feito' : ''}" onclick="mtnModal(''); mtnApresentar('${p.id}', ${e.n}, ${t ? t.id : 0})"><i>${feitos[e.n] ? '✓' : e.n}</i><span><b>Encontro ${e.n}${e.n === prox ? ' · próximo' : ''}</b><small>${escapeHtml(e.modulo)}</small></span></button>`).join('')}</div>`);
 }
 function mtnProgramasAba() {
