@@ -2148,7 +2148,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 12/11 (8)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 12/11 (9)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -12111,7 +12111,7 @@ function mtEnviarEstadoRemoto() {
 async function mtConectarRemoto() {
   if (MT_REMOTO.socket && MT_REMOTO.treinamentoId === MT.doc.id) return;
   if (MT_REMOTO.socket) { MT_REMOTO.socket.disconnect(); MT_REMOTO.socket = null; }
-  const r = await api('/api/admin/treinamentos-mt/' + MT.doc.id + '/controle', { method: 'POST' });
+  const r = MT.doc.id ? await api('/api/admin/treinamentos-mt/' + MT.doc.id + '/controle', { method: 'POST' }) : await api('/api/admin/programa-controle', { method: 'POST', body: JSON.stringify({ programa: MT.__mentoria || '' }) });
   MT_REMOTO.codigo = r.codigo; MT_REMOTO.link = r.link; MT_REMOTO.treinamentoId = MT.doc.id; MT_REMOTO.conectados = 0;
   if (typeof io !== 'function') throw new Error('Conexão em tempo real indisponível.');
   const sk = io({ transports: ['websocket', 'polling'] });
@@ -15124,7 +15124,8 @@ async function mtnApresentar(progId, n, tid) {
   mostrarToast('🎬 Montando os slides do encontro…');
   try {
     const r = await api(`/api/admin/mentoria/programa/${encodeURIComponent(progId)}/apresentar`, { method: 'POST', body: JSON.stringify({ encontro: n, turma: t ? t.id : 0 }) });
-    MT.doc = await api('/api/admin/treinamentos-mt/' + r.id); MT.modSel = 0; MT.sujo = false; MT.__voltarLista = false; MT.__mentoria = progId;
+    if (r.aviso) mostrarToast(r.aviso, true);
+    MT.doc = r.doc || await api('/api/admin/treinamentos-mt/' + r.id); MT.modSel = 0; MT.sujo = false; MT.__voltarLista = false; MT.__mentoria = progId;
     mtApresentar(0);
   } catch (e) { mostrarToast(e.message, true); }
 }

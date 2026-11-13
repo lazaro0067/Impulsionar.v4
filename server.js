@@ -9735,12 +9735,14 @@ app.post('/api/admin/mentoria/programa/:id/apresentar', requireRole('admin'), as
             if (t) {
                 const atual = await dbGet(`SELECT codigo FROM mentoria_checkins WHERE turma_id = ? AND encontro = ? AND expira > datetime('now') ORDER BY criado_em DESC LIMIT 1`, [t.id, n]).catch(() => null);
                 let codigo = atual && atual.codigo;
-                if (!codigo) { codigo = crypto.randomBytes(5).toString('hex'); await mtRun(`INSERT INTO mentoria_checkins (codigo, turma_id, encontro, expira) VALUES (?,?,?, datetime('now', '+180 minutes'))`, [codigo, t.id, n]); }
-                presenca = { codigo, link: `${baseUrlPublicaDpo(req)}/presenca/${codigo}` };
+                if (!codigo) { codigo = crypto.randomBytes(5).toString('hex'); try { await mtRun(`INSERT INTO mentoria_checkins (codigo, turma_id, encontro, expira) VALUES (?,?,?, datetime('now', '+180 minutes'))`, [codigo, t.id, n]); } catch (e) { codigo = null; } }
+                if (codigo) presenca = { codigo, link: `${baseUrlPublicaDpo(req)}/presenca/${codigo}` };
             }
         }
         const e = p.encontros[n - 1];
         const dados = camposTreinamentoMt({ titulo: `${p.curto || p.nome} · Encontro ${n} — ${e.modulo}`, objetivo: e.tema, publico: 'lideranca', duracao_min: 60, instrutor: (d.marca || {}).mentor || '', modulos: deckEncontroProgramaMt(p, n, presenca, baseUrlPublicaDpo(req)) });
+        const doc = Object.assign({ id: 0, status: 'pronto', divulgacao: null, check: null, ata: null }, dados, { modulos: JSON.parse(dados.modulos) });
+        try {
         const chave = `mt_prog_trein:${p.id}:${n}`, ref = await dbGet(`SELECT value FROM integration_settings WHERE key = ?`, [chave]).catch(() => null);
         let id = ref && Number(ref.value), existe = id ? await dbGet(`SELECT id FROM treinamentos_mt WHERE id = ?`, [id]).catch(() => null) : null;
         const cols = Object.keys(dados);
@@ -9750,6 +9752,11 @@ app.post('/api/admin/mentoria/programa/:id/apresentar', requireRole('admin'), as
             await new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [chave, String(id)], () => ok()));
         }
         res.json({ id, presenca: presenca ? presenca.codigo : null });
+        } catch (e) {
+            // banco sem espaço (SQLITE_FULL) ou outro erro ao salvar: apresenta assim mesmo, sem salvar
+            if (/SQLITE_FULL|disk is full|database or disk/i.test(e.message)) limpezaAutomaticaDisco('disco cheio ao apresentar');
+            res.json({ id: 0, doc, presenca: presenca ? presenca.codigo : null, aviso: /SQLITE_FULL|disk/i.test(e.message) ? 'O disco do servidor está cheio: abri os slides sem salvar e já comecei a limpeza automática.' : '' });
+        }
     } catch (e) { res.status(500).json({ error: 'Não consegui montar os slides: ' + e.message }); }
 });
 // ----- Gravações (tela do apresentador e câmera do celular) -----
@@ -15595,6 +15602,39 @@ async function levantarEspacoEst() {
     r.partesMB = r.partes.reduce((s, x) => s + x.mb, 0); r.soltosMB = r.soltos.reduce((s, x) => s + x.mb, 0);
     return r;
 }
+// 🧹 Limpeza AUTOMÁTICA do disco: o disco cheio trava o banco (SQLITE_FULL) e tudo para de salvar.
+// Apaga só sobras que nada no sistema usa: envios interrompidos, vídeos/áudios/imagens temporários (render, robô, narração,
+// cenas, capas) que não aparecem em nenhuma tabela, e pastas temporárias de render. Com pouco espaço, fica mais agressiva.
+let LIMPANDO_DISCO = false;
+async function limpezaAutomaticaDisco(motivo) {
+    if (LIMPANDO_DISCO) return null; LIMPANDO_DISCO = true;
+    const out = { apagados: 0, mb: 0, antesMB: discoLivreMB(PASTA_UPLOADS) };
+    try {
+        const apertado = out.antesMB !== null && out.antesMB < 800, agora = Date.now(), H = 3600 * 1000;
+        const apagar = (arq, st) => { try { fs.unlinkSync(arq); out.apagados++; out.mb += st.size / 1048576; } catch (e) {} };
+        // 1) envios em partes interrompidos
+        try { for (const n of await fs.promises.readdir(PASTA_PARTES)) { const arq = path.join(PASTA_PARTES, n), st = await fs.promises.stat(arq).catch(() => null); if (!st || !st.isFile()) continue; const id = n.replace(/\.(part|json)$/, ''), e = ENVIOS_EM_PARTES.get(id); if (e && agora - e.t < 15 * 60 * 1000) continue; if (agora - st.mtimeMs > (apertado ? 2 : 24) * H) apagar(arq, st); } } catch (e) {}
+        // 2) arquivos soltos na pasta de uploads que nenhuma tabela usa
+        const usados = await nomesReferenciadosNoBanco();
+        const regras = [[/\.(mp4|webm|mov|m4v|mkv)$/i, apertado ? 3 : 24], [/^(rapido|robo|real|fundo|capa|colagem|tmp-voz|voz)-.*\.(mp4|jpe?g|png|mp3)$/i, apertado ? 3 : 48], [/^file-\d+-\d+\.(mp3|ogg|wav|m4a|aac|flac)$/i, apertado ? 6 : 72]];
+        for (const n of await fs.promises.readdir(PASTA_UPLOADS).catch(() => [])) {
+            const r = regras.find(([re]) => re.test(n)); if (!r || usados.includes(n)) continue;
+            const arq = path.join(PASTA_UPLOADS, n), st = await fs.promises.stat(arq).catch(() => null); if (!st || !st.isFile()) continue;
+            if (agora - st.mtimeMs > r[1] * H) apagar(arq, st);
+        }
+        // 3) pastas temporárias de render que ficaram para trás
+        const tmp = require('os').tmpdir();
+        for (const n of await fs.promises.readdir(tmp).catch(() => [])) { if (!/^render-/.test(n)) continue; const d = path.join(tmp, n), st = await fs.promises.stat(d).catch(() => null); if (st && agora - st.mtimeMs > 6 * H) fs.rm(d, { recursive: true, force: true }, () => {}); }
+        out.mb = Math.round(out.mb); out.depoisMB = discoLivreMB(PASTA_UPLOADS);
+        if (out.apagados) console.log(`🧹 Limpeza automática (${motivo}): ${out.apagados} arquivo(s), ${out.mb} MB liberados · livre: ${out.depoisMB} MB`);
+    } catch (e) { console.warn('Limpeza automática:', e.message); }
+    finally { LIMPANDO_DISCO = false; }
+    return out;
+}
+setTimeout(() => limpezaAutomaticaDisco('início'), 90 * 1000);
+setInterval(() => { const l = discoLivreMB(PASTA_UPLOADS); limpezaAutomaticaDisco(l !== null && l < 1500 ? 'pouco espaço' : 'rotina'); }, 3 * 3600 * 1000);
+setInterval(() => { const l = discoLivreMB(PASTA_UPLOADS); if (l !== null && l < 500) limpezaAutomaticaDisco('disco quase cheio'); }, 10 * 60 * 1000);
+app.post('/api/admin/disco/limpar-agora', requireRole('admin'), async (req, res) => { const r = await limpezaAutomaticaDisco('manual'); res.json(r || { ocupado: true }); });
 app.get('/api/admin/estudio/espaco', requireRole('admin'), async (req, res) => { try { res.json(await levantarEspacoEst()); } catch (e) { res.status(500).json({ error: e.message }); } });
 app.post('/api/admin/estudio/espaco/limpar', requireRole('admin'), async (req, res) => {
     const b = req.body || {}, minHoras = Math.max(1, Number(b.minHoras) || 24); let apagados = 0, mb = 0;
