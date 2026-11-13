@@ -9688,7 +9688,7 @@ function deckEncontroProgramaMt(p, n, presenca, base) {
     const mod = (nome, slides) => ({ titulo: `${nome} · ${faixa(nome)}`, tipo: 'slides', slides });
     const abertura = [
         // abertura de palestrante: foto, nome e trajetória (a legenda embaixo mostra o encontro do dia)
-        sl('', '', 'DIGA: "Boa noite! Eu sou o Lázaro…" Apresente-se em 30 segundos com a sua trajetória e diga o que eles vão conseguir fazer no fim desta hora.', 'imagem', { imagem: String(base || '').replace(/\/$/, '') + '/mentoria-palestrante.jpg?v=2' }),
+        sl('', '', 'DIGA: "Boa noite! Eu sou o Lázaro…" Apresente-se em 30 segundos com a sua trajetória e diga o que eles vão conseguir fazer no fim desta hora.', 'imagem', { imagem: String(base || '').replace(/\/$/, '') + '/mentoria-palestrante.jpg?v=4' }),
         sl('No fim desta hora, você vai', bl(e.objetivo || [e.tema]), 'DIGA: "No fim desta hora, cada um de vocês vai…" e leia os itens.\nFAÇA: peça para alguém repetir o 1º item com as próprias palavras.', 'destaque'),
         sl('Agenda de hoje · 60 minutos', B.map(b => `• ${mm(b.ini)}–${mm(b.fim)}  ${b.nome} (${b.min} min)`).join('\n'), 'DIGA: "Esse é o nosso relógio de hoje. Começamos e terminamos no horário."\nSe atrasar, corte do Conceito, nunca da Prática.')
     ];
