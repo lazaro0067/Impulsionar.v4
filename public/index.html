@@ -1794,6 +1794,80 @@
   .magn-cap-l .ditado-wrap { flex:1; }
   .ch-wa-mods { display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 12px; margin:10px 0; font-size:14px; } .ch-wa-mods i { font-style:normal; }
   .chwa-st { font-style:normal; font-size:11px; font-weight:700; border-radius:6px; padding:1px 6px; margin-left:4px; white-space:nowrap; } .chwa-st.ok { background:#dcfce7; color:#166534; } .chwa-st.pend { background:#fef3c7; color:#92400e; } .chwa-st.erro { background:#fee2e2; color:#b91c1c; }
+  .igc { max-width:1040px; margin:0 auto; }
+  .igc-head { display:flex; gap:18px; align-items:center; background:#fff; border:1px solid #e2e8f0; border-radius:18px; padding:18px; margin-top:38px; position:relative; overflow:hidden; }
+  .igc-head::before { content:''; position:absolute; inset:0 0 auto 0; height:4px; background:linear-gradient(90deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5); }
+  .igc-foto { width:86px; height:86px; border-radius:50%; padding:3px; background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5); flex:0 0 auto; }
+  .igc-foto img, .igc-foto span { width:100%; height:100%; border-radius:50%; border:3px solid #fff; object-fit:cover; display:flex; align-items:center; justify-content:center; background:#f1f5f9; font-size:34px; }
+  .igc-id { flex:1; min-width:0; } .igc-id h1 { margin:0; font-size:22px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .igc-id h1 small { font-size:12px; font-weight:700; color:#16a34a; background:#dcfce7; border-radius:20px; padding:2px 8px; }
+  .igc-nums { display:flex; gap:22px; margin:6px 0; } .igc-nums div b { display:block; font-size:18px; color:#0f172a; } .igc-nums div span { font-size:12px; color:#64748b; }
+  .igc-bio { font-size:13px; color:#334155; white-space:pre-line; max-height:40px; overflow:hidden; }
+  .igc-head-bts { display:flex; flex-direction:column; gap:6px; } .igc-head-bts button, .igc-head-bts a { width:auto; margin:0; white-space:nowrap; text-align:center; text-decoration:none; font-size:14px; font-weight:800; }
+  .igc-pri { background:linear-gradient(90deg,#d62976,#962fbf) !important; color:#fff !important; border:none !important; font-weight:800; border-radius:10px; padding:10px 16px; cursor:pointer; }
+  .igc-abas { display:flex; gap:4px; margin:12px 0; overflow-x:auto; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:5px; scrollbar-width:none; } .igc-abas::-webkit-scrollbar { display:none; }
+  .igc-abas button { width:auto; margin:0; border:none; background:none; color:#475569; font-weight:700; padding:9px 13px; border-radius:10px; white-space:nowrap; cursor:pointer; font-size:14px; }
+  .igc-abas button.on { background:#0f172a; color:#fff; }
+  .igc-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:12px; }
+  .igc-kpi { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; } .igc-kpi b { display:block; font-size:24px; color:#0f172a; line-height:1.1; } .igc-kpi span { font-size:12px; color:#64748b; font-weight:600; }
+  .igc-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:16px; margin-bottom:12px; } .igc-card h3 { margin:0 0 10px; font-size:16px; display:flex; justify-content:space-between; align-items:center; gap:8px; } .igc-card h3 a, .igc-card h3 button { font-size:13px; width:auto; margin:0; }
+  .igc-dupla { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:12px; } .igc-dupla > div { min-width:0; } @media (max-width:820px) { .igc-dupla { grid-template-columns:1fr; } }
+  .igc-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+  .igc-post { position:relative; aspect-ratio:4/5; background:#0f172a; border-radius:6px; overflow:hidden; cursor:pointer; display:block; color:#fff; text-decoration:none; }
+  .igc-post img { width:100%; height:100%; object-fit:cover; display:block; } .igc-post .tp { position:absolute; top:6px; right:6px; font-size:13px; text-shadow:0 1px 3px #000; }
+  .igc-post .rot { position:absolute; top:6px; left:6px; font-size:10px; font-weight:800; border-radius:6px; padding:2px 6px; color:#fff; }
+  .igc-post .mt { position:absolute; left:0; right:0; bottom:0; padding:18px 6px 5px; background:linear-gradient(transparent,rgba(0,0,0,.75)); font-size:11px; font-weight:700; display:flex; gap:7px; flex-wrap:wrap; }
+  .igc-prox { display:flex; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid #f1f5f9; font-size:13px; } .igc-prox:last-child { border:none; } .igc-prox .rb-mid { width:44px; height:55px; border-radius:8px; }
+  .igc-vazio { color:#64748b; font-size:13px; padding:8px 0; }
+  .igc-criar textarea { min-height:200px; font-size:15px; line-height:1.5; }
+  .igc-modos { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; } @media (max-width:600px) { .igc-modos { grid-template-columns:1fr; } }
+  .igc-modo { width:100% !important; margin:0 !important; text-align:left; border-radius:14px; padding:14px 16px; cursor:pointer; border:2px solid #e2e8f0; background:#fff; color:#0f172a; }
+  .igc-modo b { display:block; font-size:16px; } .igc-modo small { display:block; color:#64748b; font-weight:500; margin-top:3px; line-height:1.35; }
+  .igc-modo.ia { border-color:#c084fc; background:linear-gradient(135deg,#faf5ff,#fdf2f8); } .igc-modo.ia b { color:#7e22ce; } .igc-modo:disabled { opacity:.6; }
+  .igc-ops { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-top:10px; } .igc-ops label { font-size:13px; font-weight:700; color:#334155; } .igc-ops select, .igc-ops input[type=number] { margin-top:4px !important; }
+  .igc-sw { display:flex; gap:6px; margin-bottom:8px; } .igc-sw button { width:auto; margin:0; border:1px solid #cbd5e1; background:#fff; border-radius:20px; padding:6px 12px; font-weight:700; color:#334155; cursor:pointer; font-size:13px; } .igc-sw button.on { background:#0f172a; color:#fff; border-color:#0f172a; }
+  .igc-job { border:2px solid #c084fc; background:#faf5ff; border-radius:16px; padding:16px; margin-bottom:12px; }
+  .igc-barra { height:10px; background:#ede9fe; border-radius:10px; overflow:hidden; margin:10px 0 6px; } .igc-barra i { display:block; height:100%; background:linear-gradient(90deg,#d62976,#962fbf); transition:width .6s; border-radius:10px; }
+  .igc-pronto { display:grid; grid-template-columns:220px 1fr; gap:14px; align-items:start; } @media (max-width:600px) { .igc-pronto { grid-template-columns:1fr; } }
+  .igc-pronto video { width:100%; border-radius:12px; background:#000; aspect-ratio:9/16; }
+  .igc-pronto pre { white-space:pre-wrap; font-family:inherit; font-size:13px; background:#fff; border:1px solid #e9d5ff; border-radius:10px; padding:10px; max-height:220px; overflow:auto; margin:6px 0; }
+  .igc-sub { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; } .igc-sub button { width:auto; margin:0; border:1px solid #e2e8f0; background:#fff; border-radius:10px; padding:7px 12px; font-weight:700; cursor:pointer; color:#334155; } .igc-sub button.on { border-color:#962fbf; color:#962fbf; background:#faf5ff; }
+  @media (max-width:600px) { .igc-head { flex-wrap:wrap; padding:14px; gap:12px; } .igc-foto { width:64px; height:64px; } .igc-nums { gap:14px; } .igc-head-bts { flex-direction:row; width:100%; } .igc-head-bts > * { flex:1; } .igc-kpi b { font-size:20px; } }
+  .ev-cam-tp > i { position:absolute; left:10px; top:40%; width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,.35); transition:background .2s; }
+  .ev-cam-tp.ouvindo > i { background:#22c55e; box-shadow:0 0 12px #22c55e; }
+  .rb { max-width:1040px; margin:0 auto; }
+  .rb-topo { display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:38px 52px 0 0; } .rb-topo h1 { margin:0; flex:1; min-width:200px; }
+  .rb-liga { width:auto !important; margin:0 !important; border-radius:22px; padding:8px 14px; font-weight:800; border:2px solid #16a34a; background:#dcfce7; color:#166534; cursor:pointer; }
+  .rb-liga.off { border-color:#f59e0b; background:#fef3c7; color:#92400e; }
+  .rb-conta { display:flex; gap:10px; align-items:center; background:linear-gradient(135deg,#fdf2f8,#eef2ff); border:1px solid #e9d5ff; border-radius:14px; padding:12px; margin:12px 0; }
+  .rb-conta .ic { font-size:28px; } .rb-conta small { display:block; color:#64748b; } .rb-conta button { width:auto; margin:0 0 0 auto; }
+  .rb-card { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px; margin-bottom:12px; }
+  .rb-card h3 { margin:0 0 10px; font-size:16px; }
+  .rb-tipos { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; } .rb-tipos button { width:auto; margin:0; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:20px; padding:7px 12px; font-weight:700; cursor:pointer; }
+  .rb-tipos button.on { background:#7c3aed; border-color:#7c3aed; color:#fff; }
+  .rb-midias { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .rb-mid { position:relative; width:84px; height:105px; border-radius:10px; overflow:hidden; background:#0f172a; flex:0 0 auto; }
+  .rb-mid img, .rb-mid video { width:100%; height:100%; object-fit:cover; display:block; }
+  .rb-mid .x { position:absolute; top:3px; right:3px; width:22px !important; height:22px; margin:0 !important; padding:0; border-radius:50%; border:none; background:rgba(0,0,0,.65); color:#fff; font-size:13px; cursor:pointer; line-height:22px; }
+  .rb-mid .pg { position:absolute; left:0; right:0; bottom:0; background:rgba(0,0,0,.65); color:#fff; font-size:11px; text-align:center; padding:2px; }
+  .rb-add { width:84px !important; height:105px; margin:0 !important; border:2px dashed #a78bfa; background:#faf5ff; color:#6d28d9; border-radius:10px; font-weight:800; cursor:pointer; font-size:12px; }
+  .rb-linha { display:flex; gap:8px; flex-wrap:wrap; align-items:center; } .rb-linha > * { margin:0 !important; }
+  .rb textarea { min-height:110px; } .rb .rb-ideia { min-height:54px; }
+  .rb-quando { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; } .rb-quando label { display:flex; gap:6px; align-items:center; border:1px solid #cbd5e1; border-radius:20px; padding:6px 12px; cursor:pointer; font-size:14px; font-weight:600; }
+  .rb-quando label.on { border-color:#7c3aed; background:#f5f3ff; color:#5b21b6; } .rb-quando input[type=radio] { display:none; } .rb-quando input[type=datetime-local] { width:auto; margin:0; }
+  .rb-dica { color:#64748b; font-size:12px; margin:4px 0 0; }
+  .rb-item { display:flex; gap:10px; border:1px solid #e2e8f0; border-left:4px solid #a78bfa; border-radius:12px; padding:10px; margin-bottom:8px; background:#fff; }
+  .rb-item.erro { border-left-color:#dc2626; background:#fef2f2; } .rb-item.publicado { border-left-color:#16a34a; opacity:.85; } .rb-item.rascunho { border-left-color:#94a3b8; } .rb-item.publicando { border-left-color:#2563eb; }
+  .rb-item .rb-mid { width:64px; height:80px; }
+  .rb-item-c { flex:1; min-width:0; } .rb-item-c p { margin:4px 0; font-size:13px; color:#334155; white-space:pre-line; max-height:58px; overflow:hidden; }
+  .rb-st { display:inline-block; font-size:11px; font-weight:800; border-radius:6px; padding:2px 7px; background:#ede9fe; color:#5b21b6; margin-right:6px; }
+  .rb-st.erro { background:#fee2e2; color:#b91c1c; } .rb-st.publicado { background:#dcfce7; color:#166534; } .rb-st.publicando { background:#dbeafe; color:#1d4ed8; } .rb-st.rascunho { background:#f1f5f9; color:#475569; }
+  .rb-acoes { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; } .rb-acoes button, .rb-acoes a { width:auto; margin:0; padding:5px 10px; font-size:12px; border-radius:8px; border:1px solid #cbd5e1; background:#fff; color:#334155; cursor:pointer; text-decoration:none; font-weight:700; }
+  .rb-acoes .pri { background:#7c3aed; border-color:#7c3aed; color:#fff; } .rb-acoes .del { color:#b91c1c; border-color:#fecaca; }
+  .rb-err { color:#b91c1c; font-size:12px; font-weight:600; }
+  .rb-cfg { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; } .rb-cfg label { font-size:13px; font-weight:700; color:#334155; } .rb-cfg input, .rb-cfg select { margin-top:4px !important; }
+  .rb-hs { display:flex; gap:6px; flex-wrap:wrap; } .rb-hs span { background:#f5f3ff; color:#5b21b6; border-radius:8px; padding:3px 8px; font-weight:800; font-size:13px; }
+  .rb-seguro { font-size:12px; color:#166534; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:8px 10px; margin:0 0 12px; }
+  @media (max-width:600px) { .rb-conta { flex-wrap:wrap; } .rb-conta button { margin:6px 0 0; width:100%; } .rb-mid, .rb-add { width:72px !important; height:90px; } }
   .mtf { max-width:980px; margin:0 auto; }
   .mtf-topo { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; } .mtf-topo h1 { margin:0; } .mtf-topo-bts { display:flex; gap:6px; }
   .mtf-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 0; } .mtf-kpis button { margin:0; width:auto; border:1px solid #e2e8f0; background:#fff; border-radius:12px; padding:10px; cursor:pointer; font:inherit; text-align:left; color:#0f172a; }
@@ -2074,7 +2148,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 11/11 (1)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 12/11 (3)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -2382,6 +2456,7 @@ function sair(silencioso) {
 const MENU_POR_PERFIL = {
   admin: [
     ['dashboard', 'Dashboard'], ['agenda', '📅 Minha Agenda'], ['minhasTarefas', '✅ Minhas Tarefas'], ['meuPerfilImpulsionar', 'Meu Perfil'], ['agenteRelatorios', '🤖 Agente de Relatórios'],
+    { group: '📸 Instagram', items: [['igVisao', '🏠 Visão geral'], ['igCriar', '✨ Criar post com IA'], ['roboInstagram', '🤖 Robô & agenda'], ['igVirais', '🔥 Virais do nicho'], ['igComentarios', '💬 Comentários'], ['igEstrategia', '📈 Estratégia'], ['igConexao', '⚙️ Conexão']] },
     { group: 'Empresas & Consultoria', items: [
         ['consulting', 'Consultoria'], ['companies', 'Empresas']
     ]},
@@ -2411,7 +2486,7 @@ const MENU_POR_PERFIL = {
         ['ministrarTreinamento', 'Meus Treinamentos']
     ]},
     { group: 'Estúdio de Vídeo', items: [
-        ['estudioVideo', 'Projetos de Vídeo'], ['estudioAgente', 'Agente Viral'], ['estudioAgenda', 'Agenda & Instagram'], ['estudioAcessos', 'Acessos & Planos (clientes)']
+        ['estudioVideo', 'Projetos de Vídeo'], ['estudioAgente', 'Agente Viral'], ['estudioAgenda', 'Agenda de vídeos'], ['estudioAcessos', 'Acessos & Planos (clientes)']
     ]},
     { group: 'Teste DISC', items: [
         ['discTesteMaster', 'Testar & Enviar Teste DISC']
@@ -2493,7 +2568,7 @@ const MENU_POR_PERFIL = {
     ['contracts', 'Meus Contratos']
   ],
   estudio: [
-    ['estudioVideo', 'Estúdio de Vídeo']
+    ['estudioVideo', 'Estúdio de Vídeo'], ['igVisao', '📸 Instagram']
   ],
   candidate: [
     ['portalPerfil', 'Meu Currículo'], ['portalVagas', 'Vagas Disponíveis'], ['portalCandidaturas', 'Minhas Candidaturas'], ['discTeste', 'Teste de Perfil DISC'],
@@ -2771,7 +2846,7 @@ function irPara(aba, semHistorico) {
     contracts: renderContracts, planosEmpresa: renderPlanosEmpresa, portalMensagens: renderPortalMensagens,
     meuPerfilImpulsionar: renderMeuPerfilImpulsionar, automacao: renderAutomacao, assistenteIA: renderAssistenteIA,
     pipelineDesenvolvimento: renderPipelineDesenvolvimento, metasConsolidado: renderMetasConsolidado,
-    chavesIntegracoes: renderChavesIntegracoes, mentoriaNegocio: () => { MTN.modo = 'do-chao'; return renderMentoriaNegocio(); }, mentoriaProgramas: () => { MTN.modo = 'comunicacao-impacto'; MTN.abaP = 'programa'; return renderMentoriaNegocio(); }, agenda: renderAgenda, minhasTarefas: renderMinhasTarefas,
+    roboInstagram: () => renderIg('robo'), igVisao: () => renderIg('visao'), igCriar: () => renderIg('criar'), igVirais: () => renderIg('virais'), igComentarios: () => renderIg('comentarios'), igEstrategia: () => renderIg('estrategia'), igConexao: () => renderIg('conexao'), chavesIntegracoes: renderChavesIntegracoes, mentoriaNegocio: () => { MTN.modo = 'do-chao'; return renderMentoriaNegocio(); }, mentoriaProgramas: () => { MTN.modo = 'comunicacao-impacto'; MTN.abaP = 'programa'; return renderMentoriaNegocio(); }, agenda: renderAgenda, minhasTarefas: renderMinhasTarefas,
     dpoPrecos: renderDpoPrecos, dpoAgenda: renderDpoAgenda, dpoHome: renderDpoHome, dpoConsultores: renderDpoConsultores, chamados: renderChamados, dpoAcompanhamentos: renderDpoAcompanhamentosMaster, materialDpo: renderMaterialDpoMaster, ministrarTreinamento: renderMinistrarTreinamento, traineePrograma: renderTrainee, agenteRelatorios: renderAgenteRelatorios, estudioVideo: () => renderEstudioVideo('projetos'), estudioAcessos: () => renderEstudioVideo('acessos'), estudioAgente: () => renderEstudioVideo('agente'), estudioAgenda: () => renderEstudioVideo('agenda'),
     discTeste: renderDiscTeste, discTesteMaster: renderDiscTesteMaster, acessosCandidatos: renderAcessosCandidatos, creditosVagas: renderCreditosVagas
   };
@@ -23484,7 +23559,8 @@ function evMenuBaixar() {
   const vids = ES.p.dados.midias.filter(m => m.tipo === 'video' && (m.url || (ES.locais || {})[m.id]));
   document.getElementById('ev-modal').innerHTML = `<div class="ev-modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="ev-modal" style="max-width:500px;">
     <div class="ev-modal-cab"><h3>⬇️ Baixar o vídeo</h3><button onclick="document.getElementById('ev-modal').innerHTML=''">✕</button></div>
-    <button class="ev-btn primario grande" style="width:100%;text-align:left;" onclick="evBaixarRapido()">⚡ Baixar rápido <small style="display:block;font-weight:400;opacity:.85;">O servidor monta em segundos: cortes, velocidade, zoom, legendas e música. O celular não precisa exportar.</small></button>
+    <button class="ev-btn primario grande" style="width:100%;text-align:left;" onclick="evBaixarRapido()">⚡ Baixar em alta qualidade (1080p) <small style="display:block;font-weight:400;opacity:.85;">Para Instagram, YouTube e aulas. O servidor monta com cortes, legendas, música, cor corrigida, imagem nítida e voz limpa.</small></button>
+    <button class="ev-btn grande" style="width:100%;text-align:left;margin-top:8px;" onclick="evBaixarRapido(true)">📱 Baixar leve para WhatsApp (720p) <small style="display:block;font-weight:400;opacity:.85;">Arquivo até 5× menor: envia e abre rápido. No WhatsApp, toque em <b>HD</b> antes de enviar (ou envie como <b>Documento</b>) para ele não reduzir a qualidade.</small></button>
     <button class="ev-btn grande" style="width:100%;text-align:left;margin-top:8px;" onclick="document.getElementById('ev-modal').innerHTML=''; evExportar()">🎬 Exportar completo no aparelho <small style="display:block;font-weight:400;opacity:.85;">Com todos os efeitos (colagem, cenas, cores, estabilização). Mais lento.</small></button>
     ${vids.length ? `<div class="ev-sub" style="margin:14px 0 6px;"><b>🎞️ Gravação original, sem edição:</b></div>${vids.map(m => `<button class="ev-btn" style="width:100%;text-align:left;margin-top:6px;" onclick="evBaixarOriginal('${m.id}')">⬇️ ${escapeHtml(m.nome || 'Vídeo')}${m.duracao ? ' · ' + evFmtT(m.duracao).slice(0, 5) : ''}</button>`).join('')}` : ''}
   </div></div>`;
@@ -23502,13 +23578,13 @@ async function evBaixarOriginal(id) {
     evCarregando(null); await evEntregarArquivo(blob, evNomeArquivo(mp4 ? 'mp4' : 'webm').replace(/\.(mp4|webm)$/, '-original.$1'));
   } catch (e) { evCarregando(null); mostrarToast('Não consegui baixar: ' + e.message, true); }
 }
-async function evBaixarRapido() {
+async function evBaixarRapido(leve) {
   document.getElementById('ev-modal').innerHTML = '';
   const subindo = ES.p.dados.midias.filter(m => m.enviando || m.preparando);
   if (subindo.length) return mostrarToast('⏳ Espere o vídeo terminar de subir para o servidor (barra "Subindo" no alto) e tente de novo.', true);
   try {
     evCarregando('⚡ O servidor está montando o vídeo…'); await evSalvar(true);
-    const r = await api('/api/admin/estudio/projetos/' + ES.p.id + '/render-rapido', { method: 'POST', body: '{}' }), t0 = Date.now();
+    const r = await api('/api/admin/estudio/projetos/' + ES.p.id + '/render-rapido', { method: 'POST', body: JSON.stringify({ leve: !!leve }) }), t0 = Date.now();
     let j = null;
     for (let i = 0; i < 1800; i++) {
       await new Promise(z => setTimeout(z, i < 5 ? 1000 : 2000));
@@ -24814,6 +24890,7 @@ async function evAbrirCamera() {
       <label class="ev-chk2"><input type="checkbox" id="ev-cam-guiaop" ${EVCAM.semGuia ? '' : 'checked'} onchange="EVCAM.semGuia=!this.checked; document.getElementById('evc-guia').hidden=!this.checked"> 📐 Guia para centralizar (linhas e posição da cabeça)</label>
       <label class="ev-chk2"><input type="checkbox" id="ev-cam-estab" ${EVCAM.semEstab ? '' : 'checked'} onchange="EVCAM.semEstab=!this.checked"> 📳 Tirar a tremedura e centralizar o rosto depois</label>
       <label class="ev-chk2"><input type="checkbox" id="ev-cam-luz" checked> ✨ Melhorar luz e cor automaticamente depois</label>
+      <label class="ev-chk2"><input type="checkbox" id="ev-cam-segue" ${EVCAM.segueVoz === false ? '' : 'checked'} onchange="EVCAM.segueVoz=this.checked"> 🎙️ Teleprompter acompanha a minha voz <small style="opacity:.7">(rola quando você fala, para quando você para)</small></label>
       <label class="ev-chk2"><input type="checkbox" id="ev-cam-usatp" ${temRoteiro ? 'checked' : ''} onchange="document.getElementById('evc-tp-bt').classList.toggle('on', this.checked); evCamTp()"> 📝 Mostrar o roteiro (teleprompter)</label>
       <div id="ev-cam-tpcfg" class="ev-dupla" style="align-items:center;"><button class="ev-mini" onclick="EVCAM.ppm=Math.max(60,EVCAM.ppm-10); evCamTp()">−</button><span id="ev-cam-ppm" style="font-size:12px;">${EVCAM.ppm} ppm</span><button class="ev-mini" onclick="EVCAM.ppm=Math.min(260,EVCAM.ppm+10); evCamTp()">+</button><button class="ev-mini" onclick="evAbrirTeleprompter()">✏️ roteiro</button></div>
     </div>
@@ -24930,8 +25007,15 @@ function evCamDesenharLoop() {
       conter(EVCAM.vTela);
       if (EVCAM.modo === 'telacam' && EVCAM.vid) { const r = Math.round(Math.min(W, H) * 0.32), x = W - r - W * 0.04, y = H - r - H * 0.04; g.save(); g.beginPath(); g.arc(x + r / 2, y + r / 2, r / 2, 0, 7); g.clip(); cobrir(EVCAM.vid, x, y, r, r, esp); g.restore(); g.strokeStyle = '#fff'; g.lineWidth = 6; g.beginPath(); g.arc(x + r / 2, y + r / 2, r / 2, 0, 7); g.stroke(); }
     }
-    if (EVCAM.an) { const b = new Uint8Array(EVCAM.an.fftSize); EVCAM.an.getByteTimeDomainData(b); let m = 0; b.forEach(x => { m = Math.max(m, Math.abs(x - 128)); }); const n = document.getElementById('ev-cam-nivel'); if (n) n.style.width = Math.min(100, m / 128 * 260) + '%'; }
-    if (EVCAM.rolando) { const t = document.getElementById('ev-cam-tp-txt'); if (t) { const agora = performance.now(), dt = EVCAM.ult ? (agora - EVCAM.ult) / 1000 : 0; EVCAM.ult = agora; const pal = Math.max(1, ((ES.p.dados.roteiro || '').match(/\S+/g) || []).length); EVCAM.pos += t.scrollHeight / pal * EVCAM.ppm / 60 * dt; t.style.transform = `translateY(${-EVCAM.pos}px)`; } }
+    if (EVCAM.an) { const b = new Uint8Array(EVCAM.an.fftSize); EVCAM.an.getByteTimeDomainData(b); let m = 0; b.forEach(x => { m = Math.max(m, Math.abs(x - 128)); }); const n = document.getElementById('ev-cam-nivel'); if (n) n.style.width = Math.min(100, m / 128 * 260) + '%';
+      // nível da voz com "chão de ruído" que se adapta ao ambiente (o teleprompter sabe quando você está falando)
+      const nv = m / 128; EVCAM.nivelVoz = nv; EVCAM.ruido = EVCAM.ruido === undefined ? nv : (nv < EVCAM.ruido ? EVCAM.ruido + (nv - EVCAM.ruido) * 0.2 : EVCAM.ruido + (nv - EVCAM.ruido) * 0.003); }
+    if (EVCAM.rolando) { const t = document.getElementById('ev-cam-tp-txt'); if (t) { const agora = performance.now(), dt = EVCAM.ult ? Math.min(0.1, (agora - EVCAM.ult) / 1000) : 0; EVCAM.ult = agora; const pal = Math.max(1, ((t.textContent || ES.p.dados.roteiro || '').match(/\S+/g) || []).length);
+      // 🎙️ acompanha a voz: rola enquanto você fala e para quando você para (pausa, respiração, erro)
+      let fator = 1;
+      if (EVCAM.segueVoz !== false && EVCAM.an) { const falando = (EVCAM.nivelVoz || 0) > Math.max(0.045, (EVCAM.ruido || 0) * 2.4); if (falando) EVCAM.ultFala = agora; const quieto = agora - (EVCAM.ultFala || 0) > 650; EVCAM.vel = (EVCAM.vel || 0) + ((quieto ? 0 : 1) - (EVCAM.vel || 0)) * Math.min(1, dt * 6); fator = EVCAM.vel;
+        const ind = document.getElementById('ev-cam-tp'); if (ind) ind.classList.toggle('ouvindo', !quieto); }
+      EVCAM.pos += t.scrollHeight / pal * EVCAM.ppm / 60 * dt * fator; t.style.transform = `translateY(${-EVCAM.pos}px)`; } }
     EVCAM.raf = requestAnimationFrame(passo);
   };
   passo();
@@ -25205,6 +25289,8 @@ async function evCamUsar() {
   evMudou(); evPainel('midia');
   evFecharCamera(true);
   mostrarToast('🎥 Gravação na linha do tempo! Ela termina de subir sozinha em segundo plano.');
+  // gravou pelo "Criar post" do Instagram: já abre a edição automática (cortes, legendas, voz limpa) — gravar → revisar → postar
+  if (window.IGC_GRAVANDO && ES && window.IGC_GRAVANDO === ES.p.id && g.modo === 'camera') { window.IGC_GRAVANDO = null; setTimeout(() => { if (ES && typeof evAbrirEdicaoCompleta === 'function') evAbrirEdicaoCompleta(); }, 1800); }
   }
   if (!EVCAM.pp && !(m.parte) && g.modo === 'camera' && (melhorar || firmar)) setTimeout(async () => { if (firmar && ES && g.dur <= 180) await evEstabilizar({ midias: [m] }); else if (firmar && g.dur > 180) mostrarToast('📳 Gravação longa: para tirar a tremedura, use Filtros › Tirar a tremedura (leva o tempo do vídeo).'); if (ES) await evImagemInteligente({ silencioso: false, cor: !!melhorar, enquadrar: true }); }, 600);
   if (m.enviando) {
@@ -27544,7 +27630,7 @@ function evRadarResultadoHtml(r) {
       <div class="evr-gancho">“${escapeHtml(x.gancho || '')}”</div>
       ${x.baseado_em ? `<small class="evr-base">Baseado em: ${escapeHtml(x.baseado_em)}</small>` : ''}
       <details><summary>Ver roteiro</summary><div class="evr-rot">${escapeHtml(x.roteiro || '')}</div>${(x.texto_tela || []).length ? `<div class="evr-tt">Texto na tela: ${x.texto_tela.map(escapeHtml).join(' · ')}</div>` : ''}${x.cta ? `<div class="evr-tt">CTA: ${escapeHtml(x.cta)}</div>` : ''}</details>
-      <div class="evr-acoes"><button class="pri" onclick="evRadarUsar(${i}, 'camera')">🎥 Gravar agora</button><button onclick="evRadarUsar(${i}, 'tp')">📱 Teleprompter</button><button onclick="evRadarUsar(${i}, 'ia')">🤖 Vídeo com IA</button><button onclick="navigator.clipboard.writeText(EVR.atual.ideias[${i}].roteiro || '').then(()=>mostrarToast('Roteiro copiado!'))">📋</button></div>
+      <div class="evr-acoes"><button class="pri" onclick="evRadarUsar(${i}, 'camera')">🎥 Gravar agora</button><button onclick="evRadarUsar(${i}, 'tp')">📱 Teleprompter</button><button onclick="igcPostDaIdeia(${i})">✨ Post pronto pela IA</button><button onclick="evRadarUsar(${i}, 'ia')">🤖 Vídeo com IA</button><button onclick="navigator.clipboard.writeText(EVR.atual.ideias[${i}].roteiro || '').then(()=>mostrarToast('Roteiro copiado!'))">📋</button></div>
     </div>`).join('')}</div>
     <h3>🔥 O que está viralizando</h3>
     <div class="evr-tend">${(r.tendencias || []).map(t => `<div class="evr-t"><b>${escapeHtml(t.titulo || '')}</b><small>${escapeHtml(t.formato || '')}</small><p>${escapeHtml(t.por_que_viraliza || '')}</p>${t.gancho_exemplo ? `<div class="evr-gancho">“${escapeHtml(t.gancho_exemplo)}”</div>` : ''}
@@ -28224,7 +28310,7 @@ function evMenuCelular() {
   if (!ma) { document.getElementById('conteudo').insertAdjacentHTML('beforeend', '<div id="modal-area"></div>'); ma = document.getElementById('modal-area'); }
   ma.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) this.parentElement.innerHTML=''"><div class="modal-caixa eh-menu">
     <b>${escapeHtml((ESTADO.usuario || {}).name || '')}</b>
-    <button onclick="document.getElementById('modal-area').innerHTML=''; renderEstudioVideo('instagram')">📸 Instagram (conectar e publicar)</button>
+    <button onclick="document.getElementById('modal-area').innerHTML=''; renderIg('visao')">📸 Instagram (perfil, robô e posts com IA)</button>
     ${ESTADO.usuario.role === 'admin' ? `<button onclick="document.getElementById('modal-area').innerHTML=''; evNovaAula()">🎓 Gravar aula para a Academy</button><button onclick="document.getElementById('modal-area').innerHTML=''; renderEstudioVideo('acessos')">👥 Acessos & planos (clientes)</button>` : `<button onclick="document.getElementById('modal-area').innerHTML=''; renderEstudioVideo('conta')">💳 Meu plano e uso</button>`}
     <button onclick="document.getElementById('modal-area').innerHTML=''; evNovoProjeto()">＋ Novo projeto (escolher formato)</button>
     <button onclick="location.reload()">🔄 Atualizar (sincronizar agora)</button>
@@ -28281,6 +28367,7 @@ function evDesenharHomeCelular(corpo) {
   </div>`;
 }
 async function renderEstudioVideo(aba) {
+  if (aba === 'instagram') return igcIr('visao'); // o Instagram agora é um módulo próprio
   if (aba) EVL.aba = aba;
   const cont = document.getElementById('conteudo');
   if (document.body.classList.contains('modo-estudio')) {
@@ -28301,7 +28388,7 @@ async function renderEstudioVideo(aba) {
   cont.innerHTML = `<div id="ev-pagina"><div class="estudio-barra">${eiLogo('mini')}<b style="flex:1"></b><a href="/">💻 Sistema</a><button onclick="sair()">Sair</button></div>
     <div class="ev-pag-topo"><div><h1 style="margin:0;">🎬 Estúdio de Vídeo</h1><div class="plano-meta">Edite Reels, Stories e vídeos do feed no padrão das grandes contas, com o Agente Viral da Impulsionar — e grave aulas para a Academy com teleprompter.</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-secundario" style="width:auto;" onclick="evAbrirNoCelular()">📱 Abrir no celular</button><button class="btn-secundario" style="width:auto;" onclick="evNovaAula()">🎓 Gravar aula</button><button class="btn-secundario" style="width:auto;" onclick="evAbrirCriarVideoIa()">🤖 Criar vídeo com IA</button><button class="btn-primario" style="width:auto;" onclick="evNovoProjeto()">＋ Novo vídeo</button></div></div>
-    <div class="ev-pag-abas">${[['projetos', '🎞️ Projetos'], ['radar', '📡 Radar Viral'], ['agente', '🤖 Agente Viral (treinar)'], ['agenda', '🗓️ Agenda & publicações'], ['instagram', '📸 Instagram']].concat(ESTADO.usuario.role === 'admin' ? [['acessos', '👥 Acessos & planos']] : [['conta', '💳 Meu plano']]).map(([k, r]) => `<button class="${EVL.aba === k ? 'on' : ''}" onclick="renderEstudioVideo('${k}')">${r}</button>`).join('')}</div>
+    <div class="ev-pag-abas">${[['projetos', '🎞️ Projetos'], ['radar', '📡 Radar Viral'], ['agente', '🤖 Agente Viral (treinar)'], ['agenda', '🗓️ Agenda & publicações'], ['instagram', '📸 Instagram ↗']].concat(ESTADO.usuario.role === 'admin' ? [['acessos', '👥 Acessos & planos']] : [['conta', '💳 Meu plano']]).map(([k, r]) => `<button class="${EVL.aba === k ? 'on' : ''}" onclick="renderEstudioVideo('${k}')">${r}</button>`).join('')}</div>
     <div id="ev-pag-corpo"><p>Carregando...</p></div></div>`;
   const corpo = document.getElementById('ev-pag-corpo');
   try {
@@ -28471,11 +28558,11 @@ async function evDesenharInstagram(corpo) {
       <div class="acoes-form"><button class="btn-secundario" style="width:auto;" onclick="evConectarIg()">Conectar</button></div></details></div>`;
     return;
   }
-  corpo.innerHTML = `<div class="ig-pag"><div class="ig-conta"><div class="ig-logo peq">📸</div><div style="flex:1;min-width:0;"><b>@${escapeHtml(c.username || c.userId)}</b><small>Conectado · publica e agenda direto do Estúdio</small></div><button class="btn-secundario btn-sm" style="width:auto;" onclick="igEntrar()" ${c.loginDisponivel ? '' : 'hidden'}>🔄 Reconectar</button><button class="btn-secundario btn-sm" style="width:auto;" onclick="evDesconectarIg()">Desconectar</button></div>
+  corpo.innerHTML = `<div class="ig-pag"><div class="ig-conta"><div class="ig-logo peq">📸</div><div style="flex:1;min-width:0;"><b>@${escapeHtml(c.username || c.userId)}</b><small>Conectado · o robô e o Estúdio publicam direto no seu perfil</small></div><button class="btn-secundario btn-sm" style="width:auto;" onclick="igEntrar()" ${c.loginDisponivel ? '' : 'hidden'}>🔄 Reconectar</button><button class="btn-secundario btn-sm" style="width:auto;" onclick="evDesconectarIg()">Desconectar</button></div>
     ${igAbas()}${cfgApp}</div>`;
   igMostrarAba();
 }
-async function igSalvarApp() { try { const r = await api('/api/admin/instagram-app', { method: 'PUT', body: JSON.stringify({ appId: document.getElementById('ig-app-id').value, appSecret: document.getElementById('ig-app-sec').value }) }); mostrarToast(r.message); renderEstudioVideo('instagram'); } catch (e) { mostrarToast(e.message, true); } }
+async function igSalvarApp() { try { const r = await api('/api/admin/instagram-app', { method: 'PUT', body: JSON.stringify({ appId: document.getElementById('ig-app-id').value, appSecret: document.getElementById('ig-app-sec').value }) }); mostrarToast(r.message); renderIg('conexao'); } catch (e) { mostrarToast(e.message, true); } }
 async function igEntrar() {
   try { const r = await api('/api/admin/estudio/instagram/login' + (document.body.classList.contains('modo-estudio') ? '?volta=estudio' : '')); location.href = r.url; }
   catch (e) { mostrarToast(e.message, true); }
@@ -28655,6 +28742,7 @@ function evHtmlReferencias(l) {
 // ---------- Instagram conectado: abas Plano · Roteiros virais · Interação ----------
 let IGABA = 'insights';
 function igAbas() {
+  if (window.IGC_CONEXAO) return '';
   return `<div class="ig-abas">${[['insights', '🧠 Insights & Treino'], ['plano', '📈 Plano 10 dias'], ['roteiros', '🔥 Roteiros virais'], ['interacao', '💬 Interação automática']].map(([k, r]) => `<button class="${IGABA === k ? 'on' : ''}" onclick="IGABA='${k}'; igMostrarAba()">${r}</button>`).join('')}</div><div id="ig-aba"></div>`;
 }
 function igMostrarAba() {
@@ -28856,13 +28944,13 @@ function igRetornoLogin() {
   const h = location.hash || ''; if (!h.startsWith('#instagram=')) return;
   const ok = /#instagram=ok/.test(h), msg = decodeURIComponent((h.match(/msg=([^&]*)/) || [, ''])[1]);
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
-  setTimeout(() => { if (msg) mostrarToast(msg, !ok); if (typeof renderEstudioVideo === 'function' && (ESTADO.usuario.role === 'admin' || ESTADO.usuario.role === 'estudio')) { if (!document.body.classList.contains('modo-estudio')) irPara('estudioVideo'); setTimeout(() => renderEstudioVideo('instagram'), 400); } }, 900);
+  setTimeout(() => { if (msg) mostrarToast(msg, !ok); if (typeof renderEstudioVideo === 'function' && (ESTADO.usuario.role === 'admin' || ESTADO.usuario.role === 'estudio')) { IGC.ins = null; igcIr('visao'); } }, 900);
 }
 async function evConectarIg() {
-  try { const r = await api('/api/admin/estudio/instagram', { method: 'PUT', body: JSON.stringify({ userId: document.getElementById('ev-ig-id').value, token: document.getElementById('ev-ig-token').value }) }); mostrarToast(r.message); renderEstudioVideo('instagram'); }
+  try { const r = await api('/api/admin/estudio/instagram', { method: 'PUT', body: JSON.stringify({ userId: document.getElementById('ev-ig-id').value, token: document.getElementById('ev-ig-token').value }) }); mostrarToast(r.message); renderIg('conexao'); }
   catch (e) { mostrarToast(e.message, true); }
 }
-async function evDesconectarIg() { if (!confirm('Desconectar o Instagram?')) return; try { await api('/api/admin/estudio/instagram', { method: 'PUT', body: JSON.stringify({ remover: true }) }); renderEstudioVideo('instagram'); } catch (e) { mostrarToast(e.message, true); } }
+async function evDesconectarIg() { if (!confirm('Desconectar o Instagram?')) return; try { await api('/api/admin/estudio/instagram', { method: 'PUT', body: JSON.stringify({ remover: true }) }); IGC.ins = null; IGC.perfil = null; renderIg('conexao'); } catch (e) { mostrarToast(e.message, true); } }
 
 // ---------- Treinar o Agente Viral ----------
 const EV_TIPOS_AG = { regra: ['📏 Regras', 'O que o agente deve SEMPRE fazer (estilo, linguagem, estrutura).', 'Ex.: Sempre falar com o líder de operação, linguagem do chão de fábrica, sem termos em inglês.'], proibido: ['🚫 Nunca fazer', 'Palavras, promessas e assuntos proibidos.', 'Ex.: Nunca prometer resultado em X dias; nunca citar concorrentes.'], exemplo: ['🏆 Posts que deram certo', 'Cole o gancho/roteiro/legenda de posts que performaram bem, com os números.', 'Cole aqui o roteiro ou a legenda do post…'], referencia: ['⭐ Referências', 'Perfis, criadores e estilos que você admira.', 'Ex.: @perfil — ganchos com pergunta e cortes a cada 2 s'], tendencia: ['📡 Tendências do mercado', 'Preenchido sozinho pelo Radar Viral: o que está viralizando agora no seu nicho. O agente usa as 2 pesquisas mais recentes.', 'Rode o 📡 Radar Viral para atualizar automaticamente.'] };
@@ -28942,6 +29030,312 @@ function mtfQuando(d) {
 const MTF_ATALHOS = () => { const h = MTF.hoje; return [['Hoje', h], ['Amanhã', mtfSoma(h, 1)], ['Sexta', mtfDiaSem(h) === 5 ? h : mtfProx(h, 5)], ['Segunda', mtfProx(h, 1)], ['+1 semana', mtfSoma(h, 7)]]; };
 const MTF_ST = { aberta: ['Aberta', '#64748b'], andamento: ['Em andamento', '#2563eb'], aguardando: ['Aguardando alguém', '#d97706'], concluida: ['Concluída', '#16a34a'] };
 
+/* ==========================================================
+   🤖 ROBÔ DO INSTAGRAM — fila que publica sozinha pela conexão oficial da Meta
+   ========================================================== */
+/* ==========================================================
+   📸 CENTRAL DO INSTAGRAM — módulo próprio (fora do Estúdio): visão completa do perfil,
+   criar post com IA (roteiro → vídeo pronto), robô/agenda, virais do nicho, comentários e estratégia
+   ========================================================== */
+const IGC = { aba: 'visao', conta: null, ins: null, insT: 0, job: null, criar: { modo: 'roteiro' } };
+const IGC_ABAS = [['visao', '🏠 Visão geral', 'igVisao'], ['criar', '✨ Criar post', 'igCriar'], ['robo', '🤖 Robô & agenda', 'roboInstagram'], ['virais', '🔥 Virais do nicho', 'igVirais'], ['comentarios', '💬 Comentários', 'igComentarios'], ['estrategia', '📈 Estratégia', 'igEstrategia'], ['conexao', '⚙️ Conexão', 'igConexao']];
+const igcNum = v => v === null || v === undefined || v === '' ? '—' : Number(v) >= 10000 ? (Number(v) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil' : Number(v).toLocaleString('pt-BR');
+function igcIr(aba) { const a = IGC_ABAS.find(x => x[0] === aba); if (a && !document.body.classList.contains('modo-estudio')) irPara(a[2]); else renderIg(aba); }
+async function renderIg(aba) {
+  if (aba) IGC.aba = aba;
+  const cont = document.getElementById('conteudo');
+  if (!document.getElementById('igc-corpo')) cont.innerHTML = '<div class="igc"><div id="igc-topo"></div><div class="igc-abas" id="igc-abas"></div><div id="igc-corpo"><p class="plano-meta">Carregando…</p></div></div>';
+  document.getElementById('igc-abas').innerHTML = IGC_ABAS.map(([k, r]) => `<button class="${IGC.aba === k ? 'on' : ''}" onclick="igcIr('${k}')">${r}</button>`).join('');
+  try { IGC.conta = await api('/api/admin/estudio/instagram'); } catch (e) { IGC.conta = { configurado: false }; }
+  igcTopo();
+  if (IGC.conta.configurado && !IGC.perfil) api('/api/admin/estudio/instagram/perfil-resumo').then(p => { if (p && p.username) { IGC.perfil = p; igcTopo(); } }).catch(() => {});
+  const el = document.getElementById('igc-corpo'); el.innerHTML = '<p class="plano-meta">Carregando…</p>';
+  if (!IGC.conta.configurado && !['conexao', 'criar', 'virais'].includes(IGC.aba)) { IGC.aba = 'conexao'; document.querySelectorAll('#igc-abas button').forEach((b, i) => b.classList.toggle('on', IGC_ABAS[i][0] === 'conexao')); }
+  try {
+    if (IGC.aba === 'visao') await igcVisao(el);
+    else if (IGC.aba === 'criar') await igcCriar(el);
+    else if (IGC.aba === 'robo') await renderRoboInstagram(el);
+    else if (IGC.aba === 'virais') await igcVirais(el);
+    else if (IGC.aba === 'comentarios') await igInteracao(el);
+    else if (IGC.aba === 'estrategia') igcEstrategia(el);
+    else { window.IGC_CONEXAO = true; try { await evDesenharInstagram(el); } finally { window.IGC_CONEXAO = false; } }
+  } catch (e) { el.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; }
+}
+function igcTopo() {
+  const el = document.getElementById('igc-topo'); if (!el) return;
+  const c = IGC.conta || {}, p = (IGC.ins && IGC.ins.perfil && IGC.ins.perfil.username ? IGC.ins.perfil : IGC.perfil) || {};
+  if (!c.configurado) { el.innerHTML = `<div class="igc-head"><div class="igc-foto"><span>📸</span></div><div class="igc-id"><h1>Instagram</h1><div class="igc-bio">Conecte a sua conta profissional para ver as métricas, publicar e deixar o robô trabalhar.</div></div><div class="igc-head-bts">${c.loginDisponivel ? '<button class="igc-pri" onclick="igEntrar()">Entrar com Instagram</button>' : `<button class="igc-pri" onclick="igcIr('conexao')">Conectar</button>`}</div></div>`; return; }
+  const u = p.username || c.username || '';
+  el.innerHTML = `<div class="igc-head"><div class="igc-foto">${p.profile_picture_url ? `<img src="${escapeHtml(p.profile_picture_url)}" alt="">` : '<span>📸</span>'}</div>
+    <div class="igc-id"><h1>@${escapeHtml(u)} <small>● conectado</small></h1>
+      <div class="igc-nums"><div><b>${igcNum(p.media_count)}</b><span>posts</span></div><div><b>${igcNum(p.followers_count)}</b><span>seguidores</span></div><div><b>${igcNum(p.follows_count)}</b><span>seguindo</span></div></div>
+      ${p.biography ? `<div class="igc-bio">${escapeHtml(p.biography)}</div>` : p.name ? `<div class="igc-bio">${escapeHtml(p.name)}</div>` : ''}</div>
+    <div class="igc-head-bts"><button class="igc-pri" onclick="igcIr('criar')">✨ Criar post</button>${u ? `<a class="btn-secundario" style="padding:9px 14px;border-radius:10px;" href="https://instagram.com/${encodeURIComponent(u)}" target="_blank" rel="noopener">Ver perfil ↗</a>` : ''}</div></div>`;
+}
+// ---------- 🏠 Visão geral ----------
+async function igcVisao(el) {
+  el.innerHTML = '<p class="plano-meta">📊 Lendo o seu perfil, os posts e as métricas…</p>';
+  if (!IGC.ins || Date.now() - IGC.insT > 5 * 60000) { IGC.ins = await api('/api/admin/estudio/instagram/insights'); IGC.insT = Date.now(); IGINS = IGC.ins; }
+  igcTopo();
+  let fila = []; try { fila = (await api('/api/admin/estudio/robo')).posts.filter(p => p.status === 'agendado').slice(0, 4); } catch (e) {}
+  const d = IGC.ins, c = d.conta28dias || {}, posts = d.posts || [];
+  const kp = [['reach', 'contas alcançadas'], ['views', 'visualizações'], ['accounts_engaged', 'contas que interagiram'], ['total_interactions', 'interações'], ['profile_views', 'visitas ao perfil'], ['follower_count', 'novos seguidores']].filter(([k]) => c[k] !== undefined);
+  const vir = posts.filter(x => x.rotulo === 'viralizou' || x.rotulo === 'acima').length, flop = posts.filter(x => x.rotulo === 'flopou' || x.rotulo === 'abaixo').length;
+  el.innerHTML = `<div class="igc-kpis">${kp.length ? kp.map(([k, r]) => `<div class="igc-kpi"><b>${igcNum(c[k])}</b><span>${r} · 28 dias</span></div>`).join('') : '<div class="igc-kpi"><b>—</b><span>As métricas da conta aparecem quando a Meta liberar (conta profissional com alguns posts).</span></div>'}</div>
+    <div class="igc-dupla"><div>
+      <div class="igc-card"><div id="ig-evol"></div></div>
+      <div class="igc-card"><h3>🖼️ Seus últimos posts <span style="font-size:12px;color:#64748b;font-weight:600;">base: ${escapeHtml(d.base || '')}</span></h3>
+        ${posts.length ? `<div class="igc-grid">${posts.map(x => { const r = IG_ROT[x.rotulo] || IG_ROT.media; return `<a class="igc-post" href="${escapeHtml(x.link || x.permalink || '#')}" target="_blank" rel="noopener">${x.capa ? `<img src="${escapeHtml(x.capa)}" loading="lazy" alt="">` : ''}<span class="tp">${x.tipo === 'Reels' ? '🎬' : x.tipo === 'Carrossel' ? '🗂️' : ''}</span>${x.rotulo && x.rotulo !== 'media' ? `<span class="rot" style="background:${r[2]}">${r[0]} ${r[1]}</span>` : ''}<span class="mt">${x.views != null ? '▶ ' + igcNum(x.views) : x.alcance != null ? '👁 ' + igcNum(x.alcance) : ''} ❤ ${igcNum(x.curtidas)} 💬 ${igcNum(x.comentarios)}</span></a>`; }).join('')}</div>` : '<div class="igc-vazio">Nenhum post ainda.</div>'}</div>
+    </div><div>
+      <div class="igc-card"><h3>⏰ Próximos posts do robô <button class="btn-secundario btn-sm" onclick="igcIr('robo')">Abrir</button></h3>
+        ${fila.length ? fila.map(p => `<div class="igc-prox">${rbMiniatura(p.midias[0] || {})}<div style="flex:1;min-width:0;"><b>${rbData(p.quando)}</b><div style="color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml((p.legenda || '').split('\n')[0] || (RB_TIPOS.find(t => t[0] === p.tipo) || [, p.tipo])[1])}</div></div></div>`).join('') : '<div class="igc-vazio">Fila vazia. <a href="#" onclick="igcIr(\'criar\');return false;">Criar um post</a></div>'}</div>
+      <div class="igc-card"><h3>🧠 Leitura rápida</h3>
+        <div style="font-size:14px;line-height:1.6;">🔥 <b>${vir}</b> post(s) acima da média · 🥶 <b>${flop}</b> abaixo<br>${d.padroes && d.padroes.resumo ? escapeHtml(String(d.padroes.resumo).slice(0, 400)) : 'Abra <b>Estratégia › Insights</b> para a IA explicar por que cada post bombou ou flopou e aprender com isso.'}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;"><button class="btn-secundario btn-sm" style="width:auto;" onclick="igcIr('estrategia')">📈 Ver estratégia</button><button class="btn-secundario btn-sm" style="width:auto;" onclick="igcIr('virais')">🔥 O que viraliza no nicho</button></div></div>
+    </div></div>`;
+  igEvolucao();
+}
+// ---------- ✨ Criar post ----------
+async function igcCriar(el) {
+  const C = IGC.criar;
+  if (!C.vozes) { try { const v = await api('/api/admin/estudio/vozes'); C.vozes = v.vozes || []; if (!C.voz) C.voz = (C.vozes.find(x => x.minha) || C.vozes[0] || {}).id; } catch (e) { C.vozes = []; } }
+  if (!C.jobId) { try { C.jobId = sessionStorage.getItem('igc_job') || null; } catch (e) {} }
+  el.innerHTML = `<div id="igc-job"></div>
+    <div class="igc-card igc-criar"><h3>✨ Criar post</h3>
+      <div class="igc-sw"><button class="${C.modo === 'roteiro' ? 'on' : ''}" onclick="igcCriarModo('roteiro')">📝 Tenho o roteiro</button><button class="${C.modo === 'tema' ? 'on' : ''}" onclick="igcCriarModo('tema')">💡 Só tenho a ideia</button><button onclick="igcIr('robo')">🖼️ Foto / carrossel</button></div>
+      ${C.modo === 'roteiro' ? `<textarea id="igc-rot" placeholder="Cole aqui o roteiro (o texto que vai ser falado no vídeo).&#10;&#10;Ex.: Pare de achar que liderar é mandar. Liderar é fazer o time enxergar a meta…">${escapeHtml(C.roteiro || '')}</textarea>`
+        : `<input id="igc-tema" placeholder="Sobre o que é o vídeo? Ex.: 3 erros do líder novo na primeira semana" value="${escapeHtml(C.tema || '')}"><label style="font-size:13px;font-weight:700;">Duração<select id="igc-dur">${[20, 30, 45, 60].map(n => `<option value="${n}" ${Number(C.duracao || 30) === n ? 'selected' : ''}>${n} segundos</option>`).join('')}</select></label>`}
+      ${C.inspiracao ? `<p class="rb-dica">🔥 Seguindo o formato que viraliza: ${escapeHtml(C.inspiracao.slice(0, 160))} <a href="#" onclick="IGC.criar.inspiracao='';igcIr('criar');return false;">tirar</a></p>` : ''}
+      <div class="igc-ops">
+        <label>Voz da narração<select id="igc-voz">${(C.vozes || []).map(v => `<option value="${escapeHtml(v.id)}" ${v.id === C.voz ? 'selected' : ''}>${escapeHtml(v.nome)}</option>`).join('') || '<option value="">Voz padrão</option>'}</select></label>
+        <label>Depois de pronto<select id="igc-dest">${[['fila', '🤖 Robô posta no melhor horário'], ['rascunho', '👀 Eu reviso antes de postar'], ['agora', '🚀 Postar assim que ficar pronto']].map(([k, r]) => `<option value="${k}" ${(C.destino || 'rascunho') === k ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
+        <label style="display:flex;gap:8px;align-items:center;margin-top:18px;"><input type="checkbox" id="igc-mus" ${C.musica === false ? '' : 'checked'} style="width:auto;margin:0;"> 🎵 Música de fundo</label>
+      </div>
+      <div class="igc-modos">
+        <button class="igc-modo ia" id="igc-bt-ia" onclick="igcCriarIa()"><b>🤖 A IA cria o vídeo completo</b><small>Narração com a voz escolhida, uma cena real para cada frase, legendas animadas, música, capa, legenda do post e hashtags. Você pode fechar o app: avisamos quando ficar pronto.</small></button>
+        <button class="igc-modo" onclick="igcCriarGravar()"><b>🎥 Eu gravo com teleprompter</b><small>Abre a câmera com o roteiro rolando na tela (acompanha a sua voz). Depois a IA corta os silêncios, coloca legendas e deixa pronto para postar.</small></button>
+      </div>
+      ${(C.vozes || []).some(v => v.minha) ? '' : '<p class="rb-dica">🎙️ Quer a narração com a <b>sua voz</b>? Treine uma vez em Estúdio › Criar com IA › Minha voz.</p>'}
+    </div>`;
+  if (C.jobId) igcAcompanhar();
+}
+function igcGuardar() { const C = IGC.criar, v = id => (document.getElementById(id) || {}).value; if (document.getElementById('igc-rot')) C.roteiro = v('igc-rot'); if (document.getElementById('igc-tema')) { C.tema = v('igc-tema'); C.duracao = Number(v('igc-dur')); } if (document.getElementById('igc-voz')) C.voz = v('igc-voz'); if (document.getElementById('igc-dest')) C.destino = v('igc-dest'); const m = document.getElementById('igc-mus'); if (m) C.musica = m.checked; }
+function igcCriarModo(m) { igcGuardar(); IGC.criar.modo = m; igcCriar(document.getElementById('igc-corpo')); }
+async function igcCriarIa() {
+  igcGuardar(); const C = IGC.criar;
+  const corpo = { voz: C.voz, destino: C.destino || 'rascunho', musica: C.musica !== false, inspiracao: C.inspiracao || '' };
+  if (C.modo === 'roteiro') { if ((C.roteiro || '').trim().length < 20) return mostrarToast('Cole o roteiro (pelo menos uma frase completa).', true); corpo.roteiro = C.roteiro; }
+  else { if ((C.tema || '').trim().length < 4) return mostrarToast('Escreva sobre o que é o vídeo.', true); corpo.tema = C.tema; corpo.duracao = C.duracao || 30; }
+  if (corpo.destino !== 'rascunho' && IGC.conta && !IGC.conta.configurado) return mostrarToast('Conecte o Instagram primeiro (aba Conexão), ou escolha "Eu reviso antes de postar".', true);
+  const b = document.getElementById('igc-bt-ia'); if (b) b.disabled = true;
+  try { const r = await api('/api/admin/estudio/post-ia', { method: 'POST', body: JSON.stringify(corpo) }); C.jobId = r.id; try { sessionStorage.setItem('igc_job', r.id); } catch (e) {} igcAcompanhar(); document.getElementById('igc-job').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  catch (e) { mostrarToast(e.message, true); if (b) b.disabled = false; }
+}
+function igcAcompanhar() {
+  clearTimeout(IGC.tJob);
+  const passo = async () => {
+    const el = document.getElementById('igc-job'); if (!el || !IGC.criar.jobId) return;
+    let j; try { j = await api('/api/admin/estudio/post-ia/' + IGC.criar.jobId); } catch (e) { el.innerHTML = ''; IGC.criar.jobId = null; try { sessionStorage.removeItem('igc_job'); } catch (x) {} return; }
+    const b = document.getElementById('igc-bt-ia'); if (b) b.disabled = j.status === 'trabalhando';
+    if (j.status === 'trabalhando') { el.innerHTML = `<div class="igc-job"><b>🤖 A IA está criando o seu post…</b><div class="igc-barra"><i style="width:${j.pct || 2}%"></i></div><div style="font-size:14px;">${escapeHtml(j.etapa || '')}</div><small class="rb-dica">${j.segundos}s · costuma levar de 1 a 4 minutos. Pode sair desta tela ou fechar o app.</small></div>`; IGC.tJob = setTimeout(passo, 3000); return; }
+    if (j.status === 'erro') { el.innerHTML = `<div class="igc-job" style="border-color:#fecaca;background:#fef2f2;"><b>⚠️ Não consegui criar o post</b><p style="margin:6px 0;">${escapeHtml(j.erro || '')}</p><button class="btn-secundario btn-sm" style="width:auto;" onclick="IGC.criar.jobId=null;try{sessionStorage.removeItem('igc_job')}catch(e){};document.getElementById('igc-job').innerHTML=''">Fechar</button></div>`; return; }
+    el.innerHTML = `<div class="igc-job"><b>✅ Post pronto: ${escapeHtml(j.titulo || '')}</b>
+      <div class="igc-pronto" style="margin-top:10px;"><video src="${escapeHtml(j.videoUrl)}" ${j.capa ? `poster="${escapeHtml(j.capa)}"` : ''} controls playsinline preload="metadata"></video>
+      <div><div style="font-size:14px;">${j.quando ? (IGC.criar.destino === 'agora' ? '🚀 Publicando no Instagram agora…' : '⏰ Na fila do robô: posta ' + rbData(j.quando)) : '👀 Salvo para você revisar — nada foi postado ainda.'}</div>
+        <pre>${escapeHtml([j.legenda, j.hashtags].filter(Boolean).join('\n\n'))}</pre>
+        <div class="rb-acoes">${j.roboId ? `<button class="pri" onclick="igcIr('robo')">📋 Ver na fila do robô</button>` : ''}<button onclick="igcAbrirEditor(${j.projetoId})">✂️ Ajustar no editor</button><a href="${escapeHtml(j.videoUrl)}" download>⬇️ Baixar vídeo</a><button onclick="IGC.criar.jobId=null;try{sessionStorage.removeItem('igc_job')}catch(e){};document.getElementById('igc-job').innerHTML=''">Criar outro</button></div>
+        ${(j.creditos || []).length ? `<small class="rb-dica">Créditos: ${escapeHtml([...new Set(j.creditos)].slice(0, 6).join(' · '))}</small>` : ''}</div></div></div>`;
+  };
+  passo();
+}
+async function igcAbrirEditor(id) { try { if (!document.body.classList.contains('modo-estudio')) irPara('estudioVideo'); setTimeout(() => evAbrirEditor(id), 500); } catch (e) { mostrarToast(e.message, true); } }
+async function igcCriarGravar() {
+  igcGuardar(); const C = IGC.criar;
+  let roteiro = (C.roteiro || '').trim();
+  if (C.modo === 'tema') {
+    if ((C.tema || '').trim().length < 4) return mostrarToast('Escreva sobre o que é o vídeo.', true);
+    mostrarToast('✍️ Escrevendo o roteiro para você gravar…');
+    try { const r = await api('/api/admin/estudio/ia/roteiro', { method: 'POST', body: JSON.stringify({ tema: C.tema, duracao: C.duracao || 30 }) }); roteiro = (r.cenas || []).map(c => c.fala).filter(Boolean).join('\n\n') || r.roteiro || ''; C.legendaIa = r.legenda || ''; C.hashIa = Array.isArray(r.hashtags) ? r.hashtags.join(' ') : (r.hashtags || ''); }
+    catch (e) { return mostrarToast(e.message, true); }
+  }
+  if (roteiro.length < 10) return mostrarToast('Cole o roteiro para aparecer no teleprompter.', true);
+  if (!document.body.classList.contains('modo-estudio')) irPara('estudioVideo');
+  setTimeout(async () => { const id = await igAbrirGravacao(roteiro.split(/\n/)[0].slice(0, 70) || 'Vídeo gravado', roteiro, C.legendaIa || '', C.hashIa || ''); if (id) window.IGC_GRAVANDO = id; }, 400);
+}
+// ---------- 🔥 Virais do nicho ----------
+async function igcVirais(el) {
+  el.innerHTML = `<div id="ig-perfis"><p class="plano-meta">Carregando…</p></div><div id="igc-radar" style="margin-top:12px;"></div>`;
+  igPerfisCarregar();
+  await evDesenharRadar(document.getElementById('igc-radar'));
+}
+function igcPostDaIdeia(i) {
+  const x = (((EVR || {}).atual || {}).ideias || [])[i]; if (!x) return;
+  Object.assign(IGC.criar, { modo: 'roteiro', roteiro: [x.gancho, x.roteiro].filter(Boolean).join('\n\n'), inspiracao: [x.formato, x.titulo].filter(Boolean).join(' · ') });
+  igcIr('criar');
+}
+// ---------- 📈 Estratégia ----------
+function igcEstrategia(el) {
+  const sub = IGC.sub || 'insights';
+  el.innerHTML = `<div class="igc-sub">${[['insights', '🧠 Por que bombou ou flopou'], ['plano', '📈 Plano de 10 dias'], ['roteiros', '🔥 Roteiros para o seu perfil']].map(([k, r]) => `<button class="${sub === k ? 'on' : ''}" onclick="IGC.sub='${k}';igcEstrategia(document.getElementById('igc-corpo'))">${r}</button>`).join('')}</div><div class="igc-card"><div id="ig-aba"></div></div>`;
+  IGABA = sub; igMostrarAba();
+}
+const RB = { d: null, tipo: 'reels', midias: [], quando: 'auto', enviando: 0, videos: null, editando: null };
+const RB_TIPOS = [['reels', '🎬 Reels'], ['foto', '🖼️ Foto'], ['carrossel', '🗂️ Carrossel'], ['story', '⭕ Story']];
+const RB_ST = { agendado: '⏰ Na fila', publicando: '🚀 Publicando', publicado: '✅ Publicado', erro: '⚠️ Erro', rascunho: '📝 Rascunho' };
+async function renderRoboInstagram(alvo) {
+  if (!alvo && !document.getElementById('igc-corpo')) return renderIg('robo');
+  const cont = alvo || document.getElementById('igc-corpo') || document.getElementById('conteudo');
+  cont.innerHTML = '<div class="rb"><p class="plano-meta">Carregando o robô…</p></div>';
+  try { RB.d = await api('/api/admin/estudio/robo'); } catch (e) { cont.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
+  rbDesenhar();
+  clearTimeout(RB.t); if (RB.d.posts.some(p => p.status === 'publicando')) RB.t = setTimeout(() => { if (document.getElementById('rb-fila')) rbRecarregar(); }, 15000);
+}
+async function rbRecarregar() { try { RB.d = await api('/api/admin/estudio/robo'); rbDesenharFila(); clearTimeout(RB.t); if (RB.d.posts.some(p => p.status === 'publicando')) RB.t = setTimeout(() => { if (document.getElementById('rb-fila')) rbRecarregar(); }, 15000); } catch (e) {} }
+const rbData = iso => iso ? new Date(iso).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+const rbEhVideo = m => /^video\//.test(m.mime || '') || /\.(mp4|mov|m4v|webm|mkv|3gp)$/i.test(m.url || '');
+function rbMiniatura(m, i, remover) {
+  const src = m.local || m.url || '';
+  const midia = rbEhVideo(m) ? `<video src="${escapeHtml(src)}#t=0.5" muted playsinline preload="metadata"></video>` : `<img src="${escapeHtml(m.thumb || src)}" alt="">`;
+  return `<div class="rb-mid"${m.k ? ` data-k="${m.k}"` : ''}>${src ? midia : ''}${m.progresso !== undefined && m.progresso < 1 ? `<div class="pg">${Math.round(m.progresso * 100)}%</div>` : ''}${remover ? `<button class="x" onclick="rbTirarMidia(${i})" title="Tirar">✕</button>` : ''}</div>`;
+}
+function rbDesenhar() {
+  const cont = document.getElementById('igc-corpo') || document.getElementById('conteudo'); if (!cont) return;
+  const d = RB.d, ig = d.instagram, c = d.cfg, hs = (c.horarios && c.horarios.length) ? c.horarios : d.horarios.horarios;
+  cont.innerHTML = `<div class="rb">
+    <div class="rb-topo" style="padding:0 0 10px;"><b style="flex:1;font-size:16px;">🤖 O robô publica sozinho, mesmo com o app fechado</b>
+      ${ig.conectado ? `<button class="rb-liga ${c.ativo ? '' : 'off'}" onclick="rbLigar(${!c.ativo})">${c.ativo ? '● Ligado — postando sozinho' : '⏸ Pausado — toque para ligar'}</button>` : `<button class="igc-pri" style="width:auto;" onclick="${ig.loginDisponivel ? 'igEntrar()' : "igcIr('conexao')"}">Conectar Instagram</button>`}</div>
+    <p class="rb-seguro">🔒 Publicação pela <b>conexão oficial da Meta</b>: sem guardar sua senha e sem simular cliques (é isso que gera bloqueio e queda de alcance). Para o alcance, o que pesa é o conteúdo, o horário e a constância — o robô cuida dos dois últimos.</p>
+    <div class="rb-card" id="rb-novo"></div>
+    <div class="rb-card"><h3>📋 Fila do robô</h3><div id="rb-fila"></div></div>
+    <div class="rb-card"><h3>⚙️ Como o robô trabalha</h3>
+      <p class="rb-dica" style="margin:0 0 8px;">Melhores horários ${d.horarios.fonte === 'seus_posts' ? `(calculados pelos seus ${d.horarios.analisados || ''} últimos posts)` : '(padrão — melhoram quando houver mais posts seus)'}: <span class="rb-hs">${d.horarios.horarios.map(h => `<span>${h}</span>`).join('')}</span></p>
+      <div class="rb-cfg">
+        <label>Posts no feed por dia<select id="rb-pd">${[1, 2, 3, 4].map(n => `<option ${n === c.postsDia ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label>Intervalo mínimo entre posts<select id="rb-iv">${[2, 3, 4, 6, 8].map(n => `<option value="${n}" ${n === c.intervaloHoras ? 'selected' : ''}>${n} horas</option>`).join('')}</select></label>
+        <label>Meus horários (opcional)<input id="rb-hs" placeholder="ex.: 07:40, 12:10, 19:00" value="${escapeHtml((c.horarios || []).join(', '))}"></label>
+        <label>Tom das legendas<input id="rb-tom" placeholder="ex.: direto, motivador, de líder para líder" value="${escapeHtml(c.tom || '')}"></label>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;margin:10px 0;font-size:14px;"><input type="checkbox" id="rb-var" ${c.variacao !== false ? 'checked' : ''} style="width:auto;margin:0;"> Variar alguns minutos no horário (posta como gente, não no minuto exato)</label>
+      <button style="width:auto;" onclick="rbSalvarCfg()">Salvar</button>
+      <p class="rb-dica">💬 Respostas aos comentários: <b>${d.comentarios.ativo ? (d.comentarios.modo === 'auto' ? 'automáticas ✅' : 'você aprova ✅') : 'desligadas'}</b> — <a href="#" onclick="igcIr('comentarios');return false;">configurar</a>. Responder rápido nas primeiras horas ajuda o post a ser entregue para mais gente.</p>
+    </div></div>`;
+  rbDesenharNovo(); rbDesenharFila();
+}
+function rbDesenharNovo() {
+  const el = document.getElementById('rb-novo'); if (!el) return;
+  const t = RB.tipo, max = t === 'carrossel' ? 10 : 1, aceita = t === 'reels' ? 'video/*' : t === 'foto' ? 'image/*' : 'image/*,video/*';
+  const leg = (document.getElementById('rb-leg') || {}).value ?? RB.leg ?? '', hash = (document.getElementById('rb-hash') || {}).value ?? RB.hash ?? '', ideia = (document.getElementById('rb-ideia') || {}).value ?? RB.ideia ?? '';
+  const dt = (document.getElementById('rb-dt') || {}).value || '';
+  el.innerHTML = `<h3>➕ Novo post</h3>
+    <div class="rb-tipos">${RB_TIPOS.map(([k, r]) => `<button class="${k === t ? 'on' : ''}" onclick="rbTipo('${k}')">${r}</button>`).join('')}</div>
+    <div class="rb-midias">${RB.midias.map((m, i) => rbMiniatura(m, i, true)).join('')}
+      ${RB.midias.length < max ? `<button class="rb-add" onclick="document.getElementById('rb-arq').click()">＋ ${t === 'reels' ? 'Vídeo' : t === 'carrossel' ? 'Fotos' : 'Foto/vídeo'}</button>` : ''}
+      ${t === 'reels' && !RB.midias.length ? `<button class="rb-add" style="border-color:#60a5fa;background:#eff6ff;color:#1d4ed8;" onclick="rbEscolherEstudio()">🎞️ Do Estúdio</button>` : ''}</div>
+    <input type="file" id="rb-arq" accept="${aceita}" ${max > 1 ? 'multiple' : ''} style="display:none" onchange="rbArquivos(this.files)">
+    <div id="rb-estudio"></div>
+    ${t === 'story' ? '<p class="rb-dica" style="margin-top:0">Story não tem legenda pela conexão oficial — vai só a foto/vídeo.</p>' : `
+    <div class="rb-linha"><textarea id="rb-ideia" class="rb-ideia" style="flex:1;min-width:220px;" placeholder="Sobre o que é o post? (ex.: 3 erros do líder novo na primeira semana)">${escapeHtml(ideia)}</textarea>
+      <button style="width:auto;" onclick="rbLegendaIA(this)">✨ Escrever com IA</button></div>
+    <textarea id="rb-leg" placeholder="Legenda" style="margin-top:8px;">${escapeHtml(leg)}</textarea>
+    <input id="rb-hash" placeholder="#hashtags (3 a 5 específicas do assunto)" value="${escapeHtml(hash)}">`}
+    <div class="rb-quando">${[['auto', '🤖 Melhor horário livre'], ['agora', '🚀 Agora'], ['data', '📅 Escolher'], ['rascunho', '📝 Rascunho']].map(([k, r]) => `<label class="${RB.quando === k ? 'on' : ''}"><input type="radio" name="rb-q" ${RB.quando === k ? 'checked' : ''} onchange="rbQuando('${k}')">${r}</label>`).join('')}
+      ${RB.quando === 'data' ? `<input type="datetime-local" id="rb-dt" value="${escapeHtml(dt)}">` : ''}</div>
+    <button id="rb-enviar" style="width:auto;padding:11px 22px;" onclick="rbCriar(this)" ${RB.enviando ? 'disabled' : ''}>${RB.enviando ? 'Enviando arquivo…' : RB.quando === 'agora' ? '🚀 Publicar agora' : RB.quando === 'rascunho' ? 'Salvar rascunho' : '➕ Colocar na fila'}</button>`;
+}
+function rbGuardarTextos() { ['leg', 'hash', 'ideia'].forEach(k => { const e = document.getElementById('rb-' + k); if (e) RB[k] = e.value; }); }
+function rbTipo(k) { rbGuardarTextos(); RB.tipo = k; const max = k === 'carrossel' ? 10 : 1; RB.midias = RB.midias.filter(m => k !== 'reels' || rbEhVideo(m)).slice(0, max); if (k !== 'reels') RB.projetoId = null; rbDesenharNovo(); }
+function rbQuando(k) { rbGuardarTextos(); RB.quando = k; rbDesenharNovo(); }
+function rbTirarMidia(i) { rbGuardarTextos(); const m = RB.midias.splice(i, 1)[0]; if (m && m.local) URL.revokeObjectURL(m.local); if (m && m.projetoId) RB.projetoId = null; rbDesenharNovo(); }
+async function rbArquivos(lista) {
+  rbGuardarTextos();
+  const max = RB.tipo === 'carrossel' ? 10 : 1, fs = [...(lista || [])].slice(0, max - RB.midias.length);
+  for (const f of fs) {
+    if (RB.tipo === 'reels' && !/^video\//.test(f.type) && !/\.(mp4|mov|m4v|webm)$/i.test(f.name)) { mostrarToast('Reels precisa de vídeo.', true); continue; }
+    const m = { local: URL.createObjectURL(f), mime: f.type || '', progresso: 0, nome: f.name, k: 'm' + Math.random().toString(36).slice(2, 9) }; RB.midias.push(m); RB.enviando++; rbDesenharNovo();
+    evEnviarArquivo(f, p => { m.progresso = p; const pg = document.querySelector(`[data-k="${m.k}"] .pg`); if (pg) pg.textContent = Math.round(p * 100) + '%'; })
+      .then(r => { m.url = r.url; m.mime = r.mime || m.mime; m.progresso = 1; if (!rbEhVideo(m)) m.thumb = r.url; })
+      .catch(e => { mostrarToast('Falha ao enviar ' + f.name + ': ' + e.message, true); RB.midias = RB.midias.filter(x => x !== m); })
+      .finally(() => { RB.enviando--; rbGuardarTextos(); rbDesenharNovo(); });
+  }
+}
+async function rbEscolherEstudio() {
+  const el = document.getElementById('rb-estudio'); if (!el) return;
+  el.innerHTML = '<p class="rb-dica">Carregando vídeos do Estúdio…</p>';
+  try { RB.videos = (await api('/api/admin/estudio/robo/videos')).videos; } catch (e) { el.innerHTML = `<p class="rb-err">${escapeHtml(e.message)}</p>`; return; }
+  el.innerHTML = RB.videos.length ? `<div class="rb-midias">${RB.videos.map(v => `<div style="width:96px;cursor:pointer;" onclick="rbUsarVideo(${v.id})">${rbMiniatura({ url: v.video_url, mime: 'video/mp4' })}<small style="display:block;font-size:11px;line-height:1.2;margin-top:3px;">${escapeHtml(v.titulo || 'Vídeo')}</small></div>`).join('')}</div>`
+    : '<p class="rb-dica">Nenhum vídeo exportado no Estúdio ainda. Exporte um vídeo lá (ou envie um arquivo aqui).</p>';
+}
+function rbUsarVideo(id) {
+  const v = (RB.videos || []).find(x => x.id === id); if (!v) return; rbGuardarTextos();
+  RB.midias = [{ url: v.video_url.split('?')[0], mime: 'video/mp4', projetoId: v.id }]; RB.projetoId = v.id;
+  if (!RB.leg && v.legenda) RB.leg = v.legenda; if (!RB.hash && v.hashtags) RB.hash = v.hashtags; if (!RB.ideia) RB.ideia = v.titulo || '';
+  const el = document.getElementById('rb-leg'); if (el && !el.value) el.value = RB.leg; rbDesenharNovo();
+}
+async function rbLegendaIA(bt) {
+  rbGuardarTextos(); if (!(RB.ideia || '').trim() && !(RB.leg || '').trim()) { mostrarToast('Escreva em poucas palavras sobre o que é o post.', true); return; }
+  bt.disabled = true; bt.textContent = '✨ Escrevendo…';
+  try { const r = await api('/api/admin/estudio/robo/legenda', { method: 'POST', body: JSON.stringify({ ideia: RB.ideia, legenda: RB.leg, tipo: RB.tipo }) }); RB.leg = r.legenda; RB.hash = r.hashtags; document.getElementById('rb-leg').value = r.legenda; document.getElementById('rb-hash').value = r.hashtags; }
+  catch (e) { mostrarToast(e.message, true); }
+  bt.disabled = false; bt.textContent = '✨ Escrever com IA';
+}
+async function rbCriar(bt) {
+  rbGuardarTextos();
+  if (RB.enviando) { mostrarToast('Espere o arquivo terminar de subir.', true); return; }
+  if (!RB.d.instagram.conectado && RB.quando !== 'rascunho') { mostrarToast('Conecte o Instagram primeiro (botão "Entrar com Instagram").', true); return; }
+  const prontas = RB.midias.filter(m => m.url);
+  if (!prontas.length) { mostrarToast('Adicione a foto ou o vídeo.', true); return; }
+  if (RB.tipo === 'carrossel' && prontas.length < 2) { mostrarToast('Carrossel precisa de 2 a 10 fotos.', true); return; }
+  let quando = RB.quando;
+  if (quando === 'data') { const v = (document.getElementById('rb-dt') || {}).value; if (!v) { mostrarToast('Escolha a data e a hora.', true); return; } quando = new Date(v).toISOString(); }
+  bt.disabled = true;
+  try {
+    const r = await api('/api/admin/estudio/robo/posts', { method: 'POST', body: JSON.stringify({ tipo: RB.tipo, midias: prontas.map(m => ({ url: m.url, mime: m.mime, thumb: m.thumb || '' })), projetoId: RB.projetoId || null, legenda: RB.leg || '', hashtags: RB.hash || '', quando }) });
+    mostrarToast(r.message);
+    RB.midias.forEach(m => m.local && URL.revokeObjectURL(m.local)); Object.assign(RB, { midias: [], leg: '', hash: '', ideia: '', projetoId: null });
+    RB.d = await api('/api/admin/estudio/robo'); rbDesenhar();
+    if (quando === 'agora') { clearTimeout(RB.t); RB.t = setTimeout(rbRecarregar, 15000); }
+  } catch (e) { mostrarToast(e.message, true); bt.disabled = false; }
+}
+function rbDesenharFila() {
+  const el = document.getElementById('rb-fila'); if (!el) return;
+  const L = RB.d.posts;
+  if (!L.length) { el.innerHTML = '<p class="rb-dica">Fila vazia. Adicione um post acima e o robô publica no melhor horário.</p>'; return; }
+  el.innerHTML = L.map(p => {
+    const ed = RB.editando === p.id, m = p.midias[0] || {};
+    const quando = p.status === 'publicado' ? 'Publicado ' + rbData(p.publicado_em) : p.status === 'agendado' ? rbData(p.quando) + (p.auto_horario ? ' · melhor horário' : '') : '';
+    return `<div class="rb-item ${p.status}">${rbMiniatura(m)}<div class="rb-item-c">
+      <div><span class="rb-st ${p.status}">${RB_ST[p.status] || p.status}</span><b style="font-size:13px;">${(RB_TIPOS.find(t => t[0] === p.tipo) || ['', p.tipo])[1]}${p.midias.length > 1 ? ' · ' + p.midias.length + ' itens' : ''}</b> <small style="color:#64748b;">${quando}</small></div>
+      ${ed ? `<textarea id="rb-ed-leg" style="min-height:90px;">${escapeHtml(p.legenda || '')}</textarea><input id="rb-ed-hash" value="${escapeHtml(p.hashtags || '')}" placeholder="#hashtags"><input type="datetime-local" id="rb-ed-dt" style="width:auto;">
+        <div class="rb-acoes"><button class="pri" onclick="rbSalvarEdicao(${p.id})">Salvar</button><button onclick="RB.editando=null;rbDesenharFila()">Cancelar</button></div>`
+      : `<p>${escapeHtml((p.legenda || (p.tipo === 'story' ? '(story sem legenda)' : '(sem legenda)')).slice(0, 220))}</p>`}
+      ${p.erro ? `<div class="rb-err">${escapeHtml(p.erro)}</div>` : ''}
+      ${ed ? '' : `<div class="rb-acoes">${p.status === 'publicado' ? (p.permalink ? `<a href="${escapeHtml(p.permalink)}" target="_blank" rel="noopener">Ver no Instagram ↗</a>` : '') + `<button class="del" onclick="rbExcluir(${p.id})">Tirar da lista</button>`
+        : p.status === 'publicando' ? '<small class="rb-dica">O Instagram está processando… (1 a 5 min)</small>'
+        : `<button class="pri" onclick="rbAcao(${p.id},'agora')">🚀 Postar agora</button>${p.status !== 'agendado' || !p.auto_horario ? `<button onclick="rbAcao(${p.id},'auto')">🤖 Melhor horário</button>` : ''}<button onclick="RB.editando=${p.id};rbDesenharFila()">✏️ Editar</button>${p.status === 'agendado' ? `<button onclick="rbAcao(${p.id},'rascunho')">⏸ Pausar</button>` : ''}<button class="del" onclick="rbExcluir(${p.id})">🗑️ Excluir</button>`}</div>`}
+    </div></div>`;
+  }).join('');
+}
+async function rbAcao(id, quando) {
+  try { const r = await api('/api/admin/estudio/robo/posts/' + id, { method: 'PUT', body: JSON.stringify({ quando }) }); mostrarToast(r.message); await rbRecarregar(); if (quando === 'agora') { clearTimeout(RB.t); RB.t = setTimeout(rbRecarregar, 15000); } }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function rbSalvarEdicao(id) {
+  const b = { legenda: document.getElementById('rb-ed-leg').value, hashtags: document.getElementById('rb-ed-hash').value }, dt = document.getElementById('rb-ed-dt').value;
+  if (dt) b.quando = new Date(dt).toISOString();
+  try { const r = await api('/api/admin/estudio/robo/posts/' + id, { method: 'PUT', body: JSON.stringify(b) }); mostrarToast(r.message); RB.editando = null; await rbRecarregar(); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function rbExcluir(id) {
+  if (!confirm('Excluir este post da fila?')) return;
+  try { const r = await api('/api/admin/estudio/robo/posts/' + id, { method: 'DELETE' }); mostrarToast(r.message); await rbRecarregar(); } catch (e) { mostrarToast(e.message, true); }
+}
+async function rbLigar(ativo) {
+  try { const r = await api('/api/admin/estudio/robo/config', { method: 'PUT', body: JSON.stringify({ ativo }) }); RB.d.cfg = r.cfg; mostrarToast(r.message); rbGuardarTextos(); rbDesenhar(); } catch (e) { mostrarToast(e.message, true); }
+}
+async function rbSalvarCfg() {
+  const b = { postsDia: Number(document.getElementById('rb-pd').value), intervaloHoras: Number(document.getElementById('rb-iv').value), horarios: document.getElementById('rb-hs').value.split(/[,;\s]+/).filter(Boolean).map(h => /^\d:\d\d$/.test(h) ? '0' + h : h), variacao: document.getElementById('rb-var').checked, tom: document.getElementById('rb-tom').value };
+  try { const r = await api('/api/admin/estudio/robo/config', { method: 'PUT', body: JSON.stringify(b) }); RB.d.cfg = r.cfg; mostrarToast('Configurações salvas ✅'); rbGuardarTextos(); rbDesenhar(); } catch (e) { mostrarToast(e.message, true); }
+}
 async function renderMinhasTarefas() {
   const cont = document.getElementById('conteudo');
   cont.innerHTML = '<div class="mtf"><p class="plano-meta">Carregando tarefas…</p></div>';

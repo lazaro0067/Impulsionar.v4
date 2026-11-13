@@ -16274,11 +16274,8 @@ function tempoDasCenasEst(falas, palavras, duracao) {
     });
     return out;
 }
-app.post('/api/admin/estudio/narrar', requireRole('admin', 'estudio'), async (req, res) => {
-    const b = req.body || {}, falas = (Array.isArray(b.falas) ? b.falas : [b.texto]).map(f => String(f || '').trim()).filter(Boolean).slice(0, 60);
-    const texto = falas.join(' ').slice(0, b.amostra ? 220 : 9000); if (texto.length < 3) return res.status(400).json({ error: 'Não há texto para narrar.' });
-    if (!b.amostra) { try { await consumirEst('narracoes', 1); } catch (e) { return erroLimiteEst(res, e); } }
-    try {
+async function narrarEst(falas, voz, velocidade, texto) {
+    const b = { voz, velocidade }; texto = texto || falas.join(' ').slice(0, 9000);
         // texto grande vai em pedaços (o serviço aceita ~3000 caracteres por vez)
         const blocos = []; let atual = '';
         texto.split(/(?<=[.!?])\s+/).forEach(fr => { if ((atual + ' ' + fr).length > 2500 && atual) { blocos.push(atual); atual = fr; } else atual = (atual ? atual + ' ' : '') + fr; }); if (atual) blocos.push(atual);
@@ -16298,8 +16295,14 @@ app.post('/api/admin/estudio/narrar', requireRole('admin', 'estudio'), async (re
         const nome = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + '.mp3', arq = path.join(PASTA_UPLOADS, nome);
         fs.writeFileSync(arq, Buffer.concat(mp3s));
         copiarUploadParaBanco({ filename: nome, path: arq, size: fs.statSync(arq).size, mimetype: 'audio/mpeg' });
-        res.json({ url: '/uploads/' + nome, duracao: +deslocamento.toFixed(2), palavras, provedor, aviso: provedor === 'google' ? 'A voz natural da Microsoft não respondeu e foi usada a voz de reserva (mais robótica). Para uma voz natural, use a sua voz treinada ou uma voz premium.' : '', cenas: tempoDasCenasEst(falas, palavras, deslocamento) });
-    } catch (e) { console.warn('Narração:', e.message); res.status(502).json({ error: 'Não consegui gerar a voz agora: ' + e.message }); }
+        return ({ url: '/uploads/' + nome, duracao: +deslocamento.toFixed(2), palavras, provedor, aviso: provedor === 'google' ? 'A voz natural da Microsoft não respondeu e foi usada a voz de reserva (mais robótica). Para uma voz natural, use a sua voz treinada ou uma voz premium.' : '', cenas: tempoDasCenasEst(falas, palavras, deslocamento) });
+}
+app.post('/api/admin/estudio/narrar', requireRole('admin', 'estudio'), async (req, res) => {
+    const b = req.body || {}, falas = (Array.isArray(b.falas) ? b.falas : [b.texto]).map(f => String(f || '').trim()).filter(Boolean).slice(0, 60);
+    const texto = falas.join(' ').slice(0, b.amostra ? 220 : 9000); if (texto.length < 3) return res.status(400).json({ error: 'Não há texto para narrar.' });
+    if (!b.amostra) { try { await consumirEst('narracoes', 1); } catch (e) { return erroLimiteEst(res, e); } }
+    try { res.json(await narrarEst(falas, b.voz, b.velocidade, texto)); }
+    catch (e) { console.warn('Narração:', e.message); res.status(502).json({ error: 'Não consegui gerar a voz agora: ' + e.message }); }
 });
 app.get('/api/admin/estudio/vozes', requireRole('admin', 'estudio'), async (req, res) => {
     const cfg = await lerVozConfigEst();
@@ -17100,32 +17103,68 @@ function montarAssEst(textos, W, H) {
     });
     return linhas.join('\n');
 }
+// 🎨 Imagem profissional no vídeo final: a MESMA correção de cor do editor (balanço de branco + curva de tons + saturação),
+// os ajustes manuais de brilho/contraste/saturação, limpeza de granulado/compressão e nitidez (mais forte quando o vídeo original é pequeno)
+function evCurvaGradeSrv(g, x) {
+    let v = Math.max(0, Math.min(1, (x - g.preto) / (g.branco - g.preto))); v = Math.pow(v, g.gama);
+    const om = Number.isFinite(g.ombro) ? g.ombro : 1;
+    if (om < 1 && v > om) { const k = 2.2, t = (v - om) / (1 - om); v = om + (1 - om) * (1 - Math.exp(-k * t)) / (1 - Math.exp(-k)); }
+    v = v + (Number(g.curvaS) || 0) * Math.sin((v - 0.5) * Math.PI) * 0.5 * (1 - Math.abs(2 * v - 1) * 0.3);
+    return Math.max(0, Math.min(1, 0.012 + v * 0.976));
+}
+function evImagemSrv(d, c, m, srcH, H, ehImagem) {
+    const pre = ehImagem ? [] : ['hqdn3d=1.5:1.5:3:3'], g = m && m.grade, n = v => typeof v === 'number' && isFinite(v);
+    const gOk = g && typeof g === 'object' && n(g.preto) && n(g.branco) && g.branco - g.preto > 0.2 && n(g.gama) && g.gama > 0.3 && g.gama < 3 && n(g.sat) && Array.isArray(g.wb) && g.wb.length === 3 && g.wb.every(n);
+    let sat = 1.05, ct = 1.03, br = 0, nit = 0;
+    if (d.corAuto && c.corAuto !== false && gOk) {
+        const it = d.corIntensidade === undefined ? 1 : Math.max(0, Math.min(1.5, Number(d.corIntensidade) || 0)), mix = (a, b) => a + (b - a) * it;
+        const wb = g.wb.map(x => mix(1, x)); if (wb.some(x => Math.abs(x - 1) > 0.01)) pre.push(`colorchannelmixer=rr=${wb[0].toFixed(4)}:gg=${wb[1].toFixed(4)}:bb=${wb[2].toFixed(4)}`);
+        pre.push(`curves=all='${Array.from({ length: 17 }, (_, i) => { const x = i / 16; return x.toFixed(4) + '/' + mix(x, evCurvaGradeSrv(g, x)).toFixed(4); }).join(' ')}'`);
+        sat = mix(1, g.sat) * 1.02; ct = 1; nit = (Number(g.nitidez) || 0) * it;
+    }
+    const aj = Object.assign({}, d.ajustes || {}, c.ajustes || {});
+    if (n(aj.brilho) && aj.brilho !== 100) br = Math.max(-0.3, Math.min(0.3, (aj.brilho / 100 - 1) * 0.5));
+    if (n(aj.contraste) && aj.contraste !== 100) ct *= aj.contraste / 100;
+    if (n(aj.saturacao) && aj.saturacao !== 100) sat *= aj.saturacao / 100;
+    pre.push(`eq=contrast=${ct.toFixed(3)}:saturation=${Math.max(0, Math.min(3, sat)).toFixed(3)}:brightness=${br.toFixed(3)}`);
+    const pequeno = srcH && srcH < H * 0.9, forca = Math.min(1.2, (pequeno ? 0.75 : 0.45) + nit * 2);
+    return { pre: pre.join(','), pos: `unsharp=5:5:${forca.toFixed(2)}:5:5:0` };
+}
 app.post('/api/admin/estudio/projetos/:id/render-rapido', requireRole('admin', 'estudio'), async (req, res) => {
     if (!(await ffmpegDisponivel())) return res.status(400).json({ error: 'O servidor não tem o ffmpeg para montar o vídeo.' });
     const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [req.params.id]).catch(() => null); if (!p) return res.status(404).json({ error: 'Projeto não encontrado.' });
+    try { const r = renderRapidoEst(p, !!(req.body || {}).leve); res.json({ job: r.id }); } // 📱 leve = versão para WhatsApp (720p)
+    catch (e) { res.status(e.status || 500).json({ error: e.message }); }
+});
+// monta o MP4 final no servidor (usado pelo botão "Baixar rápido" e pelo post criado pela IA)
+function renderRapidoEst(p, leve) {
     let d = {}; try { d = JSON.parse(p.dados || '{}'); } catch (e) {}
-    const formatos = { '9:16': [1080, 1920], '4:5': [1080, 1350], '1:1': [1080, 1080], '16:9': [1920, 1080] }, [W, H] = formatos[p.formato] || formatos['9:16'];
+    const formatos = { '9:16': [1080, 1920], '4:5': [1080, 1350], '1:1': [1080, 1080], '16:9': [1920, 1080] }, [W0, H0] = formatos[p.formato] || formatos['9:16'], W = leve ? Math.round(W0 * 2 / 3 / 2) * 2 : W0, H = leve ? Math.round(H0 * 2 / 3 / 2) * 2 : H0;
     const midias = Object.fromEntries((d.midias || []).map(m => [m.id, m]));
     const clips = (d.clips || []).map(c => ({ c, m: midias[c.midia] })).filter(x => x.m && (x.m.tipo === 'video' || x.m.tipo === 'imagem'));
-    if (!clips.length) return res.status(400).json({ error: 'O projeto não tem vídeo na linha do tempo.' });
-    const faltam = clips.filter(x => !arquivoDaUrlEst(x.m.url)).map(x => x.m.nome || 'vídeo'); if (faltam.length) return res.status(400).json({ error: 'Falta no servidor o arquivo de: ' + [...new Set(faltam)].join(', ') + '. Espere terminar de subir ou reenvie.' });
+    if (!clips.length) throw Object.assign(new Error('O projeto não tem vídeo na linha do tempo.'), { status: 400 });
+    const faltam = clips.filter(x => !arquivoDaUrlEst(x.m.url)).map(x => x.m.nome || 'vídeo'); if (faltam.length) throw Object.assign(new Error('Falta no servidor o arquivo de: ' + [...new Set(faltam)].join(', ') + '. Espere terminar de subir ou reenvie.'), { status: 400 });
     const id = require('crypto').randomBytes(6).toString('hex'), job = { status: 'processando', progresso: 0, t: Date.now() }; JOBS_RENDER.set(id, job); setTimeout(() => JOBS_RENDER.delete(id), 6 * 3600 * 1000);
-    res.json({ job: id });
-    (async () => {
+    const pronto = (async () => {
         const tmpDir = path.join(require('os').tmpdir(), 'render-' + id); fs.mkdirSync(tmpDir, { recursive: true });
         try {
             const args = ['-y', '-hide_banner', '-loglevel', 'error'], fil = []; let n = 0, total = 0;
             for (const { c, m } of clips) {
                 const arq = arquivoDaUrlEst(m.url), vel = Math.max(0.25, Math.min(4, Number(c.vel) || 1));
                 if (m.tipo === 'imagem') {
-                    const dur = Math.max(0.3, (Number(c.fim) || 3) - (Number(c.ini) || 0)); args.push('-loop', '1', '-t', String(dur), '-i', arq);
-                    fil.push(`[${n}:v]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},fps=30,format=yuv420p,setsar=1[v${n}]`, `anullsrc=r=48000:cl=stereo,atrim=0:${dur.toFixed(3)}[a${n}]`); total += dur;
+                    const dur = Math.max(0.3, (Number(c.fim) || 3) - (Number(c.ini) || 0)); args.push('-loop', '1', '-framerate', '30', '-t', String(dur), '-i', arq);
+                    const im = evImagemSrv(d, c, m, 0, H, true);
+                    // 🎥 foto com movimento de câmera (Ken Burns): aproxima ou afasta devagar, alternando o lado — nada fica parado
+                    const kb = c.kb ? (() => { const fr = Math.max(1, Math.round(dur * 30)), W2 = Math.round(W * 1.5 / 2) * 2, H2 = Math.round(H * 1.5 / 2) * 2, entra = n % 2 === 0, z = entra ? `1+0.14*on/${fr}` : `1.14-0.14*on/${fr}`, px = ['iw/2-(iw/zoom/2)', 'iw*0.45-(iw/zoom/2)', 'iw*0.55-(iw/zoom/2)'][n % 3];
+                        return `scale=${W2}:${H2}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W2}:${H2},zoompan=z='${z}':x='max(0,min(iw-iw/zoom,${px}))':y='ih/2-(ih/zoom/2)':d=1:s=${W}x${H}:fps=30`; })() : '';
+                    fil.push(`[${n}:v]${im.pre},${kb || `scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H}`},${im.pos},fps=30,format=yuv420p,setsar=1[v${n}]`, `anullsrc=r=48000:cl=stereo,atrim=0:${dur.toFixed(3)}[a${n}]`); total += dur;
                 } else {
                     let info = ''; try { await rodarFfmpegJa(['-hide_banner', '-i', arq], 20000); } catch (e) { info = String(e.stderr || ''); }
                     const temAudio = /Stream #[^\n]*Audio:/.test(info), ini = Math.max(0, Number(c.ini) || 0), fim = Math.max(ini + 0.1, Number(c.fim) || ini + 3), dur = (fim - ini) / vel;
                     args.push('-i', arq);
                     const zoom = Math.max(1, Math.min(2, Number(c.zoom) || 1)), zf = zoom > 1.001 ? `,scale=iw*${zoom.toFixed(3)}:ih*${zoom.toFixed(3)},crop=${W}:${H}` : '';
-                    fil.push(`[${n}:v]trim=start=${ini.toFixed(3)}:end=${fim.toFixed(3)},setpts=(PTS-STARTPTS)/${vel},scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}${zf},fps=30,format=yuv420p,setsar=1[v${n}]`);
+                    const rs = info.match(/Stream #[^\n]*Video:[^\n]*?\b(\d{2,5})x(\d{2,5})\b/), lado = rs ? Math.min(Number(rs[1]), Number(rs[2])) : 0, im = evImagemSrv(d, c, m, lado, Math.min(W, H), false);
+                    fil.push(`[${n}:v]trim=start=${ini.toFixed(3)}:end=${fim.toFixed(3)},setpts=(PTS-STARTPTS)/${vel},${im.pre},scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H}${zf},${im.pos},fps=30,format=yuv420p,setsar=1[v${n}]`);
                     const vol = c.mudo ? 0 : (c.vol !== undefined ? Number(c.vol) : 1);
                     if (temAudio) { let at = ''; let v2 = vel; while (v2 > 2) { at += ',atempo=2'; v2 /= 2; } while (v2 < 0.5) { at += ',atempo=0.5'; v2 /= 0.5; } if (Math.abs(v2 - 1) > 0.001) at += `,atempo=${v2.toFixed(4)}`;
                         fil.push(`[${n}:a]atrim=start=${ini.toFixed(3)}:end=${fim.toFixed(3)},asetpts=PTS-STARTPTS${at},aresample=48000,aformat=channel_layouts=stereo,volume=${vol.toFixed(3)}[a${n}]`); }
@@ -17144,22 +17183,24 @@ app.post('/api/admin/estudio/projetos/:id/render-rapido', requireRole('admin', '
             if (ex.vozLimpa) { const lp = Object.assign({ ia: 1, reducao: 24, graves: 100, zumbido: 0, chiado: 9000, realce: 2.5, silencio: true, nivelar: true, ganho: 0, isolar: true }, ex.limpeza || {}); fil.push(`[ac]${filtroLimpezaAudio(lp)}[acl]`); saidaA = '[acl]'; }
             if (extras.length) { fil.push(`${saidaA}${extras.join('')}amix=inputs=${extras.length + 1}:duration=first:normalize=0[am]`); saidaA = '[am]'; }
             // 🔊 volume no padrão das redes (Instagram/Reels -14 LUFS; aula horizontal -16 LUFS), sem estourar
-            fil.push(`${saidaA}loudnorm=I=${p.formato === '16:9' ? -16 : -14}:TP=-1.0:LRA=11,aresample=48000[afin]`); saidaA = '[afin]';
+            fil.push(`${saidaA}alimiter=limit=0.89:attack=5:release=60:level=disabled,loudnorm=I=${p.formato === '16:9' ? -16 : -14}:TP=-1.0:LRA=11,aresample=48000[afin]`); saidaA = '[afin]';
             let saidaV = '[vc]';
             if (await ffmpegTemLegendas()) { const assArq = path.join(tmpDir, 'leg.ass'); fs.writeFileSync(assArq, montarAssEst(d.textos, W, H)); fil.push(`[vc]subtitles=${assArq.replace(/\\/g, '/').replace(/:/g, '\\:')}[vs]`); saidaV = '[vs]'; }
             else job.aviso = 'O ffmpeg do servidor não tem o módulo de legendas: o vídeo saiu sem os textos.';
             const nome = 'rapido-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + '.mp4', out = path.join(PASTA_UPLOADS, nome), tmpOut = path.join(tmpDir, 'saida.mp4');
             // 🎬 padrão profissional: H.264 High, 30 fps constantes (sem travadas), 15–20 Mbps; vídeo curto sai no capricho, aula longa um pouco mais rápido
-            const curto = total <= 240, qual = curto ? ['-preset', 'medium', '-crf', '18'] : ['-preset', 'faster', '-crf', '19'];
-            args.push('-filter_complex', fil.join(';'), '-map', saidaV, '-map', saidaA, '-c:v', 'libx264', ...qual, '-profile:v', 'high', '-level:v', '4.2', '-maxrate', '20M', '-bufsize', '40M', '-g', '60', '-pix_fmt', 'yuv420p', '-r', '30', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', '-t', total.toFixed(3), tmpOut);
+            const curto = total <= 240, qual = leve ? ['-preset', 'faster', '-crf', '23', '-maxrate', '3500k', '-bufsize', '7M'] : (curto ? ['-preset', 'fast', '-crf', '18'] : ['-preset', 'veryfast', '-crf', '19']).concat(['-maxrate', '20M', '-bufsize', '40M']);
+            args.push('-filter_complex', fil.join(';'), '-map', saidaV, '-map', saidaA, '-c:v', 'libx264', ...qual, '-profile:v', 'high', '-level:v', '4.2', '-g', '60', '-pix_fmt', 'yuv420p', '-r', '30', '-c:a', 'aac', '-b:a', leve ? '128k' : '192k', '-ar', '48000', '-movflags', '+faststart', '-t', total.toFixed(3), tmpOut);
             job.status = 'processando'; job.total = total;
             await rodarFfmpeg(args, 60 * 60 * 1000);
             try { await fs.promises.rename(tmpOut, out); } catch (e) { await fs.promises.copyFile(tmpOut, out); }
             Object.assign(job, { status: 'pronto', url: '/uploads/' + nome, progresso: 1 });
         } catch (e) { Object.assign(job, { status: 'erro', erro: String(e.stderr || e.message).slice(0, 300) }); console.warn('Render rápido:', job.erro); }
         finally { fs.rm(tmpDir, { recursive: true, force: true }, () => {}); }
+        return job;
     })();
-});
+    return { id, job, pronto };
+}
 app.get('/api/admin/estudio/render-rapido/:job', requireRole('admin', 'estudio'), (req, res) => { const j = JOBS_RENDER.get(req.params.job); if (!j) return res.status(404).json({ error: 'Não encontrado (o servidor reiniciou). Tente de novo.' }); res.json(j); });
 
 // ----- Teleprompter: link para gravar no celular com o roteiro rolando na tela -----
@@ -17779,6 +17820,395 @@ setInterval(async () => {
     } catch (e) { /* tenta no próximo minuto */ }
 }, 60 * 1000);
 
+
+// ============================================================
+// 🤖 ROBÔ DO INSTAGRAM — fila de posts que publica sozinho pela conexão OFICIAL da Meta
+// (Instagram API com login do Instagram). Não guarda senha e não simula cliques:
+// isso é proibido pelos termos do Instagram e é o que derruba alcance/bloqueia contas.
+// Faz: Reels, foto, carrossel (até 10) e story (foto/vídeo) · legenda e hashtags pela IA ·
+// melhor horário calculado pelos seus posts · intervalo mínimo e limite por dia ·
+// pequena variação de minutos (não posta sempre no minuto exato) · novas tentativas.
+// ============================================================
+db.run(`CREATE TABLE IF NOT EXISTS robo_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, dono INTEGER DEFAULT 0, tipo TEXT DEFAULT 'foto', midias TEXT, legenda TEXT, hashtags TEXT,
+    quando TEXT, status TEXT DEFAULT 'fila', ig_media_id TEXT, permalink TEXT, erro TEXT, tentativas INTEGER DEFAULT 0, projeto_id INTEGER, auto_horario INTEGER DEFAULT 0,
+    publicado_em TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+const TIPOS_ROBO = ['reels', 'foto', 'carrossel', 'story'];
+const CFG_ROBO_PADRAO = { ativo: true, postsDia: 2, intervaloHoras: 3, horarios: [], variacao: true, tom: '' };
+const HORARIOS_ROBO_PADRAO = ['07:40', '12:10', '18:40', '20:30'];
+async function cfgRobo(dono) { const r = await dbGet(`SELECT value FROM integration_settings WHERE key = ?`, [chaveIgEst('robo_cfg', dono)]).catch(() => null); try { return Object.assign({}, CFG_ROBO_PADRAO, JSON.parse((r && r.value) || '{}')); } catch (e) { return { ...CFG_ROBO_PADRAO }; } }
+function salvarCfgRobo(dono, c) { return new Promise(ok => db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [chaveIgEst('robo_cfg', dono), JSON.stringify(c)], () => ok())); }
+const horaBrRobo = d => new Date(new Date(d).getTime() - 3 * 3600000); // horário de Brasília (sem horário de verão)
+const diaBrRobo = d => horaBrRobo(d).toISOString().slice(0, 10);
+// melhores horários: olha os seus últimos posts e vê em que horas eles tiveram mais interação
+async function melhoresHorariosRobo(dono) {
+    const cache = await dbGet(`SELECT value FROM integration_settings WHERE key = ?`, [chaveIgEst('robo_horarios', dono)]).catch(() => null);
+    try { const c = JSON.parse((cache && cache.value) || 'null'); if (c && c.dia === diaBrRobo(Date.now()) && Array.isArray(c.horarios)) return c; } catch (e) {}
+    let out = { dia: diaBrRobo(Date.now()), horarios: HORARIOS_ROBO_PADRAO, fonte: 'padrao' };
+    try {
+        const ig = await lerIgEst(dono);
+        if (ig.token) {
+            const posts = ((await igEst('GET', `/${euIg(ig)}/media`, { fields: 'timestamp,like_count,comments_count', limit: '40' }, ig.token)).data || []);
+            const por = {}; posts.forEach(p => { const h = horaBrRobo(p.timestamp).getUTCHours(); if (isNaN(h)) return; const x = por[h] = por[h] || { n: 0, s: 0 }; x.n++; x.s += (Number(p.like_count) || 0) + (Number(p.comments_count) || 0) * 3; });
+            const top = Object.entries(por).filter(([, v]) => v.n >= 2).map(([h, v]) => [Number(h), v.s / v.n]).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([h]) => h).sort((a, b) => a - b);
+            if (top.length >= 2) out = { dia: out.dia, horarios: top.map(h => String(h).padStart(2, '0') + ':' + (h < 12 ? '40' : '10')), fonte: 'seus_posts', analisados: posts.length };
+        }
+    } catch (e) {}
+    if (out.fonte === 'seus_posts') db.run(`INSERT INTO integration_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [chaveIgEst('robo_horarios', dono), JSON.stringify(out)]);
+    return out;
+}
+// próximo horário livre: respeita posts por dia e o intervalo mínimo entre posts (story não conta)
+async function proximoHorarioRobo(dono, ignorarId) {
+    const cfg = await cfgRobo(dono), hs = (cfg.horarios && cfg.horarios.length ? cfg.horarios : (await melhoresHorariosRobo(dono)).horarios).slice().sort();
+    const ocupados = (await dbAll(`SELECT quando FROM robo_posts WHERE dono = ? AND tipo != 'story' AND status IN ('agendado', 'publicando', 'publicado') AND quando > ? AND id != ?`, [dono, new Date(Date.now() - 2 * 86400000).toISOString(), ignorarId || 0]).catch(() => [])).map(r => new Date(r.quando).getTime());
+    const intervalo = Math.max(1, Number(cfg.intervaloHoras) || 3) * 3600000, porDia = Math.max(1, Number(cfg.postsDia) || 2);
+    for (let d = 0; d < 60; d++) {
+        const dia = diaBrRobo(Date.now() + d * 86400000);
+        const noDia = ocupados.filter(t => diaBrRobo(t) === dia).length; if (noDia >= porDia) continue;
+        for (const h of hs) {
+            const [hh, mm] = h.split(':').map(Number); let t = Date.parse(`${dia}T${String(hh).padStart(2, '0')}:${String(mm || 0).padStart(2, '0')}:00-03:00`);
+            if (cfg.variacao !== false) t += Math.round((Math.random() * 12 - 6) * 60000); // ±6 min: não posta sempre no minuto exato
+            if (t < Date.now() + 10 * 60000) continue;
+            if (ocupados.some(o => Math.abs(o - t) < intervalo)) continue;
+            return new Date(t).toISOString();
+        }
+    }
+    return new Date(Date.now() + 86400000).toISOString();
+}
+const caminhoRobo = url => path.join(PASTA_UPLOADS, path.basename(String(url || '').split('?')[0]));
+const ehVideoRobo = m => /^video\//.test(m.mime || '') || /\.(mp4|mov|m4v|webm|mkv|3gp)$/i.test(m.url || '');
+// o Instagram só aceita JPEG e proporção entre 4:5 e 1.91:1 no feed; vídeo em MP4 H.264
+async function prepararMidiaRobo(m, uso) {
+    const orig = caminhoRobo(m.url); if (!fs.existsSync(orig)) throw Object.assign(new Error('Arquivo não encontrado no servidor: ' + path.basename(orig) + '. Envie de novo.'), { definitivo: true });
+    const nome = 'robo-' + Date.now() + '-' + Math.round(Math.random() * 1e6);
+    if (ehVideoRobo(m)) {
+        if (/\.mp4$/i.test(orig) && m.pronto) return '/uploads/' + path.basename(orig);
+        const dest = path.join(PASTA_UPLOADS, nome + '.mp4');
+        const vf = uso === 'story' ? 'scale=1080:1920:force_original_aspect_ratio=decrease:flags=lanczos,pad=1080:1920:(ow-iw)/2:(oh-ih)/2' : "scale='min(1080,iw)':-2:flags=lanczos";
+        await rodarFfmpeg(['-y', '-hide_banner', '-loglevel', 'error', '-i', orig, '-t', '900', '-vf', vf + ',fps=30,format=yuv420p', '-c:v', 'libx264', '-profile:v', 'high', '-preset', 'veryfast', '-crf', '20', '-maxrate', '20M', '-bufsize', '40M', '-c:a', 'aac', '-b:a', '160k', '-ar', '48000', '-movflags', '+faststart', dest], 30 * 60000);
+        return '/uploads/' + path.basename(dest);
+    }
+    const dest = path.join(PASTA_UPLOADS, nome + '.jpg');
+    const vf = uso === 'story' ? 'scale=1080:1920:force_original_aspect_ratio=decrease:flags=lanczos,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black'
+        : uso === 'carrossel' ? 'scale=1080:1350:force_original_aspect_ratio=increase:flags=lanczos,crop=1080:1350'
+        : "crop='if(lt(iw/ih,0.8),iw,if(gt(iw/ih,1.91),ih*1.91,iw))':'if(lt(iw/ih,0.8),iw/0.8,ih)',scale='min(1440,iw)':-2:flags=lanczos";
+    await rodarFfmpeg(['-y', '-hide_banner', '-loglevel', 'error', '-i', orig, '-frames:v', '1', '-vf', vf, '-q:v', '2', dest], 120000);
+    return '/uploads/' + path.basename(dest);
+}
+async function esperarContainerRobo(id, token) {
+    for (let i = 0; i < 72; i++) {
+        const st = await igEst('GET', '/' + id, { fields: 'status_code,status' }, token);
+        if (st.status_code === 'FINISHED' || st.status_code === 'PUBLISHED') return;
+        if (st.status_code === 'ERROR' || st.status_code === 'EXPIRED') throw Object.assign(new Error('O Instagram recusou a mídia: ' + (st.status || st.status_code)), { definitivo: true });
+        await new Promise(r => setTimeout(r, 5000));
+    }
+    throw new Error('O Instagram demorou demais para processar.');
+}
+async function publicarRoboPost(id, base) {
+    const p = await dbGet(`SELECT * FROM robo_posts WHERE id = ?`, [id]); if (!p) throw Object.assign(new Error('Post não encontrado.'), { definitivo: true });
+    const ig = await lerIgEst(p.dono); if (!ig.userId || !ig.token) throw Object.assign(new Error('Conecte o Instagram no Robô.'), { definitivo: true });
+    base = String(base || '').replace(/\/$/, '');
+    if (!/^https:\/\//.test(base) || /localhost|127\.0\.0\.1/.test(base)) throw new Error('O sistema precisa estar num endereço público (https) para o Instagram buscar as fotos/vídeos.');
+    let midias = []; try { midias = JSON.parse(p.midias || '[]'); } catch (e) {}
+    if (!midias.length) throw Object.assign(new Error('Post sem foto/vídeo.'), { definitivo: true });
+    await new Promise(ok => db.run(`UPDATE robo_posts SET status = 'publicando', erro = NULL WHERE id = ?`, [id], ok));
+    const caption = [p.legenda || '', p.hashtags || ''].filter(Boolean).join('\n\n').slice(0, 2200);
+    const url = async (m, uso) => base + await prepararMidiaRobo(m, uso);
+    let cont;
+    if (p.tipo === 'carrossel') {
+        const filhos = [];
+        for (const m of midias.slice(0, 10)) {
+            const u = await url(m, 'carrossel');
+            const c = await igEst('POST', `/${ig.userId}/media`, ehVideoRobo(m) ? { media_type: 'VIDEO', video_url: u, is_carousel_item: 'true' } : { image_url: u, is_carousel_item: 'true' }, ig.token);
+            await esperarContainerRobo(c.id, ig.token); filhos.push(c.id);
+        }
+        if (filhos.length < 2) throw Object.assign(new Error('Carrossel precisa de pelo menos 2 fotos/vídeos.'), { definitivo: true });
+        cont = await igEst('POST', `/${ig.userId}/media`, { media_type: 'CAROUSEL', children: filhos.join(','), caption }, ig.token);
+    } else {
+        const m = midias[0], v = ehVideoRobo(m);
+        if (p.tipo === 'reels' && !v) throw Object.assign(new Error('Reels precisa de um vídeo.'), { definitivo: true });
+        const u = await url(m, p.tipo === 'story' ? 'story' : (v ? 'reels' : 'foto'));
+        const prm = p.tipo === 'story' ? (v ? { media_type: 'STORIES', video_url: u } : { media_type: 'STORIES', image_url: u })
+            : v ? { media_type: 'REELS', video_url: u, caption, share_to_feed: 'true' } : { image_url: u, caption };
+        cont = await igEst('POST', `/${ig.userId}/media`, prm, ig.token);
+    }
+    await esperarContainerRobo(cont.id, ig.token);
+    const pub = await igEst('POST', `/${ig.userId}/media_publish`, { creation_id: cont.id }, ig.token);
+    let link = ''; try { link = (await igEst('GET', '/' + pub.id, { fields: 'permalink' }, ig.token)).permalink || ''; } catch (e) {}
+    await new Promise(ok => db.run(`UPDATE robo_posts SET status = 'publicado', ig_media_id = ?, permalink = ?, publicado_em = ?, erro = NULL, tentativas = 0 WHERE id = ?`, [pub.id, link, new Date().toISOString(), id], ok));
+    if (p.projeto_id) db.run(`UPDATE estudio_projetos SET status = 'publicado', publicado_em = CURRENT_TIMESTAMP, ig_media_id = ?, ig_permalink = ? WHERE id = ?`, [pub.id, link, p.projeto_id]);
+    avisarRobo(p.dono, '🤖 Robô publicou no Instagram', (p.legenda || '').split('\n')[0].slice(0, 90) || 'Post publicado ✅');
+    return { id: pub.id, permalink: link };
+}
+async function avisarRobo(dono, title, body) {
+    try { const ids = dono ? [dono] : (await dbAll(`SELECT DISTINCT p.user_id FROM push_inscricoes p JOIN users u ON u.id = p.user_id WHERE u.role = 'admin'`).catch(() => [])).map(r => r.user_id); for (const u of ids) agPushUsuario(u, { title, body, url: '/#ir=roboInstagram' }).catch(() => {}); } catch (e) {}
+}
+const baseRobo = async () => (typeof appBaseUrlAtiva !== 'undefined' && urlPublicaValida(appBaseUrlAtiva) ? appBaseUrlAtiva : '') || ULTIMA_BASE_ESTUDIO || (await basePublicaEst()) || (typeof ULTIMA_BASE_DPO !== 'undefined' ? ULTIMA_BASE_DPO : '');
+const RODANDO_ROBO = new Set();
+async function rodarRoboPost(id, base) {
+    if (RODANDO_ROBO.has(id)) return; RODANDO_ROBO.add(id);
+    try {
+        const p = await dbGet(`SELECT dono FROM robo_posts WHERE id = ?`, [id]);
+        await ALS_EST.run({ dono: (p && p.dono) || 0 }, async () => { await consumirEst('instagram', 1); return publicarRoboPost(id, base || await baseRobo()); });
+    } catch (e) {
+        const t = ((await dbGet(`SELECT tentativas FROM robo_posts WHERE id = ?`, [id]).catch(() => null)) || {}).tentativas || 0;
+        if (!e.definitivo && !e.limite && t < 3) db.run(`UPDATE robo_posts SET status = 'agendado', quando = ?, tentativas = ?, erro = ? WHERE id = ?`, [new Date(Date.now() + 10 * 60000).toISOString(), t + 1, `Tentativa ${t + 1} falhou (${e.message}). Tento de novo em 10 min.`, id]);
+        else { db.run(`UPDATE robo_posts SET status = 'erro', erro = ? WHERE id = ?`, [e.message, id]); const p = await dbGet(`SELECT dono FROM robo_posts WHERE id = ?`, [id]).catch(() => null); avisarRobo((p && p.dono) || 0, '⚠️ Robô não conseguiu postar', e.message.slice(0, 120)); }
+    } finally { RODANDO_ROBO.delete(id); }
+}
+setInterval(async () => {
+    try {
+        const devidos = await dbAll(`SELECT id, dono FROM robo_posts WHERE status = 'agendado' AND quando <= ? ORDER BY quando LIMIT 5`, [new Date().toISOString()]);
+        for (const p of devidos) { const c = await cfgRobo(p.dono); if (c.ativo === false) continue; await rodarRoboPost(p.id); }
+    } catch (e) {}
+}, 60 * 1000);
+// limpeza: publicando há mais de 1 hora (servidor reiniciou no meio) volta para a fila
+setTimeout(() => db.run(`UPDATE robo_posts SET status = 'agendado', quando = ? WHERE status = 'publicando'`, [new Date(Date.now() + 2 * 60000).toISOString()], () => {}), 30000);
+
+const linhaRobo = r => { let m = []; try { m = JSON.parse(r.midias || '[]'); } catch (e) {} return { ...r, midias: m }; };
+function midiasValidasRobo(l) { return (Array.isArray(l) ? l : []).filter(m => m && /^\/uploads\/[\w.\-]+$/.test(String(m.url || '').split('?')[0])).slice(0, 10).map(m => ({ url: String(m.url).split('?')[0], mime: String(m.mime || '').slice(0, 60), thumb: /^(\/uploads\/|data:image\/)/.test(m.thumb || '') && String(m.thumb).length < 200000 ? m.thumb : '', pronto: !!m.pronto })); }
+app.get('/api/admin/estudio/robo', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(); salvarBasePublicaEst(baseUrlPublicaDpo(req));
+    const [ig, cfg, hor, posts, inter] = await Promise.all([lerIgEst(dono), cfgRobo(dono), melhoresHorariosRobo(dono), dbAll(`SELECT * FROM robo_posts WHERE dono = ? AND (status != 'publicado' OR publicado_em > ?) ORDER BY CASE status WHEN 'publicando' THEN 0 WHEN 'erro' THEN 1 WHEN 'agendado' THEN 2 WHEN 'rascunho' THEN 3 ELSE 4 END, COALESCE(quando, criado_em)`, [dono, new Date(Date.now() - 30 * 86400000).toISOString()]).catch(() => []), cfgInteracaoIg(dono)]);
+    const appc = await appIgCfg();
+    res.json({ instagram: { conectado: !!(ig.userId && ig.token), username: ig.username, loginDisponivel: !!(appc.id && appc.secret) }, cfg, horarios: hor, posts: posts.map(linhaRobo), comentarios: { ativo: !!inter.ativo, modo: inter.modo } });
+});
+app.put('/api/admin/estudio/robo/config', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), b = req.body || {}, at = await cfgRobo(dono);
+    const hs = Array.isArray(b.horarios) ? [...new Set(b.horarios.map(h => String(h).trim()).filter(h => /^([01]\d|2[0-3]):[0-5]\d$/.test(h)))].sort().slice(0, 8) : at.horarios;
+    const c = { ativo: b.ativo === undefined ? at.ativo : !!b.ativo, postsDia: Math.max(1, Math.min(6, Number(b.postsDia) || at.postsDia)), intervaloHoras: Math.max(1, Math.min(12, Number(b.intervaloHoras) || at.intervaloHoras)), horarios: hs, variacao: b.variacao === undefined ? at.variacao : !!b.variacao, tom: String(b.tom ?? at.tom ?? '').slice(0, 300) };
+    await salvarCfgRobo(dono, c);
+    res.json({ cfg: c, message: c.ativo ? '✅ Robô ligado: publica sozinho nos horários.' : '⏸️ Robô pausado: nada é publicado até você ligar de novo.' });
+});
+app.post('/api/admin/estudio/robo/posts', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), b = req.body || {};
+    const tipo = TIPOS_ROBO.includes(b.tipo) ? b.tipo : 'foto';
+    let midias = midiasValidasRobo(b.midias), projetoId = null;
+    if (b.projetoId) {
+        const pr = await dbGet(`SELECT id, video_url, legenda, hashtags, capa_url, created_by FROM estudio_projetos WHERE id = ?`, [b.projetoId]).catch(() => null);
+        if (!pr || !pr.video_url) return res.status(400).json({ error: 'Exporte o vídeo do projeto antes.' });
+        if (dono && pr.created_by !== dono) return res.status(403).json({ error: 'Projeto de outra conta.' });
+        midias = [{ url: pr.video_url.split('?')[0], mime: 'video/mp4', thumb: pr.capa_url || '', pronto: true }]; projetoId = pr.id;
+        if (!b.legenda) b.legenda = pr.legenda || ''; if (!b.hashtags) b.hashtags = pr.hashtags || '';
+    }
+    if (!midias.length) return res.status(400).json({ error: 'Envie pelo menos uma foto ou vídeo.' });
+    if (tipo === 'carrossel' && midias.length < 2) return res.status(400).json({ error: 'Carrossel precisa de 2 a 10 fotos/vídeos.' });
+    if (tipo === 'reels' && !ehVideoRobo(midias[0])) return res.status(400).json({ error: 'Reels precisa de vídeo. Para foto, escolha "Foto" ou "Carrossel".' });
+    const rascunho = b.quando === 'rascunho', auto = !rascunho && (!b.quando || b.quando === 'auto');
+    let quando = null;
+    if (!rascunho) {
+        quando = auto ? await proximoHorarioRobo(dono) : b.quando === 'agora' ? new Date().toISOString() : new Date(b.quando).toISOString?.();
+        if (!auto && b.quando !== 'agora' && (isNaN(new Date(b.quando)) || new Date(b.quando) < Date.now() - 60000)) return res.status(400).json({ error: 'Escolha uma data/hora futura.' });
+    }
+    const id = await new Promise((ok, ko) => db.run(`INSERT INTO robo_posts (dono, tipo, midias, legenda, hashtags, quando, status, projeto_id, auto_horario) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [dono, tipo, JSON.stringify(midias), String(b.legenda || '').slice(0, 2200), String(b.hashtags || '').slice(0, 600), quando, rascunho ? 'rascunho' : 'agendado', projetoId, auto ? 1 : 0], function (e) { e ? ko(e) : ok(this.lastID); }));
+    if (b.quando === 'agora') { const base = baseUrlPublicaDpo(req); salvarBasePublicaEst(base); rodarRoboPost(id, base); }
+    const quem = quando ? new Date(quando).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+    res.json({ id, quando, message: rascunho ? 'Salvo como rascunho.' : b.quando === 'agora' ? '🚀 Publicando agora… leva de 1 a 5 minutos.' : `✅ Na fila: o robô publica ${quem}${auto ? ' (melhor horário livre)' : ''}. Pode fechar o app.` });
+});
+app.put('/api/admin/estudio/robo/posts/:id', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), b = req.body || {};
+    const p = await dbGet(`SELECT * FROM robo_posts WHERE id = ? AND dono = ?`, [req.params.id, dono]).catch(() => null);
+    if (!p) return res.status(404).json({ error: 'Post não encontrado.' });
+    if (p.status === 'publicando' || p.status === 'publicado') return res.status(400).json({ error: p.status === 'publicado' ? 'Já foi publicado.' : 'Está sendo publicado agora.' });
+    const sets = [], vals = [];
+    if (b.legenda !== undefined) { sets.push('legenda = ?'); vals.push(String(b.legenda).slice(0, 2200)); }
+    if (b.hashtags !== undefined) { sets.push('hashtags = ?'); vals.push(String(b.hashtags).slice(0, 600)); }
+    if (b.tipo && TIPOS_ROBO.includes(b.tipo)) { sets.push('tipo = ?'); vals.push(b.tipo); }
+    if (b.midias) { const m = midiasValidasRobo(b.midias); if (m.length) { sets.push('midias = ?'); vals.push(JSON.stringify(m)); } }
+    let msg = 'Post atualizado.';
+    if (b.quando !== undefined) {
+        if (b.quando === 'rascunho') { sets.push("status = 'rascunho'", 'quando = NULL'); msg = 'Pausado (rascunho). Não será publicado.'; }
+        else {
+            const auto = b.quando === 'auto', q = auto ? await proximoHorarioRobo(dono, p.id) : b.quando === 'agora' ? new Date().toISOString() : new Date(b.quando);
+            if (!auto && b.quando !== 'agora' && (isNaN(q) || q < Date.now() - 60000)) return res.status(400).json({ error: 'Escolha uma data/hora futura.' });
+            const iso = typeof q === 'string' ? q : q.toISOString();
+            sets.push("status = 'agendado'", 'quando = ?', 'erro = NULL', 'tentativas = 0', 'auto_horario = ?'); vals.push(iso, auto ? 1 : 0);
+            msg = b.quando === 'agora' ? '🚀 Publicando agora…' : '✅ Agendado para ' + new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' });
+        }
+    }
+    if (sets.length) await new Promise(ok => db.run(`UPDATE robo_posts SET ${sets.join(', ')} WHERE id = ?`, [...vals, p.id], ok));
+    if (b.quando === 'agora') { const base = baseUrlPublicaDpo(req); salvarBasePublicaEst(base); rodarRoboPost(p.id, base); }
+    res.json({ message: msg });
+});
+app.delete('/api/admin/estudio/robo/posts/:id', requireRole('admin', 'estudio'), async (req, res) => {
+    const p = await dbGet(`SELECT status FROM robo_posts WHERE id = ? AND dono = ?`, [req.params.id, donoAtualEst()]).catch(() => null);
+    if (!p) return res.status(404).json({ error: 'Post não encontrado.' });
+    if (p.status === 'publicando') return res.status(400).json({ error: 'Está sendo publicado agora. Espere terminar.' });
+    db.run(`DELETE FROM robo_posts WHERE id = ?`, [req.params.id]);
+    res.json({ message: p.status === 'publicado' ? 'Removido da lista (o post continua no Instagram).' : 'Post removido da fila.' });
+});
+app.get('/api/admin/estudio/robo/videos', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst();
+    const l = await dbAll(`SELECT id, titulo, video_url, capa_url, legenda, hashtags, status, updated_at FROM estudio_projetos WHERE video_url IS NOT NULL AND video_url != '' AND status != 'publicado' AND (? = 0 OR created_by = ?) ORDER BY updated_at DESC LIMIT 30`, [dono, dono]).catch(() => []);
+    res.json({ videos: l });
+});
+app.post('/api/admin/estudio/robo/legenda', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), b = req.body || {}, cfg = await cfgRobo(dono), inter = await cfgInteracaoIg(dono);
+    const ideia = String(b.ideia || '').trim().slice(0, 1500), atual = String(b.legenda || '').trim().slice(0, 2200);
+    if (!ideia && !atual) return res.status(400).json({ error: 'Escreva em poucas palavras sobre o que é o post.' });
+    try { await consumirEst('ia', 1); } catch (e) { return erroLimiteEst(res, e); }
+    let ctx = ''; try { ctx = await contextoAgenteEst(); ctx = typeof ctx === 'string' ? ctx.slice(0, 2500) : JSON.stringify(ctx).slice(0, 2500); } catch (e) {}
+    const pedido = `Você escreve legendas de Instagram que geram alcance (salvamentos, compartilhamentos e comentários).
+Formato do post: ${({ reels: 'Reels (vídeo)', foto: 'foto no feed', carrossel: 'carrossel no feed', story: 'story' })[b.tipo] || 'post'}.
+${ideia ? 'Sobre o post: ' + ideia : ''}${atual ? '\nLegenda atual (melhore mantendo a ideia): ' + atual : ''}
+${cfg.tom || inter.tom ? 'Tom do perfil: ' + (cfg.tom || inter.tom) : ''}
+${ctx ? 'Contexto do perfil (use o estilo, não copie):\n' + ctx : ''}
+Regras: primeira linha é um gancho forte (até 90 caracteres) que faz parar de rolar; frases curtas, linhas separadas; valor prático; termine com UMA chamada clara (comentar uma palavra, salvar ou compartilhar); 0 a 3 emojis; português do Brasil; nada de prometer resultado; sem hashtags dentro da legenda.
+Hashtags: de 3 a 5, específicas do nicho e do assunto (nada genérico como #love #instagood).
+Responda APENAS com JSON: {"legenda":"...","hashtags":"#a #b #c"}`;
+    try { const r = await iaEstudio(pedido, { json: true, max: 1500 }); res.json({ legenda: String(r.legenda || '').slice(0, 2200), hashtags: String(r.hashtags || '').slice(0, 600) }); }
+    catch (e) { res.status(500).json({ error: 'A IA não respondeu: ' + e.message }); }
+});
+
+// ============================================================
+// ✨ POST COMPLETO PELA IA: roteiro (ou tema) → voz → cenas reais → legendas animadas → música → vídeo MP4 → legenda do post → fila do robô.
+// Roda inteiro no servidor: a pessoa pode fechar o app; quando fica pronto chega o aviso no celular.
+// ============================================================
+const JOBS_POST_IA = new Map();
+function blocosLegendaSrv(pal) {
+    const blocos = []; let b = [];
+    const limpa = w => String(w || '').replace(/[^\wÀ-ú]/g, '');
+    const fechar = () => { if (!b.length) return; const ws = b.map(p => String(p.w).replace(/^[,.]+/, '')); const maior = ws.reduce((mm, w, k) => limpa(w).length > limpa(ws[mm]).length ? k : mm, 0); if (limpa(ws[maior]).length >= 5) ws[maior] = ws[maior].toUpperCase(); blocos.push({ texto: ws.join(' '), ini: b[0].ini, fim: b[b.length - 1].fim }); b = []; };
+    pal.forEach(p => { const u = b[b.length - 1]; if (b.length >= 4 || (u && (p.ini - u.fim > 0.45 || /[.!?,;]$/.test(u.w)) && b.length >= 2) || (u && /[.!?]$/.test(u.w))) fechar(); b.push(p); });
+    fechar();
+    blocos.forEach((x, i) => { const prox = blocos[i + 1]; x.dur = Math.max(0.35, (prox ? Math.min(prox.ini, x.fim + 0.6) : x.fim + 0.4) - x.ini); });
+    return blocos;
+}
+async function musicaAutomaticaEst(humor) {
+    const l = await buscarMusicasEst(HUMORES_MUSICA[humor] || HUMORES_MUSICA.motivacional);
+    for (const x of l.slice(0, 6).sort(() => Math.random() - 0.5)) {
+        try {
+            const r = await fetch(`https://api.openverse.org/v1/audio/${encodeURIComponent(x.id)}/`, { headers: { 'User-Agent': 'ImpulsionarV4/1.0' }, signal: AbortSignal.timeout(15000) });
+            const j = await r.json(); if (!r.ok || !j.url) continue;
+            const a = await fetch(j.url, { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(60000) }); if (!a.ok) continue;
+            const buf = Buffer.from(await a.arrayBuffer()); if (buf.length < 20000 || buf.length > 30 * 1048576) continue;
+            const tipo = a.headers.get('content-type') || '', ext = /ogg/.test(tipo) || /\.ogg/i.test(j.url) ? '.ogg' : /wav/.test(tipo) ? '.wav' : '.mp3';
+            const nome = 'file-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + ext; fs.writeFileSync(path.join(PASTA_UPLOADS, nome), buf);
+            return { url: '/uploads/' + nome, titulo: j.title || 'Música', credito: `🎵 Música: "${j.title || ''}"${j.creator ? ' — ' + j.creator : ''} (${((j.license || '') + ' ' + (j.license_version || '')).toUpperCase().trim() || 'CC'})` };
+        } catch (e) {}
+    }
+    return null;
+}
+// fundo de reserva quando não acha cena (degradê na cor da marca, também com movimento)
+async function fundoReservaEst(i) {
+    const cores = [['0x0b1329', '0x1d3a8a'], ['0x1e1b4b', '0x7c3aed'], ['0x0f172a', '0xdc4c4c'], ['0x052e16', '0x0f766e']][i % 4];
+    const nome = 'fundo-' + Date.now() + '-' + i + '.jpg', arq = path.join(PASTA_UPLOADS, nome);
+    try { await rodarFfmpegJa(['-y', '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', `gradients=s=1080x1920:c0=${cores[0]}:c1=${cores[1]}:x0=0:y0=0:x1=1080:y1=1920:nb_colors=2`, '-frames:v', '1', arq], 30000); }
+    catch (e) { await rodarFfmpegJa(['-y', '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', `color=c=${cores[1]}:s=1080x1920`, '-frames:v', '1', arq], 30000); }
+    return '/uploads/' + nome;
+}
+function planoLocalPostEst(roteiro) {
+    const frases = String(roteiro).replace(/\s+/g, ' ').split(/(?<=[.!?])\s+/).filter(f => f.trim().length > 1);
+    const cenas = []; let at = '';
+    frases.forEach(f => { if ((at + ' ' + f).split(' ').length > 18 && at) { cenas.push(at); at = f; } else at = (at ? at + ' ' : '') + f; }); if (at) cenas.push(at);
+    return { titulo: frases[0] ? frases[0].slice(0, 60) : 'Vídeo', gancho_tela: (frases[0] || '').split(' ').slice(0, 7).join(' '), legenda: roteiro.slice(0, 600), hashtags: '', musica: 'motivacional', cenas: cenas.map(f => ({ fala: f, busca: 'business team office', busca2: 'leadership meeting', tipo: 'video' })) };
+}
+async function criarPostIaEst(job, o) {
+    const etapa = (txt, pct) => { job.etapa = txt; job.pct = pct; };
+    // 1) roteiro em cenas
+    etapa('✍️ Dividindo o roteiro em cenas e escolhendo as imagens…', 5);
+    let plano;
+    if (iaDisponivelMt()) {
+        await consumirEst('ia', 1);
+        const pedido = `Você é diretor de Reels virais no Brasil. Vou criar um vídeo vertical 9:16 com NARRAÇÃO + CENAS REAIS (banco de vídeos) + legendas animadas.
+${o.roteiro ? `ROTEIRO DO AUTOR — use o TEXTO EXATO como fala (não reescreva, não resuma, não acrescente; só corrija erro de digitação). Apenas divida em cenas:\n"""${o.roteiro}"""` : `TEMA: ${o.tema}\nEscreva o roteiro falado de ~${o.duracao}s: 1ª frase = gancho fortíssimo, frases curtas e faladas, uma ideia por frase, final com CTA (comentar uma palavra, salvar ou seguir).`}
+${o.inspiracao ? 'REFERÊNCIA DO QUE ESTÁ VIRALIZANDO (siga o formato e o ritmo, sem copiar): ' + o.inspiracao + '\n' : ''}Divida em 5 a 14 cenas (2 a 6 s de fala cada). Para cada cena: "fala" (trecho exato), "texto_tela" (até 5 palavras, só quando reforça a ideia; senão vazio), "busca" e "busca2" (termos em INGLÊS, concretos e visuais, 2 a 5 palavras, como se busca no Pexels — ex.: "warehouse workers forklift", "manager talking to team", "stressed man office"), "tipo" ("video" de preferência, "foto" se for algo difícil de filmar).
+Também: "titulo" (até 60 caracteres), "gancho_tela" (texto grande da tela nos 2 primeiros segundos, até 7 palavras, que faça parar de rolar), "legenda" (legenda do post: 1ª linha gancho, valor em linhas curtas, CTA; sem hashtags), "hashtags" (3 a 5, específicas do nicho, em uma string), "musica" (um de: motivacional, corporativo, inspirador, animado, calmo, epico, emocionante, tecnologia).
+JSON: {"titulo":"","gancho_tela":"","legenda":"","hashtags":"#a #b #c","musica":"motivacional","cenas":[{"fala":"","texto_tela":"","busca":"","busca2":"","tipo":"video"}]}`;
+        plano = await iaEstudio(pedido, { json: true, max: 7000 }); delete plano.__fontes;
+    } else {
+        if (!o.roteiro) throw new Error('A IA não está conectada. Cole um roteiro pronto ou conecte a chave da IA.');
+        plano = planoLocalPostEst(o.roteiro);
+    }
+    const cenas = (Array.isArray(plano.cenas) ? plano.cenas : []).map(c => ({ fala: String(c.fala || '').trim(), texto_tela: String(c.texto_tela || '').trim().slice(0, 60), busca: String(c.busca || c.fala || '').slice(0, 80), busca2: String(c.busca2 || '').slice(0, 80), tipo: c.tipo === 'foto' ? 'foto' : 'video' })).filter(c => c.fala).slice(0, 16);
+    if (!cenas.length) throw new Error('Não consegui dividir o roteiro em cenas. Tente de novo.');
+    job.titulo = String(plano.titulo || cenas[0].fala).slice(0, 80);
+    // 2) voz
+    etapa('🎙️ Gravando a narração…', 18);
+    await consumirEst('narracoes', 1);
+    const narr = await narrarEst(cenas.map(c => c.fala), o.voz || 'pt-BR-AntonioNeural', o.velocidade || 0);
+    const tempos = narr.cenas && narr.cenas.length === cenas.length ? narr.cenas : tempoDasCenasEst(cenas.map(c => c.fala), narr.palavras || [], narr.duracao);
+    const total = narr.duracao + 0.6;
+    const durs = tempos.map((t, i) => Math.max(0.8, (i === tempos.length - 1 ? total : (tempos[i + 1] ? tempos[i + 1].ini : t.fim)) - (i === 0 ? 0 : t.ini)));
+    // 3) cenas reais
+    etapa('🎬 Buscando uma filmagem real para cada cena…', 32);
+    const reais = await resolverCenasReaisEst(cenas.map((c, i) => ({ i, busca: c.busca, busca2: c.busca2, dur: durs[i], tipo: c.tipo })), true, (i, n) => etapa(`🎬 Buscando cenas reais… ${i}/${n}`, 32 + Math.round(30 * i / n)));
+    const porI = {}; (reais.cenas || []).forEach(r => { porI[r.i] = r; });
+    const dados = { midias: [{ id: 'narr', url: narr.url, nome: 'Narração da IA', tipo: 'audio', duracao: narr.duracao, transcricao: narr.palavras || [] }], clips: [], textos: [], audios: [{ id: 'a-narr', midia: 'narr', ini: 0, corte: 0, dur: narr.duracao, vol: 1, narracao: true }],
+        sobreposicoes: [], filtro: 'nenhum', transicao: 'corte', ajustes: { brilho: 100, contraste: 100, saturacao: 100, temperatura: 0 }, extras: {}, corAuto: false, roteiro: cenas.map(c => c.fala).join('\n\n'), criadoPelaIa: true };
+    let ultimo = null, creditos = [];
+    for (let i = 0; i < cenas.length; i++) {
+        let r = porI[i], id = 'c' + i, d = durs[i];
+        if (!r && ultimo && ultimo.tipo === 'foto') r = ultimo; // repete a última foto com outro movimento
+        if (r) {
+            if (r.credito) creditos.push(r.credito);
+            dados.midias.push({ id, tipo: r.tipo === 'video' ? 'video' : 'imagem', url: r.url, nome: (r.tipo === 'video' ? '🎬 ' : '📷 ') + (r.busca || 'cena'), duracao: r.tipo === 'video' ? r.duracao || 0 : 0, w: r.w, h: r.h, thumb: r.thumb || '', credito: r.credito, cenaReal: true });
+            if (r.tipo === 'video') { const durV = Number(r.duracao) || d, ini = durV > d + 1 ? Math.min(1.5, durV - d - 0.5) : 0, vel = durV - ini < d ? Math.max(0.5, (durV - ini) / d) : 1; dados.clips.push({ id: 'k' + i, midia: id, ini, fim: ini + d * vel, vel, vol: 0, zoom: i % 3 === 1 ? 1.08 : 1 }); }
+            else dados.clips.push({ id: 'k' + i, midia: id, ini: 0, fim: d, vel: 1, vol: 0, kb: true });
+            ultimo = r;
+        } else {
+            const url = await fundoReservaEst(i); dados.midias.push({ id, tipo: 'imagem', url, nome: 'Fundo ' + (i + 1), duracao: 0 }); dados.clips.push({ id: 'k' + i, midia: id, ini: 0, fim: d, vel: 1, vol: 0, kb: true });
+        }
+    }
+    // 4) textos: gancho grande no começo + legendas palavra por palavra no tempo da voz
+    const gancho = String(plano.gancho_tela || '').trim();
+    if (gancho) dados.textos.push({ id: 't-gancho', texto: gancho, ini: 0, dur: Math.min(2.8, durs[0] + 0.3), estilo: 'gancho', x: 0.5, y: 0.22 });
+    let t = 0; cenas.forEach((c, i) => { if (i > 0 && c.texto_tela) dados.textos.push({ id: 't-apoio' + i, texto: c.texto_tela, ini: t + 0.15, dur: Math.max(0.8, durs[i] - 0.3), estilo: 'apoio', x: 0.5, y: 0.2 }); t += durs[i]; });
+    blocosLegendaSrv(narr.palavras || []).forEach((b, i) => dados.textos.push({ id: 'l' + i, texto: b.texto, ini: b.ini, dur: b.dur, estilo: 'legenda', x: 0.5, y: 0.66, auto: true }));
+    // 5) música de fundo baixinha
+    if (o.musica !== false) {
+        etapa('🎵 Escolhendo a música de fundo…', 66);
+        const m = await musicaAutomaticaEst(plano.musica).catch(() => null);
+        if (m) { dados.midias.push({ id: 'mus', url: m.url, nome: m.titulo, tipo: 'audio', duracao: total }); dados.audios.push({ id: 'a-mus', midia: 'mus', ini: 0, corte: 0, dur: total, vol: 0.09, musica: true }); creditos.push(m.credito); }
+    }
+    // 6) projeto + vídeo final
+    etapa('🎞️ Montando o vídeo em alta qualidade…', 70);
+    await consumirEst('projetos', 1);
+    const legenda = String(plano.legenda || '').trim(), hashtags = Array.isArray(plano.hashtags) ? plano.hashtags.join(' ') : String(plano.hashtags || '');
+    const projetoId = await new Promise((ok, ko) => db.run(`INSERT INTO estudio_projetos (titulo, formato, tipo, dados, legenda, hashtags, created_by, status) VALUES (?, '9:16', 'reels', ?, ?, ?, ?, 'rascunho')`, [job.titulo, JSON.stringify(dados), legenda, hashtags, o.userId], function (e) { e ? ko(e) : ok(this.lastID); }));
+    job.projetoId = projetoId;
+    const p = await dbGet(`SELECT * FROM estudio_projetos WHERE id = ?`, [projetoId]);
+    const r = renderRapidoEst(p, false);
+    const tic = setInterval(() => { const s = Math.round((Date.now() - r.job.t) / 1000); etapa(`🎞️ Montando o vídeo em alta qualidade… ${s}s`, Math.min(95, 70 + Math.round(s / 4))); }, 2000);
+    const fim = await r.pronto.finally(() => clearInterval(tic));
+    if (fim.status !== 'pronto') throw new Error('Não consegui montar o vídeo: ' + (fim.erro || 'erro'));
+    let capa = '';
+    try { const nomeCapa = 'capa-' + Date.now() + '.jpg'; await rodarFfmpegJa(['-y', '-hide_banner', '-loglevel', 'error', '-ss', '0.6', '-i', arquivoDaUrlEst(fim.url), '-frames:v', '1', '-vf', 'scale=540:-2', '-q:v', '3', path.join(PASTA_UPLOADS, nomeCapa)], 30000); capa = '/uploads/' + nomeCapa; } catch (e) {}
+    await new Promise(ok => db.run(`UPDATE estudio_projetos SET video_url = ?, video_mime = 'video/mp4', status = 'pronto', capa_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [fim.url, capa || null, projetoId], ok));
+    job.videoUrl = fim.url; job.capa = capa; job.legenda = legenda; job.hashtags = hashtags; job.creditos = creditos;
+    // 7) fila do robô
+    if (o.destino !== 'nada') {
+        const quando = o.destino === 'fila' ? await proximoHorarioRobo(o.dono) : o.destino === 'agora' ? new Date().toISOString() : null;
+        const midias = [{ url: fim.url, mime: 'video/mp4', thumb: capa, pronto: true }];
+        job.roboId = await new Promise((ok, ko) => db.run(`INSERT INTO robo_posts (dono, tipo, midias, legenda, hashtags, quando, status, projeto_id, auto_horario) VALUES (?, 'reels', ?, ?, ?, ?, ?, ?, ?)`, [o.dono, JSON.stringify(midias), legenda, hashtags, quando, quando ? 'agendado' : 'rascunho', projetoId, o.destino === 'fila' ? 1 : 0], function (e) { e ? ko(e) : ok(this.lastID); }));
+        job.quando = quando;
+        if (o.destino === 'agora') rodarRoboPost(job.roboId, o.base);
+    }
+    etapa('✅ Post pronto!', 100); job.status = 'pronto';
+    avisarRobo(o.dono, '✨ Post criado pela IA está pronto', job.titulo + (job.quando && o.destino === 'fila' ? ' — na fila do robô' : ''));
+}
+// cabeçalho da Central do Instagram: foto, @, números e bio (1 chamada, guardado por 10 min)
+const CACHE_PERFIL_IG = new Map();
+app.get('/api/admin/estudio/instagram/perfil-resumo', requireRole('admin', 'estudio'), async (req, res) => {
+    const dono = donoAtualEst(), c = CACHE_PERFIL_IG.get(dono);
+    if (c && Date.now() - c.t < 600000 && !req.query.atualizar) return res.json(c.p);
+    try { const ig = await lerIgEst(dono); if (!ig.token) return res.json({});
+        const p = await igEst('GET', '/' + euIg(ig), { fields: 'username,name,biography,followers_count,follows_count,media_count,profile_picture_url' }, ig.token).catch(() => igEst('GET', '/' + euIg(ig), { fields: 'username,followers_count,media_count' }, ig.token));
+        CACHE_PERFIL_IG.set(dono, { t: Date.now(), p }); res.json(p); }
+    catch (e) { res.json({ erro: e.message }); }
+});
+app.post('/api/admin/estudio/post-ia', requireRole('admin', 'estudio'), async (req, res) => {
+    const b = req.body || {}, roteiro = String(b.roteiro || '').trim().slice(0, 6000), tema = String(b.tema || '').trim().slice(0, 600);
+    if (roteiro.length < 20 && tema.length < 4) return res.status(400).json({ error: 'Cole o roteiro (ou escreva o tema) do vídeo.' });
+    if (!(await ffmpegDisponivel())) return res.status(400).json({ error: 'O servidor não tem o ffmpeg para montar o vídeo.' });
+    const dono = donoAtualEst(), base = baseUrlPublicaDpo(req); salvarBasePublicaEst(base);
+    const id = require('crypto').randomBytes(6).toString('hex'), job = { status: 'trabalhando', etapa: 'Começando…', pct: 1, t: Date.now(), roteiro: !!roteiro };
+    JOBS_POST_IA.set(id, job); setTimeout(() => JOBS_POST_IA.delete(id), 12 * 3600 * 1000);
+    res.json({ id });
+    const o = { dono, userId: req.user.userId, roteiro, tema, duracao: Math.max(15, Math.min(90, Number(b.duracao) || 40)), voz: String(b.voz || '').slice(0, 80), velocidade: Number(b.velocidade) || 0, musica: b.musica !== false, destino: ['fila', 'agora', 'rascunho', 'nada'].includes(b.destino) ? b.destino : 'rascunho', base, inspiracao: String(b.inspiracao || '').slice(0, 800) };
+    ALS_EST.run({ dono }, () => criarPostIaEst(job, o)).catch(e => { console.warn('Post IA:', e.message); Object.assign(job, { status: 'erro', erro: e.message }); if (job.projetoId) db.run(`UPDATE estudio_projetos SET erro_publicacao = ? WHERE id = ?`, ['Criação pela IA: ' + e.message, job.projetoId]); });
+});
+app.get('/api/admin/estudio/post-ia/:id', requireRole('admin', 'estudio'), (req, res) => { const j = JOBS_POST_IA.get(req.params.id); if (!j) return res.status(404).json({ error: 'Não encontrado (o servidor reiniciou). Veja em Projetos se o vídeo ficou salvo.' }); res.json(Object.assign({ segundos: Math.round((Date.now() - j.t) / 1000) }, j)); });
 
 // ============================================================
 // VIDEOCHAMADA PRÓPRIA (WEBRTC) PARA AS MENTORIAS
