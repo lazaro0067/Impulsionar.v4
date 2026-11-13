@@ -2148,7 +2148,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 12/11 (4)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 12/11 (5)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -28764,6 +28764,8 @@ async function igEvolucao() {
 }
 // ----- Insights & Treino: por que flopou / viralizou, sinais do algoritmo e lições que o agente aprende -----
 let IGINS = null, IGDIAG = null;
+// atualiza a parte certa da tela (no Estúdio ou na Central do Instagram) sem quebrar quando o quadro não existe
+function igRecarregarAba(fn) { const el = document.getElementById('ig-aba'); if (el) return fn(el); if (document.getElementById('igc-corpo') && typeof renderIg === 'function') return renderIg(IGC.aba); }
 const IG_ROT = { viralizou: ['🔥', 'Viralizou', '#16a34a'], acima: ['📈', 'Acima', '#22c55e'], media: ['➖', 'Na média', '#64748b'], abaixo: ['📉', 'Abaixo', '#d97706'], flopou: ['🥶', 'Flopou', '#dc2626'] };
 const fmtIg = v => v === null || v === undefined || v === '' ? '—' : Number(v).toLocaleString('pt-BR');
 async function igInsights(el) {
@@ -28819,20 +28821,20 @@ function igHtmlPadroes(x) {
 async function igDiagnosticar(mediaId) {
   const b = document.getElementById('ig-diag-bt'); if (b) { b.disabled = true; b.textContent = '⏳ Analisando os números… (até 1 min)'; }
   mostrarToast('🔍 O agente está lendo os números do post…');
-  try { const r = await api('/api/admin/estudio/instagram/diagnostico', { method: 'POST', body: JSON.stringify(mediaId ? { media_id: mediaId } : {}) }); IGDIAG = { ...r.diagnostico, id: r.id }; await igInsights(document.getElementById('ig-aba')); document.getElementById('ig-diag-res').scrollIntoView({ behavior: 'smooth' }); }
+  try { const r = await api('/api/admin/estudio/instagram/diagnostico', { method: 'POST', body: JSON.stringify(mediaId ? { media_id: mediaId } : {}) }); IGDIAG = { ...r.diagnostico, id: r.id }; await igRecarregarAba(igInsights); const dr = document.getElementById('ig-diag-res'); if (dr) dr.scrollIntoView({ behavior: 'smooth' }); }
   catch (e) { mostrarToast(e.message, true); if (b) { b.disabled = false; b.textContent = '🔍 Tentar de novo'; } }
 }
 async function igPadroes() {
   const b = document.getElementById('ig-pad-bt'); if (b) { b.disabled = true; b.textContent = '⏳ Comparando todos os posts… (até 1 min)'; }
-  try { await api('/api/admin/estudio/instagram/padroes', { method: 'POST', body: '{}' }); mostrarToast('💡 Insights prontos!'); await igInsights(document.getElementById('ig-aba')); }
+  try { await api('/api/admin/estudio/instagram/padroes', { method: 'POST', body: '{}' }); mostrarToast('💡 Insights prontos!'); await igRecarregarAba(igInsights); }
   catch (e) { mostrarToast(e.message, true); if (b) { b.disabled = false; b.textContent = '💡 O que viraliza no meu perfil'; } }
 }
 async function igEnsinar(licoes, origem) {
   licoes = (licoes || []).map(x => String(x || '').trim()).filter(Boolean); if (!licoes.length) return mostrarToast('Escreva a lição.', true);
-  try { const r = await api('/api/admin/estudio/instagram/licoes', { method: 'POST', body: JSON.stringify({ licoes, origem }) }); mostrarToast(r.message); await igInsights(document.getElementById('ig-aba')); } catch (e) { mostrarToast(e.message, true); }
+  try { const r = await api('/api/admin/estudio/instagram/licoes', { method: 'POST', body: JSON.stringify({ licoes, origem }) }); mostrarToast(r.message); await igRecarregarAba(igInsights); } catch (e) { mostrarToast(e.message, true); }
 }
 async function igLicaoAtiva(id, ativo) { try { await api('/api/admin/estudio/agente/' + id, { method: 'PUT', body: JSON.stringify({ ativo }) }); } catch (e) { mostrarToast(e.message, true); } }
-async function igLicaoApagar(id) { if (!confirm('Apagar esta lição do agente?')) return; try { await api('/api/admin/estudio/agente/' + id, { method: 'DELETE' }); igInsights(document.getElementById('ig-aba')); } catch (e) { mostrarToast(e.message, true); } }
+async function igLicaoApagar(id) { if (!confirm('Apagar esta lição do agente?')) return; try { await api('/api/admin/estudio/agente/' + id, { method: 'DELETE' }); igRecarregarAba(igInsights); } catch (e) { mostrarToast(e.message, true); } }
 // ----- Perfis que mandam bem no nicho: o agente estuda e aprende ganchos, formatos e visuais -----
 let IGPERF = { lista: [], ultimo: null, job: null };
 async function igPerfisCarregar() {
@@ -28897,7 +28899,7 @@ async function igRoteiros(el) {
 }
 async function igGerarRoteiros() {
   const b = document.getElementById('ig-rot-bt'); b.disabled = true; b.textContent = '⏳ Lendo o perfil e criando… (até 1 min)';
-  try { await api('/api/admin/estudio/instagram/roteiros', { method: 'POST', body: JSON.stringify({ tema: document.getElementById('ig-rot-tema').value, qtd: Number(document.getElementById('ig-rot-qtd').value) }) }); mostrarToast('🔥 Roteiros prontos!'); igRoteiros(document.getElementById('ig-aba')); }
+  try { await api('/api/admin/estudio/instagram/roteiros', { method: 'POST', body: JSON.stringify({ tema: document.getElementById('ig-rot-tema').value, qtd: Number(document.getElementById('ig-rot-qtd').value) }) }); mostrarToast('🔥 Roteiros prontos!'); igRecarregarAba(igRoteiros); }
   catch (e) { mostrarToast(e.message, true); b.disabled = false; b.textContent = '✨ Criar roteiros'; }
 }
 async function igAbrirGravacao(titulo, roteiro, legenda, hashtags, antesDeAbrir) {
@@ -28931,13 +28933,13 @@ async function igInteracao(el) {
 }
 async function igSalvarInteracao() {
   const v = id => (document.getElementById(id) || {}).value, modo = (document.querySelector('input[name="ig-in-modo"]:checked') || {}).value;
-  if (modo === 'auto' && document.getElementById('ig-in-ativo').checked && !(document.querySelector('.ig-modos label.on input[value="auto"]')) && !confirm('Autorizar o agente a responder os comentários sozinho, em seu nome?\n\nEle responde só os comentários normais (elogios, dúvidas, marcações). Críticas sérias, assuntos sensíveis e spam ficam separados para você.')) { igInteracao(document.getElementById('ig-aba')); return; }
-  try { const r = await api('/api/admin/estudio/instagram/interacao', { method: 'PUT', body: JSON.stringify({ ativo: document.getElementById('ig-in-ativo').checked, modo, limiteHora: Number(v('ig-in-lim')), diasPosts: Number(v('ig-in-dias')), tom: v('ig-in-tom') }) }); mostrarToast(r.message); igInteracao(document.getElementById('ig-aba')); }
-  catch (e) { mostrarToast(e.message, true); igInteracao(document.getElementById('ig-aba')); }
+  if (modo === 'auto' && document.getElementById('ig-in-ativo').checked && !(document.querySelector('.ig-modos label.on input[value="auto"]')) && !confirm('Autorizar o agente a responder os comentários sozinho, em seu nome?\n\nEle responde só os comentários normais (elogios, dúvidas, marcações). Críticas sérias, assuntos sensíveis e spam ficam separados para você.')) { igRecarregarAba(igInteracao); return; }
+  try { const r = await api('/api/admin/estudio/instagram/interacao', { method: 'PUT', body: JSON.stringify({ ativo: document.getElementById('ig-in-ativo').checked, modo, limiteHora: Number(v('ig-in-lim')), diasPosts: Number(v('ig-in-dias')), tom: v('ig-in-tom') }) }); mostrarToast(r.message); igRecarregarAba(igInteracao); }
+  catch (e) { mostrarToast(e.message, true); igRecarregarAba(igInteracao); }
 }
-async function igVerificarAgora(b) { b.disabled = true; b.textContent = '⏳ Lendo os comentários…'; try { const r = await api('/api/admin/estudio/instagram/interacao/verificar', { method: 'POST', body: '{}' }); mostrarToast(r.message); } catch (e) { mostrarToast(e.message, true); } igInteracao(document.getElementById('ig-aba')); }
-async function igResponder(id) { const t = document.getElementById('ig-r-' + id); try { const r = await api(`/api/admin/estudio/instagram/interacao/${encodeURIComponent(id)}/responder`, { method: 'POST', body: JSON.stringify({ resposta: t ? t.value : '' }) }); mostrarToast(r.message); igInteracao(document.getElementById('ig-aba')); } catch (e) { mostrarToast(e.message, true); } }
-async function igIgnorar(id) { try { await api(`/api/admin/estudio/instagram/interacao/${encodeURIComponent(id)}/ignorar`, { method: 'POST', body: '{}' }); igInteracao(document.getElementById('ig-aba')); } catch (e) { mostrarToast(e.message, true); } }
+async function igVerificarAgora(b) { b.disabled = true; b.textContent = '⏳ Lendo os comentários…'; try { const r = await api('/api/admin/estudio/instagram/interacao/verificar', { method: 'POST', body: '{}' }); mostrarToast(r.message); } catch (e) { mostrarToast(e.message, true); } igRecarregarAba(igInteracao); }
+async function igResponder(id) { const t = document.getElementById('ig-r-' + id); try { const r = await api(`/api/admin/estudio/instagram/interacao/${encodeURIComponent(id)}/responder`, { method: 'POST', body: JSON.stringify({ resposta: t ? t.value : '' }) }); mostrarToast(r.message); igRecarregarAba(igInteracao); } catch (e) { mostrarToast(e.message, true); } }
+async function igIgnorar(id) { try { await api(`/api/admin/estudio/instagram/interacao/${encodeURIComponent(id)}/ignorar`, { method: 'POST', body: '{}' }); igRecarregarAba(igInteracao); } catch (e) { mostrarToast(e.message, true); } }
 
 // volta do login do Instagram: mostra o resultado e abre a aba do Instagram
 function igRetornoLogin() {
