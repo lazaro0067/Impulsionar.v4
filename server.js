@@ -18100,8 +18100,9 @@ async function fundoReservaEst(i) {
 function planoLocalPostEst(roteiro) {
     const frases = String(roteiro).replace(/\s+/g, ' ').split(/(?<=[.!?])\s+/).filter(f => f.trim().length > 1);
     const cenas = []; let at = '';
-    frases.forEach(f => { if ((at + ' ' + f).split(' ').length > 18 && at) { cenas.push(at); at = f; } else at = (at ? at + ' ' : '') + f; }); if (at) cenas.push(at);
-    return { titulo: frases[0] ? frases[0].slice(0, 60) : 'Vídeo', gancho_tela: (frases[0] || '').split(' ').slice(0, 7).join(' '), legenda: roteiro.slice(0, 600), hashtags: '', musica: 'motivacional', cenas: cenas.map(f => ({ fala: f, busca: 'business team office', busca2: 'leadership meeting', tipo: 'video' })) };
+    frases.forEach(f => { if ((at + ' ' + f).split(' ').length > 12 && at) { cenas.push(at); at = f; } else at = (at ? at + ' ' : '') + f; }); if (at) cenas.push(at);
+    let tags = ''; try { tags = (hashtagsLocaisEst(roteiro) || []).slice(0, 3).join(' '); } catch (e) {}
+    return { titulo: frases[0] ? frases[0].slice(0, 60) : 'Vídeo', gancho_tela: (frases[0] || '').split(' ').slice(0, 7).join(' '), legenda: roteiro.slice(0, 1800), hashtags: tags, musica: 'motivacional', cenas: cenas.map(f => ({ fala: f, busca: 'business team office', busca2: 'leadership meeting', tipo: 'video' })) };
 }
 async function criarPostIaEst(job, o) {
     const etapa = (txt, pct) => { job.etapa = txt; job.pct = pct; };
@@ -18115,7 +18116,13 @@ ${o.roteiro ? `ROTEIRO DO AUTOR — use o TEXTO EXATO como fala (não reescreva,
 ${o.inspiracao ? 'REFERÊNCIA DO QUE ESTÁ VIRALIZANDO (siga o formato e o ritmo, sem copiar): ' + o.inspiracao + '\n' : ''}Divida em 5 a 14 cenas (2 a 6 s de fala cada). Para cada cena: "fala" (trecho exato), "texto_tela" (até 5 palavras, só quando reforça a ideia; senão vazio), "busca" e "busca2" (termos em INGLÊS, concretos e visuais, 2 a 5 palavras, como se busca no Pexels — ex.: "warehouse workers forklift", "manager talking to team", "stressed man office"), "tipo" ("video" de preferência, "foto" se for algo difícil de filmar).
 Também: "titulo" (até 60 caracteres), "gancho_tela" (texto grande da tela nos 2 primeiros segundos, até 7 palavras, que faça parar de rolar), "legenda" (legenda do post: 1ª linha gancho, valor em linhas curtas, CTA; sem hashtags), "hashtags" (3 a 5, específicas do nicho, em uma string), "musica" (um de: motivacional, corporativo, inspirador, animado, calmo, epico, emocionante, tecnologia).
 JSON: {"titulo":"","gancho_tela":"","legenda":"","hashtags":"#a #b #c","musica":"motivacional","cenas":[{"fala":"","texto_tela":"","busca":"","busca2":"","tipo":"video"}]}`;
-        plano = await iaEstudio(pedido, { json: true, max: 7000 }); delete plano.__fontes;
+        try { plano = await iaEstudio(pedido, { json: true, max: 7000 }); delete plano.__fontes; }
+        catch (e) {
+            // IA fora do ar ou sem crédito: com roteiro pronto o post sai assim mesmo (cenas pelas frases); só com o tema não dá
+            const motivo = /credit balance|billing|credit/i.test(e.message) ? 'a conta da IA (Anthropic) está sem créditos' : 'a IA não respondeu (' + e.message.slice(0, 80) + ')';
+            if (!o.roteiro) throw new Error(`Não consegui escrever o roteiro: ${motivo}. Cole um roteiro pronto (funciona sem a IA) ou adicione créditos em console.anthropic.com › Plans & Billing.`);
+            plano = planoLocalPostEst(o.roteiro); job.aviso = `Criado sem a IA porque ${motivo}: as cenas seguiram as frases do roteiro e a legenda é o próprio texto. Para cenas e legenda mais caprichadas, adicione créditos em console.anthropic.com › Plans & Billing.`;
+        }
     } else {
         if (!o.roteiro) throw new Error('A IA não está conectada. Cole um roteiro pronto ou conecte a chave da IA.');
         plano = planoLocalPostEst(o.roteiro);
