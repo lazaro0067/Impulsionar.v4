@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comunicação de Impacto para Líderes · Lázaro Neto</title>
+<meta name="description" content="Programa de 5 encontros de 1 hora para líderes pararem de ler slide, prepararem melhor, ocuparem o palco com segurança e responderem às dúvidas do time. Para você ou para os líderes da sua empresa.">
+<meta property="og:title" content="Comunicação de Impacto para Líderes · Lázaro Neto">
+<meta property="og:description" content="5 encontros de 1 hora. Todo mundo apresenta em todo encontro. Para você ou para os líderes da sua empresa.">
+<meta property="og:image" content="https://www.impulsionarv4.com.br/mentoria-palestrante.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/mentoria-estilo.css?v=1">
+<style>
+  .ofertas { display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:stretch; }
+  @media (max-width: 860px) { .ofertas { grid-template-columns:1fr; } }
+  .oferta { border-radius:26px; padding:32px; display:flex; flex-direction:column; gap:14px; box-shadow:0 24px 50px rgba(15,23,42,.14); scroll-margin-top:90px; }
+  .oferta.ind { background:linear-gradient(160deg, var(--navy), var(--navy2)); color:#fff; }
+  .oferta.emp { background:#fff; border:2px solid var(--ambar); }
+  .oferta h3 { margin:0; font-size:26px; font-weight:900; } .oferta .tag { align-self:flex-start; font-size:12px; font-weight:800; letter-spacing:1px; text-transform:uppercase; border-radius:999px; padding:5px 12px; background:rgba(245,158,11,.18); color:var(--ambar2, #f59e0b); }
+  .oferta.emp .tag { background:#fef3c7; color:#92400e; }
+  .oferta ul { list-style:none; padding:0; margin:0; display:grid; gap:9px; } .oferta li { display:flex; gap:10px; } .oferta li::before { content:'✓'; color:var(--ambar); font-weight:900; }
+  .oferta .de { text-decoration:line-through; opacity:.6; font-weight:700; } .oferta .por { font-size:44px; font-weight:900; line-height:1; } .oferta .parc { opacity:.8; font-size:14px; }
+  .oferta .rodp { margin-top:auto; display:grid; gap:8px; } .oferta small { opacity:.75; }
+  .exemplos { display:grid; grid-template-columns:1fr 1fr; gap:18px; } @media (max-width: 760px) { .exemplos { grid-template-columns:1fr; } }
+  .exemplos img { width:100%; border-radius:16px; box-shadow:0 14px 30px rgba(15,23,42,.18); display:block; }
+  .enc { display:grid; grid-template-columns:repeat(5, 1fr); gap:14px; } @media (max-width: 960px) { .enc { grid-template-columns:1fr 1fr; } } @media (max-width: 560px) { .enc { grid-template-columns:1fr; } }
+  .enc div { background:#fff; border-radius:18px; padding:18px; border-top:5px solid var(--ambar); box-shadow:0 10px 24px rgba(15,23,42,.08); }
+  .enc small { color:var(--ambar); font-weight:900; letter-spacing:1px; text-transform:uppercase; font-size:12px; } .enc b { display:block; margin:6px 0; font-size:17px; } .enc span { color:#475569; font-size:14px; }
+  .foto.larga { aspect-ratio:16/10; } .foto.larga img { object-position:center; }
+</style>
+</head>
+<body>
+<div id="app"><div class="cx" style="padding:80px 20px;text-align:center;color:#64748b;">Carregando…</div></div>
+<div class="modal" id="m-form"><div class="caixa">
+  <button class="x" onclick="mtModal('m-form', false)">✕</button>
+  <div id="m-form-corpo"></div>
+</div></div>
+<script src="/mentoria-comum.js?v=4"></script>
+<script>
+const CI = { d: null };
+(async () => {
+  let d; try { const r = await fetch('/api/public/comunicacao', { cache: 'no-store' }); if (!r.ok) throw new Error('Não consegui carregar.'); d = await r.json(); MT.dados = d; CI.d = d; } catch (e) { return mtErroPagina(e); }
+  const m = d.marca, p = d.programa, v = d.venda, t = d.turma, preco = t ? t.preco : v.precoIndividual, q = new URLSearchParams(location.search), pago = q.get('pago');
+  document.getElementById('app').innerHTML = `${mtTopo('comunicacao')}
+  ${pago === '1' ? `<div style="background:#dcfce7;color:#14532d;padding:14px 0;text-align:center;font-weight:700;">✅ Pagamento recebido! Sua vaga na Comunicação de Impacto está garantida. O Lázaro vai te chamar no WhatsApp.</div>` : pago === '2' ? `<div style="background:#fef9c3;color:#713f12;padding:14px 0;text-align:center;font-weight:700;">⏳ Pagamento em processamento. Assim que confirmar, você recebe a confirmação no WhatsApp.</div>` : pago === '0' ? `<div style="background:#fee2e2;color:#7f1d1d;padding:14px 0;text-align:center;font-weight:700;">O pagamento não foi concluído. Tente de novo ou fale com o Lázaro no WhatsApp.</div>` : ''}
+  <section class="hero"><div class="cx">
+    <div>
+      <span class="selo">🎙️ Para líderes que apresentam para o time</span>
+      <h1>Pare de <em>ler slide</em>. Comece a ser ouvido.</h1>
+      <p class="sub">${mtEsc(p.subtitulo)} DDS, reunião de resultado, treinamento e convenção: o time entende, confia e age.</p>
+      <div class="acoes"><a class="bt ambar" href="#individual">Quero para mim</a><a class="bt claro" href="#empresa">Quero para os líderes da minha empresa</a></div>
+      <div class="prova"><div><b>${p.encontros.length}</b>encontros</div><div><b>1 hora</b>cada encontro</div><div><b>100%</b>prática: todo mundo apresenta</div></div>
+    </div>
+    <div class="foto larga"><img src="/mentoria-palestrante.jpg?v=4" alt="${mtEsc(m.mentor)}"></div>
+  </div></section>
+
+  <section><div class="cx">
+    <div class="titulo"><small>Você se reconhece?</small><h2>O conteúdo é bom. O problema é como ele chega no time.</h2><p>${mtEsc(p.publico)}</p></div>
+    <div class="grade g3">${(p.dificuldades.length ? p.dificuldades : ['Ficar lendo slides', 'Travar nas perguntas do time', 'Não saber onde ficar no palco']).map(x => `<div class="card dor"><span>🔥</span><p style="color:var(--texto);font-weight:600;">${mtEsc(x)}</p></div>`).join('')}</div>
+  </div></section>
+
+  <section class="alt"><div class="cx">
+    <div class="titulo"><small>Antes × depois</small><h2>Do slide que se lê ao slide que se apresenta</h2><p>Em todo encontro você vê exemplos reais de antes e depois, e aplica no seu próprio material.</p></div>
+    <div class="exemplos"><img src="/slides-mentoria/ci-ex-palavras.png" alt="Exemplo antes e depois" loading="lazy"><img src="/slides-mentoria/ci-ex-palco.png" alt="Exemplo no palco" loading="lazy"></div>
+  </div></section>
+
+  <section><div class="cx">
+    <div class="titulo"><small>Como funciona</small><h2>${p.encontros.length} encontros de 1 hora, todo mundo apresentando</h2><p>${mtEsc(p.objetivo)}</p></div>
+    <div class="enc">${p.encontros.map(e => `<div><small>Encontro ${e.n}</small><b>${mtEsc(e.modulo)}</b><span>${mtEsc(e.tema || '')}</span></div>`).join('')}</div>
+    <div class="card" style="margin-top:18px;border-left:5px solid var(--ambar);"><h3>🏁 Entrega final</h3><p>${mtEsc(p.entrega)}</p></div>
+    <div class="card" style="margin-top:12px;border-left:5px solid var(--ambar);"><h3>⭐ Regra de ouro</h3><p>${mtEsc(p.regraOuro)}</p></div>
+  </div></section>
+
+  <section class="escuro"><div class="cx">
+    <div class="titulo"><small>Quem conduz</small><h2>${mtEsc(m.mentor)}</h2><p>${mtEsc(m.frase || '')}</p></div>
+    <div class="linha-tempo">${(d.historia || []).slice(-4).map(h => `<div class="degrau"><div class="ano">${mtEsc(h.fase)}</div><div><b>${mtEsc(h.cargo)}</b><small>${mtEsc(h.licao)}</small></div></div>`).join('')}</div>
+  </div></section>
+
+  <section id="oferta"><div class="cx">
+    <div class="titulo"><small>Escolha o formato</small><h2>Para você ou para o seu time de líderes</h2></div>
+    <div class="ofertas">
+      <div class="oferta ind" id="individual">
+        <span class="tag">${t ? `🗓️ ${mtEsc(t.nome)}${t.inicio ? ' · começa ' + mtEsc(mtData(t.inicio)) : ''}` : '📣 Individual · próxima turma'}</span>
+        <h3>Individual</h3><p style="margin:0;opacity:.85;">Você entra numa turma aberta com líderes de outras empresas.</p>
+        <ul><li>${p.encontros.length} encontros de 1 hora${t && t.horario ? ' · ' + mtEsc(t.horario) : ''}</li><li>${mtEsc(v.formatoIndividual)}</li><li>Você apresenta e recebe feedback em todo encontro</li><li>Área do Aluno com slides, dúvidas e envio de material</li><li>Apresentação final avaliada e certificado</li></ul>
+        <div class="rodp">
+          ${Number(v.precoDe) > Number(preco) ? `<div class="de">${mtMoeda(v.precoDe)}</div>` : ''}
+          <div class="por">${mtMoeda(preco)}</div><div class="parc">ou em até ${Number(v.parcelas) || 12}x no cartão${v.garantiaDias ? ` · ${v.garantiaDias} dias de garantia` : ''}</div>
+          <button class="bt ambar cheio" onclick="ciIndividual()">${t ? (t.restantes > 0 ? 'Garantir minha vaga' : 'Entrar na lista de espera') : 'Quero entrar na próxima turma'}</button>
+          <small>${t ? (t.restantes > 0 ? `${t.restantes} vaga(s) restante(s) · turma de no máximo ${t.vagas || v.vagas} líderes` : 'Vagas esgotadas nesta turma') : `Turmas de no máximo ${v.vagas} líderes`}</small>
+        </div>
+      </div>
+      <div class="oferta emp" id="empresa">
+        <span class="tag">🏢 Para empresas</span>
+        <h3>Turma fechada da sua empresa</h3><p style="margin:0;color:#475569;">Os seus líderes juntos, com exemplos da sua operação.</p>
+        <ul><li>${mtEsc(v.formatoEmpresa)}</li><li>Conteúdo ajustado aos desafios do seu time</li><li>Datas e horários combinados com você</li><li>Relatório da evolução de cada líder (régua do 1º ao último encontro)</li><li>Pode virar palestra de abertura para toda a liderança</li></ul>
+        <div class="rodp">
+          ${Number(v.empresaAPartir) ? `<div class="por" style="color:var(--navy)">a partir de ${mtMoeda(v.empresaAPartir)}</div><div class="parc" style="color:#475569;">por turma</div>` : `<div class="por" style="font-size:30px;color:var(--navy)">Proposta em até 24 h</div>`}
+          <button class="bt ambar cheio" onclick="ciEmpresa()">Pedir proposta para a minha empresa</button>
+          <small style="color:#64748b;">Sem compromisso. O Lázaro te chama no WhatsApp.</small>
+        </div>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="alt"><div class="cx faq">
+    <div class="titulo"><small>Dúvidas</small><h2>Perguntas frequentes</h2></div>
+    <details><summary>Preciso ter experiência apresentando?</summary><p>Não. O programa é para quem já apresenta para o time e quer fazer melhor, e também para quem trava. Cada um evolui a partir do próprio ponto de partida, medido na régua do primeiro encontro.</p></details>
+    <details><summary>Quanto tempo preciso por semana?</summary><p>1 hora do encontro e uma missão curta para casa: ajustar o material e ensaiar a próxima apresentação.</p></details>
+    <details><summary>É presencial ou online?</summary><p>${mtEsc(v.formatoIndividual)}. Para empresas, presencial na sua unidade ou online, como for melhor para o time.</p></details>
+    <details><summary>E se eu perder um encontro?</summary><p>Os slides ficam na sua Área do Aluno e você tira dúvidas com o mentor por lá. A prática perdida é reposta no encontro seguinte.</p></details>
+    <details><summary>A empresa pode pagar a vaga individual?</summary><p>Pode. E se forem 4 líderes ou mais, compensa a turma fechada: peça a proposta.</p></details>
+  </div></section>
+  <section class="escuro centro"><div class="cx"><p class="frase">"O slide mostra. Você explica."</p><div style="margin-top:26px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;"><a class="bt ambar" href="#individual">Quero para mim</a><a class="bt claro" href="#empresa">Quero para a minha empresa</a></div></div></section>
+  ${mtRodape()}`;
+  const alvo = q.get('quero') || location.hash.slice(1);
+  if (alvo) { const el = document.getElementById(alvo === 'vaga' ? 'individual' : alvo); if (el) el.scrollIntoView(); if (q.get('quero') === 'empresa') ciEmpresa(); if (q.get('quero') === 'vaga') ciIndividual(); }
+})();
+function ciIndividual() {
+  const d = CI.d, t = d.turma, comPag = t && t.restantes > 0 && d.pagamentoOnline;
+  document.getElementById('m-form-corpo').innerHTML = `<h3>${t && t.restantes > 0 ? 'Garantir minha vaga' : 'Quero entrar na próxima turma'}</h3><p class="sub">${comPag ? 'Preencha e você vai para o pagamento seguro do Mercado Pago (Pix ou cartão parcelado).' : t && t.restantes > 0 ? 'Preencha e o Lázaro te chama no WhatsApp para confirmar a vaga.' : 'Deixe seus dados: você é avisado em primeira mão quando a turma abrir.'}</p>
+    <form class="form" onsubmit="ciEnviarIndividual(event)">
+      <label>Seu nome<input name="nome" required autocomplete="name"></label>
+      <div class="dupla"><label>WhatsApp (com DDD)<input name="whatsapp" required inputmode="tel" placeholder="(64) 9 9999-9999"></label><label>E-mail<input name="email" type="email" required autocomplete="email"></label></div>
+      <div class="dupla"><label>Seu cargo<input name="cargo" placeholder="Ex.: Supervisor de distribuição"></label><label>Empresa<input name="empresa"></label></div>
+      <label>Para quem você mais apresenta?<select name="pessoas"><option>Para o meu time (DDS, reuniões)</option><option>Para a diretoria / gestores</option><option>Treinamentos e palestras</option><option>Ainda não apresento, quero começar</option></select></label>
+      <label>O que mais te trava hoje ao apresentar?<textarea name="mensagem" rows="3"></textarea></label>
+      <input class="hp" name="site" tabindex="-1" autocomplete="off">
+      <div class="msg-area"></div>
+      <button class="bt ambar cheio" type="submit">${comPag ? 'Ir para o pagamento' : 'Enviar'}</button>
+    </form>`;
+  mtModal('m-form'); mtEvento('clique', 'Abriu formulário: individual');
+}
+async function ciEnviarIndividual(ev) {
+  ev.preventDefault();
+  try {
+    const j = await mtEnviar(ev.target, '/api/public/comunicacao/inscricao');
+    if (j.checkout) { location.href = j.checkout; return; }
+    ciObrigado(j.mensagem || 'Recebemos sua inscrição.', 'Olá, Lázaro! Acabei de me inscrever na Comunicação de Impacto para Líderes.');
+  } catch (e) {}
+}
+function ciEmpresa() {
+  document.getElementById('m-form-corpo').innerHTML = `<h3>Proposta para a minha empresa</h3><p class="sub">Conte rapidinho sobre o seu time. A proposta chega no seu WhatsApp em até 24 horas.</p>
+    <form class="form" onsubmit="ciEnviarEmpresa(event)">
+      <div class="dupla"><label>Seu nome<input name="nome" required autocomplete="name"></label><label>Cargo<input name="cargo" placeholder="Ex.: RH, gerente, diretor"></label></div>
+      <div class="dupla"><label>Empresa<input name="empresa" required></label><label>Cidade<input name="cidade"></label></div>
+      <div class="dupla"><label>WhatsApp (com DDD)<input name="whatsapp" required inputmode="tel" placeholder="(64) 9 9999-9999"></label><label>E-mail<input name="email" type="email" autocomplete="email"></label></div>
+      <div class="dupla"><label>Quantos líderes participariam?<select name="lideres"><option>até 6</option><option>7 a 10</option><option>11 a 20</option><option>mais de 20 (mais de uma turma)</option></select></label><label>Formato<select name="modalidade"><option>Presencial na empresa</option><option>Online</option><option>Ainda não sei</option></select></label></div>
+      <label>Quando gostaria de começar?<input name="data" placeholder="Ex.: março, próximo mês"></label>
+      <label>Qual o maior desafio dos seus líderes ao apresentar?<textarea name="mensagem" rows="3"></textarea></label>
+      <input class="hp" name="site" tabindex="-1" autocomplete="off">
+      <div class="msg-area"></div>
+      <button class="bt ambar cheio" type="submit">Pedir proposta</button>
+    </form>`;
+  mtModal('m-form'); mtEvento('clique', 'Abriu formulário: empresa');
+}
+async function ciEnviarEmpresa(ev) {
+  ev.preventDefault(); const f = ev.target;
+  try {
+    await mtEnviar(f, '/api/public/mentoria/lead', { tipo: 'empresa', programa: 'comunicacao-impacto', origem: MT_RS.origem || 'comunicacao', tema: 'Comunicação de Impacto para Líderes (5 encontros)', formato: 'Turma fechada (5 encontros)', participantes: f.lideres.value });
+    ciObrigado('Pedido recebido! O Lázaro vai te chamar no WhatsApp com a proposta em até 24 horas.', 'Olá, Lázaro! Pedi uma proposta da Comunicação de Impacto para os líderes da ' + (f.empresa.value || 'minha empresa') + '.');
+  } catch (e) {}
+}
+function ciObrigado(msg, zap) {
+  document.getElementById('m-form-corpo').innerHTML = `<h3>✅ Recebido!</h3><p class="sub">${mtEsc(msg)}</p>${mtWhats() ? `<a class="bt ambar cheio" href="${mtWhats(zap)}" target="_blank" rel="noopener">💬 Falar com o Lázaro agora</a>` : ''}`;
+}
+</script>
+</body>
+</html>

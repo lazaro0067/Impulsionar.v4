@@ -12,8 +12,8 @@ async function mtCarregar() {
 function mtTopo(ativo) {
   const m = MT.dados.marca;
   return `<header class="topo"><div class="cx"><a class="marca" href="/bio"><i>${mtEsc(mtIniciais(m.mentor))}</i>${mtEsc(m.mentor)}</a>
-    <nav><a href="/mentoria" ${ativo === 'mentoria' ? 'style="color:var(--ambar2)"' : ''}>Mentoria</a><a href="/palestra" ${ativo === 'palestra' ? 'style="color:var(--ambar2)"' : ''}>Palestras</a><a href="/aula" ${ativo === 'aula' ? 'style="color:var(--ambar2)"' : ''}>Aula gratuita</a><a href="/raio-x" ${ativo === 'raio' ? 'style="color:var(--ambar2)"' : ''}>Raio-X do Líder</a></nav>
-    ${ativo === 'palestra' ? `<a class="bt ambar peq" href="#contratar">Contratar palestra</a>` : `<a class="bt ambar peq" href="/mentoria#inscricao">Quero participar</a>`}</div></header>`;
+    <nav><a href="/mentoria" ${ativo === 'mentoria' ? 'style="color:var(--ambar2)"' : ''}>Mentoria</a><a href="/palestra" ${ativo === 'palestra' ? 'style="color:var(--ambar2)"' : ''}>Palestras</a><a href="/comunicacao" ${ativo === 'comunicacao' ? 'style="color:var(--ambar2)"' : ''}>Comunicação</a><a href="/aula" ${ativo === 'aula' ? 'style="color:var(--ambar2)"' : ''}>Aula gratuita</a><a href="/raio-x" ${ativo === 'raio' ? 'style="color:var(--ambar2)"' : ''}>Raio-X do Líder</a></nav>
+    ${ativo === 'palestra' ? `<a class="bt ambar peq" href="#contratar">Contratar palestra</a>` : ativo === 'comunicacao' ? `<a class="bt ambar peq" href="#oferta">Quero participar</a>` : `<a class="bt ambar peq" href="/mentoria#inscricao">Quero participar</a>`}</div></header>`;
 }
 function mtRodape() {
   const m = MT.dados.marca;

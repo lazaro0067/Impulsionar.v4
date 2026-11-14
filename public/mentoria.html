@@ -17,7 +17,7 @@
   <button class="x" onclick="mtModal('m-insc', false)">✕</button>
   <div id="m-insc-corpo"></div>
 </div></div>
-<script src="/mentoria-comum.js?v=3"></script>
+<script src="/mentoria-comum.js?v=4"></script>
 <script>
 (async () => {
   let d; try { d = await mtCarregar(); } catch (e) { return mtErroPagina(e); }
@@ -54,7 +54,7 @@
 
   <section><div class="cx">
     <div class="titulo"><small>Como funciona</small><h2>19 encontros, aplicando no seu time real</h2><p>${mtEsc(d.formato)}</p></div>
-    <div class="semanas">${d.semanas.map(s => `<div class="sem"><small>Semana ${s.n}</small><b>${mtEsc(s.modulo)}</b><span>${mtEsc(s.tema)}</span></div>`).join('')}</div>
+    <div class="semanas">${d.semanas.map(s => `<div class="sem"><small>Encontro ${s.n}</small><b>${mtEsc(s.modulo)}</b><span>${mtEsc(s.tema)}</span></div>`).join('')}</div>
     <div class="card" style="margin-top:18px;border-left:5px solid var(--ambar);"><h3>⭐ Regra de ouro</h3><p>${mtEsc(d.regraOuro)}</p></div>
   </div></section>
 
@@ -68,7 +68,7 @@
       <div>
         <span class="selo">${t ? `🗓️ ${mtEsc(t.nome)}${t.inicio ? ' · começa ' + mtEsc(mtData(t.inicio)) : ''}` : '📣 Próxima turma'}</span>
         <h2 style="font-size:clamp(26px,3.4vw,38px);margin:14px 0 16px;font-weight:900;">Mentoria em grupo ${mtEsc(m.nome)}</h2>
-        <ul><li>12 encontros ao vivo em grupo (90 min, online)</li><li>Sessões individuais a cada 15 dias (30 min)</li><li>Grupo de WhatsApp para dúvidas e cobrança</li>${d.bonus.map(b => `<li>${mtEsc(b)}</li>`).join('')}</ul>
+        <ul><li>19 encontros ao vivo em grupo (1 hora, online, 1 por semana)</li><li>Missão aplicada no seu time real em todo encontro</li><li>Área do Aluno com slides, dúvidas e envio de material</li><li>Grupo de WhatsApp para dúvidas e cobrança</li>${d.bonus.map(b => `<li>${mtEsc(b)}</li>`).join('')}</ul>
       </div>
       <div class="valor">
         ${t && Number(preco) < Number(g.valor) ? `<div class="de">${mtMoeda(g.valor)}</div>` : ''}
@@ -82,8 +82,8 @@
   <section class="alt"><div class="cx faq">
     <div class="titulo"><small>Dúvidas</small><h2>Perguntas frequentes</h2></div>
     <details><summary>Serve para quem lidera em qualquer área?</summary><p>Foi feita para operação (logística, indústria, varejo, distribuição), mas tudo vale para qualquer líder com time de execução: rotina, indicadores, feedback e formação de sucessores.</p></details>
-    <details><summary>Quanto tempo preciso por semana?</summary><p>90 minutos do encontro ao vivo + a tarefa prática aplicada no seu próprio time (que é o seu trabalho do dia a dia, feito com método).</p></details>
-    <details><summary>E se eu perder um encontro?</summary><p>Todos os encontros ficam gravados e você continua com o acompanhamento pelo grupo de WhatsApp.</p></details>
+    <details><summary>Quanto tempo preciso por semana?</summary><p>1 hora do encontro ao vivo + a missão prática aplicada no seu próprio time (que é o seu trabalho do dia a dia, feito com método).</p></details>
+    <details><summary>E se eu perder um encontro?</summary><p>Os slides do encontro ficam na sua Área do Aluno, você tira dúvidas com o mentor por lá e continua no grupo de WhatsApp.</p></details>
     <details><summary>Tem garantia?</summary><p>Sim: 7 dias de garantia. Se não for para você, devolvemos o valor.</p></details>
     <details><summary>Minha empresa pode pagar?</summary><p>Pode. Para turmas fechadas de líderes da sua empresa, veja o <a href="/palestra#contratar">treinamento in-company</a>.</p></details>
   </div></section>

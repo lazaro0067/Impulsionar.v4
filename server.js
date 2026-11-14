@@ -13247,6 +13247,8 @@ const MT_PADRAO = {
     ],
     formato: '19 encontros ao vivo em grupo, 1 por semana (1 hora, online) + missão aplicada no time real em todo encontro + grupo de WhatsApp para dúvidas e cobrança.',
     semanasVersao: 2,
+    // venda da Comunicação de Impacto (página /comunicacao): individual em turma aberta ou turma fechada para empresa
+    vendaCi: { precoIndividual: 697, precoDe: 997, parcelas: 12, vagas: 10, empresaAPartir: 0, garantiaDias: 7, formatoIndividual: 'Presencial em Rio Verde (GO) ou ao vivo online', formatoEmpresa: 'Presencial na sua empresa ou online, turma fechada de 6 a 10 líderes' },
     semanas: Object.keys(DC_ROT).length ? Object.keys(DC_ROT).map(Number).sort((a, b) => a - b).map(n => DC_ROT[n].semana) : [
         { n: 1, modulo: 'Diagnóstico', tema: 'Onde estão os gaps do líder e do time', entregavel: 'Raio-X do Líder (autoavaliação + avaliação do time)' },
         { n: 2, modulo: 'M — Mentalidade de dono', tema: 'Do "fazer" para o "fazer acontecer": postura e exemplo', entregavel: 'Plano de virada pessoal (rascunho)' },
@@ -13534,9 +13536,10 @@ function mtProgramas(d) {
         .concat((Array.isArray(d.programas) ? d.programas : []).filter(p => p && p.id && Array.isArray(p.encontros)).map(p => Object.assign({ unidade: 'encontro' }, p)));
 }
 function mtProgramaDe(d, t) { const id = t ? mtJson(t.dados).programa : ''; const L = mtProgramas(d); return L.find(p => p.id === id) || L[0]; }
-async function mtTurmaAberta() {
-    // só turmas da mentoria principal aparecem na página de venda
-    const t = (await dbAll(`SELECT * FROM mentoria_turmas WHERE status = 'aberta' ORDER BY COALESCE(inicio, '9999') ASC, id DESC`).catch(() => [])).find(x => !mtJson(x.dados).programa || mtJson(x.dados).programa === MT_PRINCIPAL);
+async function mtTurmaAberta(prog) {
+    // página de venda: a primeira turma com status "aberta" do programa (padrão: a mentoria principal)
+    const alvo = prog || MT_PRINCIPAL;
+    const t = (await dbAll(`SELECT * FROM mentoria_turmas WHERE status = 'aberta' ORDER BY COALESCE(inicio, '9999') ASC, id DESC`).catch(() => [])).find(x => (mtJson(x.dados).programa || MT_PRINCIPAL) === alvo);
     if (!t) return null;
     const n = await dbGet(`SELECT COUNT(*) AS n FROM mentoria_alunos WHERE turma_id = ? AND pagamento = 'pago'`, [t.id]).catch(() => ({ n: 0 }));
     return Object.assign(t, { inscritos: n.n, restantes: Math.max(0, (t.vagas || 0) - n.n) });
@@ -13635,10 +13638,10 @@ app.post('/api/public/mentoria/lead', async (req, res) => {
     if (mtTxt(b.nome).length < 2 || (mtTxt(b.whatsapp).replace(/\D/g, '').length < 10 && !/@/.test(mtTxt(b.email)))) return res.status(400).json({ error: 'Informe seu nome e um WhatsApp (com DDD) ou e-mail.' });
     if (b.site) return res.json({ ok: true }); // armadilha anti-robô
     try {
-        const extra = { participantes: mtTxt(b.participantes, 40), data: mtTxt(b.data, 40), formato: mtTxt(b.formato, 60), pessoas: mtTxt(b.pessoas, 40), tema: mtTxt(b.tema, 140), evento: mtTxt(b.evento, 80), modalidade: mtTxt(b.modalidade, 40), problemas: mtTxt(b.problemas, 400), dataIso: /^\d{4}-\d{2}-\d{2}$/.test(b.dataIso || '') ? b.dataIso : '', hora: /^\d{2}:\d{2}$/.test(b.hora || '') ? b.hora : '', aula: mtTxt(b.aula, 80) };
+        const extra = { participantes: mtTxt(b.participantes, 40), data: mtTxt(b.data, 40), formato: mtTxt(b.formato, 60), pessoas: mtTxt(b.pessoas, 40), tema: mtTxt(b.tema, 140), evento: mtTxt(b.evento, 80), modalidade: mtTxt(b.modalidade, 40), problemas: mtTxt(b.problemas, 400), dataIso: /^\d{4}-\d{2}-\d{2}$/.test(b.dataIso || '') ? b.dataIso : '', hora: /^\d{2}:\d{2}$/.test(b.hora || '') ? b.hora : '', aula: mtTxt(b.aula, 80), programa: mtTxt(b.programa, 40), lideres: mtTxt(b.lideres, 40) };
         const r = await mtRun(`INSERT INTO mentoria_leads (tipo, nome, email, whatsapp, empresa, cargo, cidade, mensagem, origem, etapa, valor, dados) VALUES (?,?,?,?,?,?,?,?,?,'novo',?,?)`,
-            [tipo, mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.empresa, 160), mtTxt(b.cargo, 120), mtTxt(b.cidade, 120), mtTxt(b.mensagem, 2000), mtTxt(b.origem || 'site', 60), tipo === 'empresa' ? 6000 : 0, JSON.stringify(extra)]);
-        const rot = { aluno: 'Novo interessado na mentoria', empresa: 'Empresa pediu palestra/treinamento', aula: 'Nova inscrição na aula gratuita', raiox: 'Novo Raio-X do Líder', contato: 'Novo contato' }[tipo];
+            [tipo, mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.empresa, 160), mtTxt(b.cargo, 120), mtTxt(b.cidade, 120), mtTxt(b.mensagem, 2000), mtTxt(b.origem || 'site', 60), tipo === 'empresa' && b.programa !== 'comunicacao-impacto' ? 6000 : 0, JSON.stringify(extra)]);
+        const rot = (b.programa === 'comunicacao-impacto' ? { empresa: 'Empresa quer a Comunicação de Impacto', aluno: 'Interessado na Comunicação de Impacto' }[tipo] : '') || { aluno: 'Novo interessado na mentoria', empresa: 'Empresa pediu palestra/treinamento', aula: 'Nova inscrição na aula gratuita', raiox: 'Novo Raio-X do Líder', contato: 'Novo contato' }[tipo];
         try { mtNotificar('🚀 ' + rot, `${mtTxt(b.nome, 80)}${b.empresa ? ' · ' + mtTxt(b.empresa, 80) : ''}${b.whatsapp ? ' · ' + mtTxt(b.whatsapp, 30) : ''}`); } catch (e) {}
         waAuto(tipo === 'empresa' ? 'palestra' : tipo === 'aula' ? 'aula' : 'mentoria', b.whatsapp, b.nome, tipo === 'empresa' ? [mtTxt(b.empresa, 80) || 'sua empresa'] : []);
         rsLigarVisitante(mtTxt(b.visitante, 40), r.lastID);
@@ -13689,6 +13692,44 @@ app.post('/api/public/mentoria/inscricao', async (req, res) => {
         await mtRun(`UPDATE mentoria_alunos SET mp_preference_id = ?, checkout_url = ? WHERE id = ?`, [pref.id, pref.init_point, al.lastID]).catch(() => {});
         res.json({ ok: true, checkout: pref.init_point });
     } catch (e) { console.error('Inscrição mentoria:', e.message); res.status(500).json({ error: 'Não consegui gerar o pagamento agora. Seus dados foram salvos e o Lázaro vai te chamar no WhatsApp.' }); }
+});
+// ---------- Comunicação de Impacto à venda (página /comunicacao) ----------
+const CI_ID = 'comunicacao-impacto';
+app.get('/api/public/comunicacao', async (req, res) => {
+    try {
+        const d = await mtLer(), p = (d.programas || []).find(x => x.id === CI_ID); if (!p) return res.status(404).json({ error: 'Programa não encontrado.' });
+        const t = await mtTurmaAberta(CI_ID), v = Object.assign({}, MT_PADRAO.vendaCi, d.vendaCi || {});
+        res.json({ marca: d.marca, historia: d.historia,
+            programa: { nome: p.nome, curto: p.curto, subtitulo: p.subtitulo, objetivo: p.objetivo, publico: p.publico, formato: p.formato, entrega: p.entrega, regraOuro: p.regraOuro, dificuldades: (p.gaps || []).map(x => x.nome).filter(Boolean), encontros: (p.encontros || []).map(e => ({ n: e.n, modulo: e.modulo, tema: e.tema, entregavel: e.entregavel })) },
+            venda: v, turma: t ? { nome: t.nome, inicio: t.inicio, horario: t.horario, preco: Number(t.preco) || v.precoIndividual, vagas: t.vagas, restantes: t.restantes } : null,
+            pagamentoOnline: !!(d.pagamentoOnline && mpPreference && t) });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/public/comunicacao/inscricao', async (req, res) => {
+    if (!mtLimite(req)) return res.status(429).json({ error: 'Muitas tentativas. Tente de novo em instantes.' });
+    const b = req.body || {};
+    if (b.site) return res.json({ ok: true, semPagamento: true, mensagem: 'Recebido!' });
+    if (mtTxt(b.nome).length < 2 || mtTxt(b.whatsapp).replace(/\D/g, '').length < 10 || !/@/.test(mtTxt(b.email))) return res.status(400).json({ error: 'Informe nome, WhatsApp com DDD e e-mail.' });
+    try {
+        const d = await mtLer(), t = await mtTurmaAberta(CI_ID), v = Object.assign({}, MT_PADRAO.vendaCi, d.vendaCi || {}), preco = t ? (Number(t.preco) || v.precoIndividual) : v.precoIndividual;
+        const lead = await mtRun(`INSERT INTO mentoria_leads (tipo, nome, email, whatsapp, cargo, empresa, origem, etapa, mensagem, valor, dados) VALUES ('aluno',?,?,?,?,?, 'comunicacao', 'proposta', ?, ?, ?)`,
+            [mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.cargo, 120), mtTxt(b.empresa, 160), mtTxt(b.mensagem, 2000), preco, JSON.stringify({ programa: CI_ID, tema: 'Comunicação de Impacto · individual', pessoas: mtTxt(b.pessoas, 40) })]);
+        try { mtNotificar('🎙️ Inscrição na Comunicação de Impacto', `${mtTxt(b.nome, 80)} · ${mtTxt(b.whatsapp, 30)}${t ? ' · ' + t.nome : ' · lista de espera'}`); } catch (e) {}
+        waAuto('inscricao', b.whatsapp, b.nome);
+        rsLigarVisitante(mtTxt(b.visitante, 40), lead.lastID);
+        if (!t || !d.pagamentoOnline || !mpPreference) return res.json({ ok: true, semPagamento: true, mensagem: t ? 'Recebemos sua inscrição! O Lázaro vai te chamar no WhatsApp para confirmar a vaga.' : 'Você entrou na lista da próxima turma. O Lázaro te chama no WhatsApp assim que as datas abrirem.' });
+        if (t.restantes <= 0) return res.json({ ok: true, semPagamento: true, mensagem: 'As vagas desta turma acabaram. Você entrou na lista de espera da próxima turma.' });
+        const al = await mtRun(`INSERT INTO mentoria_alunos (turma_id, lead_id, nome, email, whatsapp, cargo, empresa, produto, valor, pagamento) VALUES (?,?,?,?,?,?,?, 'comunicacao', ?, 'pendente')`,
+            [t.id, lead.lastID, mtTxt(b.nome, 120), mtTxt(b.email, 160), mtTxt(b.whatsapp, 40), mtTxt(b.cargo, 120), mtTxt(b.empresa, 160), preco]);
+        const base = urlPublicaValida(appBaseUrlAtiva) ? appBaseUrlAtiva.replace(/\/$/, '') : '';
+        const pref = await mpPreference.create({ body: {
+            items: [{ title: `Comunicação de Impacto para Líderes — ${t.nome}`, quantity: 1, unit_price: Number(preco), currency_id: 'BRL' }],
+            payer: { name: mtTxt(b.nome, 120), email: mtTxt(b.email, 160) }, payment_methods: { installments: Number(v.parcelas) || 12 },
+            external_reference: `mentoria:${al.lastID}`, ...(base ? { back_urls: { success: base + '/comunicacao?pago=1', failure: base + '/comunicacao?pago=0', pending: base + '/comunicacao?pago=2' }, auto_return: 'approved' } : {})
+        } });
+        await mtRun(`UPDATE mentoria_alunos SET mp_preference_id = ?, checkout_url = ? WHERE id = ?`, [pref.id, pref.init_point, al.lastID]).catch(() => {});
+        res.json({ ok: true, checkout: pref.init_point });
+    } catch (e) { console.error('Inscrição comunicação:', e.message); res.status(500).json({ error: 'Não consegui gerar o pagamento agora. Seus dados foram salvos e o Lázaro vai te chamar no WhatsApp.' }); }
 });
 async function mtConfirmarPagamento(alunoId, pagamentoId) {
     const a = await dbGet(`SELECT * FROM mentoria_alunos WHERE id = ?`, [alunoId]).catch(() => null); if (!a || a.pagamento === 'pago') return;
@@ -13922,7 +13963,7 @@ app.get('/aula/:slug', (req, res) => res.set('Cache-Control', 'no-cache').sendFi
 app.get(['/aluno', '/aluno/:token'], (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'aluno.html')));
 app.get('/presenca/:codigo', (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'presenca.html')));
 // páginas públicas com endereço curto
-[['/mentoria', 'mentoria.html'], ['/palestra', 'palestra.html'], ['/aula', 'aula.html'], ['/raio-x', 'raio-x.html'], ['/bio', 'bio.html'], ['/palestra/apresentar', 'palestra-apresentar.html'], ['/programa/apresentar', 'programa-apresentar.html']]
+[['/comunicacao', 'comunicacao.html'], ['/comunicacao-de-impacto', 'comunicacao.html'], ['/mentoria', 'mentoria.html'], ['/palestra', 'palestra.html'], ['/aula', 'aula.html'], ['/raio-x', 'raio-x.html'], ['/bio', 'bio.html'], ['/palestra/apresentar', 'palestra-apresentar.html'], ['/programa/apresentar', 'programa-apresentar.html']]
     .forEach(([rota, arq]) => app.get(rota, (req, res) => res.sendFile(path.join(__dirname, 'public', arq))));
 
 // ======================================================================
