@@ -1968,6 +1968,7 @@
   .mtn-mini { font:inherit; font-size:11.5px; font-weight:700; border:1px solid #cbd5e1; background:#fff; border-radius:7px; padding:3px 7px; cursor:pointer; width:auto; } .mtn-mini.add { border-style:dashed; color:#7c3aed; border-color:#a78bfa; }
   .mtn-libbt { background:#fff !important; color:#0b1329 !important; border-color:#cbd5e1 !important; } .mtn-libbt.on { background:#dcfce7 !important; border-color:#16a34a !important; color:#166534 !important; }
   .mtn-prazo { grid-column:1 / -1; margin-top:6px; display:flex; flex-direction:column; gap:3px; align-items:stretch; font-size:11.5px; font-weight:700; color:#475569; } .mtn-prazo input { font:inherit; font-size:12px; padding:4px 6px; border:1px solid #cbd5e1; border-radius:6px; width:100%; min-width:0; margin:0; }
+  .mpg-passador { display:flex; gap:12px; align-items:flex-start; background:#ecfdf5; border:1.5px solid #22c55e; border-radius:12px; padding:10px 12px; margin:6px 0 12px; cursor:pointer; } .mpg-passador input { width:20px; height:20px; margin:2px 0 0; flex:none; accent-color:#16a34a; } .mpg-passador b { display:block; color:#166534; } .mpg-passador small { color:#166534; font-size:12.5px; }
   .mtn-dataenc { color:#7c3aed; } .mtn-dataenc i { font-style:normal; font-size:10px; } .mtn-dataenc input { border-color:#c4b5fd; }
   .mtn-badge { background:#dc2626; color:#fff; border-radius:999px; padding:1px 7px; font-size:11px; margin-left:4px; }
   .mtn-foto { width:30px; height:30px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:8px; float:left; }
@@ -2177,7 +2178,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 13/11 (4)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 13/11 (6)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -15198,12 +15199,14 @@ async function mtnApresentar(progId, n, tid) {
     if (r.aviso) mostrarToast(r.aviso, true);
     MT.doc = r.doc || await api('/api/admin/treinamentos-mt/' + r.id); MT.modSel = 0; MT.sujo = false; MT.__voltarLista = false; MT.__mentoria = progId;
     mtApresentar(0);
+    if (MTN.passador !== false && typeof mtAbrirControleCelular === 'function') setTimeout(() => { try { mtAbrirControleCelular(); } catch (e) {} }, 700);
   } catch (e) { mostrarToast(e.message, true); }
 }
 function mtnApresentarEscolher(progId) {
   const p = mtnProgramas().find(x => x.id === progId), T = MTN.turmas.filter(t => mtnProgT(t).id === progId && t.status !== 'encerrada');
   const t = T.find(x => x.status === 'andamento') || T[0], feitos = t ? ((t.dados || {}).feitos || {}) : {}, prox = (p.encontros.find(e => !feitos[e.n]) || p.encontros[0]).n;
-  mtnModal(`<h3 style="margin-top:0;">▶️ Qual encontro vai apresentar?</h3><p class="plano-meta">${t ? `Turma <b>${escapeHtml(t.nome)}</b> — o último slide já mostra o QR de presença.` : 'Sem turma ativa: os slides abrem sem o QR de presença.'} Abre aqui no sistema: use ← → para passar, N para notas, F para tela cheia e 📱 Controle pelo celular para passar os slides pelo celular.</p>
+  mtnModal(`<h3 style="margin-top:0;">▶️ Qual encontro vai apresentar?</h3><p class="plano-meta">${t ? `Turma <b>${escapeHtml(t.nome)}</b> — o último slide já mostra o QR de presença.` : 'Sem turma ativa: os slides abrem sem o QR de presença.'} Abre aqui no sistema: use ← → para passar, N para notas e F para tela cheia.</p>
+    <label class="mpg-passador"><input type="checkbox" ${MTN.passador !== false ? 'checked' : ''} onchange="MTN.passador = this.checked"><span><b>📱 Passador no celular</b><small>Ao abrir, aparece o QR: aponte a câmera do celular e passe os slides por ele. No celular você vê o roteiro de cada slide: onde ficar, o que falar e o tempo.</small></span></label>
     <div class="mpg-escolha">${p.preparacao ? `<button onclick="mtnModal(''); mtnApresentar('${p.id}', 0, ${t ? t.id : 0})"><i>🧭</i><span><b>Preparação</b><small>${escapeHtml(p.preparacao.tema || '')}</small></span></button>` : ''}${p.encontros.map(e => `<button class="${e.n === prox ? 'prox' : ''} ${feitos[e.n] ? 'feito' : ''}" onclick="mtnModal(''); mtnApresentar('${p.id}', ${e.n}, ${t ? t.id : 0})"><i>${feitos[e.n] ? '✓' : e.n}</i><span><b>Encontro ${e.n}${e.n === prox ? ' · próximo' : ''}</b><small>${escapeHtml(e.modulo)}</small></span></button>`).join('')}</div>`);
 }
 function mtnProgramasAba() {
@@ -29329,17 +29332,36 @@ function rbcTodas() { RB.midias.forEach(m => { if (m.ar) m.ajuste = rbcAuto(m.ar
 function rbcFundo(k) { RB.fundo = k; rbGuardarTextos(); rbDesenharNovo(); }
 function rbcMover(i, d) { const L = RB.midias, j = i + d; if (j < 0 || j >= L.length) return; [L[i], L[j]] = [L[j], L[i]]; rbGuardarTextos(); rbDesenharNovo(); }
 function rbcFoco(ev, i) { const m = RB.midias[i]; if ((m.ajuste || 'inteira') !== 'preencher') return; const r = ev.currentTarget.getBoundingClientRect(); m.fx = Math.round(Math.max(0, Math.min(100, (ev.clientX - r.left) / r.width * 100))); m.fy = Math.round(Math.max(0, Math.min(100, (ev.clientY - r.top) / r.height * 100))); rbGuardarTextos(); rbDesenharNovo(); }
+function rbModalProntas(titulo, itens, legenda) {
+  let ma = document.getElementById('rbc-modal'); if (!ma) { ma = document.createElement('div'); ma.id = 'rbc-modal'; document.body.appendChild(ma); }
+  const ext = u => (String(u).split('?')[0].match(/\.(\w+)$/) || [, 'jpg'])[1];
+  ma.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) this.parentNode.innerHTML=''"><div class="modal-caixa" style="max-width:760px;max-height:92vh;overflow-y:auto;">
+    <h3 style="margin-top:0;">${escapeHtml(titulo)}</h3><p class="plano-meta">Toque em cada item para baixar na ordem. No celular, segure a foto e escolha "Salvar imagem" (vídeo: abra e use "Baixar").</p>
+    <div class="rbc-prontas">${itens.map((m, i) => `<a href="${escapeHtml(m.url)}" download="instagram-${i + 1}.${ext(m.url)}" target="_blank">${m.video ? `<video src="${escapeHtml(m.url)}#t=0.5" muted playsinline preload="metadata" style="width:100%;display:block;aspect-ratio:9/16;object-fit:cover;background:#0f172a"></video>` : `<img src="${escapeHtml(m.url)}" alt="">`}<span>${itens.length > 1 ? i + 1 + ' ' : ''}⬇️</span></a>`).join('')}</div>
+    ${legenda ? `<label style="font-weight:700;font-size:13px;">Legenda</label><textarea id="rbc-leg" readonly style="min-height:110px;">${escapeHtml(legenda)}</textarea><button class="btn-secundario btn-sm" style="width:auto;" onclick="const t=document.getElementById('rbc-leg'); navigator.clipboard.writeText(t.value).then(()=>mostrarToast('📋 Legenda copiada.')).catch(()=>{t.select();document.execCommand('copy');mostrarToast('📋 Legenda copiada.');})">📋 Copiar legenda</button>` : ''}
+    <div class="acoes-form"><button class="btn-secundario" onclick="document.getElementById('rbc-modal').innerHTML=''">Fechar</button></div></div></div>`;
+}
+async function rbBaixarPost(id, bt) {
+  const p = (RB.d.posts || []).find(x => x.id === id); if (!p || !p.midias.length) return mostrarToast('Post sem foto/vídeo.', true);
+  const legenda = [p.legenda || '', p.hashtags || ''].filter(Boolean).join('\n\n'), t = bt.textContent; bt.disabled = true; bt.textContent = '⏳ Preparando…';
+  try {
+    let itens = p.midias.map(m => ({ url: m.url, video: rbEhVideo(m) }));
+    if (p.tipo === 'carrossel') {
+      const fotos = p.midias.filter(m => !rbEhVideo(m));
+      if (fotos.length) { const r = await api('/api/admin/estudio/robo/carrossel-ajustar', { method: 'POST', body: JSON.stringify({ midias: fotos }) }); let k = 0; itens = p.midias.map(m => rbEhVideo(m) ? { url: m.url, video: true } : { url: r.fotos[k++] }); }
+    }
+    const nome = (RB_TIPOS.find(x => x[0] === p.tipo) || ['', p.tipo])[1];
+    rbModalProntas(`⬇️ ${nome}${itens.length > 1 ? ' · ' + itens.length + ' itens' : ''}`, itens, legenda);
+  } catch (e) { mostrarToast(e.message, true); }
+  bt.disabled = false; bt.textContent = t;
+}
 async function rbcBaixar(bt) {
   if (RB.enviando) return mostrarToast('Espere as fotos terminarem de subir.', true);
   const L = RB.midias.filter(m => m.url && !rbEhVideo(m)); if (!L.length) return mostrarToast('Adicione as fotos.', true);
   bt.disabled = true; const t = bt.textContent; bt.textContent = '⏳ Ajustando…';
   try {
     const r = await api('/api/admin/estudio/robo/carrossel-ajustar', { method: 'POST', body: JSON.stringify({ midias: L.map(m => ({ url: m.url, mime: m.mime, ajuste: m.ajuste || 'auto', fx: m.fx ?? 50, fy: m.fy ?? 50, fundo: RB.fundo || 'desfoque' })) }) });
-    let ma = document.getElementById('rbc-modal'); if (!ma) { ma = document.createElement('div'); ma.id = 'rbc-modal'; document.body.appendChild(ma); }
-    ma.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) this.parentNode.innerHTML=''"><div class="modal-caixa" style="max-width:760px;max-height:92vh;overflow-y:auto;">
-      <h3 style="margin-top:0;">🗂️ Carrossel pronto · ${r.fotos.length} fotos 1080×1350</h3><p class="plano-meta">Toque em cada foto para baixar na ordem. No celular, segure a foto e escolha "Salvar imagem".</p>
-      <div class="rbc-prontas">${r.fotos.map((u, i) => `<a href="${escapeHtml(u)}" download="carrossel-${i + 1}.jpg" target="_blank"><img src="${escapeHtml(u)}" alt=""><span>${i + 1} ⬇️</span></a>`).join('')}</div>
-      <div class="acoes-form"><button class="btn-secundario" onclick="document.getElementById('rbc-modal').innerHTML=''">Fechar</button></div></div></div>`;
+    rbModalProntas(`🗂️ Carrossel pronto · ${r.fotos.length} fotos 1080×1350`, r.fotos.map(u => ({ url: u })));
   } catch (e) { mostrarToast(e.message, true); }
   bt.disabled = false; bt.textContent = t;
 }
@@ -29432,9 +29454,9 @@ function rbDesenharFila() {
         <div class="rb-acoes"><button class="pri" onclick="rbSalvarEdicao(${p.id})">Salvar</button><button onclick="RB.editando=null;rbDesenharFila()">Cancelar</button></div>`
       : `<p>${escapeHtml((p.legenda || (p.tipo === 'story' ? '(story sem legenda)' : '(sem legenda)')).slice(0, 220))}</p>`}
       ${p.erro ? `<div class="rb-err">${escapeHtml(p.erro)}</div>` : ''}
-      ${ed ? '' : `<div class="rb-acoes">${p.status === 'publicado' ? (p.permalink ? `<a href="${escapeHtml(p.permalink)}" target="_blank" rel="noopener">Ver no Instagram ↗</a>` : '') + `<button class="del" onclick="rbExcluir(${p.id})">Tirar da lista</button>`
-        : p.status === 'publicando' ? '<small class="rb-dica">O Instagram está processando… (1 a 5 min)</small>'
-        : `<button class="pri" onclick="rbAcao(${p.id},'agora')">🚀 Postar agora</button>${p.status !== 'agendado' || !p.auto_horario ? `<button onclick="rbAcao(${p.id},'auto')">🤖 Melhor horário</button>` : ''}<button onclick="RB.editando=${p.id};rbDesenharFila()">✏️ Editar</button>${p.status === 'agendado' ? `<button onclick="rbAcao(${p.id},'rascunho')">⏸ Pausar</button>` : ''}<button class="del" onclick="rbExcluir(${p.id})">🗑️ Excluir</button>`}</div>`}
+      ${ed ? '' : `<div class="rb-acoes">${p.status === 'publicado' ? (p.permalink ? `<a href="${escapeHtml(p.permalink)}" target="_blank" rel="noopener">Ver no Instagram ↗</a>` : '') + `<button onclick="rbBaixarPost(${p.id}, this)">⬇️ Baixar</button><button class="del" onclick="rbExcluir(${p.id})">Tirar da lista</button>`
+        : p.status === 'publicando' ? `<small class="rb-dica">O Instagram está processando… (1 a 5 min)</small><button onclick="rbBaixarPost(${p.id}, this)">⬇️ Baixar</button>`
+        : `<button class="pri" onclick="rbAcao(${p.id},'agora')">🚀 Postar agora</button>${p.status !== 'agendado' || !p.auto_horario ? `<button onclick="rbAcao(${p.id},'auto')">🤖 Melhor horário</button>` : ''}<button onclick="RB.editando=${p.id};rbDesenharFila()">✏️ Editar</button><button onclick="rbBaixarPost(${p.id}, this)">⬇️ Baixar</button>${p.status === 'agendado' ? `<button onclick="rbAcao(${p.id},'rascunho')">⏸ Pausar</button>` : ''}<button class="del" onclick="rbExcluir(${p.id})">🗑️ Excluir</button>`}</div>`}
     </div></div>`;
   }).join('');
 }
