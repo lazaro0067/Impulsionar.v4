@@ -1968,6 +1968,9 @@
   .mtn-mini { font:inherit; font-size:11.5px; font-weight:700; border:1px solid #cbd5e1; background:#fff; border-radius:7px; padding:3px 7px; cursor:pointer; width:auto; } .mtn-mini.add { border-style:dashed; color:#7c3aed; border-color:#a78bfa; }
   .mtn-libbt { background:#fff !important; color:#0b1329 !important; border-color:#cbd5e1 !important; } .mtn-libbt.on { background:#dcfce7 !important; border-color:#16a34a !important; color:#166534 !important; }
   .mtn-prazo { grid-column:1 / -1; margin-top:6px; display:flex; flex-direction:column; gap:3px; align-items:stretch; font-size:11.5px; font-weight:700; color:#475569; } .mtn-prazo input { font:inherit; font-size:12px; padding:4px 6px; border:1px solid #cbd5e1; border-radius:6px; width:100%; min-width:0; margin:0; }
+  .mta-pessoa { display:flex; gap:12px; align-items:center; padding:10px 0; border-top:1px solid #f1f5f9; flex-wrap:wrap; } .mta-pessoa .mta-av { width:38px; height:38px; border-radius:50%; background:#e2e8f0; display:grid; place-items:center; font-weight:800; flex:none; } .mta-pessoa.conhecido .mta-av { background:#dcfce7; color:#166534; }
+  .mta-p-info { flex:1; min-width:220px; } .mta-p-info small { display:block; color:#64748b; font-size:12px; } .mta-p-info b small { display:inline; color:#64748b; font-weight:600; } .mta-p-pags { color:#475569 !important; }
+  .mta-int { font-size:11px; font-weight:800; border-radius:999px; padding:2px 8px; } .mta-int.alto { background:#fee2e2; color:#991b1b; } .mta-int.zap { background:#dcfce7; color:#166534; } .mta-int.med { background:#fef3c7; color:#92400e; } .mta-anon { font-size:12px; color:#94a3b8; font-weight:700; }
   .mtv-topo { display:flex; gap:14px; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; margin-bottom:14px; }
   .mtv-kpis { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:14px; } .mtv-kpis div { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px; text-align:center; } .mtv-kpis b { display:block; font-size:26px; } .mtv-kpis small { color:#64748b; } @media (max-width:640px) { .mtv-kpis { grid-template-columns:1fr 1fr; } }
   .mtv-aviso { background:#fff7ed; border:1.5px solid #f59e0b; color:#7c2d12; border-radius:14px; padding:12px 14px; margin-bottom:18px; } .mtv-aviso.ok { background:#ecfdf5; border-color:#22c55e; color:#14532d; }
@@ -2186,7 +2189,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 14/11 (2)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 14/11 (3)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -15031,7 +15034,7 @@ function datasRealizadas(t) { const f = (t.dados || {}).feitos || {}, hoje = new
 // ---------- 📊 Acessos: quem entrou nas páginas, de onde veio, o que clicou ----------
 const MTACS = { dias: 30, d: null };
 const MTA_ORIGEM = { instagram: '📸 Instagram', whatsapp: '💬 WhatsApp', facebook: '👍 Facebook', linkedin: '💼 LinkedIn', google: '🔎 Google', youtube: '▶️ YouTube', tiktok: '🎵 TikTok', direto: '🔗 Link direto', site: '🌐 Próprio site', outro: '🌍 Outros sites', bio: '📸 Link da bio' };
-const MTA_PAG = { '/bio': 'Link da bio', '/mentoria': 'Mentoria', '/palestra': 'Palestras', '/aula': 'Aulas gratuitas', '/raio-x': 'Raio-X do Líder' };
+const MTA_PAG = { '/mentorias': 'Vitrine das mentorias (bio)', '/comunicacao': 'Comunicação de Impacto', '/comunicacao-de-impacto': 'Comunicação de Impacto',  '/bio': 'Link da bio', '/mentoria': 'Mentoria', '/palestra': 'Palestras', '/aula': 'Aulas gratuitas', '/raio-x': 'Raio-X do Líder' };
 const mtaAula = slug => { const a = ((MTACS.d || {}).aulas || []).concat(MTV.lista || []).find(x => x.slug === slug); return a ? a.titulo : slug; };
 const mtaPag = p => MTA_PAG[p] || (String(p).startsWith('/aula/') ? 'Aula: ' + mtaAula(p.slice(6)) : p);
 function mtnAcessos() { setTimeout(mtnCarregarAcessos, 0); return '<div id="mtn-acessos"><p class="plano-meta">Carregando acessos…</p></div>'; }
@@ -15050,6 +15053,7 @@ async function mtnCarregarAcessos() {
     </div>
     <div class="mta-card"><b>O que mais clicaram</b>${d.cliques.map(x => `<div class="mta-linha"><span>${escapeHtml(x.alvo)}</span><small>${escapeHtml(mtaPag(x.pagina))}</small><b>${x.n}</b></div>`).join('') || '<p class="plano-meta">Sem cliques no período.</p>'}</div>
     ${d.aulas.length ? `<div class="mta-card"><b>Aulas gratuitas</b>${d.aulas.map(a => `<div class="mta-linha"><span>🎥 ${escapeHtml(a.titulo)}</span><small>${a.iniciaram} começaram · ${a.terminaram} terminaram</small><b>${a.iniciaram ? Math.round(a.terminaram / a.iniciaram * 100) : 0}%</b></div>`).join('')}</div>` : ''}
+    ${mtaQuemEntrou(d)}
     <div class="mta-card"><b>🔥 Contatos que voltaram ao site</b><p class="plano-meta" style="margin:2px 0 10px;">Pessoas já cadastradas que visitaram suas páginas no período — os mais "quentes" primeiro. Chame enquanto o interesse está alto.</p>
       ${d.quentes.length ? d.quentes.map(q => `<div class="mta-quente"><div><b>${escapeHtml(q.nome || 'Contato')}</b> <span class="mtn-tipo">${MTN_TIPOS[q.tipo] || q.tipo}</span>${q.retorno_em ? ' <span class="mta-ok">✓ já chamado</span>' : ''}
           <small>${q.visitas} visita(s) · ${q.cliques} clique(s)${q.videos ? ` · ${q.videos} vídeo(s)` : ''} · últ. ${escapeHtml(mtnQuando(q.ultimo))} · ${escapeHtml(String(q.paginas || '').split(',').map(mtaPag).join(', '))}</small></div>
@@ -15058,6 +15062,23 @@ async function mtnCarregarAcessos() {
     </div>
     <div class="mta-card"><b>🔗 Links para divulgar (com origem)</b><p class="plano-meta" style="margin:2px 0 8px;">Use estes links em cada lugar para saber de onde vem cada visita.</p>
       ${[['Bio do Instagram', '/bio?o=bio'], ['Stories / Direct', '/mentoria?o=instagram'], ['Status do WhatsApp', '/aula?o=whatsapp'], ['LinkedIn', '/palestra?o=linkedin'], ['Raio-X (qualquer lugar)', '/raio-x?o=divulgacao']].map(([r, u]) => `<div class="mta-linha"><span>${r}</span><code>${escapeHtml(mtnBase() + u)}</code><button class="mtn-bt" onclick="mtnCopiar('${escapeHtml(mtnBase() + u)}')">Copiar</button></div>`).join('')}</div>`;
+}
+// 👀 Quem entrou: lista de visitantes (anônimos ou já cadastrados) com o que viram e clicaram
+function mtaQuemEntrou(d) {
+  const P = (d.pessoas || []).filter(x => MTACS.quem === 'contatos' ? x.contato : MTACS.quem === 'quentes' ? x.interesse === 'alto' || x.interesse === 'whatsapp' || x.interesse === 'medio' : true);
+  const nC = (d.pessoas || []).filter(x => x.contato).length, nQ = (d.pessoas || []).filter(x => x.interesse !== 'baixo').length;
+  const selo = { alto: '<span class="mta-int alto">🔥 clicou para comprar</span>', whatsapp: '<span class="mta-int zap">💬 clicou no WhatsApp</span>', medio: '<span class="mta-int med">👀 voltou várias vezes</span>', baixo: '' };
+  const disp = x => /cel|mobile|android|iphone/i.test(x || '') ? '📱 celular' : x ? '💻 computador' : '';
+  return `<div class="mta-card"><b>👀 Quem entrou</b><p class="plano-meta" style="margin:2px 0 10px;">Cada pessoa que abriu suas páginas no período. Quem já deixou nome e WhatsApp aparece com o nome e o botão para chamar (abre o seu WhatsApp normal, não precisa do WhatsApp Business). Quem não deixou contato aparece como visitante anônimo: o Instagram e o navegador não informam quem é.</p>
+    <div class="mtn-filtros" style="margin-bottom:8px;">${[['todos', 'Todos', (d.pessoas || []).length], ['quentes', '🔥 Com interesse', nQ], ['contatos', '📇 Com contato', nC]].map(([k, r, n]) => `<button class="${(MTACS.quem || 'todos') === k ? 'on' : ''}" onclick="MTACS.quem='${k}'; mtnCarregarAcessos()">${r} <small>${n}</small></button>`).join('')}</div>
+    ${P.length ? P.map(x => { const c = x.contato, pags = String(x.paginas || '').split(',').filter(Boolean).map(mtaPag), alvos = String(x.alvos || '').split(',').filter(Boolean);
+      return `<div class="mta-pessoa ${c ? 'conhecido' : ''}"><div class="mta-av">${c ? escapeHtml(String(c.nome || '?').trim().charAt(0).toUpperCase()) : '👤'}</div>
+        <div class="mta-p-info"><b>${c ? escapeHtml(c.nome || 'Contato') + (c.empresa ? ` <small>· ${escapeHtml(c.empresa)}</small>` : '') : escapeHtml(x.apelido) + ' <small>· anônimo</small>'}</b> ${selo[x.interesse] || ''}
+          <small>${escapeHtml(mtnQuando(x.ultimo))} · ${MTA_ORIGEM[x.origem] || (x.origem ? escapeHtml(x.origem) : '🔗 Link direto')} · ${disp(x.dispositivo)} · ${x.visitas} visita(s)${x.cliques ? ` · ${x.cliques} clique(s)` : ''}${x.videos ? ` · assistiu aula` : ''}</small>
+          <small class="mta-p-pags">Viu: ${escapeHtml(pags.join(', ') || '—')}${alvos.length ? ` · Clicou: ${escapeHtml(alvos.slice(0, 4).join(' · ').slice(0, 160))}` : ''}</small></div>
+        <div class="mta-bts">${c ? `<button class="mtn-bt" onclick="mtnCaminho(${c.id})">👣 Caminho</button>${c.whatsapp ? `<a class="mtn-bt zap" target="_blank" rel="noopener" href="https://wa.me/${mtnNum(c)}?text=${encodeURIComponent(mtnMsgRetorno({ nome: c.nome, paginas: x.paginas }))}" onclick="api('/api/admin/mentoria/leads/${c.id}/retorno', { method: 'POST' }).catch(() => {})">💬 Chamar no WhatsApp</a>` : ''}` : `<span class="mta-anon" title="Sem nome e WhatsApp não dá para chamar. Ele aparece com nome quando preenche um formulário ou abre um link rastreado.">sem contato</span>`}</div></div>`; }).join('')
+      : '<p class="plano-meta">Ninguém neste filtro no período.</p>'}
+  </div>`;
 }
 function mtnMsgRetorno(q) {
   const pg = /mentoria|inscric/.test(q.paginas || '') ? 'a página da mentoria Do Chão à Gestão' : /palestra/.test(q.paginas || '') ? 'a página de palestras' : /aula/.test(q.paginas || '') ? 'as nossas aulas gratuitas' : /raio-x/.test(q.paginas || '') ? 'o Raio-X do Líder' : 'o nosso site';

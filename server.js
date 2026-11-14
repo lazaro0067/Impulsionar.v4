@@ -14973,7 +14973,20 @@ app.get('/api/admin/mentoria/acessos', requireRole('admin'), async (req, res) =>
         quentes.sort((a, b) => b.pontos - a.pontos || String(b.ultimo).localeCompare(String(a.ultimo)));
         const aulas = await dbAll(`SELECT a.id, a.titulo, a.slug, (SELECT COUNT(DISTINCT visitante) FROM site_eventos e WHERE e.tipo='video' AND e.alvo = a.slug AND e.dados LIKE '%"p":0%') iniciaram,
             (SELECT COUNT(DISTINCT visitante) FROM site_eventos e WHERE e.tipo='video' AND e.alvo = a.slug AND e.dados LIKE '%"p":90%') terminaram FROM mentoria_aulas a ORDER BY a.ordem, a.id`).catch(() => []);
-        res.json({ dias, total: Object.assign({ visitas: 0, visitantes: 0, cliques: 0, assistiram: 0 }, tot || {}, { cadastros: (leads || {}).n || 0 }), porDia, paginas, origens, cliques, dispositivos, quentes, aulas });
+        // quem entrou: cada visitante (anônimo ou já cadastrado), o que viu e o que clicou
+        const pessoas = await q(`SELECT visitante, MAX(lead_id) lead_id, COUNT(CASE WHEN tipo='visita' THEN 1 END) visitas, COUNT(CASE WHEN tipo='clique' THEN 1 END) cliques, COUNT(CASE WHEN tipo='video' THEN 1 END) videos,
+            GROUP_CONCAT(DISTINCT pagina) paginas, GROUP_CONCAT(DISTINCT CASE WHEN tipo='clique' THEN replace(alvo, ',', ' ') END) alvos, MAX(CASE WHEN origem NOT IN ('direto','site','') THEN origem END) origem, MAX(dispositivo) dispositivo, MIN(criado_em) primeiro, MAX(criado_em) ultimo
+            FROM site_eventos WHERE criado_em >= datetime('now', ?) AND visitante IS NOT NULL GROUP BY visitante ORDER BY ultimo DESC LIMIT 120`);
+        const vis = pessoas.map(x => x.visitante), lids = pessoas.map(x => x.lead_id).filter(Boolean);
+        const conh = vis.length ? await dbAll(`SELECT id, nome, whatsapp, email, empresa, tipo, etapa, visitante, dados FROM mentoria_leads WHERE visitante IN (${vis.map(() => '?').join(',')})${lids.length ? ` OR id IN (${lids.map(() => '?').join(',')})` : ''}`, [...vis, ...lids]).catch(() => []) : [];
+        pessoas.forEach(x => {
+            const l = conh.find(c => c.id === x.lead_id) || conh.find(c => c.visitante === x.visitante);
+            if (l) x.contato = { id: l.id, nome: l.nome, whatsapp: l.whatsapp, empresa: l.empresa, tipo: l.tipo, etapa: l.etapa, programa: mtJson(l.dados).programa || '' };
+            const a = String(x.alvos || '');
+            x.interesse = /quero|vaga|inscri|pagamento|proposta|garantir|participar/i.test(a) ? 'alto' : /whatsapp/i.test(a) ? 'whatsapp' : (x.visitas >= 3 || x.videos) ? 'medio' : 'baixo';
+            x.apelido = 'Visitante ' + String(x.visitante).slice(-4).toUpperCase();
+        });
+        res.json({ dias, total: Object.assign({ visitas: 0, visitantes: 0, cliques: 0, assistiram: 0 }, tot || {}, { cadastros: (leads || {}).n || 0 }), porDia, paginas, origens, cliques, dispositivos, quentes, aulas, pessoas });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/admin/mentoria/leads/:id/caminho', requireRole('admin'), async (req, res) => {
