@@ -1847,6 +1847,17 @@
   .rb-tipos { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; } .rb-tipos button { width:auto; margin:0; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:20px; padding:7px 12px; font-weight:700; cursor:pointer; }
   .rb-tipos button.on { background:#7c3aed; border-color:#7c3aed; color:#fff; }
   .rb-midias { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .rbc-vazio { display:grid; gap:4px; place-items:center; text-align:center; border:2px dashed #a78bfa; background:#f5f3ff; color:#4c1d95; border-radius:14px; padding:22px 16px; cursor:pointer; margin-bottom:10px; } .rbc-vazio span { font-size:13px; color:#6d28d9; max-width:460px; }
+  .rbc { margin-bottom:10px; } .rbc-barra { display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:12.5px; font-weight:700; color:#475569; margin-bottom:10px; }
+  .rbc-barra button, .rbc-bts button { width:auto; margin:0; font:inherit; font-size:12px; font-weight:700; padding:5px 10px; border-radius:999px; border:1px solid #cbd5e1; background:#fff; color:#0f172a; cursor:pointer; } .rbc-barra button.on { background:#0b1329; color:#fff; border-color:#0b1329; }
+  .rbc-grade { display:flex; gap:12px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x mandatory; } .rbc-item { flex:0 0 168px; scroll-snap-align:start; }
+  .rbc-quadro { position:relative; width:168px; aspect-ratio:4/5; border-radius:10px; overflow:hidden; background:#0b1329; box-shadow:0 4px 14px rgba(15,23,42,.18); cursor:crosshair; } .rbc-quadro.f-claro { background:#fff; outline:1px solid #e2e8f0; }
+  .rbc-quadro img, .rbc-quadro video { position:absolute; inset:0; width:100%; height:100%; display:block; } .rbc-quadro img.bg { object-fit:cover; filter:blur(7px) brightness(.88); transform:scale(1.12); }
+  .rbc-n { position:absolute; left:6px; top:6px; background:rgba(15,23,42,.75); color:#fff; font-size:11px; font-weight:800; border-radius:999px; padding:2px 7px; } .rbc-quadro .pg { position:absolute; inset:0; display:grid; place-items:center; background:rgba(15,23,42,.55); color:#fff; font-weight:800; }
+  .rbc-alvo { position:absolute; width:18px; height:18px; margin:-9px 0 0 -9px; border:2px solid #fff; border-radius:50%; box-shadow:0 0 0 2px rgba(124,58,237,.8); pointer-events:none; }
+  .rbc-bts { display:flex; gap:4px; justify-content:center; align-items:center; margin-top:6px; } .rbc-bts button { padding:4px 8px; } .rbc-bts .tg { flex:1; white-space:nowrap; padding:4px 6px !important; font-size:11.5px !important; } .rbc-bts button:disabled { opacity:.35; } .rbc-bts small { flex:1; text-align:center; color:#64748b; }
+  .rbc-add { flex:0 0 120px; aspect-ratio:4/5; height:auto; display:grid; place-content:center; text-align:center; border:2px dashed #cbd5e1; border-radius:10px; font-size:30px; color:#64748b; cursor:pointer; align-self:flex-start; } .rbc-add small { display:block; font-size:12px; font-weight:700; }
+  .rbc-prontas { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:10px; margin:12px 0; } .rbc-prontas a { position:relative; display:block; border-radius:10px; overflow:hidden; } .rbc-prontas img { width:100%; display:block; } .rbc-prontas span { position:absolute; right:6px; bottom:6px; background:#f59e0b; color:#0b1329; font-weight:800; font-size:12px; border-radius:999px; padding:2px 8px; }
   .rb-mid { position:relative; width:84px; height:105px; border-radius:10px; overflow:hidden; background:#0f172a; flex:0 0 auto; }
   .rb-mid img, .rb-mid video { width:100%; height:100%; object-fit:cover; display:block; }
   .rb-mid .x { position:absolute; top:3px; right:3px; width:22px !important; height:22px; margin:0 !important; padding:0; border-radius:50%; border:none; background:rgba(0,0,0,.65); color:#fff; font-size:13px; cursor:pointer; line-height:22px; }
@@ -2165,7 +2176,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 13/11 (2)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 13/11 (3)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -28409,6 +28420,7 @@ function evDesenharHomeCelular(corpo) {
       <label class="eh-acao"><input type="file" accept="video/*,image/*" multiple hidden onchange="evCelGaleria(this.files); this.value=''"><span>🖼️</span><b>Da galeria</b><small>Fotos e vídeos do celular</small></label>
       <button class="eh-acao" onclick="evCelGravar()"><span>🎬</span><b>Gravar Reels</b><small>Vídeo em pé para o feed e Reels</small></button>
       <button class="eh-acao" onclick="evGravarStory()"><span>📱</span><b>Gravar Story</b><small>Grave, edite e agende o Story</small></button>
+      <label class="eh-acao"><input type="file" accept="image/*" multiple hidden onchange="igCarrossel(this.files); this.value=''"><span>🗂️</span><b>Carrossel de fotos</b><small>Suba as fotos: ajusta no 4:5 e agenda</small></label>
       <button class="eh-acao" onclick="evAbrirCriarVideoIa()"><span>🤖</span><b>Criar com IA</b><small>Roteiro, pessoa ou animação</small></button>
       ${ESTADO.usuario.role === 'admin' ? `<button class="eh-acao" onclick="evNovaAula()"><span>🎓</span><b>Gravar aula</b><small>Teleprompter + Academy</small></button>` : `<button class="eh-acao" onclick="renderEstudioVideo('conta')"><span>💳</span><b>Meu plano</b><small>Uso do mês e renovação</small></button>`}
       <button class="eh-acao" onclick="evNovoProjeto()"><span>✂️</span><b>Editar do zero</b><small>Projeto em branco</small></button>
@@ -29162,7 +29174,7 @@ async function igcCriar(el) {
   if (!C.jobId) { try { C.jobId = sessionStorage.getItem('igc_job') || null; } catch (e) {} }
   el.innerHTML = `<div id="igc-job"></div>
     <div class="igc-card igc-criar"><h3>✨ Criar post</h3>
-      <div class="igc-sw"><button class="${C.modo === 'roteiro' ? 'on' : ''}" onclick="igcCriarModo('roteiro')">📝 Tenho o roteiro</button><button class="${C.modo === 'tema' ? 'on' : ''}" onclick="igcCriarModo('tema')">💡 Só tenho a ideia</button><button onclick="igcIr('robo')">🖼️ Foto / carrossel</button></div>
+      <div class="igc-sw"><button class="${C.modo === 'roteiro' ? 'on' : ''}" onclick="igcCriarModo('roteiro')">📝 Tenho o roteiro</button><button class="${C.modo === 'tema' ? 'on' : ''}" onclick="igcCriarModo('tema')">💡 Só tenho a ideia</button><button onclick="igCarrossel()">🗂️ Carrossel de fotos</button><button onclick="RB.tipo='foto'; igcIr('robo')">🖼️ Foto</button></div>
       ${C.modo === 'roteiro' ? `<textarea id="igc-rot" placeholder="Cole aqui o roteiro (o texto que vai ser falado no vídeo).&#10;&#10;Ex.: Pare de achar que liderar é mandar. Liderar é fazer o time enxergar a meta…">${escapeHtml(C.roteiro || '')}</textarea>`
         : `<input id="igc-tema" placeholder="Sobre o que é o vídeo? Ex.: 3 erros do líder novo na primeira semana" value="${escapeHtml(C.tema || '')}"><label style="font-size:13px;font-weight:700;">Duração<select id="igc-dur">${[20, 30, 45, 60].map(n => `<option value="${n}" ${Number(C.duracao || 30) === n ? 'selected' : ''}>${n} segundos</option>`).join('')}</select></label>`}
       ${C.inspiracao ? `<p class="rb-dica">🔥 Seguindo o formato que viraliza: ${escapeHtml(C.inspiracao.slice(0, 160))} <a href="#" onclick="IGC.criar.inspiracao='';igcIr('criar');return false;">tirar</a></p>` : ''}
@@ -29280,6 +29292,45 @@ function rbDesenhar() {
       <p class="rb-dica">💬 Respostas aos comentários: <b>${d.comentarios.ativo ? (d.comentarios.modo === 'auto' ? 'automáticas ✅' : 'você aprova ✅') : 'desligadas'}</b> — <a href="#" onclick="igcIr('comentarios');return false;">configurar</a>. Responder rápido nas primeiras horas ajuda o post a ser entregue para mais gente.</p>
     </div></div>`;
   rbDesenharNovo(); rbDesenharFila();
+  if (RB.pend) { const f = RB.pend; RB.pend = null; rbArquivos(f); }
+  if (RB.irNovo) { RB.irNovo = false; setTimeout(() => { const n = document.getElementById('rb-novo'); if (n) n.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50); }
+}
+// ===== Carrossel de fotos: cada foto ajustada no 4:5 (1080×1350) do feed, igual ao que vai para o Instagram =====
+function igCarrossel(files) { RB.tipo = 'carrossel'; RB.irNovo = true; if (files && files.length) RB.pend = [...files]; igcIr('robo'); }
+const rbcAuto = ar => ar >= 0.7 && ar <= 1.0 ? 'preencher' : 'inteira';
+function rbcEditor() {
+  const L = RB.midias, fundo = RB.fundo || 'desfoque';
+  if (!L.length) return `<label class="rbc-vazio"><input type="file" accept="image/*,video/*" multiple hidden onchange="rbArquivos(this.files); this.value=''"><b>🗂️ Escolha de 2 a 10 fotos</b><span>Fotos em pé, deitadas, prints de slide… o sistema ajusta cada uma para o formato do carrossel (4:5 · 1080×1350) sem cortar o que importa.</span></label>`;
+  return `<div class="rbc">
+    <div class="rbc-barra"><span>Fundo das fotos inteiras:</span>${[['desfoque', '🌫️ Desfocado'], ['escuro', '🟦 Azul V4'], ['claro', '⬜ Branco']].map(([k, r]) => `<button class="${fundo === k ? 'on' : ''}" onclick="rbcFundo('${k}')">${r}</button>`).join('')}
+      <span style="flex:1"></span><button onclick="rbcTodas('auto')">✨ Ajuste automático</button><button onclick="rbcBaixar(this)">⬇️ Baixar prontas</button></div>
+    <div class="rbc-grade">${L.map((m, i) => { const src = m.local || m.url || '', v = rbEhVideo(m), aj = m.ajuste || (m.ar ? rbcAuto(m.ar) : 'inteira'); return `<div class="rbc-item" data-k="${m.k || ''}">
+      <div class="rbc-quadro f-${fundo}" ${v ? '' : `onclick="rbcFoco(event, ${i})" title="${aj === 'preencher' ? 'Toque no ponto que deve ficar no centro' : ''}"`}>
+        ${v ? `<video src="${escapeHtml(src)}#t=0.5" muted playsinline preload="metadata" style="object-fit:cover"></video>` : `${fundo === 'desfoque' ? `<img class="bg" src="${escapeHtml(src)}" alt="">` : ''}<img class="fg" src="${escapeHtml(src)}" alt="" onload="rbcCarregou(this, ${i})" style="object-fit:${aj === 'preencher' ? 'cover' : 'contain'};object-position:${m.fx ?? 50}% ${m.fy ?? 50}%">`}
+        <span class="rbc-n">${i + 1}/${L.length}</span>${m.progresso !== undefined && m.progresso < 1 ? `<div class="pg">${Math.round(m.progresso * 100)}%</div>` : ''}${aj === 'preencher' && !v ? `<i class="rbc-alvo" style="left:${m.fx ?? 50}%;top:${m.fy ?? 50}%"></i>` : ''}</div>
+      <div class="rbc-bts"><button ${i ? '' : 'disabled'} onclick="rbcMover(${i}, -1)" title="Para a esquerda">◀</button>${v ? '<small>vídeo</small>' : `<button class="tg" onclick="rbcAjuste(${i})">${aj === 'preencher' ? '✂️ Preencher' : '🖼️ Inteira'}</button>`}<button ${i < L.length - 1 ? '' : 'disabled'} onclick="rbcMover(${i}, 1)" title="Para a direita">▶</button><button onclick="rbTirarMidia(${i})" title="Tirar">✕</button></div></div>`; }).join('')}
+      ${L.length < 10 ? `<label class="rbc-add"><input type="file" accept="image/*,video/*" multiple hidden onchange="rbArquivos(this.files); this.value=''">＋<small>Mais fotos</small></label>` : ''}</div>
+    <p class="rb-dica">✂️ <b>Preencher</b> ocupa o quadro todo (toque na foto para escolher o que fica no centro) · 🖼️ <b>Inteira</b> mostra tudo, ideal para slide e foto de grupo. A 1ª foto é a capa: use ◀ ▶ para mudar a ordem.</p></div>`;
+}
+function rbcCarregou(img, i) { const m = RB.midias[i]; if (!m || m.ar) return; m.ar = img.naturalWidth / img.naturalHeight; if (!m.ajuste) { m.ajuste = rbcAuto(m.ar); if (m.ajuste === 'preencher') { rbGuardarTextos(); rbDesenharNovo(); } } }
+function rbcAjuste(i) { const m = RB.midias[i]; m.ajuste = (m.ajuste || 'inteira') === 'preencher' ? 'inteira' : 'preencher'; rbGuardarTextos(); rbDesenharNovo(); }
+function rbcTodas() { RB.midias.forEach(m => { if (m.ar) m.ajuste = rbcAuto(m.ar); m.fx = 50; m.fy = 50; }); rbGuardarTextos(); rbDesenharNovo(); }
+function rbcFundo(k) { RB.fundo = k; rbGuardarTextos(); rbDesenharNovo(); }
+function rbcMover(i, d) { const L = RB.midias, j = i + d; if (j < 0 || j >= L.length) return; [L[i], L[j]] = [L[j], L[i]]; rbGuardarTextos(); rbDesenharNovo(); }
+function rbcFoco(ev, i) { const m = RB.midias[i]; if ((m.ajuste || 'inteira') !== 'preencher') return; const r = ev.currentTarget.getBoundingClientRect(); m.fx = Math.round(Math.max(0, Math.min(100, (ev.clientX - r.left) / r.width * 100))); m.fy = Math.round(Math.max(0, Math.min(100, (ev.clientY - r.top) / r.height * 100))); rbGuardarTextos(); rbDesenharNovo(); }
+async function rbcBaixar(bt) {
+  if (RB.enviando) return mostrarToast('Espere as fotos terminarem de subir.', true);
+  const L = RB.midias.filter(m => m.url && !rbEhVideo(m)); if (!L.length) return mostrarToast('Adicione as fotos.', true);
+  bt.disabled = true; const t = bt.textContent; bt.textContent = '⏳ Ajustando…';
+  try {
+    const r = await api('/api/admin/estudio/robo/carrossel-ajustar', { method: 'POST', body: JSON.stringify({ midias: L.map(m => ({ url: m.url, mime: m.mime, ajuste: m.ajuste || 'auto', fx: m.fx ?? 50, fy: m.fy ?? 50, fundo: RB.fundo || 'desfoque' })) }) });
+    let ma = document.getElementById('rbc-modal'); if (!ma) { ma = document.createElement('div'); ma.id = 'rbc-modal'; document.body.appendChild(ma); }
+    ma.innerHTML = `<div class="modal-fundo" onclick="if(event.target===this) this.parentNode.innerHTML=''"><div class="modal-caixa" style="max-width:760px;max-height:92vh;overflow-y:auto;">
+      <h3 style="margin-top:0;">🗂️ Carrossel pronto · ${r.fotos.length} fotos 1080×1350</h3><p class="plano-meta">Toque em cada foto para baixar na ordem. No celular, segure a foto e escolha "Salvar imagem".</p>
+      <div class="rbc-prontas">${r.fotos.map((u, i) => `<a href="${escapeHtml(u)}" download="carrossel-${i + 1}.jpg" target="_blank"><img src="${escapeHtml(u)}" alt=""><span>${i + 1} ⬇️</span></a>`).join('')}</div>
+      <div class="acoes-form"><button class="btn-secundario" onclick="document.getElementById('rbc-modal').innerHTML=''">Fechar</button></div></div></div>`;
+  } catch (e) { mostrarToast(e.message, true); }
+  bt.disabled = false; bt.textContent = t;
 }
 function rbDesenharNovo() {
   const el = document.getElementById('rb-novo'); if (!el) return;
@@ -29288,7 +29339,8 @@ function rbDesenharNovo() {
   const dt = (document.getElementById('rb-dt') || {}).value || '';
   el.innerHTML = `<h3>➕ Novo post</h3>
     <div class="rb-tipos">${RB_TIPOS.map(([k, r]) => `<button class="${k === t ? 'on' : ''}" onclick="rbTipo('${k}')">${r}</button>`).join('')}</div>
-    <div class="rb-midias">${RB.midias.map((m, i) => rbMiniatura(m, i, true)).join('')}
+    ${t === 'carrossel' ? rbcEditor() : ''}
+    <div class="rb-midias" ${t === 'carrossel' && RB.midias.length ? 'style="display:none"' : ''}>${RB.midias.map((m, i) => rbMiniatura(m, i, true)).join('')}
       ${RB.midias.length < max ? `<button class="rb-add" onclick="document.getElementById('rb-arq').click()">＋ ${t === 'reels' ? 'Vídeo' : t === 'carrossel' ? 'Fotos' : 'Foto/vídeo'}</button>` : ''}
       ${t === 'reels' && !RB.midias.length ? `<button class="rb-add" style="border-color:#60a5fa;background:#eff6ff;color:#1d4ed8;" onclick="rbEscolherEstudio()">🎞️ Do Estúdio</button>` : ''}</div>
     <input type="file" id="rb-arq" accept="${aceita}" ${max > 1 ? 'multiple' : ''} style="display:none" onchange="rbArquivos(this.files)">
@@ -29349,7 +29401,7 @@ async function rbCriar(bt) {
   if (quando === 'data') { const v = (document.getElementById('rb-dt') || {}).value; if (!v) { mostrarToast('Escolha a data e a hora.', true); return; } quando = new Date(v).toISOString(); }
   bt.disabled = true;
   try {
-    const r = await api('/api/admin/estudio/robo/posts', { method: 'POST', body: JSON.stringify({ tipo: RB.tipo, midias: prontas.map(m => ({ url: m.url, mime: m.mime, thumb: m.thumb || '' })), projetoId: RB.projetoId || null, legenda: RB.leg || '', hashtags: RB.hash || '', quando }) });
+    const r = await api('/api/admin/estudio/robo/posts', { method: 'POST', body: JSON.stringify({ tipo: RB.tipo, midias: prontas.map(m => ({ url: m.url, mime: m.mime, thumb: m.thumb || '', ajuste: m.ajuste || 'auto', fx: m.fx ?? 50, fy: m.fy ?? 50, fundo: RB.fundo || 'desfoque' })), projetoId: RB.projetoId || null, legenda: RB.leg || '', hashtags: RB.hash || '', quando }) });
     mostrarToast(r.message);
     RB.midias.forEach(m => m.local && URL.revokeObjectURL(m.local)); Object.assign(RB, { midias: [], leg: '', hash: '', ideia: '', projetoId: null });
     RB.d = await api('/api/admin/estudio/robo'); rbDesenhar();

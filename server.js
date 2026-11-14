@@ -18210,11 +18210,27 @@ async function prepararMidiaRobo(m, uso) {
         return '/uploads/' + path.basename(dest);
     }
     const dest = path.join(PASTA_UPLOADS, nome + '.jpg');
+    if (uso === 'carrossel') { await ajustarFotoCarrosselRobo(orig, dest, m); return '/uploads/' + path.basename(dest); }
     const vf = uso === 'story' ? 'scale=1080:1920:force_original_aspect_ratio=decrease:flags=lanczos,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black'
         : uso === 'carrossel' ? 'scale=1080:1350:force_original_aspect_ratio=increase:flags=lanczos,crop=1080:1350'
         : "crop='if(lt(iw/ih,0.8),iw,if(gt(iw/ih,1.91),ih*1.91,iw))':'if(lt(iw/ih,0.8),iw/0.8,ih)',scale='min(1440,iw)':-2:flags=lanczos";
     await rodarFfmpeg(['-y', '-hide_banner', '-loglevel', 'error', '-i', orig, '-frames:v', '1', '-vf', vf, '-q:v', '2', dest], 120000);
     return '/uploads/' + path.basename(dest);
+}
+// Carrossel 4:5 (1080×1350): "preencher" corta para ocupar tudo (o ponto de foco escolhe o que fica);
+// "inteira" mostra a foto/slide sem cortar, com fundo desfocado, azul Impulsionar ou branco.
+// "auto": foto em pé (proporção entre 0,7 e 1) preenche; deitada (slide, foto de grupo) fica inteira.
+function filtroCarrosselRobo(m) {
+    const aj = ['preencher', 'inteira'].includes(m.ajuste) ? m.ajuste : 'auto', fx = Math.max(0, Math.min(100, Number(m.fx ?? 50))) / 100, fy = Math.max(0, Math.min(100, Number(m.fy ?? 50))) / 100;
+    const cobreW = 'if(gt(a,0.8),1350*a,1080)', cobreH = 'if(gt(a,0.8),1350,1080/a)', cabeW = 'if(gt(a,0.8),1080,1350*a)', cabeH = 'if(gt(a,0.8),1080/a,1350)';
+    const w = aj === 'preencher' ? cobreW : aj === 'inteira' ? cabeW : `if(between(a,0.7,1.0),${cobreW},${cabeW})`, h = aj === 'preencher' ? cobreH : aj === 'inteira' ? cabeH : `if(between(a,0.7,1.0),${cobreH},${cabeH})`;
+    const fg = `scale=w='ceil(${w})':h='ceil(${h})':flags=lanczos,crop=w='min(iw,1080)':h='min(ih,1350)':x='(iw-ow)*${fx.toFixed(3)}':y='(ih-oh)*${fy.toFixed(3)}'`;
+    const fundo = ['escuro', 'claro'].includes(m.fundo) ? m.fundo : 'desfoque';
+    if (fundo === 'desfoque') return `[0:v]split[a][b];[a]scale=1080:1350:force_original_aspect_ratio=increase,crop=1080:1350,boxblur=40:3,eq=brightness=-0.12[bg];[b]${fg}[fg];[bg][fg]overlay=x='(W-w)/2':y='(H-h)/2',format=yuvj420p[s]`;
+    return `color=c=${fundo === 'escuro' ? '0x0b1329' : 'white'}:s=1080x1350:d=1[bg];[0:v]${fg}[fg];[bg][fg]overlay=x='(W-w)/2':y='(H-h)/2':shortest=1,format=yuvj420p[s]`;
+}
+async function ajustarFotoCarrosselRobo(orig, dest, m) {
+    await rodarFfmpeg(['-y', '-hide_banner', '-loglevel', 'error', '-i', orig, '-filter_complex', filtroCarrosselRobo(m || {}), '-map', '[s]', '-frames:v', '1', '-q:v', '2', dest], 120000);
 }
 async function esperarContainerRobo(id, token) {
     for (let i = 0; i < 72; i++) {
@@ -18287,7 +18303,18 @@ setInterval(async () => {
 setTimeout(() => db.run(`UPDATE robo_posts SET status = 'agendado', quando = ? WHERE status = 'publicando'`, [new Date(Date.now() + 2 * 60000).toISOString()], () => {}), 30000);
 
 const linhaRobo = r => { let m = []; try { m = JSON.parse(r.midias || '[]'); } catch (e) {} return { ...r, midias: m }; };
-function midiasValidasRobo(l) { return (Array.isArray(l) ? l : []).filter(m => m && /^\/uploads\/[\w.\-]+$/.test(String(m.url || '').split('?')[0])).slice(0, 10).map(m => ({ url: String(m.url).split('?')[0], mime: String(m.mime || '').slice(0, 60), thumb: /^(\/uploads\/|data:image\/)/.test(m.thumb || '') && String(m.thumb).length < 200000 ? m.thumb : '', pronto: !!m.pronto })); }
+function midiasValidasRobo(l) { return (Array.isArray(l) ? l : []).filter(m => m && /^\/uploads\/[\w.\-]+$/.test(String(m.url || '').split('?')[0])).slice(0, 10).map(m => ({ url: String(m.url).split('?')[0], mime: String(m.mime || '').slice(0, 60), thumb: /^(\/uploads\/|data:image\/)/.test(m.thumb || '') && String(m.thumb).length < 200000 ? m.thumb : '', pronto: !!m.pronto,
+    ajuste: ['auto', 'preencher', 'inteira'].includes(m.ajuste) ? m.ajuste : 'auto', fx: Math.max(0, Math.min(100, Math.round(Number(m.fx ?? 50)) || 0)), fy: Math.max(0, Math.min(100, Math.round(Number(m.fy ?? 50)) || 0)), fundo: ['desfoque', 'escuro', 'claro'].includes(m.fundo) ? m.fundo : 'desfoque' })); }
+// baixa as fotos do carrossel já no 1080×1350 (para conferir ou postar manualmente)
+app.post('/api/admin/estudio/robo/carrossel-ajustar', requireRole('admin', 'estudio'), async (req, res) => {
+    const midias = midiasValidasRobo((req.body || {}).midias).filter(m => !ehVideoRobo(m));
+    if (!midias.length) return res.status(400).json({ error: 'Envie as fotos do carrossel.' });
+    try {
+        const out = [];
+        for (const [i, m] of midias.entries()) { const orig = caminhoRobo(m.url); if (!fs.existsSync(orig)) throw new Error('Foto ' + (i + 1) + ' não está mais no servidor. Envie de novo.'); const dest = path.join(PASTA_UPLOADS, `carrossel-${Date.now()}-${i + 1}.jpg`); await ajustarFotoCarrosselRobo(orig, dest, m); out.push('/uploads/' + path.basename(dest)); }
+        res.json({ fotos: out });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
 app.get('/api/admin/estudio/robo', requireRole('admin', 'estudio'), async (req, res) => {
     const dono = donoAtualEst(); salvarBasePublicaEst(baseUrlPublicaDpo(req));
     const [ig, cfg, hor, posts, inter] = await Promise.all([lerIgEst(dono), cfgRobo(dono), melhoresHorariosRobo(dono), dbAll(`SELECT * FROM robo_posts WHERE dono = ? AND (status != 'publicado' OR publicado_em > ?) ORDER BY CASE status WHEN 'publicando' THEN 0 WHEN 'erro' THEN 1 WHEN 'agendado' THEN 2 WHEN 'rascunho' THEN 3 ELSE 4 END, COALESCE(quando, criado_em)`, [dono, new Date(Date.now() - 30 * 86400000).toISOString()]).catch(() => []), cfgInteracaoIg(dono)]);
