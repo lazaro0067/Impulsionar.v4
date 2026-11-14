@@ -1,0 +1,4484 @@
+{
+"1": {
+"semana": {
+"n": 1,
+"modulo": "Diagnóstico",
+"tema": "Raio-X do líder e do time, os combinados e o indicador que vai provar a evolução",
+"entregavel": "Raio-X do Líder respondido + indicador escolhido com o número de hoje",
+"objetivo": [
+"M · Mentalidade de dono",
+"O · Operação sob controle",
+"V · Vínculo com o time"
+],
+"tarefa": [
+"Raio-X do Líder: As 30 perguntas respondidas por você.",
+"Visão do time: 2 pessoas do time respondem sobre você.",
+"Indicador: O número de hoje anotado na Área do Aluno."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc01/dc01-01-capa",
+"De onde você parte",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 1 de 19. Hoje: Raio-X do líder e do time, os combinados e o indicador que vai provar a evolução.",
+"tempo": "30 s"
+}
+],
+[
+"dc01/dc01-02-provoca",
+"Agora o seu resultado vem das pessoas.",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "Você foi promovido porque era bom no que fazia. Agora o seu resultado vem das pessoas.",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc01/dc01-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc01/dc01-04-retomada",
+"Combinados da mentoria",
+{
+"objetivo": "Combinados do grupo.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Leia cada item e peça um \"ok\" no chat"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc01/dc01-05-sec1",
+"01 · M.O.V.E.R.: os 5 pilares do líder de operação",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc01/dc01-06-conceito",
+"M.O.V.E.R.: os 5 pilares do líder de operação",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "M · Mentalidade de dono: Do fazer para o fazer acontecer. · O · Operação sob controle: Os indicadores certos, à vista. · V · Vínculo com o time: Motivar, comunicar, dar feedback e cobrar. · E · Execução com disciplina: Rotina, reunião de turno e PDCA. · R · Replicar líderes: Formar quem vai ficar no seu lugar. · Fechamento: O seu case: indicador antes e depois.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc01/dc01-07-frase",
+"Quem move pessoas, move resultados.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Quem move pessoas, move resultados.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc01/dc01-08-antes-depois",
+"Líder bombeiro × líder de gestão",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc01/dc01-09-sec2",
+"02 · Raio-X do Líder em 4 passos",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc01/dc01-10-ferramenta",
+"Raio-X do Líder em 4 passos",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Responda as 30 perguntas com sinceridade (nota 1 a 5)",
+"Passo 2: Marque os 2 pilares com menor nota",
+"Passo 3: Peça para 2 pessoas do time responderem as mesmas perguntas sobre você",
+"Passo 4: Compare: onde a sua nota e a do time mais diferem?"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc01/dc01-11-caso",
+"Caso: Supervisor novo, 40 pessoas no turno",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: Fazia conferência junto com o time e saía às 22h. Ninguém olhava indicador. O que fez: Separou 30 min por dia para gestão e passou a abrir o turno com 3 números. Depois: Em 6 semanas: avaria caiu e ele saía no horário.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc01/dc01-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc01/dc01-13-pratica",
+"Escolha o indicador que você vai mover",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc01/dc01-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc01/dc01-15-missao",
+"Raio-X completo",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "Raio-X do Líder: As 30 perguntas respondidas por você. · Visão do time: 2 pessoas do time respondem sobre você. · Indicador: O número de hoje anotado na Área do Aluno.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc01/dc01-16-fim",
+"Toda virada começa com um retrato honesto.",
+{
+"onde": "Câmera.",
+"fale": "Toda virada começa com um retrato honesto. Até o Encontro 2: mentalidade de dono.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"2": {
+"semana": {
+"n": 2,
+"modulo": "M · Mentalidade de dono",
+"tema": "Sair do operacional e assumir o papel de líder: onde o tempo do líder deve estar",
+"entregavel": "Mapa do tempo da semana + 3 tarefas que você vai delegar",
+"objetivo": [
+"Antes: fazer bem",
+"Agora: fazer acontecer",
+"Seu trabalho"
+],
+"tarefa": [
+"3 tarefas: Passe 3 tarefas para pessoas do time, explicando o padrão.",
+"Acompanhe: Confira 1 vez por dia, sem pegar de volta.",
+"Conte: O que funcionou e o que precisou ajustar."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc02/dc02-01-capa",
+"Do \"fazer\" para o \"fazer acontecer\"",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 2 de 19. Hoje: Sair do operacional e assumir o papel de líder: onde o tempo do líder deve estar.",
+"tempo": "30 s"
+}
+],
+[
+"dc02/dc02-02-provoca",
+"a operação para ou continua rodando?",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "Se você sumir uma semana… a operação para ou continua rodando?",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc02/dc02-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc02/dc02-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc02/dc02-05-sec1",
+"01 · O que muda quando você vira líder",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc02/dc02-06-conceito",
+"O que muda quando você vira líder",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Antes: fazer bem: Você era medido pelo que entregava com as mãos. · Agora: fazer acontecer: Você é medido pelo que o time entrega sem você. · Seu trabalho: Planejar, ensinar, acompanhar e corrigir. · A armadilha: Voltar a fazer porque \"é mais rápido\".",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc02/dc02-07-frase",
+"Cada tarefa que você faz pelo time é uma aula que ele não teve.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Cada tarefa que você faz pelo time é uma aula que ele não teve.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc02/dc02-08-antes-depois",
+"Fazer × fazer acontecer",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc02/dc02-09-sec2",
+"02 · Mapa do tempo em 4 passos",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc02/dc02-10-ferramenta",
+"Mapa do tempo em 4 passos",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Liste tudo o que você fez nos últimos 3 dias",
+"Passo 2: Marque: F (fazer), E (ensinar), G (gestão)",
+"Passo 3: Some as horas de cada letra",
+"Passo 4: Escolha 3 tarefas F para passar para o time"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc02/dc02-11-caso",
+"Caso: Coordenador de armazém",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: 70% do tempo fazendo: conferência, rádio, sistema. O que fez: Treinou 2 conferentes e passou o fechamento do sistema para um assistente. Depois: Ganhou 2 horas por dia para gestão e acompanhamento.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc02/dc02-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc02/dc02-13-pratica",
+"Monte o seu mapa do tempo",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc02/dc02-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc02/dc02-15-missao",
+"Delegue de verdade",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "3 tarefas: Passe 3 tarefas para pessoas do time, explicando o padrão. · Acompanhe: Confira 1 vez por dia, sem pegar de volta. · Conte: O que funcionou e o que precisou ajustar.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc02/dc02-16-fim",
+"Líder bom não é o que mais faz.",
+{
+"onde": "Câmera.",
+"fale": "Líder bom não é o que mais faz. É o que faz o time fazer. Até o Encontro 3.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"3": {
+"semana": {
+"n": 3,
+"modulo": "M · Mentalidade de dono",
+"tema": "O exemplo do líder: coerência entre o que fala e o que faz, e presença no chão",
+"entregavel": "Plano de exemplo: 3 atitudes que o time vai ver você praticar",
+"objetivo": [
+"Chegada",
+"Pressão",
+"Padrão"
+],
+"tarefa": [
+"Ronda diária: Faça a ronda de 15 min todos os dias.",
+"3 atitudes: Pratique as 3 atitudes do seu plano.",
+"Escute: Anote o que o time falou na ronda."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc03/dc03-01-capa",
+"Exemplo e postura do líder",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 3 de 19. Hoje: O exemplo do líder: coerência entre o que fala e o que faz, e presença no chão.",
+"tempo": "30 s"
+}
+],
+[
+"dc03/dc03-02-provoca",
+"O time faz o que você faz.",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "O time não faz o que você fala. O time faz o que você faz.",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc03/dc03-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc03/dc03-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc03/dc03-05-sec1",
+"01 · O que o time lê em você",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc03/dc03-06-conceito",
+"O que o time lê em você",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Chegada: Hora que chega, como cumprimenta, onde vai primeiro. · Pressão: Como reage quando o indicador piora. · Padrão: Se você cumpre a regra que cobra: EPI, horário, 5S.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc03/dc03-07-frase",
+"Você não pode cobrar o padrão que você não cumpre.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Você não pode cobrar o padrão que você não cumpre.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc03/dc03-08-antes-depois",
+"O que destrói × o que constrói",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc03/dc03-09-sec2",
+"02 · Ronda do líder (gemba) em 4 passos",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc03/dc03-10-ferramenta",
+"Ronda do líder (gemba) em 4 passos",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Escolha um horário fixo por dia (15 min)",
+"Passo 2: Vá até onde o trabalho acontece",
+"Passo 3: Observe 1 padrão e pergunte: \"O que está difícil?\"",
+"Passo 4: Anote e volte com resposta em até 48 h"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc03/dc03-11-caso",
+"Caso: Gerente de distribuição",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: O time dizia: \"Ele só aparece para cobrar.\" O que fez: Passou a fazer a ronda das 6h na doca, cumprimentando cada motorista. Depois: Os problemas começaram a chegar antes de virar crise.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc03/dc03-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc03/dc03-13-pratica",
+"Seu plano de exemplo",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc03/dc03-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc03/dc03-15-missao",
+"Exemplo em ação",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "Ronda diária: Faça a ronda de 15 min todos os dias. · 3 atitudes: Pratique as 3 atitudes do seu plano. · Escute: Anote o que o time falou na ronda.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc03/dc03-16-fim",
+"O exemplo não é uma forma de liderar.",
+{
+"onde": "Câmera.",
+"fale": "O exemplo não é uma forma de liderar. É a única. Até o Encontro 4.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"4": {
+"semana": {
+"n": 4,
+"modulo": "M · Mentalidade de dono",
+"tema": "Responsabilidade: trocar a desculpa pela ação, focar no que está no seu controle",
+"entregavel": "Plano de virada pessoal (3 compromissos com prazo)",
+"objetivo": [
+"Controlo",
+"Influencio",
+"Não controlo"
+],
+"tarefa": [
+"Ação 1: Execute o primeiro compromisso do plano.",
+"Resultado: O que mudou no número?",
+"Mentalidade: Anote 1 vez em que trocou a desculpa pela ação."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc04/dc04-01-capa",
+"Dono do resultado",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 4 de 19. Hoje: Responsabilidade: trocar a desculpa pela ação, focar no que está no seu controle.",
+"tempo": "30 s"
+}
+],
+[
+"dc04/dc04-02-provoca",
+"Desculpa explica. Não resolve.",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "\"A meta é irreal.\" \"Faltou gente.\" \"O sistema caiu.\" Desculpa explica. Não resolve.",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc04/dc04-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc04/dc04-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc04/dc04-05-sec1",
+"01 · Onde está a sua energia?",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc04/dc04-06-conceito",
+"Onde está a sua energia?",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Controlo: Escala, treinamento, padrão, rotina, feedback. · Influencio: Outras áreas, fornecedor, manutenção, RH. · Não controlo: Clima, mercado, decisão da diretoria.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc04/dc04-07-frase",
+"Dono do resultado pergunta: \"O que eu posso fazer a partir de amanhã?\"",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Dono do resultado pergunta: \"O que eu posso fazer a partir de amanhã?\"",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc04/dc04-08-antes-depois",
+"Vítima × dono",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc04/dc04-09-sec2",
+"02 · Plano de virada pessoal",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc04/dc04-10-ferramenta",
+"Plano de virada pessoal",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Escreva o problema que você mais culpa os outros",
+"Passo 2: Separe: o que controlo, influencio e não controlo",
+"Passo 3: Escolha 3 ações do que você controla",
+"Passo 4: Coloque prazo e como vai medir"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc04/dc04-11-caso",
+"Caso: Supervisor de entrega",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: \"A roteirização é ruim, por isso devolve.\" O que fez: Levantou as 20 devoluções da semana: 12 eram por erro de carga, do time dele. Depois: Atacou a carga primeiro e as devoluções caíram pela metade.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc04/dc04-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc04/dc04-13-pratica",
+"Monte o seu plano de virada",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc04/dc04-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc04/dc04-15-missao",
+"Cumpra o compromisso 1",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "Ação 1: Execute o primeiro compromisso do plano. · Resultado: O que mudou no número? · Mentalidade: Anote 1 vez em que trocou a desculpa pela ação.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc04/dc04-16-fim",
+"Quem assume o problema, ganha o poder de resolver.",
+{
+"onde": "Câmera.",
+"fale": "Quem assume o problema, ganha o poder de resolver. Fechamos o M. Até o Encontro 5: operação sob controle.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"5": {
+"semana": {
+"n": 5,
+"modulo": "O · Operação sob controle",
+"tema": "Escolher os 3 a 5 indicadores do time, separando resultado de processo",
+"entregavel": "Lista de indicadores do time com meta e fonte",
+"objetivo": [
+"Resultado",
+"Processo"
+],
+"tarefa": [
+"Fichas prontas: Ficha de cada indicador preenchida.",
+"Validação: Mostre para o seu gestor e ajuste.",
+"Histórico: Levante os últimos 30 dias de cada um."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc05/dc05-01-capa",
+"Os indicadores que importam",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 5 de 19. Hoje: Escolher os 3 a 5 indicadores do time, separando resultado de processo.",
+"tempo": "30 s"
+}
+],
+[
+"dc05/dc05-02-provoca",
+"não controla nada.",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "Se você medir tudo… não controla nada.",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc05/dc05-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc05/dc05-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc05/dc05-05-sec1",
+"01 · Resultado × processo",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc05/dc05-06-conceito",
+"Resultado × processo",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Resultado: Mostra o que já aconteceu. Ex.: entregas no prazo, avaria, custo por caixa. · Processo: Mostra o que vai acontecer. Ex.: carga conferida, checklist feito, treino em dia.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc05/dc05-07-frase",
+"O indicador de processo de hoje é o resultado de amanhã.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "O indicador de processo de hoje é o resultado de amanhã.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc05/dc05-08-antes-depois",
+"Indicador ruim × indicador bom",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc05/dc05-09-sec2",
+"02 · Ficha do indicador",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc05/dc05-10-ferramenta",
+"Ficha do indicador",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Nome: o que mede, em 1 frase",
+"Passo 2: Fórmula e fonte: de onde sai o número",
+"Passo 3: Meta e frequência: quanto e quando olhar",
+"Passo 4: Responsável: quem atualiza e quem age"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc05/dc05-11-caso",
+"Caso: Armazém com 12 indicadores",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: Ninguém sabia qual importava. Reunião de 1 hora lendo planilha. O que fez: Ficou com 4: acuracidade, avaria, produtividade e segurança. Depois: A reunião caiu para 15 minutos e virou ação.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc05/dc05-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc05/dc05-13-pratica",
+"Escolha os seus 3 a 5 indicadores",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc05/dc05-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc05/dc05-15-missao",
+"Indicadores validados",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "Fichas prontas: Ficha de cada indicador preenchida. · Validação: Mostre para o seu gestor e ajuste. · Histórico: Levante os últimos 30 dias de cada um.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc05/dc05-16-fim",
+"O que é medido é melhorado.",
+{
+"onde": "Câmera.",
+"fale": "O que é medido é melhorado. Até o Encontro 6: gestão à vista.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"6": {
+"semana": {
+"n": 6,
+"modulo": "O · Operação sob controle",
+"tema": "Montar o painel de gestão à vista para o time saber o placar todo dia",
+"entregavel": "Painel de indicadores do time (quadro físico ou digital)",
+"objetivo": [
+"Simples",
+"Atualizado",
+"Com farol"
+],
+"tarefa": [
+"Monte: Quadro físico ou digital, onde o time vê.",
+"Atualize: Todo dia, no mesmo horário.",
+"Foto: Mande a foto do quadro na Área do Aluno."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc06/dc06-01-capa",
+"Gestão à vista",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 6 de 19. Hoje: Montar o painel de gestão à vista para o time saber o placar todo dia.",
+"tempo": "30 s"
+}
+],
+[
+"dc06/dc06-02-provoca",
+"\"Como estamos hoje?\"",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "Pergunte para alguém do seu time: \"Como estamos hoje?\"",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc06/dc06-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc06/dc06-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc06/dc06-05-sec1",
+"01 · Gestão à vista em 3 regras",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc06/dc06-06-conceito",
+"Gestão à vista em 3 regras",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Simples: Entende em 5 segundos, de longe. · Atualizado: Todo dia, no mesmo horário, pela mesma pessoa. · Com farol: Verde: na meta · amarelo: atenção · vermelho: ação.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc06/dc06-07-frase",
+"Time que vê o placar joga para ganhar.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Time que vê o placar joga para ganhar.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc06/dc06-08-antes-depois",
+"Quadro decorativo × quadro de gestão",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc06/dc06-09-sec2",
+"02 · Monte o quadro em 4 blocos",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc06/dc06-10-ferramenta",
+"Monte o quadro em 4 blocos",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Indicadores com meta e farol",
+"Passo 2: Gráfico dos últimos 30 dias",
+"Passo 3: Plano de ação dos vermelhos (quem, o quê, quando)",
+"Passo 4: Reconhecimento: quem fez a diferença"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc06/dc06-11-caso",
+"Caso: Centro de distribuição",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: Indicadores só no e-mail do gerente. O que fez: Quadro na saída do refeitório, atualizado às 7h pelo líder de turno. Depois: O time passou a cobrar o próprio número.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc06/dc06-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc06/dc06-13-pratica",
+"Desenhe o seu painel",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc06/dc06-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc06/dc06-15-missao",
+"Painel no ar",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "Monte: Quadro físico ou digital, onde o time vê. · Atualize: Todo dia, no mesmo horário. · Foto: Mande a foto do quadro na Área do Aluno.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc06/dc06-16-fim",
+"O que fica escondido não é gerenciado.",
+{
+"onde": "Câmera.",
+"fale": "O que fica escondido não é gerenciado. Até o Encontro 7: leitura de causa.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"7": {
+"semana": {
+"n": 7,
+"modulo": "O · Operação sob controle",
+"tema": "Ler a causa do indicador ruim com 5 porquês e diagrama de causa e efeito",
+"entregavel": "Análise de causa de 1 indicador vermelho",
+"objetivo": [
+"Sintoma",
+"Causa",
+"Causa raiz"
+],
+"tarefa": [
+"Confirme: Vá até a operação e veja a causa com os seus olhos.",
+"Ação: Coloque a ação na causa raiz em prática.",
+"Registre: Anote no plano de ação do quadro."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc07/dc07-01-capa",
+"Leitura de causa",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 7 de 19. Hoje: Ler a causa do indicador ruim com 5 porquês e diagrama de causa e efeito.",
+"tempo": "30 s"
+}
+],
+[
+"dc07/dc07-02-provoca",
+"E agora, você cobra ou investiga?",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "O indicador ficou vermelho. E agora, você cobra ou investiga?",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc07/dc07-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc07/dc07-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc07/dc07-05-sec1",
+"01 · Sintoma × causa",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc07/dc07-06-conceito",
+"Sintoma × causa",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Sintoma: O que aparece: atraso, avaria, falta. · Causa: Por que aparece: falta de padrão, treino, equipamento. · Causa raiz: A que, se resolvida, faz o problema não voltar.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc07/dc07-07-frase",
+"Quem trata o sintoma apaga o mesmo incêndio toda semana.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Quem trata o sintoma apaga o mesmo incêndio toda semana.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc07/dc07-08-antes-depois",
+"Achismo × leitura de causa",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc07/dc07-09-sec2",
+"02 · 5 porquês",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc07/dc07-10-ferramenta",
+"5 porquês",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Escreva o problema com número: \"Avaria subiu para 0,8%\"",
+"Passo 2: Pergunte \"por quê?\" e responda com fato",
+"Passo 3: Repita até chegar numa causa que você controla",
+"Passo 4: Teste: se resolver essa causa, o problema volta?"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc07/dc07-11-caso",
+"Caso: Avaria na entrega",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: Por quê? Caixas amassadas. Por quê? Palete mal montado. O que fez: Por quê? Ninguém ensinou o padrão de montagem ao novato. Depois: Ação: padrão visual + treino de 15 min. A avaria caiu.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc07/dc07-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc07/dc07-13-pratica",
+"Leia a causa do seu vermelho",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc07/dc07-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc07/dc07-15-missao",
+"Vá ao local",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "Confirme: Vá até a operação e veja a causa com os seus olhos. · Ação: Coloque a ação na causa raiz em prática. · Registre: Anote no plano de ação do quadro.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc07/dc07-16-fim",
+"Pergunte \"por quê?\" até a causa aparecer.",
+{
+"onde": "Câmera.",
+"fale": "Pergunte \"por quê?\" até a causa aparecer. Até o Encontro 8: reunião de resultado.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"8": {
+"semana": {
+"n": 8,
+"modulo": "O · Operação sob controle",
+"tema": "Reunião semanal de resultado curta e objetiva, que termina em ação",
+"entregavel": "Pauta-padrão da reunião de resultado + 1 reunião feita",
+"objetivo": [
+"Placar · 3 min",
+"Vermelhos · 6 min",
+"Plano · 4 min"
+],
+"tarefa": [
+"Faça: 1 reunião de resultado com a pauta-padrão.",
+"Cronometre: Coube em 15 minutos?",
+"Ações: Anote as ações com dono e prazo."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc08/dc08-01-capa",
+"Reunião de resultado em 15 minutos",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 8 de 19. Hoje: Reunião semanal de resultado curta e objetiva, que termina em ação.",
+"tempo": "30 s"
+}
+],
+[
+"dc08/dc08-02-provoca",
+"e ninguém sabe o que fazer depois?",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "Reunião de 1 hora… e ninguém sabe o que fazer depois?",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc08/dc08-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc08/dc08-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc08/dc08-05-sec1",
+"01 · Os 4 blocos da reunião de 15 min",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc08/dc08-06-conceito",
+"Os 4 blocos da reunião de 15 min",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Placar · 3 min: Indicadores com farol. · Vermelhos · 6 min: Causa e ação de cada um. · Plano · 4 min: O que ficou da semana passada? · Destaque · 2 min: Reconhecer quem fez a diferença.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc08/dc08-07-frase",
+"Reunião boa termina com nome e data.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Reunião boa termina com nome e data.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc08/dc08-08-antes-depois",
+"Reunião que cansa × reunião que move",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc08/dc08-09-sec2",
+"02 · Pauta-padrão em 4 passos",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc08/dc08-10-ferramenta",
+"Pauta-padrão em 4 passos",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Mesmo dia, hora e lugar (na frente do quadro)",
+"Passo 2: Abra pelo placar: verde, amarelo, vermelho",
+"Passo 3: Para cada vermelho: causa, ação, dono, prazo",
+"Passo 4: Feche lendo as ações e reconhecendo 1 pessoa"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc08/dc08-11-caso",
+"Caso: Reunião de segunda-feira",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: 1h20 de duração e metade do time no celular. O que fez: Pauta fixa de 15 minutos, em pé, na frente do quadro. Depois: Ações passaram a ser cumpridas porque tinham dono.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc08/dc08-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc08/dc08-13-pratica",
+"Simule a sua reunião",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc08/dc08-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc08/dc08-15-missao",
+"Reunião de verdade",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "Faça: 1 reunião de resultado com a pauta-padrão. · Cronometre: Coube em 15 minutos? · Ações: Anote as ações com dono e prazo.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc08/dc08-16-fim",
+"Fechamos o O. Operação sob controle.",
+{
+"onde": "Câmera.",
+"fale": "Fechamos o O. Operação sob controle. Até o Encontro 9: vínculo com o time.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"9": {
+"semana": {
+"n": 9,
+"modulo": "V · Vínculo com o time",
+"tema": "Motivação: conhecer as pessoas e reconhecer do jeito certo",
+"entregavel": "Plano de reconhecimento do time",
+"objetivo": [
+"Ser visto",
+"Respeito",
+"Crescer"
+],
+"tarefa": [
+"5 conversas: As 4 perguntas com 5 pessoas do time.",
+"5 reconhecimentos: Rápidos, específicos e sinceros.",
+"Anote: O que você descobriu que não sabia."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc09/dc09-01-capa",
+"O que move o time",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 9 de 19. Hoje: Motivação: conhecer as pessoas e reconhecer do jeito certo.",
+"tempo": "30 s"
+}
+],
+[
+"dc09/dc09-02-provoca",
+"não segura ninguém no time.",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "Pizza no fim do mês… não segura ninguém no time.",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc09/dc09-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc09/dc09-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc09/dc09-05-sec1",
+"01 · Os 4 combustíveis do time",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc09/dc09-06-conceito",
+"Os 4 combustíveis do time",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Ser visto: O líder sabe o nome, a história e o esforço. · Respeito: Ser tratado com educação, mesmo na cobrança. · Crescer: Aprender algo novo e ver futuro. · Justiça: Regra igual para todos.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc09/dc09-07-frase",
+"Reconhecimento bom é rápido, específico e sincero.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Reconhecimento bom é rápido, específico e sincero.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc09/dc09-08-antes-depois",
+"Elogio vazio × reconhecimento que marca",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc09/dc09-09-sec2",
+"02 · Conheça o seu time em 4 perguntas",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc09/dc09-10-ferramenta",
+"Conheça o seu time em 4 perguntas",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: O que você mais gosta de fazer aqui?",
+"Passo 2: O que mais te atrapalha no dia a dia?",
+"Passo 3: Onde você quer estar daqui a 2 anos?",
+"Passo 4: Como você gosta de ser reconhecido?"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc09/dc09-11-caso",
+"Caso: Turno da noite esquecido",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: O gerente só aparecia de dia. Rotatividade alta. O que fez: Passou 1 noite por semana com o turno e conversou com cada um. Depois: A rotatividade caiu e as ideias de melhoria começaram a vir da noite.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc09/dc09-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc09/dc09-13-pratica",
+"Monte o seu plano de reconhecimento",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc09/dc09-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc09/dc09-15-missao",
+"Conheça e reconheça",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "5 conversas: As 4 perguntas com 5 pessoas do time. · 5 reconhecimentos: Rápidos, específicos e sinceros. · Anote: O que você descobriu que não sabia.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc09/dc09-16-fim",
+"Pessoas não deixam empresas. Deixam líderes.",
+{
+"onde": "Câmera.",
+"fale": "Pessoas não deixam empresas. Deixam líderes. Até o Encontro 10: comunicação.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"10": {
+"semana": {
+"n": 10,
+"modulo": "V · Vínculo com o time",
+"tema": "Comunicar para o time entender e agir: mensagem clara, DDS e checagem",
+"entregavel": "Roteiro de DDS de 5 minutos aplicado",
+"objetivo": [
+"Clara",
+"Curta",
+"Concreta"
+],
+"tarefa": [
+"Faça: 2 DDS no formato de 5 minutos.",
+"Cheque: Peça para alguém repetir a mensagem.",
+"Grave: Grave 1 deles e assista."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc10/dc10-01-capa",
+"Comunicação que o time entende",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 10 de 19. Hoje: Comunicar para o time entender e agir: mensagem clara, DDS e checagem.",
+"tempo": "30 s"
+}
+],
+[
+"dc10/dc10-02-provoca",
+"Falar não é comunicar.",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "\"Mas eu falei!\" Falar não é comunicar.",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc10/dc10-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc10/dc10-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc10/dc10-05-sec1",
+"01 · Os 4 C da comunicação",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc10/dc10-06-conceito",
+"Os 4 C da comunicação",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Clara: Uma ideia por vez, sem termo técnico. · Curta: O essencial. O resto vai no papel. · Concreta: Número e exemplo da operação. · Com ação: Termina dizendo o que fazer.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc10/dc10-07-frase",
+"\"Todo mundo entendeu?\" não checa nada.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "\"Todo mundo entendeu?\" não checa nada.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc10/dc10-08-antes-depois",
+"DDS que ninguém ouve × DDS que muda",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc10/dc10-09-sec2",
+"02 · DDS de 5 minutos",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc10/dc10-10-ferramenta",
+"DDS de 5 minutos",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Fato: o que aconteceu (1 min)",
+"Passo 2: Por que importa para o time (1 min)",
+"Passo 3: O que fazer a partir de hoje (2 min)",
+"Passo 4: Checagem: alguém repete com as próprias palavras (1 min)"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc10/dc10-11-caso",
+"Caso: Mudança de rota",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: Avisada por mensagem no grupo, metade não leu. O que fez: DDS de 5 minutos com o mapa e 1 motorista repetindo a nova rota. Depois: Zero erro de rota na semana.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc10/dc10-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc10/dc10-13-pratica",
+"Apresente o seu DDS",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc10/dc10-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc10/dc10-15-missao",
+"DDS de verdade",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "Faça: 2 DDS no formato de 5 minutos. · Cheque: Peça para alguém repetir a mensagem. · Grave: Grave 1 deles e assista.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc10/dc10-16-fim",
+"O líder é responsável pelo que o time entende.",
+{
+"onde": "Câmera.",
+"fale": "O líder é responsável pelo que o time entende. Até o Encontro 11: feedback.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"11": {
+"semana": {
+"n": 11,
+"modulo": "V · Vínculo com o time",
+"tema": "Dar feedback com o modelo Situação, Comportamento e Impacto",
+"entregavel": "3 feedbacks dados com o modelo SCI",
+"objetivo": [
+"Situação",
+"Comportamento",
+"Impacto"
+],
+"tarefa": [
+"2 positivos: Com o modelo SCI, no mesmo dia do fato.",
+"1 corretivo: Em particular, com SCI e próximo passo.",
+"Registre: Como a pessoa reagiu."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc11/dc11-01-capa",
+"Feedback que desenvolve",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 11 de 19. Hoje: Dar feedback com o modelo Situação, Comportamento e Impacto.",
+"tempo": "30 s"
+}
+],
+[
+"dc11/dc11-02-provoca",
+"que você deu um feedback positivo?",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "Quando foi a última vez… que você deu um feedback positivo?",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc11/dc11-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc11/dc11-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc11/dc11-05-sec1",
+"01 · Feedback SCI",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc11/dc11-06-conceito",
+"Feedback SCI",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Situação: Quando e onde: \"Ontem, na carga do caminhão 12…\" · Comportamento: O que a pessoa fez (fato, não opinião). · Impacto: O efeito no time, no cliente ou no resultado.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc11/dc11-07-frase",
+"Feedback é sobre o comportamento, nunca sobre a pessoa.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Feedback é sobre o comportamento, nunca sobre a pessoa.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc11/dc11-08-antes-depois",
+"Feedback que fere × feedback que desenvolve",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc11/dc11-09-sec2",
+"02 · Feedback em 4 passos",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc11/dc11-10-ferramenta",
+"Feedback em 4 passos",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Peça licença: \"Posso te dar um retorno?\"",
+"Passo 2: SCI: situação, comportamento e impacto",
+"Passo 3: Pergunte: \"Como você vê isso?\"",
+"Passo 4: Combine o próximo passo e agradeça"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc11/dc11-11-caso",
+"Caso: Conferente experiente",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: Ninguém corrigia os erros dele \"porque é antigo\". O que fez: Feedback SCI em particular, com os 3 erros da semana. Depois: Ele mesmo propôs um checklist e virou referência.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc11/dc11-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc11/dc11-13-pratica",
+"Treine o feedback",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc11/dc11-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc11/dc11-15-missao",
+"3 feedbacks",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "2 positivos: Com o modelo SCI, no mesmo dia do fato. · 1 corretivo: Em particular, com SCI e próximo passo. · Registre: Como a pessoa reagiu.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc11/dc11-16-fim",
+"Quem não recebe feedback não sabe onde melhorar.",
+{
+"onde": "Câmera.",
+"fale": "Quem não recebe feedback não sabe onde melhorar. Até o Encontro 12: cobrança e conversa difícil.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"12": {
+"semana": {
+"n": 12,
+"modulo": "V · Vínculo com o time",
+"tema": "Cobrança e conversa difícil sem perder a equipe",
+"entregavel": "Roteiro de conversa difícil + 1 conversa feita",
+"objetivo": [
+"Ficou claro?",
+"Ela consegue?",
+"Foi combinado?"
+],
+"tarefa": [
+"Faça: A conversa difícil que você adiava.",
+"Combine: O que muda e quando vão revisar.",
+"Registre: O que aconteceu."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc12/dc12-01-capa",
+"Cobrar sem perder o time",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 12 de 19. Hoje: Cobrança e conversa difícil sem perder a equipe.",
+"tempo": "30 s"
+}
+],
+[
+"dc12/dc12-02-provoca",
+"e o problema cresce sozinho.",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "Você evita a conversa… e o problema cresce sozinho.",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc12/dc12-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc12/dc12-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc12/dc12-05-sec1",
+"01 · Antes de cobrar, confira",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc12/dc12-06-conceito",
+"Antes de cobrar, confira",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Ficou claro?: A pessoa sabia o que era esperado? · Ela consegue?: Tem treino, ferramenta e tempo? · Foi combinado?: Tinha prazo e padrão definido? · É para todos?: A mesma regra vale para o time todo?",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc12/dc12-07-frase",
+"Cobrar é cuidar. Omitir é abandonar.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Cobrar é cuidar. Omitir é abandonar.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc12/dc12-08-antes-depois",
+"Bronca × conversa difícil",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc12/dc12-09-sec2",
+"02 · Conversa difícil em 5 passos",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc12/dc12-10-ferramenta",
+"Conversa difícil em 5 passos",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Abra com o objetivo: \"Quero resolver X com você\"",
+"Passo 2: Mostre o fato (SCI)",
+"Passo 3: Escute: \"O que está acontecendo?\"",
+"Passo 4: Combine: o que muda, até quando",
+"Passo 5: Marque a data para revisar juntos"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc12/dc12-11-caso",
+"Caso: Atrasos repetidos",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: O líder reclamava com o time todo no grupo. O que fez: Conversa em particular: descobriu o problema do transporte e combinou outra escala. Depois: Os atrasos pararam e o colaborador ficou.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc12/dc12-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc12/dc12-13-pratica",
+"Simule a conversa difícil",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc12/dc12-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc12/dc12-15-missao",
+"A conversa adiada",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "Faça: A conversa difícil que você adiava. · Combine: O que muda e quando vão revisar. · Registre: O que aconteceu.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc12/dc12-16-fim",
+"Fechamos o V. Vínculo forte aguenta cobrança.",
+{
+"onde": "Câmera.",
+"fale": "Fechamos o V. Vínculo forte aguenta cobrança. Até o Encontro 13: execução com disciplina.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"13": {
+"semana": {
+"n": 13,
+"modulo": "E · Execução com disciplina",
+"tema": "Montar a agenda-padrão do líder com blocos fixos de gestão",
+"entregavel": "Agenda-padrão da semana",
+"objetivo": [
+"Abertura do turno",
+"Acompanhamento",
+"Gente"
+],
+"tarefa": [
+"5 dias: Siga a agenda-padrão por 5 dias.",
+"Meça: Quantos blocos você cumpriu?",
+"Ajuste: O que precisa mudar na agenda."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc13/dc13-01-capa",
+"Rotina do líder",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 13 de 19. Hoje: Montar a agenda-padrão do líder com blocos fixos de gestão.",
+"tempo": "30 s"
+}
+],
+[
+"dc13/dc13-02-provoca",
+"o dia decide por você.",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "Sem rotina… o dia decide por você.",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc13/dc13-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc13/dc13-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc13/dc13-05-sec1",
+"01 · Os blocos fixos do líder",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc13/dc13-06-conceito",
+"Os blocos fixos do líder",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Abertura do turno: Quadro, reunião de início, ronda. · Acompanhamento: Pontos de controle durante o dia. · Gente: Feedback, conversas e treino. · Melhoria: Plano de ação e análise de causa.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc13/dc13-07-frase",
+"Disciplina é fazer o combinado mesmo quando ninguém cobra.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Disciplina é fazer o combinado mesmo quando ninguém cobra.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc13/dc13-08-antes-depois",
+"Dia reativo × dia com rotina",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc13/dc13-09-sec2",
+"02 · Monte a agenda-padrão",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc13/dc13-10-ferramenta",
+"Monte a agenda-padrão",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Marque os horários fixos da operação",
+"Passo 2: Encaixe os 4 blocos do líder",
+"Passo 3: Deixe 30% livre para imprevisto",
+"Passo 4: Coloque no celular como evento repetido"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc13/dc13-11-caso",
+"Caso: Gerente com 3 turnos",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: Vivia no telefone e nada avançava. O que fez: Agenda-padrão com ronda às 6h, reunião às 7h e bloco de gente às 15h. Depois: Em 1 mês, os planos de ação começaram a fechar.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc13/dc13-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc13/dc13-13-pratica",
+"Desenhe a sua semana",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc13/dc13-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc13/dc13-15-missao",
+"Viva a agenda",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "5 dias: Siga a agenda-padrão por 5 dias. · Meça: Quantos blocos você cumpriu? · Ajuste: O que precisa mudar na agenda.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc13/dc13-16-fim",
+"Rotina não prende. Rotina liberta.",
+{
+"onde": "Câmera.",
+"fale": "Rotina não prende. Rotina liberta. Até o Encontro 14: reunião de início de turno.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"14": {
+"semana": {
+"n": 14,
+"modulo": "E · Execução com disciplina",
+"tema": "A reunião de início de turno de 10 minutos que organiza o dia",
+"entregavel": "Roteiro da reunião de início de turno aplicado 5 dias",
+"objetivo": [
+"Segurança · 2 min",
+"Placar · 3 min",
+"Foco · 3 min"
+],
+"tarefa": [
+"Faça: A reunião de início de turno por 5 dias.",
+"Passe a bola: Uma pessoa do time conduz 1 dia.",
+"Registre: O que mudou no começo do turno."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc14/dc14-01-capa",
+"Reunião de início de turno",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 14 de 19. Hoje: A reunião de início de turno de 10 minutos que organiza o dia.",
+"tempo": "30 s"
+}
+],
+[
+"dc14/dc14-02-provoca",
+"definem as outras 8 horas.",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "Os primeiros 10 minutos do turno… definem as outras 8 horas.",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc14/dc14-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc14/dc14-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc14/dc14-05-sec1",
+"01 · Os 4 tempos do início de turno",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc14/dc14-06-conceito",
+"Os 4 tempos do início de turno",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Segurança · 2 min: Um alerta ou cuidado do dia. · Placar · 3 min: Como foi ontem, com farol. · Foco · 3 min: A prioridade de hoje e quem faz o quê. · Gente · 2 min: Reconhecimento e recado rápido.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc14/dc14-07-frase",
+"Time que sabe a prioridade não precisa perguntar.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Time que sabe a prioridade não precisa perguntar.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc14/dc14-08-antes-depois",
+"Bagunça × alinhamento",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc14/dc14-09-sec2",
+"02 · Roteiro de 10 minutos",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc14/dc14-10-ferramenta",
+"Roteiro de 10 minutos",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Mesmo horário e lugar, todo dia",
+"Passo 2: Segurança, placar, foco, gente",
+"Passo 3: Uma pessoa do time conduz 1 dia por semana",
+"Passo 4: Termine com a frase de foco do dia"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc14/dc14-11-caso",
+"Caso: Doca de carregamento",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: Saída dos caminhões atrasava todo dia. O que fez: Reunião de 10 min às 5h50 com a prioridade das rotas críticas. Depois: Os caminhões passaram a sair no horário.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc14/dc14-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc14/dc14-13-pratica",
+"Conduza a sua reunião",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc14/dc14-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc14/dc14-15-missao",
+"5 dias seguidos",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "Faça: A reunião de início de turno por 5 dias. · Passe a bola: Uma pessoa do time conduz 1 dia. · Registre: O que mudou no começo do turno.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc14/dc14-16-fim",
+"Comece o dia com o time alinhado.",
+{
+"onde": "Câmera.",
+"fale": "Comece o dia com o time alinhado. Até o Encontro 15: PDCA e plano de ação.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"15": {
+"semana": {
+"n": 15,
+"modulo": "E · Execução com disciplina",
+"tema": "PDCA, plano de ação 5W2H e auditoria de padrão",
+"entregavel": "Quadro de plano de ação (5W2H) com 3 ações",
+"objetivo": [
+"P · Planejar",
+"D · Fazer",
+"C · Checar"
+],
+"tarefa": [
+"3 ações: Em andamento, no quadro.",
+"Auditoria: 1 auditoria de padrão com checklist.",
+"Cheque: O número mudou?"
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc15/dc15-01-capa",
+"PDCA e plano de ação",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 15 de 19. Hoje: PDCA, plano de ação 5W2H e auditoria de padrão.",
+"tempo": "30 s"
+}
+],
+[
+"dc15/dc15-02-provoca",
+"que ninguém executa.",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "Plano bonito na planilha… que ninguém executa.",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc15/dc15-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc15/dc15-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc15/dc15-05-sec1",
+"01 · PDCA",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc15/dc15-06-conceito",
+"PDCA",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "P · Planejar: Problema, causa e ação. · D · Fazer: Executar como planejado. · C · Checar: O número mudou? · A · Agir: Funcionou: vira padrão. Não: volta ao P.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc15/dc15-07-frase",
+"Ação sem dono e sem prazo é só uma boa intenção.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Ação sem dono e sem prazo é só uma boa intenção.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc15/dc15-08-antes-depois",
+"Lista de desejos × plano 5W2H",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc15/dc15-09-sec2",
+"02 · 5W2H em 1 linha",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc15/dc15-10-ferramenta",
+"5W2H em 1 linha",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: O quê e por quê",
+"Passo 2: Quem e quando",
+"Passo 3: Onde e como",
+"Passo 4: Quanto custa (se custar)"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc15/dc15-11-caso",
+"Caso: Padrão de 5S que não durava",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: Mutirão todo mês e em 1 semana voltava a bagunça. O que fez: Auditoria semanal de 10 min com checklist e nota no quadro. Depois: O padrão se manteve e virou rotina do time.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc15/dc15-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc15/dc15-13-pratica",
+"Monte o seu quadro de ações",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc15/dc15-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc15/dc15-15-missao",
+"Rode o PDCA",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "3 ações: Em andamento, no quadro. · Auditoria: 1 auditoria de padrão com checklist. · Cheque: O número mudou?",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc15/dc15-16-fim",
+"Fechamos o E. Disciplina vence talento.",
+{
+"onde": "Câmera.",
+"fale": "Fechamos o E. Disciplina vence talento. Até o Encontro 16: replicar líderes.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"16": {
+"semana": {
+"n": 16,
+"modulo": "R · Replicar líderes",
+"tema": "Captar e integrar: escolher a pessoa certa e fazer ela dar certo",
+"entregavel": "Roteiro de entrevista + plano de integração dos primeiros 30 dias",
+"objetivo": [
+"Técnica se ensina",
+"Atitude se escolhe",
+"Pergunte por fatos"
+],
+"tarefa": [
+"Plano de 30 dias: Padrinho, treino e conversas.",
+"Aplique: No próximo novato (ou revise o último).",
+"Converse: Com o novato mais recente: como foi a chegada?"
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc16/dc16-01-capa",
+"Captar a pessoa certa",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 16 de 19. Hoje: Captar e integrar: escolher a pessoa certa e fazer ela dar certo.",
+"tempo": "30 s"
+}
+],
+[
+"dc16/dc16-02-provoca",
+"Integrar mal custa mais.",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "Contratar errado custa caro. Integrar mal custa mais.",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc16/dc16-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc16/dc16-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc16/dc16-05-sec1",
+"01 · Contrate pelo comportamento",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc16/dc16-06-conceito",
+"Contrate pelo comportamento",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Técnica se ensina: Conferir, operar, dirigir: dá para treinar. · Atitude se escolhe: Responsabilidade, disciplina, vontade de aprender. · Pergunte por fatos: \"Me conte uma vez em que…\"",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc16/dc16-07-frase",
+"O primeiro mês decide se a pessoa fica.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "O primeiro mês decide se a pessoa fica.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc16/dc16-08-antes-depois",
+"Joga no turno × integra de verdade",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc16/dc16-09-sec2",
+"02 · Entrevista em 4 perguntas",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc16/dc16-10-ferramenta",
+"Entrevista em 4 perguntas",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Me conte uma vez em que você errou no trabalho. O que fez?",
+"Passo 2: Uma situação de conflito com colega. Como resolveu?",
+"Passo 3: Algo que você aprendeu sozinho. Como?",
+"Passo 4: Por que você quer trabalhar aqui?"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc16/dc16-11-caso",
+"Caso: Rotatividade nos primeiros 30 dias",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: Metade dos novatos saía no primeiro mês. O que fez: Padrinho + conversa no dia 7, 15 e 30 com o líder. Depois: A saída no primeiro mês caiu muito.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc16/dc16-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc16/dc16-13-pratica",
+"Treine a entrevista",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc16/dc16-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc16/dc16-15-missao",
+"Integração pronta",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "Plano de 30 dias: Padrinho, treino e conversas. · Aplique: No próximo novato (ou revise o último). · Converse: Com o novato mais recente: como foi a chegada?",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc16/dc16-16-fim",
+"Bons times começam na escolha.",
+{
+"onde": "Câmera.",
+"fale": "Bons times começam na escolha. Até o Encontro 17: formar sucessores.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"17": {
+"semana": {
+"n": 17,
+"modulo": "R · Replicar líderes",
+"tema": "Mapa de talentos e treino no posto para formar sucessores",
+"entregavel": "Mapa de talentos (9 box) do time",
+"objetivo": [
+"Desempenho",
+"Potencial",
+"Os destaques"
+],
+"tarefa": [
+"9 box: Mapa de talentos pronto.",
+"2 pessoas: Converse com elas sobre o futuro.",
+"Treino: Comece o treino no posto de 1 tarefa sua."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc17/dc17-01-capa",
+"Formar sucessores",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 17 de 19. Hoje: Mapa de talentos e treino no posto para formar sucessores.",
+"tempo": "30 s"
+}
+],
+[
+"dc17/dc17-02-provoca",
+"quem fica no seu lugar?",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "Se você for promovido amanhã… quem fica no seu lugar?",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc17/dc17-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc17/dc17-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc17/dc17-05-sec1",
+"01 · Mapa de talentos · 9 box",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc17/dc17-06-conceito",
+"Mapa de talentos · 9 box",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "Desempenho: Entrega o resultado do cargo hoje? · Potencial: Aprende rápido, assume mais, influencia o time? · Os destaques: Alto desempenho e alto potencial: seus sucessores.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc17/dc17-07-frase",
+"Líder que não forma sucessor fica preso no cargo.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Líder que não forma sucessor fica preso no cargo.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc17/dc17-08-antes-depois",
+"Joga e torce × treino no posto",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc17/dc17-09-sec2",
+"02 · Monte o 9 box",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc17/dc17-10-ferramenta",
+"Monte o 9 box",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Liste as pessoas do time",
+"Passo 2: Dê nota de desempenho: baixo, médio, alto",
+"Passo 3: Dê nota de potencial: baixo, médio, alto",
+"Passo 4: Coloque cada um no quadrado e marque 2 sucessores"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc17/dc17-11-caso",
+"Caso: Supervisor que não tirava férias",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: Ninguém sabia fazer o fechamento do turno. O que fez: Escolheu 2 líderes de equipe e treinou no posto em 4 semanas. Depois: Tirou férias e o turno bateu a meta.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc17/dc17-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc17/dc17-13-pratica",
+"Seu mapa de talentos",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc17/dc17-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc17/dc17-15-missao",
+"Comece a formar",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "9 box: Mapa de talentos pronto. · 2 pessoas: Converse com elas sobre o futuro. · Treino: Comece o treino no posto de 1 tarefa sua.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc17/dc17-16-fim",
+"Seu legado é quem você forma.",
+{
+"onde": "Câmera.",
+"fale": "Seu legado é quem você forma. Até o Encontro 18: PDI do time.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"18": {
+"semana": {
+"n": 18,
+"modulo": "R · Replicar líderes",
+"tema": "PDI: plano de desenvolvimento individual das pessoas-chave",
+"entregavel": "PDI de 2 pessoas-chave, combinado com elas",
+"objetivo": [
+"70% · Prática",
+"20% · Com pessoas",
+"10% · Curso"
+],
+"tarefa": [
+"Combine: Os 2 PDIs com as pessoas.",
+"Indicador: Anote o número de hoje do seu indicador.",
+"Case: Prepare 5 minutos: antes, o que fez, depois."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc18/dc18-01-capa",
+"PDI do time",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 18 de 19. Hoje: PDI: plano de desenvolvimento individual das pessoas-chave.",
+"tempo": "30 s"
+}
+],
+[
+"dc18/dc18-02-provoca",
+"desenvolvimento vira promessa.",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "Sem plano… desenvolvimento vira promessa.",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc18/dc18-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc18/dc18-04-retomada",
+"Como foi a missão?",
+{
+"objetivo": "Cobrar a missão e trazer o caso real para a sala.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Chame cada um pelo nome, 30 segundos por pessoa",
+"Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Conceito · 05–25 min",
+[
+[
+"dc18/dc18-05-sec1",
+"01 · A regra 70 · 20 · 10",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc18/dc18-06-conceito",
+"A regra 70 · 20 · 10",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "70% · Prática: Projetos e desafios no trabalho real. · 20% · Com pessoas: Feedback, mentoria e acompanhar alguém. · 10% · Curso: Treinamento formal e leitura.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc18/dc18-07-frase",
+"PDI bom cabe em 1 página e é revisado todo mês.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "PDI bom cabe em 1 página e é revisado todo mês.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc18/dc18-08-antes-depois",
+"PDI de gaveta × PDI que funciona",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Ferramenta · 25–35 min",
+[
+[
+"dc18/dc18-09-sec2",
+"02 · PDI em 1 página",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc18/dc18-10-ferramenta",
+"PDI em 1 página",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Objetivo: onde a pessoa quer chegar",
+"Passo 2: 2 competências para desenvolver",
+"Passo 3: 3 ações (70-20-10) com prazo",
+"Passo 4: Data de revisão mensal"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc18/dc18-11-caso",
+"Caso: Conferente com potencial",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: Queria crescer e não sabia por onde. O que fez: PDI: conduzir a reunião de turno, acompanhar o supervisor e curso de Excel. Depois: Em 6 meses, assumiu como líder de equipe.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Prática · 35–55 min",
+[
+[
+"dc18/dc18-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc18/dc18-13-pratica",
+"Escreva os 2 PDIs",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Explique em 30 segundos e abra as salas",
+"Avise no chat quando faltar 2 minutos",
+"Volte todos para a sala principal para o feedback"
+],
+"tempo": "20 min"
+}
+],
+[
+"dc18/dc18-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc18/dc18-15-missao",
+"PDI combinado + case",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "Combine: Os 2 PDIs com as pessoas. · Indicador: Anote o número de hoje do seu indicador. · Case: Prepare 5 minutos: antes, o que fez, depois.",
+"pergunte": "Quando você vai fazer? Dia e hora.",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc18/dc18-16-fim",
+"Fechamos o R. Agora é mostrar o resultado.",
+{
+"onde": "Câmera.",
+"fale": "Fechamos o R. Agora é mostrar o resultado. Até o Encontro 19: o seu case.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+},
+"19": {
+"semana": {
+"n": 19,
+"modulo": "Fechamento",
+"tema": "Apresentação do case de cada líder: indicador antes e depois e o plano dos próximos 90 dias",
+"entregavel": "Case do aluno (vira depoimento) + plano dos próximos 90 dias",
+"objetivo": [
+"M",
+"O",
+"V"
+],
+"tarefa": [
+"Mantenha: A rotina, o painel e a reunião.",
+"Avalie: A mentoria na Área do Aluno (0 a 10).",
+"Depoimento: Grave 1 minuto contando o seu antes e depois."
+]
+},
+"modulos": [
+[
+"Abertura · 00–05 min",
+[
+[
+"dc19/dc19-01-capa",
+"O seu case: antes e depois",
+{
+"objetivo": "Dizer o tema do dia.",
+"onde": "Câmera ligada, olhando para a lente.",
+"fale": "Encontro 19 de 19. Hoje: Apresentação do case de cada líder: indicador antes e depois e o plano dos próximos 90 dias.",
+"tempo": "30 s"
+}
+],
+[
+"dc19/dc19-02-provoca",
+"qual é o seu número?",
+{
+"objetivo": "Provocar e gerar identificação.",
+"onde": "Câmera, sem compartilhar nada além do slide.",
+"fale": "19 encontros depois… qual é o seu número?",
+"faca": [
+"Peça 2 respostas no chat ou no microfone"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc19/dc19-03-agenda",
+"Agenda · 1 hora",
+{
+"onde": "Compartilhando a tela.",
+"fale": "Pouca teoria e muita aplicação no seu time real.",
+"faca": [
+"Se atrasar, corte do conceito, nunca da prática"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc19/dc19-04-retomada",
+"Como vai funcionar",
+{
+"objetivo": "Explicar a dinâmica dos cases.",
+"onde": "Galeria de câmeras (todo mundo aparecendo).",
+"faca": [
+"Leia cada item e peça um \"ok\" no chat"
+],
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Revisão · 05–10 min",
+[
+[
+"dc19/dc19-05-sec1",
+"01 · O que você construiu",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc19/dc19-06-conceito",
+"O que você construiu",
+{
+"objetivo": "Passar a ideia central do dia.",
+"onde": "Compartilhando a tela, câmera ligada.",
+"fale": "M: Plano de virada e exemplo. · O: Indicadores, painel e reunião de resultado. · V: Reconhecimento, feedback e conversa difícil. · E: Agenda-padrão, reunião de turno e PDCA. · R: 9 box, sucessores e PDI. · Você: Um líder que move pessoas.",
+"faca": [
+"Dê 1 exemplo da sua operação para cada item"
+],
+"pergunte": "Qual desses é o mais difícil no seu time hoje?",
+"tempo": "8 min"
+}
+],
+[
+"dc19/dc19-07-frase",
+"Quem move pessoas, move resultados.",
+{
+"onde": "Centro da câmera, devagar.",
+"fale": "Quem move pessoas, move resultados.",
+"faca": [
+"Pausa de 3 segundos depois da frase"
+],
+"tempo": "1 min"
+}
+],
+[
+"dc19/dc19-08-antes-depois",
+"Case fraco × case forte",
+{
+"objetivo": "Mostrar a diferença na prática.",
+"onde": "Compartilhando a tela.",
+"faca": [
+"Leia primeiro o lado ruim e pergunte quem já viu isso",
+"Depois o lado bom"
+],
+"pergunte": "Em qual coluna está o seu time hoje?",
+"tempo": "4 min"
+}
+]
+]
+],
+[
+"Estrutura do case",
+[
+[
+"dc19/dc19-09-sec2",
+"02 · Antes · O que fiz · Depois",
+{
+"tempo": "10 s"
+}
+],
+[
+"dc19/dc19-10-ferramenta",
+"Antes · O que fiz · Depois",
+{
+"objetivo": "Entregar a ferramenta que eles usam hoje.",
+"onde": "Compartilhando a tela.",
+"fale": "Esse é o passo a passo. Vocês vão usar daqui a pouco na prática.",
+"faca": [
+"Passo 1: Antes: o problema e o número (1 min)",
+"Passo 2: O que fiz: 3 ferramentas aplicadas (2 min)",
+"Passo 3: Depois: o número de hoje e o que mudou no time (1 min)",
+"Passo 4: Próximos 90 dias: o que vou manter (1 min)"
+],
+"tempo": "5 min"
+}
+],
+[
+"dc19/dc19-11-caso",
+"Caso: Exemplo de case",
+{
+"objetivo": "Mostrar a ferramenta funcionando.",
+"onde": "Compartilhando a tela.",
+"fale": "Antes: 12 indicadores, reunião de 1 hora, saída às 22h. O que fez: 4 indicadores, painel, reunião de 15 min e rotina. Depois: Meta batida 3 semanas seguidas e saída no horário.",
+"faca": [
+"Se tiver um caso seu parecido, conte no lugar deste"
+],
+"tempo": "3 min"
+}
+]
+]
+],
+[
+"Apresentações · 10–50 min",
+[
+[
+"dc19/dc19-12-sec3",
+"03 · Prática",
+{
+"fale": "Agora é com vocês.",
+"tempo": "10 s"
+}
+],
+[
+"dc19/dc19-13-pratica",
+"Sua vez · 5 minutos",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Chame cada um pelo nome",
+"Cronometre 5 minutos",
+"Peça um ponto forte no chat depois de cada case"
+],
+"tempo": "30 min"
+}
+],
+[
+"dc19/dc19-14-feedback",
+"Feedback 1 + 1 + 1",
+{
+"objetivo": "Feedback curto e útil.",
+"onde": "Galeria de câmeras.",
+"faca": [
+"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Comece sempre pelo ponto forte",
+"Máximo 1 minuto por pessoa"
+],
+"tempo": "5 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 55–60 min",
+[
+[
+"dc19/dc19-15-missao",
+"Continue movendo",
+{
+"objetivo": "Combinar a aplicação até o próximo encontro.",
+"onde": "Câmera.",
+"fale": "Mantenha: A rotina, o painel e a reunião. · Avalie: A mentoria na Área do Aluno (0 a 10). · Depoimento: Grave 1 minuto contando o seu antes e depois.",
+"pergunte": "O que você vai manter nos próximos 90 dias?",
+"faca": [
+"Peça que anotem na agenda do celular agora",
+"Lembre do QR de presença no próximo slide"
+],
+"tempo": "3 min"
+}
+],
+[
+"dc19/dc19-16-fim",
+"Do chão à gestão. Agora é com você.",
+{
+"onde": "Câmera.",
+"fale": "Do chão à gestão. Agora é com você. Obrigado pela entrega nesses 19 encontros.",
+"tempo": "30 s"
+}
+]
+]
+]
+]
+}
+}

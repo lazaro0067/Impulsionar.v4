@@ -69,7 +69,7 @@ function assistir(a) {
     <div><a href="/aula" style="color:#cbd5e1;text-decoration:none;font-weight:700;">← Todas as aulas</a>
       <h1 style="font-size:clamp(26px,4vw,42px);margin:10px 0 6px;">${mtEsc(a.titulo)}</h1>${a.duracao ? `<p class="sub" style="margin:0 0 16px;">⏱️ ${mtEsc(a.duracao)} · aula gratuita</p>` : ''}
       <div id="area-video"></div>
-      <div class="cta-fim" id="cta-fim"><div class="preco" style="grid-template-columns:1fr;"><div><h2 style="margin:0 0 8px;font-size:24px;font-weight:900;">Gostou? Vamos aplicar isso no seu time.</h2><p style="color:#cbd5e1;margin:0 0 16px;">Na mentoria ${mtEsc(MT.dados.marca.nome)} você trabalha isso em 12 semanas, com acompanhamento.</p>
+      <div class="cta-fim" id="cta-fim"><div class="preco" style="grid-template-columns:1fr;"><div><h2 style="margin:0 0 8px;font-size:24px;font-weight:900;">Gostou? Vamos aplicar isso no seu time.</h2><p style="color:#cbd5e1;margin:0 0 16px;">Na mentoria ${mtEsc(MT.dados.marca.nome)} você trabalha isso em 19 encontros, com acompanhamento.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;"><a class="bt ambar" href="${mtEsc(a.ctaLink || '/mentoria')}">${mtEsc(a.ctaTexto || 'Conhecer a mentoria')}</a><a class="bt claro" href="/raio-x">Fazer o Raio-X do Líder</a>${mtWhats() ? `<a class="bt claro" target="_blank" rel="noopener" href="${mtWhats('Olá, Lázaro! Assisti a aula "' + a.titulo + '" e quero conversar.')}">💬 Falar com o Lázaro</a>` : ''}</div></div></div></div>
     </div></div></section>
   <section><div class="cx">

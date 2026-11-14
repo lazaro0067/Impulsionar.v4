@@ -9843,13 +9843,18 @@ const DECKS_CI = {
             ['e5-15-fim', 'Agora o palco é seu.', { onde: 'Centro.', fale: 'Agora o palco é seu. Obrigado pela entrega nesses 5 encontros.', tempo: '30 s' }]]]
     ]
 };
-function deckDesenhadoCiMt(n, presenca, base) {
-    const D = DECKS_CI[n]; if (!D) return null;
+function deckMentoriaMt(p, n, presenca, base) { // slides de qualquer mentoria: desenhados quando existem; senão, montados do conteúdo
+    if (p.id === 'comunicacao-impacto') return n === 1 ? deckEncontro1Mt(p, presenca, base) : deckDesenhadoCiMt(n, presenca, base);
+    if (p.id === 'do-chao' && DC_ROT[n]) return deckDesenhadoCiMt(n, presenca, base, DC_ROT[n].modulos, 'jpg', 'dc');
+    return null;
+}
+function deckDesenhadoCiMt(n, presenca, base, lista, ext, pasta) {
+    const D = lista || DECKS_CI[n]; if (!D) return null;
     const raiz = String(base || '').replace(/\/$/, '');
     const guia = g => [g.objetivo && '🎯 OBJETIVO: ' + g.objetivo, g.onde && '📍 ONDE FICAR: ' + g.onde, g.fale && '🗣️ FALE: "' + g.fale + '"', g.faca && g.faca.length ? '🎬 FAÇA:\n' + g.faca.map(x => '• ' + x).join('\n') : '', g.pergunte && '❓ PERGUNTE: "' + g.pergunte + '"', g.tempo && '⏱️ TEMPO: ' + g.tempo].filter(Boolean).join('\n');
-    const arq = a => a.includes('/') || a.startsWith('ci-') ? a : `e${n}/${a}`;
-    const mods = D.map(([titulo, ss]) => ({ titulo, tipo: 'slides', slides: ss.map(([a, t, g]) => ({ titulo: t, texto: '', notas: guia(g), layout: 'imagem', imagem: `${raiz}/slides-mentoria/${arq(a)}.png?v=1` })) }));
-    mods[0].slides.unshift({ titulo: '', texto: '', layout: 'imagem', imagem: raiz + '/mentoria-palestrante.jpg?v=4', notas: guia({ objetivo: 'Abrir com presença.', onde: 'Centro da sala, de frente, sem nada nas mãos.', fale: `Boa noite, turma! Bem-vindos ao Encontro ${n}.`, faca: ['Sorria e olhe para 3 pessoas diferentes'], tempo: '20 s' }) });
+    const arq = a => pasta ? `${pasta}/${a}` : a.includes('/') || a.startsWith('ci-') ? a : `e${n}/${a}`;
+    const mods = D.map(([titulo, ss]) => ({ titulo, tipo: 'slides', slides: ss.map(([a, t, g]) => ({ titulo: t, texto: '', notas: guia(g), layout: 'imagem', imagem: `${raiz}/slides-mentoria/${arq(a)}.${ext || 'png'}?v=1` })) }));
+    mods[0].slides.unshift({ titulo: '', texto: '', layout: 'imagem', imagem: raiz + '/mentoria-palestrante.jpg?v=4', notas: guia({ objetivo: 'Abrir com presença.', onde: 'Centro da sala, de frente, sem nada nas mãos.', fale: `Boa noite, turma! Bem-vindos ao Encontro ${n}${pasta ? ' de 19' : ''}.`, faca: ['Sorria e olhe para 3 pessoas diferentes'], tempo: '20 s' }) });
     const fim = mods[mods.length - 1].slides;
     if (presenca) fim.splice(fim.length - 1, 0, { titulo: 'Registre sua presença', texto: ['Abra a câmera do celular', 'Aponte para o QR code', 'Toque em Confirmar presença'].map((x, i) => `• Passo ${i + 1} · ${x}`).join('\n'), layout: 'padrao', imagem: 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=8&data=' + encodeURIComponent(presenca.link), imgTam: 11, notas: guia({ objetivo: 'Registrar a presença.', onde: 'Ao lado da tela.', faca: ['Deixe o QR até todos registrarem'], tempo: '1 min' }) });
     return mods;
@@ -9945,7 +9950,7 @@ async function fotosDosSlidesMt(mods) {
 }
 app.post('/api/admin/mentoria/programa/:id/apresentar', requireRole('admin'), async (req, res) => {
     try {
-        const d = await mtLer(), p = (d.programas || []).find(x => x.id === req.params.id); if (!p) return res.status(404).json({ error: 'Programa não encontrado.' });
+        const d = await mtLer(), p = mtProgramas(d).find(x => x.id === req.params.id); if (!p) return res.status(404).json({ error: 'Programa não encontrado.' });
         const n = Number((req.body || {}).encontro); if (!(n >= 1 && n <= p.encontros.length)) return res.status(400).json({ error: 'Encontro inválido.' });
         let presenca = null; const tid = Number((req.body || {}).turma) || 0;
         if (tid) {
@@ -9958,7 +9963,7 @@ app.post('/api/admin/mentoria/programa/:id/apresentar', requireRole('admin'), as
             }
         }
         const e = p.encontros[n - 1];
-        const dados = camposTreinamentoMt({ titulo: `${p.curto || p.nome} · Encontro ${n} — ${e.modulo}`, objetivo: e.tema, publico: 'lideranca', duracao_min: 60, instrutor: (d.marca || {}).mentor || '', modulos: n === 1 && p.id === 'comunicacao-impacto' ? deckEncontro1Mt(p, presenca, baseUrlPublicaDpo(req)) : (p.id === 'comunicacao-impacto' && deckDesenhadoCiMt(n, presenca, baseUrlPublicaDpo(req))) || await fotosDosSlidesMt(deckEncontroProgramaMt(p, n, presenca, baseUrlPublicaDpo(req))) });
+        const dados = camposTreinamentoMt({ titulo: `${p.curto || p.nome} · Encontro ${n} — ${e.modulo}`, objetivo: e.tema, publico: 'lideranca', duracao_min: 60, instrutor: (d.marca || {}).mentor || '', modulos: deckMentoriaMt(p, n, presenca, baseUrlPublicaDpo(req)) || await fotosDosSlidesMt(deckEncontroProgramaMt(p, n, presenca, baseUrlPublicaDpo(req))) });
         const doc = Object.assign({ id: 0, status: 'pronto', divulgacao: null, check: null, ata: null }, dados, { modulos: JSON.parse(dados.modulos) });
         try {
         const chave = `mt_prog_trein:${p.id}:${n}`, ref = await dbGet(`SELECT value FROM integration_settings WHERE key = ?`, [chave]).catch(() => null);
@@ -13205,9 +13210,11 @@ app.use('/uploads', express.static(PASTA_UPLOADS));
 if (PASTA_UPLOADS !== PASTA_UPLOADS_CODIGO) app.use('/uploads', express.static(PASTA_UPLOADS_CODIGO)); // arquivos antigos que ainda estejam na pasta do código
 // =====================================================================
 // 🚀 MENTORIA "DO CHÃO À GESTÃO" — o negócio de mentoria e palestras do Lázaro dentro do Impulsionar
-// Tudo num lugar: conteúdo (método MOVER, 12 semanas, palestra, roteiros), páginas públicas com
+// Tudo num lugar: conteúdo (método MOVER, 19 encontros, palestra, roteiros), páginas públicas com
 // inscrição e pagamento, funil de leads (alunos e empresas), turmas e o plano de 90 dias com indicadores.
 // =====================================================================
+// Do Chão à Gestão · 19 encontros de 1 hora online: conteúdo e roteiro de cada slide (gerados junto com os slides em public/slides-mentoria/dc)
+const DC_ROT = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'mentoria-do-chao.json'), 'utf8')); } catch (e) { console.warn('mentoria-do-chao.json não encontrado:', e.message); return {}; } })();
 const MT_PADRAO = {
     marca: {
         nome: 'Do Chão à Gestão', mentor: 'Lázaro Neto', titulo: 'Liderança que move operações',
@@ -13238,8 +13245,9 @@ const MT_PADRAO = {
         { letra: 'E', nome: 'Execução com disciplina', descricao: 'Rotina do líder: reunião de início de turno, PDCA, plano de ação, auditoria de padrão.', entregavel: 'Agenda-padrão do líder + quadro de plano de ação' },
         { letra: 'R', nome: 'Replicar líderes', descricao: 'Captar, treinar e formar sucessores; PDI do time.', entregavel: 'Mapa de talentos + PDI de 2 pessoas-chave' }
     ],
-    formato: '1 encontro ao vivo em grupo por semana (90 min, online) + 1 sessão individual a cada 15 dias (30 min) + grupo de WhatsApp para dúvidas e cobrança.',
-    semanas: [
+    formato: '19 encontros ao vivo em grupo, 1 por semana (1 hora, online) + missão aplicada no time real em todo encontro + grupo de WhatsApp para dúvidas e cobrança.',
+    semanasVersao: 2,
+    semanas: Object.keys(DC_ROT).length ? Object.keys(DC_ROT).map(Number).sort((a, b) => a - b).map(n => DC_ROT[n].semana) : [
         { n: 1, modulo: 'Diagnóstico', tema: 'Onde estão os gaps do líder e do time', entregavel: 'Raio-X do Líder (autoavaliação + avaliação do time)' },
         { n: 2, modulo: 'M — Mentalidade de dono', tema: 'Do "fazer" para o "fazer acontecer": postura e exemplo', entregavel: 'Plano de virada pessoal (rascunho)' },
         { n: 3, modulo: 'M — Mentalidade de dono', tema: 'Responsabilidade e dono do resultado', entregavel: 'Plano de virada pessoal' },
@@ -13315,11 +13323,11 @@ const MT_PADRAO = {
         indicador: { nome: 'Nota na régua de apresentação (1 a 5)', dica: 'Use a nota média da régua: a do Encontro 1 é o "antes" e a da apresentação final é o "hoje".', antes: 'Ex.: 2,3', depois: 'Ex.: 4,1' }
     }],
     kit: ['Raio-X do Líder (questionário de 30 perguntas)', 'Painel de indicadores (planilha modelo)', 'Roteiros de feedback, reconhecimento e conversa difícil', 'Modelo de reunião de 15 minutos de início de turno', 'Plano de ação 5W2H e quadro PDCA', 'Mapa de talentos (9 box) e modelo de PDI'],
-    regraOuro: 'Toda semana termina com uma tarefa prática aplicada no time real. O aluno traz o resultado no encontro seguinte. É isso que gera depoimento e venda das próximas turmas.',
+    regraOuro: 'Todo encontro termina com uma missão aplicada no seu time real. Você traz o resultado no encontro seguinte e a gente ajusta junto.',
     ofertas: [
         { codigo: 'conteudo', degrau: 0, produto: 'Conteúdo no Instagram, lives e aula gratuita', preco: 'Grátis', valor: 0, para: 'Atrair e gerar confiança' },
         { codigo: 'minicurso', degrau: 1, produto: 'Mini-curso "Rotina do Líder de Operação" (gravado, 2 h)', preco: 'R$ 97', valor: 97, para: 'Primeira compra, filtra quem é sério' },
-        { codigo: 'grupo', degrau: 2, produto: 'Mentoria em grupo Do Chão à Gestão (12 semanas)', preco: 'R$ 2.997 ou 12x de R$ 297', valor: 2997, para: 'Supervisores, coordenadores, gerentes' },
+        { codigo: 'grupo', degrau: 2, produto: 'Mentoria em grupo Do Chão à Gestão (19 encontros)', preco: 'R$ 2.997 ou 12x de R$ 297', valor: 2997, para: 'Supervisores, coordenadores, gerentes' },
         { codigo: 'individual', degrau: 3, produto: 'Mentoria individual (3 meses)', preco: 'R$ 9.000', valor: 9000, para: 'Gerentes e donos de negócio' },
         { codigo: 'palestra', degrau: 4, produto: 'Palestra (60–90 min)', preco: 'R$ 5.000 a R$ 8.000', valor: 6000, para: 'RH, convenções, SIPAT, eventos' },
         { codigo: 'incompany', degrau: 5, produto: 'Treinamento in-company (turma de líderes, 4 encontros)', preco: 'R$ 15.000 a R$ 25.000', valor: 18000, para: 'Empresas com operação grande' }
@@ -13352,7 +13360,7 @@ const MT_PADRAO = {
             { titulo: 'Reel 2 — Ensino (feedback)', gancho: 'Se seu time some quando você vira as costas, o problema não é o time.', conteudo: 'Feedback em 3 passos: fato, impacto, combinado. Exemplo: "Ontem o carregamento saiu 40 minutos atrasado. Isso atrasou 6 entregas. O que a gente combina para amanhã?"', chamada: 'Salva esse vídeo e usa amanhã no seu time.' },
             { titulo: 'Reel 3 — Opinião forte', gancho: 'Líder que grita é líder que não tem rotina.', conteudo: 'Grito é sinal de que o problema chegou tarde. Rotina de gestão faz o problema aparecer cedo: reunião de 15 minutos, indicador na parede e plano de ação.', chamada: 'Concorda? Comenta aí.' },
             { titulo: 'Reel 4 — Bastidor', gancho: 'Como é a manhã de quem toca 3 unidades.', conteudo: 'Cortes rápidos de agenda, café, revisão de indicadores, conversa com o time (sem mostrar dados ou marcas da empresa). O segredo não é trabalhar mais. É ter rotina.', chamada: 'Me segue para ver a rotina de um líder de operação.' },
-            { titulo: 'Reel 5 — Oferta', gancho: 'Você foi promovido a líder e ninguém te ensinou a liderar?', conteudo: 'Foi pra isso que eu criei a Do Chão à Gestão: 12 semanas para você montar sua rotina, motivar seu time e melhorar seu indicador.', chamada: 'Comenta LÍDER que eu te mando os detalhes.' }
+            { titulo: 'Reel 5 — Oferta', gancho: 'Você foi promovido a líder e ninguém te ensinou a liderar?', conteudo: 'Foi pra isso que eu criei a Do Chão à Gestão: 19 encontros para você montar sua rotina, motivar seu time e melhorar seu indicador.', chamada: 'Comenta LÍDER que eu te mando os detalhes.' }
         ],
         dicas: ['Os 3 primeiros segundos decidem a visualização: comece pela frase mais forte, sem "olá, pessoal".', 'Legenda na tela sempre (a maioria assiste sem som).', 'Celular na vertical, luz de frente, áudio com microfone de lapela barato.', 'Responda todos os comentários na primeira hora.'],
         hashtags: '#liderança #gestaodepessoas #lideranca #logistica #operacoes #gestao #desenvolvimentodelideres #docchaoagestao'
@@ -13361,7 +13369,7 @@ const MT_PADRAO = {
         alunos: ['Atração: reels e carrosséis trazem seguidores que são líderes.', 'Captura: a chamada "comenta LÍDER" ou o link na bio leva para o grupo de WhatsApp ou para a aula gratuita mensal.', 'Aula gratuita (live de 60 min): você ensina um tema prático e, no fim, apresenta a mentoria com prazo de inscrição.', 'Conversa de diagnóstico (20 min, por vídeo ou WhatsApp): você entende a dor da pessoa e mostra como a mentoria resolve.', 'Fechamento: link de pagamento (Mercado Pago, parcelado).', 'Pós-venda: resultado do aluno vira depoimento, que vira conteúdo, que traz o próximo aluno.'],
         empresas: ['Lista de 50 empresas: fornecedores, transportadoras, indústrias e redes de varejo da região de Rio Verde e do agro de Goiás.', 'Contato: mensagem no LinkedIn ou WhatsApp para RH e gerentes de operação, oferecendo uma palestra para os líderes.', 'Primeiras 2 palestras com preço de entrada (ou gratuitas): em troca de gravação, fotos e depoimento do RH.', 'Proposta: depois da palestra, ofereça o treinamento in-company para a turma de líderes.', 'Indicação: peça ao RH duas indicações de outras empresas.'],
         scriptEmpresa: 'Olá, [nome]! Aqui é o Lázaro Neto, consultor da Impulsionar V4. Há mais de 12 anos lidero operações (hoje 3 unidades) e levo para as empresas a palestra "Quem Move Pessoas, Move Resultados", sobre como os líderes de operação engajam o time e melhoram os indicadores. Faz sentido conversarmos 15 minutos sobre levar isso para os líderes da [empresa]?',
-        scriptDiagnostico: ['Me conta da sua operação: quantas pessoas você lidera?', 'Qual é hoje o maior problema com o seu time?', 'O que acontece se isso continuar assim nos próximos 6 meses?', 'Se em 12 semanas você tivesse rotina, time engajado e indicador melhorando, o que mudaria para você?', 'Apresente a mentoria, o preço e o prazo. Pergunte: "Faz sentido para você?"']
+        scriptDiagnostico: ['Me conta da sua operação: quantas pessoas você lidera?', 'Qual é hoje o maior problema com o seu time?', 'O que acontece se isso continuar assim nos próximos 6 meses?', 'Se em 19 encontros você tivesse rotina, time engajado e indicador melhorando, o que mudaria para você?', 'Apresente a mentoria, o preço e o prazo. Pergunte: "Faz sentido para você?"']
     },
     palestra: {
         titulo: 'Quem Move Pessoas, Move Resultados', duracao: '60 minutos',
@@ -13410,7 +13418,7 @@ const MT_PADRAO = {
           partes: [['Gancho', 'Essa reunião de 15 minutos salvou a minha operação.'], ['Como funciona', 'Todo dia, no início do turno, de pé, com 3 perguntas:\nO que aconteceu ontem?\nQual é a meta de hoje?\nO que pode travar?'], ['Resultado', 'Em 15 minutos o problema aparece antes de virar incêndio.'], ['Chamada', 'Comenta ROTINA que eu te mando o modelo dessa reunião.']],
           legenda: '15 minutos por dia que mudam a operação inteira. ⏱️\n\nComenta ROTINA que eu te mando o modelo pronto da reunião de início de turno.', cena: 'Mostrar uma roda de pessoas de costas ou um quadro de gestão à vista (sem dados reais).' },
         { id: 's2-sab', semana: 2, dia: 'Sábado', linha: 'Oferta', titulo: 'Promovido e ninguém te ensinou?', duracao: '40 s',
-          partes: [['Gancho', 'Você foi promovido a líder e ninguém te ensinou a liderar?'], ['Oferta', 'Foi pra isso que eu criei a Do Chão à Gestão: 12 semanas para você montar sua rotina, motivar seu time e melhorar seu indicador.\nTurma pequena, ao vivo, aplicando no seu time real.'], ['Chamada', 'Comenta LÍDER que eu te mando os detalhes.']],
+          partes: [['Gancho', 'Você foi promovido a líder e ninguém te ensinou a liderar?'], ['Oferta', 'Foi pra isso que eu criei a Do Chão à Gestão: 19 encontros para você montar sua rotina, motivar seu time e melhorar seu indicador.\nTurma pequena, ao vivo, aplicando no seu time real.'], ['Chamada', 'Comenta LÍDER que eu te mando os detalhes.']],
           legenda: 'Ser bom tecnicamente te promoveu. Liderar gente é outra habilidade — e dá para aprender. 🚀\n\nComenta LÍDER que eu te mando os detalhes da próxima turma da mentoria Do Chão à Gestão.', cena: 'Fundo limpo, boa luz de frente. Fala direta, sem pressa.' },
         { id: 's3-seg', semana: 3, dia: 'Segunda', linha: 'Ensino', titulo: 'Como cobrar sem perder o time', duracao: '45 s',
           partes: [['Gancho', 'Cobrar não é ser chato. Chato é cobrar sem ter combinado.'], ['Os 3 passos', '1. Combine claro: o quê, até quando e como vai ser medido.\n2. Acompanhe no prazo, não só no fim.\n3. Dê a consequência justa: reconheça quem entregou e converse com quem não entregou.'], ['Chamada', 'Salva e aplica no próximo combinado com o seu time.']],
@@ -13437,7 +13445,7 @@ const MT_PADRAO = {
           partes: [['Gancho', 'Em 5 minutos você descobre qual é o seu ponto fraco como líder.'], ['Oferta', 'Eu criei o Raio-X do Líder: 30 perguntas sobre o seu dia a dia.\nNo fim você vê sua nota em cada pilar e o que fazer primeiro.'], ['Chamada', 'É grátis. Link na bio, ou comenta RAIO-X que eu te mando.']],
           legenda: '🩻 Raio-X do Líder: grátis, 5 minutos, resultado na hora.\n\nComenta RAIO-X que eu te mando o link (ou pega na bio).', cena: 'Mostrar o celular com a página do Raio-X aberta (gravação de tela).' },
         { id: 'vsl-mentoria', semana: 0, dia: 'Página de venda', linha: 'Vídeo de vendas', titulo: 'Vídeo de apresentação da mentoria', duracao: '2 min',
-          partes: [['Gancho', 'Se você foi promovido a líder por ser bom no que fazia e hoje passa o dia apagando incêndio, esse vídeo é para você.'], ['Quem sou eu', 'Eu sou o Lázaro. Em 2013 eu era ajudante de distribuição. Fui manobrista, conferente, supervisor, coordenador e gerente. Hoje lidero operações em 3 unidades.'], ['O problema', 'Ninguém ensina o líder de operação a liderar gente. Ele aprende no susto: grita, faz tudo sozinho, cobra sem combinado, e o time não entrega.'], ['A solução', 'Eu criei a mentoria Do Chão à Gestão, com o método MOVER: Mentalidade de dono, Operação sob controle, Vínculo com o time, Execução com disciplina e Replicar líderes.\nSão 12 semanas, ao vivo, em turma pequena, aplicando tudo no seu time real.'], ['O que você leva', 'Você sai com rotina de líder, painel de indicadores, roteiro de feedback, plano de ação e um indicador que melhorou de verdade.'], ['Chamada', 'As vagas são poucas. Clica no botão abaixo e garanta a sua.']],
+          partes: [['Gancho', 'Se você foi promovido a líder por ser bom no que fazia e hoje passa o dia apagando incêndio, esse vídeo é para você.'], ['Quem sou eu', 'Eu sou o Lázaro. Em 2013 eu era ajudante de distribuição. Fui manobrista, conferente, supervisor, coordenador e gerente. Hoje lidero operações em 3 unidades.'], ['O problema', 'Ninguém ensina o líder de operação a liderar gente. Ele aprende no susto: grita, faz tudo sozinho, cobra sem combinado, e o time não entrega.'], ['A solução', 'Eu criei a mentoria Do Chão à Gestão, com o método MOVER: Mentalidade de dono, Operação sob controle, Vínculo com o time, Execução com disciplina e Replicar líderes.\nSão 19 encontros, ao vivo, em turma pequena, aplicando tudo no seu time real.'], ['O que você leva', 'Você sai com rotina de líder, painel de indicadores, roteiro de feedback, plano de ação e um indicador que melhorou de verdade.'], ['Chamada', 'As vagas são poucas. Clica no botão abaixo e garanta a sua.']],
           legenda: 'Vídeo da página da mentoria Do Chão à Gestão.', cena: 'Gravar sentado, enquadramento do peito para cima, luz de frente, fundo limpo. Depois de exportar, use "Colocar na página da mentoria".', pagina: 'mentoria' },
         { id: 'convite-rh', semana: 0, dia: 'Para empresas', linha: 'Vídeo para RH', titulo: 'Convite para palestra (RH e diretores)', duracao: '60 s',
           partes: [['Gancho', 'Se os líderes da sua operação são bons tecnicamente, mas o time não entrega, esse recado é para você do RH.'], ['A palestra', 'Na palestra "Quem Move Pessoas, Move Resultados" eu mostro como o líder motiva sem prometer dinheiro, controla a operação pelos indicadores certos e forma os próximos líderes.'], ['Prova', 'São mais de 12 anos liderando operações com até 250 pessoas.'], ['Chamada', 'Para levar para a sua SIPAT, convenção ou reunião de resultado, acesse o link e peça sua proposta.']],
@@ -13508,6 +13516,8 @@ async function mtLer() {
     const out = JSON.parse(JSON.stringify(MT_PADRAO));
     Object.keys(d).forEach(k => { if (d[k] !== undefined && d[k] !== null) out[k] = (typeof d[k] === 'object' && !Array.isArray(d[k]) && typeof out[k] === 'object' && !Array.isArray(out[k])) ? Object.assign(out[k], d[k]) : d[k]; });
     if (!Array.isArray(out.programas)) out.programas = []; MT_PADRAO.programas.forEach(p => { const k = out.programas.findIndex(x => x && x.id === p.id); if (k < 0) out.programas.push(JSON.parse(JSON.stringify(p))); else if ((Number(out.programas[k].versao) || 1) < (Number(p.versao) || 1)) out.programas[k] = JSON.parse(JSON.stringify(p)); }); // programa novo do padrão sempre aparece
+    if ((Number(d.semanasVersao) || 1) < MT_PADRAO.semanasVersao) { out.semanas = JSON.parse(JSON.stringify(MT_PADRAO.semanas)); out.formato = MT_PADRAO.formato; out.semanasVersao = MT_PADRAO.semanasVersao; } // 19 encontros de 1 hora
+    if (/gera depoimento e venda/.test(out.regraOuro || '')) out.regraOuro = MT_PADRAO.regraOuro; // o aluno vê este texto
     if (!out.marca.fotoUrl) out.marca.fotoUrl = MT_PADRAO.marca.fotoUrl;
     if (out.marca.mentor === 'Lázaro Salles') out.marca.mentor = 'Lázaro Neto'; // nome público escolhido
     if (out.marca.whatsapp === '(61) 9396-4750') out.marca.whatsapp = '(61) 99396-4750'; // número com o 9
@@ -13517,10 +13527,10 @@ async function mtLer() {
     return out;
 }
 async function mtSalvar(d) { await mtRun(`INSERT INTO mentoria_negocio (id, dados, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET dados = excluded.dados, updated_at = CURRENT_TIMESTAMP`, [JSON.stringify(d)]); }
-// Programas: a mentoria principal (12 semanas) + programas separados (ex.: Comunicação de Impacto)
+// Programas: a mentoria principal (19 encontros) + programas separados (ex.: Comunicação de Impacto)
 const MT_PRINCIPAL = 'do-chao';
 function mtProgramas(d) {
-    return [{ id: MT_PRINCIPAL, nome: d.marca.nome, curto: d.marca.nome, icone: '🚀', unidade: 'semana', encontros: d.semanas, regraOuro: d.regraOuro, kit: d.kit, formato: d.formato }]
+    return [{ id: MT_PRINCIPAL, nome: d.marca.nome, curto: d.marca.nome, icone: '🚀', unidade: 'encontro', encontros: d.semanas, regraOuro: d.regraOuro, kit: d.kit, formato: d.formato }]
         .concat((Array.isArray(d.programas) ? d.programas : []).filter(p => p && p.id && Array.isArray(p.encontros)).map(p => Object.assign({ unidade: 'encontro' }, p)));
 }
 function mtProgramaDe(d, t) { const id = t ? mtJson(t.dados).programa : ''; const L = mtProgramas(d); return L.find(p => p.id === id) || L[0]; }
@@ -13612,7 +13622,7 @@ app.get('/api/public/mentoria', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // apresentação da palestra (roteiro completo, para o Lázaro apresentar)
-app.get('/api/public/mentoria/programa/:id', async (req, res) => { const d = await mtLer(), p = (d.programas || []).find(x => x.id === req.params.id); if (!p) return res.status(404).json({ error: 'Programa não encontrado.' }); res.json({ programa: p, marca: d.marca }); });
+app.get('/api/public/mentoria/programa/:id', async (req, res) => { const d = await mtLer(), p = mtProgramas(d).find(x => x.id === req.params.id); if (!p) return res.status(404).json({ error: 'Programa não encontrado.' }); res.json({ programa: p, marca: d.marca }); });
 app.get('/api/public/mentoria/palestra-completa', async (req, res) => { const d = await mtLer(); res.json({ marca: d.marca, palestra: d.palestra, historia: d.historia, metodo: d.metodo }); });
 // Aviso de nova solicitação: sininho do sistema + notificação no celular (alertas da Minha Agenda)
 function mtNotificar(titulo, msg) {
@@ -13688,7 +13698,7 @@ async function mtConfirmarPagamento(alunoId, pagamentoId) {
 }
 // ======================================================================
 // ÁREA DO ALUNO DA MENTORIA — acesso por link pessoal (criado pelo Master e
-// enviado pelo WhatsApp), jornada das 12 semanas, tarefas, indicador e
+// enviado pelo WhatsApp), jornada dos 19 encontros, tarefas, indicador e
 // presença validada por QR code no fim de cada encontro.
 // ======================================================================
 db.run(`ALTER TABLE mentoria_alunos ADD COLUMN acesso_token TEXT`, () => {});
@@ -13719,7 +13729,7 @@ async function mtPainelAluno(a) {
     const pr = mtJson(a.progresso), feitos = (t ? mtJson(t.dados).feitos : {}) || {}, hoje = mtHojeBr(), prog = mtProgramaDe(d, t);
     const encontros = prog.encontros.map((s, i) => { const data = t ? mtDataEncontro(t, i, prog) : ''; return { n: s.n, modulo: s.modulo, tema: s.tema, entregavel: s.entregavel, data, realizado: !!feitos[s.n] || !!(data && data < hoje) || pres.has(Number(s.n)), presente: pres.has(Number(s.n)), entregue: !!(pr.entregas || {})[s.n], nota: (pr.notas || {})[s.n] || '' }; });
     // área do aluno: slides liberados pelo mentor, prazo do desafio, materiais enviados, avaliações e dúvidas
-    const td = t ? mtJson(t.dados) : {}, lib = td.liberados || {}, prazos = td.prazos || {}, temSlides = (d.programas || []).some(x => x.id === prog.id);
+    const td = t ? mtJson(t.dados) : {}, lib = td.liberados || {}, prazos = td.prazos || {}, temSlides = prog.id === MT_PRINCIPAL ? !!DC_ROT[1] : (d.programas || []).some(x => x.id === prog.id);
     const msgs = await dbAll(`SELECT id, de, texto, anexo_url, anexo_nome, encontro, criado_em FROM mentoria_mensagens WHERE aluno_id = ? ORDER BY id`, [a.id]).catch(() => []);
     const avs = await dbAll(`SELECT encontro, nota, respostas, comentario, criado_em FROM mentoria_avaliacoes WHERE aluno_id = ?`, [a.id]).catch(() => []);
     encontros.forEach(e => { e.liberado = temSlides && !!lib[e.n]; e.prazo = prazos[e.n] || ''; e.materiais = msgs.filter(m => m.de === 'aluno' && m.anexo_url && Number(m.encontro) === Number(e.n)).map(m => ({ nome: m.anexo_nome, url: m.anexo_url, em: m.criado_em })); const av = avs.find(x => Number(x.encontro) === Number(e.n)); e.avaliacao = av ? { nota: av.nota, comentario: av.comentario, respostas: mtJson(av.respostas) } : null; });
@@ -13855,10 +13865,10 @@ app.get('/api/public/aluno/:token/encontro/:n/slides', async (req, res) => {
     try {
         const a = await mtAlunoPorToken(req.params.token); if (!a) return res.status(404).json({ error: 'Acesso inválido.' });
         const t = a.turma_id ? await dbGet(`SELECT * FROM mentoria_turmas WHERE id = ?`, [a.turma_id]).catch(() => null) : null, n = Number(req.params.n);
-        const d = await mtLer(), prog = mtProgramaDe(d, t), p = (d.programas || []).find(x => x.id === prog.id);
+        const d = await mtLer(), p = mtProgramaDe(d, t);
         if (!p || !t || !(mtJson(t.dados).liberados || {})[n]) return res.status(403).json({ error: 'O mentor ainda não liberou os slides deste encontro.' });
         if (!(n >= 1 && n <= p.encontros.length)) return res.status(404).json({ error: 'Encontro não encontrado.' });
-        const base = baseUrlPublicaDpo(req), mods = n === 1 && p.id === 'comunicacao-impacto' ? deckEncontro1Mt(p, null, base) : (p.id === 'comunicacao-impacto' && deckDesenhadoCiMt(n, null, base)) || await fotosDosSlidesMt(deckEncontroProgramaMt(p, n, null, base));
+        const base = baseUrlPublicaDpo(req), mods = deckMentoriaMt(p, n, null, base) || await fotosDosSlidesMt(deckEncontroProgramaMt(p, n, null, base));
         const slides = []; mods.forEach(m => (m.slides || []).forEach(s => slides.push({ titulo: s.titulo || '', texto: s.texto || '', imagem: s.imagem || '', layout: s.layout || 'padrao', secao: String(m.titulo || '').replace(/\s·\s\d.*$/, '') })));
         const e = p.encontros[n - 1];
         res.json({ programa: p.nome, encontro: n, modulo: e.modulo, tema: e.tema, slides });
