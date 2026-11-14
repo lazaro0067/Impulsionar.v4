@@ -15003,16 +15003,19 @@ app.get('/api/admin/mentoria/acessos', requireRole('admin'), async (req, res) =>
     try {
         const dias = Math.min(180, Math.max(1, Number(req.query.dias) || 30)), desde = `-${dias} days`;
         const q = (sql, p = []) => dbAll(sql, [desde, ...p]).catch(() => []);
-        const [tot] = await q(`SELECT COUNT(CASE WHEN tipo='visita' THEN 1 END) visitas, COUNT(DISTINCT CASE WHEN tipo='visita' THEN visitante END) visitantes, COUNT(CASE WHEN tipo='clique' THEN 1 END) cliques, COUNT(DISTINCT CASE WHEN tipo='video' THEN visitante END) assistiram FROM site_eventos WHERE criado_em >= datetime('now', ?)`);
-        const [leads] = await q(`SELECT COUNT(*) n FROM mentoria_leads WHERE created_at >= datetime('now', ?) AND visitante IS NOT NULL`);
-        const porDia = await q(`SELECT date(criado_em, '-3 hours') dia, COUNT(*) visitas, COUNT(DISTINCT visitante) pessoas FROM site_eventos WHERE tipo='visita' AND criado_em >= datetime('now', ?) GROUP BY dia ORDER BY dia`);
-        const paginas = await q(`SELECT pagina, COUNT(*) visitas, COUNT(DISTINCT visitante) pessoas FROM site_eventos WHERE tipo='visita' AND criado_em >= datetime('now', ?) GROUP BY pagina ORDER BY visitas DESC LIMIT 15`);
-        const origens = await q(`SELECT origem, COUNT(*) visitas, COUNT(DISTINCT visitante) pessoas FROM site_eventos WHERE tipo='visita' AND criado_em >= datetime('now', ?) GROUP BY origem ORDER BY visitas DESC`);
-        const cliques = await q(`SELECT pagina, alvo, COUNT(*) n FROM site_eventos WHERE tipo='clique' AND criado_em >= datetime('now', ?) GROUP BY pagina, alvo ORDER BY n DESC LIMIT 20`);
-        const dispositivos = await q(`SELECT dispositivo, COUNT(DISTINCT visitante) pessoas FROM site_eventos WHERE criado_em >= datetime('now', ?) GROUP BY dispositivo`);
+        // na área de um programa (ex.: Comunicação de Impacto), só as páginas dele e quem passou por elas
+        const prog = String(req.query.programa || ''), pref = prog === 'comunicacao-impacto' ? '/comunicacao' : '';
+        const F = pref ? ` AND pagina LIKE '${pref}%'` : '', FV = pref ? ` AND visitante IN (SELECT visitante FROM site_eventos WHERE pagina LIKE '${pref}%')` : '', FL = pref ? ` AND (origem = 'comunicacao' OR dados LIKE '%${prog}%')` : '';
+        const [tot] = await q(`SELECT COUNT(CASE WHEN tipo='visita' THEN 1 END) visitas, COUNT(DISTINCT CASE WHEN tipo='visita' THEN visitante END) visitantes, COUNT(CASE WHEN tipo='clique' THEN 1 END) cliques, COUNT(DISTINCT CASE WHEN tipo='video' THEN visitante END) assistiram FROM site_eventos WHERE criado_em >= datetime('now', ?)${F}`);
+        const [leads] = await q(`SELECT COUNT(*) n FROM mentoria_leads WHERE created_at >= datetime('now', ?) AND visitante IS NOT NULL${FL}`);
+        const porDia = await q(`SELECT date(criado_em, '-3 hours') dia, COUNT(*) visitas, COUNT(DISTINCT visitante) pessoas FROM site_eventos WHERE tipo='visita' AND criado_em >= datetime('now', ?)${F} GROUP BY dia ORDER BY dia`);
+        const paginas = await q(`SELECT pagina, COUNT(*) visitas, COUNT(DISTINCT visitante) pessoas FROM site_eventos WHERE tipo='visita' AND criado_em >= datetime('now', ?)${F} GROUP BY pagina ORDER BY visitas DESC LIMIT 15`);
+        const origens = await q(`SELECT origem, COUNT(*) visitas, COUNT(DISTINCT visitante) pessoas FROM site_eventos WHERE tipo='visita' AND criado_em >= datetime('now', ?)${F} GROUP BY origem ORDER BY visitas DESC`);
+        const cliques = await q(`SELECT pagina, alvo, COUNT(*) n FROM site_eventos WHERE tipo='clique' AND criado_em >= datetime('now', ?)${F} GROUP BY pagina, alvo ORDER BY n DESC LIMIT 20`);
+        const dispositivos = await q(`SELECT dispositivo, COUNT(DISTINCT visitante) pessoas FROM site_eventos WHERE criado_em >= datetime('now', ?)${F} GROUP BY dispositivo`);
         // contatos que voltaram ao site: pontuação por atividade recente
         const quentes = await q(`SELECT l.id, l.nome, l.whatsapp, l.tipo, l.etapa, l.empresa, l.retorno_em, COUNT(e.id) eventos, COUNT(CASE WHEN e.tipo='visita' THEN 1 END) visitas, COUNT(CASE WHEN e.tipo='video' THEN 1 END) videos, COUNT(CASE WHEN e.tipo='clique' THEN 1 END) cliques, MAX(e.criado_em) ultimo,
-            GROUP_CONCAT(DISTINCT e.pagina) paginas FROM site_eventos e JOIN mentoria_leads l ON l.id = e.lead_id WHERE e.criado_em >= datetime('now', ?) AND COALESCE(l.etapa,'novo') NOT IN ('fechado','perdido') GROUP BY l.id ORDER BY ultimo DESC LIMIT 40`);
+            GROUP_CONCAT(DISTINCT e.pagina) paginas FROM site_eventos e JOIN mentoria_leads l ON l.id = e.lead_id WHERE e.criado_em >= datetime('now', ?)${FV.replace('visitante IN', 'e.visitante IN')} AND COALESCE(l.etapa,'novo') NOT IN ('fechado','perdido') GROUP BY l.id ORDER BY ultimo DESC LIMIT 40`);
         quentes.forEach(x => { x.pontos = x.visitas * 2 + x.cliques * 3 + x.videos * 4 + (/mentoria|inscric/.test(x.paginas || '') ? 5 : 0); x.codigo = mtCodigoLead(x.id); });
         quentes.sort((a, b) => b.pontos - a.pontos || String(b.ultimo).localeCompare(String(a.ultimo)));
         const aulas = await dbAll(`SELECT a.id, a.titulo, a.slug, (SELECT COUNT(DISTINCT visitante) FROM site_eventos e WHERE e.tipo='video' AND e.alvo = a.slug AND e.dados LIKE '%"p":0%') iniciaram,
@@ -15020,7 +15023,7 @@ app.get('/api/admin/mentoria/acessos', requireRole('admin'), async (req, res) =>
         // quem entrou: cada visitante (anônimo ou já cadastrado), o que viu e o que clicou
         const pessoas = await q(`SELECT visitante, MAX(lead_id) lead_id, COUNT(CASE WHEN tipo='visita' THEN 1 END) visitas, COUNT(CASE WHEN tipo='clique' THEN 1 END) cliques, COUNT(CASE WHEN tipo='video' THEN 1 END) videos,
             GROUP_CONCAT(DISTINCT pagina) paginas, GROUP_CONCAT(DISTINCT CASE WHEN tipo='clique' THEN replace(alvo, ',', ' ') END) alvos, MAX(CASE WHEN origem NOT IN ('direto','site','') THEN origem END) origem, MAX(dispositivo) dispositivo, MIN(criado_em) primeiro, MAX(criado_em) ultimo
-            FROM site_eventos WHERE criado_em >= datetime('now', ?) AND visitante IS NOT NULL GROUP BY visitante ORDER BY ultimo DESC LIMIT 120`);
+            FROM site_eventos WHERE criado_em >= datetime('now', ?) AND visitante IS NOT NULL${FV} GROUP BY visitante ORDER BY ultimo DESC LIMIT 120`);
         const vis = pessoas.map(x => x.visitante), lids = pessoas.map(x => x.lead_id).filter(Boolean);
         const conh = vis.length ? await dbAll(`SELECT id, nome, whatsapp, email, empresa, tipo, etapa, visitante, dados FROM mentoria_leads WHERE visitante IN (${vis.map(() => '?').join(',')})${lids.length ? ` OR id IN (${lids.map(() => '?').join(',')})` : ''}`, [...vis, ...lids]).catch(() => []) : [];
         pessoas.forEach(x => {

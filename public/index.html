@@ -2193,7 +2193,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 14/11 (5)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 14/11 (6)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -14675,10 +14675,10 @@ const mtnLeadsVis = () => mtnModo() === 'do-chao' ? MTN.leads : (MTN.leads || []
 function mtnDesenharPrograma() {
   const p = MTN.d.programas.find(x => x.id === mtnModo()), cont = document.getElementById('conteudo'), nT = MTN.turmas.filter(t => mtnProgT(t).id === p.id).length, ehCi = p.id === 'comunicacao-impacto';
   const novas = mtnLeadsVis().filter(l => (l.etapa || 'novo') === 'novo').length;
-  const abas = [['pedidos', `📥 Solicitações${novas ? ` <i class="mtn-badge">${novas}</i>` : ''}`], ['painel', '🏁 Painel'], ['funil', '🧲 Funil de vendas'], ['turmas', `🎓 Turmas${nT ? ` <i class="mtn-badge" style="background:#64748b">${nT}</i>` : ''}`], ['programa', '📚 Método e conteúdo']].concat(ehCi ? [['config', '⚙️ Configurações']] : []);
+  const abas = [['pedidos', `📥 Solicitações${novas ? ` <i class="mtn-badge">${novas}</i>` : ''}`], ['painel', '🏁 Painel'], ['acessos', '📊 Acessos'], ['funil', '🧲 Funil de vendas'], ['turmas', `🎓 Turmas${nT ? ` <i class="mtn-badge" style="background:#64748b">${nT}</i>` : ''}`], ['programa', '📚 Método e conteúdo']].concat(ehCi ? [['config', '⚙️ Configurações']] : []);
   if (MTN.abaP === 'vender') MTN.abaP = 'painel';
   if (!abas.some(a => a[0] === MTN.abaP)) MTN.abaP = ehCi ? 'painel' : 'programa';
-  const corpo = { pedidos: mtnPedidos, painel: () => ehCi ? mtnCiVender(p) : mtnProgramaHtml(p), funil: mtnFunil, turmas: mtnTurmas, programa: () => mtnProgramaHtml(p), config: () => mtnCiConfig() }[MTN.abaP];
+  const corpo = { acessos: mtnAcessos, pedidos: mtnPedidos, painel: () => ehCi ? mtnCiVender(p) : mtnProgramaHtml(p), funil: mtnFunil, turmas: mtnTurmas, programa: () => mtnProgramaHtml(p), config: () => mtnCiConfig() }[MTN.abaP];
   cont.innerHTML = `<div class="mtn"><div class="mtn-cab"><div><h1 style="margin:0;">${p.icone || '🎙️'} ${escapeHtml(p.nome)}</h1><p class="plano-meta" style="margin:4px 0 0;">${escapeHtml(MTN.d.marca.mentor)} · ${escapeHtml(p.encontros.length + ' encontros de ' + (p.duracaoEncontro || '1 h'))} · para você ou para empresas</p></div>
     <div class="mtn-acoes">${ehCi ? `<a class="btn-secundario" href="/comunicacao" target="_blank" rel="noopener">👁️ Ver página de venda</a>` : ''}<button class="btn-primario" style="width:auto;" onclick="mtnApresentarEscolher('${p.id}')">▶️ Apresentar encontro</button><button class="btn-secundario" onclick="mtnProgramaImprimir('${p.id}')">🖨️ Imprimir / PDF</button><button class="btn-secundario" onclick="mtnEditarTurma(0, '${p.id}')">＋ Nova turma</button></div></div>
     <nav class="mtn-abas">${abas.map(([k, r]) => `<button class="${MTN.abaP === k ? 'on' : ''}" onclick="MTN.abaP='${k}'; mtnDesenhar()">${r}</button>`).join('')}</nav>
@@ -15037,17 +15037,17 @@ function mtnFecharQr() { clearInterval(MTQ.timer); const e = document.getElement
 function datasRealizadas(t) { const f = (t.dados || {}).feitos || {}, hoje = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10), d = mtnDatasEncontros(t); return mtnProgT(t).encontros.filter((s, i) => f[s.n] || (d[i] && d[i].toISOString().slice(0, 10) < hoje)).length; }
 // ---------- 📊 Acessos: quem entrou nas páginas, de onde veio, o que clicou ----------
 const MTACS = { dias: 30, d: null };
-const MTA_ORIGEM = { instagram: '📸 Instagram', whatsapp: '💬 WhatsApp', facebook: '👍 Facebook', linkedin: '💼 LinkedIn', google: '🔎 Google', youtube: '▶️ YouTube', tiktok: '🎵 TikTok', direto: '🔗 Link direto', site: '🌐 Próprio site', outro: '🌍 Outros sites', bio: '📸 Link da bio' };
+const MTA_ORIGEM = { anuncio: '📣 Anúncio da Meta', stories: '📸 Stories', rh: '🏢 RH e gestores', comunicacao: '🎙️ Página da Comunicação', instagram: '📸 Instagram', whatsapp: '💬 WhatsApp', facebook: '👍 Facebook', linkedin: '💼 LinkedIn', google: '🔎 Google', youtube: '▶️ YouTube', tiktok: '🎵 TikTok', direto: '🔗 Link direto', site: '🌐 Próprio site', outro: '🌍 Outros sites', bio: '📸 Link da bio' };
 const MTA_PAG = { '/mentorias': 'Vitrine das mentorias (bio)', '/comunicacao': 'Comunicação de Impacto', '/comunicacao-de-impacto': 'Comunicação de Impacto',  '/bio': 'Link da bio', '/mentoria': 'Mentoria', '/palestra': 'Palestras', '/aula': 'Aulas gratuitas', '/raio-x': 'Raio-X do Líder' };
 const mtaAula = slug => { const a = ((MTACS.d || {}).aulas || []).concat(MTV.lista || []).find(x => x.slug === slug); return a ? a.titulo : slug; };
 const mtaPag = p => MTA_PAG[p] || (String(p).startsWith('/aula/') ? 'Aula: ' + mtaAula(p.slice(6)) : p);
 function mtnAcessos() { setTimeout(mtnCarregarAcessos, 0); return '<div id="mtn-acessos"><p class="plano-meta">Carregando acessos…</p></div>'; }
 async function mtnCarregarAcessos() {
   const el = document.getElementById('mtn-acessos'); if (!el) return;
-  try { MTACS.d = await api('/api/admin/mentoria/acessos?dias=' + MTACS.dias); } catch (e) { el.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
+  try { MTACS.d = await api('/api/admin/mentoria/acessos?dias=' + MTACS.dias + (mtnModo() !== 'do-chao' ? '&programa=' + encodeURIComponent(mtnModo()) : '')); } catch (e) { el.innerHTML = `<div class="msg-vazio">${escapeHtml(e.message)}</div>`; return; }
   const d = MTACS.d, t = d.total, maxDia = Math.max(1, ...d.porDia.map(x => x.visitas)), totOrig = Math.max(1, d.origens.reduce((s, x) => s + x.visitas, 0));
   const tx = t.visitantes ? Math.round(t.cadastros / t.visitantes * 1000) / 10 : 0;
-  el.innerHTML = `<div class="mta-topo"><div><h2 class="mtn-h2" style="margin:0;">📊 Acessos às suas páginas</h2><p class="plano-meta" style="margin:4px 0 0;">Link da bio, mentoria, palestras, aulas e Raio-X. Quem preenche um formulário passa a ser reconhecido — e as visitas dele aparecem em "Contatos que voltaram".</p></div>
+  el.innerHTML = `<div class="mta-topo"><div><h2 class="mtn-h2" style="margin:0;">📊 Acessos ${mtnModo() === 'comunicacao-impacto' ? 'à página da Comunicação de Impacto' : 'às suas páginas'}</h2><p class="plano-meta" style="margin:4px 0 0;">${mtnModo() === 'comunicacao-impacto' ? 'Só as visitas da página /comunicacao e de quem passou por ela.' : 'Link da bio, mentoria, palestras, aulas e Raio-X.'} Quem preenche um formulário passa a ser reconhecido — e as visitas dele aparecem em "Contatos que voltaram".</p></div>
       <div class="mtn-filtros">${[7, 30, 90].map(n => `<button class="${MTACS.dias === n ? 'on' : ''}" onclick="MTACS.dias=${n}; mtnCarregarAcessos()">${n} dias</button>`).join('')}</div></div>
     <div class="mta-kpis"><div><b>${t.visitantes}</b><small>pessoas</small></div><div><b>${t.visitas}</b><small>visitas</small></div><div><b>${t.cliques}</b><small>cliques</small></div><div><b>${t.cadastros}</b><small>cadastros · ${tx}%</small></div><div><b>${t.assistiram}</b><small>assistiram aula</small></div></div>
     <div class="mta-card"><b>Visitas por dia</b>${d.porDia.length ? `<div class="mta-barras">${d.porDia.map(x => `<div title="${x.dia.split('-').reverse().join('/')}: ${x.visitas} visitas, ${x.pessoas} pessoas"><i style="height:${Math.max(4, Math.round(x.visitas / maxDia * 100))}%"></i><small>${x.dia.slice(8)}</small></div>`).join('')}</div>` : '<p class="plano-meta">Ainda sem visitas no período. Compartilhe o link da bio: <b>' + escapeHtml(mtnBase()) + '/bio</b></p>'}</div>
@@ -15065,7 +15065,7 @@ async function mtnCarregarAcessos() {
       : '<p class="plano-meta">Ninguém cadastrado voltou ao site no período. Dica: ao responder um contato, envie o <b>🔗 link rastreado</b> dele (no botão 👣 Caminho em Solicitações) — quando ele abrir, aparece aqui.</p>'}
     </div>
     <div class="mta-card"><b>🔗 Links para divulgar (com origem)</b><p class="plano-meta" style="margin:2px 0 8px;">Use estes links em cada lugar para saber de onde vem cada visita.</p>
-      ${[['Bio do Instagram', '/bio?o=bio'], ['Stories / Direct', '/mentoria?o=instagram'], ['Status do WhatsApp', '/aula?o=whatsapp'], ['LinkedIn', '/palestra?o=linkedin'], ['Raio-X (qualquer lugar)', '/raio-x?o=divulgacao']].map(([r, u]) => `<div class="mta-linha"><span>${r}</span><code>${escapeHtml(mtnBase() + u)}</code><button class="mtn-bt" onclick="mtnCopiar('${escapeHtml(mtnBase() + u)}')">Copiar</button></div>`).join('')}</div>`;
+      ${(mtnModo() === 'comunicacao-impacto' ? [['Bio do Instagram (todas as mentorias)', '/mentorias?o=instagram'], ['Stories / Direct', '/comunicacao?o=stories'], ['Status do WhatsApp', '/comunicacao?o=whatsapp'], ['LinkedIn', '/comunicacao?o=linkedin'], ['Anúncio da Meta', '/comunicacao?o=anuncio'], ['RH e gestores (proposta)', '/comunicacao?o=rh&quero=empresa']] : [['Bio do Instagram', '/mentorias?o=instagram'], ['Stories / Direct', '/mentoria?o=instagram'], ['Status do WhatsApp', '/aula?o=whatsapp'], ['LinkedIn', '/palestra?o=linkedin'], ['Anúncio da Meta', '/mentorias?o=anuncio'], ['Raio-X (qualquer lugar)', '/raio-x?o=divulgacao']]).map(([r, u]) => `<div class="mta-linha"><span>${r}</span><code>${escapeHtml(mtnBase() + u)}</code><button class="mtn-bt" onclick="mtnCopiar('${escapeHtml(mtnBase() + u)}')">Copiar</button></div>`).join('')}</div>`;
 }
 // 👀 Quem entrou: lista de visitantes (anônimos ou já cadastrados) com o que viram e clicaram
 function mtaQuemEntrou(d) {
