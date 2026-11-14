@@ -13568,7 +13568,17 @@ db.run(`CREATE TABLE IF NOT EXISTS mentoria_checkins (codigo TEXT PRIMARY KEY, t
 const mtJson = v => { try { return JSON.parse(v || '{}') || {}; } catch (e) { return {}; } };
 const mtDig = v => String(v || '').replace(/\D/g, '');
 const mtHojeBr = () => new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10);
-function mtDataEncontro(t, i) { if (!t.inicio || !/^\d{4}-\d{2}-\d{2}/.test(t.inicio)) return ''; const x = new Date(t.inicio.slice(0, 10) + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + i * 7); return x.toISOString().slice(0, 10); }
+// data de cada encontro: a que o mentor definiu (dados.datas[n]); senão, 7 dias depois do encontro anterior
+function mtDataEncontro(t, i, prog) {
+    const ds = (mtJson(t.dados).datas) || {}, ns = prog && prog.encontros ? prog.encontros.map(e => e.n) : null, ok = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+    let atual = t.inicio && /^\d{4}-\d{2}-\d{2}/.test(t.inicio) ? t.inicio.slice(0, 10) : '';
+    for (let k = 0; k <= i; k++) {
+        const n = ns ? ns[k] : k + 1;
+        if (ok(ds[n])) atual = ds[n];
+        else if (k > 0 && atual) { const x = new Date(atual + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + 7); atual = x.toISOString().slice(0, 10); }
+    }
+    return atual;
+}
 async function mtAlunoPorToken(token) {
     if (!/^[a-f0-9]{32}$/.test(String(token || ''))) return null;
     return dbGet(`SELECT * FROM mentoria_alunos WHERE acesso_token = ?`, [token]).catch(() => null);
@@ -13577,7 +13587,7 @@ async function mtPainelAluno(a) {
     const d = await mtLer(), t = a.turma_id ? await dbGet(`SELECT * FROM mentoria_turmas WHERE id = ?`, [a.turma_id]).catch(() => null) : null;
     const pres = new Set((await dbAll(`SELECT encontro FROM mentoria_presencas WHERE aluno_id = ?`, [a.id]).catch(() => [])).map(r => Number(r.encontro)));
     const pr = mtJson(a.progresso), feitos = (t ? mtJson(t.dados).feitos : {}) || {}, hoje = mtHojeBr(), prog = mtProgramaDe(d, t);
-    const encontros = prog.encontros.map((s, i) => { const data = t ? mtDataEncontro(t, i) : ''; return { n: s.n, modulo: s.modulo, tema: s.tema, entregavel: s.entregavel, data, realizado: !!feitos[s.n] || !!(data && data < hoje) || pres.has(Number(s.n)), presente: pres.has(Number(s.n)), entregue: !!(pr.entregas || {})[s.n], nota: (pr.notas || {})[s.n] || '' }; });
+    const encontros = prog.encontros.map((s, i) => { const data = t ? mtDataEncontro(t, i, prog) : ''; return { n: s.n, modulo: s.modulo, tema: s.tema, entregavel: s.entregavel, data, realizado: !!feitos[s.n] || !!(data && data < hoje) || pres.has(Number(s.n)), presente: pres.has(Number(s.n)), entregue: !!(pr.entregas || {})[s.n], nota: (pr.notas || {})[s.n] || '' }; });
     // área do aluno: slides liberados pelo mentor, prazo do desafio, materiais enviados, avaliações e dúvidas
     const td = t ? mtJson(t.dados) : {}, lib = td.liberados || {}, prazos = td.prazos || {}, temSlides = (d.programas || []).some(x => x.id === prog.id);
     const msgs = await dbAll(`SELECT id, de, texto, anexo_url, anexo_nome, encontro, criado_em FROM mentoria_mensagens WHERE aluno_id = ? ORDER BY id`, [a.id]).catch(() => []);
