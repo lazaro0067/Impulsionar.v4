@@ -13468,6 +13468,8 @@ const MT_PADRAO = {
         { id: 'faturamento', nome: 'Faturamento do mês (R$)', meta: 15000 }
     ],
     registros: [],
+    // reencontrar quem visitou sem deixar contato: recado automático na volta ao site + Pixel da Meta (anúncio para quem visitou)
+    volta: { ativo: true, pixel: '' },
     links: { whatsappGrupo: '', meet: '', proximaAula: { data: '', tema: 'Os 5 indicadores que todo líder de operação precisa olhar', link: '' } },
     pagamentoOnline: true,
     raioX: [
@@ -14945,7 +14947,7 @@ app.post('/api/public/ev', async (req, res) => {
     try {
         if (!rsLimite(req)) return;
         const b = typeof req.body === 'object' && req.body ? req.body : {}, v = rsTxt(b.v, 40);
-        if (!/^[a-z0-9]{8,40}$/i.test(v) || !['visita', 'clique', 'video', 'cadastro'].includes(b.tipo)) return;
+        if (!/^[a-z0-9]{8,40}$/i.test(v) || !['visita', 'clique', 'video', 'cadastro', 'recado'].includes(b.tipo)) return;
         const ua = String(req.headers['user-agent'] || ''); if (/bot|crawler|spider|preview|facebookexternalhit|whatsapp\//i.test(ua)) return;
         let lead = mtLeadDoCodigo(b.l);
         if (!lead) { const x = await dbGet(`SELECT lead_id FROM site_eventos WHERE visitante = ? AND lead_id IS NOT NULL ORDER BY id DESC LIMIT 1`, [v]).catch(() => null); lead = x ? x.lead_id : null; }
@@ -14953,6 +14955,48 @@ app.post('/api/public/ev', async (req, res) => {
             [v, lead, b.tipo, rsTxt(b.pagina, 120), rsTxt(b.alvo, 200), rsOrigem(b, b.ref), rsTxt(b.ref, 200), /mobile|android|iphone/i.test(ua) ? 'celular' : 'computador', b.dados ? rsTxt(JSON.stringify(b.dados), 400) : null]);
         if (lead && mtLeadDoCodigo(b.l)) await rsLigarVisitante(v, lead);
     } catch (e) { /* rastreio nunca derruba nada */ }
+});
+// ---------- 📌 Recado na volta: quem visitou sem deixar contato vê uma mensagem quando volta ----------
+db.run(`CREATE TABLE IF NOT EXISTS site_recados (visitante TEXT PRIMARY KEY, texto TEXT, link TEXT, rotulo TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP, visto_em DATETIME)`);
+const VOLTA_OFERTAS = [
+    [/comunicacao/, 'pela Comunicação de Impacto para Líderes', '/comunicacao#oferta', 'Ver a oferta'],
+    [/mentoria(?!s)|inscric/, 'pela mentoria Do Chão à Gestão', '/mentoria#inscricao', 'Ver a mentoria'],
+    [/palestra/, 'pelas palestras para empresas', '/palestra#contratar', 'Pedir proposta'],
+    [/raio-x/, 'pelo Raio-X do Líder', '/raio-x', 'Fazer o Raio-X'],
+    [/aula/, 'pelas aulas gratuitas', '/aula', 'Ver as aulas'],
+    [/mentorias|bio/, 'pelas mentorias', '/mentorias', 'Ver as mentorias']
+];
+app.get('/api/public/volta', async (req, res) => {
+    try {
+        const d = await mtLer(), cfg = Object.assign({ ativo: true, pixel: '' }, d.volta || {}), v = String(req.query.v || ''), out = { pixel: /^\d{6,20}$/.test(cfg.pixel || '') ? cfg.pixel : '' };
+        if (!/^[a-z0-9]{8,40}$/i.test(v)) return res.json(out);
+        const lead = await dbGet(`SELECT id FROM mentoria_leads WHERE visitante = ? LIMIT 1`, [v]).catch(() => null);
+        const manual = await dbGet(`SELECT * FROM site_recados WHERE visitante = ? AND visto_em IS NULL`, [v]).catch(() => null);
+        if (manual) return res.json(Object.assign(out, { recado: { id: 'manual', texto: manual.texto, link: manual.link || '', rotulo: manual.rotulo || 'Ver agora' } }));
+        if (!cfg.ativo || lead) return res.json(out);
+        // automático: só para quem mostrou interesse, numa volta (sessão nova) e no máximo 1 vez a cada 3 dias
+        const h = await dbGet(`SELECT COUNT(CASE WHEN tipo='visita' THEN 1 END) visitas, GROUP_CONCAT(CASE WHEN tipo='clique' THEN alvo END, ' ') alvos, GROUP_CONCAT(pagina, ' ') paginas,
+            MAX(CASE WHEN tipo='recado' THEN criado_em END) ultRecado, MAX(CASE WHEN tipo='visita' AND criado_em < datetime('now', '-30 minutes') THEN criado_em END) antes FROM site_eventos WHERE visitante = ?`, [v]).catch(() => null);
+        if (!h || !h.antes) return res.json(out);
+        if (h.ultRecado && Date.now() - new Date(String(h.ultRecado).replace(' ', 'T') + 'Z') < 3 * 864e5) return res.json(out);
+        const alvos = String(h.alvos || ''), interesse = /quero|vaga|inscri|proposta|garantir|participar|formul/i.test(alvos) || h.visitas >= 3;
+        if (!interesse) return res.json(out);
+        const pags = String(h.paginas || '') + ' ' + alvos, of = VOLTA_OFERTAS.find(([re]) => re.test(pags)) || VOLTA_OFERTAS[VOLTA_OFERTAS.length - 1];
+        res.json(Object.assign(out, { recado: { id: 'auto', texto: `Que bom te ver de novo! Vi que você se interessou ${of[1]}. Ficou alguma dúvida? Me chama no WhatsApp que eu te respondo pessoalmente.`, link: of[2], rotulo: of[3] } }));
+    } catch (e) { res.json({}); }
+});
+app.post('/api/public/volta/visto', async (req, res) => {
+    const v = String((req.body || {}).v || ''); if (/^[a-z0-9]{8,40}$/i.test(v)) await mtRun(`UPDATE site_recados SET visto_em = CURRENT_TIMESTAMP WHERE visitante = ? AND visto_em IS NULL`, [v]).catch(() => {});
+    res.json({ ok: true });
+});
+app.post('/api/admin/mentoria/recado', requireRole('admin'), async (req, res) => {
+    const b = req.body || {}, v = String(b.visitante || '');
+    if (!/^[a-z0-9]{8,40}$/i.test(v)) return res.status(400).json({ error: 'Visitante inválido.' });
+    if (b.apagar) { await mtRun(`DELETE FROM site_recados WHERE visitante = ?`, [v]).catch(() => {}); return res.json({ ok: true }); }
+    const texto = mtTxt(b.texto, 400); if (texto.length < 5) return res.status(400).json({ error: 'Escreva o recado.' });
+    await mtRun(`INSERT INTO site_recados (visitante, texto, link, rotulo) VALUES (?,?,?,?) ON CONFLICT(visitante) DO UPDATE SET texto = excluded.texto, link = excluded.link, rotulo = excluded.rotulo, criado_em = CURRENT_TIMESTAMP, visto_em = NULL`,
+        [v, texto, /^\/[a-z0-9\-\/#?=&]*$/i.test(b.link || '') ? b.link : '', mtTxt(b.rotulo, 40)]);
+    res.json({ ok: true });
 });
 // ---------- painel de acessos (Master) ----------
 app.get('/api/admin/mentoria/acessos', requireRole('admin'), async (req, res) => {
@@ -14986,6 +15030,9 @@ app.get('/api/admin/mentoria/acessos', requireRole('admin'), async (req, res) =>
             x.interesse = /quero|vaga|inscri|pagamento|proposta|garantir|participar/i.test(a) ? 'alto' : /whatsapp/i.test(a) ? 'whatsapp' : (x.visitas >= 3 || x.videos) ? 'medio' : 'baixo';
             x.apelido = 'Visitante ' + String(x.visitante).slice(-4).toUpperCase();
         });
+        const rec = vis.length ? await dbAll(`SELECT visitante, texto, criado_em, visto_em FROM site_recados WHERE visitante IN (${vis.map(() => '?').join(',')})`, vis).catch(() => []) : [];
+        const viu = vis.length ? await dbAll(`SELECT visitante, MAX(criado_em) quando, GROUP_CONCAT(alvo, ' ') alvos FROM site_eventos WHERE tipo = 'recado' AND visitante IN (${vis.map(() => '?').join(',')}) GROUP BY visitante`, vis).catch(() => []) : [];
+        pessoas.forEach(x => { x.recado = rec.find(r => r.visitante === x.visitante) || null; const w = viu.find(r => r.visitante === x.visitante); if (w) x.recadoVisto = { quando: w.quando, clicou: /clicou/.test(w.alvos || '') }; });
         res.json({ dias, total: Object.assign({ visitas: 0, visitantes: 0, cliques: 0, assistiram: 0 }, tot || {}, { cadastros: (leads || {}).n || 0 }), porDia, paginas, origens, cliques, dispositivos, quentes, aulas, pessoas });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });

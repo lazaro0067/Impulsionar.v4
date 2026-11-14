@@ -61,3 +61,31 @@ document.addEventListener('click', ev => {
   const alvo = /wa\.me|whatsapp/.test(href) ? 'WhatsApp: ' + txt : /instagram\.com/.test(href) ? 'Instagram: ' + txt : href && !href.startsWith('#') ? txt + ' → ' + href.replace(location.origin, '').slice(0, 80) : txt;
   if (alvo) mtEvento('clique', alvo);
 }, true);
+
+/* ---------- Recado na volta + Pixel da Meta (com aviso de cookies) ---------- */
+(async () => {
+  let r = {}; try { r = await (await fetch('/api/public/volta?v=' + encodeURIComponent(mtVisitante()), { cache: 'no-store' })).json(); } catch (e) { return; }
+  if (r.pixel) mtPixel(r.pixel);
+  if (!r.recado) return;
+  const espera = () => new Promise(ok => { const t = () => (MT.dados ? ok() : setTimeout(t, 300)); t(); });
+  await espera(); await new Promise(ok => setTimeout(ok, 2500));
+  const x = r.recado, zap = mtWhats('Olá, Lázaro! Voltei no seu site e fiquei com uma dúvida.');
+  const el = document.createElement('div'); el.className = 'mt-recado';
+  el.innerHTML = `<style>.mt-recado{position:fixed;left:16px;right:16px;bottom:16px;max-width:420px;margin-left:auto;z-index:9999;background:#fff;color:#0f172a;border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.35);padding:16px 16px 14px;font-family:Montserrat,system-ui,sans-serif;animation:mtr .35s ease}@keyframes mtr{from{transform:translateY(30px);opacity:0}}.mt-recado b{display:block;font-size:15px;margin:0 26px 6px 0}.mt-recado p{margin:0 0 12px;font-size:14px;color:#334155;line-height:1.4}.mt-recado .bts{display:flex;gap:8px;flex-wrap:wrap}.mt-recado a{flex:1;text-align:center;text-decoration:none;font-weight:800;font-size:14px;border-radius:12px;padding:11px 12px}.mt-recado .z{background:#22c55e;color:#fff}.mt-recado .o{background:#f59e0b;color:#0b1329}.mt-recado .x{position:absolute;top:8px;right:10px;border:none;background:none;font-size:20px;color:#94a3b8;cursor:pointer}</style>
+    <button class="x" aria-label="Fechar">✕</button><b>👋 ${mtEsc((MT.dados.marca || {}).mentor || 'Lázaro Neto')}</b><p>${mtEsc(x.texto)}</p>
+    <div class="bts">${zap ? `<a class="z" href="${zap}" target="_blank" rel="noopener">💬 Falar no WhatsApp</a>` : ''}${x.link && x.link.split('#')[0] !== location.pathname ? `<a class="o" href="${mtEsc(x.link)}">${mtEsc(x.rotulo || 'Ver agora')}</a>` : ''}</div>`;
+  document.body.appendChild(el);
+  mtEvento('recado', 'viu: ' + x.id);
+  if (x.id === 'manual') fetch('/api/public/volta/visto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ v: mtVisitante() }) }).catch(() => {});
+  el.querySelector('.x').onclick = () => el.remove();
+  el.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mtEvento('recado', 'clicou: ' + (a.classList.contains('z') ? 'WhatsApp' : x.rotulo)), true));
+})();
+function mtPixel(id) {
+  const ligar = () => { if (window.fbq) return; !function (f, b, e, v, n, t, s) { if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); }; if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = []; t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s); }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js'); fbq('init', id); fbq('track', 'PageView'); };
+  let ok = null; try { ok = localStorage.getItem('mt_cookies'); } catch (e) {}
+  if (ok === 'sim') return ligar(); if (ok === 'nao') return;
+  const c = document.createElement('div');
+  c.innerHTML = `<div style="position:fixed;left:12px;right:12px;top:12px;max-width:560px;margin:0 auto;z-index:9998;background:#0b1329;color:#e2e8f0;border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:12px 14px;font:13px Montserrat,system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap;box-shadow:0 10px 30px rgba(0,0,0,.4)"><span style="flex:1;min-width:200px">Usamos cookies para medir as visitas e mostrar conteúdo relevante para você no Instagram e no Facebook.</span><button data-r="sim" style="border:none;border-radius:10px;padding:8px 14px;font-weight:800;background:#f59e0b;color:#0b1329;cursor:pointer">Aceitar</button><button data-r="nao" style="border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:8px 12px;font-weight:700;background:none;color:#e2e8f0;cursor:pointer">Agora não</button></div>`;
+  c.querySelectorAll('button').forEach(bt => bt.onclick = () => { try { localStorage.setItem('mt_cookies', bt.dataset.r); } catch (e) {} c.remove(); if (bt.dataset.r === 'sim') ligar(); });
+  document.body.appendChild(c);
+}

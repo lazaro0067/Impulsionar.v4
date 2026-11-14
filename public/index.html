@@ -1968,6 +1968,9 @@
   .mtn-mini { font:inherit; font-size:11.5px; font-weight:700; border:1px solid #cbd5e1; background:#fff; border-radius:7px; padding:3px 7px; cursor:pointer; width:auto; } .mtn-mini.add { border-style:dashed; color:#7c3aed; border-color:#a78bfa; }
   .mtn-libbt { background:#fff !important; color:#0b1329 !important; border-color:#cbd5e1 !important; } .mtn-libbt.on { background:#dcfce7 !important; border-color:#16a34a !important; color:#166534 !important; }
   .mtn-prazo { grid-column:1 / -1; margin-top:6px; display:flex; flex-direction:column; gap:3px; align-items:stretch; font-size:11.5px; font-weight:700; color:#475569; } .mtn-prazo input { font:inherit; font-size:12px; padding:4px 6px; border:1px solid #cbd5e1; border-radius:6px; width:100%; min-width:0; margin:0; }
+  .mta-volta { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 12px; } @media (max-width:800px) { .mta-volta { grid-template-columns:1fr; } }
+  .mta-volta-op { display:flex; gap:10px; align-items:flex-start; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; flex-direction:column; } label.mta-volta-op { flex-direction:row; cursor:pointer; } .mta-volta-op input[type=checkbox] { width:20px; height:20px; margin:2px 0 0; flex:none; accent-color:#16a34a; } .mta-volta-op b { display:block; } .mta-volta-op small { display:block; color:#64748b; font-size:12px; }
+  .mta-rec { font-size:11.5px; font-weight:700; color:#92400e; background:#fef3c7; border-radius:999px; padding:3px 9px; margin-right:6px; } .mta-rec.ok { color:#166534; background:#dcfce7; }
   .mta-pessoa { display:flex; gap:12px; align-items:center; padding:10px 0; border-top:1px solid #f1f5f9; flex-wrap:wrap; } .mta-pessoa .mta-av { width:38px; height:38px; border-radius:50%; background:#e2e8f0; display:grid; place-items:center; font-weight:800; flex:none; } .mta-pessoa.conhecido .mta-av { background:#dcfce7; color:#166534; }
   .mta-p-info { flex:1; min-width:220px; } .mta-p-info small { display:block; color:#64748b; font-size:12px; } .mta-p-info b small { display:inline; color:#64748b; font-weight:600; } .mta-p-pags { color:#475569 !important; }
   .mta-int { font-size:11px; font-weight:800; border-radius:999px; padding:2px 8px; } .mta-int.alto { background:#fee2e2; color:#991b1b; } .mta-int.zap { background:#dcfce7; color:#166534; } .mta-int.med { background:#fef3c7; color:#92400e; } .mta-anon { font-size:12px; color:#94a3b8; font-weight:700; }
@@ -2189,7 +2192,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 14/11 (3)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 14/11 (4)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -15069,16 +15072,39 @@ function mtaQuemEntrou(d) {
   const nC = (d.pessoas || []).filter(x => x.contato).length, nQ = (d.pessoas || []).filter(x => x.interesse !== 'baixo').length;
   const selo = { alto: '<span class="mta-int alto">🔥 clicou para comprar</span>', whatsapp: '<span class="mta-int zap">💬 clicou no WhatsApp</span>', medio: '<span class="mta-int med">👀 voltou várias vezes</span>', baixo: '' };
   const disp = x => /cel|mobile|android|iphone/i.test(x || '') ? '📱 celular' : x ? '💻 computador' : '';
-  return `<div class="mta-card"><b>👀 Quem entrou</b><p class="plano-meta" style="margin:2px 0 10px;">Cada pessoa que abriu suas páginas no período. Quem já deixou nome e WhatsApp aparece com o nome e o botão para chamar (abre o seu WhatsApp normal, não precisa do WhatsApp Business). Quem não deixou contato aparece como visitante anônimo: o Instagram e o navegador não informam quem é.</p>
+  const vc = Object.assign({ ativo: true, pixel: '' }, MTN.d.volta || {});
+  return `<div class="mta-card"><b>👀 Quem entrou</b><p class="plano-meta" style="margin:2px 0 10px;">Cada pessoa que abriu suas páginas no período. Quem já deixou nome e WhatsApp aparece com o nome e o botão para chamar (abre o seu WhatsApp normal, não precisa do WhatsApp Business). Quem não deixou contato aparece como visitante anônimo: o Instagram e o navegador não informam quem é, então não dá para mandar mensagem. Mas dá para falar com ele quando ele voltar: 👇</p>
+    <div class="mta-volta">
+      <label class="mta-volta-op"><input type="checkbox" ${vc.ativo ? 'checked' : ''} onchange="mtaVoltaSalvar({ ativo: this.checked })"><span><b>🔁 Recado automático na volta</b><small>Quem mostrou interesse (clicou para comprar ou voltou 3+ vezes) e ainda não deixou contato vê, ao voltar ao site, uma mensagem sua com o botão do WhatsApp e o link da oferta que olhou. No máximo 1 vez a cada 3 dias.</small></span></label>
+      <div class="mta-volta-op"><span><b>📣 Pixel da Meta</b><small>Para anunciar no Instagram e no Facebook só para quem visitou suas páginas (público personalizado no Gerenciador de Anúncios). Aparece um aviso de cookies e o Pixel só liga para quem aceitar.</small></span><div style="display:flex;gap:6px;margin-top:6px;"><input id="mta-pixel" placeholder="ID do Pixel (só números)" value="${escapeHtml(vc.pixel || '')}" style="margin:0;max-width:240px;"><button class="mtn-bt" onclick="mtaVoltaSalvar({ pixel: document.getElementById('mta-pixel').value.replace(/\D/g, '') })">Salvar</button></div></div>
+    </div>
     <div class="mtn-filtros" style="margin-bottom:8px;">${[['todos', 'Todos', (d.pessoas || []).length], ['quentes', '🔥 Com interesse', nQ], ['contatos', '📇 Com contato', nC]].map(([k, r, n]) => `<button class="${(MTACS.quem || 'todos') === k ? 'on' : ''}" onclick="MTACS.quem='${k}'; mtnCarregarAcessos()">${r} <small>${n}</small></button>`).join('')}</div>
     ${P.length ? P.map(x => { const c = x.contato, pags = String(x.paginas || '').split(',').filter(Boolean).map(mtaPag), alvos = String(x.alvos || '').split(',').filter(Boolean);
       return `<div class="mta-pessoa ${c ? 'conhecido' : ''}"><div class="mta-av">${c ? escapeHtml(String(c.nome || '?').trim().charAt(0).toUpperCase()) : '👤'}</div>
         <div class="mta-p-info"><b>${c ? escapeHtml(c.nome || 'Contato') + (c.empresa ? ` <small>· ${escapeHtml(c.empresa)}</small>` : '') : escapeHtml(x.apelido) + ' <small>· anônimo</small>'}</b> ${selo[x.interesse] || ''}
           <small>${escapeHtml(mtnQuando(x.ultimo))} · ${MTA_ORIGEM[x.origem] || (x.origem ? escapeHtml(x.origem) : '🔗 Link direto')} · ${disp(x.dispositivo)} · ${x.visitas} visita(s)${x.cliques ? ` · ${x.cliques} clique(s)` : ''}${x.videos ? ` · assistiu aula` : ''}</small>
           <small class="mta-p-pags">Viu: ${escapeHtml(pags.join(', ') || '—')}${alvos.length ? ` · Clicou: ${escapeHtml(alvos.slice(0, 4).join(' · ').slice(0, 160))}` : ''}</small></div>
-        <div class="mta-bts">${c ? `<button class="mtn-bt" onclick="mtnCaminho(${c.id})">👣 Caminho</button>${c.whatsapp ? `<a class="mtn-bt zap" target="_blank" rel="noopener" href="https://wa.me/${mtnNum(c)}?text=${encodeURIComponent(mtnMsgRetorno({ nome: c.nome, paginas: x.paginas }))}" onclick="api('/api/admin/mentoria/leads/${c.id}/retorno', { method: 'POST' }).catch(() => {})">💬 Chamar no WhatsApp</a>` : ''}` : `<span class="mta-anon" title="Sem nome e WhatsApp não dá para chamar. Ele aparece com nome quando preenche um formulário ou abre um link rastreado.">sem contato</span>`}</div></div>`; }).join('')
+        <div class="mta-bts">${c ? `<button class="mtn-bt" onclick="mtnCaminho(${c.id})">👣 Caminho</button>${c.whatsapp ? `<a class="mtn-bt zap" target="_blank" rel="noopener" href="https://wa.me/${mtnNum(c)}?text=${encodeURIComponent(mtnMsgRetorno({ nome: c.nome, paginas: x.paginas }))}" onclick="api('/api/admin/mentoria/leads/${c.id}/retorno', { method: 'POST' }).catch(() => {})">💬 Chamar no WhatsApp</a>` : ''}` : `${x.recado ? `<span class="mta-rec ${x.recado.visto_em ? 'ok' : ''}" title="${escapeHtml(x.recado.texto)}">${x.recado.visto_em ? '✅ viu o recado ' + escapeHtml(mtnQuando(x.recado.visto_em)) : '📌 recado esperando ele voltar'}</span>` : x.recadoVisto ? `<span class="mta-rec ok">${x.recadoVisto.clicou ? '👆 clicou no recado automático' : '👀 viu o recado automático'}</span>` : ''}<button class="mtn-bt" onclick="mtaRecado('${escapeHtml(x.visitante)}', '${escapeHtml(x.apelido)}')">📌 ${x.recado ? 'Trocar recado' : 'Recado na volta'}</button>`}</div></div>`; }).join('')
       : '<p class="plano-meta">Ninguém neste filtro no período.</p>'}
   </div>`;
+}
+async function mtaVoltaSalvar(mud) {
+  const v = Object.assign({ ativo: true, pixel: '' }, MTN.d.volta || {}, mud);
+  try { await api('/api/admin/mentoria', { method: 'PUT', body: JSON.stringify({ volta: v }) }); MTN.d.volta = v; mostrarToast(mud.pixel !== undefined ? (v.pixel ? '✅ Pixel salvo. As páginas já carregam (para quem aceitar os cookies).' : 'Pixel removido.') : v.ativo ? '✅ Recado automático ligado.' : 'Recado automático desligado.'); } catch (e) { mostrarToast(e.message, true); }
+}
+function mtaRecado(v, apelido) {
+  const p = (MTACS.d.pessoas || []).find(x => x.visitante === v) || {}, pags = String(p.paginas || '') + ' ' + String(p.alvos || '');
+  const ofs = [['/comunicacao#oferta', 'Ver a oferta', 'a Comunicação de Impacto'], ['/mentoria#inscricao', 'Ver a mentoria', 'a mentoria Do Chão à Gestão'], ['/palestra#contratar', 'Pedir proposta', 'as palestras para empresas'], ['/mentorias', 'Ver as mentorias', 'as mentorias']];
+  const sug = ofs.find(o => pags.includes(o[0].split('#')[0])) || ofs[3];
+  const atual = p.recado;
+  mtnModal(`<h3 style="margin-top:0;">📌 Recado para ${escapeHtml(apelido)}</h3><p class="plano-meta">Aparece para essa pessoa na próxima vez que ela abrir qualquer página sua, com o botão do seu WhatsApp e o link abaixo. Some depois que ela vê.</p>
+    <label>Mensagem<textarea id="mtr-txt" rows="4">${escapeHtml(atual ? atual.texto : `Oi! Vi que você olhou ${sug[2]}. Esta semana ainda tenho vaga e posso tirar qualquer dúvida pelo WhatsApp. Quer conversar?`)}</textarea></label>
+    <label>Botão leva para<select id="mtr-link">${ofs.map(o => `<option value="${o[0]}|${o[1]}" ${o === sug ? 'selected' : ''}>${o[1]} · ${o[2]}</option>`).join('')}</select></label>
+    <div class="acoes-form">${atual ? `<button class="btn-secundario" onclick="mtaRecadoSalvar('${escapeHtml(v)}', true)">🗑️ Apagar recado</button>` : ''}<button class="btn-secundario" onclick="mtnModal('')">Cancelar</button><button class="btn-primario" style="width:auto;" onclick="mtaRecadoSalvar('${escapeHtml(v)}')">📌 Deixar recado</button></div>`);
+}
+async function mtaRecadoSalvar(v, apagar) {
+  const [link, rotulo] = (document.getElementById('mtr-link') || {}).value ? document.getElementById('mtr-link').value.split('|') : ['', ''];
+  try { await api('/api/admin/mentoria/recado', { method: 'POST', body: JSON.stringify(apagar ? { visitante: v, apagar: true } : { visitante: v, texto: document.getElementById('mtr-txt').value, link, rotulo }) }); mtnModal(''); mostrarToast(apagar ? 'Recado apagado.' : '📌 Recado deixado. Ele vê quando voltar ao site.'); mtnCarregarAcessos(); } catch (e) { mostrarToast(e.message, true); }
 }
 function mtnMsgRetorno(q) {
   const pg = /mentoria|inscric/.test(q.paginas || '') ? 'a página da mentoria Do Chão à Gestão' : /palestra/.test(q.paginas || '') ? 'a página de palestras' : /aula/.test(q.paginas || '') ? 'as nossas aulas gratuitas' : /raio-x/.test(q.paginas || '') ? 'o Raio-X do Líder' : 'o nosso site';
