@@ -36,6 +36,21 @@
   .kit li { margin:6px 0; } .mentor { display:flex; gap:16px; align-items:center; } .mentor img { width:76px; height:76px; border-radius:50%; object-fit:cover; object-position:center 25%; border:3px solid var(--ambar); }
   .erro-tela { min-height:70vh; display:grid; place-items:center; text-align:center; padding:30px; }
   .codigo { display:flex; gap:8px; margin-top:10px; } .codigo input { flex:1; font:inherit; padding:12px; border:1.5px solid var(--linha); border-radius:12px; }
+  .foto-perfil { position:relative; width:76px; height:76px; border-radius:50%; overflow:hidden; border:3px solid var(--ambar); background:rgba(255,255,255,.1); display:grid; place-items:center; font-size:32px; cursor:pointer; flex:0 0 auto; }
+  .foto-perfil img { width:100%; height:100%; object-fit:cover; } .foto-perfil i { position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,.6); color:#fff; font-size:10px; font-style:normal; font-weight:800; text-align:center; padding:2px 0; }
+  .ola { display:flex; gap:16px; align-items:center; margin:14px 0 8px; } .ola h1 { margin:0 !important; }
+  .acoes-enc { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; } .acoes-enc .bt { font-size:13px; padding:8px 14px; }
+  .prazo { display:inline-flex; gap:6px; align-items:center; font-size:12.5px; font-weight:800; border-radius:999px; padding:3px 10px; background:#e0f2fe; color:#075985; margin-top:6px; } .prazo.atrasado { background:#fee2e2; color:#991b1b; } .prazo.ok { background:#dcfce7; color:#166534; }
+  .mats { margin:8px 0 0; padding:0; list-style:none; font-size:13px; } .mats li { margin:4px 0; } .mats a { color:var(--navy); font-weight:700; }
+  .chat { background:#fff; border:1px solid var(--linha); border-radius:18px; padding:14px; max-height:440px; overflow:auto; display:flex; flex-direction:column; gap:8px; }
+  .msg { max-width:82%; border-radius:16px; padding:10px 13px; font-size:14.5px; line-height:1.4; white-space:pre-wrap; } .msg small { display:block; font-size:11px; opacity:.65; margin-top:4px; }
+  .msg.aluno { align-self:flex-end; background:var(--navy); color:#fff; border-bottom-right-radius:4px; } .msg.mentor { align-self:flex-start; background:#fef3c7; color:#422006; border-bottom-left-radius:4px; }
+  .msg a { color:inherit; font-weight:800; }
+  .envio { display:grid; grid-template-columns:1fr auto; gap:8px; margin-top:10px; } .envio textarea { font:inherit; border:1.5px solid var(--linha); border-radius:12px; padding:10px; min-height:52px; resize:vertical; }
+  .modal-fundo { position:fixed; inset:0; background:rgba(2,6,23,.6); display:grid; place-items:center; z-index:50; padding:14px; } .av-modal { background:#fff; border-radius:20px; padding:20px; width:min(560px,100%); max-height:92vh; overflow:auto; }
+  .notas { display:grid; grid-template-columns:repeat(11,1fr); gap:4px; margin:10px 0 14px; } .notas button { font:inherit; font-weight:900; border:1.5px solid var(--linha); background:#fff; border-radius:10px; padding:9px 0; cursor:pointer; } .notas button.on { background:var(--ambar); border-color:var(--ambar); color:var(--navy); }
+  @media (max-width:500px) { .notas { grid-template-columns:repeat(6,1fr); } }
+  .av-modal label { display:grid; gap:5px; font-size:13.5px; font-weight:700; margin:10px 0; } .av-modal textarea { font:inherit; font-size:14px; border:1.5px solid var(--linha); border-radius:10px; padding:9px 10px; min-height:58px; resize:vertical; }
 </style>
 </head>
 <body>
@@ -63,10 +78,11 @@ function desenhar() {
   const pct = Math.round(((R.realizados ? R.realizados : 0) / R.total) * 100), pg = P.programa || { unidade: 'semana', principal: true }, ENC = pg.unidade === 'encontro', U = ENC ? 'Encontro' : 'Semana', Us = ENC ? 'encontros' : 'semanas', ind = pg.indicador || {};
   document.title = `Área do Aluno · ${a.primeiroNome}`;
   document.getElementById('app').innerHTML = `<header class="topo"><div class="cx"><a class="marca" href="#"><i>V4</i>Área do Aluno</a>
-      <nav><a href="#jornada">Minha jornada</a><a href="#indicador">Meu indicador</a><a href="#kit">Kit</a></nav>${t.grupo ? `<a class="bt ambar peq" href="${esc(t.grupo)}" target="_blank" rel="noopener">💬 Grupo da turma</a>` : ''}</div></header>
+      <nav><a href="#jornada">Minha jornada</a><a href="#duvidas">Dúvidas</a><a href="#indicador">Meu indicador</a><a href="#avaliar">Avaliar</a></nav>${t.grupo ? `<a class="bt ambar peq" href="${esc(t.grupo)}" target="_blank" rel="noopener">💬 Grupo da turma</a>` : ''}</div></header>
     <section class="hero"><div class="cx"><div>
       <span class="selo">🎓 ${esc(m.mentoria)} · ${esc(t.nome || 'Mentoria')}</span>
-      <h1>Olá, ${esc(a.primeiroNome)}! 👋</h1>
+      <div class="ola"><div class="foto-perfil" onclick="document.getElementById('in-foto').click()" title="Trocar foto">${a.foto ? `<img src="${esc(a.foto)}" alt="">` : '🙂'}<i>${a.foto ? 'trocar' : 'colocar foto'}</i></div><h1>Olá, ${esc(a.primeiroNome)}! 👋</h1></div>
+      <input type="file" id="in-foto" accept="image/*" style="display:none" onchange="enviarFoto(this.files[0])">
       <p class="sub" style="margin-bottom:0;">Aqui você acompanha sua jornada de ${R.total} ${Us}: encontros, presença, tarefas e a evolução do seu indicador.</p>
       <div class="kpis"><div><b>${R.presencas}/${R.realizados || 0}</b><small>presenças</small></div><div><b>${R.entregas}/${R.total}</b><small>tarefas entregues</small></div><div><b>${R.presencaPct}%</b><small>frequência</small></div></div>
     </div><div><div class="anel" style="--p:${pct}"><div><span><b>${R.realizados}</b><small>de ${R.total} ${Us}</small></span></div></div></div></div></section>
@@ -82,9 +98,21 @@ function desenhar() {
         return `<div class="enc ${st}"><div class="num">${e.presente ? '✓' : e.n}</div><div>
           <div class="top"><b>${U} ${e.n} · ${esc(e.modulo)}</b>${e.presente ? '<span class="tag ok">✅ Presente</span>' : e.realizado ? '<span class="tag no">Faltou</span>' : st === 'proximo' ? '<span class="tag prox">Próximo</span>' : ''}${x ? `<span class="tag">${x.br}</span>` : ''}</div>
           <p>${esc(e.tema)}</p>
-          <div class="tarefa"><label><input type="checkbox" ${e.entregue ? 'checked' : ''} onchange="salvarTarefa(${e.n}, this.checked)"><span>📎 Tarefa: ${esc(e.entregavel)}</span></label>
+          <div class="tarefa"><label><input type="checkbox" ${e.entregue ? 'checked' : ''} onchange="salvarTarefa(${e.n}, this.checked)"><span>🎯 Desafio: ${esc(e.entregavel)}</span></label>
+            ${e.prazo ? (() => { const atr = !e.entregue && e.prazo < hoje; return `<span class="prazo ${e.entregue ? 'ok' : atr ? 'atrasado' : ''}">📅 ${e.entregue ? 'Entregue' : atr ? 'Prazo vencido' : 'Enviar até'} ${dt(e.prazo).br}</span>`; })() : ''}
+            ${(e.materiais || []).length ? `<ul class="mats">${e.materiais.map(m => `<li>📎 <a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.nome)}</a></li>`).join('')}</ul>` : ''}
+            <div class="acoes-enc">${e.liberado ? `<a class="bt escuro" href="/aluno/${TOKEN}/encontro/${e.n}">📖 Ver os slides</a>` : ''}<button class="bt ambar" onclick="escolherMaterial(${e.n})">📤 Enviar material ao mentor</button>${e.realizado || e.liberado ? `<button class="bt claro" onclick="avaliar(${e.n})">${e.avaliacao ? '⭐ ' + e.avaliacao.nota + '/10 · editar' : '⭐ Avaliar'}</button>` : ''}</div>
+            <small class="salvo" id="env-${e.n}"></small>
             <textarea placeholder="Como foi aplicar no seu time? (o mentor lê antes do próximo encontro)" onchange="salvarNota(${e.n}, this.value, this)">${esc(e.nota)}</textarea><small class="salvo" id="salvo-${e.n}"></small></div>
         </div></div>`; }).join('')}</div>
+    </div></section>
+    <section id="duvidas"><div class="cx"><div class="titulo"><small>Durante o programa</small><h2>💬 Dúvidas com o mentor</h2><p>Escreva aqui a sua dúvida sobre o conteúdo, o desafio ou uma situação com o time. O mentor responde por aqui mesmo.</p></div>
+      <div class="chat" id="chat">${(P.mensagens || []).length ? P.mensagens.map(msgHtml).join('') : '<p style="color:var(--cinza);margin:6px;">Nenhuma mensagem ainda. Mande a sua primeira dúvida! 👇</p>'}</div>
+      <div class="envio"><textarea id="duvida" placeholder="Escreva a sua dúvida…"></textarea><button class="bt ambar" onclick="enviarDuvida(this)">Enviar</button></div>
+      <input type="file" id="in-mat" style="display:none" onchange="enviarMaterial(this.files[0])">
+    </div></section>
+    <section id="avaliar"><div class="cx"><div class="titulo"><small>Sua opinião</small><h2>⭐ Avalie o treinamento</h2><p>A sua avaliação ajuda o mentor a melhorar os próximos encontros.</p></div>
+      <div class="card" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;"><div style="flex:1;min-width:220px;">${P.avaliacaoGeral ? `<b>Sua nota: ${P.avaliacaoGeral.nota}/10</b><p style="margin:4px 0 0;">${esc(P.avaliacaoGeral.comentario || 'Obrigado pela avaliação!')}</p>` : '<b>De 0 a 10, quanto este treinamento está ajudando você?</b>'}</div><button class="bt escuro" onclick="avaliar(0)">${P.avaliacaoGeral ? 'Editar avaliação' : 'Avaliar agora'}</button></div>
     </div></section>
     <section class="alt" id="indicador"><div class="cx"><div class="titulo"><small>Resultado</small><h2>Meu indicador</h2><p>${esc(ind.dica || 'Escolha o principal indicador do seu time (ex.: produtividade, absenteísmo, devoluções). Anote como estava no começo e como está agora.')}</p></div>
       <div class="card"><div class="ind"><label>Indicador<input id="i-nome" value="${esc(P.indicador.nome)}" placeholder="${esc(ind.nome ? 'Ex.: ' + ind.nome : 'Ex.: Produtividade (caixas/h)')}"></label><label>${ENC ? 'No 1º encontro' : 'Antes da mentoria'}<input id="i-antes" value="${esc(P.indicador.antes)}" placeholder="${esc(ind.antes || 'Ex.: 180')}"></label><label>Hoje<input id="i-depois" value="${esc(P.indicador.depois)}" placeholder="${esc(ind.depois || 'Ex.: 215')}"></label></div>
@@ -93,7 +121,7 @@ function desenhar() {
     <section id="kit"><div class="cx"><div class="grade g2">
       <div class="card"><h3>🧰 Seu kit de ferramentas</h3><ul class="kit">${P.kit.map(k => `<li>${esc(k)}</li>`).join('')}</ul><p style="font-size:13px;">Os arquivos são enviados no grupo da turma, encontro a encontro.</p></div>
       <div class="card"><div class="mentor">${m.foto ? `<img src="${esc(m.foto === '/mentoria-foto.jpg' ? '/mentoria-foto-perfil.jpg' : m.foto)}" alt="">` : ''}<div><h3 style="margin:0;">${esc(m.nome)}</h3><p>Consultor · ${esc(m.empresa || 'Impulsionar V4')}</p></div></div>
-        <p style="margin:14px 0;">Dúvida sobre uma tarefa ou uma situação com o time? Me chama.</p>
+        <p style="margin:14px 0;">Dúvida sobre uma tarefa ou uma situação com o time? Escreva em <a href="#duvidas"><b>Dúvidas com o mentor</b></a> ou me chame no WhatsApp.</p>
         ${wa(m.whatsapp) ? `<a class="bt ambar peq" href="${wa(m.whatsapp, `Olá, Lázaro! Sou ${a.nome}, da ${t.nome || 'mentoria'}.`)}" target="_blank" rel="noopener">💬 Falar com o mentor</a>` : ''}</div>
     </div></div></section>
     <footer class="rodape"><div class="cx"><div><b style="color:#fff">${esc(m.nome)}</b> · Consultor ${esc(m.empresa || 'Impulsionar V4')}<br>${pg.principal === false ? 'Programa' : 'Mentoria'} ${esc(m.mentoria)}</div>
@@ -103,6 +131,47 @@ async function enviar(corpo) { const r = await fetch('/api/public/aluno/' + TOKE
 async function salvarTarefa(n, ok) { try { await enviar({ encontro: n, entregue: ok }); const e = P.encontros.find(x => x.n === n); e.entregue = ok; P.resumo.entregas += ok ? 1 : -1; const s = document.getElementById('salvo-' + n); if (s) s.textContent = ok ? '✓ Tarefa marcada como entregue' : 'Tarefa desmarcada'; } catch (e) { alert('Não consegui salvar. Confira a internet.'); } }
 async function salvarNota(n, txt, el) { try { await enviar({ encontro: n, nota: txt }); const s = document.getElementById('salvo-' + n); if (s) s.textContent = '✓ Anotação salva'; } catch (e) { alert('Não consegui salvar. Confira a internet.'); } }
 async function salvarIndicador(bt) { try { await enviar({ indicadorNome: document.getElementById('i-nome').value, antes: document.getElementById('i-antes').value, depois: document.getElementById('i-depois').value }); document.getElementById('i-ok').textContent = '✓ Salvo'; } catch (e) { alert('Não consegui salvar.'); } }
+function msgHtml(m) { const q = new Date(String(m.em).replace(' ', 'T') + 'Z'); return `<div class="msg ${m.de}">${m.de === 'mentor' ? '<b>🎓 Mentor</b><br>' : ''}${esc(m.texto || '')}${m.anexo ? `<br>📎 <a href="${esc(m.anexo.url)}" target="_blank" rel="noopener">${esc(m.anexo.nome)}</a>` : ''}<small>${m.encontro ? 'Encontro ' + m.encontro + ' · ' : ''}${isNaN(q) ? '' : q.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</small></div>`; }
+async function enviarDuvida(bt) {
+  const t = document.getElementById('duvida'); if (!t.value.trim()) return t.focus();
+  bt.disabled = true;
+  try { const r = await fetch('/api/public/aluno/' + TOKEN + '/mensagem', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texto: t.value }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Não enviou'); await recarregar('duvidas'); }
+  catch (e) { alert(e.message); bt.disabled = false; }
+}
+let MAT_ENC = null;
+function escolherMaterial(n) { MAT_ENC = n; const i = document.getElementById('in-mat'); i.value = ''; i.click(); }
+async function enviarMaterial(f) {
+  if (!f) return; if (f.size > 40 * 1048576) return alert('Arquivo grande demais (máx. 40 MB). Envie em PDF.');
+  const s = document.getElementById('env-' + MAT_ENC); if (s) s.textContent = '⏳ Enviando ' + f.name + '…';
+  try { const r = await fetch(`/api/public/aluno/${TOKEN}/material?encontro=${MAT_ENC || ''}`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'X-Nome': encodeURIComponent(f.name) }, body: f }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Não enviou');
+    await recarregar('jornada'); const s2 = document.getElementById('env-' + MAT_ENC); if (s2) s2.textContent = '✓ Material enviado ao mentor'; }
+  catch (e) { if (s) s.textContent = ''; alert(e.message); }
+}
+async function enviarFoto(f) {
+  if (!f) return; if (f.size > 12 * 1048576) return alert('Foto grande demais (máx. 12 MB).');
+  try { const r = await fetch(`/api/public/aluno/${TOKEN}/foto`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'X-Nome': encodeURIComponent(f.name) }, body: f }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Não enviou'); await recarregar(); }
+  catch (e) { alert(e.message); }
+}
+async function recarregar(ancora) { const y = window.scrollY; const r = await fetch('/api/public/aluno/' + TOKEN, { cache: 'no-store' }); if (r.ok) { P = await r.json(); desenhar(); window.scrollTo(0, y); if (ancora === 'duvidas') { const c = document.getElementById('chat'); if (c) c.scrollTop = c.scrollHeight; } } }
+let AV = { nota: null };
+function avaliar(n) {
+  const e = n ? P.encontros.find(x => x.n === n) : null, atual = n ? e.avaliacao : P.avaliacaoGeral; AV = { n, nota: atual ? atual.nota : null };
+  const fundo = document.createElement('div'); fundo.className = 'modal-fundo'; fundo.onclick = ev => { if (ev.target === fundo) fundo.remove(); };
+  fundo.innerHTML = `<div class="av-modal"><h3 style="margin:0 0 4px;">⭐ ${n ? 'Avaliar o encontro ' + n : 'Avaliar o treinamento'}</h3><p style="margin:0;color:var(--cinza);font-size:14px;">${n ? esc(e.modulo) : 'Sua visão geral até agora'}</p>
+    <b style="display:block;margin-top:14px;font-size:14px;">De 0 a 10, quanto ${n ? 'este encontro' : 'o treinamento'} ajudou você?</b>
+    <div class="notas">${Array.from({ length: 11 }, (_, i) => `<button class="${AV.nota === i ? 'on' : ''}" onclick="AV.nota=${i};this.parentNode.querySelectorAll('button').forEach((b,k)=>b.classList.toggle('on',k===${i}))">${i}</button>`).join('')}</div>
+    ${(P.perguntasAvaliacao || []).map(q => `<label>${esc(q.texto)}<textarea data-q="${esc(q.id)}">${esc(atual && atual.respostas ? atual.respostas[q.id] || '' : '')}</textarea></label>`).join('')}
+    <label>Comentário livre<textarea id="av-com">${esc(atual ? atual.comentario || '' : '')}</textarea></label>
+    <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="bt claro" onclick="this.closest('.modal-fundo').remove()">Cancelar</button><button class="bt ambar" onclick="salvarAvaliacao(this)">Enviar avaliação</button></div></div>`;
+  document.body.appendChild(fundo);
+}
+async function salvarAvaliacao(bt) {
+  if (AV.nota === null) return alert('Escolha uma nota de 0 a 10.');
+  const m = bt.closest('.av-modal'), resp = {}; m.querySelectorAll('textarea[data-q]').forEach(t => resp[t.dataset.q] = t.value);
+  bt.disabled = true;
+  try { const r = await fetch(`/api/public/aluno/${TOKEN}/avaliacao`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ encontro: AV.n, nota: AV.nota, respostas: resp, comentario: m.querySelector('#av-com').value }) }); if (!r.ok) throw new Error('Não salvou'); m.closest('.modal-fundo').remove(); await recarregar(); }
+  catch (e) { alert(e.message); bt.disabled = false; }
+}
 carregar();
 </script>
 </body>

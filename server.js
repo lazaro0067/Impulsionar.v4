@@ -13438,6 +13438,8 @@ app.delete('/api/admin/mentoria/leads/:id', requireRole('admin'), async (req, re
 app.get('/api/admin/mentoria/turmas', requireRole('admin'), async (req, res) => {
     const turmas = await dbAll(`SELECT * FROM mentoria_turmas ORDER BY id DESC`).catch(() => []), alunos = await dbAll(`SELECT * FROM mentoria_alunos ORDER BY id`).catch(() => []);
     const pres = await dbAll(`SELECT aluno_id, encontro FROM mentoria_presencas`).catch(() => []); alunos.forEach(x => { x.presencas = pres.filter(p => p.aluno_id === x.id).map(p => Number(p.encontro)); x.temAcesso = !!x.acesso_token; });
+    const nl = await dbAll(`SELECT turma_id, COUNT(*) n FROM mentoria_mensagens WHERE de = 'aluno' AND lida = 0 GROUP BY turma_id`).catch(() => []), na = await dbAll(`SELECT turma_id, COUNT(*) n, AVG(nota) m FROM mentoria_avaliacoes GROUP BY turma_id`).catch(() => []);
+    turmas.forEach(t => { t.naoLidas = (nl.find(x => x.turma_id === t.id) || {}).n || 0; const v = na.find(x => x.turma_id === t.id) || {}; t.avaliacoes = v.n || 0; t.notaMedia = v.m == null ? null : Math.round(v.m * 10) / 10; });
     res.json(turmas.map(t => Object.assign(t, { dados: (() => { try { return JSON.parse(t.dados || '{}'); } catch (e) { return {}; } })(), alunos: alunos.filter(a => a.turma_id === t.id).map(a => Object.assign(a, { progresso: (() => { try { return JSON.parse(a.progresso || '{}'); } catch (e) { return {}; } })() })) })));
 });
 app.post('/api/admin/mentoria/turmas', requireRole('admin'), async (req, res) => {
@@ -13576,16 +13578,24 @@ async function mtPainelAluno(a) {
     const pres = new Set((await dbAll(`SELECT encontro FROM mentoria_presencas WHERE aluno_id = ?`, [a.id]).catch(() => [])).map(r => Number(r.encontro)));
     const pr = mtJson(a.progresso), feitos = (t ? mtJson(t.dados).feitos : {}) || {}, hoje = mtHojeBr(), prog = mtProgramaDe(d, t);
     const encontros = prog.encontros.map((s, i) => { const data = t ? mtDataEncontro(t, i) : ''; return { n: s.n, modulo: s.modulo, tema: s.tema, entregavel: s.entregavel, data, realizado: !!feitos[s.n] || !!(data && data < hoje) || pres.has(Number(s.n)), presente: pres.has(Number(s.n)), entregue: !!(pr.entregas || {})[s.n], nota: (pr.notas || {})[s.n] || '' }; });
+    // área do aluno: slides liberados pelo mentor, prazo do desafio, materiais enviados, avaliações e dúvidas
+    const td = t ? mtJson(t.dados) : {}, lib = td.liberados || {}, prazos = td.prazos || {}, temSlides = (d.programas || []).some(x => x.id === prog.id);
+    const msgs = await dbAll(`SELECT id, de, texto, anexo_url, anexo_nome, encontro, criado_em FROM mentoria_mensagens WHERE aluno_id = ? ORDER BY id`, [a.id]).catch(() => []);
+    const avs = await dbAll(`SELECT encontro, nota, respostas, comentario, criado_em FROM mentoria_avaliacoes WHERE aluno_id = ?`, [a.id]).catch(() => []);
+    encontros.forEach(e => { e.liberado = temSlides && !!lib[e.n]; e.prazo = prazos[e.n] || ''; e.materiais = msgs.filter(m => m.de === 'aluno' && m.anexo_url && Number(m.encontro) === Number(e.n)).map(m => ({ nome: m.anexo_nome, url: m.anexo_url, em: m.criado_em })); const av = avs.find(x => Number(x.encontro) === Number(e.n)); e.avaliacao = av ? { nota: av.nota, comentario: av.comentario, respostas: mtJson(av.respostas) } : null; });
     const proximo = encontros.find(e => e.data && e.data >= hoje && !feitos[e.n] && !e.presente) || null;
     const realizados = encontros.filter(e => e.realizado);
     return {
-        aluno: { nome: a.nome, primeiroNome: String(a.nome || '').split(' ')[0], cargo: a.cargo || '', empresa: a.empresa || '', pagamento: a.pagamento },
+        aluno: { nome: a.nome, primeiroNome: String(a.nome || '').split(' ')[0], cargo: a.cargo || '', empresa: a.empresa || '', pagamento: a.pagamento, foto: a.foto || '' },
         turma: t ? { nome: t.nome, inicio: t.inicio, horario: t.horario, status: t.status, sala: t.link_encontro || '', grupo: t.whatsapp_grupo || '' } : null,
         encontros, proximo,
         resumo: { presencas: pres.size, realizados: realizados.length, presencaPct: realizados.length ? Math.round(realizados.filter(e => e.presente).length / realizados.length * 100) : 100, entregas: Object.keys(pr.entregas || {}).length, total: encontros.length },
         indicador: { nome: pr.indicadorNome || '', antes: pr.antes || '', depois: pr.depois || '' },
         kit: prog.kit || d.kit, regraOuro: prog.regraOuro || d.regraOuro, metodo: d.metodo.map(m => ({ letra: m.letra, nome: m.nome })),
         programa: { id: prog.id, nome: prog.nome, unidade: prog.unidade, principal: prog.id === MT_PRINCIPAL, indicador: prog.indicador || null },
+        mensagens: msgs.map(m => ({ id: m.id, de: m.de, texto: m.texto, anexo: m.anexo_url ? { url: m.anexo_url, nome: m.anexo_nome } : null, encontro: m.encontro, em: m.criado_em })),
+        avaliacaoGeral: (() => { const av = avs.find(x => Number(x.encontro) === 0); return av ? { nota: av.nota, comentario: av.comentario, respostas: mtJson(av.respostas) } : null; })(),
+        perguntasAvaliacao: MT_PERGUNTAS_AVALIACAO,
         mentor: { nome: d.marca.mentor, empresa: d.marca.empresa, foto: d.marca.fotoUrl, whatsapp: d.marca.whatsapp, instagram: d.marca.instagram, instagramEmpresa: d.marca.instagramEmpresa, mentoria: prog.nome }
     };
 }
@@ -13643,6 +13653,96 @@ app.post('/api/public/aluno/:token/progresso', async (req, res) => {
     if (b.entregue && n) try { const t = a.turma_id ? await dbGet(`SELECT dados FROM mentoria_turmas WHERE id = ?`, [a.turma_id]).catch(() => null) : null, pg = mtProgramaDe(await mtLer(), t); mtNotificar('📎 Tarefa entregue · ' + pg.curto, `${a.nome} concluiu a tarefa do ${pg.unidade} ${n}`); } catch (e) {}
     res.json({ ok: true });
 });
+// ======== Área do aluno: dúvidas, materiais, foto, avaliação e slides liberados pelo mentor ========
+db.run(`ALTER TABLE mentoria_alunos ADD COLUMN foto TEXT`, () => {});
+db.run(`CREATE TABLE IF NOT EXISTS mentoria_mensagens (id INTEGER PRIMARY KEY AUTOINCREMENT, aluno_id INTEGER NOT NULL, turma_id INTEGER, de TEXT NOT NULL, texto TEXT, anexo_url TEXT, anexo_nome TEXT, encontro INTEGER, lida INTEGER DEFAULT 0, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+db.run(`CREATE TABLE IF NOT EXISTS mentoria_avaliacoes (id INTEGER PRIMARY KEY AUTOINCREMENT, aluno_id INTEGER NOT NULL, turma_id INTEGER, encontro INTEGER NOT NULL DEFAULT 0, nota INTEGER, respostas TEXT, comentario TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(aluno_id, encontro))`);
+const MT_PERGUNTAS_AVALIACAO = [
+    { id: 'aplicar', texto: 'O que você vai aplicar primeiro no seu trabalho?' },
+    { id: 'ajudou', texto: 'O que mais ajudou você?' },
+    { id: 'melhorar', texto: 'O que poderia ser melhor?' },
+    { id: 'indicar', texto: 'Você indicaria para um colega? Por quê?' }
+];
+const EXT_MATERIAL_MT = /\.(pdf|pptx?|docx?|xlsx?|png|jpe?g|webp|heic|mp4|mov|txt|key|odp)$/i;
+async function salvarArquivoAlunoMt(req, prefixo, nomeOrig) {
+    const buf = req.body; if (!Buffer.isBuffer(buf) || !buf.length) throw Object.assign(new Error('Arquivo vazio.'), { status: 400 });
+    const livre = discoLivreMB(PASTA_UPLOADS); if (livre !== null && livre < buf.length / 1048576 + 200) { limpezaAutomaticaDisco('envio do aluno'); throw Object.assign(new Error('O servidor está sem espaço agora. Tente de novo em alguns minutos.'), { status: 507 }); }
+    const ext = (String(nomeOrig || '').match(/\.[a-z0-9]{2,5}$/i) || ['.bin'])[0].toLowerCase(), nome = `${prefixo}-${Date.now()}-${crypto.randomBytes(3).toString('hex')}${ext}`;
+    await fs.promises.writeFile(path.join(PASTA_UPLOADS, nome), buf);
+    return { nome, url: '/uploads/' + nome, ext };
+}
+app.post('/api/public/aluno/:token/mensagem', async (req, res) => {
+    const a = await mtAlunoPorToken(req.params.token); if (!a) return res.status(404).json({ error: 'Acesso inválido.' });
+    const texto = mtTxt((req.body || {}).texto, 3000), enc = Number((req.body || {}).encontro) || null; if (!texto) return res.status(400).json({ error: 'Escreva a sua dúvida.' });
+    await mtRun(`INSERT INTO mentoria_mensagens (aluno_id, turma_id, de, texto, encontro) VALUES (?,?, 'aluno', ?, ?)`, [a.id, a.turma_id, texto, enc]);
+    mtNotificar('💬 Dúvida de ' + String(a.nome || '').split(' ')[0], texto.slice(0, 140));
+    res.json({ ok: true });
+});
+app.post('/api/public/aluno/:token/material', express.raw({ type: () => true, limit: '40mb' }), async (req, res) => {
+    try {
+        const a = await mtAlunoPorToken(req.params.token); if (!a) return res.status(404).json({ error: 'Acesso inválido.' });
+        const nomeOrig = mtTxt(decodeURIComponent(String(req.headers['x-nome'] || 'material')), 120), n = Number(req.query.encontro) || null;
+        if (!EXT_MATERIAL_MT.test(nomeOrig)) return res.status(400).json({ error: 'Envie PDF, PowerPoint, Word, Excel, imagem ou vídeo.' });
+        const f = await salvarArquivoAlunoMt(req, 'material-aluno-' + a.id, nomeOrig);
+        await mtRun(`INSERT INTO mentoria_mensagens (aluno_id, turma_id, de, texto, anexo_url, anexo_nome, encontro) VALUES (?,?, 'aluno', ?, ?, ?, ?)`, [a.id, a.turma_id, mtTxt((req.query.texto || ''), 500) || '📎 Material enviado', f.url, nomeOrig, n]);
+        if (n) { const pr = mtJson(a.progresso); pr.entregas = pr.entregas || {}; pr.entregas[n] = true; await mtRun(`UPDATE mentoria_alunos SET progresso = ? WHERE id = ?`, [JSON.stringify(pr), a.id]).catch(() => {}); }
+        mtNotificar('📎 Material de ' + String(a.nome || '').split(' ')[0], `${nomeOrig}${n ? ' · encontro ' + n : ''}`);
+        res.json({ ok: true, url: f.url, nome: nomeOrig });
+    } catch (e) { res.status(e.status || 500).json({ error: e.message }); }
+});
+app.post('/api/public/aluno/:token/foto', express.raw({ type: () => true, limit: '12mb' }), async (req, res) => {
+    try {
+        const a = await mtAlunoPorToken(req.params.token); if (!a) return res.status(404).json({ error: 'Acesso inválido.' });
+        const f = await salvarArquivoAlunoMt(req, 'tmp-foto-aluno-' + a.id, String(req.headers['x-nome'] || 'foto.jpg'));
+        let url = f.url;
+        try { const nome = `foto-aluno-${a.id}-${Date.now()}.jpg`; await rodarFfmpegJa(['-y', '-hide_banner', '-loglevel', 'error', '-i', path.join(PASTA_UPLOADS, f.nome), '-frames:v', '1', '-vf', "scale='if(gt(iw,ih),-2,480)':'if(gt(iw,ih),480,-2)',crop='min(iw,ih)':'min(iw,ih)'", '-q:v', '3', path.join(PASTA_UPLOADS, nome)], 30000); fs.unlink(path.join(PASTA_UPLOADS, f.nome), () => {}); url = '/uploads/' + nome; } catch (e) {}
+        if (a.foto && /^\/uploads\/foto-aluno-/.test(a.foto)) fs.unlink(path.join(PASTA_UPLOADS, path.basename(a.foto)), () => {});
+        await mtRun(`UPDATE mentoria_alunos SET foto = ? WHERE id = ?`, [url, a.id]);
+        res.json({ ok: true, foto: url });
+    } catch (e) { res.status(e.status || 500).json({ error: e.message }); }
+});
+app.post('/api/public/aluno/:token/avaliacao', async (req, res) => {
+    const a = await mtAlunoPorToken(req.params.token); if (!a) return res.status(404).json({ error: 'Acesso inválido.' });
+    const b = req.body || {}, n = Math.max(0, Number(b.encontro) || 0), nota = Number(b.nota);
+    if (!(nota >= 0 && nota <= 10)) return res.status(400).json({ error: 'Escolha uma nota de 0 a 10.' });
+    const resp = {}; MT_PERGUNTAS_AVALIACAO.forEach(q => { if (b.respostas && typeof b.respostas[q.id] === 'string') resp[q.id] = mtTxt(b.respostas[q.id], 1500); });
+    await mtRun(`INSERT INTO mentoria_avaliacoes (aluno_id, turma_id, encontro, nota, respostas, comentario) VALUES (?,?,?,?,?,?) ON CONFLICT(aluno_id, encontro) DO UPDATE SET nota = excluded.nota, respostas = excluded.respostas, comentario = excluded.comentario, criado_em = CURRENT_TIMESTAMP`, [a.id, a.turma_id, n, Math.round(nota), JSON.stringify(resp), mtTxt(b.comentario, 2000)]);
+    mtNotificar(`⭐ Avaliação ${Math.round(nota)}/10 · ${String(a.nome || '').split(' ')[0]}`, (n ? 'Encontro ' + n : 'Avaliação geral') + (b.comentario ? ': ' + mtTxt(b.comentario, 100) : ''));
+    res.json({ ok: true });
+});
+// slides do encontro para o aluno (só depois que o mentor libera; sem as notas do mentor)
+app.get('/api/public/aluno/:token/encontro/:n/slides', async (req, res) => {
+    try {
+        const a = await mtAlunoPorToken(req.params.token); if (!a) return res.status(404).json({ error: 'Acesso inválido.' });
+        const t = a.turma_id ? await dbGet(`SELECT * FROM mentoria_turmas WHERE id = ?`, [a.turma_id]).catch(() => null) : null, n = Number(req.params.n);
+        const d = await mtLer(), prog = mtProgramaDe(d, t), p = (d.programas || []).find(x => x.id === prog.id);
+        if (!p || !t || !(mtJson(t.dados).liberados || {})[n]) return res.status(403).json({ error: 'O mentor ainda não liberou os slides deste encontro.' });
+        if (!(n >= 1 && n <= p.encontros.length)) return res.status(404).json({ error: 'Encontro não encontrado.' });
+        const base = baseUrlPublicaDpo(req), mods = n === 1 ? deckEncontro1Mt(p, null, base) : await fotosDosSlidesMt(deckEncontroProgramaMt(p, n, null, base));
+        const slides = []; mods.forEach(m => (m.slides || []).forEach(s => slides.push({ titulo: s.titulo || '', texto: s.texto || '', imagem: s.imagem || '', layout: s.layout || 'padrao', secao: String(m.titulo || '').replace(/\s·\s\d.*$/, '') })));
+        const e = p.encontros[n - 1];
+        res.json({ programa: p.nome, encontro: n, modulo: e.modulo, tema: e.tema, slides });
+    } catch (e) { res.status(500).json({ error: 'Não consegui abrir os slides: ' + e.message }); }
+});
+app.get('/aluno/:token/encontro/:n', (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'aluno-slides.html')));
+// ---- Master: dúvidas, materiais e avaliações da turma ----
+app.get('/api/admin/mentoria/turmas/:id/conversas', requireRole('admin'), async (req, res) => {
+    const alunos = await dbAll(`SELECT id, nome, foto, whatsapp FROM mentoria_alunos WHERE turma_id = ? ORDER BY nome`, [req.params.id]).catch(() => []);
+    const msgs = await dbAll(`SELECT * FROM mentoria_mensagens WHERE turma_id = ? ORDER BY id`, [req.params.id]).catch(() => []);
+    const avs = await dbAll(`SELECT * FROM mentoria_avaliacoes WHERE turma_id = ? ORDER BY encontro, id`, [req.params.id]).catch(() => []);
+    const notas = avs.map(v => Number(v.nota)).filter(v => v >= 0), prom = notas.filter(v => v >= 9).length, det = notas.filter(v => v <= 6).length;
+    res.json({ alunos: alunos.map(al => ({ ...al, mensagens: msgs.filter(m => m.aluno_id === al.id), naoLidas: msgs.filter(m => m.aluno_id === al.id && m.de === 'aluno' && !m.lida).length })),
+        avaliacoes: avs.map(v => ({ ...v, respostas: mtJson(v.respostas), aluno: (alunos.find(x => x.id === v.aluno_id) || {}).nome || '' })), perguntas: MT_PERGUNTAS_AVALIACAO,
+        resumo: { media: notas.length ? +(notas.reduce((x, y) => x + y, 0) / notas.length).toFixed(1) : null, total: notas.length, nps: notas.length ? Math.round((prom - det) / notas.length * 100) : null, naoLidas: msgs.filter(m => m.de === 'aluno' && !m.lida).length } });
+});
+app.post('/api/admin/mentoria/alunos/:id/mensagem', requireRole('admin'), async (req, res) => {
+    const a = await dbGet(`SELECT id, turma_id FROM mentoria_alunos WHERE id = ?`, [req.params.id]).catch(() => null); if (!a) return res.status(404).json({ error: 'Aluno não encontrado.' });
+    const texto = mtTxt((req.body || {}).texto, 3000); if (!texto) return res.status(400).json({ error: 'Escreva a resposta.' });
+    await mtRun(`INSERT INTO mentoria_mensagens (aluno_id, turma_id, de, texto, lida) VALUES (?,?, 'mentor', ?, 1)`, [a.id, a.turma_id, texto]);
+    await mtRun(`UPDATE mentoria_mensagens SET lida = 1 WHERE aluno_id = ? AND de = 'aluno'`, [a.id]).catch(() => {});
+    res.json({ ok: true });
+});
+app.post('/api/admin/mentoria/alunos/:id/lidas', requireRole('admin'), async (req, res) => { await mtRun(`UPDATE mentoria_mensagens SET lida = 1 WHERE aluno_id = ? AND de = 'aluno'`, [req.params.id]).catch(() => {}); res.json({ ok: true }); });
 app.get('/api/public/presenca/:codigo', async (req, res) => {
     const c = await dbGet(`SELECT c.*, t.nome AS turma, t.dados AS turma_dados FROM mentoria_checkins c JOIN mentoria_turmas t ON t.id = c.turma_id WHERE c.codigo = ?`, [String(req.params.codigo)]).catch(() => null);
     if (!c) return res.status(404).json({ error: 'QR code de presença não encontrado.' });
