@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mentorias · Lázaro Neto</title>
+<meta name="description" content="Mentorias de liderança para você ou para os líderes da sua empresa: Do Chão à Gestão e Comunicação de Impacto para Líderes.">
+<meta property="og:title" content="Mentorias · Lázaro Neto">
+<meta property="og:description" content="Escolha a sua mentoria: para você ou para os líderes da sua empresa.">
+<meta property="og:image" content="https://www.impulsionarv4.com.br/mentoria-foto.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/mentoria-estilo.css?v=1">
+<style>
+  body { background:radial-gradient(900px 500px at 50% -10%, rgba(245,158,11,.25), transparent 60%), linear-gradient(180deg, var(--navy), var(--navy2)); min-height:100vh; color:#fff; }
+  .bio { max-width:560px; margin:0 auto; padding:40px 18px 70px; text-align:center; }
+  .bio .av { width:118px; height:118px; border-radius:50%; margin:0 auto 12px; background:#1e293b; border:3px solid var(--ambar); overflow:hidden; display:grid; place-items:center; font-size:40px; font-weight:900; color:var(--ambar); }
+  .bio .av img { width:100%; height:100%; object-fit:cover; object-position:center 30%; }
+  .bio h1 { font-size:24px; margin:0; font-weight:900; } .bio > p { color:#cbd5e1; margin:6px 0 22px; font-size:14px; }
+  .sec { text-align:left; font-size:12px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:var(--ambar); margin:26px 4px 10px; }
+  .mt { text-align:left; background:#fff; color:var(--navy); border-radius:22px; padding:20px; margin:12px 0; box-shadow:0 18px 40px rgba(0,0,0,.25); }
+  .mt-cab { display:flex; gap:12px; align-items:center; } .mt-cab i { font-style:normal; font-size:30px; width:54px; height:54px; border-radius:16px; background:#fef3c7; display:grid; place-items:center; flex:none; }
+  .mt h2 { margin:0; font-size:19px; font-weight:900; line-height:1.15; } .mt-cab small { color:#64748b; font-size:12.5px; font-weight:600; }
+  .mt p { margin:12px 0 10px; color:#334155; font-size:14.5px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; } .chips span { background:#f1f5f9; border-radius:999px; padding:4px 10px; font-size:12px; font-weight:700; color:#334155; }
+  .turma { margin-top:12px; background:#ecfdf5; color:#14532d; border-radius:12px; padding:9px 12px; font-size:13px; font-weight:700; } .turma.esp { background:#fff7ed; color:#7c2d12; }
+  .mt-preco { display:flex; align-items:baseline; gap:8px; margin:12px 0 4px; flex-wrap:wrap; } .mt-preco b { font-size:28px; font-weight:900; } .mt-preco small { color:#64748b; font-weight:600; }
+  .bts { display:grid; gap:8px; margin-top:12px; } .bts a { text-align:center; text-decoration:none; font-weight:800; border-radius:14px; padding:13px 14px; font-size:15px; }
+  .bts .p { background:var(--ambar); color:var(--navy); } .bts .s { background:var(--navy); color:#fff; } .bts .t { color:#475569; font-size:13px; padding:4px; text-decoration:underline; }
+  .lk { display:flex; align-items:center; gap:14px; text-align:left; text-decoration:none; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:14px 16px; margin:10px 0; color:#fff; }
+  .lk span { font-size:24px; } .lk b { display:block; font-size:15px; } .lk small { opacity:.8; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="bio" id="app">Carregando…</div>
+<script src="/mentoria-comum.js?v=4"></script>
+<script>
+(async () => {
+  let d; try { const r = await fetch('/api/public/mentorias', { cache: 'no-store' }); if (!r.ok) throw new Error('Não consegui carregar.'); d = await r.json(); MT.dados = d; } catch (e) { return mtErroPagina(e); }
+  const m = d.marca, ig = String(m.instagram || '').replace(/^@/, ''), o = MT_RS.origem ? (u => u + (u.includes('?') ? '&' : '?') + 'o=' + encodeURIComponent(MT_RS.origem)) : (u => u);
+  const comO = u => { if (!MT_RS.origem || !u) return u; const [a, h] = u.split('#'); return o(a) + (h ? '#' + h : ''); };
+  document.getElementById('app').innerHTML = `<div class="av">${m.fotoUrl ? `<img src="${mtEsc(!m.fotoUrl || m.fotoUrl === '/mentoria-foto.jpg' ? '/mentoria-foto-perfil.jpg' : m.fotoUrl)}" alt="">` : mtEsc(mtIniciais(m.mentor))}</div>
+    <h1>${mtEsc(m.mentor)}</h1><p>${mtEsc(m.titulo)} · Mentorias para líderes</p>
+    <div class="sec">Escolha a sua mentoria</div>
+    ${d.mentorias.map(x => `<div class="mt">
+      <div class="mt-cab"><i>${mtEsc(x.icone)}</i><div><h2>${mtEsc(x.nome)}</h2><small>${mtEsc(x.publico)}</small></div></div>
+      <p>${mtEsc(x.resumo)}</p>
+      <div class="chips"><span>${x.encontros} encontros</span><span>${mtEsc(x.duracao)} cada</span><span>${mtEsc(x.formato)}</span></div>
+      ${x.turma ? `<div class="turma">🗓️ ${mtEsc(x.turma.nome)}${x.turma.inicio ? ' · começa ' + mtEsc(mtData(x.turma.inicio)) : ''}${x.turma.horario ? ' · ' + mtEsc(x.turma.horario) : ''} · ${x.turma.restantes > 0 ? x.turma.restantes + ' vaga(s)' : 'lista de espera'}</div>` : `<div class="turma esp">📣 Próxima turma: entre na lista e seja avisado primeiro</div>`}
+      ${x.preco ? `<div class="mt-preco"><b>${mtMoeda(x.preco)}</b><small>ou em até ${x.parcelas}x no cartão</small></div>` : ''}
+      <div class="bts"><a class="p" href="${mtEsc(comO(x.vaga || x.link))}">${x.turma && x.turma.restantes > 0 ? 'Quero minha vaga' : 'Quero participar'}</a>${x.empresa ? `<a class="s" href="${mtEsc(comO(x.empresa))}">Quero para os líderes da minha empresa</a>` : ''}<a class="t" href="${mtEsc(comO(x.link))}">Ver tudo sobre a ${mtEsc(x.nome)}</a></div>
+    </div>`).join('')}
+    <div class="sec">Comece por aqui</div>
+    <a class="lk" href="${mtEsc(comO('/raio-x'))}"><span>🩻</span><div><b>Raio-X do Líder (grátis)</b><small>Descubra seu ponto fraco como líder em 5 minutos</small></div></a>
+    <a class="lk" href="${mtEsc(comO('/aula'))}"><span>🎥</span><div><b>Aulas gratuitas</b><small>Assista agora, quando quiser</small></div></a>
+    <a class="lk" href="${mtEsc(comO('/palestra'))}"><span>🎤</span><div><b>Palestras para empresas</b><small>${mtEsc(d.palestra.titulo || '')}</small></div></a>
+    ${mtWhats() ? `<a class="lk" href="${mtWhats('Olá, Lázaro! Vim pela página das mentorias e quero saber qual é a melhor para mim.')}" target="_blank" rel="noopener"><span>💬</span><div><b>Não sabe qual escolher?</b><small>Fale comigo no WhatsApp</small></div></a>` : ''}
+    ${ig ? `<a class="lk" href="https://instagram.com/${mtEsc(ig)}" target="_blank" rel="noopener"><span>📸</span><div><b>@${mtEsc(ig)}</b><small>Conteúdo de liderança toda semana</small></div></a>` : ''}`;
+})();
+</script>
+</body>
+</html>

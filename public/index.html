@@ -1972,6 +1972,7 @@
   .mtv-kpis { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:14px; } .mtv-kpis div { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px; text-align:center; } .mtv-kpis b { display:block; font-size:26px; } .mtv-kpis small { color:#64748b; } @media (max-width:640px) { .mtv-kpis { grid-template-columns:1fr 1fr; } }
   .mtv-aviso { background:#fff7ed; border:1.5px solid #f59e0b; color:#7c2d12; border-radius:14px; padding:12px 14px; margin-bottom:18px; } .mtv-aviso.ok { background:#ecfdf5; border-color:#22c55e; color:#14532d; }
   .mtv-h { margin:22px 0 10px; font-size:17px; }
+  .mtv-bio { display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; background:linear-gradient(135deg, #0b1329, #1e1b4b); color:#fff; border-radius:14px; padding:14px 16px; margin-bottom:16px; } .mtv-bio b { display:block; font-size:16px; } .mtv-bio small { display:block; color:#cbd5e1; } .mtv-bio code { color:#fbbf24; font-size:13px; }
   .mtv-links { display:grid; gap:8px; } .mtv-link { display:flex; gap:12px; align-items:center; justify-content:space-between; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; flex-wrap:wrap; } .mtv-link b { display:block; } .mtv-link small { color:#64748b; display:block; } .mtv-link code { font-size:12px; color:#7c3aed; word-break:break-all; } .mtv-bts { display:flex; gap:6px; flex-wrap:wrap; } .mtv-bts .btn-sm { width:auto; margin:0; text-decoration:none; }
   .mtv-textos { display:grid; grid-template-columns:1fr 1fr; gap:10px; } @media (max-width:900px) { .mtv-textos { grid-template-columns:1fr; } } .mtv-texto { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; } .mtv-texto-cab { display:flex; justify-content:space-between; gap:8px; align-items:center; } .mtv-texto-cab .btn-sm { width:auto; margin:0; } .mtv-texto pre { white-space:pre-wrap; font:inherit; font-size:13px; color:#334155; margin:8px 0 0; max-height:220px; overflow:auto; }
   .mtv-form { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px; } .mtv-form .larga { grid-column:1 / -1; } .mtv-form small { display:block; color:#64748b; font-weight:500; font-size:11.5px; } @media (max-width:760px) { .mtv-form { grid-template-columns:1fr; } }
@@ -2185,7 +2186,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 14/11 (1)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 14/11 (2)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -14625,6 +14626,8 @@ function mtnBase() { return (MTN.base || location.origin).replace(/\/$/, ''); }
 function mtnLinks() {
   const b = mtnBase();
   return [
+    ['🧭', 'Link da bio: todas as mentorias numa página', b + '/mentorias?o=instagram', 'Mentorias para líderes: escolha a sua (para você ou para a sua empresa): '],
+    ['🎙️', 'Comunicação de Impacto (individual e empresa)', b + '/comunicacao', 'Comunicação de Impacto para Líderes: 5 encontros de 1 hora para parar de ler slide e ser ouvido pelo time. Veja: '],
     ['🚀', 'Página da mentoria (venda e inscrição)', b + '/mentoria', 'Mentoria Do Chão à Gestão: 19 encontros para você montar sua rotina de líder, engajar o time e melhorar seu indicador. Vagas: '],
     ['🎤', 'Página da palestra (empresas pedem proposta)', b + '/palestra', 'Palestra "Quem Move Pessoas, Move Resultados" para os líderes da sua empresa: '],
     ['🔴', 'Aula gratuita (inscrição)', b + '/aula', 'Aula gratuita e ao vivo para líderes de operação. Inscreva-se: '],
@@ -14660,13 +14663,19 @@ async function renderMentoriaNegocio() {
   window.addEventListener('focus', checar);
 })();
 const mtnModo = () => (MTN.modo && MTN.modo !== 'do-chao' && (MTN.d.programas || []).some(p => p.id === MTN.modo)) ? MTN.modo : 'do-chao';
+// leads visíveis na tela: na área de um programa, só os contatos dele; na Do Chão à Gestão, todos
+const mtnLeadsVis = () => mtnModo() === 'do-chao' ? MTN.leads : (MTN.leads || []).filter(l => mtnDadosLead(l).programa === mtnModo() || (mtnModo() === 'comunicacao-impacto' && l.origem === 'comunicacao'));
 function mtnDesenharPrograma() {
-  const p = MTN.d.programas.find(x => x.id === mtnModo()), cont = document.getElementById('conteudo'), nT = MTN.turmas.filter(t => mtnProgT(t).id === p.id).length;
-  if (!['programa', 'turmas', 'vender'].includes(MTN.abaP) || (MTN.abaP === 'vender' && p.id !== 'comunicacao-impacto')) MTN.abaP = 'programa';
-  cont.innerHTML = `<div class="mtn"><div class="mtn-cab"><div><h1 style="margin:0;">${p.icone || '🎙️'} ${escapeHtml(p.nome)}</h1><p class="plano-meta" style="margin:4px 0 0;">${escapeHtml(MTN.d.marca.mentor)} · ${escapeHtml(p.encontros.length + ' encontros')} · ${escapeHtml(p.publico || '')}</p></div>
-    <div class="mtn-acoes"><button class="btn-secundario" onclick="mtnApresentarEscolher('${p.id}')">▶️ Apresentar slides</button><button class="btn-secundario" onclick="mtnProgramaImprimir('${p.id}')">🖨️ Imprimir / PDF</button><button class="btn-primario" style="width:auto;" onclick="mtnEditarTurma(0, '${p.id}')">＋ Nova turma</button></div></div>
-    <nav class="mtn-abas">${[['programa', '📘 Conteúdo do programa'], ['turmas', `🎓 Turmas e alunos${nT ? ` <i class="mtn-badge" style="background:#64748b">${nT}</i>` : ''}`]].concat(p.id === 'comunicacao-impacto' ? [['vender', `🛒 Vender e divulgar${mtnCiLeads().filter(l => (l.etapa || 'novo') === 'novo').length ? ` <i class="mtn-badge">${mtnCiLeads().filter(l => (l.etapa || 'novo') === 'novo').length}</i>` : ''}`]] : []).map(([k, r]) => `<button class="${MTN.abaP === k ? 'on' : ''}" onclick="MTN.abaP='${k}'; mtnDesenhar()">${r}</button>`).join('')}</nav>
-    <div id="mtn-corpo">${MTN.abaP === 'turmas' ? mtnTurmas() : MTN.abaP === 'vender' ? mtnCiVender(p) : mtnProgramaHtml(p)}</div></div>`;
+  const p = MTN.d.programas.find(x => x.id === mtnModo()), cont = document.getElementById('conteudo'), nT = MTN.turmas.filter(t => mtnProgT(t).id === p.id).length, ehCi = p.id === 'comunicacao-impacto';
+  const novas = mtnLeadsVis().filter(l => (l.etapa || 'novo') === 'novo').length;
+  const abas = [['pedidos', `📥 Solicitações${novas ? ` <i class="mtn-badge">${novas}</i>` : ''}`], ['painel', '🏁 Painel'], ['funil', '🧲 Funil de vendas'], ['turmas', `🎓 Turmas${nT ? ` <i class="mtn-badge" style="background:#64748b">${nT}</i>` : ''}`], ['programa', '📚 Método e conteúdo']].concat(ehCi ? [['config', '⚙️ Configurações']] : []);
+  if (MTN.abaP === 'vender') MTN.abaP = 'painel';
+  if (!abas.some(a => a[0] === MTN.abaP)) MTN.abaP = ehCi ? 'painel' : 'programa';
+  const corpo = { pedidos: mtnPedidos, painel: () => ehCi ? mtnCiVender(p) : mtnProgramaHtml(p), funil: mtnFunil, turmas: mtnTurmas, programa: () => mtnProgramaHtml(p), config: () => mtnCiConfig() }[MTN.abaP];
+  cont.innerHTML = `<div class="mtn"><div class="mtn-cab"><div><h1 style="margin:0;">${p.icone || '🎙️'} ${escapeHtml(p.nome)}</h1><p class="plano-meta" style="margin:4px 0 0;">${escapeHtml(MTN.d.marca.mentor)} · ${escapeHtml(p.encontros.length + ' encontros de ' + (p.duracaoEncontro || '1 h'))} · para você ou para empresas</p></div>
+    <div class="mtn-acoes">${ehCi ? `<a class="btn-secundario" href="/comunicacao" target="_blank" rel="noopener">👁️ Ver página de venda</a>` : ''}<button class="btn-primario" style="width:auto;" onclick="mtnApresentarEscolher('${p.id}')">▶️ Apresentar encontro</button><button class="btn-secundario" onclick="mtnProgramaImprimir('${p.id}')">🖨️ Imprimir / PDF</button><button class="btn-secundario" onclick="mtnEditarTurma(0, '${p.id}')">＋ Nova turma</button></div></div>
+    <nav class="mtn-abas">${abas.map(([k, r]) => `<button class="${MTN.abaP === k ? 'on' : ''}" onclick="MTN.abaP='${k}'; mtnDesenhar()">${r}</button>`).join('')}</nav>
+    <div id="mtn-corpo">${corpo()}</div></div>`;
 }
 // ===== Comunicação de Impacto à venda: página /comunicacao, links por canal, textos prontos e preço =====
 const mtnCiLeads = () => (MTN.leads || []).filter(l => mtnDadosLead(l).programa === 'comunicacao-impacto' || l.origem === 'comunicacao');
@@ -14682,19 +14691,25 @@ function mtnCiTextos(base) {
   ];
 }
 function mtnCiVender(p) {
-  const base = location.origin + '/comunicacao', v = Object.assign({}, MTN_CI_PADRAO, MTN.d.vendaCi || {}), L = mtnCiLeads(), aberta = MTN.turmas.find(t => mtnProgT(t).id === p.id && t.status === 'aberta');
-  const links = [['Página de venda', base, 'A página completa: individual e empresa'], ['Instagram · link da bio', base + '?o=instagram', 'Para colocar na bio'], ['Instagram · Stories', base + '?o=stories', 'Para o adesivo de link'], ['WhatsApp', base + '?o=whatsapp', 'Para mandar em conversa e grupos'], ['LinkedIn', base + '?o=linkedin', 'Para post e mensagem'], ['Direto na vaga individual', base + '?o=direto&quero=vaga', 'Já abre o formulário de inscrição'], ['Direto na proposta para empresa', base + '?o=rh&quero=empresa', 'Já abre o pedido de proposta (RH e gestores)']];
+  const base = mtnBase() + '/comunicacao', v = Object.assign({}, MTN_CI_PADRAO, MTN.d.vendaCi || {}), L = mtnCiLeads(), aberta = MTN.turmas.find(t => mtnProgT(t).id === p.id && t.status === 'aberta');
+  const links = [['Página de venda', base, 'A página completa: individual e empresa'], ['Vitrine de todas as mentorias', mtnBase() + '/mentorias', 'Para a bio: pessoa escolhe a mentoria'], ['Instagram · link da bio', base + '?o=instagram', 'Para colocar na bio'], ['Instagram · Stories', base + '?o=stories', 'Para o adesivo de link'], ['WhatsApp', base + '?o=whatsapp', 'Para mandar em conversa e grupos'], ['LinkedIn', base + '?o=linkedin', 'Para post e mensagem'], ['Direto na vaga individual', base + '?o=direto&quero=vaga', 'Já abre o formulário de inscrição'], ['Direto na proposta para empresa', base + '?o=rh&quero=empresa', 'Já abre o pedido de proposta (RH e gestores)']];
   const ql = (u, t) => `<button class="btn-secundario btn-sm" onclick="mtnCopiar(${escapeHtml(JSON.stringify(u))})">📋 Copiar</button><a class="btn-secundario btn-sm" href="${escapeHtml(u)}" target="_blank" rel="noopener">↗ Abrir</a><a class="btn-secundario btn-sm" href="https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=10&data=${encodeURIComponent(u)}" target="_blank" rel="noopener" title="QR code para imprimir ou pôr no slide">▦ QR</a>`;
   return `<div class="mtv">
     <div class="mtv-topo"><div><h2 class="mtn-h2" style="margin:0;">🛒 Vender a Comunicação de Impacto</h2><p class="plano-meta" style="margin:4px 0 0;">Uma página com duas ofertas: <b>vaga individual</b> (com pagamento online quando há turma aberta) e <b>turma fechada para empresa</b> (pedido de proposta). Tudo cai em 📥 Solicitações, avisa no sininho e no celular.</p></div>
       <button class="btn-primario" style="width:auto;" onclick="window.open('${base}', '_blank')">👁️ Ver a página</button></div>
     <div class="mtv-kpis"><div><b>${L.length}</b><small>contatos desta oferta</small></div><div><b>${L.filter(l => l.tipo !== 'empresa').length}</b><small>individuais</small></div><div><b>${L.filter(l => l.tipo === 'empresa').length}</b><small>empresas</small></div><div><b>${L.filter(l => (l.etapa || 'novo') === 'novo').length}</b><small>sem resposta</small></div></div>
-    ${L.length ? `<button class="btn-secundario btn-sm" style="margin:-4px 0 14px;" onclick="MTN.modo='do-chao'; MTN.aba='pedidos'; MTN.filtroPed='comunicacao'; mtnDesenhar()">📥 Ver os contatos em Solicitações</button>` : ''}
+    ${L.length ? `<button class="btn-secundario btn-sm" style="margin:-4px 0 14px;" onclick="MTN.abaP='pedidos'; MTN.filtroPed='abertas'; mtnDesenhar()">📥 Ver os contatos em Solicitações</button>` : ''}
+    <div class="mtv-bio"><div><b>🔗 Link da bio: todas as mentorias numa página</b><small>Vende a Do Chão à Gestão e a Comunicação de Impacto, para pessoa ou empresa. Coloque na bio do Instagram.</small><code>${escapeHtml((mtnBase() + '/mentorias?o=instagram').replace(/^https?:\/\//, ''))}</code></div><div class="mtv-bts">${ql(mtnBase() + '/mentorias?o=instagram')}</div></div>
     <div class="mtv-aviso ${aberta ? 'ok' : ''}">${aberta ? `✅ Vendendo vagas na <b>${escapeHtml(aberta.nome)}</b>${aberta.inicio ? ' · começa ' + new Date(aberta.inicio + 'T12:00:00').toLocaleDateString('pt-BR') : ''} · preço da turma: <b>${mtnMoeda(Number(aberta.preco) || v.precoIndividual)}</b>${MTN.d.pagamentoOnline ? ' · pagamento online ligado' : ' · <b>pagamento online desligado</b>: o interessado deixa os dados e você confirma no WhatsApp'}.` : `⚠️ Nenhuma turma da Comunicação de Impacto com status <b>Inscrições abertas</b>. A página continua vendendo, mas a vaga individual vira <b>lista da próxima turma</b>. Para vender com data e pagamento, crie ou edite uma turma e coloque o status "Inscrições abertas". <button class="btn-secundario btn-sm" onclick="mtnEditarTurma(0, '${p.id}')">＋ Abrir turma</button>`}</div>
     <h3 class="mtv-h">🔗 Links prontos (cada canal é medido separado)</h3>
     <div class="mtv-links">${links.map(([t, u, s]) => `<div class="mtv-link"><div><b>${t}</b><small>${s}</small><code>${escapeHtml(u.replace(/^https?:\/\//, ''))}</code></div><div class="mtv-bts">${ql(u)}</div></div>`).join('')}</div>
     <h3 class="mtv-h">✍️ Textos prontos para divulgar</h3>
     <div class="mtv-textos">${mtnCiTextos(base).map(([t, x]) => `<div class="mtv-texto"><div class="mtv-texto-cab"><b>${t}</b><button class="btn-secundario btn-sm" onclick="mtnCopiar(${escapeHtml(JSON.stringify(x))})">📋 Copiar</button></div><pre>${escapeHtml(x)}</pre></div>`).join('')}</div>
+    </div>`;
+}
+function mtnCiConfig() {
+  const v = Object.assign({}, MTN_CI_PADRAO, MTN.d.vendaCi || {});
+  return `<div class="mtv">
     <h3 class="mtv-h">💰 Preço e condições que aparecem na página</h3>
     <div class="mtv-form">
       <label>Vaga individual (R$)<input id="vci-precoIndividual" type="number" value="${escapeHtml(v.precoIndividual)}"><small>Se a turma aberta tiver preço, vale o da turma.</small></label>
@@ -14765,8 +14780,8 @@ async function mtnRegistrar(semana, id, v) {
 function mtnCopiar(t) { navigator.clipboard.writeText(t).then(() => mostrarToast('📋 Copiado!'), () => prompt('Copie:', t)); }
 // ---------- 🧲 Funil ----------
 function mtnFunil() {
-  const L = MTN.leads.filter(l => MTN.filtro === 'todos' || l.tipo === MTN.filtro), cont = t => MTN.leads.filter(l => l.tipo === t).length;
-  return `<div class="mtn-filtros">${[['todos', 'Todos', MTN.leads.length], ...Object.entries(MTN_TIPOS).map(([k, v]) => [k, v, cont(k)])].map(([k, r, n]) => `<button class="${MTN.filtro === k ? 'on' : ''}" onclick="MTN.filtro='${k}'; mtnDesenhar()">${r} <small>${n}</small></button>`).join('')}
+  const LV = mtnLeadsVis(), L = LV.filter(l => MTN.filtro === 'todos' || l.tipo === MTN.filtro), cont = t => LV.filter(l => l.tipo === t).length;
+  return `<div class="mtn-filtros">${[['todos', 'Todos', LV.length], ...Object.entries(MTN_TIPOS).map(([k, v]) => [k, v, cont(k)])].map(([k, r, n]) => `<button class="${MTN.filtro === k ? 'on' : ''}" onclick="MTN.filtro='${k}'; mtnDesenhar()">${r} <small>${n}</small></button>`).join('')}
       <span style="flex:1"></span><button class="btn-primario btn-sm" style="width:auto;" onclick="mtnEditarLead()">＋ Novo contato</button><button class="btn-secundario btn-sm" onclick="mtnImportar()">📋 Colar lista de empresas</button></div>
     <div class="mtn-kanban">${MTN_ETAPAS.map(([e, r]) => { const it = L.filter(l => (l.etapa || 'novo') === e), soma = it.reduce((s, l) => s + (Number(l.valor) || 0), 0); return `<div class="mtn-col"><div class="mtn-col-cab"><b>${r}</b><small>${it.length}${soma ? ' · ' + mtnMoeda(soma) : ''}</small></div>
       ${it.map(l => `<div class="mtn-lead"><div class="mtn-lead-top"><span class="mtn-tipo">${MTN_TIPOS[l.tipo] || l.tipo}</span><small>${l.created_at ? new Date(String(l.created_at).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''}</small></div>
@@ -14785,7 +14800,7 @@ function mtnQuando(dt) {
   return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 function mtnPedidos() {
-  const L = MTN.leads, f = MTN.filtroPed || 'abertas';
+  const L = mtnLeadsVis(), f = MTN.filtroPed || 'abertas';
   const filtros = [['abertas', '📬 Em aberto', l => MTN_ABERTAS.includes(l.etapa || 'novo')], ['novo', '🆕 Novas', l => (l.etapa || 'novo') === 'novo'], ['empresa', '🎤 Palestras e empresas', l => l.tipo === 'empresa'], ['aluno', '🎓 Mentoria', l => l.tipo === 'aluno' && mtnDadosLead(l).programa !== 'comunicacao-impacto'], ['comunicacao', '🎙️ Comunicação', l => mtnDadosLead(l).programa === 'comunicacao-impacto' || l.origem === 'comunicacao'], ['aula', '🔴 Aula', l => l.tipo === 'aula'], ['raiox', '🩻 Raio-X', l => l.tipo === 'raiox'], ['todas', 'Todas', () => true]];
   const fn = (filtros.find(x => x[0] === f) || filtros[0])[2];
   const lista = L.filter(fn).sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')) || b.id - a.id);

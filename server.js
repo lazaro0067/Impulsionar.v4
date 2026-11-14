@@ -13705,6 +13705,26 @@ app.get('/api/public/comunicacao', async (req, res) => {
             pagamentoOnline: !!(d.pagamentoOnline && mpPreference && t) });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
+// vitrine para a bio: todas as mentorias à venda numa página só (/mentorias)
+const MT_PAGINAS_VENDA = { [MT_PRINCIPAL]: { link: '/mentoria', vaga: '/mentoria#inscricao', empresa: '/palestra#contratar' }, 'comunicacao-impacto': { link: '/comunicacao', vaga: '/comunicacao?quero=vaga', empresa: '/comunicacao?quero=empresa' } };
+app.get('/api/public/mentorias', async (req, res) => {
+    try {
+        const d = await mtLer(), v = Object.assign({}, MT_PADRAO.vendaCi, d.vendaCi || {}), g = (d.ofertas || []).find(o => o.codigo === 'grupo') || {};
+        const lista = [];
+        for (const p of mtProgramas(d)) {
+            const t = await mtTurmaAberta(p.id), pg = MT_PAGINAS_VENDA[p.id] || {}, ehPrinc = p.id === MT_PRINCIPAL;
+            const base = ehPrinc ? Number(g.valor) || 0 : p.id === 'comunicacao-impacto' ? v.precoIndividual : 0;
+            lista.push({ id: p.id, nome: p.nome, icone: p.icone || '🎓', encontros: (p.encontros || []).length, duracao: ehPrinc ? '1 hora' : (p.duracaoEncontro || '1 h').replace(/^1 h$/, '1 hora'),
+                resumo: ehPrinc ? 'Rotina de gestão, time engajado e indicador melhorando, com o método M.O.V.E.R.' : (p.subtitulo || ''),
+                formato: ehPrinc ? 'Ao vivo online, 1 por semana' : p.id === 'comunicacao-impacto' ? v.formatoIndividual : (p.formato || ''),
+                publico: ehPrinc ? 'Supervisores, coordenadores e gerentes de operação' : (p.publico || ''),
+                preco: t ? Number(t.preco) || base : base, parcelas: p.id === 'comunicacao-impacto' ? Number(v.parcelas) || 12 : 12,
+                turma: t ? { nome: t.nome, inicio: t.inicio, horario: t.horario, restantes: t.restantes } : null,
+                link: pg.link || '', vaga: pg.vaga || '', empresa: pg.empresa || '' });
+        }
+        res.json({ marca: d.marca, mentorias: lista.filter(x => x.link), palestra: { titulo: d.palestra.titulo }, aula: d.links.proximaAula });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
 app.post('/api/public/comunicacao/inscricao', async (req, res) => {
     if (!mtLimite(req)) return res.status(429).json({ error: 'Muitas tentativas. Tente de novo em instantes.' });
     const b = req.body || {};
@@ -13963,7 +13983,7 @@ app.get('/aula/:slug', (req, res) => res.set('Cache-Control', 'no-cache').sendFi
 app.get(['/aluno', '/aluno/:token'], (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'aluno.html')));
 app.get('/presenca/:codigo', (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'presenca.html')));
 // páginas públicas com endereço curto
-[['/comunicacao', 'comunicacao.html'], ['/comunicacao-de-impacto', 'comunicacao.html'], ['/mentoria', 'mentoria.html'], ['/palestra', 'palestra.html'], ['/aula', 'aula.html'], ['/raio-x', 'raio-x.html'], ['/bio', 'bio.html'], ['/palestra/apresentar', 'palestra-apresentar.html'], ['/programa/apresentar', 'programa-apresentar.html']]
+[['/mentorias', 'mentorias.html'], ['/comunicacao', 'comunicacao.html'], ['/comunicacao-de-impacto', 'comunicacao.html'], ['/mentoria', 'mentoria.html'], ['/palestra', 'palestra.html'], ['/aula', 'aula.html'], ['/raio-x', 'raio-x.html'], ['/bio', 'bio.html'], ['/palestra/apresentar', 'palestra-apresentar.html'], ['/programa/apresentar', 'programa-apresentar.html']]
     .forEach(([rota, arq]) => app.get(rota, (req, res) => res.sendFile(path.join(__dirname, 'public', arq))));
 
 // ======================================================================
