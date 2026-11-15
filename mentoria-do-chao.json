@@ -18,7 +18,116 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Abertura · 00–12 min · frase, história e resumo",
+[
+[
+"dc01/dc01-00a-frase",
+"Em 2013 eu carregava caixa. Hoje eu formo quem lidera.",
+{
+"objetivo": "Abrir com impacto antes de qualquer apresentação.",
+"onde": "Câmera ligada, olhando para a lente, em silêncio por 3 segundos.",
+"fale": "Em 2013 eu carregava caixa. Hoje eu formo quem lidera. E é exatamente esse caminho que a gente vai fazer junto nos próximos 19 encontros.",
+"faca": [
+"Fale devagar, com pausa entre as duas frases",
+"Não se apresente ainda: deixe a frase trabalhar"
+],
+"tempo": "40 s"
+}
+],
+[
+"dc-palestrante",
+"Lázaro Neto · palestrante e mentor",
+{
+"objetivo": "Apresentar-se com autoridade.",
+"onde": "Câmera.",
+"fale": "Eu sou o Lázaro Neto, gerente corporativo de operações. Cresci dentro da operação, degrau por degrau.",
+"tempo": "30 s"
+}
+],
+[
+"dc01/dc01-00c-escada",
+"Minha escada: de 2013 até hoje",
+{
+"objetivo": "Contar a sua história com verdade: é ela que gera confiança.",
+"onde": "Compartilhando a tela.",
+"fale": "Comecei como ajudante de distribuição em 2013. Fui manobrista, conferente, supervisor em Formosa e em Rio Verde, coordenador, gerente de operações e hoje sou gerente corporativo.",
+"faca": [
+"Conte 1 momento real de cada degrau, 20 a 30 segundos cada",
+"Escolha 1 erro que você cometeu como líder novo: é o que mais conecta"
+],
+"pergunte": "Quem aqui também começou na ponta?",
+"tempo": "3 min"
+}
+],
+[
+"dc01/dc01-00d-numeros",
+"O tamanho da responsabilidade",
+{
+"objetivo": "Mostrar escala sem se gabar: os números dependem de gente.",
+"onde": "Compartilhando a tela.",
+"fale": "Quando cheguei na gestão eram 250 pessoas, 47 caminhões, 14 carretas e 12 milhões em estoque por dia. Nenhum desses números se move sozinho.",
+"tempo": "1 min"
+}
+],
+[
+"dc01/dc01-00e-licoes",
+"As lições do chão",
+{
+"objetivo": "Ligar a sua história ao que eles vão aprender.",
+"onde": "Compartilhando a tela.",
+"fale": "Cada degrau me ensinou uma coisa. E é isso que eu organizei em método para vocês.",
+"faca": [
+"Leia só os títulos e comente 2 lições que mais marcaram"
+],
+"tempo": "1 min 30 s"
+}
+],
+[
+"dc01/dc01-00f-virada",
+"13 anos de operação em 19 encontros",
+{
+"onde": "Câmera, devagar.",
+"fale": "O que eu aprendi em 13 anos de operação, organizado em 19 encontros. Vocês não precisam aprender do jeito difícil.",
+"faca": [
+"Pausa de 3 segundos"
+],
+"tempo": "30 s"
+}
+],
+[
+"dc01/dc01-00g-jornada",
+"A jornada: 19 encontros",
+{
+"objetivo": "Dar o mapa: o aluno precisa saber para onde vai.",
+"onde": "Compartilhando a tela.",
+"fale": "Encontro 1, diagnóstico. Do 2 ao 4, mentalidade de dono. Do 5 ao 8, operação sob controle. Do 9 ao 12, vínculo com o time. Do 13 ao 15, execução. Do 16 ao 18, formar sucessores. E no 19 cada um apresenta o seu case.",
+"tempo": "2 min"
+}
+],
+[
+"dc01/dc01-00h-como",
+"Como funciona",
+{
+"objetivo": "Combinar o formato.",
+"onde": "Compartilhando a tela.",
+"fale": "1 hora por semana, ao vivo. Toda semana uma missão no seu time real. Tudo fica na Área do Aluno. E o seu indicador é escolhido hoje.",
+"tempo": "1 min"
+}
+],
+[
+"dc01/dc01-00i-leva",
+"O que você leva no final",
+{
+"objetivo": "Mostrar o valor concreto.",
+"onde": "Compartilhando a tela.",
+"fale": "No final você sai com as ferramentas prontas e um case com número, que pode mostrar para o seu gestor.",
+"tempo": "1 min"
+}
+]
+]
+],
+[
+"Encontro 1 · combinados · 12–14 min",
 [
 [
 "dc01/dc01-01-capa",
@@ -70,7 +179,7 @@
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 14–27 min",
 [
 [
 "dc01/dc01-05-sec1",
@@ -122,7 +231,7 @@
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Ferramenta · 27–35 min",
 [
 [
 "dc01/dc01-09-sec2",
