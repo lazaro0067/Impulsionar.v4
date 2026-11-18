@@ -1992,7 +1992,7 @@
   #mt-matpainel { position:fixed; inset:0; z-index:99999; background:rgba(5,8,15,.75); display:none; place-items:center; padding:20px; } .mtp-caixa { background:#fff; color:#0f172a; border-radius:18px; padding:18px; width:min(900px,100%); max-height:90vh; overflow:auto; } .mtp-cab { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:18px; } .mtp-cab button { font:inherit; border:none; background:#f1f5f9; border-radius:10px; padding:6px 12px; cursor:pointer; font-weight:800; }
   .mtp-grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:10px; } .mtp-item { font:inherit; text-align:left; display:grid; grid-template-columns:40px 1fr; grid-template-rows:auto auto; column-gap:8px; align-items:center; border:1px solid #e2e8f0; background:#f8fafc; border-radius:14px; padding:12px; cursor:pointer; } .mtp-item:hover { border-color:#f59e0b; background:#fffbeb; } .mtp-item span { grid-row:span 2; font-size:28px; } .mtp-item b { font-size:14px; } .mtp-item small { color:#64748b; font-size:12px; word-break:break-all; }
   #mt-visor { position:fixed; inset:0; z-index:100000; background:#0b1329; display:none; flex-direction:column; } .mtv-topo { display:flex; align-items:center; gap:8px; padding:10px 14px; color:#fff; border-bottom:1px solid rgba(255,255,255,.1); } .mtv-topo > div { flex:1; min-width:0; } .mtv-topo b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .mtv-topo small { color:#94a3b8; } .mtv-topo button, .mtv-topo a { font:inherit; font-weight:700; font-size:13px; background:#1e293b; color:#fff; border:none; border-radius:10px; padding:8px 12px; cursor:pointer; text-decoration:none; white-space:nowrap; } .mtv-topo button:disabled { opacity:.35; } .mtv-topo .x { background:#f59e0b; color:#0b1329; }
-  .mtv-corpo { flex:1; display:flex; min-height:0; } .mtv-corpo iframe { flex:1; border:0; background:#fff; } .mtv-img { flex:1; display:grid; place-items:center; padding:12px; } .mtv-img img, .mtv-img video { max-width:100%; max-height:calc(100vh - 90px); border-radius:8px; } .mtv-aviso { margin:auto; color:#cbd5e1; font-weight:600; padding:20px; text-align:center; } .mtv-rodape { color:#94a3b8; font-size:12px; padding:6px 14px; text-align:center; }
+  .mtv-corpo { flex:1; display:flex; min-height:0; } .mtv-pdf { flex:1; min-width:0; min-height:0; display:flex; align-items:center; justify-content:center; padding:10px; } .mtv-pdf canvas { box-shadow:0 10px 40px rgba(0,0,0,.5); background:#fff; } .mtv-topo button#mtv-office { background:#334155; } .mtv-corpo iframe { flex:1; border:0; background:#fff; } .mtv-img { flex:1; display:grid; place-items:center; padding:12px; } .mtv-img img, .mtv-img video { max-width:100%; max-height:calc(100vh - 90px); border-radius:8px; } .mtv-aviso { margin:auto; color:#cbd5e1; font-weight:600; padding:20px; text-align:center; } .mtv-rodape { color:#94a3b8; font-size:12px; padding:6px 14px; text-align:center; }
   .mtn-arq { display:flex; align-items:center; gap:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:8px 10px; margin:6px 0 0 26px; } .mtn-arq.novo { border-color:#f59e0b; background:#fffbeb; } .mtn-arq > div { flex:1; min-width:0; } .mtn-arq b { word-break:break-all; } .mtn-arq i { font-style:normal; font-size:11px; font-weight:800; color:#b45309; } .mtn-arq small { display:block; color:#64748b; font-size:12px; } .mtn-arq a { text-decoration:none; width:auto; white-space:nowrap; }
   .mtn-ent { border-bottom:1px solid #e2e8f0; padding:10px 0; } .mtn-ent.ok .mtn-tarefa b { color:#15803d; } .mtn-mat-enc { border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; margin:10px 0; } .mtn-mat-enc h4 { margin:0 0 6px; } .mtn-mat-enc h4 small { color:#64748b; font-weight:600; margin-left:6px; } .mtn-mat-al { margin:8px 0; } .mtn-mat-al .mtn-arq { margin-left:0; }
   .mtc-abas { display:flex; gap:6px; margin-bottom:12px; } .mtc-abas button { font:inherit; font-weight:700; border:1px solid #cbd5e1; background:#fff; border-radius:999px; padding:6px 14px; cursor:pointer; } .mtc-abas button.on { background:#0b1329; color:#fff; border-color:#0b1329; }
@@ -2203,7 +2203,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 18/11 (2)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 18/11 (3)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -12058,8 +12058,8 @@ function mtCronometro() { const s = Math.floor((Date.now() - MTS.ini) / 1000); r
 function mtTecla(e) {
   if (!MTS) return;
   const vis = id => { const x = document.getElementById(id); return x && x.style.display !== 'none' && x.style.display !== ''; };
-  if (vis('mt-visor')) { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); const i = MTVIS.lista.indexOf(MTVIS.atual), j = i + (e.key === 'ArrowRight' ? 1 : -1); if (MTVIS.lista[j]) mtnVerArq(MTVIS.lista[j]); } return; }
-  if (vis('mt-matpainel')) { if (e.key === 'Escape') document.getElementById('mt-matpainel').style.display = 'none'; return; }
+  if (vis('mt-visor')) { if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); mtVisNav(1); } else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); mtVisNav(-1); } else if (e.key === 'Escape' && !document.fullscreenElement) mtnFecharVisor(); return; }
+  if (vis('mt-matpainel')) { if (e.key === 'Escape') mtFecharPainelMat(); return; }
   if (MTS.editando && e.key !== 'Escape') return;
   if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); mtIr(1); }
   else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); mtIr(-1); }
@@ -12173,7 +12173,9 @@ function mtCssSlides() {
   }
   return (MT_CSS_REMOTO = out.join('\n'));
 }
-function mtHtmlRemoto(it) {
+function mtMiniRemoto(h) { return String(h || '').replace(/\/slides-mentoria\/(?!_m\/)([\w\-\/]+?)\.(png|jpe?g)(\?v=\d+)?/gi, '/slides-mentoria/_m/$1.jpg'); }
+function mtHtmlRemoto(it) { return mtMiniRemoto(mtHtmlRemotoBase(it)); }
+function mtHtmlRemotoBase(it) {
   if (!it) return '';
   if (it.tipo === 'arquivo') {
     const a = MT.doc.modulos[it.mi].arquivo || {};
@@ -12189,7 +12191,14 @@ function mtEnviarEstadoRemoto() {
   MT_REMOTO.socket.emit('mt-estado', { i: MTS.i, total: MTS.deck.length, titulo: mtTituloDeck(it), proximo: mtTituloDeck(MTS.deck[MTS.i + 1]),
     modulo: it.mi !== undefined ? MT.doc.modulos[it.mi].titulo : '', notas: it.tipo === 'slide' ? (MT.doc.modulos[it.mi].slides[it.si].notas || '') : '', ini: MTS.ini, agora: Date.now(),
     tempo: (() => { const t = mtTempoInfo(); if (!t) return null; const prox = MT.doc.modulos.slice(t.mi + 1).find((m, k) => MTS.plano[t.mi + 1 + k]); return { blocoIni: MTS.blocoIni[t.mi], dur: t.dur, plIni: t.pl.ini, fim: t.fim, proximo: prox ? prox.titulo : '' }; })(),
-    telas, css: mtCssSlides(), cor: mtPub(MT.doc.publico).cor });
+    telas, css: MT_REMOTO.cssOk ? undefined : mtCssSlides(), cor: mtPub(MT.doc.publico).cor, material: mtMaterialRemoto(), seq: MT_REMOTO.seqVisto || 0 });
+  MT_REMOTO.cssOk = true;
+}
+function mtMaterialRemoto() {
+  const v = document.getElementById('mt-visor'), p = document.getElementById('mt-matpainel');
+  if (v && v.style.display === 'flex') return { aberto: true, nome: MTVIS.nome, aluno: MTVIS.aluno, i: MTVIS.i, n: MTVIS.lista.length, pag: MTVIS.pag, pags: MTVIS.pags, modo: MTVIS.modo, mini: MTVIS.mini || '' };
+  if (p && p.style.display === 'grid') return { lista: [...p.querySelectorAll('.mtn-ver')].map(b => ({ aluno: b.dataset.aluno || '', nome: b.dataset.nome || '' })) };
+  return MT.__turma && MT.__mentoria ? { disponivel: true } : null;
 }
 async function mtConectarRemoto() {
   if (MT_REMOTO.socket && MT_REMOTO.treinamentoId === MT.doc.id) return;
@@ -12199,21 +12208,37 @@ async function mtConectarRemoto() {
   if (typeof io !== 'function') throw new Error('Conexão em tempo real indisponível.');
   const sk = io({ transports: ['websocket', 'polling'] });
   MT_REMOTO.socket = sk;
-  sk.on('connect', () => sk.emit('mt-apresentador', { codigo: MT_REMOTO.codigo, token: ESTADO.token }));
+  sk.on('connect', () => { sk.emit('mt-apresentador', { codigo: MT_REMOTO.codigo, token: ESTADO.token }); MT_REMOTO.cssOk = false; setTimeout(() => { try { mtEnviarEstadoRemoto(); } catch (e) {} }, 300); });
   sk.on('mt-controles', d => { MT_REMOTO.conectados = d.conectados; });
   sk.on('mt-controle-conectou', () => {
-    MT_REMOTO.conectados++; mostrarToast('📱 Celular conectado! Já pode passar os slides por ele.');
+    MT_REMOTO.conectados++; MT_REMOTO.cssOk = false; mostrarToast('📱 Celular conectado! Já pode passar os slides por ele.');
     const m = document.getElementById('mt-remoto-modal'); if (m) m.remove();
     if (MTS) mtDesenharShow();
   });
   sk.on('mt-gravacao-status', st => { MT_GRAV.celular = st.gravando ? 'gravando' : st.enviando ? 'enviando' : st.camera ? 'pronta' : ''; if (MTS) mtDesenharShow(); });
   sk.on('mt-gravacao-recebida', () => { mostrarToast('📹 Filmagem do celular salva no treinamento!'); MT_GRAV.celular = 'pronta'; if (MTS) mtDesenharShow(); });
-  sk.on('mt-comando', c => {
+  sk.on('mt-comando', async c => {
     if (!MTS) return;
+    if (c.seq) MT_REMOTO.seqVisto = c.seq;
+    const visor = mtVisAberto(), painel = (document.getElementById('mt-matpainel') || {}).style;
+    if (c.cmd === 'pedir-estado') { MT_REMOTO.cssOk = false; return mtEnviarEstadoRemoto(); }
+    if (c.cmd === 'mat-fechar') { if (visor) mtnFecharVisor(); else if (painel) { painel.display = 'none'; mtEnviarEstadoRemoto(); } return; }
+    if (c.cmd === 'mat-lista') { if (visor) mtnFecharVisor(); await mtMateriaisShow(); return mtEnviarEstadoRemoto(); }
+    if (c.cmd === 'mat-abrir') { const b = [...document.querySelectorAll('#mt-matpainel .mtn-ver')][c.i]; if (b) mtnVerArq(b); return; }
+    if (c.cmd === 'mat-modo') { if (visor && MTVIS.modo === 'pdf') mtVisOffice(); return; }
+    if (visor) {
+      if (c.cmd === 'proximo' || c.cmd === 'mat-prox') return mtVisNav(1);
+      if (c.cmd === 'anterior' || c.cmd === 'mat-ant') return mtVisNav(-1);
+      if (c.cmd === 'mat-aluno-prox') return mtVisAluno(1);
+      if (c.cmd === 'mat-aluno-ant') return mtVisAluno(-1);
+      return mtEnviarEstadoRemoto();
+    }
     if (c.cmd === 'proximo') mtIr(1); else if (c.cmd === 'anterior') mtIr(-1);
-    else if (c.cmd === 'ir') mtIrPara(Math.max(0, Math.min(MTS.deck.length - 1, c.i)));
+    else if (c.cmd === 'ir') { const alvo = Math.max(0, Math.min(MTS.deck.length - 1, c.i)); if (alvo !== MTS.i) mtIrPara(alvo); else mtEnviarEstadoRemoto(); }
     else mtEnviarEstadoRemoto();
   });
+  sk.on('disconnect', () => { if (MTS) mostrarToast('📡 Conexão do passador caiu. Reconectando sozinho…', true); });
+  sk.io && sk.io.on && sk.io.on('reconnect', () => { if (MTS) mostrarToast('📱 Passador reconectado.'); });
 }
 async function mtAbrirControleCelular() {
   try { await mtConectarRemoto(); } catch (e) { return mostrarToast(e.message, true); }
@@ -15322,6 +15347,7 @@ function mtnEntregas(tid, id) {
     <div class="acoes-form"><button class="btn-secundario" onclick="mtnModal(''); mtnLerMateriais([${mats.filter(m => m.novo).map(m => a.id).slice(0, 1).join(',')}]); mtnDesenhar()">Fechar</button></div>`);
 }
 const MTVIS = { lista: [], atual: null, tid: 0, f: -1, t: null };
+function mtFecharPainelMat() { const p = document.getElementById('mt-matpainel'); if (p) p.style.display = 'none'; if (typeof MT_REMOTO !== 'undefined' && MT_REMOTO.socket && MTS) mtEnviarEstadoRemoto(); }
 async function mtMateriaisShow(f) {
   MTVIS.tid = MT.__turma; if (f === undefined) { MTVIS.f = -1; try { const ts = await api('/api/admin/mentoria/turmas'); MTVIS.t = ts.find(x => x.id === MTVIS.tid); } catch (e) { return mostrarToast(e.message, true); } } else MTVIS.f = f;
   const t = MTVIS.t; if (!t) return mostrarToast('Turma não encontrada.', true);
@@ -15330,31 +15356,95 @@ async function mtMateriaisShow(f) {
   if (MTVIS.f === -1) MTVIS.f = encs.includes(n - 1) ? n - 1 : encs.includes(n) ? n : 0;
   const lista = todos.filter(m => !MTVIS.f || m.encontro === MTVIS.f).sort((x, y) => x.aluno.localeCompare(y.aluno));
   let v = document.getElementById('mt-matpainel'); if (!v) { v = document.createElement('div'); v.id = 'mt-matpainel'; document.body.appendChild(v); }
-  v.innerHTML = `<div class="mtp-caixa mtn-arqs-raiz"><div class="mtp-cab"><b>📎 Materiais dos alunos · ${escapeHtml(t.nome)}</b><button onclick="document.getElementById('mt-matpainel').style.display='none'">✕</button></div>
+  v.innerHTML = `<div class="mtp-caixa mtn-arqs-raiz"><div class="mtp-cab"><b>📎 Materiais dos alunos · ${escapeHtml(t.nome)}</b><button onclick="mtFecharPainelMat()">✕</button></div>
     <div class="mtc-abas" style="flex-wrap:wrap;"><button class="${!MTVIS.f ? 'on' : ''}" onclick="mtMateriaisShow(0)">Todos (${todos.length})</button>${encs.filter(Boolean).map(e => `<button class="${MTVIS.f === e ? 'on' : ''}" onclick="mtMateriaisShow(${e})">Encontro ${e} · ${todos.filter(m => m.encontro === e).length}</button>`).join('')}</div>
     ${lista.length ? `<div class="mtp-grade">${lista.map(m => `<button class="mtn-ver mtp-item" data-url="${escapeHtml(m.url)}" data-nome="${escapeHtml(m.nome)}" data-aluno="${escapeHtml(m.aluno)}" onclick="mtnVerArq(this)"><span>${/\.pptx?$/i.test(m.nome) ? '📊' : /\.pdf$/i.test(m.nome) ? '📕' : /\.(png|jpe?g|webp|gif)$/i.test(m.nome) ? '🖼️' : /\.(mp4|mov|webm)$/i.test(m.nome) ? '🎬' : '📄'}</span><b>${escapeHtml(m.aluno)}</b><small>${escapeHtml(m.nome)}${m.encontro ? ' · E' + m.encontro : ''}</small></button>`).join('')}</div>` : '<p class="plano-meta">Nenhum material enviado ainda.</p>'}
     <p class="plano-meta" style="margin:10px 0 0;">Clique no nome para abrir na tela, com o formato original. Use ◀ ▶ para ir de um aluno para o outro.</p></div>`;
-  v.style.display = 'grid';
+  v.style.display = 'grid'; if (typeof MT_REMOTO !== 'undefined' && MT_REMOTO.socket) mtEnviarEstadoRemoto();
 }
-function mtnVerArq(bt) {
-  const lista = [...(bt.closest('.mtn-arqs-raiz') || document).querySelectorAll('.mtn-ver')], i = lista.indexOf(bt); MTVIS.lista = lista; MTVIS.atual = bt; const _x = 0, url = bt.dataset.url, nome = bt.dataset.nome || 'arquivo', ext = (nome.match(/\.([a-z0-9]+)$/i) || [, ''])[1].toLowerCase();
+// ---------- Visor de materiais dos alunos (abre na tela e obedece ao passador) ----------
+let MT_PDFJS = null;
+async function mtPdfJs() { if (!MT_PDFJS) { MT_PDFJS = await import('/vendor/pdfjs/pdf.min.js'); MT_PDFJS.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js'; } return MT_PDFJS; }
+const MTV_OFFICE = /^(pptx?|ppsx?|docx?|xlsx?|odp|key)$/;
+function mtnVerArq(bt, pag) {
+  if (!bt) return;
+  const raiz = bt.closest('.mtn-arqs-raiz') || document, lista = [...raiz.querySelectorAll('.mtn-ver')], i = lista.indexOf(bt);
+  const url = bt.dataset.url, nome = bt.dataset.nome || 'arquivo', ext = (nome.match(/\.([a-z0-9]+)$/i) || [, ''])[1].toLowerCase();
   const al = bt.dataset.aluno || (bt.closest('.mtn-mat-al') ? ((bt.closest('.mtn-mat-al').querySelector(':scope > b') || {}).textContent || '') : '');
-  const abs = /^https?:/i.test(url) ? url : location.origin + url, local = /^(localhost|127\.|192\.168\.)/.test(location.hostname);
-  let corpo;
-  if (/^(pptx?|docx?|xlsx?|ppsx?)$/.test(ext)) corpo = local ? `<div class="mtv-aviso">O visualizador do Office só funciona no site publicado (impulsionarv4.com.br). Use ⬇️ Baixar.</div>` : `<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(abs)}" allowfullscreen></iframe>`;
-  else if (ext === 'pdf') corpo = `<iframe src="${escapeHtml(url)}#view=FitH"></iframe>`;
-  else if (/^(png|jpe?g|gif|webp|heic)$/.test(ext)) corpo = `<div class="mtv-img"><img src="${escapeHtml(url)}" alt=""></div>`;
-  else if (/^(mp4|mov|webm|m4v)$/.test(ext)) corpo = `<div class="mtv-img"><video src="${escapeHtml(url)}" controls autoplay playsinline></video></div>`;
-  else corpo = `<div class="mtv-aviso">Este tipo de arquivo não abre aqui. Use ⬇️ Baixar.</div>`;
+  const seq = (MTVIS.seq || 0) + 1;
+  Object.assign(MTVIS, { lista, atual: bt, i, url, nome, ext, aluno: al, pdf: null, pag: 1, pags: 0, modo: 'carregando', seq, fimPag: pag === 'fim' });
   let v = document.getElementById('mt-visor'); if (!v) { v = document.createElement('div'); v.id = 'mt-visor'; document.body.appendChild(v); }
-  v.innerHTML = `<div class="mtv-topo"><div><b>${escapeHtml(nome)}</b><small>${escapeHtml(al)}${lista.length > 1 ? ` · ${i + 1} de ${lista.length}` : ''}</small></div>
-    ${lista.length > 1 ? `<button ${i <= 0 ? 'disabled' : ''} onclick="mtnVerArq(MTVIS.lista[${i - 1}])">◀</button><button ${i >= lista.length - 1 ? 'disabled' : ''} onclick="mtnVerArq(MTVIS.lista[${i + 1}])">▶</button>` : ''}
-    <button onclick="(document.getElementById('mt-visor').requestFullscreen || (() => {})).call(document.getElementById('mt-visor'))">⛶ Tela cheia</button><a href="${escapeHtml(url)}" download="${escapeHtml(nome)}">⬇️ Baixar</a><button class="x" onclick="mtnFecharVisor()">✕ Fechar</button></div>
-    <div class="mtv-corpo">${corpo}</div>${/^(pptx?|docx?|xlsx?|ppsx?)$/.test(ext) && !local ? '<div class="mtv-rodape">Aberto com o visualizador do Microsoft Office, mantendo o formato. Arquivos muito grandes (acima de 10 MB) podem não abrir: use ⬇️ Baixar.</div>' : ''}`;
+  v.innerHTML = `<div class="mtv-topo"><div><b>${escapeHtml(nome)}</b><small>${escapeHtml(al)}${lista.length > 1 ? ` · material ${i + 1} de ${lista.length}` : ''}<span id="mtv-pag"></span></small></div>
+    <button title="Material anterior" ${i <= 0 ? 'disabled' : ''} onclick="mtVisAluno(-1)">⏮ Anterior</button><button title="Página anterior (←)" onclick="mtVisNav(-1)">◀</button><button title="Próxima página (→)" onclick="mtVisNav(1)">▶</button><button title="Próximo material" ${i >= lista.length - 1 ? 'disabled' : ''} onclick="mtVisAluno(1)">Próximo ⏭</button>
+    <button id="mtv-office" style="display:none" onclick="mtVisOffice()" title="Abrir no visualizador do Microsoft Office (formato idêntico, mas sem passador)">Ver no Office</button>
+    <button onclick="(document.getElementById('mt-visor').requestFullscreen || (() => {})).call(document.getElementById('mt-visor'))">⛶</button><a href="${escapeHtml(url)}" download="${escapeHtml(nome)}" title="Baixar">⬇️</a><button class="x" onclick="mtnFecharVisor()">✕ Fechar</button></div>
+    <div class="mtv-corpo" id="mtv-corpo"><div class="mtv-aviso">⏳ Abrindo ${escapeHtml(nome)}…</div></div><div class="mtv-rodape" id="mtv-rodape"></div>`;
   v.style.display = 'flex'; document.addEventListener('keydown', mtnVisorTecla);
+  const corpo = document.getElementById('mtv-corpo'), rod = document.getElementById('mtv-rodape');
+  const fim = () => { mtVisEstado(); };
+  if (/^(png|jpe?g|gif|webp)$/.test(ext)) { MTVIS.modo = 'img'; corpo.innerHTML = `<div class="mtv-img"><img src="${escapeHtml(url)}" alt=""></div>`; return fim(); }
+  if (/^(mp4|mov|webm|m4v)$/.test(ext)) { MTVIS.modo = 'video'; corpo.innerHTML = `<div class="mtv-img"><video id="mtv-video" src="${escapeHtml(url)}" controls playsinline></video></div>`; return fim(); }
+  if (ext !== 'pdf' && !MTV_OFFICE.test(ext)) { MTVIS.modo = 'outro'; corpo.innerHTML = '<div class="mtv-aviso">Este tipo de arquivo não abre aqui. Use ⬇️ para baixar.</div>'; return fim(); }
+  fim();
+  (async () => {
+    let pdfUrl = ext === 'pdf' ? url : null;
+    if (!pdfUrl) {
+      corpo.innerHTML = '<div class="mtv-aviso">⏳ Preparando o material para o passador…<br><small>Na primeira vez pode levar alguns segundos.</small></div>';
+      try { pdfUrl = (await Promise.race([api('/api/admin/mentoria/material-pdf?url=' + encodeURIComponent(url)), new Promise(r => setTimeout(() => r({}), 40000))])).pdf || null; } catch (e) { pdfUrl = null; }
+      if (MTVIS.seq !== seq) return;
+      if (!pdfUrl) return mtVisOffice(true);
+    }
+    try {
+      const lib = await mtPdfJs(), doc = await lib.getDocument({ url: pdfUrl }).promise;
+      if (MTVIS.seq !== seq) return;
+      Object.assign(MTVIS, { pdf: doc, pags: doc.numPages, pag: MTVIS.fimPag ? doc.numPages : 1, modo: 'pdf' });
+      corpo.innerHTML = '<div class="mtv-pdf"><canvas id="mtv-canvas"></canvas></div>';
+      document.getElementById('mtv-office').style.display = MTV_OFFICE.test(ext) && !/^(localhost|127\.)/.test(location.hostname) ? '' : 'none';
+      rod.textContent = MTV_OFFICE.test(ext) ? 'Modo passador: o arquivo foi convertido em páginas. Se alguma fonte ficar diferente, use "Ver no Office".' : '';
+      await mtVisDesenharPag();
+    } catch (e) { if (MTVIS.seq === seq) { if (MTV_OFFICE.test(ext)) mtVisOffice(true); else { MTVIS.modo = 'outro'; corpo.innerHTML = `<iframe src="${escapeHtml(url)}"></iframe>`; mtVisEstado(); } } }
+  })();
 }
-function mtnFecharVisor() { const v = document.getElementById('mt-visor'); if (v) { v.style.display = 'none'; v.innerHTML = ''; } if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); document.removeEventListener('keydown', mtnVisorTecla); }
-function mtnVisorTecla(e) { if (e.key === 'Escape' && !document.fullscreenElement) mtnFecharVisor(); }
+function mtVisOffice(semConversao) {
+  const corpo = document.getElementById('mtv-corpo'), rod = document.getElementById('mtv-rodape'); if (!corpo) return;
+  const local = /^(localhost|127\.|192\.168\.)/.test(location.hostname), abs = /^https?:/i.test(MTVIS.url) ? MTVIS.url : location.origin + MTVIS.url;
+  MTVIS.modo = 'office'; MTVIS.pdf = null; MTVIS.pags = 0;
+  corpo.innerHTML = local ? '<div class="mtv-aviso">O visualizador do Office só funciona no site publicado (impulsionarv4.com.br). Use ⬇️ para baixar.</div>' : `<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(abs)}" allowfullscreen></iframe>`;
+  const b = document.getElementById('mtv-office'); if (b) b.style.display = 'none';
+  rod.textContent = semConversao ? 'Aberto no visualizador do Office (formato original). Aqui o passador troca de aluno; as páginas deste arquivo você passa no computador.' : 'Visualizador do Office: formato original. O passador troca de aluno; as páginas você passa no computador.';
+  mtVisEstado();
+}
+async function mtVisDesenharPag() {
+  const c = document.getElementById('mtv-canvas'); if (!c || !MTVIS.pdf) return;
+  const seq = MTVIS.seq, pag = await MTVIS.pdf.getPage(MTVIS.pag); if (seq !== MTVIS.seq) return;
+  const box = c.parentElement, v1 = pag.getViewport({ scale: 1 }), esc = Math.min(box.clientWidth / v1.width, box.clientHeight / v1.height), dpr = Math.min(2, window.devicePixelRatio || 1), vp = pag.getViewport({ scale: esc * dpr });
+  if (MTVIS.tarefa) try { MTVIS.tarefa.cancel(); } catch (e) {}
+  c.width = vp.width; c.height = vp.height; c.style.width = (vp.width / dpr) + 'px'; c.style.height = (vp.height / dpr) + 'px';
+  MTVIS.tarefa = pag.render({ canvasContext: c.getContext('2d'), viewport: vp });
+  try { await MTVIS.tarefa.promise; } catch (e) { return; }
+  const el = document.getElementById('mtv-pag'); if (el) el.textContent = ` · página ${MTVIS.pag} de ${MTVIS.pags}`;
+  mtVisEstado(true);
+}
+function mtVisNav(d) {
+  if (MTVIS.modo === 'pdf' && MTVIS.pags) { const n = MTVIS.pag + d; if (n >= 1 && n <= MTVIS.pags) { MTVIS.pag = n; return mtVisDesenharPag(); } }
+  if (MTVIS.modo === 'video' && d) { const vd = document.getElementById('mtv-video'); if (vd && d > 0 && vd.paused) { vd.play().catch(() => {}); return mtVisEstado(); } }
+  mtVisAluno(d, true);
+}
+function mtVisAluno(d, continuar) { const alvo = MTVIS.lista[MTVIS.i + d]; if (alvo) mtnVerArq(alvo, continuar && d < 0 ? 'fim' : undefined); else mostrarToast(d > 0 ? 'Este é o último material.' : 'Este é o primeiro material.'); }
+function mtVisAberto() { const v = document.getElementById('mt-visor'); return !!(v && v.style.display === 'flex'); }
+function mtVisEstado(comMiniatura) {
+  if (typeof MT_REMOTO === 'undefined' || !MT_REMOTO.socket || !MTS) return;
+  if (comMiniatura) { try { const c = document.getElementById('mtv-canvas'), t = document.createElement('canvas'), w = 360; t.width = w; t.height = Math.round(c.height * w / c.width); t.getContext('2d').drawImage(c, 0, 0, t.width, t.height); MTVIS.mini = t.toDataURL('image/jpeg', 0.6); } catch (e) { MTVIS.mini = ''; } }
+  else if (MTVIS.modo !== 'pdf') MTVIS.mini = MTVIS.modo === 'img' ? MTVIS.url : '';
+  mtEnviarEstadoRemoto();
+}
+function mtnFecharVisor() { const v = document.getElementById('mt-visor'); if (v) { v.style.display = 'none'; v.innerHTML = ''; } MTVIS.pdf = null; MTVIS.modo = ''; MTVIS.seq = (MTVIS.seq || 0) + 1; if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); document.removeEventListener('keydown', mtnVisorTecla); if (typeof MTS !== 'undefined' && MTS) mtEnviarEstadoRemoto(); }
+function mtnVisorTecla(e) {
+  if (typeof MTS !== 'undefined' && MTS) return; // na apresentação quem cuida das teclas é o mtTecla
+  if (e.key === 'Escape' && !document.fullscreenElement) mtnFecharVisor();
+  else if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); mtVisNav(1); } else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); mtVisNav(-1); }
+}
+window.addEventListener('resize', () => { if (mtVisAberto() && MTVIS.modo === 'pdf') mtVisDesenharPag(); });
 async function mtnLerMateriais(ids) { for (const id of [...new Set(ids)]) await api('/api/admin/mentoria/alunos/' + id + '/lidas', { method: 'POST', body: '{}' }).catch(() => {}); if (ids.length) await mtnRecarregarTurmas(); }
 function mtnMateriais(tid, filtro) {
   const t = MTN.turmas.find(x => x.id === tid); if (!t) return; const pg = mtnProgT(t), f = filtro === undefined ? 0 : filtro;

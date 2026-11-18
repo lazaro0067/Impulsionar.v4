@@ -13897,11 +13897,45 @@ const MT_PERGUNTAS_AVALIACAO = [
     { id: 'indicar', texto: 'Você indicaria para um colega? Por quê?' }
 ];
 const EXT_MATERIAL_MT = /\.(pdf|pptx?|docx?|xlsx?|png|jpe?g|webp|heic|mp4|mov|txt|key|odp)$/i;
+// Material do aluno em PDF (para o visor da apresentação passar página por página pelo passador).
+// PDF: usa o próprio arquivo. PowerPoint/Word/Excel: converte uma vez com o LibreOffice (se o servidor tiver) e guarda.
+let SOFFICE_MT = null; const CONVERSOES_MT = new Map();
+function materialPdfMt(url) {
+    const nome = path.basename(String(url || '')); if (!/^[\w.\-]+$/.test(nome)) return Promise.resolve(null);
+    if (/\.pdf$/i.test(nome)) return Promise.resolve('/uploads/' + nome);
+    if (!/\.(pptx?|docx?|odp|key|xlsx?)$/i.test(nome)) return Promise.resolve(null);
+    const pdfNome = nome.replace(/\.[a-z0-9]+$/i, '') + '.conv.pdf', pdfCaminho = path.join(PASTA_UPLOADS, pdfNome);
+    if (fs.existsSync(pdfCaminho)) return Promise.resolve('/uploads/' + pdfNome);
+    if (CONVERSOES_MT.has(nome)) return CONVERSOES_MT.get(nome);
+    const pr = (async () => {
+        const salvo = await restaurarUploadDoBanco(pdfNome); if (salvo) return '/uploads/' + pdfNome;
+        if (SOFFICE_MT === false) return null;
+        const orig = caminhoUploadMt('/uploads/' + nome);
+        if (!fs.existsSync(orig)) { const r = await restaurarUploadDoBanco(nome); if (!r) return null; }
+        const saida = path.join(require('os').tmpdir(), 'mtm-' + Date.now() + '-' + crypto.randomBytes(3).toString('hex')); fs.mkdirSync(saida, { recursive: true });
+        const ok = await new Promise(res => require('child_process').execFile('soffice', ['--headless', '-env:UserInstallation=file://' + saida + '/perfil', '--convert-to', 'pdf', '--outdir', saida, orig], { timeout: 120000 }, err => {
+            if (err && err.code === 'ENOENT') SOFFICE_MT = false; else if (!err) SOFFICE_MT = true;
+            res(!err);
+        }));
+        const pdf = ok && fs.readdirSync(saida).find(n => /\.pdf$/i.test(n));
+        if (!pdf) return null;
+        fs.copyFileSync(path.join(saida, pdf), pdfCaminho); fs.rmSync(saida, { recursive: true, force: true });
+        copiarUploadParaBanco({ filename: pdfNome, path: pdfCaminho, size: fs.statSync(pdfCaminho).size, mimetype: 'application/pdf' });
+        return '/uploads/' + pdfNome;
+    })().catch(() => null).finally(() => CONVERSOES_MT.delete(nome));
+    CONVERSOES_MT.set(nome, pr); return pr;
+}
+app.get('/api/admin/mentoria/material-pdf', requireRole('admin'), async (req, res) => {
+    const pdf = await materialPdfMt(String(req.query.url || ''));
+    res.json({ pdf, conversor: SOFFICE_MT !== false });
+});
 async function salvarArquivoAlunoMt(req, prefixo, nomeOrig) {
     const buf = req.body; if (!Buffer.isBuffer(buf) || !buf.length) throw Object.assign(new Error('Arquivo vazio.'), { status: 400 });
     const livre = discoLivreMB(PASTA_UPLOADS); if (livre !== null && livre < buf.length / 1048576 + 200) { limpezaAutomaticaDisco('envio do aluno'); throw Object.assign(new Error('O servidor está sem espaço agora. Tente de novo em alguns minutos.'), { status: 507 }); }
     const ext = (String(nomeOrig || '').match(/\.[a-z0-9]{2,5}$/i) || ['.bin'])[0].toLowerCase(), nome = `${prefixo}-${Date.now()}-${crypto.randomBytes(3).toString('hex')}${ext}`;
     await fs.promises.writeFile(path.join(PASTA_UPLOADS, nome), buf);
+    copiarUploadParaBanco({ filename: nome, path: path.join(PASTA_UPLOADS, nome), size: buf.length, mimetype: '' });
+    if (/\.(pptx?|docx?|odp|key|xlsx?)$/i.test(ext)) setTimeout(() => materialPdfMt('/uploads/' + nome).catch(() => {}), 2000);
     return { nome, url: '/uploads/' + nome, ext };
 }
 app.post('/api/public/aluno/:token/mensagem', async (req, res) => {
@@ -18976,6 +19010,7 @@ io.on('connection', (socket) => {
             const payload = jwt.verify(String(token || ''), JWT_SECRET);
             if (payload.role !== 'admin' || !CONTROLES_MT.has(String(codigo))) return;
             socket.join('mtc:' + codigo); socket.data.mtc = { codigo: String(codigo), papel: 'apresentador' };
+            socket.to('mtc:' + codigo).emit('mt-apresentador-on', {});
             const n = (io.sockets.adapter.rooms.get('mtc:' + codigo) || new Set()).size - 1;
             socket.emit('mt-controles', { conectados: Math.max(0, n) });
         } catch (e) { /* token inválido */ }
@@ -18987,10 +19022,14 @@ io.on('connection', (socket) => {
         socket.emit('mt-controle-ok', { titulo: c.titulo });
         socket.to('mtc:' + codigo).emit('mt-controle-conectou', {});
     });
-    socket.on('mt-comando', ({ cmd, i } = {}) => {
-        const m = socket.data.mtc; if (!m || m.papel !== 'controle') return;
-        if (!['proximo', 'anterior', 'ir', 'pedir-estado'].includes(cmd)) return;
-        socket.to('mtc:' + m.codigo).emit('mt-comando', { cmd, i: Number(i) || 0 });
+    socket.on('mt-comando', ({ cmd, i, seq } = {}, ack) => {
+        const m = socket.data.mtc, responder = r => { if (typeof ack === 'function') ack(r); };
+        if (!m || m.papel !== 'controle') return responder({ ok: false, erro: 'desconectado' });
+        if (!['proximo', 'anterior', 'ir', 'pedir-estado', 'mat-prox', 'mat-ant', 'mat-aluno-prox', 'mat-aluno-ant', 'mat-fechar', 'mat-lista', 'mat-abrir', 'mat-modo'].includes(cmd)) return responder({ ok: false });
+        const sala = io.sockets.adapter.rooms.get('mtc:' + m.codigo) || new Set();
+        const apresentadores = [...sala].filter(id => { const s = io.sockets.sockets.get(id); return s && s.data.mtc && s.data.mtc.papel === 'apresentador'; }).length;
+        socket.to('mtc:' + m.codigo).emit('mt-comando', { cmd, i: Number(i) || 0, seq: Number(seq) || 0 });
+        responder({ ok: true, apresentadores });
     });
     socket.on('mt-gravar', ({ acao } = {}) => {
         const m = socket.data.mtc; if (!m || m.papel !== 'apresentador' || !['iniciar', 'parar'].includes(acao)) return;

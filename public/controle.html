@@ -58,14 +58,34 @@
   .prog { height: 6px; border-radius: 6px; background: rgba(255,255,255,.15); overflow: hidden; display: none; } .prog div { height: 100%; width: 0; background: #16a34a; }
   .rec-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #ef4444; margin-right: 6px; animation: pisca 1s infinite; } @keyframes pisca { 50% { opacity: .2; } }
   .notas { flex: 1; overflow-y: auto; background: rgba(255,255,255,.04); border-radius: 14px; padding: 10px 12px; font-size: 14.5px; line-height: 1.45; min-height: 50px; }
+  .aviso { display:none; background:#7c2d12; color:#fff; border-radius:12px; padding:8px 12px; font-size:13px; font-weight:700; }
+  .aviso.on { display:block; }
+  .st.off { background:#b91c1c; }
+  .mat { display:none; flex-direction:column; gap:10px; background:rgba(255,255,255,.06); border:2px solid #f59e0b; border-radius:16px; padding:12px; }
+  .app.modo-mat .mat { display:flex; } .app.modo-mat .slides-area, .app.modo-mat .seguir { display:none; }
+  .mat .mini { width:100%; aspect-ratio:16/9; border-radius:10px; background:#111827 center/contain no-repeat; display:flex; align-items:center; justify-content:center; font-size:40px; }
+  .mat .al { font-size:20px; font-weight:800; } .mat .nm { font-size:13px; opacity:.8; word-break:break-all; } .mat .pg { font-size:14px; font-weight:800; color:#fbbf24; }
+  .mat-bts { display:grid; grid-template-columns:1fr 1fr; gap:8px; } .mat-bts button, .mat-x { border:none; border-radius:12px; padding:12px; font-weight:800; font-size:14px; color:#fff; background:#334155; }
+  .mat-x { background:#f59e0b; color:#0b1324; width:100%; }
+  .matl { display:none; flex-direction:column; gap:8px; overflow-y:auto; } .app.modo-lista .matl { display:flex; } .app.modo-lista .notas, .app.modo-lista .cam { display:none !important; }
+  .matl button { text-align:left; border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.06); color:#fff; border-radius:12px; padding:12px; font-size:15px; font-weight:800; } .matl button small { display:block; font-weight:600; opacity:.7; font-size:12px; word-break:break-all; }
+  .aba-mat { display:none; } .aba-mat.on2 { display:block; }
 </style>
 </head>
 <body>
 <div class="app" id="app">
   <div class="topo"><div class="tt" id="tt">Conectando...</div><span class="st" id="st">conectando</span></div>
   <div class="barra"><div id="barra" style="width:0%"></div></div>
+  <div class="aviso" id="aviso"></div>
   <style id="css-slides"></style>
-  <div>
+  <div class="mat" id="mat">
+    <div class="rot">📎 MATERIAL DO ALUNO NA TELA</div>
+    <div class="mini" id="mat-mini">📄</div>
+    <div><div class="al" id="mat-al"></div><div class="nm" id="mat-nm"></div><div class="pg" id="mat-pg"></div></div>
+    <div class="mat-bts"><button onclick="enviar('mat-aluno-ant')">⏮ Aluno anterior</button><button onclick="enviar('mat-aluno-prox')">Próximo aluno ⏭</button></div>
+    <button class="mat-x" onclick="enviar('mat-fechar')">✕ Fechar material e voltar aos slides</button>
+  </div>
+  <div class="slides-area">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;"><div class="rot" id="rot">AGORA</div><div class="relogio" id="rel">00:00</div></div>
     <div class="tempo" id="tempo" style="display:none"></div>
     <div class="pv agora" id="pv0"><div class="pv-vazio">Aguardando a apresentação...</div></div>
@@ -75,7 +95,8 @@
     <div class="seg" id="seg1" onclick="irPara(1)"><div class="lbl"><span>A SEGUIR</span><span id="t1"></span></div><div class="pv" id="pv1"><div class="pv-vazio">—</div></div></div>
     <div class="seg" id="seg2" onclick="irPara(2)"><div class="lbl"><span>DEPOIS</span><span id="t2"></span></div><div class="pv" id="pv2"><div class="pv-vazio">—</div></div></div>
   </div>
-  <div class="abas"><button class="aba on" id="aba-notas" onclick="aba('notas')">🗒️ Notas</button><button class="aba" id="aba-cam" onclick="aba('cam')">🎥 Câmera</button></div>
+  <div class="abas"><button class="aba on" id="aba-notas" onclick="aba('notas')">🗒️ Notas</button><button class="aba" id="aba-cam" onclick="aba('cam')">🎥 Câmera</button><button class="aba aba-mat" id="aba-mat" onclick="enviar('mat-lista')">📎 Materiais</button></div>
+  <div class="matl" id="matl"></div>
   <div class="notas" id="notas"><span style="opacity:.55">As notas do apresentador aparecem aqui.</span></div>
   <div class="cam" id="cam">
     <video id="vid" playsinline muted autoplay></video>
@@ -85,7 +106,7 @@
   </div>
   <div class="bts">
     <button class="bt ant" id="ant" onclick="cmd('anterior')">◀</button>
-    <button class="bt prx" id="prx" onclick="cmd('proximo')">Próximo ▶</button>
+    <button class="bt prx" id="prx" onclick="cmd('proximo')"><span id="prx-tx">Próximo</span> ▶</button>
   </div>
 </div>
 <script src="/socket.io/socket.io.js"></script>
@@ -109,12 +130,35 @@
     el.style.display = ''; el.className = 'tempo ' + st;
     el.innerHTML = `<div class="enc" style="width:${Math.min(100, gasto * 100 / t.dur)}%"></div><div class="tx"><b>${resta >= 0 ? '⏱ faltam ' + mmss(resta) : '⏰ +' + mmss(-resta)}</b><small>bloco de ${mmss(t.dur)} · ${Math.abs(atraso) < 1 ? 'no horário' : atraso > 0 ? atraso + ' min atrasado' : -atraso + ' min adiantado'}</small></div>${t.proximo ? `<div class="tx" style="margin-top:2px"><small>Próximo: ${esc(t.proximo)}</small><small>fim às ${t.fim} min</small></div>` : ''}`;
   }
-  const socket = io({ transports: ['websocket', 'polling'] });
+  const socket = io({ transports: ['websocket', 'polling'], reconnectionDelay: 500, reconnectionDelayMax: 3000, timeout: 8000 });
+  let seq = 0, pend = null, pendT = 0, fila = null, avisoT = null;
+  function aviso(t, ms) { const a = $('aviso'); clearTimeout(avisoT); if (!t) { a.classList.remove('on'); return; } a.textContent = t; a.classList.add('on'); if (ms) avisoT = setTimeout(() => a.classList.remove('on'), ms); }
+  function marcaSt(t, ok) { $('st').textContent = t; $('st').classList.toggle('on', !!ok); $('st').classList.toggle('off', !ok); }
   function entrar() { socket.emit('mt-controle-entrar', { codigo }); }
-  socket.on('connect', () => { $('st').textContent = 'conectado'; $('st').classList.add('on'); entrar(); });
-  socket.on('disconnect', () => { $('st').textContent = 'reconectando'; $('st').classList.remove('on'); });
+  socket.on('connect', () => { marcaSt('conectado', true); aviso(''); entrar(); });
+  socket.on('disconnect', () => { marcaSt('reconectando…', false); aviso('📡 Sem conexão com a apresentação. Reconectando sozinho…'); });
+  socket.on('connect_error', () => { marcaSt(navigator.onLine === false ? 'sem internet' : 'reconectando…', false); });
+  socket.on('mt-apresentador-on', () => socket.emit('mt-comando', { cmd: 'pedir-estado' }));
+  // comando com confirmação: se não chegar, avisa e reenvia quando a conexão voltar
+  function enviar(c, i) {
+    if (navigator.vibrate) navigator.vibrate(15);
+    const msg = { cmd: c, i: i || 0, seq: ++seq };
+    if (!socket.connected) { fila = msg; aviso('📡 Sem conexão. O comando vai assim que reconectar…'); socket.connect(); return; }
+    socket.timeout(4000).emit('mt-comando', msg, (err, r) => {
+      if (err) { fila = msg; aviso('⚠️ O servidor não respondeu. Verifique a internet do celular.'); return; }
+      if (r && r.ok && r.apresentadores === 0) aviso('⚠️ O computador da apresentação está desconectado. Confira a internet do notebook.', 6000);
+      else if (!pend) aviso('');
+    });
+  }
+  socket.on('mt-controle-ok', () => { if (fila) { const f = fila; fila = null; socket.emit('mt-comando', f); } });
+  // a tela não apaga enquanto o passador estiver aberto (apagar derruba a conexão)
+  let trava = null; async function manterAcesa() { try { if ('wakeLock' in navigator && !trava) { trava = await navigator.wakeLock.request('screen'); trava.addEventListener('release', () => { trava = null; }); } } catch (e) {} }
+  document.addEventListener('touchstart', manterAcesa, { passive: true, once: true }); document.addEventListener('click', manterAcesa, { once: true });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'visible') return; manterAcesa(); if (!socket.connected) socket.connect(); else socket.emit('mt-comando', { cmd: 'pedir-estado' }); });
+  window.addEventListener('online', () => { if (!socket.connected) socket.connect(); });
   socket.on('mt-controle-erro', d => { document.getElementById('app').innerHTML = `<div class="erro">⚠️<br><br>${esc(d.error)}</div>`; });
   socket.on('mt-controle-ok', d => { $('tt').textContent = '🎤 ' + d.titulo; socket.emit('mt-comando', { cmd: 'pedir-estado' }); });
+  function caixa(box, h) { if (box._h === h) return false; box._h = h; box.innerHTML = h; return true; }
   let cssAtual = '';
   function ajustar(box) {
     box.style.fontSize = Math.max(3, box.clientWidth / 60) + 'px';
@@ -125,23 +169,49 @@
       for (let n = 0; n < 16 && sl.scrollHeight > sl.clientHeight + 1 && k > 0.4; n++) { k -= 0.05; alvos.forEach(a => { a.el.style.fontSize = (a.base * (a.base > 2 ? Math.max(0.65, 1 - (1 - k) * 0.6) : k)) + 'em'; }); }
     });
   }
-  function irPara(k) { if (!estado || !estado.telas || !estado.telas[k]) return; if (navigator.vibrate) navigator.vibrate(15); socket.emit('mt-comando', { cmd: 'ir', i: estado.telas[k].i }); }
+  function irPara(k) { if (!estado || !estado.telas || !estado.telas[k]) return; irAlvo(estado.telas[k].i); }
+  // passa na hora no celular (sem esperar a volta) e manda o número exato do slide: toque repetido não pula slide a mais
+  function irAlvo(alvo) {
+    if (!estado) return; alvo = Math.max(0, Math.min(estado.total - 1, alvo)); pend = alvo; pendT = Date.now();
+    const t = (estado.telas || []).find(x => x.i === alvo);
+    if (t) { caixa($('pv0'), t.html); requestAnimationFrame(() => ajustar($('pv0'))); $('nome').textContent = t.titulo || ''; }
+    $('cont').textContent = `${alvo + 1} / ${estado.total}`; $('barra').style.width = Math.round((alvo + 1) * 100 / estado.total) + '%';
+    $('ant').disabled = alvo <= 0; $('prx').disabled = alvo >= estado.total - 1;
+    enviar('ir', alvo);
+  }
+  setInterval(() => { if (pend !== null && Date.now() - pendT > 3500) { pend = null; aviso('⚠️ A apresentação não confirmou. Toque de novo ou confira a internet do notebook.', 5000); socket.emit('mt-comando', { cmd: 'pedir-estado' }); } }, 1000);
   socket.on('mt-estado', e => {
-    estado = e; if (e.ini) ini = e.ini; desv = e.agora ? Date.now() - e.agora : 0; tempoBloco(); 
+    if (!e.css && estado && estado.css) e.css = estado.css;
+    estado = e; if (e.ini) ini = e.ini; desv = e.agora ? Date.now() - e.agora : 0; tempoBloco(); marcaSt('conectado', true);
     if (e.css && e.css !== cssAtual) { cssAtual = e.css; $('css-slides').textContent = e.css; }
+    if (pend !== null && (e.i === pend || Date.now() - pendT > 3500)) { pend = null; aviso(''); }
+    desenharMaterial(e.material);
+    if (pend !== null) return; // ainda indo para o slide que você pediu
     $('rot').textContent = 'AGORA' + (e.modulo ? ' · ' + e.modulo.toUpperCase() : '');
     $('nome').textContent = e.titulo || '—';
     $('cont').textContent = `${e.i + 1} / ${e.total}`;
     [0, 1, 2].forEach(k => {
       const t = (e.telas || [])[k], box = $('pv' + k);
-      box.innerHTML = t ? t.html : `<div class="pv-vazio">${k ? 'Fim da apresentação' : '—'}</div>`;
+      const mudou = caixa(box, t ? t.html : `<div class="pv-vazio">${k ? 'Fim da apresentação' : '—'}</div>`);
       if (k) { $('t' + k).textContent = t ? t.titulo : ''; $('seg' + k).style.opacity = t ? 1 : .35; }
-      if (t) requestAnimationFrame(() => ajustar(box));
+      if (t && mudou) requestAnimationFrame(() => ajustar(box));
     });
     $('notas').innerHTML = e.notas ? textoHtml(e.notas) : '<span style="opacity:.55">Sem notas neste slide.</span>';
     $('barra').style.width = Math.round((e.i + 1) * 100 / e.total) + '%';
-    $('ant').disabled = e.i <= 0; $('prx').disabled = e.i >= e.total - 1;
+    const mat = e.material && e.material.aberto;
+    $('ant').disabled = !mat && e.i <= 0; $('prx').disabled = !mat && e.i >= e.total - 1;
   });
+  function desenharMaterial(m) {
+    const app = $('app'), aberto = !!(m && m.aberto), lista = m && m.lista;
+    app.classList.toggle('modo-mat', aberto); app.classList.toggle('modo-lista', !!lista && !aberto);
+    $('aba-mat').classList.toggle('on2', !!m); $('prx-tx').textContent = aberto ? (m.pags ? 'Página' : 'Próximo') : 'Próximo';
+    if (aberto) {
+      $('mat-al').textContent = m.aluno || 'Material'; $('mat-nm').textContent = m.nome + (m.n > 1 ? ` · material ${m.i + 1} de ${m.n}` : '');
+      $('mat-pg').textContent = m.pags ? `Página ${m.pag} de ${m.pags}` + (m.pag === m.pags && m.i < m.n - 1 ? ' · o próximo ▶ abre o aluno seguinte' : '') : m.modo === 'office' ? 'Visualizador do Office: as páginas se passam no computador. Aqui você troca de aluno.' : m.modo === 'carregando' ? '⏳ abrindo…' : '';
+      const mi = $('mat-mini'); if (m.mini) { mi.style.backgroundImage = `url("${m.mini}")`; mi.textContent = ''; } else { mi.style.backgroundImage = ''; mi.textContent = m.modo === 'video' ? '🎬' : '📄'; }
+    }
+    if (lista && !aberto) $('matl').innerHTML = lista.length ? '<div class="rot">TOQUE PARA ABRIR NA TELA</div>' + lista.map((x, k) => `<button onclick="enviar('mat-abrir', ${k})">${esc(x.aluno)}<small>${esc(x.nome)}</small></button>`).join('') + `<button onclick="enviar('mat-fechar')" style="text-align:center">✕ Fechar lista</button>` : '<div class="rot">Nenhum material enviado ainda.</div>';
+  }
   // ----- Câmera do celular -----
   let camStream = null, rec = null, pedacos = [], recIni = 0, facing = 'environment', ultimoBlob = null;
   function aba(q) {
@@ -197,7 +267,10 @@
     if (d.acao === 'iniciar') { if (camStream) iniciarGravacao(); else { aba('cam'); $('cam-info').textContent = '⏺ O apresentador começou a gravar. Toque em "Ativar câmera" para filmar junto.'; } }
     else pararGravacao();
   });
-  function cmd(c) { if (navigator.vibrate) navigator.vibrate(15); socket.emit('mt-comando', { cmd: c }); }
+  function cmd(c) {
+    if (estado && !(estado.material && estado.material.aberto)) return irAlvo((pend !== null ? pend : estado.i) + (c === 'proximo' ? 1 : -1));
+    enviar(c);
+  }
   window.addEventListener('resize', () => [0, 1, 2].forEach(k => ajustar($('pv' + k))));
   setInterval(tempoBloco, 1000);
   setInterval(() => { if (!ini) return; const s = Math.floor((Date.now() - ini) / 1000); $('rel').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }, 1000);
