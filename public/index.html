@@ -1989,6 +1989,10 @@
   .mpg-passador { display:flex; gap:12px; align-items:flex-start; background:#ecfdf5; border:1.5px solid #22c55e; border-radius:12px; padding:10px 12px; margin:6px 0 12px; cursor:pointer; } .mpg-passador input { width:20px; height:20px; margin:2px 0 0; flex:none; accent-color:#16a34a; } .mpg-passador b { display:block; color:#166534; } .mpg-passador small { color:#166534; font-size:12.5px; }
   .mtn-dataenc { color:#7c3aed; } .mtn-dataenc i { font-style:normal; font-size:10px; } .mtn-dataenc input { border-color:#c4b5fd; }
   .mtn-foto-al { width:30px; height:30px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:8px; float:left; }
+  #mt-matpainel { position:fixed; inset:0; z-index:99999; background:rgba(5,8,15,.75); display:none; place-items:center; padding:20px; } .mtp-caixa { background:#fff; color:#0f172a; border-radius:18px; padding:18px; width:min(900px,100%); max-height:90vh; overflow:auto; } .mtp-cab { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:18px; } .mtp-cab button { font:inherit; border:none; background:#f1f5f9; border-radius:10px; padding:6px 12px; cursor:pointer; font-weight:800; }
+  .mtp-grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:10px; } .mtp-item { font:inherit; text-align:left; display:grid; grid-template-columns:40px 1fr; grid-template-rows:auto auto; column-gap:8px; align-items:center; border:1px solid #e2e8f0; background:#f8fafc; border-radius:14px; padding:12px; cursor:pointer; } .mtp-item:hover { border-color:#f59e0b; background:#fffbeb; } .mtp-item span { grid-row:span 2; font-size:28px; } .mtp-item b { font-size:14px; } .mtp-item small { color:#64748b; font-size:12px; word-break:break-all; }
+  #mt-visor { position:fixed; inset:0; z-index:100000; background:#0b1329; display:none; flex-direction:column; } .mtv-topo { display:flex; align-items:center; gap:8px; padding:10px 14px; color:#fff; border-bottom:1px solid rgba(255,255,255,.1); } .mtv-topo > div { flex:1; min-width:0; } .mtv-topo b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .mtv-topo small { color:#94a3b8; } .mtv-topo button, .mtv-topo a { font:inherit; font-weight:700; font-size:13px; background:#1e293b; color:#fff; border:none; border-radius:10px; padding:8px 12px; cursor:pointer; text-decoration:none; white-space:nowrap; } .mtv-topo button:disabled { opacity:.35; } .mtv-topo .x { background:#f59e0b; color:#0b1329; }
+  .mtv-corpo { flex:1; display:flex; min-height:0; } .mtv-corpo iframe { flex:1; border:0; background:#fff; } .mtv-img { flex:1; display:grid; place-items:center; padding:12px; } .mtv-img img, .mtv-img video { max-width:100%; max-height:calc(100vh - 90px); border-radius:8px; } .mtv-aviso { margin:auto; color:#cbd5e1; font-weight:600; padding:20px; text-align:center; } .mtv-rodape { color:#94a3b8; font-size:12px; padding:6px 14px; text-align:center; }
   .mtn-arq { display:flex; align-items:center; gap:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:8px 10px; margin:6px 0 0 26px; } .mtn-arq.novo { border-color:#f59e0b; background:#fffbeb; } .mtn-arq > div { flex:1; min-width:0; } .mtn-arq b { word-break:break-all; } .mtn-arq i { font-style:normal; font-size:11px; font-weight:800; color:#b45309; } .mtn-arq small { display:block; color:#64748b; font-size:12px; } .mtn-arq a { text-decoration:none; width:auto; white-space:nowrap; }
   .mtn-ent { border-bottom:1px solid #e2e8f0; padding:10px 0; } .mtn-ent.ok .mtn-tarefa b { color:#15803d; } .mtn-mat-enc { border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; margin:10px 0; } .mtn-mat-enc h4 { margin:0 0 6px; } .mtn-mat-enc h4 small { color:#64748b; font-weight:600; margin-left:6px; } .mtn-mat-al { margin:8px 0; } .mtn-mat-al .mtn-arq { margin-left:0; }
   .mtc-abas { display:flex; gap:6px; margin-bottom:12px; } .mtc-abas button { font:inherit; font-weight:700; border:1px solid #cbd5e1; background:#fff; border-radius:999px; padding:6px 14px; cursor:pointer; } .mtc-abas button.on { background:#0b1329; color:#fff; border-color:#0b1329; }
@@ -2199,7 +2203,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 18/11 (1)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 18/11 (2)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -12053,6 +12057,9 @@ function mtZerarBloco() { const it = MTS && MTS.deck[MTS.i]; if (!it || it.mi ==
 function mtCronometro() { const s = Math.floor((Date.now() - MTS.ini) / 1000); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
 function mtTecla(e) {
   if (!MTS) return;
+  const vis = id => { const x = document.getElementById(id); return x && x.style.display !== 'none' && x.style.display !== ''; };
+  if (vis('mt-visor')) { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); const i = MTVIS.lista.indexOf(MTVIS.atual), j = i + (e.key === 'ArrowRight' ? 1 : -1); if (MTVIS.lista[j]) mtnVerArq(MTVIS.lista[j]); } return; }
+  if (vis('mt-matpainel')) { if (e.key === 'Escape') document.getElementById('mt-matpainel').style.display = 'none'; return; }
   if (MTS.editando && e.key !== 'Escape') return;
   if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); mtIr(1); }
   else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); mtIr(-1); }
@@ -12113,7 +12120,7 @@ function mtDesenharShow() {
     <div class="mt-show-top">
       <div class="mt-show-tt">${escapeHtml(d.titulo)}${m ? ' · <span>' + escapeHtml(m.titulo) + '</span>' : ''}</div>
       <div style="display:flex;gap:6px;align-items:center;">
-        ${mtBlocoHtml()}<span class="mt-show-rel" id="mt-relogio" title="Tempo total desde que abriu a apresentação">${mtCronometro()}${mtFimTxt()}</span>
+        ${MT.__turma && MT.__mentoria ? `<button class="mt-sb" onclick="mtMateriaisShow()" title="Abrir os materiais que os alunos enviaram">📎 Materiais dos alunos</button>` : ''}${mtBlocoHtml()}<span class="mt-show-rel" id="mt-relogio" title="Tempo total desde que abriu a apresentação">${mtCronometro()}${mtFimTxt()}</span>
         ${editavel ? `<button class="mt-sb ${MTS.editando ? 'on' : ''}" onclick="mtAlternarEdicao()" title="Editar este slide">✏️ ${MTS.editando ? 'Concluir edição' : 'Editar'}</button>` : ''}
         ${editavel && MTS.editando ? (() => { const sl = d.modulos[it.mi].slides[it.si]; return `<label class="mt-sb" style="cursor:pointer;" title="Subir uma foto para este slide">🖼️ ${sl.imagem ? 'Trocar foto' : 'Foto'}<input type="file" accept="image/*" style="display:none;" onchange="mtShowFoto(this)"></label>${sl.imagem ? `<button class="mt-sb" onclick="mtShowLayoutFoto()" title="Alternar entre foto ao lado do texto e foto em tela cheia">${sl.layout === 'imagem' ? '▤ Foto + texto' : '⛶ Foto tela cheia'}</button><button class="mt-sb" onclick="mtShowRemoverFoto()" title="Tirar a foto deste slide">🗑️</button>` : ''}`; })() : ''}
         ${MT.sujo ? `<button class="mt-sb salvar" onclick="mtSalvarShow()">💾 Salvar</button>` : ''}
@@ -15305,7 +15312,7 @@ async function mtnSalvarEdicaoAluno(id) {
 async function mtnAluno(id, campos) { try { await api('/api/admin/mentoria/alunos/' + id, { method: 'PUT', body: JSON.stringify(campos) }); await mtnRecarregarTurmas(); } catch (e) { mostrarToast(e.message, true); } }
 async function mtnAlunoProg(tid, id, k, v) { const a = (MTN.turmas.find(t => t.id === tid) || { alunos: [] }).alunos.find(x => x.id === id); if (!a) return; const pr = Object.assign({}, a.progresso || {}, { [k]: v }); a.progresso = pr; await api('/api/admin/mentoria/alunos/' + id, { method: 'PUT', body: JSON.stringify({ progresso: pr }) }).catch(e => mostrarToast(e.message, true)); }
 function mtnEntregues(a) { const ent = (a.progresso || {}).entregas || {}, s = new Set(Object.keys(ent).filter(k => ent[k]).map(Number)); (a.materiais || []).forEach(m => { if (m.encontro) s.add(m.encontro); }); return [...s]; }
-function mtnArqHtml(m) { const q = m.em ? new Date(String(m.em).replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''; return `<div class="mtn-arq${m.novo ? ' novo' : ''}"><span>📄</span><div><b>${escapeHtml(m.nome)}</b>${m.novo ? ' <i>novo</i>' : ''}<small>${q}${m.texto ? ' · ' + escapeHtml(m.texto) : ''}</small></div><a class="btn-secundario btn-sm" href="${escapeHtml(m.url)}" target="_blank" rel="noopener">Abrir</a><a class="btn-secundario btn-sm" href="${escapeHtml(m.url)}" download="${escapeHtml(m.nome)}">⬇️ Baixar</a></div>`; }
+function mtnArqHtml(m) { const q = m.em ? new Date(String(m.em).replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''; return `<div class="mtn-arq${m.novo ? ' novo' : ''}"><span>📄</span><div><b>${escapeHtml(m.nome)}</b>${m.novo ? ' <i>novo</i>' : ''}<small>${q}${m.texto ? ' · ' + escapeHtml(m.texto) : ''}</small></div><button class="btn-primario btn-sm mtn-ver" style="width:auto;" data-url="${escapeHtml(m.url)}" data-nome="${escapeHtml(m.nome)}" onclick="mtnVerArq(this)">👁️ Ver aqui</button><a class="btn-secundario btn-sm" href="${escapeHtml(m.url)}" download="${escapeHtml(m.nome)}">⬇️ Baixar</a></div>`; }
 function mtnEntregas(tid, id) {
   const a = (MTN.turmas.find(t => t.id === tid) || { alunos: [] }).alunos.find(x => x.id === id); if (!a) return; const ent = (a.progresso || {}).entregas || {}, pg = mtnProgT(MTN.turmas.find(t => t.id === tid)), mats = a.materiais || [];
   const semEnc = mats.filter(m => !m.encontro || !pg.encontros.some(s => Number(s.n) === m.encontro));
@@ -15314,6 +15321,40 @@ function mtnEntregas(tid, id) {
     ${semEnc.length ? `<div class="mtn-ent"><b>Outros arquivos</b>${semEnc.map(mtnArqHtml).join('')}</div>` : ''}
     <div class="acoes-form"><button class="btn-secundario" onclick="mtnModal(''); mtnLerMateriais([${mats.filter(m => m.novo).map(m => a.id).slice(0, 1).join(',')}]); mtnDesenhar()">Fechar</button></div>`);
 }
+const MTVIS = { lista: [], atual: null, tid: 0, f: -1, t: null };
+async function mtMateriaisShow(f) {
+  MTVIS.tid = MT.__turma; if (f === undefined) { MTVIS.f = -1; try { const ts = await api('/api/admin/mentoria/turmas'); MTVIS.t = ts.find(x => x.id === MTVIS.tid); } catch (e) { return mostrarToast(e.message, true); } } else MTVIS.f = f;
+  const t = MTVIS.t; if (!t) return mostrarToast('Turma não encontrada.', true);
+  const todos = []; t.alunos.forEach(a => (a.materiais || []).forEach(m => todos.push(Object.assign({ aluno: a.nome }, m))));
+  const encs = [...new Set(todos.map(m => m.encontro))].sort((x, y) => x - y), n = MT.__encontro || 0;
+  if (MTVIS.f === -1) MTVIS.f = encs.includes(n - 1) ? n - 1 : encs.includes(n) ? n : 0;
+  const lista = todos.filter(m => !MTVIS.f || m.encontro === MTVIS.f).sort((x, y) => x.aluno.localeCompare(y.aluno));
+  let v = document.getElementById('mt-matpainel'); if (!v) { v = document.createElement('div'); v.id = 'mt-matpainel'; document.body.appendChild(v); }
+  v.innerHTML = `<div class="mtp-caixa mtn-arqs-raiz"><div class="mtp-cab"><b>📎 Materiais dos alunos · ${escapeHtml(t.nome)}</b><button onclick="document.getElementById('mt-matpainel').style.display='none'">✕</button></div>
+    <div class="mtc-abas" style="flex-wrap:wrap;"><button class="${!MTVIS.f ? 'on' : ''}" onclick="mtMateriaisShow(0)">Todos (${todos.length})</button>${encs.filter(Boolean).map(e => `<button class="${MTVIS.f === e ? 'on' : ''}" onclick="mtMateriaisShow(${e})">Encontro ${e} · ${todos.filter(m => m.encontro === e).length}</button>`).join('')}</div>
+    ${lista.length ? `<div class="mtp-grade">${lista.map(m => `<button class="mtn-ver mtp-item" data-url="${escapeHtml(m.url)}" data-nome="${escapeHtml(m.nome)}" data-aluno="${escapeHtml(m.aluno)}" onclick="mtnVerArq(this)"><span>${/\.pptx?$/i.test(m.nome) ? '📊' : /\.pdf$/i.test(m.nome) ? '📕' : /\.(png|jpe?g|webp|gif)$/i.test(m.nome) ? '🖼️' : /\.(mp4|mov|webm)$/i.test(m.nome) ? '🎬' : '📄'}</span><b>${escapeHtml(m.aluno)}</b><small>${escapeHtml(m.nome)}${m.encontro ? ' · E' + m.encontro : ''}</small></button>`).join('')}</div>` : '<p class="plano-meta">Nenhum material enviado ainda.</p>'}
+    <p class="plano-meta" style="margin:10px 0 0;">Clique no nome para abrir na tela, com o formato original. Use ◀ ▶ para ir de um aluno para o outro.</p></div>`;
+  v.style.display = 'grid';
+}
+function mtnVerArq(bt) {
+  const lista = [...(bt.closest('.mtn-arqs-raiz') || document).querySelectorAll('.mtn-ver')], i = lista.indexOf(bt); MTVIS.lista = lista; MTVIS.atual = bt; const _x = 0, url = bt.dataset.url, nome = bt.dataset.nome || 'arquivo', ext = (nome.match(/\.([a-z0-9]+)$/i) || [, ''])[1].toLowerCase();
+  const al = bt.dataset.aluno || (bt.closest('.mtn-mat-al') ? ((bt.closest('.mtn-mat-al').querySelector(':scope > b') || {}).textContent || '') : '');
+  const abs = /^https?:/i.test(url) ? url : location.origin + url, local = /^(localhost|127\.|192\.168\.)/.test(location.hostname);
+  let corpo;
+  if (/^(pptx?|docx?|xlsx?|ppsx?)$/.test(ext)) corpo = local ? `<div class="mtv-aviso">O visualizador do Office só funciona no site publicado (impulsionarv4.com.br). Use ⬇️ Baixar.</div>` : `<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(abs)}" allowfullscreen></iframe>`;
+  else if (ext === 'pdf') corpo = `<iframe src="${escapeHtml(url)}#view=FitH"></iframe>`;
+  else if (/^(png|jpe?g|gif|webp|heic)$/.test(ext)) corpo = `<div class="mtv-img"><img src="${escapeHtml(url)}" alt=""></div>`;
+  else if (/^(mp4|mov|webm|m4v)$/.test(ext)) corpo = `<div class="mtv-img"><video src="${escapeHtml(url)}" controls autoplay playsinline></video></div>`;
+  else corpo = `<div class="mtv-aviso">Este tipo de arquivo não abre aqui. Use ⬇️ Baixar.</div>`;
+  let v = document.getElementById('mt-visor'); if (!v) { v = document.createElement('div'); v.id = 'mt-visor'; document.body.appendChild(v); }
+  v.innerHTML = `<div class="mtv-topo"><div><b>${escapeHtml(nome)}</b><small>${escapeHtml(al)}${lista.length > 1 ? ` · ${i + 1} de ${lista.length}` : ''}</small></div>
+    ${lista.length > 1 ? `<button ${i <= 0 ? 'disabled' : ''} onclick="mtnVerArq(MTVIS.lista[${i - 1}])">◀</button><button ${i >= lista.length - 1 ? 'disabled' : ''} onclick="mtnVerArq(MTVIS.lista[${i + 1}])">▶</button>` : ''}
+    <button onclick="(document.getElementById('mt-visor').requestFullscreen || (() => {})).call(document.getElementById('mt-visor'))">⛶ Tela cheia</button><a href="${escapeHtml(url)}" download="${escapeHtml(nome)}">⬇️ Baixar</a><button class="x" onclick="mtnFecharVisor()">✕ Fechar</button></div>
+    <div class="mtv-corpo">${corpo}</div>${/^(pptx?|docx?|xlsx?|ppsx?)$/.test(ext) && !local ? '<div class="mtv-rodape">Aberto com o visualizador do Microsoft Office, mantendo o formato. Arquivos muito grandes (acima de 10 MB) podem não abrir: use ⬇️ Baixar.</div>' : ''}`;
+  v.style.display = 'flex'; document.addEventListener('keydown', mtnVisorTecla);
+}
+function mtnFecharVisor() { const v = document.getElementById('mt-visor'); if (v) { v.style.display = 'none'; v.innerHTML = ''; } if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); document.removeEventListener('keydown', mtnVisorTecla); }
+function mtnVisorTecla(e) { if (e.key === 'Escape' && !document.fullscreenElement) mtnFecharVisor(); }
 async function mtnLerMateriais(ids) { for (const id of [...new Set(ids)]) await api('/api/admin/mentoria/alunos/' + id + '/lidas', { method: 'POST', body: '{}' }).catch(() => {}); if (ids.length) await mtnRecarregarTurmas(); }
 function mtnMateriais(tid, filtro) {
   const t = MTN.turmas.find(x => x.id === tid); if (!t) return; const pg = mtnProgT(t), f = filtro === undefined ? 0 : filtro;
@@ -15324,11 +15365,11 @@ function mtnMateriais(tid, filtro) {
       ${com.map(a => `<div class="mtn-mat-al"><b>${escapeHtml(a.nome)}</b>${a.materiais.filter(m => m.encontro === n).map(mtnArqHtml).join('')}</div>`).join('') || '<p class="plano-meta">Ninguém enviou arquivo ainda.</p>'}
       ${sem.length && com.length ? `<p class="plano-meta" style="margin:6px 0 0;">Faltam: ${sem.map(a => escapeHtml(a.nome.split(' ')[0])).join(', ')}</p>` : ''}</div>`; }).join('');
   const outros = t.alunos.map(a => ({ a, fs: (a.materiais || []).filter(m => !m.encontro) })).filter(x => x.fs.length);
-  mtnModal(`<h3 style="margin-top:0;">📎 Materiais dos alunos · ${escapeHtml(t.nome)}</h3>
+  mtnModal(`<div class="mtn-arqs-raiz"><h3 style="margin-top:0;">📎 Materiais dos alunos · ${escapeHtml(t.nome)}</h3>
     <div class="mtc-abas" style="flex-wrap:wrap;"><button class="${!f ? 'on' : ''}" onclick="mtnMateriais(${tid}, 0)">Todos (${total})</button>${pg.encontros.map(s => { const c = t.alunos.reduce((x, a) => x + (a.materiais || []).filter(m => m.encontro === Number(s.n)).length, 0); return `<button class="${f === Number(s.n) ? 'on' : ''}" onclick="mtnMateriais(${tid}, ${s.n})">E${s.n}${c ? ' · ' + c : ''}</button>`; }).join('')}</div>
     ${total ? '' : '<p class="plano-meta">Nenhum aluno enviou arquivo ainda. O aluno envia pela Área do Aluno, no encontro, em "📤 Enviar material ao mentor". Quando chegar, aparece aqui e no botão do topo da turma.</p>'}
     ${blocos}${!f && outros.length ? `<div class="mtn-mat-enc"><h4>Sem encontro definido</h4>${outros.map(x => `<div class="mtn-mat-al"><b>${escapeHtml(x.a.nome)}</b>${x.fs.map(mtnArqHtml).join('')}</div>`).join('')}</div>` : ''}
-    <div class="acoes-form"><button class="btn-secundario" onclick="mtnModal(''); mtnLerMateriais([${t.alunos.filter(a => (a.materiais || []).some(m => m.novo)).map(a => a.id).join(',')}])">Fechar</button></div>`);
+    <div class="acoes-form"><button class="btn-secundario" onclick="mtnModal(''); mtnLerMateriais([${t.alunos.filter(a => (a.materiais || []).some(m => m.novo)).map(a => a.id).join(',')}])">Fechar</button></div></div>`);
 }
 async function mtnEntrega(tid, id, n, on) { const a = (MTN.turmas.find(t => t.id === tid) || { alunos: [] }).alunos.find(x => x.id === id); const pr = Object.assign({}, a.progresso || {}); pr.entregas = Object.assign({}, pr.entregas || {}); if (on) pr.entregas[n] = true; else delete pr.entregas[n]; a.progresso = pr; await api('/api/admin/mentoria/alunos/' + id, { method: 'PUT', body: JSON.stringify({ progresso: pr }) }).catch(e => mostrarToast(e.message, true)); }
 async function mtnExcluirAluno(id) { if (!confirm('Tirar este aluno da turma?')) return; await api('/api/admin/mentoria/alunos/' + id, { method: 'DELETE' }).catch(() => {}); await mtnRecarregarTurmas(); }
@@ -15365,7 +15406,7 @@ async function mtnApresentar(progId, n, tid) {
   try {
     const r = await api(`/api/admin/mentoria/programa/${encodeURIComponent(progId)}/apresentar`, { method: 'POST', body: JSON.stringify({ encontro: n, turma: t ? t.id : 0 }) });
     if (r.aviso) mostrarToast(r.aviso, true);
-    MT.doc = r.doc || await api('/api/admin/treinamentos-mt/' + r.id); MT.modSel = 0; MT.sujo = false; MT.__voltarLista = false; MT.__mentoria = progId;
+    MT.doc = r.doc || await api('/api/admin/treinamentos-mt/' + r.id); MT.modSel = 0; MT.sujo = false; MT.__voltarLista = false; MT.__mentoria = progId; MT.__turma = t ? t.id : 0; MT.__encontro = n;
     mtApresentar(0);
     if (MTN.passador !== false && typeof mtAbrirControleCelular === 'function') setTimeout(() => { try { mtAbrirControleCelular(); } catch (e) {} }, 700);
   } catch (e) { mostrarToast(e.message, true); }
