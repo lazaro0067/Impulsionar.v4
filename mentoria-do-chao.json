@@ -18,7 +18,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–12 min · frase, história e resumo",
+"Abertura · 00–15 min · frase, história e resumo",
 [
 [
 "dc01/dc01-00a-frase",
@@ -110,7 +110,7 @@
 {
 "objetivo": "Combinar o formato.",
 "onde": "Compartilhando a tela.",
-"fale": "1 hora por semana, ao vivo. Toda semana uma missão no seu time real. Tudo fica na Área do Aluno. E o seu indicador é escolhido hoje.",
+"fale": "2 horas por semana, ao vivo, com um intervalo de 10 minutos. Toda semana uma missão no seu time real. Tudo fica na Área do Aluno. E o seu indicador é escolhido hoje.",
 "tempo": "1 min"
 }
 ],
@@ -127,7 +127,7 @@
 ]
 ],
 [
-"Encontro 1 · combinados · 12–14 min",
+"Encontro 1 · combinados · 15–25 min",
 [
 [
 "dc01/dc01-01-capa",
@@ -154,14 +154,15 @@
 ],
 [
 "dc01/dc01-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -179,7 +180,7 @@
 ]
 ],
 [
-"Conceito · 14–27 min",
+"Conceito · 25–45 min",
 [
 [
 "dc01/dc01-05-sec1",
@@ -199,7 +200,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -211,7 +212,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -225,13 +226,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 27–35 min",
+"Intervalo · 45–55 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 55–70 min",
 [
 [
 "dc01/dc01-09-sec2",
@@ -253,7 +274,7 @@
 "Passo 3: Peça para 2 pessoas do time responderem as mesmas perguntas sobre você",
 "Passo 4: Compare: onde a sua nota e a do time mais diferem?"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -266,13 +287,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 70–100 min",
 [
 [
 "dc01/dc01-12-sec3",
@@ -303,17 +324,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 100–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc01/dc01-15-missao",
@@ -327,7 +369,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -362,7 +404,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc02/dc02-01-capa",
@@ -389,14 +431,15 @@
 ],
 [
 "dc02/dc02-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -406,16 +449,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc02/dc02-05-sec1",
@@ -435,7 +478,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -447,7 +490,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -461,13 +504,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc02/dc02-09-sec2",
@@ -489,7 +552,7 @@
 "Passo 3: Some as horas de cada letra",
 "Passo 4: Escolha 3 tarefas F para passar para o time"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -502,13 +565,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc02/dc02-12-sec3",
@@ -539,17 +602,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc02/dc02-15-missao",
@@ -563,7 +647,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -598,7 +682,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc03/dc03-01-capa",
@@ -625,14 +709,15 @@
 ],
 [
 "dc03/dc03-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -642,16 +727,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc03/dc03-05-sec1",
@@ -671,7 +756,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -683,7 +768,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -697,13 +782,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc03/dc03-09-sec2",
@@ -725,7 +830,7 @@
 "Passo 3: Observe 1 padrão e pergunte: \"O que está difícil?\"",
 "Passo 4: Anote e volte com resposta em até 48 h"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -738,13 +843,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc03/dc03-12-sec3",
@@ -775,17 +880,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc03/dc03-15-missao",
@@ -799,7 +925,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -834,7 +960,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc04/dc04-01-capa",
@@ -861,14 +987,15 @@
 ],
 [
 "dc04/dc04-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -878,16 +1005,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc04/dc04-05-sec1",
@@ -907,7 +1034,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -919,7 +1046,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -933,13 +1060,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc04/dc04-09-sec2",
@@ -961,7 +1108,7 @@
 "Passo 3: Escolha 3 ações do que você controla",
 "Passo 4: Coloque prazo e como vai medir"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -974,13 +1121,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc04/dc04-12-sec3",
@@ -1011,17 +1158,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc04/dc04-15-missao",
@@ -1035,7 +1203,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -1069,7 +1237,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc05/dc05-01-capa",
@@ -1096,14 +1264,15 @@
 ],
 [
 "dc05/dc05-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -1113,16 +1282,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc05/dc05-05-sec1",
@@ -1142,7 +1311,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -1154,7 +1323,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -1168,13 +1337,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc05/dc05-09-sec2",
@@ -1196,7 +1385,7 @@
 "Passo 3: Meta e frequência: quanto e quando olhar",
 "Passo 4: Responsável: quem atualiza e quem age"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -1209,13 +1398,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc05/dc05-12-sec3",
@@ -1246,17 +1435,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc05/dc05-15-missao",
@@ -1270,7 +1480,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -1305,7 +1515,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc06/dc06-01-capa",
@@ -1332,14 +1542,15 @@
 ],
 [
 "dc06/dc06-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -1349,16 +1560,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc06/dc06-05-sec1",
@@ -1378,7 +1589,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -1390,7 +1601,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -1404,13 +1615,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc06/dc06-09-sec2",
@@ -1432,7 +1663,7 @@
 "Passo 3: Plano de ação dos vermelhos (quem, o quê, quando)",
 "Passo 4: Reconhecimento: quem fez a diferença"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -1445,13 +1676,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc06/dc06-12-sec3",
@@ -1482,17 +1713,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc06/dc06-15-missao",
@@ -1506,7 +1758,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -1541,7 +1793,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc07/dc07-01-capa",
@@ -1568,14 +1820,15 @@
 ],
 [
 "dc07/dc07-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -1585,16 +1838,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc07/dc07-05-sec1",
@@ -1614,7 +1867,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -1626,7 +1879,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -1640,13 +1893,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc07/dc07-09-sec2",
@@ -1668,7 +1941,7 @@
 "Passo 3: Repita até chegar numa causa que você controla",
 "Passo 4: Teste: se resolver essa causa, o problema volta?"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -1681,13 +1954,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc07/dc07-12-sec3",
@@ -1718,17 +1991,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc07/dc07-15-missao",
@@ -1742,7 +2036,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -1777,7 +2071,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc08/dc08-01-capa",
@@ -1804,14 +2098,15 @@
 ],
 [
 "dc08/dc08-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -1821,16 +2116,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc08/dc08-05-sec1",
@@ -1850,7 +2145,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -1862,7 +2157,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -1876,13 +2171,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc08/dc08-09-sec2",
@@ -1904,7 +2219,7 @@
 "Passo 3: Para cada vermelho: causa, ação, dono, prazo",
 "Passo 4: Feche lendo as ações e reconhecendo 1 pessoa"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -1917,13 +2232,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc08/dc08-12-sec3",
@@ -1954,17 +2269,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc08/dc08-15-missao",
@@ -1978,7 +2314,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -2013,7 +2349,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc09/dc09-01-capa",
@@ -2040,14 +2376,15 @@
 ],
 [
 "dc09/dc09-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -2057,16 +2394,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc09/dc09-05-sec1",
@@ -2086,7 +2423,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -2098,7 +2435,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -2112,13 +2449,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc09/dc09-09-sec2",
@@ -2140,7 +2497,7 @@
 "Passo 3: Onde você quer estar daqui a 2 anos?",
 "Passo 4: Como você gosta de ser reconhecido?"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -2153,13 +2510,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc09/dc09-12-sec3",
@@ -2190,17 +2547,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc09/dc09-15-missao",
@@ -2214,7 +2592,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -2249,7 +2627,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc10/dc10-01-capa",
@@ -2276,14 +2654,15 @@
 ],
 [
 "dc10/dc10-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -2293,16 +2672,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc10/dc10-05-sec1",
@@ -2322,7 +2701,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -2334,7 +2713,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -2348,13 +2727,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc10/dc10-09-sec2",
@@ -2376,7 +2775,7 @@
 "Passo 3: O que fazer a partir de hoje (2 min)",
 "Passo 4: Checagem: alguém repete com as próprias palavras (1 min)"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -2389,13 +2788,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc10/dc10-12-sec3",
@@ -2426,17 +2825,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc10/dc10-15-missao",
@@ -2450,7 +2870,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -2485,7 +2905,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc11/dc11-01-capa",
@@ -2512,14 +2932,15 @@
 ],
 [
 "dc11/dc11-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -2529,16 +2950,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc11/dc11-05-sec1",
@@ -2558,7 +2979,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -2570,7 +2991,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -2584,13 +3005,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc11/dc11-09-sec2",
@@ -2612,7 +3053,7 @@
 "Passo 3: Pergunte: \"Como você vê isso?\"",
 "Passo 4: Combine o próximo passo e agradeça"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -2625,13 +3066,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc11/dc11-12-sec3",
@@ -2662,17 +3103,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc11/dc11-15-missao",
@@ -2686,7 +3148,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -2721,7 +3183,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc12/dc12-01-capa",
@@ -2748,14 +3210,15 @@
 ],
 [
 "dc12/dc12-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -2765,16 +3228,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc12/dc12-05-sec1",
@@ -2794,7 +3257,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -2806,7 +3269,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -2820,13 +3283,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc12/dc12-09-sec2",
@@ -2849,7 +3332,7 @@
 "Passo 4: Combine: o que muda, até quando",
 "Passo 5: Marque a data para revisar juntos"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -2862,13 +3345,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc12/dc12-12-sec3",
@@ -2899,17 +3382,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc12/dc12-15-missao",
@@ -2923,7 +3427,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -2958,7 +3462,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc13/dc13-01-capa",
@@ -2985,14 +3489,15 @@
 ],
 [
 "dc13/dc13-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -3002,16 +3507,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc13/dc13-05-sec1",
@@ -3031,7 +3536,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -3043,7 +3548,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -3057,13 +3562,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc13/dc13-09-sec2",
@@ -3085,7 +3610,7 @@
 "Passo 3: Deixe 30% livre para imprevisto",
 "Passo 4: Coloque no celular como evento repetido"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -3098,13 +3623,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc13/dc13-12-sec3",
@@ -3135,17 +3660,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc13/dc13-15-missao",
@@ -3159,7 +3705,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -3194,7 +3740,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc14/dc14-01-capa",
@@ -3221,14 +3767,15 @@
 ],
 [
 "dc14/dc14-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -3238,16 +3785,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc14/dc14-05-sec1",
@@ -3267,7 +3814,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -3279,7 +3826,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -3293,13 +3840,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc14/dc14-09-sec2",
@@ -3321,7 +3888,7 @@
 "Passo 3: Uma pessoa do time conduz 1 dia por semana",
 "Passo 4: Termine com a frase de foco do dia"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -3334,13 +3901,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc14/dc14-12-sec3",
@@ -3371,17 +3938,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc14/dc14-15-missao",
@@ -3395,7 +3983,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -3430,7 +4018,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc15/dc15-01-capa",
@@ -3457,14 +4045,15 @@
 ],
 [
 "dc15/dc15-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -3474,16 +4063,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc15/dc15-05-sec1",
@@ -3503,7 +4092,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -3515,7 +4104,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -3529,13 +4118,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc15/dc15-09-sec2",
@@ -3557,7 +4166,7 @@
 "Passo 3: Onde e como",
 "Passo 4: Quanto custa (se custar)"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -3570,13 +4179,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc15/dc15-12-sec3",
@@ -3607,17 +4216,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc15/dc15-15-missao",
@@ -3631,7 +4261,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -3666,7 +4296,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc16/dc16-01-capa",
@@ -3693,14 +4323,15 @@
 ],
 [
 "dc16/dc16-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -3710,16 +4341,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc16/dc16-05-sec1",
@@ -3739,7 +4370,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -3751,7 +4382,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -3765,13 +4396,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc16/dc16-09-sec2",
@@ -3793,7 +4444,7 @@
 "Passo 3: Algo que você aprendeu sozinho. Como?",
 "Passo 4: Por que você quer trabalhar aqui?"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -3806,13 +4457,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc16/dc16-12-sec3",
@@ -3843,17 +4494,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc16/dc16-15-missao",
@@ -3867,7 +4539,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -3902,7 +4574,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc17/dc17-01-capa",
@@ -3929,14 +4601,15 @@
 ],
 [
 "dc17/dc17-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -3946,16 +4619,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc17/dc17-05-sec1",
@@ -3975,7 +4648,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -3987,7 +4660,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -4001,13 +4674,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc17/dc17-09-sec2",
@@ -4029,7 +4722,7 @@
 "Passo 3: Dê nota de potencial: baixo, médio, alto",
 "Passo 4: Coloque cada um no quadrado e marque 2 sucessores"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -4042,13 +4735,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc17/dc17-12-sec3",
@@ -4079,17 +4772,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc17/dc17-15-missao",
@@ -4103,7 +4817,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -4138,7 +4852,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Check-in e retomada · 00–15 min",
 [
 [
 "dc18/dc18-01-capa",
@@ -4165,14 +4879,15 @@
 ],
 [
 "dc18/dc18-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -4182,16 +4897,16 @@
 "objetivo": "Cobrar a missão e trazer o caso real para a sala.",
 "onde": "Galeria de câmeras (todo mundo aparecendo).",
 "faca": [
-"Chame cada um pelo nome, 30 segundos por pessoa",
+"Chame cada um pelo nome, 1 minuto por pessoa",
 "Valorize quem fez; para quem não fez: \"O que travou?\", sem bronca"
 ],
-"tempo": "4 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Conceito · 05–25 min",
+"Conceito · 15–40 min",
 [
 [
 "dc18/dc18-05-sec1",
@@ -4211,7 +4926,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -4223,7 +4938,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -4237,13 +4952,33 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Ferramenta · 25–35 min",
+"Intervalo · 40–50 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Ferramenta · 50–65 min",
 [
 [
 "dc18/dc18-09-sec2",
@@ -4265,7 +5000,7 @@
 "Passo 3: 3 ações (70-20-10) com prazo",
 "Passo 4: Data de revisão mensal"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -4278,13 +5013,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Prática · 35–55 min",
+"Prática · 65–95 min",
 [
 [
 "dc18/dc18-12-sec3",
@@ -4315,17 +5050,38 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Caso real da turma · 95–110 min",
+[
+[
+"dc-hotseat",
+"Caso real da turma",
+{
+"objetivo": "Resolver um problema real desta semana com o método de hoje.",
+"onde": "Galeria de câmeras.",
+"fale": "Quem tem um problema real no time essa semana? O grupo vai ajudar usando a ferramenta de hoje.",
+"faca": [
+"1 voluntário conta o problema em 2 minutos",
+"O grupo só faz perguntas por 3 minutos",
+"Cada um sugere 1 ação usando a ferramenta de hoje",
+"O voluntário escolhe a ação, o prazo e conta no próximo encontro"
+],
+"tempo": "15 min"
+}
+]
+]
+],
+[
+"Missão e fechamento · 110–120 min",
 [
 [
 "dc18/dc18-15-missao",
@@ -4339,7 +5095,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [
@@ -4374,7 +5130,7 @@
 },
 "modulos": [
 [
-"Abertura · 00–05 min",
+"Abertura · 00–10 min",
 [
 [
 "dc19/dc19-01-capa",
@@ -4401,14 +5157,15 @@
 ],
 [
 "dc19/dc19-03-agenda",
-"Agenda · 1 hora",
+"Agenda · 2 horas",
 {
 "onde": "Compartilhando a tela.",
-"fale": "Pouca teoria e muita aplicação no seu time real.",
+"fale": "Pouca teoria e muita aplicação no seu time real. Temos 2 horas com um intervalo de 10 minutos.",
 "faca": [
+"Diga o horário do intervalo e do fim",
 "Se atrasar, corte do conceito, nunca da prática"
 ],
-"tempo": "30 s"
+"tempo": "1 min"
 }
 ],
 [
@@ -4426,7 +5183,7 @@
 ]
 ],
 [
-"Revisão · 05–10 min",
+"Revisão · 10–20 min",
 [
 [
 "dc19/dc19-05-sec1",
@@ -4446,7 +5203,7 @@
 "Dê 1 exemplo da sua operação para cada item"
 ],
 "pergunte": "Qual desses é o mais difícil no seu time hoje?",
-"tempo": "8 min"
+"tempo": "15 min"
 }
 ],
 [
@@ -4458,7 +5215,7 @@
 "faca": [
 "Pausa de 3 segundos depois da frase"
 ],
-"tempo": "1 min"
+"tempo": "2 min"
 }
 ],
 [
@@ -4472,13 +5229,13 @@
 "Depois o lado bom"
 ],
 "pergunte": "Em qual coluna está o seu time hoje?",
-"tempo": "4 min"
+"tempo": "6 min"
 }
 ]
 ]
 ],
 [
-"Estrutura do case",
+"Estrutura do case · 20–25 min",
 [
 [
 "dc19/dc19-09-sec2",
@@ -4500,7 +5257,7 @@
 "Passo 3: Depois: o número de hoje e o que mudou no time (1 min)",
 "Passo 4: Próximos 90 dias: o que vou manter (1 min)"
 ],
-"tempo": "5 min"
+"tempo": "8 min"
 }
 ],
 [
@@ -4513,13 +5270,13 @@
 "faca": [
 "Se tiver um caso seu parecido, conte no lugar deste"
 ],
-"tempo": "3 min"
+"tempo": "5 min"
 }
 ]
 ]
 ],
 [
-"Apresentações · 10–50 min",
+"Cases · parte 1 · 25–65 min",
 [
 [
 "dc19/dc19-12-sec3",
@@ -4531,16 +5288,55 @@
 ],
 [
 "dc19/dc19-13-pratica",
-"Sua vez · 5 minutos",
+"Sua vez · 5 min + 2 perguntas",
 {
 "objetivo": "Todo mundo aplica no caso real.",
 "onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
 "faca": [
 "Chame cada um pelo nome",
-"Cronometre 5 minutos",
+"Cronometre 5 minutos + 2 perguntas",
 "Peça um ponto forte no chat depois de cada case"
 ],
-"tempo": "30 min"
+"tempo": "7 min cada"
+}
+]
+]
+],
+[
+"Intervalo · 65–75 min",
+[
+[
+"dc-intervalo",
+"Intervalo · 10 minutos",
+{
+"objetivo": "Recarregar a turma para a segunda metade.",
+"onde": "Câmera, antes de liberar.",
+"fale": "10 minutos de intervalo. Voltamos no horário que está na tela, com câmera ligada.",
+"faca": [
+"Diga o horário exato de volta",
+"Deixe este slide na tela durante o intervalo",
+"Volte 1 minuto antes e chame a turma pelo nome"
+],
+"tempo": "10 min"
+}
+]
+]
+],
+[
+"Cases · parte 2 · 75–105 min",
+[
+[
+"dc19/dc19-13-pratica",
+"Sua vez · 5 min + 2 perguntas",
+{
+"objetivo": "Todo mundo aplica no caso real.",
+"onde": "Abra as salas em duplas (ou trios) e passe de sala em sala.",
+"faca": [
+"Chame cada um pelo nome",
+"Cronometre 5 minutos + 2 perguntas",
+"Peça um ponto forte no chat depois de cada case"
+],
+"tempo": "7 min cada"
 }
 ],
 [
@@ -4550,17 +5346,17 @@
 "objetivo": "Feedback curto e útil.",
 "onde": "Galeria de câmeras.",
 "faca": [
-"Escolha 2 ou 3 pessoas para mostrar o que fizeram",
+"Escolha 4 ou 5 pessoas para mostrar o que fizeram",
 "Comece sempre pelo ponto forte",
 "Máximo 1 minuto por pessoa"
 ],
-"tempo": "5 min"
+"tempo": "10 min"
 }
 ]
 ]
 ],
 [
-"Missão e fechamento · 55–60 min",
+"Próximos 90 dias e avaliação · 105–120 min",
 [
 [
 "dc19/dc19-15-missao",
@@ -4574,7 +5370,7 @@
 "Peça que anotem na agenda do celular agora",
 "Lembre do QR de presença no próximo slide"
 ],
-"tempo": "3 min"
+"tempo": "6 min"
 }
 ],
 [

@@ -29,6 +29,11 @@
   .barra div { height: 100%; background: #dc4c4c; transition: width .25s; }
   .erro { margin: auto; text-align: center; padding: 30px; font-size: 16px; }
   .relogio { font-variant-numeric: tabular-nums; font-size: 13px; opacity: .8; }
+  .tempo { position:relative; overflow:hidden; border-radius:12px; padding:8px 12px; margin:0 0 8px; background:rgba(255,255,255,.07); border:1px solid rgba(34,197,94,.7); font-variant-numeric:tabular-nums; }
+  .tempo .enc { position:absolute; inset:0 auto 0 0; background:rgba(34,197,94,.35); }
+  .tempo .tx { position:relative; display:flex; justify-content:space-between; align-items:baseline; gap:8px; } .tempo b { font-size:22px; } .tempo small { font-size:12px; opacity:.85; }
+  .tempo.alerta { border-color:#f59e0b; } .tempo.alerta .enc { background:rgba(245,158,11,.45); }
+  .tempo.estourou { border-color:#ef4444; background:rgba(220,38,38,.55); animation:pisca2 1.2s infinite; } .tempo.estourou .enc { display:none; } @keyframes pisca2 { 50% { opacity:.7; } }
   .pv { position: relative; width: 100%; border-radius: 10px; overflow: hidden; background: #111827; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
   .pv .mt-sl { pointer-events: none; }
   .pv-vazio { aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; font-size: 13px; opacity: .5; }
@@ -62,6 +67,7 @@
   <style id="css-slides"></style>
   <div>
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;"><div class="rot" id="rot">AGORA</div><div class="relogio" id="rel">00:00</div></div>
+    <div class="tempo" id="tempo" style="display:none"></div>
     <div class="pv agora" id="pv0"><div class="pv-vazio">Aguardando a apresentação...</div></div>
     <div class="linha-info"><strong id="nome"></strong><span id="cont"></span></div>
   </div>
@@ -92,7 +98,17 @@
     linhas.forEach(l => { const b = l.match(/^\s*[•\-\*–]\s*(.*)$/); if (b) { if (!ul) { h += '<ul>'; ul = true; } h += '<li>' + esc(b[1]) + '</li>'; } else { if (ul) { h += '</ul>'; ul = false; } if (l.trim()) h += '<p style="margin:0 0 6px;">' + esc(l) + '</p>'; } });
     return h + (ul ? '</ul>' : '');
   }
-  let estado = null, ini = null;
+  let estado = null, ini = null, desv = 0, vibrou = {};
+  const mmss = s => { const a = Math.abs(Math.round(s)); return Math.floor(a / 60) + ':' + String(a % 60).padStart(2, '0'); };
+  // ⏱ tempo do bloco: quanto falta, quanto atrasou o encontro e o próximo bloco
+  function tempoBloco() {
+    const el = $('tempo'), t = estado && estado.tempo; if (!el) return; if (!t) { el.style.display = 'none'; return; }
+    const ag = Date.now() - desv, gasto = (ag - t.blocoIni) / 1000, resta = t.dur - gasto, atraso = Math.round(((t.blocoIni - ini) / 1000 - t.plIni * 60 + Math.max(0, -resta)) / 60);
+    const st = resta < 0 ? 'estourou' : resta <= Math.min(120, t.dur * 0.2) ? 'alerta' : 'ok', k = t.blocoIni + st;
+    if (st !== 'ok' && !vibrou[k]) { vibrou[k] = 1; if (navigator.vibrate) navigator.vibrate(st === 'estourou' ? [300, 150, 300, 150, 300] : [200, 100, 200]); }
+    el.style.display = ''; el.className = 'tempo ' + st;
+    el.innerHTML = `<div class="enc" style="width:${Math.min(100, gasto * 100 / t.dur)}%"></div><div class="tx"><b>${resta >= 0 ? '⏱ faltam ' + mmss(resta) : '⏰ +' + mmss(-resta)}</b><small>bloco de ${mmss(t.dur)} · ${Math.abs(atraso) < 1 ? 'no horário' : atraso > 0 ? atraso + ' min atrasado' : -atraso + ' min adiantado'}</small></div>${t.proximo ? `<div class="tx" style="margin-top:2px"><small>Próximo: ${esc(t.proximo)}</small><small>fim às ${t.fim} min</small></div>` : ''}`;
+  }
   const socket = io({ transports: ['websocket', 'polling'] });
   function entrar() { socket.emit('mt-controle-entrar', { codigo }); }
   socket.on('connect', () => { $('st').textContent = 'conectado'; $('st').classList.add('on'); entrar(); });
@@ -111,7 +127,7 @@
   }
   function irPara(k) { if (!estado || !estado.telas || !estado.telas[k]) return; if (navigator.vibrate) navigator.vibrate(15); socket.emit('mt-comando', { cmd: 'ir', i: estado.telas[k].i }); }
   socket.on('mt-estado', e => {
-    estado = e; if (e.ini) ini = e.ini;
+    estado = e; if (e.ini) ini = e.ini; desv = e.agora ? Date.now() - e.agora : 0; tempoBloco(); 
     if (e.css && e.css !== cssAtual) { cssAtual = e.css; $('css-slides').textContent = e.css; }
     $('rot').textContent = 'AGORA' + (e.modulo ? ' · ' + e.modulo.toUpperCase() : '');
     $('nome').textContent = e.titulo || '—';
@@ -183,6 +199,7 @@
   });
   function cmd(c) { if (navigator.vibrate) navigator.vibrate(15); socket.emit('mt-comando', { cmd: c }); }
   window.addEventListener('resize', () => [0, 1, 2].forEach(k => ajustar($('pv' + k))));
+  setInterval(tempoBloco, 1000);
   setInterval(() => { if (!ini) return; const s = Math.floor((Date.now() - ini) / 1000); $('rel').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }, 1000);
   // Passar slide deslizando o dedo também.
   let x0 = null;

@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Comunicação de Impacto para Líderes · Lázaro Neto</title>
-<meta name="description" content="Programa de 5 encontros de 1 hora para líderes pararem de ler slide, prepararem melhor, ocuparem o palco com segurança e responderem às dúvidas do time. Para você ou para os líderes da sua empresa.">
+<meta name="description" content="Programa de 5 encontros de 2 horas para líderes pararem de ler slide, prepararem melhor, ocuparem o palco com segurança e responderem às dúvidas do time. Para você ou para os líderes da sua empresa.">
 <meta property="og:title" content="Comunicação de Impacto para Líderes · Lázaro Neto">
-<meta property="og:description" content="5 encontros de 1 hora. Todo mundo apresenta em todo encontro. Para você ou para os líderes da sua empresa.">
+<meta property="og:description" content="5 encontros de 2 horas. Todo mundo apresenta em todo encontro. Para você ou para os líderes da sua empresa.">
 <meta property="og:image" content="https://www.impulsionarv4.com.br/mentoria-palestrante.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/mentoria-estilo.css?v=1">
@@ -49,7 +49,7 @@ const CI = { d: null };
       <h1>Pare de <em>ler slide</em>. Comece a ser ouvido.</h1>
       <p class="sub">${mtEsc(p.subtitulo)} DDS, reunião de resultado, treinamento e convenção: o time entende, confia e age.</p>
       <div class="acoes"><a class="bt ambar" href="#individual">Quero para mim</a><a class="bt claro" href="#empresa">Quero para os líderes da minha empresa</a></div>
-      <div class="prova"><div><b>${p.encontros.length}</b>encontros</div><div><b>1 hora</b>cada encontro</div><div><b>100%</b>prática: todo mundo apresenta</div></div>
+      <div class="prova"><div><b>${p.encontros.length}</b>encontros</div><div><b>2 horas</b>cada encontro</div><div><b>100%</b>prática: todo mundo apresenta</div></div>
     </div>
     <div class="foto larga"><img src="/mentoria-palestrante.jpg?v=4" alt="${mtEsc(m.mentor)}"></div>
   </div></section>
@@ -65,7 +65,7 @@ const CI = { d: null };
   </div></section>
 
   <section><div class="cx">
-    <div class="titulo"><small>Como funciona</small><h2>${p.encontros.length} encontros de 1 hora, todo mundo apresentando</h2><p>${mtEsc(p.objetivo)}</p></div>
+    <div class="titulo"><small>Como funciona</small><h2>${p.encontros.length} encontros de 2 horas, todo mundo apresentando</h2><p>${mtEsc(p.objetivo)}</p></div>
     <div class="enc">${p.encontros.map(e => `<div><small>Encontro ${e.n}</small><b>${mtEsc(e.modulo)}</b><span>${mtEsc(e.tema || '')}</span></div>`).join('')}</div>
     <div class="card" style="margin-top:18px;border-left:5px solid var(--ambar);"><h3>🏁 Entrega final</h3><p>${mtEsc(p.entrega)}</p></div>
     <div class="card" style="margin-top:12px;border-left:5px solid var(--ambar);"><h3>⭐ Regra de ouro</h3><p>${mtEsc(p.regraOuro)}</p></div>
@@ -82,7 +82,7 @@ const CI = { d: null };
       <div class="oferta ind" id="individual">
         <span class="tag">${t ? `🗓️ ${mtEsc(t.nome)}${t.inicio ? ' · começa ' + mtEsc(mtData(t.inicio)) : ''}` : '📣 Individual · próxima turma'}</span>
         <h3>Individual</h3><p style="margin:0;opacity:.85;">Você entra numa turma aberta com líderes de outras empresas.</p>
-        <ul><li>${p.encontros.length} encontros de 1 hora${t && t.horario ? ' · ' + mtEsc(t.horario) : ''}</li><li>${mtEsc(v.formatoIndividual)}</li><li>Você apresenta e recebe feedback em todo encontro</li><li>Área do Aluno com slides, dúvidas e envio de material</li><li>Apresentação final avaliada e certificado</li></ul>
+        <ul><li>${p.encontros.length} encontros de 2 horas${t && t.horario ? ' · ' + mtEsc(t.horario) : ''}</li><li>${mtEsc(v.formatoIndividual)}</li><li>Você apresenta e recebe feedback em todo encontro</li><li>Área do Aluno com slides, dúvidas e envio de material</li><li>Apresentação final avaliada e certificado</li></ul>
         <div class="rodp">
           ${Number(v.precoDe) > Number(preco) ? `<div class="de">${mtMoeda(v.precoDe)}</div>` : ''}
           <div class="por">${mtMoeda(preco)}</div><div class="parc">ou em até ${Number(v.parcelas) || 12}x no cartão${v.garantiaDias ? ` · ${v.garantiaDias} dias de garantia` : ''}</div>
@@ -106,7 +106,7 @@ const CI = { d: null };
   <section class="alt"><div class="cx faq">
     <div class="titulo"><small>Dúvidas</small><h2>Perguntas frequentes</h2></div>
     <details><summary>Preciso ter experiência apresentando?</summary><p>Não. O programa é para quem já apresenta para o time e quer fazer melhor, e também para quem trava. Cada um evolui a partir do próprio ponto de partida, medido na régua do primeiro encontro.</p></details>
-    <details><summary>Quanto tempo preciso por semana?</summary><p>1 hora do encontro e uma missão curta para casa: ajustar o material e ensaiar a próxima apresentação.</p></details>
+    <details><summary>Quanto tempo preciso por semana?</summary><p>2 horas de encontro (com intervalo) e uma missão curta para casa: ajustar o material e ensaiar a próxima apresentação.</p></details>
     <details><summary>É presencial ou online?</summary><p>${mtEsc(v.formatoIndividual)}. Para empresas, presencial na sua unidade ou online, como for melhor para o time.</p></details>
     <details><summary>E se eu perder um encontro?</summary><p>Os slides ficam na sua Área do Aluno e você tira dúvidas com o mentor por lá. A prática perdida é reposta no encontro seguinte.</p></details>
     <details><summary>A empresa pode pagar a vaga individual?</summary><p>Pode. E se forem 4 líderes ou mais, compensa a turma fechada: peça a proposta.</p></details>

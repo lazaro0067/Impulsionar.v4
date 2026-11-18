@@ -9676,48 +9676,50 @@ app.post('/api/admin/programa-controle', requireRole('admin'), async (req, res) 
 
 // ----- Slides de cada encontro dos programas, abertos DENTRO do sistema (apresentação do Ministrar Treinamento:
 // gravar, notas e passar os slides pelo celular). Os slides são gerados a partir do programa a cada vez que abre.
-// Encontro 1 (1 hora): slides desenhados um a um (public/slides-mentoria/e1) + roteiro de condução no celular
+// Encontro 1 (2 horas): slides desenhados um a um (public/slides-mentoria/e1) + roteiro de condução no celular
 function deckEncontro1Mt(p, presenca, base) {
-    const raiz = String(base || '').replace(/\/$/, ''), img = a => `${raiz}/slides-mentoria/${a}.png?v=1`;
+    const raiz = String(base || '').replace(/\/$/, ''), img = a => `${raiz}/slides-mentoria/${a}.png?v=2`;
     const guia = g => [g.objetivo && '🎯 OBJETIVO: ' + g.objetivo, g.onde && '📍 ONDE FICAR: ' + g.onde, g.fale && '🗣️ FALE: "' + g.fale + '"', g.faca && g.faca.length ? '🎬 FAÇA:\n' + g.faca.map(x => '• ' + x).join('\n') : '', g.pergunte && '❓ PERGUNTE: "' + g.pergunte + '"', g.tempo && '⏱️ TEMPO: ' + g.tempo].filter(Boolean).join('\n');
     const s = (arq, titulo, g) => ({ titulo, texto: '', notas: guia(g), layout: 'imagem', imagem: img(arq) });
     const mod = (titulo, slides) => ({ titulo, tipo: 'slides', slides });
     const mods = [
-        mod('Abertura · 00–03 min', [
+        mod('Abertura · 00–10 min', [
             { titulo: '', texto: '', layout: 'imagem', imagem: raiz + '/mentoria-palestrante.jpg?v=4', notas: guia({ objetivo: 'Criar conexão e autoridade em 30 segundos.', onde: 'Centro da sala, de frente, sem nada nas mãos.', fale: 'Bom dia! Eu sou o Lázaro. Comecei no chão da operação e hoje cuido da gestão de pessoas e processos. Nos próximos encontros, vocês vão sair apresentando com segurança.', faca: ['Sorria e olhe para 3 pessoas diferentes'], tempo: '30 s' }) },
             s('e1/e1-01-capa', 'A comunicação que faz o time agir', { objetivo: 'Dizer o tema do dia.', onde: 'Centro.', fale: 'Hoje é sobre a comunicação que faz o time agir: o que é, onde ela falha, como se preparar e como montar um material que funciona.', tempo: '30 s' }),
-            s('e1/e1-02-pergunta', 'Quantas vezes você explicou… e o time fez diferente?', { objetivo: 'Gerar identificação: todo mundo já passou por isso.', onde: 'Frente do público, perto da turma.', pergunte: 'Quantas vezes você explicou e o time fez diferente? Levanta a mão quem já passou por isso.', faca: ['Espere as mãos levantarem', 'Peça 1 exemplo rápido de alguém'], tempo: '1 min' }),
-            s('e1/e1-03-agenda', 'Agenda · 1 hora', { objetivo: 'Combinar o relógio.', onde: 'Lado da tela.', fale: 'Temos 1 hora, em 5 partes. No fim, vocês saem com uma missão.', tempo: '30 s' })]),
-        mod('O que é comunicação · 03–15 min', [
+            s('e1/e1-02-pergunta', 'Quantas vezes você explicou… e o time fez diferente?', { objetivo: 'Gerar identificação: todo mundo já passou por isso.', onde: 'Frente do público, perto da turma.', pergunte: 'Quantas vezes você explicou e o time fez diferente? Levanta a mão quem já passou por isso.', faca: ['Espere as mãos levantarem', 'Peça 1 exemplo rápido de alguém'], tempo: '3 min' }),
+            s('e1/e1-03-agenda', 'Agenda · 2 horas', { objetivo: 'Combinar o relógio.', onde: 'Lado da tela.', fale: 'Temos 2 horas, com um intervalo de 10 minutos no meio. No fim, vocês saem com uma missão.', tempo: '30 s' })]),
+        mod('O que é comunicação · 10–30 min', [
             s('e1/e1-04-sec1', '01 · O que é comunicação', { onde: 'Centro.', fale: 'Vamos começar pelo básico que quase ninguém pensa: o que é comunicação.', tempo: '10 s' }),
-            s('e1/e1-05-definicao', 'É o que o outro entende — e faz', { objetivo: 'Mudar a visão: comunicação é resultado no outro.', onde: 'Centro, pausa depois da frase.', fale: 'Comunicação não é o que eu falo. É o que o outro entende e faz. Se ninguém fez nada diferente depois da sua reunião, você não comunicou: você só falou.', faca: ['Faça 2 segundos de pausa depois de "e faz"'], tempo: '2 min' }),
-            s('e1/e1-06-caminho', 'O caminho da mensagem', { objetivo: 'Mostrar como a comunicação funciona, de ponta a ponta.', onde: 'Lado da tela, apontando cada caixa.', fale: 'Toda mensagem nasce de uma intenção: o que eu quero que aconteça. Vira palavras e números, passa por um canal, chega no entendimento do outro e só termina na ação. No meio tem ruído. E o único jeito de saber se chegou é o feedback.', faca: ['Aponte da caixa 1 até a 5', 'Dê exemplo de ruído da operação: barulho da empilhadeira, pressa da troca de turno'], pergunte: 'Qual é o maior ruído na comunicação do seu time hoje?', tempo: '4 min' }),
-            s('e1/e1-07-parte-chega', 'Começa em você. Termina no outro.', { objetivo: 'De onde parte e até onde chega.', onde: 'Lado da tela.', fale: 'A comunicação começa em você, antes de falar: qual o meu objetivo, o que eles precisam saber e fazer. E termina no outro: ele entendeu, sabe o que fazer, fez?', tempo: '3 min' }),
-            s('e1/e1-08-4c', 'Os 4 C', { objetivo: 'Dar o critério de comunicação eficiente.', onde: 'Lado da tela.', fale: 'Quem é entendido fala de forma Clara, Curta, Concreta e Com ação.', faca: ['Para cada C, um exemplo do dia a dia'], tempo: '3 min' })]),
-        mod('Dinâmica · 15–25 min', [
+            s('e1/e1-05-definicao', 'É o que o outro entende — e faz', { objetivo: 'Mudar a visão: comunicação é resultado no outro.', onde: 'Centro, pausa depois da frase.', fale: 'Comunicação não é o que eu falo. É o que o outro entende e faz. Se ninguém fez nada diferente depois da sua reunião, você não comunicou: você só falou.', faca: ['Faça 2 segundos de pausa depois de "e faz"'], tempo: '3 min' }),
+            s('e1/e1-06-caminho', 'O caminho da mensagem', { objetivo: 'Mostrar como a comunicação funciona, de ponta a ponta.', onde: 'Lado da tela, apontando cada caixa.', fale: 'Toda mensagem nasce de uma intenção: o que eu quero que aconteça. Vira palavras e números, passa por um canal, chega no entendimento do outro e só termina na ação. No meio tem ruído. E o único jeito de saber se chegou é o feedback.', faca: ['Aponte da caixa 1 até a 5', 'Dê exemplo de ruído da operação: barulho da empilhadeira, pressa da troca de turno'], pergunte: 'Qual é o maior ruído na comunicação do seu time hoje?', tempo: '7 min' }),
+            s('e1/e1-07-parte-chega', 'Começa em você. Termina no outro.', { objetivo: 'De onde parte e até onde chega.', onde: 'Lado da tela.', fale: 'A comunicação começa em você, antes de falar: qual o meu objetivo, o que eles precisam saber e fazer. E termina no outro: ele entendeu, sabe o que fazer, fez?', tempo: '5 min' }),
+            s('e1/e1-08-4c', 'Os 4 C', { objetivo: 'Dar o critério de comunicação eficiente.', onde: 'Lado da tela.', fale: 'Quem é entendido fala de forma Clara, Curta, Concreta e Com ação.', faca: ['Para cada C, um exemplo do dia a dia'], tempo: '5 min' })]),
+        mod('Dinâmica · 30–50 min', [
             s('e1/e1-09-sec2', '02 · Dinâmica: desenho às cegas', { faca: ['Distribua papel e caneta', 'Tenha 2 figuras simples prontas (formas geométricas)'], tempo: '30 s' }),
-            s('e1/e1-10-dinamica1', 'Rodada 1 · sem perguntas', { objetivo: 'Sentir a comunicação de mão única.', onde: 'Fundo da sala, cronometrando.', faca: ['Chame 1 voluntário e entregue a figura 1 (só ele vê)', 'Ele descreve de costas para a turma', 'Ninguém pode perguntar', '90 segundos e todos levantam o papel'], tempo: '4 min' }),
-            s('e1/e1-11-dinamica2', 'Rodada 2 · com perguntas', { objetivo: 'Mostrar o poder do feedback.', onde: 'Fundo da sala.', faca: ['Outro voluntário, figura 2', 'Agora de frente e a turma pode perguntar', 'Compare os desenhos com a figura nas duas rodadas'], pergunte: 'Qual rodada ficou mais parecida? Por quê?', tempo: '4 min' }),
-            s('e1/e1-12-licao', 'Sem feedback, a mensagem chega pela metade', { objetivo: 'Fechar a lição da dinâmica.', onde: 'Centro.', fale: 'Na rodada 1 vocês comunicaram como em muita reunião: de costas, sem olhar, sem pergunta. Sem feedback, a mensagem chega pela metade.', tempo: '1 min' })]),
-        mod('Falhas · 25–32 min', [
+            s('e1/e1-10-dinamica1', 'Rodada 1 · sem perguntas', { objetivo: 'Sentir a comunicação de mão única.', onde: 'Fundo da sala, cronometrando.', faca: ['Chame 1 voluntário e entregue a figura 1 (só ele vê)', 'Ele descreve de costas para a turma', 'Ninguém pode perguntar', '90 segundos e todos levantam o papel'], tempo: '8 min' }),
+            s('e1/e1-11-dinamica2', 'Rodada 2 · com perguntas', { objetivo: 'Mostrar o poder do feedback.', onde: 'Fundo da sala.', faca: ['Outro voluntário, figura 2', 'Agora de frente e a turma pode perguntar', 'Compare os desenhos com a figura nas duas rodadas'], pergunte: 'Qual rodada ficou mais parecida? Por quê?', tempo: '8 min' }),
+            s('e1/e1-12-licao', 'Sem feedback, a mensagem chega pela metade', { objetivo: 'Fechar a lição da dinâmica.', onde: 'Centro.', fale: 'Na rodada 1 vocês comunicaram como em muita reunião: de costas, sem olhar, sem pergunta. Sem feedback, a mensagem chega pela metade.', tempo: '2 min' })]),
+        mod('Intervalo · 50–60 min', [
+            s('ci-intervalo', 'Intervalo · 10 minutos', { objetivo: 'Recarregar a turma para a segunda metade.', onde: 'Centro, antes de liberar.', fale: '10 minutos de intervalo. Voltamos no horário que está na tela, em ponto.', faca: ['Diga o horário exato de volta', 'Deixe este slide na tela durante o intervalo', 'Volte 1 minuto antes e chame a turma'], tempo: '10 min' }) ]),
+        mod('Falhas · 60–75 min', [
             s('e1/e1-13-sec3', '03 · As falhas que custam caro', { tempo: '10 s' }),
-            s('e1/e1-14-falhas', '8 falhas que fazem o time desligar', { objetivo: 'Mostrar o que não podemos fazer.', onde: 'Lado da tela, apontando cada falha.', faca: ['Passe rápido pelas 8', 'Escolha 2 e conte um caso real'], pergunte: 'Qual dessas você mais vê nas reuniões da empresa?', tempo: '5 min' }),
-            s('e1/e1-15-frase', 'O time não perdoa a falta de preparo', { objetivo: 'Fazer a ponte para a preparação.', onde: 'Centro, devagar.', fale: 'O time perdoa o nervosismo. Não perdoa a falta de preparo.', faca: ['Pausa de 3 segundos antes de passar'], tempo: '1 min' })]),
-        mod('Preparação · 32–40 min', [
+            s('e1/e1-14-falhas', '8 falhas que fazem o time desligar', { objetivo: 'Mostrar o que não podemos fazer.', onde: 'Lado da tela, apontando cada falha.', faca: ['Passe rápido pelas 8', 'Escolha 2 e conte um caso real'], pergunte: 'Qual dessas você mais vê nas reuniões da empresa?', tempo: '11 min' }),
+            s('e1/e1-15-frase', 'O time não perdoa a falta de preparo', { objetivo: 'Fazer a ponte para a preparação.', onde: 'Centro, devagar.', fale: 'O time perdoa o nervosismo. Não perdoa a falta de preparo.', faca: ['Pausa de 3 segundos antes de passar'], tempo: '2 min' })]),
+        mod('Preparação · 75–90 min', [
             s('e1/e1-16-sec4', '04 · Preparação', { tempo: '10 s' }),
-            s('e1/e1-17-60', '60% acontece antes de começar', { objetivo: 'Mostrar o peso da preparação.', onde: 'Lado da tela, apontando a barra.', fale: '60% do resultado de uma reunião acontece antes dela começar. Vale para reunião de resultado, DDS, treinamento, palestra e apresentação para a diretoria.', faca: ['Conte como você se prepara para uma apresentação importante'], pergunte: 'Quanto tempo você investe preparando a sua última reunião?', tempo: '3 min' }),
-            s('e1/e1-18-perguntas', 'As 5 perguntas da preparação', { objetivo: 'Dar o roteiro de preparação.', onde: 'Lado da tela.', fale: 'Antes de abrir o PowerPoint, responda estas 5 perguntas.', faca: ['Leia cada pergunta e dê 1 exemplo', 'Diga que elas valem para a missão de casa'], tempo: '4 min' })]),
-        mod('Montagem do material · 40–53 min', [
+            s('e1/e1-17-60', '60% acontece antes de começar', { objetivo: 'Mostrar o peso da preparação.', onde: 'Lado da tela, apontando a barra.', fale: '60% do resultado de uma reunião acontece antes dela começar. Vale para reunião de resultado, DDS, treinamento, palestra e apresentação para a diretoria.', faca: ['Conte como você se prepara para uma apresentação importante'], pergunte: 'Quanto tempo você investe preparando a sua última reunião?', tempo: '6 min' }),
+            s('e1/e1-18-perguntas', 'As 5 perguntas da preparação', { objetivo: 'Dar o roteiro de preparação.', onde: 'Lado da tela.', fale: 'Antes de abrir o PowerPoint, responda estas 5 perguntas.', faca: ['Leia cada pergunta e dê 1 exemplo', 'Diga que elas valem para a missão de casa'], tempo: '8 min' })]),
+        mod('Montagem do material · 90–110 min', [
             s('e1/e1-19-sec5', '05 · Montagem do material', { tempo: '10 s' }),
-            s('e1/e1-20-estrutura', 'Abertura · 3 pontos · Ação', { objetivo: 'Dar a estrutura do material.', onde: 'Lado da tela.', fale: 'Todo material bom tem abertura com gancho, no máximo 3 pontos e um fechamento com ação.', tempo: '3 min' }),
-            s('e1/e1-21-regras', '6 regras para o slide falar sozinho', { objetivo: 'Entregar as regras do slide.', onde: 'Lado da tela.', faca: ['Leia as 6 regras', 'Diga: os próximos slides mostram cada regra na prática'], tempo: '2 min' }),
-            s('ci-ex-texto', 'Exemplo · Texto demais × 1 mensagem', { objetivo: 'Mostrar a regra 1 na prática.', onde: 'Lado da tela.', pergunte: 'Qual dos dois o time entende em 5 segundos?', tempo: '2 min' }),
-            s('ci-ex-titulo', 'Exemplo · Título genérico × título-mensagem', { onde: 'Lado da tela.', pergunte: 'Lendo só o título, dá para entender o slide?', tempo: '2 min' }),
-            s('ci-ex-grafico', 'Exemplo · Gráfico poluído × com destaque', { onde: 'Lado da tela.', fale: 'Destaque o que importa e apague o resto.', tempo: '2 min' }),
-            s('e1/e1-22-teste', 'O teste final', { objetivo: 'Dar o teste que eles vão usar em casa.', onde: 'Centro.', fale: 'Mostre o slide para alguém por 5 segundos. Se ele não disser a mensagem, o slide não está pronto.', tempo: '1 min' })]),
-        mod('Missão para casa · 53–60 min', [
-            s('e1/e1-23-missao', 'Missão: material que se explica sozinho', { objetivo: 'Combinar a missão.', onde: 'Centro.', fale: 'A missão é montar um material de até 10 slides, sobre um tema real, que passe a mensagem sem ninguém apresentar.', faca: ['Conte quantas pessoas tem e decida: individual ou em dupla', 'Defina o número de slides (até 10)', 'Combine a data de entrega: início do Encontro 2'], tempo: '3 min' }),
-            s('e1/e1-24-regua', 'Como o material será avaliado', { objetivo: 'Deixar claro como vão ser avaliados.', onde: 'Lado da tela.', fale: 'No Encontro 2, os materiais serão trocados. Cada um lê o do outro sem apresentação e dá nota de 1 a 5 nestes 6 pontos.', tempo: '2 min' })])
+            s('e1/e1-20-estrutura', 'Abertura · 3 pontos · Ação', { objetivo: 'Dar a estrutura do material.', onde: 'Lado da tela.', fale: 'Todo material bom tem abertura com gancho, no máximo 3 pontos e um fechamento com ação.', tempo: '5 min' }),
+            s('e1/e1-21-regras', '6 regras para o slide falar sozinho', { objetivo: 'Entregar as regras do slide.', onde: 'Lado da tela.', faca: ['Leia as 6 regras', 'Diga: os próximos slides mostram cada regra na prática'], tempo: '3 min' }),
+            s('ci-ex-texto', 'Exemplo · Texto demais × 1 mensagem', { objetivo: 'Mostrar a regra 1 na prática.', onde: 'Lado da tela.', pergunte: 'Qual dos dois o time entende em 5 segundos?', tempo: '3 min' }),
+            s('ci-ex-titulo', 'Exemplo · Título genérico × título-mensagem', { onde: 'Lado da tela.', pergunte: 'Lendo só o título, dá para entender o slide?', tempo: '3 min' }),
+            s('ci-ex-grafico', 'Exemplo · Gráfico poluído × com destaque', { onde: 'Lado da tela.', fale: 'Destaque o que importa e apague o resto.', tempo: '3 min' }),
+            s('e1/e1-22-teste', 'O teste final', { objetivo: 'Dar o teste que eles vão usar em casa.', onde: 'Centro.', fale: 'Mostre o slide para alguém por 5 segundos. Se ele não disser a mensagem, o slide não está pronto.', tempo: '2 min' })]),
+        mod('Missão para casa · 110–120 min', [
+            s('e1/e1-23-missao', 'Missão: material que se explica sozinho', { objetivo: 'Combinar a missão.', onde: 'Centro.', fale: 'A missão é montar um material de até 10 slides, sobre um tema real, que passe a mensagem sem ninguém apresentar.', faca: ['Conte quantas pessoas tem e decida: individual ou em dupla', 'Defina o número de slides (até 10)', 'Combine a data de entrega: início do Encontro 2'], tempo: '4 min' }),
+            s('e1/e1-24-regua', 'Como o material será avaliado', { objetivo: 'Deixar claro como vão ser avaliados.', onde: 'Lado da tela.', fale: 'No Encontro 2, os materiais serão trocados. Cada um lê o do outro sem apresentação e dá nota de 1 a 5 nestes 6 pontos.', tempo: '3 min' })])
     ];
     const fim = mods[mods.length - 1].slides;
     if (presenca) fim.push({ titulo: 'Registre sua presença', texto: ['Abra a câmera do celular', 'Aponte para o QR code', 'Toque em Confirmar presença'].map((x, i) => `• Passo ${i + 1} · ${x}`).join('\n'), layout: 'padrao', imagem: 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=8&data=' + encodeURIComponent(presenca.link), imgTam: 11, notas: guia({ objetivo: 'Registrar a presença.', onde: 'Ao lado da tela.', faca: ['Deixe o QR até todos registrarem'], tempo: '1 min' }) });
@@ -9728,118 +9730,128 @@ function deckEncontro1Mt(p, presenca, base) {
 // Slides desenhados (public/slides-mentoria/eN) + roteiro de condução em cada slide (aparece no celular pelo passador).
 const DECKS_CI = {
     2: [
-        ['Abertura · 00–03 min', [
+        ['Abertura · 00–05 min', [
             ['e2-01-capa', 'Preparação e slides que não se leem', { objetivo: 'Dizer o tema do dia.', onde: 'Centro.', fale: 'Hoje é sobre preparar a fala separada do slide. O slide mostra, você explica.', tempo: '30 s' }],
-            ['e2-02-pergunta', 'Você apresentou ou leu para o time?', { objetivo: 'Gerar identificação.', onde: 'Frente do público.', pergunte: 'Na sua última reunião, você apresentou para o time ou leu para o time? Levanta a mão quem já leu slide.', faca: ['Espere as mãos', 'Ria junto: todo mundo já fez'], tempo: '1 min' }],
-            ['e2-03-agenda', 'Agenda · 1 hora', { objetivo: 'Combinar o relógio.', onde: 'Lado da tela.', fale: 'Começamos avaliando os materiais da missão. Depois 3 técnicas e muita prática: todo mundo apresenta hoje.', tempo: '30 s' }]]],
-        ['Avaliação dos materiais · 03–15 min', [
+            ['e2-02-pergunta', 'Você apresentou ou leu para o time?', { objetivo: 'Gerar identificação.', onde: 'Frente do público.', pergunte: 'Na sua última reunião, você apresentou para o time ou leu para o time? Levanta a mão quem já leu slide.', faca: ['Espere as mãos', 'Ria junto: todo mundo já fez'], tempo: '2 min' }],
+            ['e2-03-agenda', 'Agenda · 2 horas', { objetivo: 'Combinar o relógio.', onde: 'Lado da tela.', fale: 'Começamos avaliando os materiais da missão. Depois 3 técnicas e muita prática: todo mundo apresenta hoje.', tempo: '30 s' }]]],
+        ['Avaliação dos materiais · 05–30 min', [
             ['e2-04-sec1', '01 · Avaliação dos materiais', { fale: 'Vamos ver se o material de vocês passou a mensagem sozinho.', tempo: '10 s' }],
-            ['e2-05-troca', 'Troque e avalie sem apresentar', { objetivo: 'Medir se o material passa a mensagem sem apresentador.', onde: 'Circulando entre as duplas.', faca: ['Entregue a régua impressa (6 pontos, nota 1 a 5)', 'Ninguém explica o próprio material', '8 minutos de leitura e notas, cronometrados'], tempo: '8 min' }],
+            ['e2-05-troca', 'Troque e avalie sem apresentar', { objetivo: 'Medir se o material passa a mensagem sem apresentador.', onde: 'Circulando entre as duplas.', faca: ['Entregue a régua impressa (6 pontos, nota 1 a 5)', 'Ninguém explica o próprio material', '15 minutos de leitura e notas, cronometrados'], tempo: '15 min' }],
             ['e1/e1-24-regua', 'Régua do material', { objetivo: 'Lembrar os critérios durante a avaliação.', onde: 'Lado da tela.', faca: ['Deixe este slide aberto enquanto avaliam'], tempo: 'durante a avaliação' }],
-            ['e2-06-devolutiva', 'O que a régua mostrou', { objetivo: 'Cada um ouve a nota e o ajuste.', onde: 'Centro.', faca: ['1 minuto por pessoa: nota, slide mais forte, 1 ajuste', 'Anote a nota de cada um (comparar no Encontro 5)'], pergunte: 'Qual regra mais faltou nos materiais?', tempo: '4 min' }]]],
-        ['Roteiro em 3 atos · 15–22 min', [
+            ['e2-06-devolutiva', 'O que a régua mostrou', { objetivo: 'Cada um ouve a nota e o ajuste.', onde: 'Centro.', faca: ['1 minuto por pessoa: nota, slide mais forte, 1 ajuste', 'Anote a nota de cada um (comparar no Encontro 5)'], pergunte: 'Qual regra mais faltou nos materiais?', tempo: '8 min' }]]],
+        ['Roteiro em 3 atos · 30–42 min', [
             ['e2-07-sec2', '02 · Roteiro em 3 atos', { fale: 'Antes do slide vem a história.', tempo: '10 s' }],
-            ['e2-08-3atos', 'Abertura · 3 pontos · Ação', { objetivo: 'Dar a estrutura da fala.', onde: 'Lado da tela, apontando cada bloco.', fale: 'Toda apresentação de 4 minutos tem 30 segundos de abertura, 3 minutos com até 3 pontos e 30 segundos de fechamento com ação.', faca: ['Dê 1 exemplo de reunião de resultado nesse formato'], tempo: '3 min' }],
-            ['e2-09-ganchos', '3 ganchos que prendem o time', { objetivo: 'Mostrar como abrir bem.', onde: 'Lado da tela.', fale: 'Os primeiros 30 segundos decidem se o time vai ouvir. Abra com número, pergunta ou caso real.', pergunte: 'Qual gancho você usaria na sua apresentação?', faca: ['Peça 2 pessoas para falar o gancho delas'], tempo: '3 min' }]]],
-        ['Slide é apoio · 22–28 min', [
+            ['e2-08-3atos', 'Abertura · 3 pontos · Ação', { objetivo: 'Dar a estrutura da fala.', onde: 'Lado da tela, apontando cada bloco.', fale: 'Toda apresentação de 4 minutos tem 30 segundos de abertura, 3 minutos com até 3 pontos e 30 segundos de fechamento com ação.', faca: ['Dê 1 exemplo de reunião de resultado nesse formato'], tempo: '5 min' }],
+            ['e2-09-ganchos', '3 ganchos que prendem o time', { objetivo: 'Mostrar como abrir bem.', onde: 'Lado da tela.', fale: 'Os primeiros 30 segundos decidem se o time vai ouvir. Abra com número, pergunta ou caso real.', pergunte: 'Qual gancho você usaria na sua apresentação?', faca: ['Peça 2 pessoas para falar o gancho delas'], tempo: '5 min' }]]],
+        ['Intervalo · 42–52 min', [
+            ['ci-intervalo', 'Intervalo · 10 minutos', { objetivo: 'Recarregar a turma para a segunda metade.', onde: 'Centro, antes de liberar.', fale: '10 minutos de intervalo. Voltamos no horário que está na tela, em ponto.', faca: ['Diga o horário exato de volta', 'Deixe este slide na tela durante o intervalo', 'Volte 1 minuto antes e chame a turma'], tempo: '10 min' }]]],
+        ['Slide é apoio · 52–62 min', [
             ['e2-10-sec3', '03 · Slide é apoio, não teleprompter', { tempo: '10 s' }],
-            ['e2-11-frase', 'Se está tudo escrito, o time não precisa de você', { objetivo: 'Provocar.', onde: 'Centro, devagar.', fale: 'Se está tudo escrito na tela, o time não precisa de você.', faca: ['Pausa de 3 segundos'], tempo: '1 min' }],
-            ['ci-ex-palavras', 'Exemplo · Teleprompter × palavras-chave', { objetivo: 'Mostrar na prática.', onde: 'Lado da tela, primeiro o lado ruim.', pergunte: 'Qual dos dois deixa você falar e o time olhar para você?', tempo: '2 min' }],
-            ['e2-12-onde', 'Onde vai o texto?', { objetivo: 'Separar tela, notas e fala.', onde: 'Lado da tela.', fale: 'Na tela, palavras-chave e um número. Nas notas, o texto completo. Na sua boca, a história e o exemplo.', faca: ['Mostre onde ficam as notas no PowerPoint'], tempo: '2 min' }]]],
-        ['Olha · Pausa · Fala · 28–33 min', [
+            ['e2-11-frase', 'Se está tudo escrito, o time não precisa de você', { objetivo: 'Provocar.', onde: 'Centro, devagar.', fale: 'Se está tudo escrito na tela, o time não precisa de você.', faca: ['Pausa de 3 segundos'], tempo: '2 min' }],
+            ['ci-ex-palavras', 'Exemplo · Teleprompter × palavras-chave', { objetivo: 'Mostrar na prática.', onde: 'Lado da tela, primeiro o lado ruim.', pergunte: 'Qual dos dois deixa você falar e o time olhar para você?', tempo: '3 min' }],
+            ['e2-12-onde', 'Onde vai o texto?', { objetivo: 'Separar tela, notas e fala.', onde: 'Lado da tela.', fale: 'Na tela, palavras-chave e um número. Nas notas, o texto completo. Na sua boca, a história e o exemplo.', faca: ['Mostre onde ficam as notas no PowerPoint'], tempo: '3 min' }]]],
+        ['Olha · Pausa · Fala · 62–70 min', [
             ['e2-13-sec4', '04 · Olha · Pausa · Fala', { tempo: '10 s' }],
-            ['e2-14-opf', 'Olha · Pausa · Fala', { objetivo: 'Entregar a técnica para não ler a tela.', onde: 'Lado da tela.', fale: 'Olha o slide 1 segundo, vira para o time, pausa, e só então fala.', faca: ['Faça cada passo devagar enquanto explica'], tempo: '1 min' }],
-            ['e2-15-ensaio', 'Ensaio mental não conta', { objetivo: 'Mostrar como ensaiar de verdade.', onde: 'Centro.', fale: 'Ensaio é em voz alta, em pé, cronometrado e 3 vezes. A última, gravada.', tempo: '1 min' }],
-            ['e2-16-demo', 'Agora olhem eu fazer', { objetivo: 'Mostrar a diferença ao vivo.', onde: 'Lado da tela.', faca: ['Apresente 1 slide lendo a tela, de costas', 'Repita com Olha · Pausa · Fala', 'Deixe a turma dizer o que mudou'], pergunte: 'O que mudou de uma versão para a outra?', tempo: '3 min' }]]],
-        ['Prática · 33–55 min', [
+            ['e2-14-opf', 'Olha · Pausa · Fala', { objetivo: 'Entregar a técnica para não ler a tela.', onde: 'Lado da tela.', fale: 'Olha o slide 1 segundo, vira para o time, pausa, e só então fala.', faca: ['Faça cada passo devagar enquanto explica'], tempo: '2 min' }],
+            ['e2-15-ensaio', 'Ensaio mental não conta', { objetivo: 'Mostrar como ensaiar de verdade.', onde: 'Centro.', fale: 'Ensaio é em voz alta, em pé, cronometrado e 3 vezes. A última, gravada.', tempo: '2 min' }],
+            ['e2-16-demo', 'Agora olhem eu fazer', { objetivo: 'Mostrar a diferença ao vivo.', onde: 'Lado da tela.', faca: ['Apresente 1 slide lendo a tela, de costas', 'Repita com Olha · Pausa · Fala', 'Deixe a turma dizer o que mudou'], pergunte: 'O que mudou de uma versão para a outra?', tempo: '5 min' }]]],
+        ['Prática · 70–112 min', [
             ['e2-17-sec5', '05 · Prática', { fale: 'Agora é com vocês.', tempo: '10 s' }],
-            ['e2-18-pratica1', 'Reescreva 3 slides', { objetivo: 'Aplicar no material real.', onde: 'Circulando.', faca: ['Cronometre 8 minutos', 'Confira os títulos: são conclusões?', 'Ajude quem travar com o roteiro de 3 atos'], tempo: '8 min' }],
-            ['e2-19-pratica2', 'Apresente sem ler a tela', { objetivo: 'Todo mundo apresenta 2 minutos.', onde: 'Fundo da sala, cronometrando.', faca: ['Combine a regra da mão levantada antes de começar', 'Peça para gravarem no próprio celular', 'Avise quando faltar 30 segundos'], tempo: '12 min' }],
+            ['e2-18-pratica1', 'Reescreva 3 slides', { objetivo: 'Aplicar no material real.', onde: 'Circulando.', faca: ['Cronometre 12 minutos', 'Confira os títulos: são conclusões?', 'Ajude quem travar com o roteiro de 3 atos'], tempo: '12 min' }],
+            ['e2-19-pratica2', 'Apresente sem ler a tela', { objetivo: 'Todo mundo apresenta 2 minutos.', onde: 'Fundo da sala, cronometrando.', faca: ['Combine a regra da mão levantada antes de começar', 'Peça para gravarem no próprio celular', 'Avise quando faltar 30 segundos'], tempo: '30 min' }],
             ['e2-20-feedback', 'Feedback 1 + 1 + 1', { objetivo: 'Feedback curto e útil depois de cada um.', onde: 'Ao lado de quem apresentou.', fale: '"Foi bom" não vale. Diga o quê.', faca: ['Máximo 1 minuto por pessoa', 'Comece sempre pelo ponto forte'], tempo: 'durante a prática' }]]],
-        ['Missão e fechamento · 55–60 min', [
-            ['e2-21-missao', 'Missão: ensaie e corte', { objetivo: 'Combinar a prática até o Encontro 3.', onde: 'Centro.', pergunte: 'Quando você vai ensaiar? Dia e hora.', faca: ['Peça que anotem na agenda do celular agora'], tempo: '2 min' }],
+        ['Missão e fechamento · 112–120 min', [
+            ['e2-21-missao', 'Missão: ensaie e corte', { objetivo: 'Combinar a prática até o Encontro 3.', onde: 'Centro.', pergunte: 'Quando você vai ensaiar? Dia e hora.', faca: ['Peça que anotem na agenda do celular agora'], tempo: '3 min' }],
             ['e2-22-fim', 'O slide mostra. Você explica.', { onde: 'Centro.', fale: 'O slide mostra. Você explica. No Encontro 3, todo mundo de pé, usando o palco.', tempo: '30 s' }]]]
     ],
     3: [
-        ['Abertura · 00–05 min', [
+        ['Abertura · 00–10 min', [
             ['e3-01-capa', 'Palco, corpo e confiança', { objetivo: 'Dizer o tema do dia.', onde: 'Centro.', fale: 'Hoje é sobre onde ficar, o que fazer com as mãos e como a voz soa.', tempo: '30 s' }],
-            ['e3-02-pergunta', 'O time já decidiu se confia em você', { objetivo: 'Mostrar que o corpo fala primeiro.', onde: 'Centro, parado e firme.', fale: 'Antes da primeira frase, o time já decidiu se confia em você. Hoje a gente treina isso.', faca: ['Fique 3 segundos em silêncio, firme, antes de falar'], tempo: '1 min' }],
-            ['e3-03-agenda', 'Agenda · 1 hora', { onde: 'Lado da tela.', fale: 'Pouca teoria e muita prática de pé.', tempo: '30 s' }],
-            ['e3-04-retomada', 'Como foi a missão?', { objetivo: 'Retomar e cobrar o ensaio.', onde: 'Frente do público.', faca: ['30 segundos por pessoa', 'Valorize quem gravou; quem não fez: "O que travou?", sem bronca'], tempo: '3 min' }]]],
-        ['Mapa do palco · 05–11 min', [
+            ['e3-02-pergunta', 'O time já decidiu se confia em você', { objetivo: 'Mostrar que o corpo fala primeiro.', onde: 'Centro, parado e firme.', fale: 'Antes da primeira frase, o time já decidiu se confia em você. Hoje a gente treina isso.', faca: ['Fique 3 segundos em silêncio, firme, antes de falar'], tempo: '2 min' }],
+            ['e3-03-agenda', 'Agenda · 2 horas', { onde: 'Lado da tela.', fale: 'Pouca teoria e muita prática de pé.', tempo: '30 s' }],
+            ['e3-04-retomada', 'Como foi a missão?', { objetivo: 'Retomar e cobrar o ensaio.', onde: 'Frente do público.', faca: ['30 segundos por pessoa', 'Valorize quem gravou; quem não fez: "O que travou?", sem bronca'], tempo: '6 min' }]]],
+        ['Mapa do palco · 10–20 min', [
             ['e3-05-sec1', '01 · O mapa do palco', { tempo: '10 s' }],
-            ['e3-06-mapa', 'Os 3 pontos do palco', { objetivo: 'Cada lugar tem uma função.', onde: 'Ande até cada ponto enquanto explica.', fale: 'Centro para abrir e fechar. Lado da tela para explicar o slide. Frente do time para histórias e perguntas.', faca: ['Marque os 3 pontos no chão com fita antes do encontro'], tempo: '3 min' }],
-            ['e3-07-movimento', 'Ande, pare, fale', { objetivo: 'Movimento com intenção.', onde: 'Demonstre andando.', fale: 'Ande em silêncio, pare, firme os pés e só então fale.', faca: ['Mostre o errado: falar andando de um lado para o outro'], tempo: '2 min' }]]],
-        ['Corpo · 11–17 min', [
+            ['e3-06-mapa', 'Os 3 pontos do palco', { objetivo: 'Cada lugar tem uma função.', onde: 'Ande até cada ponto enquanto explica.', fale: 'Centro para abrir e fechar. Lado da tela para explicar o slide. Frente do time para histórias e perguntas.', faca: ['Marque os 3 pontos no chão com fita antes do encontro'], tempo: '5 min' }],
+            ['e3-07-movimento', 'Ande, pare, fale', { objetivo: 'Movimento com intenção.', onde: 'Demonstre andando.', fale: 'Ande em silêncio, pare, firme os pés e só então fale.', faca: ['Mostre o errado: falar andando de um lado para o outro'], tempo: '3 min' }]]],
+        ['Corpo · 20–32 min', [
             ['e3-08-sec2', '02 · Corpo que passa confiança', { tempo: '10 s' }],
-            ['e3-09-postura', 'Postura base', { objetivo: 'Dar a base firme.', onde: 'Centro, fazendo a postura.', faca: ['Peça para todos ficarem de pé e copiarem a postura'], tempo: '2 min' }],
-            ['e3-10-maos', 'O que fazer com as mãos', { objetivo: 'Tirar a dúvida mais comum.', onde: 'Centro.', faca: ['Mostre cada erro e cada acerto com o próprio corpo'], pergunte: 'Qual desses você mais faz sem perceber?', tempo: '2 min' }],
-            ['e3-11-olhar', '1 frase = 1 pessoa', { objetivo: 'Distribuir o olhar.', onde: 'Frente do time.', fale: 'Uma frase inteira para uma pessoa. A próxima, para outra pessoa em outro ponto da sala.', faca: ['Faça ao vivo olhando para 3 pessoas diferentes'], tempo: '2 min' }]]],
-        ['Voz · 17–22 min', [
+            ['e3-09-postura', 'Postura base', { objetivo: 'Dar a base firme.', onde: 'Centro, fazendo a postura.', faca: ['Peça para todos ficarem de pé e copiarem a postura'], tempo: '4 min' }],
+            ['e3-10-maos', 'O que fazer com as mãos', { objetivo: 'Tirar a dúvida mais comum.', onde: 'Centro.', faca: ['Mostre cada erro e cada acerto com o próprio corpo'], pergunte: 'Qual desses você mais faz sem perceber?', tempo: '4 min' }],
+            ['e3-11-olhar', '1 frase = 1 pessoa', { objetivo: 'Distribuir o olhar.', onde: 'Frente do time.', fale: 'Uma frase inteira para uma pessoa. A próxima, para outra pessoa em outro ponto da sala.', faca: ['Faça ao vivo olhando para 3 pessoas diferentes'], tempo: '4 min' }]]],
+        ['Voz · 32–42 min', [
             ['e3-12-sec3', '03 · Voz e pausa', { tempo: '10 s' }],
-            ['e3-13-voz', 'Fale para a última fileira', { objetivo: 'Volume, ritmo e pausa.', onde: 'Fundo da sala para testar o volume.', faca: ['Fale uma frase baixo e pergunte se o fundo ouviu', 'Fale de novo com volume certo'], tempo: '2 min' }],
-            ['e3-14-frase', 'A pausa passa segurança', { onde: 'Centro.', fale: 'A pausa passa segurança. O "ééé" passa dúvida.', faca: ['Pausa de 2 segundos depois da frase'], tempo: '1 min' }],
-            ['e3-15-exemplo', 'Antes × depois · No palco', { objetivo: 'Resumir tudo no antes e depois.', onde: 'Lado da tela.', pergunte: 'Qual desses erros você viu na sua gravação?', tempo: '2 min' }]]],
-        ['Demonstração · 22–27 min', [
-            ['e3-16-demo', 'Caça aos erros', { objetivo: 'Fixar pelo exagero.', onde: 'Use os 3 pontos.', faca: ['Faça uma abertura certa, usando os 3 pontos', 'Repita exagerando: balançar, mão no bolso, olhar no chão, "ééé"', 'A turma aponta cada erro em voz alta'], tempo: '5 min' }]]],
-        ['Prática · 27–55 min', [
+            ['e3-13-voz', 'Fale para a última fileira', { objetivo: 'Volume, ritmo e pausa.', onde: 'Fundo da sala para testar o volume.', faca: ['Fale uma frase baixo e pergunte se o fundo ouviu', 'Fale de novo com volume certo'], tempo: '4 min' }],
+            ['e3-14-frase', 'A pausa passa segurança', { onde: 'Centro.', fale: 'A pausa passa segurança. O "ééé" passa dúvida.', faca: ['Pausa de 2 segundos depois da frase'], tempo: '2 min' }],
+            ['e3-15-exemplo', 'Antes × depois · No palco', { objetivo: 'Resumir tudo no antes e depois.', onde: 'Lado da tela.', pergunte: 'Qual desses erros você viu na sua gravação?', tempo: '4 min' }]]],
+        ['Intervalo · 42–52 min', [
+            ['ci-intervalo', 'Intervalo · 10 minutos', { objetivo: 'Recarregar a turma para a segunda metade.', onde: 'Centro, antes de liberar.', fale: '10 minutos de intervalo. Voltamos no horário que está na tela, em ponto.', faca: ['Diga o horário exato de volta', 'Deixe este slide na tela durante o intervalo', 'Volte 1 minuto antes e chame a turma'], tempo: '10 min' }]]],
+        ['Demonstração · 52–60 min', [
+            ['e3-16-demo', 'Caça aos erros', { objetivo: 'Fixar pelo exagero.', onde: 'Use os 3 pontos.', faca: ['Faça uma abertura certa, usando os 3 pontos', 'Repita exagerando: balançar, mão no bolso, olhar no chão, "ééé"', 'A turma aponta cada erro em voz alta'], tempo: '8 min' }]]],
+        ['Prática · 60–112 min', [
             ['e3-17-sec4', '04 · Prática no palco', { fale: 'Todo mundo de pé. Todo mundo apresenta.', tempo: '10 s' }],
-            ['e3-18-aquecimento', 'Corpo e voz prontos', { objetivo: 'Aquecer antes de apresentar.', onde: 'No meio da turma.', faca: ['Conduza junto, todo mundo ao mesmo tempo'], tempo: '3 min' }],
-            ['e3-19-pratica', 'Apresente usando o palco', { objetivo: 'Todo mundo usa os 3 pontos.', onde: 'Fundo da sala, cronometrando.', faca: ['2 minutos por pessoa', 'Peça para gravarem no próprio celular', 'Avise quando faltar 30 segundos'], tempo: '22 min' }],
+            ['e3-18-aquecimento', 'Corpo e voz prontos', { objetivo: 'Aquecer antes de apresentar.', onde: 'No meio da turma.', faca: ['Conduza junto, todo mundo ao mesmo tempo'], tempo: '6 min' }],
+            ['e3-19-pratica', 'Apresente usando o palco', { objetivo: 'Todo mundo usa os 3 pontos.', onde: 'Fundo da sala, cronometrando.', faca: ['3 minutos por pessoa', 'Peça para gravarem no próprio celular', 'Avise quando faltar 30 segundos'], tempo: '40 min' }],
             ['e3-20-feedback', 'Feedback no corpo', { objetivo: 'Feedback em postura, olhar e voz.', onde: 'Ao lado de quem apresentou.', faca: ['Comece pelo ponto forte', 'Máximo 1 minuto'], tempo: 'durante a prática' }]]],
-        ['Missão e fechamento · 55–60 min', [
-            ['e3-21-missao', 'Missão: assista e ensaie', { objetivo: 'Combinar a prática até o Encontro 4.', onde: 'Centro.', pergunte: 'Quando você vai assistir à gravação? Dia e hora.', tempo: '2 min' }],
+        ['Missão e fechamento · 112–120 min', [
+            ['e3-21-missao', 'Missão: assista e ensaie', { objetivo: 'Combinar a prática até o Encontro 4.', onde: 'Centro.', pergunte: 'Quando você vai assistir à gravação? Dia e hora.', tempo: '3 min' }],
             ['e3-22-fim', 'Confiança não se sente. Se mostra.', { onde: 'Centro.', fale: 'Confiança não se sente. Se mostra. No Encontro 4: como tirar as dúvidas do time.', tempo: '30 s' }]]]
     ],
     4: [
-        ['Abertura · 00–05 min', [
+        ['Abertura · 00–10 min', [
             ['e4-01-capa', 'Tirar dúvidas do time', { objetivo: 'Dizer o tema do dia.', onde: 'Centro.', fale: 'Hoje é sobre a parte que mais trava o líder: as perguntas.', tempo: '30 s' }],
-            ['e4-02-pergunta', 'E se perguntarem o que você não sabe?', { objetivo: 'Gerar identificação.', onde: 'Frente do público.', pergunte: 'Quem aqui já travou numa pergunta na frente do time?', faca: ['Peça 1 caso rápido'], tempo: '1 min' }],
-            ['e4-03-agenda', 'Agenda · 1 hora', { onde: 'Lado da tela.', tempo: '30 s' }],
-            ['e4-04-retomada', 'O que a gravação mostrou?', { objetivo: 'Retomar a missão.', onde: 'Frente do público.', faca: ['30 segundos por pessoa', 'Valorize quem assistiu sem som e só com som'], tempo: '3 min' }]]],
-        ['Antecipar · 05–10 min', [
+            ['e4-02-pergunta', 'E se perguntarem o que você não sabe?', { objetivo: 'Gerar identificação.', onde: 'Frente do público.', pergunte: 'Quem aqui já travou numa pergunta na frente do time?', faca: ['Peça 1 caso rápido'], tempo: '2 min' }],
+            ['e4-03-agenda', 'Agenda · 2 horas', { onde: 'Lado da tela.', tempo: '30 s' }],
+            ['e4-04-retomada', 'O que a gravação mostrou?', { objetivo: 'Retomar a missão.', onde: 'Frente do público.', faca: ['30 segundos por pessoa', 'Valorize quem assistiu sem som e só com som'], tempo: '6 min' }]]],
+        ['Antecipar · 10–20 min', [
             ['e4-05-sec1', '01 · Antecipar é metade do trabalho', { tempo: '10 s' }],
-            ['e4-06-tipos', 'Os 4 tipos de pergunta', { objetivo: 'Mostrar que as perguntas são previsíveis.', onde: 'Lado da tela.', fale: 'Em toda reunião aparecem esses 4. Quem se prepara para eles não é pego de surpresa.', pergunte: 'Qual desses mais aparece nas suas reuniões?', tempo: '4 min' }]]],
-        ['Método OPRC · 10–18 min', [
+            ['e4-06-tipos', 'Os 4 tipos de pergunta', { objetivo: 'Mostrar que as perguntas são previsíveis.', onde: 'Lado da tela.', fale: 'Em toda reunião aparecem esses 4. Quem se prepara para eles não é pego de surpresa.', pergunte: 'Qual desses mais aparece nas suas reuniões?', tempo: '8 min' }]]],
+        ['Método OPRC · 20–35 min', [
             ['e4-07-sec2', '02 · Método OPRC', { tempo: '10 s' }],
-            ['e4-08-oprc', 'O · P · R · C', { objetivo: 'Entregar o método.', onde: 'Lado da tela.', fale: 'Ouvir até o fim, parafrasear, responder em até 3 frases e checar se respondeu.', tempo: '3 min' }],
-            ['e4-09-exemplo-oprc', 'OPRC na prática', { objetivo: 'Mostrar uma resposta completa.', onde: 'Frente do público.', faca: ['Peça para alguém fazer a pergunta do slide', 'Responda ao vivo seguindo as 4 letras'], tempo: '2 min' }],
-            ['e4-10-antes-depois', 'Antes × depois · Pergunta difícil', { onde: 'Lado da tela.', pergunte: 'O que o líder da esquerda fez que piorou a situação?', tempo: '2 min' }]]],
-        ['Não sei · hostil · 18–23 min', [
+            ['e4-08-oprc', 'O · P · R · C', { objetivo: 'Entregar o método.', onde: 'Lado da tela.', fale: 'Ouvir até o fim, parafrasear, responder em até 3 frases e checar se respondeu.', tempo: '6 min' }],
+            ['e4-09-exemplo-oprc', 'OPRC na prática', { objetivo: 'Mostrar uma resposta completa.', onde: 'Frente do público.', faca: ['Peça para alguém fazer a pergunta do slide', 'Responda ao vivo seguindo as 4 letras'], tempo: '4 min' }],
+            ['e4-10-antes-depois', 'Antes × depois · Pergunta difícil', { onde: 'Lado da tela.', pergunte: 'O que o líder da esquerda fez que piorou a situação?', tempo: '4 min' }]]],
+        ['Não sei · hostil · 35–45 min', [
             ['e4-11-sec3', '03 · Quando não sabe. Quando é hostil.', { tempo: '10 s' }],
-            ['e4-12-nao-sei', 'Não invente. Combine o retorno.', { objetivo: 'Dar a frase pronta.', onde: 'Centro.', fale: 'Não tenho esse dado agora. Vou confirmar com a área e te retorno até sexta. E cumpra.', tempo: '2 min' }],
-            ['e4-13-hostil', 'Pergunta hostil', { objetivo: 'Não discutir na frente do time.', onde: 'Frente do público.', faca: ['Dê 1 exemplo de pergunta hostil e responda com os 3 passos'], tempo: '2 min' }],
+            ['e4-12-nao-sei', 'Não invente. Combine o retorno.', { objetivo: 'Dar a frase pronta.', onde: 'Centro.', fale: 'Não tenho esse dado agora. Vou confirmar com a área e te retorno até sexta. E cumpra.', tempo: '4 min' }],
+            ['e4-13-hostil', 'Pergunta hostil', { objetivo: 'Não discutir na frente do time.', onde: 'Frente do público.', faca: ['Dê 1 exemplo de pergunta hostil e responda com os 3 passos'], tempo: '4 min' }],
             ['e4-14-frase', 'Inventar destrói a confiança', { onde: 'Centro.', fale: 'Não saber é normal. Inventar destrói a confiança.', faca: ['Pausa de 3 segundos'], tempo: '30 s' }]]],
-        ['Demonstração · 23–28 min', [
-            ['e4-15-demo', 'Agora perguntem para mim', { objetivo: 'Mostrar o OPRC ao vivo.', onde: 'Frente do público.', faca: ['Peça 3 perguntas difíceis', 'Responda cada uma com OPRC', 'A turma marca as 4 letras'], tempo: '5 min' }]]],
-        ['Prática · 28–55 min', [
+        ['Intervalo · 45–55 min', [
+            ['ci-intervalo', 'Intervalo · 10 minutos', { objetivo: 'Recarregar a turma para a segunda metade.', onde: 'Centro, antes de liberar.', fale: '10 minutos de intervalo. Voltamos no horário que está na tela, em ponto.', faca: ['Diga o horário exato de volta', 'Deixe este slide na tela durante o intervalo', 'Volte 1 minuto antes e chame a turma'], tempo: '10 min' }]]],
+        ['Demonstração · 55–62 min', [
+            ['e4-15-demo', 'Agora perguntem para mim', { objetivo: 'Mostrar o OPRC ao vivo.', onde: 'Frente do público.', faca: ['Peça 3 perguntas difíceis', 'Responda cada uma com OPRC', 'A turma marca as 4 letras'], tempo: '7 min' }]]],
+        ['Prática · 62–112 min', [
             ['e4-16-sec4', '04 · Prática', { tempo: '10 s' }],
-            ['e4-17-banco', 'Banco de perguntas', { objetivo: 'Cada um prepara as perguntas do próprio tema.', onde: 'Circulando.', faca: ['5 minutos cronometrados', 'Recolha os papéis para o sorteio'], tempo: '5 min' }],
-            ['e4-18-rodada', 'Rodada OPRC', { objetivo: 'Todo mundo responde de verdade.', onde: 'Fundo da sala.', faca: ['1 minuto de apresentação + 2 perguntas sorteadas', 'Distribua os papéis: cético, reclamão, quem não entendeu', 'Peça para gravarem'], tempo: '20 min' }],
+            ['e4-17-banco', 'Banco de perguntas', { objetivo: 'Cada um prepara as perguntas do próprio tema.', onde: 'Circulando.', faca: ['10 minutos cronometrados', 'Recolha os papéis para o sorteio'], tempo: '10 min' }],
+            ['e4-18-rodada', 'Rodada OPRC', { objetivo: 'Todo mundo responde de verdade.', onde: 'Fundo da sala.', faca: ['1 minuto de apresentação + 2 perguntas sorteadas', 'Distribua os papéis: cético, reclamão, quem não entendeu', 'Peça para gravarem'], tempo: '40 min' }],
             ['e4-19-feedback', 'Feedback na resposta', { objetivo: 'Checar as 4 letras.', onde: 'Ao lado de quem respondeu.', faca: ['Comece pelo ponto forte', 'Máximo 1 minuto'], tempo: 'durante a prática' }]]],
-        ['Missão e fechamento · 55–60 min', [
-            ['e4-20-missao', 'Missão: ensaio geral', { objetivo: 'Preparar a apresentação final.', onde: 'Centro.', fale: 'No Encontro 5, cada um apresenta 4 minutos para a banca e responde 1 pergunta.', pergunte: 'Quando vai ser o seu ensaio geral? Dia e hora.', tempo: '2 min' }],
+        ['Missão e fechamento · 112–120 min', [
+            ['e4-20-missao', 'Missão: ensaio geral', { objetivo: 'Preparar a apresentação final.', onde: 'Centro.', fale: 'No Encontro 5, cada um apresenta 4 minutos para a banca e responde 2 perguntas.', pergunte: 'Quando vai ser o seu ensaio geral? Dia e hora.', tempo: '3 min' }],
             ['e4-21-fim', 'Quem responde bem, ganha o time.', { onde: 'Centro.', fale: 'Quem responde bem, ganha o time. Até a apresentação final.', tempo: '30 s' }]]]
     ],
     5: [
-        ['Abertura · 00–05 min', [
+        ['Abertura · 00–10 min', [
             ['e5-01-capa', 'Apresentação final avaliada', { objetivo: 'Abrir o dia da prova.', onde: 'Centro.', fale: 'Hoje cada um mostra tudo o que treinou, em 4 minutos, para a banca.', tempo: '30 s' }],
             ['e5-02-frase', 'Hoje é dia de mostrar', { onde: 'Centro.', fale: 'Hoje é dia de mostrar.', tempo: '20 s' }],
-            ['e5-03-agenda', 'Agenda · 1 hora', { onde: 'Lado da tela.', tempo: '20 s' }],
-            ['e5-04-revisao', 'O que a banca vai observar', { objetivo: 'Revisão relâmpago das técnicas.', onde: 'Lado da tela.', faca: ['Uma frase por técnica, sem aprofundar'], tempo: '1 min' }],
-            ['e5-05-aquecimento', 'Antes de começar', { objetivo: 'Aquecer e sortear a ordem.', onde: 'No meio da turma.', faca: ['Conduza a respiração e a voz junto', 'Sorteie a ordem', 'Entregue a régua para a banca'], tempo: '2 min' }]]],
-        ['Apresentações · 05–50 min', [
+            ['e5-03-agenda', 'Agenda · 2 horas', { onde: 'Lado da tela.', tempo: '20 s' }],
+            ['e5-04-revisao', 'O que a banca vai observar', { objetivo: 'Revisão relâmpago das técnicas.', onde: 'Lado da tela.', faca: ['Uma frase por técnica, sem aprofundar'], tempo: '2 min' }],
+            ['e5-05-aquecimento', 'Antes de começar', { objetivo: 'Aquecer e sortear a ordem.', onde: 'No meio da turma.', faca: ['Conduza a respiração e a voz junto', 'Sorteie a ordem', 'Entregue a régua para a banca'], tempo: '4 min' }]]],
+        ['Apresentações · parte 1 · 10–55 min', [
             ['e5-06-como', 'Sua vez · 4 minutos', { objetivo: 'Combinar as regras.', onde: 'Lado da tela.', faca: ['Mostre as placas amarela (1 min) e vermelha (tempo)', 'Peça para cada um gravar no próprio celular'], tempo: '1 min' }],
             ['ci-ex-final', 'Antes × depois · 4 minutos', { onde: 'Lado da tela.', fale: 'É isso que a banca espera.', tempo: '1 min' }],
             ['e5-08-regua', 'A régua · nota de 1 a 5', { objetivo: 'Padronizar a avaliação.', onde: 'Com a banca.', faca: ['Banca: você, o gestor e 2 colegas sorteados', 'Cada um preenche a régua de cada apresentação'], tempo: '1 min' }],
-            ['e5-09-sua-vez', 'Sua vez', { objetivo: 'Deixe este slide na tela entre um e outro.', onde: 'Sentado com a banca, de frente para quem apresenta.', faca: ['Chame o próximo pelo nome', 'Cronometre 4 minutos', 'Faça 1 pergunta do banco de perguntas difíceis', 'Aplausos depois de cada um'], tempo: '40 min (4 min + 1 pergunta por pessoa)' }]]],
-        ['Resultado · 50–55 min', [
+            ['e5-09-sua-vez', 'Sua vez', { objetivo: 'Deixe este slide na tela entre um e outro.', onde: 'Sentado com a banca, de frente para quem apresenta.', faca: ['Chame o próximo pelo nome', 'Cronometre 4 minutos', 'Faça 2 perguntas do banco de perguntas difíceis', 'Aplausos depois de cada um'], tempo: '45 min (4 min + 2 perguntas + devolutiva da banca)' }]]],
+        ['Intervalo · 55–65 min', [
+            ['ci-intervalo', 'Intervalo · 10 minutos', { objetivo: 'Recarregar a turma para a segunda metade.', onde: 'Centro, antes de liberar.', fale: '10 minutos de intervalo. Voltamos no horário que está na tela, em ponto.', faca: ['Diga o horário exato de volta', 'Deixe este slide na tela durante o intervalo', 'Volte 1 minuto antes e chame a turma'], tempo: '10 min' }]]],
+        ['Apresentações · parte 2 · 65–100 min', [
+            ['e5-09-sua-vez', 'Sua vez', { objetivo: 'Segunda metade das apresentações.', onde: 'Sentado com a banca, de frente.', faca: ['Retome pela ordem do sorteio', 'Banca segue a mesma régua', 'Mantenha o cronômetro: 4 min + 2 perguntas + devolutiva'], tempo: '35 min' }]]],
+        ['Resultado · 100–110 min', [
             ['e5-10-sec', 'Resultado e evolução', { tempo: '10 s' }],
-            ['e5-11-evolucao', 'A sua evolução', { objetivo: 'Cada um vê a própria evolução.', onde: 'Centro.', faca: ['Devolva a régua do Encontro 1 para cada um'], pergunte: 'Em qual ponto você mais evoluiu?', tempo: '3 min' }],
-            ['e5-12-meta', 'A meta da turma', { objetivo: 'Fechar o piloto com números.', onde: 'Lado da tela.', fale: 'A meta era subir 1,5 ponto na média da régua, com 80% de presença.', faca: ['Diga a média do Encontro 1 e a de hoje'], tempo: '2 min' }]]],
-        ['Compromisso · 55–60 min', [
-            ['e5-13-compromisso', 'A sua próxima apresentação real', { objetivo: 'Levar para o trabalho.', onde: 'Centro.', faca: ['Cada um diz em 20 segundos: o quê, para quem e quando'], tempo: '3 min' }],
-            ['e5-14-avaliar', 'Avalie e receba o certificado', { objetivo: 'Coletar a avaliação.', onde: 'Centro.', fale: 'Antes de sair, avaliem o programa na Área do Aluno: nota de 0 a 10 e um comentário. É assim que a próxima turma fica ainda melhor.', faca: ['Entregue os certificados'], tempo: '1 min' }],
+            ['e5-11-evolucao', 'A sua evolução', { objetivo: 'Cada um vê a própria evolução.', onde: 'Centro.', faca: ['Devolva a régua do Encontro 1 para cada um'], pergunte: 'Em qual ponto você mais evoluiu?', tempo: '6 min' }],
+            ['e5-12-meta', 'A meta da turma', { objetivo: 'Fechar o piloto com números.', onde: 'Lado da tela.', fale: 'A meta era subir 1,5 ponto na média da régua, com 80% de presença.', faca: ['Diga a média do Encontro 1 e a de hoje'], tempo: '4 min' }]]],
+        ['Compromisso · 110–120 min', [
+            ['e5-13-compromisso', 'A sua próxima apresentação real', { objetivo: 'Levar para o trabalho.', onde: 'Centro.', faca: ['Cada um diz em 20 segundos: o quê, para quem e quando'], tempo: '6 min' }],
+            ['e5-14-avaliar', 'Avalie e receba o certificado', { objetivo: 'Coletar a avaliação.', onde: 'Centro.', fale: 'Antes de sair, avaliem o programa na Área do Aluno: nota de 0 a 10 e um comentário. É assim que a próxima turma fica ainda melhor.', faca: ['Entregue os certificados'], tempo: '2 min' }],
             ['e5-15-fim', 'Agora o palco é seu.', { onde: 'Centro.', fale: 'Agora o palco é seu. Obrigado pela entrega nesses 5 encontros.', tempo: '30 s' }]]]
     ]
 };
@@ -9853,7 +9865,7 @@ function deckDesenhadoCiMt(n, presenca, base, lista, ext, pasta) {
     const raiz = String(base || '').replace(/\/$/, '');
     const guia = g => [g.objetivo && '🎯 OBJETIVO: ' + g.objetivo, g.onde && '📍 ONDE FICAR: ' + g.onde, g.fale && '🗣️ FALE: "' + g.fale + '"', g.faca && g.faca.length ? '🎬 FAÇA:\n' + g.faca.map(x => '• ' + x).join('\n') : '', g.pergunte && '❓ PERGUNTE: "' + g.pergunte + '"', g.tempo && '⏱️ TEMPO: ' + g.tempo].filter(Boolean).join('\n');
     const arq = a => pasta ? `${pasta}/${a}` : a.includes('/') || a.startsWith('ci-') ? a : `e${n}/${a}`;
-    const mods = D.map(([titulo, ss]) => ({ titulo, tipo: 'slides', slides: ss.map(([a, t, g]) => ({ titulo: t, texto: '', notas: guia(g), layout: 'imagem', imagem: `${raiz}/slides-mentoria/${arq(a)}.${ext || 'png'}?v=1` })) }));
+    const mods = D.map(([titulo, ss]) => ({ titulo, tipo: 'slides', slides: ss.map(([a, t, g]) => ({ titulo: t, texto: '', notas: guia(g), layout: 'imagem', imagem: `${raiz}/slides-mentoria/${arq(a)}.${ext || 'png'}?v=2` })) }));
     if (!(pasta && n === 1)) mods[0].slides.unshift({ titulo: '', texto: '', layout: 'imagem', imagem: raiz + (pasta ? `/slides-mentoria/${pasta}/${pasta}-palestrante.jpg?v=1` : '/mentoria-palestrante.jpg?v=4'), notas: guia({ objetivo: 'Abrir com presença.', onde: 'Centro da sala, de frente, sem nada nas mãos.', fale: `Boa noite, turma! Bem-vindos ao Encontro ${n}${pasta ? ' de 19' : ''}.`, faca: ['Sorria e olhe para 3 pessoas diferentes'], tempo: '20 s' }) });
     const fim = mods[mods.length - 1].slides;
     if (presenca) fim.splice(fim.length - 1, 0, { titulo: 'Registre sua presença', texto: ['Abra a câmera do celular', 'Aponte para o QR code', 'Toque em Confirmar presença'].map((x, i) => `• Passo ${i + 1} · ${x}`).join('\n'), layout: 'padrao', imagem: 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=8&data=' + encodeURIComponent(presenca.link), imgTam: 11, notas: guia({ objetivo: 'Registrar a presença.', onde: 'Ao lado da tela.', faca: ['Deixe o QR até todos registrarem'], tempo: '1 min' }) });
@@ -9890,7 +9902,7 @@ function deckEncontroProgramaMt(p, n, presenca, base) {
     const abertura = [
         sl('', '', { objetivo: 'Criar conexão e autoridade nos primeiros 30 segundos.', onde: 'Centro da sala, de frente para a turma, sem nada nas mãos.', fale: 'Boa noite! Eu sou o Lázaro. Comecei no chão da operação e hoje cuido da gestão de pessoas e processos. Hoje vocês vão sair daqui apresentando melhor.', faca: ['Sorria e olhe para 3 pessoas diferentes enquanto fala'], tempo: '1 min' }, '', { layout: 'imagem', imagem: raiz + '/mentoria-palestrante.jpg?v=4' }),
         sl('Hoje você sai daqui sabendo', lista((e.objetivo || [e.tema]).map(x => '✓ ' + curto(x, 60))), { objetivo: 'Mostrar o que eles levam no fim.', onde: 'Lado da tela, apontando para cada item.', fale: 'No fim desta hora, cada um de vocês vai…', faca: ['Leia os itens um por vez', 'Peça para alguém repetir o 1º com as próprias palavras'], tempo: '1 min' }, 'workshop leaders training'),
-        sl('Agenda · 60 minutos', B.map(b => `• ${mm(b.ini)}–${mm(b.fim)} · ${b.nome}`).join('\n'), { objetivo: 'Combinar o relógio do encontro.', onde: 'Lado da tela.', fale: 'Esse é o nosso relógio. A maior parte é prática: todo mundo apresenta hoje.', faca: ['Se atrasar, corte do Conceito, nunca da Prática'], tempo: '30 s' })
+        sl('Agenda · ' + (t >= 120 ? t / 60 + ' horas' : t + ' minutos'), B.map(b => `• ${mm(b.ini)}–${mm(b.fim)} · ${b.nome}`).join('\n'), { objetivo: 'Combinar o relógio do encontro.', onde: 'Lado da tela.', fale: 'Esse é o nosso relógio. A maior parte é prática: todo mundo apresenta hoje.', faca: ['Se atrasar, corte do Conceito, nunca da Prática'], tempo: '30 s' })
     ];
     if (n === 1) abertura.push(sl('Agora: a sua apresentação real', passos(['Pense na apresentação que você precisa fazer nas próximas semanas', 'Diga em 20 segundos: o tema e para quem é', 'Dê a sua nota de segurança, de 0 a 10']), { objetivo: 'Registrar o ponto de partida de cada um.', onde: 'Frente do público, circulando.', faca: ['Rodada de 20 segundos por pessoa', 'Anote o tema e a nota de cada um (linha de base do piloto)'], tempo: '3 min' }));
     else if (n === 2) {
@@ -9963,7 +9975,7 @@ app.post('/api/admin/mentoria/programa/:id/apresentar', requireRole('admin'), as
             }
         }
         const e = p.encontros[n - 1];
-        const dados = camposTreinamentoMt({ titulo: `${p.curto || p.nome} · Encontro ${n} — ${e.modulo}`, objetivo: e.tema, publico: 'lideranca', duracao_min: 60, instrutor: (d.marca || {}).mentor || '', modulos: deckMentoriaMt(p, n, presenca, baseUrlPublicaDpo(req)) || await fotosDosSlidesMt(deckEncontroProgramaMt(p, n, presenca, baseUrlPublicaDpo(req))) });
+        const dados = camposTreinamentoMt({ titulo: `${p.curto || p.nome} · Encontro ${n} — ${e.modulo}`, objetivo: e.tema, publico: 'lideranca', duracao_min: (p.id === 'do-chao' || /^2/.test(String(p.duracaoEncontro || ''))) ? 120 : 60, instrutor: (d.marca || {}).mentor || '', modulos: deckMentoriaMt(p, n, presenca, baseUrlPublicaDpo(req)) || await fotosDosSlidesMt(deckEncontroProgramaMt(p, n, presenca, baseUrlPublicaDpo(req))) });
         const doc = Object.assign({ id: 0, status: 'pronto', divulgacao: null, check: null, ata: null }, dados, { modulos: JSON.parse(dados.modulos) });
         try {
         const chave = `mt_prog_trein:${p.id}:${n}`, ref = await dbGet(`SELECT value FROM integration_settings WHERE key = ?`, [chave]).catch(() => null);
@@ -13213,7 +13225,7 @@ if (PASTA_UPLOADS !== PASTA_UPLOADS_CODIGO) app.use('/uploads', express.static(P
 // Tudo num lugar: conteúdo (método MOVER, 19 encontros, palestra, roteiros), páginas públicas com
 // inscrição e pagamento, funil de leads (alunos e empresas), turmas e o plano de 90 dias com indicadores.
 // =====================================================================
-// Do Chão à Gestão · 19 encontros de 1 hora online: conteúdo e roteiro de cada slide (gerados junto com os slides em public/slides-mentoria/dc)
+// Do Chão à Gestão · 19 encontros de 2 horas online: conteúdo e roteiro de cada slide (gerados junto com os slides em public/slides-mentoria/dc)
 const DC_ROT = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'mentoria-do-chao.json'), 'utf8')); } catch (e) { console.warn('mentoria-do-chao.json não encontrado:', e.message); return {}; } })();
 const MT_PADRAO = {
     marca: {
@@ -13245,8 +13257,8 @@ const MT_PADRAO = {
         { letra: 'E', nome: 'Execução com disciplina', descricao: 'Rotina do líder: reunião de início de turno, PDCA, plano de ação, auditoria de padrão.', entregavel: 'Agenda-padrão do líder + quadro de plano de ação' },
         { letra: 'R', nome: 'Replicar líderes', descricao: 'Captar, treinar e formar sucessores; PDI do time.', entregavel: 'Mapa de talentos + PDI de 2 pessoas-chave' }
     ],
-    formato: '19 encontros ao vivo em grupo, 1 por semana (1 hora, online) + missão aplicada no time real em todo encontro + grupo de WhatsApp para dúvidas e cobrança.',
-    semanasVersao: 2,
+    formato: '19 encontros ao vivo em grupo, 1 por semana (2 horas, online, com intervalo) + missão aplicada no time real em todo encontro + grupo de WhatsApp para dúvidas e cobrança.',
+    semanasVersao: 3,
     // venda da Comunicação de Impacto (página /comunicacao): individual em turma aberta ou turma fechada para empresa
     vendaCi: { precoIndividual: 697, precoDe: 997, parcelas: 12, vagas: 10, empresaAPartir: 0, garantiaDias: 7, formatoIndividual: 'Presencial em Rio Verde (GO) ou ao vivo online', formatoEmpresa: 'Presencial na sua empresa ou online, turma fechada de 6 a 10 líderes' },
     semanas: Object.keys(DC_ROT).length ? Object.keys(DC_ROT).map(Number).sort((a, b) => a - b).map(n => DC_ROT[n].semana) : [
@@ -13265,12 +13277,12 @@ const MT_PADRAO = {
     ],
     // Outros programas (separados da mentoria principal), cada um com suas turmas, área do aluno e presença
     programas: [{
-        id: 'comunicacao-impacto', versao: 4, nome: 'Comunicação de Impacto para Líderes', curto: 'Comunicação de Impacto', icone: '🎙️', duracaoEncontro: '1 h',
-        subtitulo: 'Programa de 5 encontros de 1 hora para líderes prepararem, apresentarem e responderem dúvidas do time com segurança.',
-        objetivo: 'Em 5 encontros semanais de 1 hora, o líder sai lendo menos slides, preparando melhor o material, ocupando o palco com segurança e respondendo às dúvidas do time.',
+        id: 'comunicacao-impacto', versao: 5, nome: 'Comunicação de Impacto para Líderes', curto: 'Comunicação de Impacto', icone: '🎙️', duracaoEncontro: '2 h',
+        subtitulo: 'Programa de 5 encontros de 2 horas para líderes prepararem, apresentarem e responderem dúvidas do time com segurança.',
+        objetivo: 'Em 5 encontros semanais de 2 horas, o líder sai lendo menos slides, preparando melhor o material, ocupando o palco com segurança e respondendo às dúvidas do time.',
         publico: 'Líderes e multiplicadores que apresentam para o time: DDS, reuniões de resultado, treinamentos internos e convenções.',
-        formato: '5 encontros presenciais semanais de 1 h · turma de 6 a 10 pessoas · todos apresentam em todo encontro.',
-        entrega: 'Apresentação final de 4 minutos com 1 pergunta da banca, avaliada pela mesma régua do primeiro encontro.',
+        formato: '5 encontros presenciais semanais de 2 h (com intervalo de 10 min) · turma de 6 a 10 pessoas · todos apresentam em todo encontro.',
+        entrega: 'Apresentação final de 4 minutos com 2 perguntas da banca, avaliada pela mesma régua do primeiro encontro.',
         regraOuro: 'Todo encontro termina com você apresentando de verdade e recebendo feedback. A tarefa de casa prepara a próxima apresentação.',
         gaps: [
             { n: 1, nome: 'Revisão do material', principal: 1, reforco: '2 e 5' },
@@ -13280,39 +13292,39 @@ const MT_PADRAO = {
             { n: 5, nome: 'Ficar lendo slides', principal: 2, reforco: '3 e 5' },
             { n: 6, nome: 'Tirar dúvidas do time', principal: 4, reforco: '5' }
         ],
-        roteiro: [['Abertura', '5 min', 'Retomada da tarefa de casa (1 aprendizado de cada um) ou combinados'], ['Conceito', '15 min', 'A ideia do dia, uma por slide, com exemplo da operação'], ['Demonstração', '5 min', 'O condutor faz ao vivo o que acabou de ensinar'], ['Prática', '30 min', 'Todos apresentam (2 a 3 min) e recebem feedback 1 + 1 + 1'], ['Fechamento', '5 min', 'Tarefa de casa, presença e próximo encontro']],
+        roteiro: [['Abertura', '10 min', 'Retomada da tarefa de casa (1 aprendizado de cada um) ou combinados'], ['Conceito', '30 min', 'A ideia do dia, uma por slide, com exemplo da operação'], ['Intervalo', '10 min', 'Água, café e volta no horário combinado'], ['Demonstração', '8 min', 'O condutor faz ao vivo o que acabou de ensinar'], ['Prática', '52 min', 'Todos apresentam (2 a 4 min) e recebem feedback 1 + 1 + 1'], ['Fechamento', '10 min', 'Tarefa de casa, presença e próximo encontro']],
         regras: ['Todo mundo apresenta em todo encontro. Ninguém só assiste.', 'Feedback no formato 1 ponto forte + 1 ajuste + 1 dica prática.', 'As apresentações são gravadas no celular do próprio participante, que assiste antes do próximo encontro.', 'O tema da prática é real: um assunto que a pessoa precisa apresentar no trabalho nas próximas semanas.', 'Errar na sala é o objetivo. O que se fala na sala fica na sala.', 'Começamos e terminamos no horário: 1 hora cravada.'],
         encontros: [
             { n: 1, modulo: 'A comunicação que faz o time agir', tema: 'O que é comunicação, as falhas que custam caro, a preparação e a montagem do material', entregavel: 'Missão: montar um material de até 10 slides (individual ou em dupla) que passe a mensagem sem ninguém apresentar', gaps: '1 e 2',
                 objetivo: ['Entender como a comunicação funciona, de onde parte e onde chega', 'Saber as falhas que não podemos cometer', 'Sair com a missão de montar um material que se explica sozinho'],
                 teoria: ['Comunicação é o que o outro entende e faz: intenção, mensagem, canal, entendimento e ação.', 'Os 4 C: clara, curta, concreta e com ação.', 'As 8 falhas que fazem o time desligar.', '60% do resultado acontece na preparação: as 5 perguntas antes de abrir o PowerPoint.', 'Montagem do material: abertura, 3 pontos e ação, com as 6 regras do slide.'],
                 demonstracao: 'Exemplos de slide ruim × slide bom: texto demais, título genérico e gráfico poluído.',
-                pratica: ['Dinâmica · 10 min: desenho às cegas, rodada sem perguntas e rodada com perguntas.'],
+                pratica: ['Dinâmica · 20 min: desenho às cegas, rodada sem perguntas e rodada com perguntas.'],
                 tarefa: ['Montar um material de até 10 slides sobre um tema real, individual ou em dupla, que passe a mensagem sem ninguém apresentar.', 'Trazer no início do Encontro 2 para avaliação pela régua.'] },
             { n: 2, modulo: 'Preparação e slides que não se leem', tema: 'Preparar a fala separada do slide: o slide mostra, a pessoa explica', entregavel: 'Ensaiar 3 vezes em voz alta a abertura e o fechamento (gravar a última) e cortar 30% do texto dos slides', gaps: '2 e 5',
                 objetivo: ['Montar o roteiro de 3 atos da sua apresentação', 'Trocar frases por palavras-chave nos slides', 'Apresentar sem ler a tela (Olha, Pausa, Fala)'],
                 teoria: ['Roteiro em 3 atos: abertura com gancho, no máximo 3 pontos-chave, fechamento com ação.', 'Slide é apoio, não teleprompter: no máximo 6 linhas, palavras-chave, números grandes e imagens.', 'Ensaio de verdade: em voz alta, em pé, cronometrado, 3 vezes. Ensaio mental não conta.', 'Técnica Olha, Pausa, Fala: olhar o slide, virar para o público, só então falar.'],
                 demonstracao: 'O condutor apresenta o mesmo slide duas vezes: lendo e usando Olha, Pausa, Fala. A turma diz a diferença.',
-                pratica: ['Reescrever · 8 min: cada um reescreve 3 slides do próprio material em palavras-chave e monta o roteiro de 3 atos.', 'Apresentar · 22 min: cada um apresenta 2 minutos. Se ler mais de uma frase da tela, a turma levanta a mão e ele recomeça o slide.'],
+                pratica: ['Reescrever · 12 min: cada um reescreve 3 slides do próprio material em palavras-chave e monta o roteiro de 3 atos.', 'Apresentar · 30 min: cada um apresenta 2 minutos. Se ler mais de uma frase da tela, a turma levanta a mão e ele recomeça o slide.'],
                 tarefa: ['Ensaiar em voz alta 3 vezes a abertura e o fechamento da apresentação final, gravando a última.', 'Cortar pelo menos 30% do texto dos slides.'] },
             { n: 3, modulo: 'Palco, corpo e confiança', tema: 'Onde ficar, o que fazer com as mãos e como a voz soa', entregavel: 'Assistir à gravação sem som e só com som (1 ajuste em cada) e ensaiar em pé num espaço parecido com o real', gaps: '3 e 4',
                 objetivo: ['Usar os 3 pontos do palco com intenção', 'Postura, olhar e voz que passam confiança', 'Trocar o "ééé" pela pausa'],
                 teoria: ['Mapa do palco em 3 pontos: centro para abrir e fechar, lado da tela para explicar o slide, frente do público para perguntas e histórias.', 'Postura base: pés na largura do quadril, peso distribuído, mãos na altura da cintura, visíveis.', 'Olhar: uma frase completa para uma pessoa, depois outra pessoa em outro ponto da sala.', 'Voz: volume para a última fileira, pausas de 2 segundos, trocar "ééé" por silêncio.'],
                 demonstracao: 'O condutor faz uma abertura usando os 3 pontos do palco e depois exagera os erros (balançar, mão no bolso, olhar no chão). A turma aponta cada erro.',
-                pratica: ['Aquecimento · 3 min: voz e postura, todos juntos.', 'Palco · 27 min: cada um apresenta 2 minutos do próprio material usando os 3 pontos marcados no chão. Feedback em postura, olhar e voz.'],
+                pratica: ['Aquecimento · 5 min: voz e postura, todos juntos.', 'Palco · 45 min: cada um apresenta 3 minutos do próprio material usando os 3 pontos marcados no chão. Feedback em postura, olhar e voz.'],
                 tarefa: ['Assistir à gravação sem som (só corpo) e depois só com som (só voz). Anotar 1 ajuste em cada.', 'Ensaiar a apresentação final em pé, num espaço parecido com o real.'] },
             { n: 4, modulo: 'Tirar dúvidas do time', tema: 'Método OPRC e banco de perguntas difíceis', entregavel: 'Responder por escrito as 2 piores perguntas e fazer o ensaio geral de 4 minutos, cronometrado e gravado', gaps: '6 e 4',
                 objetivo: ['Antecipar as perguntas do time', 'Responder com o método OPRC', 'Saber o que dizer quando não sabe a resposta'],
                 teoria: ['Antecipar é metade do trabalho: listar as perguntas mais prováveis e as mais difíceis.', 'Método OPRC: Ouvir até o fim, Parafrasear, Responder em até 3 frases, Checar se respondeu.', 'Quando não sabe: "Não tenho esse dado agora. Vou confirmar com [área] e te retorno até [dia]." E cumprir.', 'Pergunta hostil: reconhecer o sentimento, voltar ao fato, oferecer o próximo passo. Nunca discutir na frente do time.'],
                 demonstracao: 'A turma faz 3 perguntas difíceis ao condutor, que responde usando o OPRC.',
-                pratica: ['Banco de perguntas · 5 min: cada um escreve 3 perguntas prováveis e 1 difícil sobre o próprio tema.', 'Rodada OPRC · 25 min: cada um apresenta 1 minuto e responde 2 perguntas sorteadas (chefe cético, colega que reclama, quem não entendeu nada).'],
+                pratica: ['Banco de perguntas · 10 min: cada um escreve 3 perguntas prováveis e 1 difícil sobre o próprio tema.', 'Rodada OPRC · 40 min: cada um apresenta 1 minuto e responde 2 perguntas sorteadas (chefe cético, colega que reclama, quem não entendeu nada).'],
                 tarefa: ['Escrever a resposta das 2 piores perguntas e ensaiar em voz alta.', 'Ensaio geral da apresentação final de 4 minutos, cronometrado e gravado.'] },
             { n: 5, modulo: 'Apresentação final avaliada', tema: 'Prova prática com banca e plano dos próximos 30 dias', entregavel: 'Compromisso: qual apresentação real vai fazer nos próximos 30 dias e qual ponto vai treinar', gaps: 'todos',
-                objetivo: ['Apresentar 4 minutos para a banca', 'Responder 1 pergunta com o OPRC', 'Comparar a sua régua de hoje com a do Encontro 1'],
-                blocos: [['Abertura', 5], ['Apresentações', 45], ['Fechamento', 10]],
+                objetivo: ['Apresentar 4 minutos para a banca', 'Responder 2 perguntas com o OPRC', 'Comparar a sua régua de hoje com a do Encontro 1'],
+                blocos: [['Abertura', 10], ['Apresentações · parte 1', 45], ['Intervalo', 10], ['Apresentações · parte 2', 35], ['Fechamento', 20]],
                 teoria: ['Revisão relâmpago: 3 passes, 3 atos, Olha-Pausa-Fala, 3 pontos do palco e OPRC.'],
                 demonstracao: 'Banca: condutor, gestor da área e 2 colegas sorteados. Todos preenchem a régua.',
-                pratica: ['Apresentações · 45 min: cada participante apresenta 4 minutos e responde 1 pergunta da banca.'],
+                pratica: ['Apresentações · 80 min (com intervalo no meio): cada participante apresenta 4 minutos, responde 2 perguntas da banca e recebe a devolutiva.'],
                 tarefa: ['Fazer a apresentação real nos próximos 30 dias e contar como foi na sessão de continuidade.'] }
         ],
         kit: ['Checklist de revisão do material (24 h antes)', 'Roteiro de 3 atos (4 minutos)', 'Régua de avaliação (nota de 1 a 5)', 'Método OPRC para responder perguntas', 'Banco de perguntas difíceis'],
@@ -13520,7 +13532,7 @@ async function mtLer() {
     const out = JSON.parse(JSON.stringify(MT_PADRAO));
     Object.keys(d).forEach(k => { if (d[k] !== undefined && d[k] !== null) out[k] = (typeof d[k] === 'object' && !Array.isArray(d[k]) && typeof out[k] === 'object' && !Array.isArray(out[k])) ? Object.assign(out[k], d[k]) : d[k]; });
     if (!Array.isArray(out.programas)) out.programas = []; MT_PADRAO.programas.forEach(p => { const k = out.programas.findIndex(x => x && x.id === p.id); if (k < 0) out.programas.push(JSON.parse(JSON.stringify(p))); else if ((Number(out.programas[k].versao) || 1) < (Number(p.versao) || 1)) out.programas[k] = JSON.parse(JSON.stringify(p)); }); // programa novo do padrão sempre aparece
-    if ((Number(d.semanasVersao) || 1) < MT_PADRAO.semanasVersao) { out.semanas = JSON.parse(JSON.stringify(MT_PADRAO.semanas)); out.formato = MT_PADRAO.formato; out.semanasVersao = MT_PADRAO.semanasVersao; } // 19 encontros de 1 hora
+    if ((Number(d.semanasVersao) || 1) < MT_PADRAO.semanasVersao) { out.semanas = JSON.parse(JSON.stringify(MT_PADRAO.semanas)); out.formato = MT_PADRAO.formato; out.semanasVersao = MT_PADRAO.semanasVersao; } // 19 encontros de 2 horas
     if (/gera depoimento e venda/.test(out.regraOuro || '')) out.regraOuro = MT_PADRAO.regraOuro; // o aluno vê este texto
     if (!out.marca.fotoUrl) out.marca.fotoUrl = MT_PADRAO.marca.fotoUrl;
     if (out.marca.mentor === 'Lázaro Salles') out.marca.mentor = 'Lázaro Neto'; // nome público escolhido
@@ -13583,6 +13595,8 @@ app.delete('/api/admin/mentoria/leads/:id', requireRole('admin'), async (req, re
 app.get('/api/admin/mentoria/turmas', requireRole('admin'), async (req, res) => {
     const turmas = await dbAll(`SELECT * FROM mentoria_turmas ORDER BY id DESC`).catch(() => []), alunos = await dbAll(`SELECT * FROM mentoria_alunos ORDER BY id`).catch(() => []);
     const pres = await dbAll(`SELECT aluno_id, encontro FROM mentoria_presencas`).catch(() => []); alunos.forEach(x => { x.presencas = pres.filter(p => p.aluno_id === x.id).map(p => Number(p.encontro)); x.temAcesso = !!x.acesso_token; });
+    const anx = await dbAll(`SELECT id, aluno_id, encontro, texto, anexo_url, anexo_nome, lida, criado_em FROM mentoria_mensagens WHERE de = 'aluno' AND anexo_url IS NOT NULL AND anexo_url <> '' ORDER BY id`).catch(() => []);
+    alunos.forEach(x => { x.materiais = anx.filter(m => m.aluno_id === x.id).map(m => ({ id: m.id, encontro: m.encontro ? Number(m.encontro) : 0, nome: m.anexo_nome || 'arquivo', url: m.anexo_url, texto: m.texto || '', novo: !m.lida, em: m.criado_em })); });
     const nl = await dbAll(`SELECT turma_id, COUNT(*) n FROM mentoria_mensagens WHERE de = 'aluno' AND lida = 0 GROUP BY turma_id`).catch(() => []), na = await dbAll(`SELECT turma_id, COUNT(*) n, AVG(nota) m FROM mentoria_avaliacoes GROUP BY turma_id`).catch(() => []);
     turmas.forEach(t => { t.naoLidas = (nl.find(x => x.turma_id === t.id) || {}).n || 0; const v = na.find(x => x.turma_id === t.id) || {}; t.avaliacoes = v.n || 0; t.notaMedia = v.m == null ? null : Math.round(v.m * 10) / 10; });
     res.json(turmas.map(t => Object.assign(t, { dados: (() => { try { return JSON.parse(t.dados || '{}'); } catch (e) { return {}; } })(), alunos: alunos.filter(a => a.turma_id === t.id).map(a => Object.assign(a, { progresso: (() => { try { return JSON.parse(a.progresso || '{}'); } catch (e) { return {}; } })() })) })));
@@ -13716,7 +13730,7 @@ app.get('/api/public/mentorias', async (req, res) => {
         for (const p of mtProgramas(d)) {
             const t = await mtTurmaAberta(p.id), pg = MT_PAGINAS_VENDA[p.id] || {}, ehPrinc = p.id === MT_PRINCIPAL;
             const base = ehPrinc ? Number(g.valor) || 0 : p.id === 'comunicacao-impacto' ? v.precoIndividual : 0;
-            lista.push({ id: p.id, nome: p.nome, icone: p.icone || '🎓', encontros: (p.encontros || []).length, duracao: ehPrinc ? '1 hora' : (p.duracaoEncontro || '1 h').replace(/^1 h$/, '1 hora'),
+            lista.push({ id: p.id, nome: p.nome, icone: p.icone || '🎓', encontros: (p.encontros || []).length, duracao: ehPrinc ? '2 horas' : String(p.duracaoEncontro || '1 h').replace(/^(\d+) h$/, (x, k) => k + (k === '1' ? ' hora' : ' horas')),
                 resumo: ehPrinc ? 'Rotina de gestão, time engajado e indicador melhorando, com o método M.O.V.E.R.' : (p.subtitulo || ''),
                 formato: ehPrinc ? 'Ao vivo online, 1 por semana' : p.id === 'comunicacao-impacto' ? v.formatoIndividual : (p.formato || ''),
                 publico: ehPrinc ? 'Supervisores, coordenadores e gerentes de operação' : (p.publico || ''),

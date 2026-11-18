@@ -696,6 +696,10 @@
   .mt-show-top { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 14px; background:rgba(255,255,255,.04); }
   .mt-show-tt { font-size:13.5px; font-weight:700; opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .mt-show-tt span { opacity:.65; font-weight:500; }
   .mt-show-rel { font-variant-numeric:tabular-nums; font-size:13px; opacity:.75; margin-right:6px; }
+  .mt-bloco { display:inline-flex; flex-direction:column; line-height:1.1; padding:4px 10px; border-radius:10px; cursor:pointer; margin-right:6px; font-variant-numeric:tabular-nums; color:#fff; background:linear-gradient(90deg, rgba(34,197,94,.45) var(--p), rgba(255,255,255,.08) var(--p)); border:1px solid rgba(34,197,94,.7); }
+  .mt-bloco b { font-size:13px; } .mt-bloco small { font-size:10.5px; opacity:.85; }
+  .mt-bloco.alerta { background:linear-gradient(90deg, rgba(245,158,11,.55) var(--p), rgba(255,255,255,.08) var(--p)); border-color:#f59e0b; }
+  .mt-bloco.estourou { background:rgba(220,38,38,.75); border-color:#ef4444; animation:mtPisca 1.2s infinite; } @keyframes mtPisca { 50% { opacity:.6; } }
   .mt-sb { width:auto !important; background:rgba(255,255,255,.08) !important; color:#fff !important; border:1px solid rgba(255,255,255,.15) !important; border-radius:8px !important; padding:6px 11px !important; font-size:12.5px !important; font-weight:700 !important; margin:0 !important; cursor:pointer; }
   .mt-sb:disabled { opacity:.3; cursor:default; }
   .mt-sb.on { background:#fff !important; color:#0b1324 !important; }
@@ -1985,6 +1989,8 @@
   .mpg-passador { display:flex; gap:12px; align-items:flex-start; background:#ecfdf5; border:1.5px solid #22c55e; border-radius:12px; padding:10px 12px; margin:6px 0 12px; cursor:pointer; } .mpg-passador input { width:20px; height:20px; margin:2px 0 0; flex:none; accent-color:#16a34a; } .mpg-passador b { display:block; color:#166534; } .mpg-passador small { color:#166534; font-size:12.5px; }
   .mtn-dataenc { color:#7c3aed; } .mtn-dataenc i { font-style:normal; font-size:10px; } .mtn-dataenc input { border-color:#c4b5fd; }
   .mtn-foto-al { width:30px; height:30px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:8px; float:left; }
+  .mtn-arq { display:flex; align-items:center; gap:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:8px 10px; margin:6px 0 0 26px; } .mtn-arq.novo { border-color:#f59e0b; background:#fffbeb; } .mtn-arq > div { flex:1; min-width:0; } .mtn-arq b { word-break:break-all; } .mtn-arq i { font-style:normal; font-size:11px; font-weight:800; color:#b45309; } .mtn-arq small { display:block; color:#64748b; font-size:12px; } .mtn-arq a { text-decoration:none; width:auto; white-space:nowrap; }
+  .mtn-ent { border-bottom:1px solid #e2e8f0; padding:10px 0; } .mtn-ent.ok .mtn-tarefa b { color:#15803d; } .mtn-mat-enc { border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; margin:10px 0; } .mtn-mat-enc h4 { margin:0 0 6px; } .mtn-mat-enc h4 small { color:#64748b; font-weight:600; margin-left:6px; } .mtn-mat-al { margin:8px 0; } .mtn-mat-al .mtn-arq { margin-left:0; }
   .mtc-abas { display:flex; gap:6px; margin-bottom:12px; } .mtc-abas button { font:inherit; font-weight:700; border:1px solid #cbd5e1; background:#fff; border-radius:999px; padding:6px 14px; cursor:pointer; } .mtc-abas button.on { background:#0b1329; color:#fff; border-color:#0b1329; }
   .mtc-grade { display:grid; grid-template-columns:220px 1fr; gap:12px; min-height:340px; } @media (max-width:700px) { .mtc-grade { grid-template-columns:1fr; } }
   .mtc-lista { display:grid; gap:4px; align-content:start; max-height:420px; overflow:auto; } .mtc-lista button { display:flex; gap:8px; align-items:center; text-align:left; font:inherit; border:1px solid #e2e8f0; background:#fff; border-radius:10px; padding:7px; cursor:pointer; } .mtc-lista button.on { border-color:#7c3aed; background:#f5f3ff; }
@@ -2193,7 +2199,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 14/11 (6)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 18/11 (1)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -12013,13 +12019,37 @@ function mtApresentarModulo(mi, si, xi) {
 }
 function mtApresentar(idx) {
   const deck = mtMontarDeck();
-  MTS = { deck, i: Math.max(0, Math.min(idx || 0, deck.length - 1)), editando: false, notas: false, ini: Date.now() };
+  MTS = { deck, i: Math.max(0, Math.min(idx || 0, deck.length - 1)), editando: false, notas: false, ini: Date.now(), plano: mtPlanoBlocos(), blocoIni: {}, avisou: {} };
   let el = document.getElementById('mt-show');
   if (!el) { el = document.createElement('div'); el.id = 'mt-show'; document.body.appendChild(el); }
   document.addEventListener('keydown', mtTecla);
-  clearInterval(MTS.relogio); MTS.relogio = setInterval(() => { const r = document.getElementById('mt-relogio'); if (r) r.textContent = mtCronometro(); }, 1000);
+  clearInterval(MTS.relogio); MTS.relogio = setInterval(() => { const r = document.getElementById('mt-relogio'); if (r) r.textContent = mtCronometro() + mtFimTxt(); mtAtualizarBloco(); }, 1000);
   mtDesenharShow();
 }
+// ⏱ gestão de tempo: cada bloco (módulo) tem o tempo planejado no título ("Prática · 35–55 min")
+function mtPlanoBlocos() { return ((MT.doc && MT.doc.modulos) || []).map(m => { const r = String(m.titulo || '').match(/(\d{1,3})\s*[–-]\s*(\d{1,3})\s*min/); return r && +r[2] > +r[1] ? { ini: +r[1], fim: +r[2] } : null; }); }
+function mtFimTxt() { const f = MTS && MTS.plano ? Math.max(0, ...MTS.plano.filter(Boolean).map(p => p.fim)) : 0; return f ? ' / ' + (f % 60 ? f + ' min' : f / 60 + 'h') : ''; }
+const mtMMSS = s => { const a = Math.abs(Math.round(s)); return `${Math.floor(a / 60)}:${String(a % 60).padStart(2, '0')}`; };
+function mtTempoInfo() {
+  if (!MTS || !MTS.plano) return null; const it = MTS.deck[MTS.i]; if (!it || it.mi === undefined) return null;
+  const pl = MTS.plano[it.mi]; if (!pl) return null;
+  if (!MTS.blocoIni[it.mi]) MTS.blocoIni[it.mi] = Date.now();
+  const dur = (pl.fim - pl.ini) * 60, gasto = (Date.now() - MTS.blocoIni[it.mi]) / 1000, resta = dur - gasto;
+  const atraso = (MTS.blocoIni[it.mi] - MTS.ini) / 1000 - pl.ini * 60 + Math.max(0, -resta);
+  const fim = Math.max(...MTS.plano.filter(Boolean).map(p => p.fim));
+  return { mi: it.mi, dur, gasto, resta, atraso, fim, pl, estado: resta < 0 ? 'estourou' : resta <= Math.min(120, dur * 0.2) ? 'alerta' : 'ok' };
+}
+function mtBlocoHtml() {
+  const t = mtTempoInfo(); if (!t) return '';
+  const pct = Math.min(100, t.gasto * 100 / t.dur), at = Math.round(t.atraso / 60);
+  return `<span class="mt-bloco ${t.estado}" id="mt-bloco" title="Tempo do bloco atual (planejado: ${t.pl.ini}–${t.pl.fim} min). Clique para zerar o tempo do bloco." onclick="mtZerarBloco()" style="--p:${pct}%"><b>${t.resta >= 0 ? '⏱ faltam ' + mtMMSS(t.resta) : '⏰ +' + mtMMSS(-t.resta) + ' do bloco'}</b><small>bloco ${mtMMSS(t.dur)} · ${Math.abs(at) < 1 ? 'no horário' : at > 0 ? at + ' min atrasado' : -at + ' min adiantado'}</small></span>`;
+}
+function mtAtualizarBloco() {
+  const el = document.getElementById('mt-bloco'), t = mtTempoInfo(); if (!el || !t) return;
+  el.outerHTML = mtBlocoHtml();
+  const k = t.mi + ':' + t.estado; if (t.estado !== 'ok' && !MTS.avisou[k]) { MTS.avisou[k] = 1; mostrarToast(t.estado === 'alerta' ? '⏱ Faltam ' + mtMMSS(t.resta) + ' para fechar este bloco.' : '⏰ O tempo deste bloco acabou. Hora de passar para o próximo.', t.estado === 'estourou'); }
+}
+function mtZerarBloco() { const it = MTS && MTS.deck[MTS.i]; if (!it || it.mi === undefined) return; if (!confirm('Zerar o tempo deste bloco (começar a contar agora)?')) return; MTS.blocoIni[it.mi] = Date.now(); MTS.avisou = {}; mtAtualizarBloco(); mtEnviarEstadoRemoto(); }
 function mtCronometro() { const s = Math.floor((Date.now() - MTS.ini) / 1000); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
 function mtTecla(e) {
   if (!MTS) return;
@@ -12083,7 +12113,7 @@ function mtDesenharShow() {
     <div class="mt-show-top">
       <div class="mt-show-tt">${escapeHtml(d.titulo)}${m ? ' · <span>' + escapeHtml(m.titulo) + '</span>' : ''}</div>
       <div style="display:flex;gap:6px;align-items:center;">
-        <span class="mt-show-rel" id="mt-relogio">${mtCronometro()}</span>
+        ${mtBlocoHtml()}<span class="mt-show-rel" id="mt-relogio" title="Tempo total desde que abriu a apresentação">${mtCronometro()}${mtFimTxt()}</span>
         ${editavel ? `<button class="mt-sb ${MTS.editando ? 'on' : ''}" onclick="mtAlternarEdicao()" title="Editar este slide">✏️ ${MTS.editando ? 'Concluir edição' : 'Editar'}</button>` : ''}
         ${editavel && MTS.editando ? (() => { const sl = d.modulos[it.mi].slides[it.si]; return `<label class="mt-sb" style="cursor:pointer;" title="Subir uma foto para este slide">🖼️ ${sl.imagem ? 'Trocar foto' : 'Foto'}<input type="file" accept="image/*" style="display:none;" onchange="mtShowFoto(this)"></label>${sl.imagem ? `<button class="mt-sb" onclick="mtShowLayoutFoto()" title="Alternar entre foto ao lado do texto e foto em tela cheia">${sl.layout === 'imagem' ? '▤ Foto + texto' : '⛶ Foto tela cheia'}</button><button class="mt-sb" onclick="mtShowRemoverFoto()" title="Tirar a foto deste slide">🗑️</button>` : ''}`; })() : ''}
         ${MT.sujo ? `<button class="mt-sb salvar" onclick="mtSalvarShow()">💾 Salvar</button>` : ''}
@@ -12150,7 +12180,8 @@ function mtEnviarEstadoRemoto() {
   const it = MTS.deck[MTS.i];
   const telas = [0, 1, 2].map(k => MTS.deck[MTS.i + k] ? { i: MTS.i + k, titulo: mtTituloDeck(MTS.deck[MTS.i + k]), html: mtHtmlRemoto(MTS.deck[MTS.i + k]) } : null).filter(Boolean);
   MT_REMOTO.socket.emit('mt-estado', { i: MTS.i, total: MTS.deck.length, titulo: mtTituloDeck(it), proximo: mtTituloDeck(MTS.deck[MTS.i + 1]),
-    modulo: it.mi !== undefined ? MT.doc.modulos[it.mi].titulo : '', notas: it.tipo === 'slide' ? (MT.doc.modulos[it.mi].slides[it.si].notas || '') : '', ini: MTS.ini,
+    modulo: it.mi !== undefined ? MT.doc.modulos[it.mi].titulo : '', notas: it.tipo === 'slide' ? (MT.doc.modulos[it.mi].slides[it.si].notas || '') : '', ini: MTS.ini, agora: Date.now(),
+    tempo: (() => { const t = mtTempoInfo(); if (!t) return null; const prox = MT.doc.modulos.slice(t.mi + 1).find((m, k) => MTS.plano[t.mi + 1 + k]); return { blocoIni: MTS.blocoIni[t.mi], dur: t.dur, plIni: t.pl.ini, fim: t.fim, proximo: prox ? prox.titulo : '' }; })(),
     telas, css: mtCssSlides(), cor: mtPub(MT.doc.publico).cor });
 }
 async function mtConectarRemoto() {
@@ -14634,7 +14665,7 @@ function mtnLinks() {
   const b = mtnBase();
   return [
     ['🧭', 'Link da bio: todas as mentorias numa página', b + '/mentorias?o=instagram', 'Mentorias para líderes: escolha a sua (para você ou para a sua empresa): '],
-    ['🎙️', 'Comunicação de Impacto (individual e empresa)', b + '/comunicacao', 'Comunicação de Impacto para Líderes: 5 encontros de 1 hora para parar de ler slide e ser ouvido pelo time. Veja: '],
+    ['🎙️', 'Comunicação de Impacto (individual e empresa)', b + '/comunicacao', 'Comunicação de Impacto para Líderes: 5 encontros de 2 horas para parar de ler slide e ser ouvido pelo time. Veja: '],
     ['🚀', 'Página da mentoria (venda e inscrição)', b + '/mentoria', 'Mentoria Do Chão à Gestão: 19 encontros para você montar sua rotina de líder, engajar o time e melhorar seu indicador. Vagas: '],
     ['🎤', 'Página da palestra (empresas pedem proposta)', b + '/palestra', 'Palestra "Quem Move Pessoas, Move Resultados" para os líderes da sua empresa: '],
     ['🔴', 'Aula gratuita (inscrição)', b + '/aula', 'Aula gratuita e ao vivo para líderes de operação. Inscreva-se: '],
@@ -14690,11 +14721,11 @@ const MTN_CI_PADRAO = { precoIndividual: 697, precoDe: 997, parcelas: 12, vagas:
 function mtnCiTextos(base) {
   const m = MTN.d.marca, v = Object.assign({}, MTN_CI_PADRAO, MTN.d.vendaCi || {}), preco = 'R$ ' + Number(v.precoIndividual).toLocaleString('pt-BR');
   return [
-    ['💬 WhatsApp para um líder (individual)', `Fala, tudo bem? Abri uma turma da Comunicação de Impacto para Líderes: 5 encontros de 1 hora para parar de ler slide, preparar melhor o DDS e a reunião, e responder as perguntas do time com segurança. Todo mundo apresenta em todo encontro. Vaga individual: ${preco} ou em até ${v.parcelas}x. Dá uma olhada: ${base}?o=whatsapp`],
-    ['🏢 WhatsApp / e-mail para RH ou gestor (empresa)', `Olá! Sou o ${m.mentor}, ${m.titulo || 'gerente corporativo de operações'}. Conduzo a Comunicação de Impacto para Líderes: 5 encontros de 1 hora em que os líderes preparam o material, apresentam e recebem feedback em todo encontro, até uma apresentação final avaliada. Faço turma fechada para a sua empresa, presencial ou online, com exemplos da operação de vocês. Posso te mandar uma proposta? Detalhes: ${base}?o=rh&quero=empresa`],
-    ['📸 Legenda para o Instagram', `Seu time não ouve slide. Ouve você. 🎙️\n\nNa Comunicação de Impacto para Líderes são 5 encontros de 1 hora:\n1. Comunicação que faz o time agir\n2. Preparação e slides que não se leem\n3. Palco, corpo e confiança\n4. Tirar dúvidas do time\n5. Apresentação final avaliada\n\nTodo mundo apresenta em todo encontro. Para você ou para os líderes da sua empresa.\n\n👉 Link na bio ou comente "COMUNICAÇÃO"\n\n#lideranca #comunicacao #gestaodepessoas #oratoria #lideres`],
-    ['📱 Texto curto para Stories', `Você lê slide na frente do time? 👀\nTurma nova da Comunicação de Impacto: 5 encontros, 1 hora cada.\nToque no link 👇`],
-    ['💼 Post para o LinkedIn', `Líder bom de operação nem sempre é ouvido quando apresenta. O problema raramente é o conteúdo: é slide lido, fala sem estrutura e trava nas perguntas.\n\nPor isso criei a Comunicação de Impacto para Líderes: 5 encontros de 1 hora, 100% prática, em que cada líder apresenta, recebe feedback e evolui numa régua do primeiro ao último encontro.\n\nTurmas abertas para líderes e turmas fechadas para empresas: ${base}?o=linkedin`]
+    ['💬 WhatsApp para um líder (individual)', `Fala, tudo bem? Abri uma turma da Comunicação de Impacto para Líderes: 5 encontros de 2 horas para parar de ler slide, preparar melhor o DDS e a reunião, e responder as perguntas do time com segurança. Todo mundo apresenta em todo encontro. Vaga individual: ${preco} ou em até ${v.parcelas}x. Dá uma olhada: ${base}?o=whatsapp`],
+    ['🏢 WhatsApp / e-mail para RH ou gestor (empresa)', `Olá! Sou o ${m.mentor}, ${m.titulo || 'gerente corporativo de operações'}. Conduzo a Comunicação de Impacto para Líderes: 5 encontros de 2 horas em que os líderes preparam o material, apresentam e recebem feedback em todo encontro, até uma apresentação final avaliada. Faço turma fechada para a sua empresa, presencial ou online, com exemplos da operação de vocês. Posso te mandar uma proposta? Detalhes: ${base}?o=rh&quero=empresa`],
+    ['📸 Legenda para o Instagram', `Seu time não ouve slide. Ouve você. 🎙️\n\nNa Comunicação de Impacto para Líderes são 5 encontros de 2 horas:\n1. Comunicação que faz o time agir\n2. Preparação e slides que não se leem\n3. Palco, corpo e confiança\n4. Tirar dúvidas do time\n5. Apresentação final avaliada\n\nTodo mundo apresenta em todo encontro. Para você ou para os líderes da sua empresa.\n\n👉 Link na bio ou comente "COMUNICAÇÃO"\n\n#lideranca #comunicacao #gestaodepessoas #oratoria #lideres`],
+    ['📱 Texto curto para Stories', `Você lê slide na frente do time? 👀\nTurma nova da Comunicação de Impacto: 5 encontros, 2 horas cada.\nToque no link 👇`],
+    ['💼 Post para o LinkedIn', `Líder bom de operação nem sempre é ouvido quando apresenta. O problema raramente é o conteúdo: é slide lido, fala sem estrutura e trava nas perguntas.\n\nPor isso criei a Comunicação de Impacto para Líderes: 5 encontros de 2 horas, 100% prática, em que cada líder apresenta, recebe feedback e evolui numa régua do primeiro ao último encontro.\n\nTurmas abertas para líderes e turmas fechadas para empresas: ${base}?o=linkedin`]
   ];
 }
 function mtnCiVender(p) {
@@ -15194,14 +15225,14 @@ function mtnTurmas() {
         <div class="mtn-link-bt">${t.link_encontro ? `<a class="btn-secundario btn-sm" href="${escapeHtml(t.link_encontro)}" target="_blank" rel="noopener">🎥 Sala</a>` : ''}${t.whatsapp_grupo ? `<a class="btn-secundario btn-sm" href="${escapeHtml(t.whatsapp_grupo)}" target="_blank" rel="noopener">💬 Grupo</a>` : ''}<button class="btn-secundario btn-sm" onclick="mtnEditarTurma(${t.id})">✏️</button><button class="btn-secundario btn-sm" onclick="mtnNovoAluno(${t.id})">＋ Aluno</button><button class="btn-primario btn-sm" style="width:auto;" onclick="mtnAcessosTurma(${t.id})">🔑 Enviar acessos</button></div></div>
       <p class="plano-meta" style="margin:8px 0 0;">📷 No fim de cada encontro, toque em <b>QR presença</b> no ${pg.unidade} e mostre a tela (ou compartilhe na reunião online). A lista de presentes atualiza sozinha.</p>
       <div class="mtn-encontros">${pg.encontros.map((s, i) => `<label class="mtn-enc ${feitos[s.n] ? 'ok' : ''}"><input type="checkbox" ${feitos[s.n] ? 'checked' : ''} onchange="mtnEncontro(${t.id}, ${s.n}, this.checked)"><b>${sg}${s.n}${datas[i] ? ' · ' + datas[i].toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''}</b><span>${escapeHtml(s.modulo)}</span><small>${escapeHtml(s.entregavel)}</small><button class="mtn-qrbt" onclick="event.preventDefault(); event.stopPropagation(); mtnQrPresenca(${t.id}, ${s.n})">📷 QR presença · ${t.alunos.filter(a => (a.presencas || []).includes(s.n)).length}/${t.alunos.length}</button>${`<button class="mtn-qrbt mpg-slbt" onclick="event.preventDefault(); mtnApresentar('${pg.id}', ${s.n}, ${t.id})">▶️ Slides</button><button class="mtn-qrbt mtn-libbt ${((t.dados || {}).liberados || {})[s.n] ? 'on' : ''}" onclick="event.preventDefault(); event.stopPropagation(); mtnLiberar(${t.id}, ${s.n})">${((t.dados || {}).liberados || {})[s.n] ? '✅ Liberado na Área do Aluno' : '📤 Liberar slides ao aluno'}</button>`}<span class="mtn-prazo mtn-dataenc" onclick="event.preventDefault(); event.stopPropagation();">🗓️ Data do encontro${((t.dados || {}).datas || {})[s.n] ? ' <i title="definida por você">✏️</i>' : ''}<input type="date" value="${mtnIso(datas[i])}" onclick="event.stopPropagation()" onchange="mtnDataEnc(${t.id}, ${s.n}, this.value)"></span><span class="mtn-prazo" onclick="event.preventDefault(); event.stopPropagation();">📅 Prazo do desafio<input type="date" value="${escapeHtml(((t.dados || {}).prazos || {})[s.n] || '')}" onclick="event.stopPropagation()" onchange="mtnPrazo(${t.id}, ${s.n}, this.value)"></span></label>`).join('')}</div>
-      <div class="mtn-link-bt" style="margin-top:10px;"><button class="btn-secundario btn-sm" onclick="mtnConversas(${t.id})">💬 Dúvidas e materiais${t.naoLidas ? ` <b class="mtn-badge">${t.naoLidas} nova(s)</b>` : ''}</button><button class="btn-secundario btn-sm" onclick="mtnConversas(${t.id}, 'av')">⭐ Avaliações${t.avaliacoes ? ` · média ${String(t.notaMedia).replace('.', ',')} (${t.avaliacoes})` : ''}</button></div>
+      <div class="mtn-link-bt" style="margin-top:10px;"><button class="btn-primario btn-sm" style="width:auto;" onclick="mtnMateriais(${t.id})">📎 Materiais dos alunos${(() => { const tot = t.alunos.reduce((s, a) => s + (a.materiais || []).length, 0), nv = t.alunos.reduce((s, a) => s + (a.materiais || []).filter(m => m.novo).length, 0); return tot ? ` (${tot})` + (nv ? ` <b class="mtn-badge">${nv} novo(s)</b>` : '') : ''; })()}</button><button class="btn-secundario btn-sm" onclick="mtnConversas(${t.id})">💬 Dúvidas e mensagens${t.naoLidas ? ` <b class="mtn-badge">${t.naoLidas} nova(s)</b>` : ''}</button><button class="btn-secundario btn-sm" onclick="mtnConversas(${t.id}, 'av')">⭐ Avaliações${t.avaliacoes ? ` · média ${String(t.notaMedia).replace('.', ',')} (${t.avaliacoes})` : ''}</button></div>
       <div class="tabela-rolagem"><table class="mtn-tab"><thead><tr><th>Aluno</th><th>WhatsApp</th><th>Pagamento</th><th>Área do aluno</th><th>Presença</th><th>Entregas</th><th>Indicador antes</th><th>Indicador depois</th><th></th></tr></thead><tbody>
-      ${t.alunos.map(a => { const pr = a.progresso || {}, ent = Object.keys(pr.entregas || {}).length; return `<tr><td>${a.foto ? `<img class="mtn-foto-al" src="${escapeHtml(a.foto)}" alt="">` : ''}<b>${escapeHtml(a.nome)}</b><br><small>${escapeHtml([a.cargo, a.empresa].filter(Boolean).join(' · '))}</small></td>
+      ${t.alunos.map(a => { const pr = a.progresso || {}, ent = mtnEntregues(a).length, nmat = (a.materiais || []).length; return `<tr><td>${a.foto ? `<img class="mtn-foto-al" src="${escapeHtml(a.foto)}" alt="">` : ''}<b>${escapeHtml(a.nome)}</b><br><small>${escapeHtml([a.cargo, a.empresa].filter(Boolean).join(' · '))}</small></td>
         <td>${a.whatsapp ? `<a href="https://wa.me/${(d => d.length <= 11 ? '55' + d : d)(String(a.whatsapp).replace(/\D/g, ''))}" target="_blank" rel="noopener">${escapeHtml(a.whatsapp)}</a> <button class="mtn-mini" title="Editar WhatsApp" onclick="mtnEditarAluno(${t.id}, ${a.id})">✏️</button>` : `<button class="mtn-mini add" onclick="mtnEditarAluno(${t.id}, ${a.id})">＋ WhatsApp</button>`}</td>
         <td><select onchange="mtnAluno(${a.id}, { pagamento: this.value })">${['pendente', 'pago', 'cortesia', 'reembolsado'].map(p => `<option ${a.pagamento === p ? 'selected' : ''}>${p}</option>`).join('')}</select>${a.checkout_url && a.pagamento === 'pendente' ? `<br><a href="${escapeHtml(a.checkout_url)}" target="_blank" rel="noopener" style="font-size:12px;">link de pagamento</a>` : ''}</td>
         <td><button class="btn-secundario btn-sm" onclick="mtnAcesso(${t.id}, ${a.id})">${a.temAcesso ? (a.ultimo_acesso ? '✅ Acessou' : '📨 Link criado') : '🔑 Criar acesso'}</button></td>
         <td><button class="btn-secundario btn-sm" onclick="mtnPresencas(${t.id}, ${a.id})">${(a.presencas || []).length}/${datasRealizadas(t)}</button></td>
-        <td><button class="btn-secundario btn-sm" onclick="mtnEntregas(${t.id}, ${a.id})">${ent}/${pg.encontros.length}</button></td>
+        <td><button class="btn-secundario btn-sm" onclick="mtnEntregas(${t.id}, ${a.id})">${ent}/${pg.encontros.length}${nmat ? ` · 📎 ${nmat}` : ''}</button></td>
         <td><input class="mtn-num" value="${escapeHtml(pr.antes || '')}" onchange="mtnAlunoProg(${t.id}, ${a.id}, 'antes', this.value)"></td><td><input class="mtn-num" value="${escapeHtml(pr.depois || '')}" onchange="mtnAlunoProg(${t.id}, ${a.id}, 'depois', this.value)"></td>
         <td style="white-space:nowrap;"><button class="btn-secundario btn-sm" title="Editar aluno" onclick="mtnEditarAluno(${t.id}, ${a.id})">✏️</button> <button class="btn-secundario btn-sm" title="Excluir" onclick="mtnExcluirAluno(${a.id})">🗑️</button></td></tr>`; }).join('') || '<tr><td colspan="9" class="plano-meta">Nenhum aluno ainda. As inscrições pagas pela página entram aqui sozinhas.</td></tr>'}</tbody></table></div></div>`; }).join('')}`;
 }
@@ -15273,10 +15304,31 @@ async function mtnSalvarEdicaoAluno(id) {
 }
 async function mtnAluno(id, campos) { try { await api('/api/admin/mentoria/alunos/' + id, { method: 'PUT', body: JSON.stringify(campos) }); await mtnRecarregarTurmas(); } catch (e) { mostrarToast(e.message, true); } }
 async function mtnAlunoProg(tid, id, k, v) { const a = (MTN.turmas.find(t => t.id === tid) || { alunos: [] }).alunos.find(x => x.id === id); if (!a) return; const pr = Object.assign({}, a.progresso || {}, { [k]: v }); a.progresso = pr; await api('/api/admin/mentoria/alunos/' + id, { method: 'PUT', body: JSON.stringify({ progresso: pr }) }).catch(e => mostrarToast(e.message, true)); }
+function mtnEntregues(a) { const ent = (a.progresso || {}).entregas || {}, s = new Set(Object.keys(ent).filter(k => ent[k]).map(Number)); (a.materiais || []).forEach(m => { if (m.encontro) s.add(m.encontro); }); return [...s]; }
+function mtnArqHtml(m) { const q = m.em ? new Date(String(m.em).replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''; return `<div class="mtn-arq${m.novo ? ' novo' : ''}"><span>📄</span><div><b>${escapeHtml(m.nome)}</b>${m.novo ? ' <i>novo</i>' : ''}<small>${q}${m.texto ? ' · ' + escapeHtml(m.texto) : ''}</small></div><a class="btn-secundario btn-sm" href="${escapeHtml(m.url)}" target="_blank" rel="noopener">Abrir</a><a class="btn-secundario btn-sm" href="${escapeHtml(m.url)}" download="${escapeHtml(m.nome)}">⬇️ Baixar</a></div>`; }
 function mtnEntregas(tid, id) {
-  const a = (MTN.turmas.find(t => t.id === tid) || { alunos: [] }).alunos.find(x => x.id === id); if (!a) return; const ent = (a.progresso || {}).entregas || {}, pg = mtnProgT(MTN.turmas.find(t => t.id === tid));
-  mtnModal(`<h3 style="margin-top:0;">📎 Entregas de ${escapeHtml(a.nome)}</h3>${pg.encontros.map(s => `<label class="mtn-tarefa ${ent[s.n] ? 'ok' : ''}"><input type="checkbox" ${ent[s.n] ? 'checked' : ''} onchange="mtnEntrega(${tid}, ${id}, ${s.n}, this.checked)"><span><b>${mtnSig(pg)}${s.n}</b> · ${escapeHtml(s.entregavel)}</span></label>`).join('')}
-    <div class="acoes-form"><button class="btn-secundario" onclick="mtnModal(''); mtnDesenhar()">Fechar</button></div>`);
+  const a = (MTN.turmas.find(t => t.id === tid) || { alunos: [] }).alunos.find(x => x.id === id); if (!a) return; const ent = (a.progresso || {}).entregas || {}, pg = mtnProgT(MTN.turmas.find(t => t.id === tid)), mats = a.materiais || [];
+  const semEnc = mats.filter(m => !m.encontro || !pg.encontros.some(s => Number(s.n) === m.encontro));
+  mtnModal(`<h3 style="margin-top:0;">📎 Entregas de ${escapeHtml(a.nome)}</h3><p class="plano-meta" style="margin-top:-6px;">Os arquivos que o aluno enviou pela Área do Aluno aparecem em cada encontro. Marque a entrega quando ele mandar por outro meio (WhatsApp, impresso).</p>
+    ${pg.encontros.map(s => { const fs = mats.filter(m => m.encontro === Number(s.n)), ok = ent[s.n] || fs.length; return `<div class="mtn-ent ${ok ? 'ok' : ''}"><label class="mtn-tarefa" style="margin:0;"><input type="checkbox" ${ent[s.n] || fs.length ? 'checked' : ''} ${fs.length ? 'disabled title="Entregue pela Área do Aluno"' : ''} onchange="mtnEntrega(${tid}, ${id}, ${s.n}, this.checked)"> <span><b style="white-space:nowrap;">Encontro ${s.n}</b> · ${escapeHtml(s.tarefa ? [].concat(s.tarefa)[0] : (s.modulo || s.tema || ''))}</span></label>${fs.length ? fs.map(mtnArqHtml).join('') : '<small class="plano-meta" style="display:block;margin:4px 0 0 26px;">Nenhum arquivo enviado.</small>'}</div>`; }).join('')}
+    ${semEnc.length ? `<div class="mtn-ent"><b>Outros arquivos</b>${semEnc.map(mtnArqHtml).join('')}</div>` : ''}
+    <div class="acoes-form"><button class="btn-secundario" onclick="mtnModal(''); mtnLerMateriais([${mats.filter(m => m.novo).map(m => a.id).slice(0, 1).join(',')}]); mtnDesenhar()">Fechar</button></div>`);
+}
+async function mtnLerMateriais(ids) { for (const id of [...new Set(ids)]) await api('/api/admin/mentoria/alunos/' + id + '/lidas', { method: 'POST', body: '{}' }).catch(() => {}); if (ids.length) await mtnRecarregarTurmas(); }
+function mtnMateriais(tid, filtro) {
+  const t = MTN.turmas.find(x => x.id === tid); if (!t) return; const pg = mtnProgT(t), f = filtro === undefined ? 0 : filtro;
+  const encs = pg.encontros.filter(s => !f || Number(s.n) === f);
+  const total = t.alunos.reduce((s, a) => s + (a.materiais || []).length, 0);
+  const blocos = encs.map(s => { const n = Number(s.n), com = t.alunos.filter(a => (a.materiais || []).some(m => m.encontro === n)), sem = t.alunos.filter(a => !com.includes(a));
+    return `<div class="mtn-mat-enc"><h4>Encontro ${n} · ${escapeHtml(s.modulo || s.tema || '')} <small>${com.length}/${t.alunos.length} enviaram</small></h4>
+      ${com.map(a => `<div class="mtn-mat-al"><b>${escapeHtml(a.nome)}</b>${a.materiais.filter(m => m.encontro === n).map(mtnArqHtml).join('')}</div>`).join('') || '<p class="plano-meta">Ninguém enviou arquivo ainda.</p>'}
+      ${sem.length && com.length ? `<p class="plano-meta" style="margin:6px 0 0;">Faltam: ${sem.map(a => escapeHtml(a.nome.split(' ')[0])).join(', ')}</p>` : ''}</div>`; }).join('');
+  const outros = t.alunos.map(a => ({ a, fs: (a.materiais || []).filter(m => !m.encontro) })).filter(x => x.fs.length);
+  mtnModal(`<h3 style="margin-top:0;">📎 Materiais dos alunos · ${escapeHtml(t.nome)}</h3>
+    <div class="mtc-abas" style="flex-wrap:wrap;"><button class="${!f ? 'on' : ''}" onclick="mtnMateriais(${tid}, 0)">Todos (${total})</button>${pg.encontros.map(s => { const c = t.alunos.reduce((x, a) => x + (a.materiais || []).filter(m => m.encontro === Number(s.n)).length, 0); return `<button class="${f === Number(s.n) ? 'on' : ''}" onclick="mtnMateriais(${tid}, ${s.n})">E${s.n}${c ? ' · ' + c : ''}</button>`; }).join('')}</div>
+    ${total ? '' : '<p class="plano-meta">Nenhum aluno enviou arquivo ainda. O aluno envia pela Área do Aluno, no encontro, em "📤 Enviar material ao mentor". Quando chegar, aparece aqui e no botão do topo da turma.</p>'}
+    ${blocos}${!f && outros.length ? `<div class="mtn-mat-enc"><h4>Sem encontro definido</h4>${outros.map(x => `<div class="mtn-mat-al"><b>${escapeHtml(x.a.nome)}</b>${x.fs.map(mtnArqHtml).join('')}</div>`).join('')}</div>` : ''}
+    <div class="acoes-form"><button class="btn-secundario" onclick="mtnModal(''); mtnLerMateriais([${t.alunos.filter(a => (a.materiais || []).some(m => m.novo)).map(a => a.id).join(',')}])">Fechar</button></div>`);
 }
 async function mtnEntrega(tid, id, n, on) { const a = (MTN.turmas.find(t => t.id === tid) || { alunos: [] }).alunos.find(x => x.id === id); const pr = Object.assign({}, a.progresso || {}); pr.entregas = Object.assign({}, pr.entregas || {}); if (on) pr.entregas[n] = true; else delete pr.entregas[n]; a.progresso = pr; await api('/api/admin/mentoria/alunos/' + id, { method: 'PUT', body: JSON.stringify({ progresso: pr }) }).catch(e => mostrarToast(e.message, true)); }
 async function mtnExcluirAluno(id) { if (!confirm('Tirar este aluno da turma?')) return; await api('/api/admin/mentoria/alunos/' + id, { method: 'DELETE' }).catch(() => {}); await mtnRecarregarTurmas(); }

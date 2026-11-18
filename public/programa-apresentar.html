@@ -114,7 +114,8 @@ const BLOCOS_PADRAO = [['Abertura', 5], ['Conceito', 15], ['Demonstração', 5],
   const igE = String(m.instagramEmpresa || 'impulsionarv4').replace(/^@/, ''), igL = String(m.instagram || 'lazaroneto.oficial').replace(/^@/, ''), emp = m.empresa || 'Impulsionar V4', turma = Q.get('t') || '';
   const nomeEnc = prep ? 'Preparação' : `Encontro ${n}`;
   const logo = `<div class="logo"><div class="v4"><b>V4</b><i>↗</i></div><span>IMPULSIONAR<small>GESTÃO &amp; PESSOAS</small></span></div>`;
-  const selo = `<div class="selo">${prep ? 'Preparação · 1 hora' : `Encontro ${n} de ${p.encontros.length} · 1 hora`}</div>`;
+  const DUR = /^2/.test(String(p.duracaoEncontro || '')) ? '2 horas' : '1 hora', DURMIN = DUR === '2 horas' ? '120 minutos' : '60 minutos';
+  const selo = `<div class="selo">${prep ? 'Preparação · 1 hora' : `Encontro ${n} de ${p.encontros.length} · ${DUR}`}</div>`;
   // blocos do encontro com os minutos planejados (00–05, 05–20…)
   const B = (e.blocos || BLOCOS_PADRAO).map(b => ({ nome: b[0], min: Number(b[1]) || 5 })); let t0 = 0; B.forEach(b => { b.ini = t0; b.fim = t0 + b.min; t0 = b.fim; });
   const bi = nome => Math.max(0, B.findIndex(b => b.nome === nome));
@@ -125,20 +126,20 @@ const BLOCOS_PADRAO = [['Abertura', 5], ['Conceito', 15], ['Demonstração', 5],
   const S = [], add = (k, titulo, html, notas, claro) => S.push({ bloco: k, titulo, html: html + rod(k), notas, claro });
   const gapsDia = prep ? [] : (p.gaps || []).filter(g => String(e.gaps || '').includes('todos') || String(e.gaps || '').split(/\D+/).includes(String(g.n)) || Number(g.principal) === n);
   // ===== 1. Capa
-  add(0, 'Capa', `<div class="k">${esc(p.nome)}${turma ? ' · ' + esc(turma) : ''}</div><div style="font-size:1.6em;font-weight:800;color:#cbd5e1;margin-bottom:.4em">${nomeEnc} · 1 hora</div><h1>${esc(e.modulo)}</h1><div class="sub">${esc(e.tema)}</div>`,
-    `DIGA: "Bom dia, pessoal. Hoje são 60 minutos e todo mundo vai apresentar." • FAÇA: confira se todos estão com o celular para gravar. Comece no horário.`);
+  add(0, 'Capa', `<div class="k">${esc(p.nome)}${turma ? ' · ' + esc(turma) : ''}</div><div style="font-size:1.6em;font-weight:800;color:#cbd5e1;margin-bottom:.4em">${nomeEnc} · ${DUR}</div><h1>${esc(e.modulo)}</h1><div class="sub">${esc(e.tema)}</div>`,
+    `DIGA: "Bom dia, pessoal. Hoje são ${DURMIN} e todo mundo vai apresentar." • FAÇA: confira se todos estão com o celular para gravar. Comece no horário.`);
   // ===== 2. Objetivo do dia (o que eles levam)
   add(0, 'Objetivo de hoje', `<div class="k">No fim desta hora, você vai</div><ul class="faca">${(e.objetivo || [e.tema]).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`,
     `DIGA: "No fim desta hora, cada um de vocês vai…" e leia os itens. • FAÇA: peça para alguém repetir o 1º item com as próprias palavras.`);
   // ===== 3. Agenda de 60 minutos
   const desc = { 'Abertura': n > 1 ? 'Retomada da tarefa de casa' : 'Combinados e boas-vindas', 'Conceito': 'Uma ideia por slide, com exemplo real', 'Demonstração': 'Eu faço ao vivo', 'Prática': 'Todos apresentam e recebem feedback', 'Fechamento': 'Tarefa, presença e próximo encontro', 'Apresentações': '4 minutos + 1 pergunta da banca', 'Boas-vindas': 'Quem somos e por que estamos aqui', 'O programa': 'Os encontros e a entrega final', 'Combinados': 'Como a turma funciona', 'Ponto de partida': 'Cada um diz a sua apresentação real e a sua nota', 'Próximos passos': 'O que trazer no Encontro 1' };
-  add(0, 'Agenda de hoje', `<div class="k">Agenda de hoje · 60 minutos</div><div class="agenda">${B.map(b => `<div><b>${mm(b.ini)}–${mm(b.fim)}</b><span>${esc(b.nome)}<small>${esc(desc[b.nome] || '')}</small></span><i>${b.min} min</i></div>`).join('')}</div>`,
+  add(0, 'Agenda de hoje', `<div class="k">Agenda de hoje · ${DURMIN}</div><div class="agenda">${B.map(b => `<div><b>${mm(b.ini)}–${mm(b.fim)}</b><span>${esc(b.nome)}<small>${esc(desc[b.nome] || '')}</small></span><i>${b.min} min</i></div>`).join('')}</div>`,
     `DIGA: "Esse é o nosso relógio de hoje." • A faixa embaixo de todo slide mostra em que bloco estamos. Se um bloco atrasar, corte do Conceito, nunca da Prática.`);
   if (prep) {
     // ===== PREPARAÇÃO (encontro de alinhamento, 1 h)
     add(bi('Boas-vindas'), 'Por que estamos aqui', `${chip(bi('Boas-vindas'))}<div class="grande">Quem apresenta bem <em style="font-style:normal;color:var(--ambar)">lidera melhor</em>.</div><div class="sub">O time decide em 30 segundos se vai prestar atenção em você. Este programa treina esses 30 segundos — e o resto.</div>`,
       'DIGA: conte em 1 minuto uma apresentação sua que deu errado e o que aprendeu. • PERGUNTE: "Quem aqui já ficou nervoso antes de apresentar?" (mãos levantadas quebram o gelo).');
-    add(bi('O programa'), 'A jornada', `${chip(bi('O programa'))}<h2>${p.encontros.length} encontros de 1 hora, <em>1 apresentação de verdade</em> no final</h2><div class="jorn" style="grid-template-columns:repeat(${p.encontros.length},1fr)">${p.encontros.map(x => `<div><b>ENCONTRO ${x.n}</b><span>${esc(x.modulo)}</span></div>`).join('')}</div>`,
+    add(bi('O programa'), 'A jornada', `${chip(bi('O programa'))}<h2>${p.encontros.length} encontros de ${DUR}, <em>1 apresentação de verdade</em> no final</h2><div class="jorn" style="grid-template-columns:repeat(${p.encontros.length},1fr)">${p.encontros.map(x => `<div><b>ENCONTRO ${x.n}</b><span>${esc(x.modulo)}</span></div>`).join('')}</div>`,
       `DIGA: "Cada encontro resolve uma dificuldade. No último: ${p.entrega || ''}"`);
     add(bi('O programa'), 'As 6 dificuldades', `${chip(bi('O programa'))}<h2>O que vamos <em>resolver</em></h2><div class="cards c6">${(p.gaps || []).map(g => `<div><i>${g.n}</i><b>${esc(g.nome)}</b></div>`).join('')}</div>`,
       'PERGUNTE: "Qual destas é a sua maior dificuldade hoje?" Peça 3 respostas em voz alta.');
