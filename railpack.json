@@ -1,6 +1,14 @@
 {
   "$schema": "https://schema.railpack.com",
   "deploy": {
-    "aptPackages": ["ffmpeg"]
+    "aptPackages": [
+      "ffmpeg",
+      "libreoffice-impress",
+      "libreoffice-writer",
+      "fonts-dejavu-core",
+      "fonts-liberation",
+      "fonts-crosextra-carlito",
+      "fonts-crosextra-caladea"
+    ]
   }
 }

@@ -1,4 +1,5 @@
-# Instala o ffmpeg no servidor (Railway): deixa os vídeos longos "navegáveis",
-# transcreve aulas de até 2 h em pedaços e converte vídeos para MP4.
+# Instala no servidor (Railway):
+# - ffmpeg: deixa os vídeos longos "navegáveis", transcreve aulas e converte vídeos para MP4
+# - LibreOffice + fontes: transforma o PowerPoint/Word dos alunos em páginas, para o passador do celular passar slide por slide
 [phases.setup]
-aptPkgs = ["...", "ffmpeg"]
+aptPkgs = ["...", "ffmpeg", "libreoffice-impress", "libreoffice-writer", "fonts-dejavu-core", "fonts-liberation", "fonts-crosextra-carlito", "fonts-crosextra-caladea"]

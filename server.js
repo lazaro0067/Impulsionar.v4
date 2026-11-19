@@ -13925,6 +13925,11 @@ function materialPdfMt(url) {
     })().catch(() => null).finally(() => CONVERSOES_MT.delete(nome));
     CONVERSOES_MT.set(nome, pr); return pr;
 }
+// Depois que o servidor sobe, já converte em páginas os PowerPoint/Word que os alunos mandaram (um por vez).
+setTimeout(async () => {
+    const ls = await dbAll(`SELECT DISTINCT anexo_url FROM mentoria_mensagens WHERE de = 'aluno' AND anexo_url IS NOT NULL ORDER BY id DESC LIMIT 300`).catch(() => []);
+    for (const l of ls) { if (SOFFICE_MT === false) break; if (/\.(pptx?|docx?|odp|key)$/i.test(l.anexo_url || '')) await materialPdfMt(l.anexo_url).catch(() => null); }
+}, 90000);
 app.get('/api/admin/mentoria/material-pdf', requireRole('admin'), async (req, res) => {
     const pdf = await materialPdfMt(String(req.query.url || ''));
     res.json({ pdf, conversor: SOFFICE_MT !== false });

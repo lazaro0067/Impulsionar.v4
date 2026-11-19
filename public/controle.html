@@ -207,7 +207,7 @@
     $('aba-mat').classList.toggle('on2', !!m); $('prx-tx').textContent = aberto ? (m.pags ? 'Página' : 'Próximo') : 'Próximo';
     if (aberto) {
       $('mat-al').textContent = m.aluno || 'Material'; $('mat-nm').textContent = m.nome + (m.n > 1 ? ` · material ${m.i + 1} de ${m.n}` : '');
-      $('mat-pg').textContent = m.pags ? `Página ${m.pag} de ${m.pags}` + (m.pag === m.pags && m.i < m.n - 1 ? ' · o próximo ▶ abre o aluno seguinte' : '') : m.modo === 'office' ? 'Visualizador do Office: as páginas se passam no computador. Aqui você troca de aluno.' : m.modo === 'carregando' ? '⏳ abrindo…' : '';
+      $('mat-pg').textContent = m.pags ? `Página ${m.pag} de ${m.pags}` + (m.pag === m.pags && m.i < m.n - 1 ? ' · o próximo ▶ abre o aluno seguinte' : '') : m.modo === 'office' ? 'Este arquivo não foi convertido em páginas: passe as páginas no notebook. Aqui você troca de aluno.' : m.modo === 'carregando' ? '⏳ abrindo…' : '';
       const mi = $('mat-mini'); if (m.mini) { mi.style.backgroundImage = `url("${m.mini}")`; mi.textContent = ''; } else { mi.style.backgroundImage = ''; mi.textContent = m.modo === 'video' ? '🎬' : '📄'; }
     }
     if (lista && !aberto) $('matl').innerHTML = lista.length ? '<div class="rot">TOQUE PARA ABRIR NA TELA</div>' + lista.map((x, k) => `<button onclick="enviar('mat-abrir', ${k})">${esc(x.aluno)}<small>${esc(x.nome)}</small></button>`).join('') + `<button onclick="enviar('mat-fechar')" style="text-align:center">✕ Fechar lista</button>` : '<div class="rot">Nenhum material enviado ainda.</div>';

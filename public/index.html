@@ -15390,9 +15390,10 @@ function mtnVerArq(bt, pag) {
     let pdfUrl = ext === 'pdf' ? url : null;
     if (!pdfUrl) {
       corpo.innerHTML = '<div class="mtv-aviso">⏳ Preparando o material para o passador…<br><small>Na primeira vez pode levar alguns segundos.</small></div>';
-      try { pdfUrl = (await Promise.race([api('/api/admin/mentoria/material-pdf?url=' + encodeURIComponent(url)), new Promise(r => setTimeout(() => r({}), 40000))])).pdf || null; } catch (e) { pdfUrl = null; }
+      let r = {}; try { r = await Promise.race([api('/api/admin/mentoria/material-pdf?url=' + encodeURIComponent(url)), new Promise(ok => setTimeout(() => ok({ demorou: true }), 45000))]); } catch (e) { r = {}; }
+      pdfUrl = r.pdf || null; MTVIS.semConversor = r.conversor === false;
       if (MTVIS.seq !== seq) return;
-      if (!pdfUrl) return mtVisOffice(true);
+      if (!pdfUrl) return mtVisOffice(true, r);
     }
     try {
       const lib = await mtPdfJs(), doc = await lib.getDocument({ url: pdfUrl }).promise;
@@ -15405,13 +15406,15 @@ function mtnVerArq(bt, pag) {
     } catch (e) { if (MTVIS.seq === seq) { if (MTV_OFFICE.test(ext)) mtVisOffice(true); else { MTVIS.modo = 'outro'; corpo.innerHTML = `<iframe src="${escapeHtml(url)}"></iframe>`; mtVisEstado(); } } }
   })();
 }
-function mtVisOffice(semConversao) {
+function mtVisOffice(semConversao, info) {
   const corpo = document.getElementById('mtv-corpo'), rod = document.getElementById('mtv-rodape'); if (!corpo) return;
   const local = /^(localhost|127\.|192\.168\.)/.test(location.hostname), abs = /^https?:/i.test(MTVIS.url) ? MTVIS.url : location.origin + MTVIS.url;
   MTVIS.modo = 'office'; MTVIS.pdf = null; MTVIS.pags = 0;
   corpo.innerHTML = local ? '<div class="mtv-aviso">O visualizador do Office só funciona no site publicado (impulsionarv4.com.br). Use ⬇️ para baixar.</div>' : `<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(abs)}" allowfullscreen></iframe>`;
   const b = document.getElementById('mtv-office'); if (b) b.style.display = 'none';
-  rod.textContent = semConversao ? 'Aberto no visualizador do Office (formato original). Aqui o passador troca de aluno; as páginas deste arquivo você passa no computador.' : 'Visualizador do Office: formato original. O passador troca de aluno; as páginas você passa no computador.';
+  rod.textContent = !semConversao ? 'Visualizador do Office: formato original. As páginas passam no próprio visualizador; o passador troca de aluno (⏭).'
+    : info && info.conversor === false ? '⚠️ O servidor ainda não tem o conversor de PowerPoint instalado, por isso o passador não passa as páginas deste arquivo. Faça o push da atualização e aguarde o Railway terminar.'
+    : info && info.demorou ? '⏳ A conversão está demorando. Feche e abra de novo em 1 minuto para passar as páginas pelo passador.' : 'Não consegui converter este arquivo em páginas. Aberto no visualizador do Office.';
   mtVisEstado();
 }
 async function mtVisDesenharPag() {
@@ -15428,6 +15431,7 @@ async function mtVisDesenharPag() {
 function mtVisNav(d) {
   if (MTVIS.modo === 'pdf' && MTVIS.pags) { const n = MTVIS.pag + d; if (n >= 1 && n <= MTVIS.pags) { MTVIS.pag = n; return mtVisDesenharPag(); } }
   if (MTVIS.modo === 'video' && d) { const vd = document.getElementById('mtv-video'); if (vd && d > 0 && vd.paused) { vd.play().catch(() => {}); return mtVisEstado(); } }
+  if (MTVIS.modo === 'office' || MTVIS.modo === 'carregando') { mostrarToast(MTVIS.modo === 'carregando' ? '⏳ Ainda preparando as páginas deste material…' : 'Este arquivo está no visualizador do Office: as páginas passam no próprio visualizador. Para trocar de aluno use ⏭.'); return mtVisEstado(); }
   mtVisAluno(d, true);
 }
 function mtVisAluno(d, continuar) { const alvo = MTVIS.lista[MTVIS.i + d]; if (alvo) mtnVerArq(alvo, continuar && d < 0 ? 'fim' : undefined); else mostrarToast(d > 0 ? 'Este é o último material.' : 'Este é o primeiro material.'); }

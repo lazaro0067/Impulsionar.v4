@@ -3,9 +3,10 @@
 FROM node:20-bookworm-slim
 
 # ffmpeg: vídeos longos, transcrição de aulas e conversão para MP4
+# LibreOffice + fontes: PowerPoint/Word dos alunos viram páginas para o passador
 # python3/make/g++: compilam sqlite3 e bcrypt
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ffmpeg python3 make g++ ca-certificates curl sqlite3 \
+ && apt-get install -y --no-install-recommends ffmpeg libreoffice-impress libreoffice-writer fonts-dejavu-core fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea python3 make g++ ca-certificates curl sqlite3 \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
