@@ -2208,7 +2208,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 18/11 (5)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 18/11 (6)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -14856,6 +14856,14 @@ function dvFoto(c, img, x, y, w, h, fade) {
   (fade || []).forEach(lado => { const g = lado === 'esq' ? c.createLinearGradient(x, 0, x + w * 0.55, 0) : lado === 'dir' ? c.createLinearGradient(x + w, 0, x + w * 0.45, 0) : lado === 'baixo' ? c.createLinearGradient(0, y + h, 0, y + h * 0.55) : c.createLinearGradient(0, y, 0, y + h * 0.35);
     g.addColorStop(0, lado === 'baixo' ? DV.navy2 : DV.navy); g.addColorStop(1, 'rgba(11,19,41,0)'); c.fillStyle = g; c.fillRect(x, y, w, h); });
 }
+function dvFotoInteira(c, img, x, yBase, w, fades) {
+  // a foto inteira, sem cortar, com as bordas sumindo em transparência (o fundo aparece por trás, sem "caixa")
+  if (!img) return 0; const h = Math.round(img.height * w / img.width), y = yBase - h, oc = document.createElement('canvas'); oc.width = w; oc.height = h; const o = oc.getContext('2d');
+  o.drawImage(img, 0, 0, w, h); o.globalCompositeOperation = 'destination-in';
+  (fades || ['esq', 'topo', 'baixo']).forEach(l => { let g; if (l === 'esq') g = o.createLinearGradient(0, 0, w * 0.5, 0); else if (l === 'dir') g = o.createLinearGradient(w, 0, w * 0.5, 0); else if (l === 'topo') g = o.createLinearGradient(0, 0, 0, h * 0.4); else g = o.createLinearGradient(0, h, 0, h * 0.8);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,1)'); o.fillStyle = g; o.fillRect(0, 0, w, h); });
+  c.drawImage(oc, x, y); return y;
+}
 function dvCirculo(c, img, cx, cy, r) { if (!img) return; c.save(); c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.clip(); const k = Math.max(2 * r / img.width, 2 * r / img.height); c.drawImage(img, cx - img.width * k / 2, cy - r * 0.92, img.width * k, img.height * k); c.restore(); c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.strokeStyle = DV.amb; c.lineWidth = 8; c.stroke(); }
 function dvChips(c, itens, x, y, tam = 30, maxX = 1000) { dvFonte(c, 800, tam); let cx = x, cy = y; itens.filter(Boolean).forEach(t => { const w = c.measureText(t).width + tam * 1.3; if (cx + w > maxX) { cx = x; cy += tam * 2.1; } dvRet(c, cx, cy, w, tam * 1.75, tam * 0.9, 'rgba(255,255,255,.12)'); c.fillStyle = DV.br; c.textBaseline = 'middle'; c.textAlign = 'left'; c.fillText(t, cx + tam * 0.65, cy + tam * 0.9); cx += w + tam * 0.45; }); return cy + tam * 1.75; }
 function dvCta(c, x, y, w, txt, tam = 36) { dvRet(c, x, y, w, tam * 2.3, tam * 1.15, DV.amb); dvFonte(c, 900, tam); c.fillStyle = DV.navy; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, x + w / 2, y + tam * 1.18); return y + tam * 2.3; }
@@ -14874,20 +14882,20 @@ const dvDataLonga = s => { try { return new Date(s + 'T12:00:00').toLocaleDateSt
 const dvSemana = s => { try { return new Date(s + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }); } catch (e) { return ''; } };
 // ---------- as peças ----------
 function mtDivPecas(D) {
-  const L = D.curto, cta = '👉 Link na bio' + (D.ig ? ` (@${D.ig})` : '') + ` ou comente "QUERO" que eu te mando.`;
-  const precoTx = D.preco ? `\n💰 ${dvMoeda(D.preco)} ou até ${D.parcelas}x no cartão.` : '';
+  const L = D.curto, cta = '👉 Acesse o link na bio' + (D.ig ? ` (@${D.ig})` : '') + ' para ver tudo e garantir a sua vaga. Ou comente "QUERO" que eu te mando o link.';
+  const precoTx = '';
   const turmaTx = D.turma && D.turma.inicio ? `\n🗓️ Próxima turma: ${dvDataLonga(D.turma.inicio)}${D.turma.horario ? ', ' + D.turma.horario : ''}. ${D.turma.restantes ? `Restam ${D.turma.restantes} vagas.` : 'Vagas esgotadas: entre na lista de espera.'}` : '';
   return [
     { id: 'oferta', nome: 'Post · Oferta', fmt: [1080, 1350], onde: 'Feed do Instagram e LinkedIn',
       legenda: `${D.promessa}\n\n${D.nomeCompleto}: ${D.encontros} encontros de ${D.duracao}, ${D.formato.toLowerCase()}, com prática em todo encontro.${precoTx}${turmaTx}\n\n${cta}\n\n${D.hashtags}`,
       desenhar(c, W, H, foto) {
-        dvFundo(c, W, H); dvFoto(c, foto, 430, 300, 650, 1050, ['esq', 'baixo', 'topo']);
+        dvFundo(c, W, H); dvFotoInteira(c, foto, 360, 1135, 720, ['esq', 'topo', 'baixo']);
         dvTexto(c, ('Mentoria · ' + D.nome2).toUpperCase(), 70, 80, 940, 800, 28, DV.amb2);
         let y = dvTexto(c, D.nome, 70, 125, 940, 900, 92, DV.br, { max: 2, lh: 1.02 });
-        y = dvTexto(c, D.promessa, 70, y + 30, 560, 900, 60, DV.amb, { max: 5, lh: 1.08 });
-        y = dvChips(c, [`${D.encontros} encontros`, `${D.duracao} cada`, D.formato], 70, Math.max(y + 40, 820), 28, 700);
-        y = dvPreco(c, D, 70, y + 36, 72);
-        dvCta(c, 70, 1150, 940, D.turma ? 'Inscrições abertas · link na bio' : 'Garanta sua vaga · link na bio', 34); dvMarca(c, W, H, D);
+        y = dvTexto(c, D.promessa, 70, y + 30, 520, 900, 60, DV.amb, { max: 6, lh: 1.08 });
+        y = dvChips(c, [`${D.encontros} encontros`, `${D.duracao} cada`, D.formato], 70, Math.max(y + 50, 760), 28, 470);
+        if (D.turma) { dvRet(c, 70, y + 30, 330, 60, 30, '#16a34a'); dvTexto(c, 'INSCRIÇÕES ABERTAS', 235, y + 46, 320, 900, 24, DV.br, { align: 'center' }); }
+        dvCta(c, 70, 1150, 940, 'Acesse o link na bio', 38); dvMarca(c, W, H, D);
       } },
     { id: 'dor', nome: 'Post · Dor (gancho)', fmt: [1080, 1350], onde: 'Feed: para atrair quem se identifica',
       legenda: `${D.dor}\n\n${D.dorSub}\n\nNa ${D.nome} eu te mostro o caminho, com prática de verdade e o seu time como laboratório.\n\n${cta}\n\n${D.hashtags}`,
@@ -14896,7 +14904,7 @@ function mtDivPecas(D) {
         let y = dvTexto(c, D.dor, 70, 300, 940, 900, 104, DV.br, { max: 4, lh: 1.04 });
         c.fillStyle = DV.amb; c.fillRect(70, y + 40, 160, 10);
         y = dvTexto(c, D.dorSub, 70, y + 90, 900, 500, 40, DV.cz, { max: 4, lh: 1.3 });
-        dvCirculo(c, foto, 160, 1110, 90); dvTexto(c, 'Comente "QUERO"', 290, 1050, 720, 900, 46, DV.amb2); dvTexto(c, 'que eu te mando o caminho.', 290, 1105, 720, 700, 34, DV.br);
+        dvCirculo(c, foto, 160, 1110, 90); dvTexto(c, 'Comente "QUERO"', 290, 1040, 720, 900, 46, DV.amb2); dvTexto(c, 'ou acesse o link na bio.', 290, 1100, 720, 700, 36, DV.br);
         dvMarca(c, W, H, D);
       } },
     { id: 'entregas', nome: 'Post · O que você leva', fmt: [1080, 1350], onde: 'Feed: mostra a entrega',
@@ -14907,7 +14915,7 @@ function mtDivPecas(D) {
         const n = D.itens.length || 1, h = Math.min(165, (1130 - y) / n - 14);
         D.itens.forEach((x, i) => { dvRet(c, 70, y, 940, h, 24, DV.card); dvRet(c, 95, y + h / 2 - 38, 76, 76, 20, DV.amb); dvFonte(c, 900, 40); c.fillStyle = DV.navy; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(i + 1), 133, y + h / 2 + 2);
           const y2 = dvTexto(c, x[0], 200, y + 22, 780, 800, 36, DV.br, { max: 1 }); dvTexto(c, x[1], 200, y2 + 6, 780, 500, 26, DV.cz, { max: 2, lh: 1.2 }); y += h + 14; });
-        dvCta(c, 70, 1160, 940, 'Quero participar · link na bio', 32); dvMarca(c, W, H, D);
+        dvCta(c, 70, 1160, 940, 'Acesse o link na bio', 34); dvMarca(c, W, H, D);
       } },
     { id: 'autoridade', nome: 'Post · Minha história', fmt: [1080, 1350], onde: 'Feed: gera confiança (autoridade)',
       legenda: `Eu comecei carregando caixa em 2013.\n\n${D.historia.map(h => `▸ ${h.cargo}`).join('\n')}\n\nCada degrau me ensinou uma coisa sobre gente e resultado. É isso que eu ensino na ${D.nome}: o que funciona no chão da operação, sem teoria de palco.\n\n${cta}\n\n${D.hashtags}`,
@@ -14918,39 +14926,38 @@ function mtDivPecas(D) {
         const hs = D.historia.slice(0, 6), passo = Math.min(118, (1120 - y) / Math.max(1, hs.length));
         hs.forEach((h, i) => { c.fillStyle = 'rgba(245,158,11,.35)'; if (i < hs.length - 1) c.fillRect(103, y + 30, 6, passo); c.beginPath(); c.arc(106, y + 24, 16, 0, Math.PI * 2); c.fillStyle = i === hs.length - 1 ? DV.amb : DV.br; c.fill();
           dvTexto(c, h.fase, 150, y, 860, 800, 24, DV.amb2, { max: 1 }); dvTexto(c, h.cargo, 150, y + 32, 860, 800, 32, DV.br, { max: 1 }); y += passo; });
-        dvCta(c, 70, 1160, 940, 'Hoje eu ensino o que aprendi · link na bio', 30); dvMarca(c, W, H, D);
+        dvCta(c, 70, 1160, 940, 'Conheça a mentoria · link na bio', 32); dvMarca(c, W, H, D);
       } },
     { id: 'turma', nome: 'Post · Turma e vagas', fmt: [1080, 1350], onde: 'Feed e status do WhatsApp: urgência',
       legenda: (D.turma ? `🗓️ ${D.nome}: nova turma começa ${dvDataLonga(D.turma.inicio)}${D.turma.horario ? ', ' + D.turma.horario : ''}.\n${D.turma.restantes ? `Só ${D.turma.restantes} vagas (turma pequena para todo mundo praticar).` : 'Vagas esgotadas: entre na lista de espera da próxima turma.'}` : `🗓️ ${D.nome}: a próxima turma vai abrir em breve. Entre na lista e seja avisado primeiro.`) + `${precoTx}\n\n${cta}\n\n${D.hashtags}`,
       desenhar(c, W, H, foto) {
-        dvFundo(c, W, H); dvFoto(c, foto, 600, 520, 480, 830, ['esq', 'baixo', 'topo']);
+        dvFundo(c, W, H); dvFotoInteira(c, foto, 470, 1135, 610, ['esq', 'topo', 'baixo']);
         dvRet(c, 70, 90, 470, 70, 35, D.turma ? '#16a34a' : 'rgba(255,255,255,.14)'); dvTexto(c, D.turma ? 'INSCRIÇÕES ABERTAS' : 'PRÓXIMA TURMA', 305, 110, 440, 900, 28, DV.br, { align: 'center' });
         let y = dvTexto(c, D.nome, 70, 200, 940, 900, 78, DV.br, { max: 2, lh: 1.03 });
-        if (D.turma && D.turma.inicio) { y = dvTexto(c, 'Começa ' + dvSemana(D.turma.inicio) + ',', 70, y + 40, 600, 700, 40, DV.cz); y = dvTexto(c, dvDataLonga(D.turma.inicio), 70, y + 4, 620, 900, 96, DV.amb, { max: 2, lh: 1 }); if (D.turma.horario) y = dvTexto(c, 'às ' + D.turma.horario, 70, y + 6, 600, 800, 44, DV.br); }
+        if (D.turma && D.turma.inicio) { y = dvTexto(c, 'Começa ' + dvSemana(D.turma.inicio) + ',', 70, y + 40, 600, 700, 40, DV.cz); y = dvTexto(c, dvDataLonga(D.turma.inicio), 70, y + 4, 520, 900, 96, DV.amb, { max: 2, lh: 1 }); if (D.turma.horario) y = dvTexto(c, 'às ' + D.turma.horario, 70, y + 6, 600, 800, 44, DV.br); }
         else y = dvTexto(c, 'Em breve.\nEntre na lista e seja avisado primeiro.', 70, y + 40, 560, 900, 56, DV.amb, { max: 4 });
         if (D.turma) { y += 40; dvRet(c, 70, y, 470, 96, 22, 'rgba(245,158,11,.16)', [DV.amb, 3]); dvTexto(c, D.turma.restantes ? `Restam ${D.turma.restantes} vagas` : 'Vagas esgotadas', 305, y + 26, 440, 900, 40, DV.amb2, { align: 'center' }); y += 96; }
-        dvPreco(c, D, 70, y + 36, 64);
-        dvCta(c, 70, 1160, 940, 'Garanta a sua · link na bio', 34); dvMarca(c, W, H, D);
+        dvCta(c, 70, 1160, 940, 'Acesse o link na bio', 36); dvMarca(c, W, H, D);
       } },
     { id: 'story-oferta', nome: 'Story · Oferta', fmt: [1080, 1920], onde: 'Stories e status do WhatsApp (coloque a figurinha de link)',
-      legenda: `Story: cole a figurinha de LINK no espaço indicado com ${D.link}?o=instagram`,
+      legenda: `Como postar: 1) suba a imagem no story; 2) toque em figurinhas → LINK; 3) cole o link abaixo e coloque a figurinha no espaço marcado.\n\nLink do story: ${D.link}?o=story`, link: D.link + '?o=story',
       desenhar(c, W, H, foto) {
         dvFundo(c, W, H); dvFoto(c, foto, 0, 0, W, 1080, ['baixo']);
         dvTexto(c, ('Mentoria · ' + D.nome2).toUpperCase(), 80, 980, 920, 800, 30, DV.amb2);
         let y = dvTexto(c, D.nome, 80, 1025, 920, 900, 96, DV.br, { max: 2, lh: 1.02 });
         y = dvTexto(c, D.promessa, 80, y + 24, 920, 900, 54, DV.amb, { max: 3 });
         y = dvChips(c, [`${D.encontros} encontros`, `${D.duracao} cada`, D.formato], 80, y + 34, 30, 1000);
-        dvPreco(c, D, 80, y + 30, 64);
-        dvRet(c, 140, 1640, 800, 130, 30, 'rgba(255,255,255,.06)', ['rgba(255,255,255,.55)', 4, [16, 12]]); dvTexto(c, '↑ cole aqui a figurinha de LINK', 540, 1688, 760, 700, 32, DV.cz, { align: 'center' });
-        dvTexto(c, 'Toque no link e garanta a sua vaga', 540, 1800, 960, 900, 40, DV.br, { align: 'center' });
+        dvTexto(c, 'Toque no link e garanta a sua vaga ↓', 540, 1545, 960, 900, 44, DV.br, { align: 'center' });
+        dvRet(c, 140, 1620, 800, 130, 30, 'rgba(255,255,255,.06)', ['rgba(255,255,255,.55)', 4, [16, 12]]); dvTexto(c, 'cole aqui a figurinha de LINK', 540, 1668, 760, 700, 32, DV.cz, { align: 'center' });
+        dvTexto(c, D.curto, 540, 1790, 980, 800, 34, DV.amb2, { align: 'center', max: 1 });
       } },
     { id: 'story-enquete', nome: 'Story · Enquete', fmt: [1080, 1920], onde: 'Stories: gera conversa (coloque a figurinha de enquete)',
-      legenda: `Story de enquete: coloque a figurinha "Enquete" com SIM / NÃO. Quem responder, chame no direct e mande ${D.link}?o=instagram`,
+      legenda: `Como postar: suba a imagem no story e coloque a figurinha ENQUETE (SIM / NÃO) no espaço marcado. Se quiser, adicione também a figurinha de LINK.\nQuem votar, chame no direct e mande o link.\n\nLink do story: ${D.link}?o=story`, link: D.link + '?o=story',
       desenhar(c, W, H, foto) {
         dvFundo(c, W, H, [0.5, 0.15]); dvTexto(c, 'ENQUETE RÁPIDA', 540, 260, 900, 800, 34, DV.amb2, { align: 'center' });
         const y = dvTexto(c, D.enquete, 540, 340, 920, 900, 104, DV.br, { max: 5, align: 'center', lh: 1.05 });
         dvRet(c, 140, Math.max(y + 80, 1000), 800, 300, 40, 'rgba(255,255,255,.06)', ['rgba(255,255,255,.55)', 4, [16, 12]]); dvTexto(c, 'cole aqui a figurinha\nde ENQUETE', 540, Math.max(y + 80, 1000) + 100, 760, 700, 40, DV.cz, { align: 'center' });
-        dvCirculo(c, foto, 540, 1600, 110); dvTexto(c, D.mentor, 540, 1735, 900, 800, 36, DV.br, { align: 'center' });
+        dvCirculo(c, foto, 540, 1520, 100); dvTexto(c, D.mentor, 540, 1640, 900, 800, 36, DV.br, { align: 'center' }); dvTexto(c, 'Saiba mais: ' + D.curto, 540, 1720, 980, 800, 32, DV.amb2, { align: 'center', max: 1 });
       } },
     { id: 'banner', nome: 'Banner · LinkedIn e WhatsApp', fmt: [1200, 628], onde: 'LinkedIn, grupos de WhatsApp e e-mail',
       legenda: `${D.promessa}\n\n${D.nomeCompleto}: ${D.encontros} encontros de ${D.duracao}, ${D.formato.toLowerCase()}.${precoTx}${turmaTx}\n\nSaiba mais e garanta sua vaga: ${D.link}?o=linkedin\n\n${D.hashtags}`,
@@ -14959,7 +14966,7 @@ function mtDivPecas(D) {
         dvTexto(c, ('Mentoria · ' + D.nome2).toUpperCase(), 500, 60, 650, 800, 22, DV.amb2);
         let y = dvTexto(c, D.nome, 500, 95, 650, 900, 60, DV.br, { max: 2, lh: 1.02 });
         y = dvTexto(c, D.promessa, 500, y + 16, 650, 900, 38, DV.amb, { max: 3 });
-        dvChips(c, [`${D.encontros} encontros`, `${D.duracao} cada`, D.preco ? dvMoeda(D.preco) : ''], 500, y + 24, 22, 1150);
+        dvChips(c, [`${D.encontros} encontros`, `${D.duracao} cada`, D.formato], 500, y + 24, 22, 1150);
         dvTexto(c, D.curto, 500, H - 70, 650, 800, 26, DV.br); if (D.ig) dvTexto(c, '@' + D.ig, W - 40, H - 70, 400, 800, 24, DV.amb2, { align: 'right' });
       } },
     { id: 'carrossel', nome: 'Carrossel · ' + (D.prog === 'do-chao' ? 'Método M.O.V.E.R.' : '5 erros'), fmt: [1080, 1350], onde: 'Feed: o que mais salva e compartilha', paginas: D.carrossel.itens.length + 2,
@@ -14970,7 +14977,7 @@ function mtDivPecas(D) {
         if (k === 0) { dvTexto(c, D.nome.toUpperCase(), 70, 90, 940, 800, 28, DV.amb2); const y = dvTexto(c, D.carrossel.capa, 70, 300, 940, 900, 108, DV.br, { max: 5, lh: 1.03 }); c.fillStyle = DV.amb; c.fillRect(70, y + 40, 200, 12); dvTexto(c, 'Arrasta para o lado →', 70, 1120, 940, 800, 40, DV.amb2); }
         else if (k <= n) { const [t, x] = its[k - 1]; dvTexto(c, `${k}/${n}`, 70, 90, 300, 800, 30, DV.cz2); dvFonte(c, 900, 260); c.fillStyle = 'rgba(245,158,11,.9)'; c.textAlign = 'left'; c.textBaseline = 'top'; c.fillText(D.prog === 'do-chao' ? t.charAt(0) : String(k), 60, 170);
           const y = dvTexto(c, D.prog === 'do-chao' ? t.slice(4) : t, 70, 500, 940, 900, 84, DV.br, { max: 3, lh: 1.04 }); dvTexto(c, x, 70, y + 40, 920, 500, 44, DV.cz, { max: 7, lh: 1.32 }); if (k < n) dvTexto(c, '→', 1010, 1150, 100, 900, 60, DV.amb2, { align: 'right' }); }
-        else { dvCirculo(c, foto, 540, 330, 170); const y = dvTexto(c, 'Quer aprender isso na prática, com o seu time?', 540, 560, 900, 900, 66, DV.br, { max: 3, align: 'center', lh: 1.05 }); dvTexto(c, D.nomeCompleto, 540, y + 30, 900, 800, 40, DV.amb2, { max: 2, align: 'center' }); dvCta(c, 140, 1010, 800, 'Comente "QUERO"', 40); dvTexto(c, 'ou link na bio · ' + D.curto, 540, 1135, 940, 700, 30, DV.cz, { align: 'center' }); }
+        else { dvCirculo(c, foto, 540, 330, 170); const y = dvTexto(c, 'Quer aprender isso na prática, com o seu time?', 540, 560, 900, 900, 66, DV.br, { max: 3, align: 'center', lh: 1.05 }); dvTexto(c, D.nomeCompleto, 540, y + 30, 900, 800, 40, DV.amb2, { max: 2, align: 'center' }); dvCta(c, 140, 1010, 800, 'Acesse o link na bio', 40); dvTexto(c, 'ou comente "QUERO" que eu te mando', 540, 1135, 940, 700, 32, DV.cz, { align: 'center' }); }
         dvMarca(c, W, H, D);
       } }
   ];
@@ -14983,17 +14990,17 @@ function mtnDivulgacao(prog) {
   setTimeout(mtDivDesenharTudo, 30);
   return `<div class="mtd">
     <div class="mtd-topo"><div class="mtd-foto"><img src="${escapeHtml(foto)}" alt=""></div><div style="flex:1;min-width:240px;"><h2 class="mtn-h2" style="margin:0 0 4px;">📣 Kit de divulgação · ${escapeHtml(D.nome)}</h2>
-      <p class="plano-meta" style="margin:0 0 8px;">Artes prontas para Instagram, stories, WhatsApp e LinkedIn, com legenda. Preço, turma, vagas e link saem do sistema: mudou lá, a arte já sai atualizada.</p>
+      <p class="plano-meta" style="margin:0 0 8px;">Artes prontas para Instagram, stories, WhatsApp e LinkedIn, com legenda. As artes não mostram valor: levam a pessoa ao link da bio, onde ela vê tudo e se inscreve. Nos stories, use o botão 🔗 Copiar link do story.</p>
       <div class="mtn-link-bt"><button class="btn-secundario btn-sm" onclick="document.getElementById('mtd-foto-arq').click()">📷 Trocar a foto das artes</button>${(MTN.d.divulgacao || {}).foto ? `<button class="btn-secundario btn-sm" onclick="mtDivFoto('')">Usar a foto do perfil</button>` : ''}<button class="btn-primario btn-sm" style="width:auto;" onclick="mtDivBaixarTudo()">⬇️ Baixar todas as artes</button><a class="btn-secundario btn-sm" href="${escapeHtml(D.link)}" target="_blank" rel="noopener">👁️ Página de venda</a></div>
       <input type="file" id="mtd-foto-arq" accept="image/*" style="display:none" onchange="mtDivEnviarFoto(this)"><small class="plano-meta">Dica: foto de boa qualidade, em pé, fundo da operação. Não use logo nem marca de empresa nas artes.</small></div></div>
     <div class="mtd-grade">${P.map((p, i) => `<div class="mtd-card">
       <div class="mtd-prev ${p.fmt[1] > p.fmt[0] * 1.5 ? 'story' : p.fmt[0] > p.fmt[1] ? 'banner' : ''}">${p.paginas ? `<div class="mtd-carr">${Array.from({ length: p.paginas }, (_, k) => `<canvas id="mtd-c-${i}-${k}" width="${p.fmt[0]}" height="${p.fmt[1]}"></canvas>`).join('')}</div>` : `<canvas id="mtd-c-${i}" width="${p.fmt[0]}" height="${p.fmt[1]}"></canvas>`}</div>
       <div class="mtd-info"><b>${escapeHtml(p.nome)}</b><small>${escapeHtml(p.onde)} · ${p.fmt[0]}×${p.fmt[1]}${p.paginas ? ` · ${p.paginas} imagens` : ''}</small>
-        <div class="mtn-link-bt"><button class="btn-primario btn-sm" style="width:auto;" onclick="mtDivBaixar(${i})">⬇️ Baixar${p.paginas ? ' as ' + p.paginas : ''}</button><button class="btn-secundario btn-sm" onclick="mtnCopiar(MTDIV.pecas[${i}].legenda)">📋 Copiar legenda</button><a class="btn-secundario btn-sm" href="https://wa.me/?text=${encodeURIComponent(p.legenda.replace(/\n\n#.*$/s, '') + (p.legenda.includes(D.link) ? '' : '\n' + D.link + '?o=whatsapp'))}" target="_blank" rel="noopener">WhatsApp</a></div>
+        <div class="mtn-link-bt"><button class="btn-primario btn-sm" style="width:auto;" onclick="mtDivBaixar(${i})">⬇️ Baixar${p.paginas ? ' as ' + p.paginas : ''}</button>${p.link ? `<button class="btn-primario btn-sm" style="width:auto;background:#16a34a;" onclick="mtnCopiar(MTDIV.pecas[${i}].link)">🔗 Copiar link do story</button>` : ''}<button class="btn-secundario btn-sm" onclick="mtnCopiar(MTDIV.pecas[${i}].legenda)">📋 ${p.link ? 'Como postar' : 'Copiar legenda'}</button><a class="btn-secundario btn-sm" href="https://wa.me/?text=${encodeURIComponent(p.legenda.replace(/\n\n#.*$/s, '') + (p.legenda.includes(D.link) ? '' : '\n' + D.link + '?o=whatsapp'))}" target="_blank" rel="noopener">WhatsApp</a></div>
         <details><summary class="plano-meta">Ver legenda</summary><pre class="mtd-leg">${escapeHtml(p.legenda)}</pre></details></div></div>`).join('')}</div>
     <h2 class="mtn-h2">🗓️ Semana de divulgação (repita por 3 a 4 semanas antes da turma)</h2>
     <div class="mtd-plano">${plano.map(([d, o, p]) => `<div><b>${d}</b><span>${escapeHtml(o)}</span><small>${escapeHtml(p)}</small></div>`).join('')}</div>
-    <p class="plano-meta">Regras que vendem: responda todo comentário "QUERO" no direct com o link · poste o story de oferta em 3 dias da semana · nos últimos 7 dias antes da turma, poste "Turma e vagas" todo dia · use os links com <code>?o=instagram</code>, <code>?o=whatsapp</code> e <code>?o=linkedin</code> para ver em 📊 Acessos de onde veio cada inscrição.</p>
+    <p class="plano-meta">Coloque na bio do Instagram o link <code>${escapeHtml(mtnBase() + '/mentorias?o=instagram')}</code> (todas as mentorias numa página). Regras que vendem: responda todo comentário "QUERO" no direct com o link · poste o story de oferta em 3 dias da semana · nos últimos 7 dias antes da turma, poste "Turma e vagas" todo dia · use os links com <code>?o=instagram</code>, <code>?o=whatsapp</code> e <code>?o=linkedin</code> para ver em 📊 Acessos de onde veio cada inscrição.</p>
   </div>`;
 }
 async function mtDivDesenharTudo() {
