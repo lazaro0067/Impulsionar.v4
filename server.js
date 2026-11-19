@@ -14327,7 +14327,14 @@ async function agTudo(uid, de, ate, cfg, forcarOutlook) {
 db.run(`CREATE TABLE IF NOT EXISTS tarefas (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, titulo TEXT NOT NULL, descricao TEXT, prazo TEXT, prazo_hora TEXT,
     prioridade TEXT DEFAULT 'media', etiqueta TEXT, com_quem TEXT, com_quem_whats TEXT, status TEXT DEFAULT 'aberta', proximo_follow TEXT, proximo_follow_hora TEXT, follows TEXT DEFAULT '[]',
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP, atualizado_em DATETIME, concluida_em DATETIME)`);
+db.run(`ALTER TABLE tarefas ADD COLUMN projeto_id INTEGER`, () => {});
+db.run(`ALTER TABLE tarefas ADD COLUMN anexos TEXT DEFAULT '[]'`, () => {});
+// 📁 Projetos: um nome, o que precisa ser feito e as ações (que são tarefas com projeto_id: entram na agenda, follow-ups e anexos)
+db.run(`CREATE TABLE IF NOT EXISTS projetos (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, nome TEXT NOT NULL, descricao TEXT, objetivo TEXT, responsavel TEXT,
+    prazo TEXT, cor TEXT DEFAULT '#2563eb', status TEXT DEFAULT 'ativo', anexos TEXT DEFAULT '[]', criado_em DATETIME DEFAULT CURRENT_TIMESTAMP, atualizado_em DATETIME, concluido_em DATETIME)`);
 const TF_STATUS = ['aberta', 'andamento', 'aguardando', 'concluida'], TF_PRIOR = ['alta', 'media', 'baixa'];
+// anexos: só arquivos que o próprio sistema guardou em /uploads
+function tfAnexos(v) { return (Array.isArray(v) ? v : []).filter(a => a && /^\/uploads\/[\w.\-]+$/.test(String(a.url || ''))).slice(0, 30).map(a => ({ url: a.url, nome: String(a.nome || 'arquivo').slice(0, 160), tam: Number(a.tam) || 0, em: a.em || new Date().toISOString() })); }
 const tfTxt = (v, n) => String(v === undefined || v === null ? '' : v).trim().slice(0, n);
 function tfLimpar(b, atual) {
     const a = atual || {}, o = {};
@@ -14342,35 +14349,41 @@ function tfLimpar(b, atual) {
     o.status = b.status !== undefined ? (TF_STATUS.includes(b.status) ? b.status : 'aberta') : (a.status || 'aberta');
     o.proximo_follow = b.proximo_follow !== undefined ? (AG_DATA.test(b.proximo_follow || '') ? b.proximo_follow : '') : (a.proximo_follow || '');
     o.proximo_follow_hora = b.proximo_follow_hora !== undefined ? (AG_HORA.test(b.proximo_follow_hora || '') ? b.proximo_follow_hora : '') : (a.proximo_follow_hora || ''); if (!o.proximo_follow) o.proximo_follow_hora = '';
+    o.anexos = b.anexos !== undefined ? JSON.stringify(tfAnexos(b.anexos)) : (a.anexos || '[]');
+    o.projeto_id = b.projeto_id !== undefined ? (Number(b.projeto_id) || null) : (a.projeto_id || null);
     return o;
 }
-const tfSaida = r => { let f = []; try { f = JSON.parse(r.follows || '[]'); } catch (e) {} return Object.assign({}, r, { follows: Array.isArray(f) ? f : [] }); };
+async function tfProjetoOk(uid, pid) { if (!pid) return null; const p = await dbGet(`SELECT id FROM projetos WHERE id = ? AND user_id = ?`, [pid, uid]).catch(() => null); if (!p) throw new Error('Projeto não encontrado.'); return p.id; }
+const tfSaida = r => { let f = [], an = []; try { f = JSON.parse(r.follows || '[]'); } catch (e) {} try { an = JSON.parse(r.anexos || '[]'); } catch (e) {} return Object.assign({}, r, { follows: Array.isArray(f) ? f : [], anexos: Array.isArray(an) ? an : [] }); };
+const pjSaida = r => { let an = []; try { an = JSON.parse(r.anexos || '[]'); } catch (e) {} return Object.assign({}, r, { anexos: Array.isArray(an) ? an : [] }); };
 async function tfDoUsuario(req) { return dbGet(`SELECT * FROM tarefas WHERE id = ? AND user_id = ?`, [req.params.id, agUid(req)]); }
 app.get('/api/admin/tarefas', requireRole('admin'), async (req, res) => {
-    try { const rows = await dbAll(`SELECT * FROM tarefas WHERE user_id = ? AND (status <> 'concluida' OR concluida_em >= datetime('now', '-90 days')) ORDER BY id DESC LIMIT 1500`, [agUid(req)]); res.json({ hoje: agHoje(), tarefas: rows.map(tfSaida) }); }
+    try { const uid = agUid(req), rows = await dbAll(`SELECT * FROM tarefas WHERE user_id = ? AND (status <> 'concluida' OR concluida_em >= datetime('now', '-90 days') OR projeto_id IS NOT NULL) ORDER BY id DESC LIMIT 3000`, [uid]);
+        const pjs = await dbAll(`SELECT * FROM projetos WHERE user_id = ? ORDER BY (status = 'concluido'), COALESCE(NULLIF(prazo, ''), '9999'), id DESC`, [uid]).catch(() => []);
+        res.json({ hoje: agHoje(), tarefas: rows.map(tfSaida), projetos: pjs.map(pjSaida) }); }
     catch (e) { res.status(500).json({ error: 'Não foi possível carregar as tarefas.' }); }
 });
 app.post('/api/admin/tarefas', requireRole('admin'), async (req, res) => {
-    try { const o = tfLimpar(req.body || {});
-        const r = await agRun(`INSERT INTO tarefas (user_id, titulo, descricao, prazo, prazo_hora, prioridade, etiqueta, com_quem, com_quem_whats, status, proximo_follow, proximo_follow_hora, atualizado_em) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`,
-            [agUid(req), o.titulo, o.descricao, o.prazo, o.prazo_hora, o.prioridade, o.etiqueta, o.com_quem, o.com_quem_whats, o.status === 'concluida' ? 'aberta' : o.status, o.proximo_follow, o.proximo_follow_hora]);
+    try { const o = tfLimpar(req.body || {}); o.projeto_id = await tfProjetoOk(agUid(req), o.projeto_id);
+        const r = await agRun(`INSERT INTO tarefas (user_id, titulo, descricao, prazo, prazo_hora, prioridade, etiqueta, com_quem, com_quem_whats, status, proximo_follow, proximo_follow_hora, anexos, projeto_id, atualizado_em) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`,
+            [agUid(req), o.titulo, o.descricao, o.prazo, o.prazo_hora, o.prioridade, o.etiqueta, o.com_quem, o.com_quem_whats, o.status === 'concluida' ? 'aberta' : o.status, o.proximo_follow, o.proximo_follow_hora, o.anexos, o.projeto_id]);
         res.json({ message: 'Tarefa criada.', tarefa: tfSaida(await dbGet(`SELECT * FROM tarefas WHERE id = ?`, [r.lastID])) }); }
     catch (e) { res.status(400).json({ error: e.message }); }
 });
 app.put('/api/admin/tarefas/:id', requireRole('admin'), async (req, res) => {
     try { const a = await tfDoUsuario(req); if (!a) return res.status(404).json({ error: 'Tarefa não encontrada.' });
-        const o = tfLimpar(req.body || {}, a), fim = o.status === 'concluida';
-        await agRun(`UPDATE tarefas SET titulo=?, descricao=?, prazo=?, prazo_hora=?, prioridade=?, etiqueta=?, com_quem=?, com_quem_whats=?, status=?, proximo_follow=?, proximo_follow_hora=?, atualizado_em=CURRENT_TIMESTAMP,
+        const o = tfLimpar(req.body || {}, a), fim = o.status === 'concluida'; if ((req.body || {}).projeto_id !== undefined) o.projeto_id = await tfProjetoOk(agUid(req), o.projeto_id);
+        await agRun(`UPDATE tarefas SET titulo=?, descricao=?, prazo=?, prazo_hora=?, prioridade=?, etiqueta=?, com_quem=?, com_quem_whats=?, status=?, proximo_follow=?, proximo_follow_hora=?, anexos=?, projeto_id=?, atualizado_em=CURRENT_TIMESTAMP,
             concluida_em=${fim ? (a.status === 'concluida' ? 'concluida_em' : 'CURRENT_TIMESTAMP') : 'NULL'} WHERE id = ?`,
-            [o.titulo, o.descricao, o.prazo, o.prazo_hora, o.prioridade, o.etiqueta, o.com_quem, o.com_quem_whats, o.status, fim ? '' : o.proximo_follow, fim ? '' : o.proximo_follow_hora, a.id]);
+            [o.titulo, o.descricao, o.prazo, o.prazo_hora, o.prioridade, o.etiqueta, o.com_quem, o.com_quem_whats, o.status, fim ? '' : o.proximo_follow, fim ? '' : o.proximo_follow_hora, o.anexos, o.projeto_id, a.id]);
         res.json({ message: fim && a.status !== 'concluida' ? '✅ Tarefa concluída.' : 'Salvo.', tarefa: tfSaida(await dbGet(`SELECT * FROM tarefas WHERE id = ?`, [a.id])) }); }
     catch (e) { res.status(400).json({ error: e.message }); }
 });
 // registra um follow (o que aconteceu) e já marca o próximo
 app.post('/api/admin/tarefas/:id/follow', requireRole('admin'), async (req, res) => {
     try { const a = await tfDoUsuario(req); if (!a) return res.status(404).json({ error: 'Tarefa não encontrada.' });
-        const b = req.body || {}, texto = tfTxt(b.texto, 2000); if (!texto) throw new Error('Escreva o que aconteceu neste follow.');
-        const f = tfSaida(a).follows; f.push({ id: Date.now().toString(36), em: new Date().toISOString(), texto });
+        const b = req.body || {}, anexos = tfAnexos(b.anexos), texto = tfTxt(b.texto, 2000) || (anexos.length ? '📎 Arquivo anexado' : ''); if (!texto) throw new Error('Escreva o que aconteceu neste follow.');
+        const f = tfSaida(a).follows; f.push(Object.assign({ id: Date.now().toString(36), em: new Date().toISOString(), texto }, anexos.length ? { anexos } : {}));
         const prox = AG_DATA.test(b.proximo_follow || '') ? b.proximo_follow : '', hora = prox && AG_HORA.test(b.proximo_follow_hora || '') ? b.proximo_follow_hora : '';
         const st = TF_STATUS.includes(b.status) ? b.status : a.status, fim = st === 'concluida';
         await agRun(`UPDATE tarefas SET follows=?, proximo_follow=?, proximo_follow_hora=?, status=?, atualizado_em=CURRENT_TIMESTAMP, concluida_em=${fim ? 'COALESCE(concluida_em, CURRENT_TIMESTAMP)' : 'NULL'} WHERE id = ?`,
@@ -14391,19 +14404,65 @@ app.delete('/api/admin/tarefas/:id', requireRole('admin'), async (req, res) => {
 });
 // desfazer exclusão: recria com os mesmos dados
 app.post('/api/admin/tarefas/restaurar', requireRole('admin'), async (req, res) => {
-    try { const t = req.body || {}, o = tfLimpar(t);
-        const r = await agRun(`INSERT INTO tarefas (user_id, titulo, descricao, prazo, prazo_hora, prioridade, etiqueta, com_quem, com_quem_whats, status, proximo_follow, proximo_follow_hora, follows, atualizado_em) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`,
-            [agUid(req), o.titulo, o.descricao, o.prazo, o.prazo_hora, o.prioridade, o.etiqueta, o.com_quem, o.com_quem_whats, o.status, o.proximo_follow, o.proximo_follow_hora, JSON.stringify(Array.isArray(t.follows) ? t.follows.slice(-300) : [])]);
+    try { const t = req.body || {}, o = tfLimpar(t); o.projeto_id = await tfProjetoOk(agUid(req), o.projeto_id).catch(() => null);
+        const r = await agRun(`INSERT INTO tarefas (user_id, titulo, descricao, prazo, prazo_hora, prioridade, etiqueta, com_quem, com_quem_whats, status, proximo_follow, proximo_follow_hora, follows, anexos, projeto_id, atualizado_em) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`,
+            [agUid(req), o.titulo, o.descricao, o.prazo, o.prazo_hora, o.prioridade, o.etiqueta, o.com_quem, o.com_quem_whats, o.status, o.proximo_follow, o.proximo_follow_hora, JSON.stringify(Array.isArray(t.follows) ? t.follows.slice(-300) : []), o.anexos, o.projeto_id]);
         res.json({ message: 'Tarefa restaurada.', id: r.lastID }); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+// 📎 anexo de tarefa/follow/projeto: recebe o arquivo puro (nome no cabeçalho x-nome) e guarda em /uploads (com cópia no banco)
+app.post('/api/admin/tarefas/anexo', requireRole('admin'), express.raw({ type: () => true, limit: '40mb' }), async (req, res) => {
+    try {
+        const buf = req.body; if (!Buffer.isBuffer(buf) || !buf.length) return res.status(400).json({ error: 'Arquivo vazio.' });
+        const nomeOrig = tfTxt(decodeURIComponent(String(req.headers['x-nome'] || 'arquivo')), 160) || 'arquivo';
+        if (/\.(exe|bat|cmd|sh|js|msi|html?|svg|php)$/i.test(nomeOrig)) return res.status(400).json({ error: 'Esse tipo de arquivo não pode ser anexado.' });
+        const livre = discoLivreMB(PASTA_UPLOADS); if (livre !== null && livre < buf.length / 1048576 + 200) return res.status(507).json({ error: 'O servidor está sem espaço agora. Tente de novo em alguns minutos.' });
+        const ext = (nomeOrig.match(/\.[a-z0-9]{2,5}$/i) || ['.bin'])[0].toLowerCase(), nome = `tarefa-${agUid(req)}-${Date.now()}-${crypto.randomBytes(3).toString('hex')}${ext}`, cam = path.join(PASTA_UPLOADS, nome);
+        await fs.promises.writeFile(cam, buf);
+        copiarUploadParaBanco({ filename: nome, path: cam, size: buf.length, mimetype: '' });
+        res.json({ url: '/uploads/' + nome, nome: nomeOrig, tam: buf.length, em: new Date().toISOString() });
+    } catch (e) { res.status(500).json({ error: 'Não consegui guardar o arquivo.' }); }
+});
+const PJ_STATUS = ['ativo', 'pausado', 'concluido'];
+function pjLimpar(b, a = {}) {
+    const o = {}; o.nome = b.nome !== undefined ? tfTxt(b.nome, 160) : a.nome; if (!o.nome) throw new Error('Dê um nome ao projeto.');
+    o.descricao = b.descricao !== undefined ? tfTxt(b.descricao, 6000) : (a.descricao || '');
+    o.objetivo = b.objetivo !== undefined ? tfTxt(b.objetivo, 600) : (a.objetivo || '');
+    o.responsavel = b.responsavel !== undefined ? tfTxt(b.responsavel, 120) : (a.responsavel || '');
+    o.prazo = b.prazo !== undefined ? (AG_DATA.test(b.prazo || '') ? b.prazo : '') : (a.prazo || '');
+    o.cor = b.cor !== undefined ? (/^#[0-9a-f]{6}$/i.test(b.cor || '') ? b.cor : '#2563eb') : (a.cor || '#2563eb');
+    o.status = b.status !== undefined ? (PJ_STATUS.includes(b.status) ? b.status : 'ativo') : (a.status || 'ativo');
+    o.anexos = b.anexos !== undefined ? JSON.stringify(tfAnexos(b.anexos)) : (a.anexos || '[]');
+    return o;
+}
+app.post('/api/admin/projetos', requireRole('admin'), async (req, res) => {
+    try { const o = pjLimpar(req.body || {});
+        const r = await agRun(`INSERT INTO projetos (user_id, nome, descricao, objetivo, responsavel, prazo, cor, status, anexos, atualizado_em) VALUES (?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`, [agUid(req), o.nome, o.descricao, o.objetivo, o.responsavel, o.prazo, o.cor, o.status, o.anexos]);
+        res.json({ message: '📁 Projeto criado.', projeto: pjSaida(await dbGet(`SELECT * FROM projetos WHERE id = ?`, [r.lastID])) }); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.put('/api/admin/projetos/:id', requireRole('admin'), async (req, res) => {
+    try { const a = await dbGet(`SELECT * FROM projetos WHERE id = ? AND user_id = ?`, [req.params.id, agUid(req)]); if (!a) return res.status(404).json({ error: 'Projeto não encontrado.' });
+        const o = pjLimpar(req.body || {}, a), fim = o.status === 'concluido';
+        await agRun(`UPDATE projetos SET nome=?, descricao=?, objetivo=?, responsavel=?, prazo=?, cor=?, status=?, anexos=?, atualizado_em=CURRENT_TIMESTAMP, concluido_em=${fim ? 'COALESCE(concluido_em, CURRENT_TIMESTAMP)' : 'NULL'} WHERE id = ?`,
+            [o.nome, o.descricao, o.objetivo, o.responsavel, o.prazo, o.cor, o.status, o.anexos, a.id]);
+        res.json({ message: fim && a.status !== 'concluido' ? '🏁 Projeto concluído.' : 'Projeto salvo.', projeto: pjSaida(await dbGet(`SELECT * FROM projetos WHERE id = ?`, [a.id])) }); }
+    catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.delete('/api/admin/projetos/:id', requireRole('admin'), async (req, res) => {
+    try { const a = await dbGet(`SELECT * FROM projetos WHERE id = ? AND user_id = ?`, [req.params.id, agUid(req)]); if (!a) return res.status(404).json({ error: 'Projeto não encontrado.' });
+        if (String(req.query.acoes) === 'apagar') await agRun(`DELETE FROM tarefas WHERE projeto_id = ? AND user_id = ?`, [a.id, agUid(req)]);
+        else await agRun(`UPDATE tarefas SET projeto_id = NULL WHERE projeto_id = ? AND user_id = ?`, [a.id, agUid(req)]);
+        await agRun(`DELETE FROM projetos WHERE id = ?`, [a.id]); res.json({ message: 'Projeto excluído.' }); }
     catch (e) { res.status(400).json({ error: e.message }); }
 });
 // tarefas na agenda: prazo, próximo follow e (no dia de hoje) as atrasadas
 async function agTarefas(uid, de, ate, cfg) {
     if ((cfg.fontes || {}).tarefas === false) return [];
-    const hoje = agHoje(), out = [], rows = await dbAll(`SELECT * FROM tarefas WHERE user_id = ? AND status <> 'concluida' AND ((prazo <> '' AND prazo <= ?) OR (proximo_follow <> '' AND proximo_follow <= ?))`, [uid, ate, ate]).catch(() => []);
+    const hoje = agHoje(), out = [], rows = await dbAll(`SELECT t.*, p.nome AS projeto_nome FROM tarefas t LEFT JOIN projetos p ON p.id = t.projeto_id WHERE t.user_id = ? AND t.status <> 'concluida' AND ((t.prazo <> '' AND t.prazo <= ?) OR (t.proximo_follow <> '' AND t.proximo_follow <= ?))`, [uid, ate, ate]).catch(() => []);
     const verHoje = de <= hoje && hoje <= ate, br = d => d.split('-').reverse().join('/').slice(0, 5), pr = t => t.prioridade === 'alta' ? '🔴 ' : '';
     rows.forEach(t => {
-        const base = { origem: 'auto', local: t.com_quem ? 'Com ' + t.com_quem : '', link: '', descricao: t.descricao || '', abrir: 'minhasTarefas', hora_fim: '' };
+        const base = { origem: 'auto', local: [t.projeto_nome ? '📁 ' + t.projeto_nome : '', t.com_quem ? 'Com ' + t.com_quem : ''].filter(Boolean).join(' · '), link: '', descricao: t.descricao || '', abrir: 'minhasTarefas', hora_fim: '' };
         if (t.prazo) {
             if (t.prazo >= de) out.push(Object.assign({}, base, { id: 'tf:' + t.id, tipo: 'tarefa', titulo: `${pr(t)}✅ ${t.titulo}`, data: t.prazo, hora_inicio: t.prazo_hora || '' }));
             else if (verHoje) out.push(Object.assign({}, base, { id: 'tfa:' + t.id, tipo: 'atrasada', titulo: `⚠️ Atrasada desde ${br(t.prazo)} · ${t.titulo}`, data: hoje, hora_inicio: '' }));
