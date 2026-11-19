@@ -13813,7 +13813,7 @@ async function mtPainelAluno(a) {
     const pr = mtJson(a.progresso), feitos = (t ? mtJson(t.dados).feitos : {}) || {}, hoje = mtHojeBr(), prog = mtProgramaDe(d, t);
     const encontros = prog.encontros.map((s, i) => { const data = t ? mtDataEncontro(t, i, prog) : ''; return { n: s.n, modulo: s.modulo, tema: s.tema, entregavel: s.entregavel, data, realizado: !!feitos[s.n] || !!(data && data < hoje) || pres.has(Number(s.n)), presente: pres.has(Number(s.n)), entregue: !!(pr.entregas || {})[s.n], nota: (pr.notas || {})[s.n] || '' }; });
     // área do aluno: slides liberados pelo mentor, prazo do desafio, materiais enviados, avaliações e dúvidas
-    const td = t ? mtJson(t.dados) : {}, lib = td.liberados || {}, prazos = td.prazos || {}, temSlides = prog.id === MT_PRINCIPAL ? !!DC_ROT[1] : (d.programas || []).some(x => x.id === prog.id);
+    const td = t ? mtJson(t.dados) : {}, lib = mtLiberadosAluno(td, a.id), prazos = td.prazos || {}, temSlides = prog.id === MT_PRINCIPAL ? !!DC_ROT[1] : (d.programas || []).some(x => x.id === prog.id);
     const msgs = await dbAll(`SELECT id, de, texto, anexo_url, anexo_nome, encontro, criado_em FROM mentoria_mensagens WHERE aluno_id = ? ORDER BY id`, [a.id]).catch(() => []);
     const avs = await dbAll(`SELECT encontro, nota, respostas, comentario, criado_em FROM mentoria_avaliacoes WHERE aluno_id = ?`, [a.id]).catch(() => []);
     encontros.forEach(e => { e.liberado = temSlides && !!lib[e.n]; e.prazo = prazos[e.n] || ''; e.materiais = msgs.filter(m => m.de === 'aluno' && m.anexo_url && Number(m.encontro) === Number(e.n)).map(m => ({ nome: m.anexo_nome, url: m.anexo_url, em: m.criado_em })); const av = avs.find(x => Number(x.encontro) === Number(e.n)); e.avaliacao = av ? { nota: av.nota, comentario: av.comentario, respostas: mtJson(av.respostas) } : null; });
@@ -13983,13 +13983,15 @@ app.post('/api/public/aluno/:token/avaliacao', async (req, res) => {
     mtNotificar(`⭐ Avaliação ${Math.round(nota)}/10 · ${String(a.nome || '').split(' ')[0]}`, (n ? 'Encontro ' + n : 'Avaliação geral') + (b.comentario ? ': ' + mtTxt(b.comentario, 100) : ''));
     res.json({ ok: true });
 });
+// encontros com slides liberados para ESTE aluno: liberados para todos (dados.liberados) ou só para ele (dados.liberadosAluno[n] = [ids])
+function mtLiberadosAluno(td, alunoId) { const r = Object.assign({}, td.liberados || {}); Object.entries(td.liberadosAluno || {}).forEach(([n, ids]) => { if ((ids || []).map(Number).includes(Number(alunoId))) r[n] = true; }); return r; }
 // slides do encontro para o aluno (só depois que o mentor libera; sem as notas do mentor)
 app.get('/api/public/aluno/:token/encontro/:n/slides', async (req, res) => {
     try {
         const a = await mtAlunoPorToken(req.params.token); if (!a) return res.status(404).json({ error: 'Acesso inválido.' });
         const t = a.turma_id ? await dbGet(`SELECT * FROM mentoria_turmas WHERE id = ?`, [a.turma_id]).catch(() => null) : null, n = Number(req.params.n);
         const d = await mtLer(), p = mtProgramaDe(d, t);
-        if (!p || !t || !(mtJson(t.dados).liberados || {})[n]) return res.status(403).json({ error: 'O mentor ainda não liberou os slides deste encontro.' });
+        if (!p || !t || !mtLiberadosAluno(mtJson(t.dados), a.id)[n]) return res.status(403).json({ error: 'O mentor ainda não liberou os slides deste encontro.' });
         if (!(n >= 1 && n <= p.encontros.length)) return res.status(404).json({ error: 'Encontro não encontrado.' });
         const base = baseUrlPublicaDpo(req), mods = deckMentoriaMt(p, n, null, base) || await fotosDosSlidesMt(deckEncontroProgramaMt(p, n, null, base));
         const slides = []; mods.forEach(m => (m.slides || []).forEach(s => slides.push({ titulo: s.titulo || '', texto: s.texto || '', imagem: s.imagem || '', layout: s.layout || 'padrao', secao: String(m.titulo || '').replace(/\s·\s\d.*$/, '') })));
