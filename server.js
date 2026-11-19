@@ -13241,6 +13241,7 @@ const MT_PADRAO = {
         central: 'Quem move pessoas, move resultados.',
         instagram: 'lazaroneto.oficial', instagramEmpresa: 'impulsionarv4', empresa: 'Impulsionar V4', cargo: 'Consultor', whatsapp: '(61) 99396-4750', email: '', linkedin: '', fotoUrl: '/mentoria-foto.jpg', videoUrl: '', videoPalestra: ''
     },
+    divulgacao: { foto: '' }, // foto usada nas artes de divulgação (aba 📣 Divulgação); vazio = foto do perfil
     historia: [
         { fase: '2013', cargo: 'Ajudante de distribuição', licao: 'Como o time da ponta enxerga o líder' },
         { fase: 'Início', cargo: 'Manobrista e conferente de armazém', licao: 'Disciplina, padrão e atenção ao detalhe' },

@@ -1995,6 +1995,11 @@
   .mtv-corpo { flex:1; display:flex; min-height:0; } .mtv-pdf { flex:1; min-width:0; min-height:0; display:flex; align-items:center; justify-content:center; padding:10px; } .mtv-pdf canvas { box-shadow:0 10px 40px rgba(0,0,0,.5); background:#fff; } .mtv-topo button#mtv-office { background:#334155; } .mtv-corpo iframe { flex:1; border:0; background:#fff; } .mtv-img { flex:1; display:grid; place-items:center; padding:12px; } .mtv-img img, .mtv-img video { max-width:100%; max-height:calc(100vh - 90px); border-radius:8px; } .mtv-aviso { margin:auto; color:#cbd5e1; font-weight:600; padding:20px; text-align:center; } .mtv-rodape { color:#94a3b8; font-size:12px; padding:6px 14px; text-align:center; }
   .mtn-arq { display:flex; align-items:center; gap:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:8px 10px; margin:6px 0 0 26px; } .mtn-arq.novo { border-color:#f59e0b; background:#fffbeb; } .mtn-arq > div { flex:1; min-width:0; } .mtn-arq b { word-break:break-all; } .mtn-arq i { font-style:normal; font-size:11px; font-weight:800; color:#b45309; } .mtn-arq small { display:block; color:#64748b; font-size:12px; } .mtn-arq a { text-decoration:none; width:auto; white-space:nowrap; }
   .mtn-ent { border-bottom:1px solid #e2e8f0; padding:10px 0; } .mtn-ent.ok .mtn-tarefa b { color:#15803d; } .mtn-mat-enc { border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; margin:10px 0; } .mtn-mat-enc h4 { margin:0 0 6px; } .mtn-mat-enc h4 small { color:#64748b; font-weight:600; margin-left:6px; } .mtn-mat-al { margin:8px 0; } .mtn-mat-al .mtn-arq { margin-left:0; }
+  .mtd-topo { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; background:#fff; border:1px solid #e2e8f0; border-radius:18px; padding:16px; margin-bottom:16px; } .mtd-foto { width:84px; height:84px; border-radius:50%; overflow:hidden; border:3px solid #f59e0b; flex:none; } .mtd-foto img { width:100%; height:100%; object-fit:cover; object-position:center 25%; }
+  .mtd-grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; } .mtd-card { background:#fff; border:1px solid #e2e8f0; border-radius:18px; overflow:hidden; display:flex; flex-direction:column; }
+  .mtd-prev { background:#0b1329; padding:12px; display:flex; justify-content:center; } .mtd-prev canvas { width:100%; height:auto; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.35); } .mtd-prev.story canvas { width:62%; } .mtd-carr { display:flex; gap:8px; overflow-x:auto; scroll-snap-type:x mandatory; width:100%; } .mtd-carr canvas { width:78%; flex:none; scroll-snap-align:start; }
+  .mtd-info { padding:12px 14px 14px; display:flex; flex-direction:column; gap:6px; } .mtd-info small { color:#64748b; font-size:12px; } .mtd-leg { white-space:pre-wrap; font:13px/1.45 inherit; font-family:inherit; background:#f8fafc; border-radius:10px; padding:10px; margin:6px 0 0; max-height:220px; overflow:auto; }
+  .mtd-plano { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; } .mtd-plano div { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px; display:flex; flex-direction:column; gap:2px; } .mtd-plano b { color:#b45309; font-size:12px; text-transform:uppercase; } .mtd-plano small { color:#64748b; font-size:12px; }
   .mtc-abas { display:flex; gap:6px; margin-bottom:12px; } .mtc-abas button { font:inherit; font-weight:700; border:1px solid #cbd5e1; background:#fff; border-radius:999px; padding:6px 14px; cursor:pointer; } .mtc-abas button.on { background:#0b1329; color:#fff; border-color:#0b1329; }
   .mtc-grade { display:grid; grid-template-columns:220px 1fr; gap:12px; min-height:340px; } @media (max-width:700px) { .mtc-grade { grid-template-columns:1fr; } }
   .mtc-lista { display:grid; gap:4px; align-content:start; max-height:420px; overflow:auto; } .mtc-lista button { display:flex; gap:8px; align-items:center; text-align:left; font:inherit; border:1px solid #e2e8f0; background:#fff; border-radius:10px; padding:7px; cursor:pointer; } .mtc-lista button.on { border-color:#7c3aed; background:#f5f3ff; }
@@ -2203,7 +2208,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 18/11 (4)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 18/11 (5)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -14738,10 +14743,10 @@ const mtnLeadsVis = () => mtnModo() === 'do-chao' ? MTN.leads : (MTN.leads || []
 function mtnDesenharPrograma() {
   const p = MTN.d.programas.find(x => x.id === mtnModo()), cont = document.getElementById('conteudo'), nT = MTN.turmas.filter(t => mtnProgT(t).id === p.id).length, ehCi = p.id === 'comunicacao-impacto';
   const novas = mtnLeadsVis().filter(l => (l.etapa || 'novo') === 'novo').length;
-  const abas = [['pedidos', `📥 Solicitações${novas ? ` <i class="mtn-badge">${novas}</i>` : ''}`], ['painel', '🏁 Painel'], ['acessos', '📊 Acessos'], ['funil', '🧲 Funil de vendas'], ['turmas', `🎓 Turmas${nT ? ` <i class="mtn-badge" style="background:#64748b">${nT}</i>` : ''}`], ['programa', '📚 Método e conteúdo']].concat(ehCi ? [['config', '⚙️ Configurações']] : []);
+  const abas = [['pedidos', `📥 Solicitações${novas ? ` <i class="mtn-badge">${novas}</i>` : ''}`], ['painel', '🏁 Painel'], ['acessos', '📊 Acessos'], ['funil', '🧲 Funil de vendas'], ['divulgacao', '📣 Divulgação'], ['turmas', `🎓 Turmas${nT ? ` <i class="mtn-badge" style="background:#64748b">${nT}</i>` : ''}`], ['programa', '📚 Método e conteúdo']].concat(ehCi ? [['config', '⚙️ Configurações']] : []);
   if (MTN.abaP === 'vender') MTN.abaP = 'painel';
   if (!abas.some(a => a[0] === MTN.abaP)) MTN.abaP = ehCi ? 'painel' : 'programa';
-  const corpo = { acessos: mtnAcessos, pedidos: mtnPedidos, painel: () => ehCi ? mtnCiVender(p) : mtnProgramaHtml(p), funil: mtnFunil, turmas: mtnTurmas, programa: () => mtnProgramaHtml(p), config: () => mtnCiConfig() }[MTN.abaP];
+  const corpo = { acessos: mtnAcessos, pedidos: mtnPedidos, painel: () => ehCi ? mtnCiVender(p) : mtnProgramaHtml(p), funil: mtnFunil, divulgacao: () => mtnDivulgacao(p.id), turmas: mtnTurmas, programa: () => mtnProgramaHtml(p), config: () => mtnCiConfig() }[MTN.abaP];
   cont.innerHTML = `<div class="mtn"><div class="mtn-cab"><div><h1 style="margin:0;">${p.icone || '🎙️'} ${escapeHtml(p.nome)}</h1><p class="plano-meta" style="margin:4px 0 0;">${escapeHtml(MTN.d.marca.mentor)} · ${escapeHtml(p.encontros.length + ' encontros de ' + (p.duracaoEncontro || '1 h'))} · para você ou para empresas</p></div>
     <div class="mtn-acoes">${ehCi ? `<a class="btn-secundario" href="/comunicacao" target="_blank" rel="noopener">👁️ Ver página de venda</a>` : ''}<button class="btn-primario" style="width:auto;" onclick="mtnApresentarEscolher('${p.id}')">▶️ Apresentar encontro</button><button class="btn-secundario" onclick="mtnProgramaImprimir('${p.id}')">🖨️ Imprimir / PDF</button><button class="btn-secundario" onclick="mtnEditarTurma(0, '${p.id}')">＋ Nova turma</button></div></div>
     <nav class="mtn-abas">${abas.map(([k, r]) => `<button class="${MTN.abaP === k ? 'on' : ''}" onclick="MTN.abaP='${k}'; mtnDesenhar()">${r}</button>`).join('')}</nav>
@@ -14797,14 +14802,230 @@ async function mtnCiSalvar() {
   const v = {}; Object.keys(MTN_CI_PADRAO).forEach(k => { const el = document.getElementById('vci-' + k); if (el) v[k] = typeof MTN_CI_PADRAO[k] === 'number' ? Number(el.value) || 0 : el.value.trim(); });
   try { await api('/api/admin/mentoria', { method: 'PUT', body: JSON.stringify({ vendaCi: v }) }); MTN.d.vendaCi = v; mostrarToast('✅ Condições salvas. A página /comunicacao já mostra.'); mtnDesenhar(); } catch (e) { mostrarToast(e.message, true); }
 }
+// ===== 📣 Divulgação: artes prontas (feed, stories, carrossel e banner) desenhadas com os dados atuais da mentoria =====
+// Preço, turma, vagas e link vêm do sistema: mudou na Configuração/Turmas, a arte já sai atualizada.
+const MTDIV = { prog: '', foto: null, fotoSrc: '', pecas: [] };
+function mtDivFontes() {
+  if (!document.getElementById('mtdiv-fontes')) { const s = document.createElement('style'); s.id = 'mtdiv-fontes'; s.textContent = [['Medium', 500], ['Bold', 700], ['ExtraBold', 800], ['Black', 900]].map(([n, w]) => `@font-face{font-family:MtDiv;font-weight:${w};src:url(/fonts/Inter-${n}.woff) format('woff');font-display:block}`).join(''); document.head.appendChild(s); }
+  return Promise.all([500, 700, 800, 900].map(w => document.fonts.load(`${w} 40px MtDiv`))).catch(() => {});
+}
+function mtDivDados(prog) {
+  const d = MTN.d, m = d.marca, base = mtnBase(), dom = base.replace(/^https?:\/\//, '').replace(/^www\./, ''), ci = prog === 'comunicacao-impacto';
+  const p = ci ? ((d.programas || []).find(x => x.id === prog) || {}) : null;
+  const ts = MTN.turmas.filter(t => mtnProgT(t).id === prog && t.status === 'aberta').sort((a, b) => String(a.inicio || '9').localeCompare(String(b.inicio || '9')));
+  const t = ts[0] || null, pagos = t ? (t.alunos || []).filter(a => a.pagamento === 'pago').length : 0;
+  const v = ci ? Object.assign({}, MTN_CI_PADRAO, d.vendaCi || {}) : null;
+  const comum = { mentor: m.mentor || 'Lázaro Neto', titulo: m.titulo || '', ig: String(m.instagram || '').replace(/^@/, ''), base,
+    preco: ci ? Number(v.precoIndividual) || 0 : (t && Number(t.preco)) || 0, parcelas: ci ? (Number(v.parcelas) || 12) : 12, precoDe: ci ? Number(v.precoDe) || 0 : 0,
+    turma: t ? { inicio: t.inicio, horario: t.horario, vagas: Number(t.vagas) || 0, restantes: Math.max(0, (Number(t.vagas) || 0) - pagos) } : null, historia: d.historia || [] };
+  if (ci) return Object.assign(comum, { prog, nome: 'Comunicação de Impacto', nome2: 'para Líderes', nomeCompleto: 'Comunicação de Impacto para Líderes', link: base + '/comunicacao', curto: dom + '/comunicacao', encontros: (p.encontros || []).length || 5, duracao: '2 horas', formato: 'Presencial ou online',
+    promessa: 'Pare de ler slide. Comece a ser ouvido pelo time.', frase: 'Se você não consegue dizer em uma frase, não vai conseguir dizer em 20 slides.',
+    dor: 'Seu time desliga no segundo slide?', dorSub: 'Não é falta de talento. É falta de método para preparar, apresentar e responder às perguntas do time.',
+    enquete: 'Na sua última reunião, você apresentou ou leu para o time?',
+    itensTit: `O que você leva em ${(p.encontros || []).length || 5} encontros`, itens: (p.encontros || []).slice(0, 5).map(e => [e.modulo, e.tema || e.entregavel || '']),
+    carrossel: { capa: '5 erros que fazem o seu time parar de te ouvir', itens: [['Ler o slide', 'Se está tudo escrito na tela, o time não precisa de você. Na tela, palavra-chave. O texto vai para as notas.'], ['Começar pedindo desculpa', '"Vou ser rápido", "desculpa o atraso". Abra com um número, uma pergunta ou um caso real.'], ['Slide com parágrafo', 'Um slide, uma ideia. O título é a conclusão, não o assunto.'], ['Terminar sem ação', 'Toda apresentação acaba dizendo quem faz o quê e até quando.'], ['Fugir da pergunta difícil', 'Repita a pergunta, responda em 3 frases e confirme se ficou claro.']] },
+    hashtags: '#comunicacao #oratoria #lideranca #apresentacao #gestaodepessoas #liderdeoperacao #logistica' });
+  const met = d.metodo || [];
+  return Object.assign(comum, { prog: 'do-chao', nome: m.nome || 'Do Chão à Gestão', nome2: 'para líderes de operação', nomeCompleto: m.nome || 'Do Chão à Gestão', link: base + '/mentoria', curto: dom + '/mentoria', encontros: 19, duracao: '2 horas', formato: 'Ao vivo, online',
+    promessa: m.central || 'Quem move pessoas, move resultados.', frase: m.frase || '',
+    dor: 'Seu time te segue ou só te obedece?', dorSub: 'Líder que apaga incêndio o dia todo, cobra sem resultado e não tem rotina de gestão. Dá para mudar com método.',
+    enquete: 'Seu time te segue ou só te obedece?',
+    itensTit: 'O método M.O.V.E.R. em 19 encontros', itens: met.slice(0, 5).map(x => [x.letra + ' · ' + x.nome, x.entregavel || x.descricao]),
+    carrossel: { capa: 'O método que me levou do chão da operação à gestão', itens: met.slice(0, 5).map(x => [x.letra + ' · ' + x.nome, x.descricao]) },
+    hashtags: '#lideranca #gestaodepessoas #liderdeoperacao #logistica #supervisor #gestao #feedback' });
+}
+// ---------- desenho ----------
+const DV = { navy: '#0b1329', navy2: '#14275a', amb: '#f59e0b', amb2: '#fbbf24', br: '#ffffff', cz: '#cbd5e1', cz2: '#94a3b8', card: 'rgba(255,255,255,.07)' };
+const dvMoeda = n => 'R$ ' + Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+function dvFonte(c, peso, tam) { c.font = `${peso} ${tam}px MtDiv, Montserrat, Arial, sans-serif`; }
+function dvQuebra(c, txt, maxW) { const out = []; String(txt || '').split('\n').forEach(par => { let l = ''; par.split(/\s+/).filter(Boolean).forEach(w => { const t = l ? l + ' ' + w : w; if (c.measureText(t).width > maxW && l) { out.push(l); l = w; } else l = t; }); out.push(l); }); return out; }
+function dvTexto(c, txt, x, y, maxW, peso, tam, cor, o = {}) {
+  let t = tam; dvFonte(c, peso, t);
+  if (o.max) while (dvQuebra(c, txt, maxW).length > o.max && t > 18) { t -= 3; dvFonte(c, peso, t); }
+  const ls = dvQuebra(c, txt, maxW), lh = t * (o.lh || 1.12); c.fillStyle = cor; c.textAlign = o.align || 'left'; c.textBaseline = 'top';
+  ls.forEach((l, i) => c.fillText(l, x, y + i * lh)); return y + ls.length * lh;
+}
+function dvRet(c, x, y, w, h, r, cor, borda) { c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h); if (cor) { c.fillStyle = cor; c.fill(); } if (borda) { c.strokeStyle = borda[0]; c.lineWidth = borda[1]; if (borda[2]) c.setLineDash(borda[2]); c.stroke(); c.setLineDash([]); } }
+function dvFundo(c, W, H, brilho = [0.85, 0.08]) {
+  const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, DV.navy); g.addColorStop(1, DV.navy2); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  const r = c.createRadialGradient(W * brilho[0], H * brilho[1], 10, W * brilho[0], H * brilho[1], Math.max(W, H) * 0.7); r.addColorStop(0, 'rgba(245,158,11,.30)'); r.addColorStop(1, 'rgba(245,158,11,0)'); c.fillStyle = r; c.fillRect(0, 0, W, H);
+}
+function dvFoto(c, img, x, y, w, h, fade) {
+  if (!img) return; c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip();
+  const k = Math.max(w / img.width, h / img.height), iw = img.width * k, ih = img.height * k; c.drawImage(img, x + (w - iw) / 2, y + Math.min(0, (h - ih) * 0.25), iw, ih); c.restore();
+  (fade || []).forEach(lado => { const g = lado === 'esq' ? c.createLinearGradient(x, 0, x + w * 0.55, 0) : lado === 'dir' ? c.createLinearGradient(x + w, 0, x + w * 0.45, 0) : lado === 'baixo' ? c.createLinearGradient(0, y + h, 0, y + h * 0.55) : c.createLinearGradient(0, y, 0, y + h * 0.35);
+    g.addColorStop(0, lado === 'baixo' ? DV.navy2 : DV.navy); g.addColorStop(1, 'rgba(11,19,41,0)'); c.fillStyle = g; c.fillRect(x, y, w, h); });
+}
+function dvCirculo(c, img, cx, cy, r) { if (!img) return; c.save(); c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.clip(); const k = Math.max(2 * r / img.width, 2 * r / img.height); c.drawImage(img, cx - img.width * k / 2, cy - r * 0.92, img.width * k, img.height * k); c.restore(); c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.strokeStyle = DV.amb; c.lineWidth = 8; c.stroke(); }
+function dvChips(c, itens, x, y, tam = 30, maxX = 1000) { dvFonte(c, 800, tam); let cx = x, cy = y; itens.filter(Boolean).forEach(t => { const w = c.measureText(t).width + tam * 1.3; if (cx + w > maxX) { cx = x; cy += tam * 2.1; } dvRet(c, cx, cy, w, tam * 1.75, tam * 0.9, 'rgba(255,255,255,.12)'); c.fillStyle = DV.br; c.textBaseline = 'middle'; c.textAlign = 'left'; c.fillText(t, cx + tam * 0.65, cy + tam * 0.9); cx += w + tam * 0.45; }); return cy + tam * 1.75; }
+function dvCta(c, x, y, w, txt, tam = 36) { dvRet(c, x, y, w, tam * 2.3, tam * 1.15, DV.amb); dvFonte(c, 900, tam); c.fillStyle = DV.navy; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, x + w / 2, y + tam * 1.18); return y + tam * 2.3; }
+function dvMarca(c, W, H, D) {
+  const y = H - 70; dvRet(c, 60, y - 26, 52, 52, 12, null, [DV.verde || '#22c55e', 4]); dvFonte(c, 900, 22); c.fillStyle = '#22c55e'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('V4', 86, y);
+  dvFonte(c, 800, 24); c.fillStyle = DV.br; c.textAlign = 'left'; c.fillText(D.mentor.toUpperCase(), 128, y - 12); dvFonte(c, 500, 20); c.fillStyle = DV.cz2; c.fillText('Impulsionar V4 · ' + D.nome, 128, y + 15);
+  if (D.ig) { dvFonte(c, 800, 24); c.fillStyle = DV.amb2; c.textAlign = 'right'; c.fillText('@' + D.ig, W - 60, y); }
+}
+function dvPreco(c, D, x, y, tam = 76) {
+  if (!D.preco) return y;
+  if (D.precoDe > D.preco) { dvFonte(c, 700, tam * 0.38); c.fillStyle = DV.cz2; c.textAlign = 'left'; c.textBaseline = 'top'; const t = 'de ' + dvMoeda(D.precoDe); c.fillText(t, x, y); const w = c.measureText(t).width; c.fillRect(x, y + tam * 0.2, w, 3); y += tam * 0.5; }
+  dvFonte(c, 900, tam); c.fillStyle = DV.br; c.textBaseline = 'top'; c.fillText(dvMoeda(D.preco), x, y); const w = c.measureText(dvMoeda(D.preco)).width;
+  dvFonte(c, 700, tam * 0.36); c.fillStyle = DV.cz; c.fillText(`ou ${D.parcelas}x no cartão`, x + w + 18, y + tam * 0.52); return y + tam * 1.1;
+}
+const dvDataLonga = s => { try { return new Date(s + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' }); } catch (e) { return s; } };
+const dvSemana = s => { try { return new Date(s + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }); } catch (e) { return ''; } };
+// ---------- as peças ----------
+function mtDivPecas(D) {
+  const L = D.curto, cta = '👉 Link na bio' + (D.ig ? ` (@${D.ig})` : '') + ` ou comente "QUERO" que eu te mando.`;
+  const precoTx = D.preco ? `\n💰 ${dvMoeda(D.preco)} ou até ${D.parcelas}x no cartão.` : '';
+  const turmaTx = D.turma && D.turma.inicio ? `\n🗓️ Próxima turma: ${dvDataLonga(D.turma.inicio)}${D.turma.horario ? ', ' + D.turma.horario : ''}. ${D.turma.restantes ? `Restam ${D.turma.restantes} vagas.` : 'Vagas esgotadas: entre na lista de espera.'}` : '';
+  return [
+    { id: 'oferta', nome: 'Post · Oferta', fmt: [1080, 1350], onde: 'Feed do Instagram e LinkedIn',
+      legenda: `${D.promessa}\n\n${D.nomeCompleto}: ${D.encontros} encontros de ${D.duracao}, ${D.formato.toLowerCase()}, com prática em todo encontro.${precoTx}${turmaTx}\n\n${cta}\n\n${D.hashtags}`,
+      desenhar(c, W, H, foto) {
+        dvFundo(c, W, H); dvFoto(c, foto, 430, 300, 650, 1050, ['esq', 'baixo', 'topo']);
+        dvTexto(c, ('Mentoria · ' + D.nome2).toUpperCase(), 70, 80, 940, 800, 28, DV.amb2);
+        let y = dvTexto(c, D.nome, 70, 125, 940, 900, 92, DV.br, { max: 2, lh: 1.02 });
+        y = dvTexto(c, D.promessa, 70, y + 30, 560, 900, 60, DV.amb, { max: 5, lh: 1.08 });
+        y = dvChips(c, [`${D.encontros} encontros`, `${D.duracao} cada`, D.formato], 70, Math.max(y + 40, 820), 28, 700);
+        y = dvPreco(c, D, 70, y + 36, 72);
+        dvCta(c, 70, 1150, 940, D.turma ? 'Inscrições abertas · link na bio' : 'Garanta sua vaga · link na bio', 34); dvMarca(c, W, H, D);
+      } },
+    { id: 'dor', nome: 'Post · Dor (gancho)', fmt: [1080, 1350], onde: 'Feed: para atrair quem se identifica',
+      legenda: `${D.dor}\n\n${D.dorSub}\n\nNa ${D.nome} eu te mostro o caminho, com prática de verdade e o seu time como laboratório.\n\n${cta}\n\n${D.hashtags}`,
+      desenhar(c, W, H, foto) {
+        dvFundo(c, W, H, [0.15, 0.1]); dvFonte(c, 900, 300); c.fillStyle = DV.amb; c.textAlign = 'left'; c.textBaseline = 'top'; c.fillText('“', 60, 40);
+        let y = dvTexto(c, D.dor, 70, 300, 940, 900, 104, DV.br, { max: 4, lh: 1.04 });
+        c.fillStyle = DV.amb; c.fillRect(70, y + 40, 160, 10);
+        y = dvTexto(c, D.dorSub, 70, y + 90, 900, 500, 40, DV.cz, { max: 4, lh: 1.3 });
+        dvCirculo(c, foto, 160, 1110, 90); dvTexto(c, 'Comente "QUERO"', 290, 1050, 720, 900, 46, DV.amb2); dvTexto(c, 'que eu te mando o caminho.', 290, 1105, 720, 700, 34, DV.br);
+        dvMarca(c, W, H, D);
+      } },
+    { id: 'entregas', nome: 'Post · O que você leva', fmt: [1080, 1350], onde: 'Feed: mostra a entrega',
+      legenda: `${D.itensTit}:\n\n${D.itens.map((x, i) => `${i + 1}. ${x[0]}${x[1] ? ' → ' + x[1] : ''}`).join('\n')}\n\nNada de teoria solta: cada encontro termina com uma entrega aplicada no seu time.${precoTx}\n\n${cta}\n\n${D.hashtags}`,
+      desenhar(c, W, H) {
+        dvFundo(c, W, H); dvTexto(c, D.nome.toUpperCase(), 70, 80, 940, 800, 28, DV.amb2);
+        let y = dvTexto(c, D.itensTit, 70, 125, 940, 900, 74, DV.br, { max: 2, lh: 1.04 }) + 30;
+        const n = D.itens.length || 1, h = Math.min(165, (1130 - y) / n - 14);
+        D.itens.forEach((x, i) => { dvRet(c, 70, y, 940, h, 24, DV.card); dvRet(c, 95, y + h / 2 - 38, 76, 76, 20, DV.amb); dvFonte(c, 900, 40); c.fillStyle = DV.navy; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(i + 1), 133, y + h / 2 + 2);
+          const y2 = dvTexto(c, x[0], 200, y + 22, 780, 800, 36, DV.br, { max: 1 }); dvTexto(c, x[1], 200, y2 + 6, 780, 500, 26, DV.cz, { max: 2, lh: 1.2 }); y += h + 14; });
+        dvCta(c, 70, 1160, 940, 'Quero participar · link na bio', 32); dvMarca(c, W, H, D);
+      } },
+    { id: 'autoridade', nome: 'Post · Minha história', fmt: [1080, 1350], onde: 'Feed: gera confiança (autoridade)',
+      legenda: `Eu comecei carregando caixa em 2013.\n\n${D.historia.map(h => `▸ ${h.cargo}`).join('\n')}\n\nCada degrau me ensinou uma coisa sobre gente e resultado. É isso que eu ensino na ${D.nome}: o que funciona no chão da operação, sem teoria de palco.\n\n${cta}\n\n${D.hashtags}`,
+      desenhar(c, W, H, foto) {
+        dvFundo(c, W, H, [0.9, 0.2]); dvCirculo(c, foto, 210, 230, 140);
+        dvTexto(c, D.mentor.toUpperCase(), 390, 150, 640, 900, 46, DV.br); dvTexto(c, D.titulo, 390, 210, 640, 600, 30, DV.amb2, { max: 2 });
+        let y = dvTexto(c, 'Do chão da operação à gestão', 70, 420, 940, 900, 66, DV.br, { max: 2, lh: 1.04 }) + 30;
+        const hs = D.historia.slice(0, 6), passo = Math.min(118, (1120 - y) / Math.max(1, hs.length));
+        hs.forEach((h, i) => { c.fillStyle = 'rgba(245,158,11,.35)'; if (i < hs.length - 1) c.fillRect(103, y + 30, 6, passo); c.beginPath(); c.arc(106, y + 24, 16, 0, Math.PI * 2); c.fillStyle = i === hs.length - 1 ? DV.amb : DV.br; c.fill();
+          dvTexto(c, h.fase, 150, y, 860, 800, 24, DV.amb2, { max: 1 }); dvTexto(c, h.cargo, 150, y + 32, 860, 800, 32, DV.br, { max: 1 }); y += passo; });
+        dvCta(c, 70, 1160, 940, 'Hoje eu ensino o que aprendi · link na bio', 30); dvMarca(c, W, H, D);
+      } },
+    { id: 'turma', nome: 'Post · Turma e vagas', fmt: [1080, 1350], onde: 'Feed e status do WhatsApp: urgência',
+      legenda: (D.turma ? `🗓️ ${D.nome}: nova turma começa ${dvDataLonga(D.turma.inicio)}${D.turma.horario ? ', ' + D.turma.horario : ''}.\n${D.turma.restantes ? `Só ${D.turma.restantes} vagas (turma pequena para todo mundo praticar).` : 'Vagas esgotadas: entre na lista de espera da próxima turma.'}` : `🗓️ ${D.nome}: a próxima turma vai abrir em breve. Entre na lista e seja avisado primeiro.`) + `${precoTx}\n\n${cta}\n\n${D.hashtags}`,
+      desenhar(c, W, H, foto) {
+        dvFundo(c, W, H); dvFoto(c, foto, 600, 520, 480, 830, ['esq', 'baixo', 'topo']);
+        dvRet(c, 70, 90, 470, 70, 35, D.turma ? '#16a34a' : 'rgba(255,255,255,.14)'); dvTexto(c, D.turma ? 'INSCRIÇÕES ABERTAS' : 'PRÓXIMA TURMA', 305, 110, 440, 900, 28, DV.br, { align: 'center' });
+        let y = dvTexto(c, D.nome, 70, 200, 940, 900, 78, DV.br, { max: 2, lh: 1.03 });
+        if (D.turma && D.turma.inicio) { y = dvTexto(c, 'Começa ' + dvSemana(D.turma.inicio) + ',', 70, y + 40, 600, 700, 40, DV.cz); y = dvTexto(c, dvDataLonga(D.turma.inicio), 70, y + 4, 620, 900, 96, DV.amb, { max: 2, lh: 1 }); if (D.turma.horario) y = dvTexto(c, 'às ' + D.turma.horario, 70, y + 6, 600, 800, 44, DV.br); }
+        else y = dvTexto(c, 'Em breve.\nEntre na lista e seja avisado primeiro.', 70, y + 40, 560, 900, 56, DV.amb, { max: 4 });
+        if (D.turma) { y += 40; dvRet(c, 70, y, 470, 96, 22, 'rgba(245,158,11,.16)', [DV.amb, 3]); dvTexto(c, D.turma.restantes ? `Restam ${D.turma.restantes} vagas` : 'Vagas esgotadas', 305, y + 26, 440, 900, 40, DV.amb2, { align: 'center' }); y += 96; }
+        dvPreco(c, D, 70, y + 36, 64);
+        dvCta(c, 70, 1160, 940, 'Garanta a sua · link na bio', 34); dvMarca(c, W, H, D);
+      } },
+    { id: 'story-oferta', nome: 'Story · Oferta', fmt: [1080, 1920], onde: 'Stories e status do WhatsApp (coloque a figurinha de link)',
+      legenda: `Story: cole a figurinha de LINK no espaço indicado com ${D.link}?o=instagram`,
+      desenhar(c, W, H, foto) {
+        dvFundo(c, W, H); dvFoto(c, foto, 0, 0, W, 1080, ['baixo']);
+        dvTexto(c, ('Mentoria · ' + D.nome2).toUpperCase(), 80, 980, 920, 800, 30, DV.amb2);
+        let y = dvTexto(c, D.nome, 80, 1025, 920, 900, 96, DV.br, { max: 2, lh: 1.02 });
+        y = dvTexto(c, D.promessa, 80, y + 24, 920, 900, 54, DV.amb, { max: 3 });
+        y = dvChips(c, [`${D.encontros} encontros`, `${D.duracao} cada`, D.formato], 80, y + 34, 30, 1000);
+        dvPreco(c, D, 80, y + 30, 64);
+        dvRet(c, 140, 1640, 800, 130, 30, 'rgba(255,255,255,.06)', ['rgba(255,255,255,.55)', 4, [16, 12]]); dvTexto(c, '↑ cole aqui a figurinha de LINK', 540, 1688, 760, 700, 32, DV.cz, { align: 'center' });
+        dvTexto(c, 'Toque no link e garanta a sua vaga', 540, 1800, 960, 900, 40, DV.br, { align: 'center' });
+      } },
+    { id: 'story-enquete', nome: 'Story · Enquete', fmt: [1080, 1920], onde: 'Stories: gera conversa (coloque a figurinha de enquete)',
+      legenda: `Story de enquete: coloque a figurinha "Enquete" com SIM / NÃO. Quem responder, chame no direct e mande ${D.link}?o=instagram`,
+      desenhar(c, W, H, foto) {
+        dvFundo(c, W, H, [0.5, 0.15]); dvTexto(c, 'ENQUETE RÁPIDA', 540, 260, 900, 800, 34, DV.amb2, { align: 'center' });
+        const y = dvTexto(c, D.enquete, 540, 340, 920, 900, 104, DV.br, { max: 5, align: 'center', lh: 1.05 });
+        dvRet(c, 140, Math.max(y + 80, 1000), 800, 300, 40, 'rgba(255,255,255,.06)', ['rgba(255,255,255,.55)', 4, [16, 12]]); dvTexto(c, 'cole aqui a figurinha\nde ENQUETE', 540, Math.max(y + 80, 1000) + 100, 760, 700, 40, DV.cz, { align: 'center' });
+        dvCirculo(c, foto, 540, 1600, 110); dvTexto(c, D.mentor, 540, 1735, 900, 800, 36, DV.br, { align: 'center' });
+      } },
+    { id: 'banner', nome: 'Banner · LinkedIn e WhatsApp', fmt: [1200, 628], onde: 'LinkedIn, grupos de WhatsApp e e-mail',
+      legenda: `${D.promessa}\n\n${D.nomeCompleto}: ${D.encontros} encontros de ${D.duracao}, ${D.formato.toLowerCase()}.${precoTx}${turmaTx}\n\nSaiba mais e garanta sua vaga: ${D.link}?o=linkedin\n\n${D.hashtags}`,
+      desenhar(c, W, H, foto) {
+        dvFundo(c, W, H); dvFoto(c, foto, 0, 0, 470, H, ['dir']); const gb = c.createLinearGradient(330, 0, 470, 0); gb.addColorStop(0, 'rgba(11,19,41,0)'); gb.addColorStop(1, 'rgba(14,26,58,1)'); c.fillStyle = gb; c.fillRect(330, 0, 141, H);
+        dvTexto(c, ('Mentoria · ' + D.nome2).toUpperCase(), 500, 60, 650, 800, 22, DV.amb2);
+        let y = dvTexto(c, D.nome, 500, 95, 650, 900, 60, DV.br, { max: 2, lh: 1.02 });
+        y = dvTexto(c, D.promessa, 500, y + 16, 650, 900, 38, DV.amb, { max: 3 });
+        dvChips(c, [`${D.encontros} encontros`, `${D.duracao} cada`, D.preco ? dvMoeda(D.preco) : ''], 500, y + 24, 22, 1150);
+        dvTexto(c, D.curto, 500, H - 70, 650, 800, 26, DV.br); if (D.ig) dvTexto(c, '@' + D.ig, W - 40, H - 70, 400, 800, 24, DV.amb2, { align: 'right' });
+      } },
+    { id: 'carrossel', nome: 'Carrossel · ' + (D.prog === 'do-chao' ? 'Método M.O.V.E.R.' : '5 erros'), fmt: [1080, 1350], onde: 'Feed: o que mais salva e compartilha', paginas: D.carrossel.itens.length + 2,
+      legenda: `${D.carrossel.capa} 👇\n\n${D.carrossel.itens.map((x, i) => `${i + 1}. ${x[0]}`).join('\n')}\n\nSalve para lembrar e mande para um líder que precisa ver isso.\n\nQuer aprender na prática? ${cta}\n\n${D.hashtags}`,
+      desenhar(c, W, H, foto, k) {
+        const its = D.carrossel.itens, n = its.length;
+        dvFundo(c, W, H, k % 2 ? [0.15, 0.1] : [0.85, 0.1]);
+        if (k === 0) { dvTexto(c, D.nome.toUpperCase(), 70, 90, 940, 800, 28, DV.amb2); const y = dvTexto(c, D.carrossel.capa, 70, 300, 940, 900, 108, DV.br, { max: 5, lh: 1.03 }); c.fillStyle = DV.amb; c.fillRect(70, y + 40, 200, 12); dvTexto(c, 'Arrasta para o lado →', 70, 1120, 940, 800, 40, DV.amb2); }
+        else if (k <= n) { const [t, x] = its[k - 1]; dvTexto(c, `${k}/${n}`, 70, 90, 300, 800, 30, DV.cz2); dvFonte(c, 900, 260); c.fillStyle = 'rgba(245,158,11,.9)'; c.textAlign = 'left'; c.textBaseline = 'top'; c.fillText(D.prog === 'do-chao' ? t.charAt(0) : String(k), 60, 170);
+          const y = dvTexto(c, D.prog === 'do-chao' ? t.slice(4) : t, 70, 500, 940, 900, 84, DV.br, { max: 3, lh: 1.04 }); dvTexto(c, x, 70, y + 40, 920, 500, 44, DV.cz, { max: 7, lh: 1.32 }); if (k < n) dvTexto(c, '→', 1010, 1150, 100, 900, 60, DV.amb2, { align: 'right' }); }
+        else { dvCirculo(c, foto, 540, 330, 170); const y = dvTexto(c, 'Quer aprender isso na prática, com o seu time?', 540, 560, 900, 900, 66, DV.br, { max: 3, align: 'center', lh: 1.05 }); dvTexto(c, D.nomeCompleto, 540, y + 30, 900, 800, 40, DV.amb2, { max: 2, align: 'center' }); dvCta(c, 140, 1010, 800, 'Comente "QUERO"', 40); dvTexto(c, 'ou link na bio · ' + D.curto, 540, 1135, 940, 700, 30, DV.cz, { align: 'center' }); }
+        dvMarca(c, W, H, D);
+      } }
+  ];
+}
+// ---------- aba ----------
+function mtnDivulgacao(prog) {
+  MTDIV.prog = prog; const D = mtDivDados(prog), P = mtDivPecas(D); MTDIV.pecas = P; MTDIV.D = D;
+  const foto = (MTN.d.divulgacao || {}).foto || MTN.d.marca.fotoUrl || '/mentoria-foto.jpg';
+  const plano = [['Segunda', 'Post · Dor (gancho)', 'Comece pela dor: atrai quem precisa'], ['Terça', 'Story · Enquete', 'Responda no direct quem votar'], ['Quarta', 'Carrossel', 'Conteúdo que salva e compartilha'], ['Quinta', 'Post · Minha história', 'Autoridade: por que ouvir você'], ['Sexta', 'Post · Oferta + Story · Oferta', 'Convite direto com link'], ['Sábado', 'Post · O que você leva', 'Mostre a entrega'], ['Domingo', 'Post · Turma e vagas', 'Urgência: data e vagas']];
+  setTimeout(mtDivDesenharTudo, 30);
+  return `<div class="mtd">
+    <div class="mtd-topo"><div class="mtd-foto"><img src="${escapeHtml(foto)}" alt=""></div><div style="flex:1;min-width:240px;"><h2 class="mtn-h2" style="margin:0 0 4px;">📣 Kit de divulgação · ${escapeHtml(D.nome)}</h2>
+      <p class="plano-meta" style="margin:0 0 8px;">Artes prontas para Instagram, stories, WhatsApp e LinkedIn, com legenda. Preço, turma, vagas e link saem do sistema: mudou lá, a arte já sai atualizada.</p>
+      <div class="mtn-link-bt"><button class="btn-secundario btn-sm" onclick="document.getElementById('mtd-foto-arq').click()">📷 Trocar a foto das artes</button>${(MTN.d.divulgacao || {}).foto ? `<button class="btn-secundario btn-sm" onclick="mtDivFoto('')">Usar a foto do perfil</button>` : ''}<button class="btn-primario btn-sm" style="width:auto;" onclick="mtDivBaixarTudo()">⬇️ Baixar todas as artes</button><a class="btn-secundario btn-sm" href="${escapeHtml(D.link)}" target="_blank" rel="noopener">👁️ Página de venda</a></div>
+      <input type="file" id="mtd-foto-arq" accept="image/*" style="display:none" onchange="mtDivEnviarFoto(this)"><small class="plano-meta">Dica: foto de boa qualidade, em pé, fundo da operação. Não use logo nem marca de empresa nas artes.</small></div></div>
+    <div class="mtd-grade">${P.map((p, i) => `<div class="mtd-card">
+      <div class="mtd-prev ${p.fmt[1] > p.fmt[0] * 1.5 ? 'story' : p.fmt[0] > p.fmt[1] ? 'banner' : ''}">${p.paginas ? `<div class="mtd-carr">${Array.from({ length: p.paginas }, (_, k) => `<canvas id="mtd-c-${i}-${k}" width="${p.fmt[0]}" height="${p.fmt[1]}"></canvas>`).join('')}</div>` : `<canvas id="mtd-c-${i}" width="${p.fmt[0]}" height="${p.fmt[1]}"></canvas>`}</div>
+      <div class="mtd-info"><b>${escapeHtml(p.nome)}</b><small>${escapeHtml(p.onde)} · ${p.fmt[0]}×${p.fmt[1]}${p.paginas ? ` · ${p.paginas} imagens` : ''}</small>
+        <div class="mtn-link-bt"><button class="btn-primario btn-sm" style="width:auto;" onclick="mtDivBaixar(${i})">⬇️ Baixar${p.paginas ? ' as ' + p.paginas : ''}</button><button class="btn-secundario btn-sm" onclick="mtnCopiar(MTDIV.pecas[${i}].legenda)">📋 Copiar legenda</button><a class="btn-secundario btn-sm" href="https://wa.me/?text=${encodeURIComponent(p.legenda.replace(/\n\n#.*$/s, '') + (p.legenda.includes(D.link) ? '' : '\n' + D.link + '?o=whatsapp'))}" target="_blank" rel="noopener">WhatsApp</a></div>
+        <details><summary class="plano-meta">Ver legenda</summary><pre class="mtd-leg">${escapeHtml(p.legenda)}</pre></details></div></div>`).join('')}</div>
+    <h2 class="mtn-h2">🗓️ Semana de divulgação (repita por 3 a 4 semanas antes da turma)</h2>
+    <div class="mtd-plano">${plano.map(([d, o, p]) => `<div><b>${d}</b><span>${escapeHtml(o)}</span><small>${escapeHtml(p)}</small></div>`).join('')}</div>
+    <p class="plano-meta">Regras que vendem: responda todo comentário "QUERO" no direct com o link · poste o story de oferta em 3 dias da semana · nos últimos 7 dias antes da turma, poste "Turma e vagas" todo dia · use os links com <code>?o=instagram</code>, <code>?o=whatsapp</code> e <code>?o=linkedin</code> para ver em 📊 Acessos de onde veio cada inscrição.</p>
+  </div>`;
+}
+async function mtDivDesenharTudo() {
+  if (!document.querySelector('.mtd')) return;
+  await mtDivFontes();
+  const src = (MTN.d.divulgacao || {}).foto || MTN.d.marca.fotoUrl || '/mentoria-foto.jpg';
+  if (MTDIV.fotoSrc !== src || !MTDIV.foto) { MTDIV.fotoSrc = src; MTDIV.foto = await new Promise(ok => { const im = new Image(); if (/^https?:/i.test(src) && !src.startsWith(location.origin)) im.crossOrigin = 'anonymous'; im.onload = () => ok(im); im.onerror = () => ok(null); im.src = src; }); }
+  MTDIV.pecas.forEach((p, i) => { const ks = p.paginas ? Array.from({ length: p.paginas }, (_, k) => k) : [null]; ks.forEach(k => { const cv = document.getElementById('mtd-c-' + i + (k === null ? '' : '-' + k)); if (!cv) return; const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height); try { p.desenhar(c, cv.width, cv.height, MTDIV.foto, k || 0); } catch (e) { console.error(e); } }); });
+}
+function mtDivArquivo(cv, nome) { return new Promise(ok => { try { cv.toBlob(b => { if (!b) return ok(false); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = nome; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); ok(true); }, 'image/png'); } catch (e) { mostrarToast('Não consegui gerar a imagem com essa foto (link externo). Use "📷 Trocar a foto das artes" e carregue a foto do computador.', true); ok(false); } }); }
+async function mtDivBaixar(i) {
+  const p = MTDIV.pecas[i], pre = (MTDIV.prog === 'do-chao' ? 'do-chao' : 'comunicacao') + '-' + p.id;
+  if (!p.paginas) return mtDivArquivo(document.getElementById('mtd-c-' + i), pre + '.png');
+  for (let k = 0; k < p.paginas; k++) { await mtDivArquivo(document.getElementById('mtd-c-' + i + '-' + k), `${pre}-${k + 1}.png`); await new Promise(r => setTimeout(r, 350)); }
+  mostrarToast(`⬇️ ${p.paginas} imagens do carrossel baixadas (na ordem 1, 2, 3…).`);
+}
+async function mtDivBaixarTudo() { for (let i = 0; i < MTDIV.pecas.length; i++) { await mtDivBaixar(i); await new Promise(r => setTimeout(r, 350)); } mostrarToast('⬇️ Kit completo baixado. Se o navegador perguntar, permita baixar vários arquivos.'); }
+async function mtDivFoto(url) { if (await mtnSalvarDados({ divulgacao: Object.assign({}, MTN.d.divulgacao || {}, { foto: url }) }, true)) { MTN.d.divulgacao = Object.assign({}, MTN.d.divulgacao || {}, { foto: url }); MTDIV.foto = null; mostrarToast(url ? '📷 Foto das artes atualizada.' : 'Voltei para a foto do perfil.'); mtnDesenhar(); } }
+async function mtDivEnviarFoto(inp) {
+  const f = inp.files && inp.files[0]; inp.value = ''; if (!f) return; if (!/^image\//.test(f.type)) return mostrarToast('Escolha uma imagem (JPG ou PNG).', true);
+  mostrarToast('📷 Enviando a foto…');
+  try { const fd = new FormData(); fd.append('file', f, f.name || 'foto.jpg'); const r = await fetch('/api/admin/estudio/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd }); const j = await r.json().catch(() => ({})); if (!r.ok || !j.url) throw new Error(j.error || 'Falha no envio da foto'); await mtDivFoto(j.url); }
+  catch (e) { mostrarToast(e.message, true); }
+}
 function mtnDesenhar() {
   if (mtnModo() !== 'do-chao') return mtnDesenharPrograma();
   const novasPed = MTN.leads.filter(l => (l.etapa || 'novo') === 'novo').length;
-  const cont = document.getElementById('conteudo'), d = MTN.d, abas = [['pedidos', `📥 Solicitações${novasPed ? ` <i class="mtn-badge">${novasPed}</i>` : ''}`], ['painel', '🏁 Painel'], ['acessos', '📊 Acessos'], ['aulas', '🎥 Aulas gratuitas'], ['gravar', '🎬 Gravações'], ['funil', '🧲 Funil de vendas'], ['turmas', '🎓 Turmas'], ['conteudo', '📚 Método e conteúdo'], ['palestra', '🎤 Palestra'], ['config', '⚙️ Configurações']];
+  const cont = document.getElementById('conteudo'), d = MTN.d, abas = [['pedidos', `📥 Solicitações${novasPed ? ` <i class="mtn-badge">${novasPed}</i>` : ''}`], ['painel', '🏁 Painel'], ['acessos', '📊 Acessos'], ['aulas', '🎥 Aulas gratuitas'], ['gravar', '🎬 Gravações'], ['funil', '🧲 Funil de vendas'], ['divulgacao', '📣 Divulgação'], ['turmas', '🎓 Turmas'], ['conteudo', '📚 Método e conteúdo'], ['palestra', '🎤 Palestra'], ['config', '⚙️ Configurações']];
   cont.innerHTML = `<div class="mtn"><div class="mtn-cab"><div><h1 style="margin:0;">🚀 ${escapeHtml(d.marca.nome)}</h1><p class="plano-meta" style="margin:4px 0 0;">${escapeHtml(d.marca.mentor)} · ${escapeHtml(d.marca.titulo)} — mentoria, palestras e o plano de 90 dias num lugar só.</p></div>
     <div class="mtn-acoes"><a class="btn-secundario" href="/mentoria" target="_blank" rel="noopener">👁️ Ver página de venda</a><button class="btn-primario" style="width:auto;" onclick="mtnApresentarEscolher('do-chao')">▶️ Apresentar encontro</button><a class="btn-secundario" style="width:auto;" href="/palestra/apresentar" target="_blank" rel="noopener">🎤 Apresentar palestra</a></div></div>
     <nav class="mtn-abas">${abas.map(([k, r]) => `<button class="${MTN.aba === k ? 'on' : ''}" onclick="MTN.aba='${k}'; mtnDesenhar()">${r}</button>`).join('')}</nav>
-    <div id="mtn-corpo">${({ pedidos: mtnPedidos, painel: mtnPainel, acessos: mtnAcessos, aulas: mtnAulas, gravar: mtnGravacoes, funil: mtnFunil, turmas: mtnTurmas, conteudo: mtnConteudo, palestra: mtnPalestra, config: mtnConfig }[MTN.aba] || mtnPainel)()}</div></div>`;
+    <div id="mtn-corpo">${({ pedidos: mtnPedidos, painel: mtnPainel, acessos: mtnAcessos, aulas: mtnAulas, gravar: mtnGravacoes, funil: mtnFunil, divulgacao: () => mtnDivulgacao('do-chao'), turmas: mtnTurmas, conteudo: mtnConteudo, palestra: mtnPalestra, config: mtnConfig }[MTN.aba] || mtnPainel)()}</div></div>`;
 }
 // ---------- 🏁 Painel ----------
 function mtnPainel() {
