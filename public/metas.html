@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Metas Individuais · Impulsionar V4</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0b3d91">
+<style>
+  @font-face { font-family:'Inter'; src:url('/fonts/Inter-Medium.woff') format('woff'); font-weight:400 500; }
+  @font-face { font-family:'Inter'; src:url('/fonts/Inter-Bold.woff') format('woff'); font-weight:600 700; }
+  @font-face { font-family:'Inter'; src:url('/fonts/Inter-ExtraBold.woff') format('woff'); font-weight:800; }
+  @font-face { font-family:'Inter'; src:url('/fonts/Inter-Black.woff') format('woff'); font-weight:900; }
+  :root { --azul:#0b3d91; --azul2:#1e66d0; --texto:#0f172a; --cinza:#64748b; --linha:#e2e8f0; --fundo:#f1f5f9; --ok:#14a06f; --risco:#c98a00; --fora:#d43c3b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--fundo); color:var(--texto); font-size:15px; -webkit-font-smoothing:antialiased; }
+  button, input, select, textarea { font:inherit; }
+  .topo { background:linear-gradient(120deg,var(--azul),var(--azul2)); color:#fff; padding:18px 16px 46px; }
+  .topo .emp { display:flex; align-items:center; gap:10px; font-size:13px; opacity:.92; font-weight:700; } .topo .emp img { height:28px; background:#fff; border-radius:8px; padding:3px 6px; }
+  .topo h1 { margin:10px 0 2px; font-size:22px; font-weight:900; line-height:1.15; } .topo p { margin:0; font-size:13px; opacity:.88; }
+  .wrap { max-width:980px; margin:-30px auto 0; padding:0 12px 40px; }
+  .card { background:#fff; border:1px solid var(--linha); border-radius:16px; padding:14px; margin-bottom:12px; box-shadow:0 6px 18px rgba(15,23,42,.05); }
+  .card h2 { margin:0 0 4px; font-size:17px; } .muted { color:var(--cinza); font-size:12.5px; }
+  .barra { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .bt { border:1px solid var(--linha); background:#fff; color:var(--texto); border-radius:10px; padding:8px 12px; font-weight:700; font-size:13.5px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+  .bt.pri { background:var(--azul); border-color:var(--azul); color:#fff; } .bt.verde { background:#16a34a; border-color:#16a34a; color:#fff; } .bt.perigo { color:#b91c1c; border-color:#fecaca; } .bt.sm { padding:5px 9px; font-size:12.5px; }
+  select, input, textarea { border:1px solid #cbd5e1; border-radius:10px; padding:9px 10px; width:100%; background:#fff; color:var(--texto); }
+  label { display:block; font-size:12px; font-weight:700; color:#334155; margin:8px 0 3px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:10px; }
+  .pc { background:#fff; border:1px solid var(--linha); border-top:4px solid #9aa5b5; border-radius:14px; padding:12px; } .pc.ok { border-top-color:var(--ok); } .pc.risco { border-top-color:var(--risco); } .pc.fora { border-top-color:var(--fora); }
+  .pc-top { display:flex; gap:10px; align-items:center; } .av { width:44px; height:44px; border-radius:50%; background:#dbeafe; color:#1e3a8a; display:grid; place-items:center; font-weight:900; flex:0 0 auto; object-fit:cover; } .av.g { width:64px; height:64px; font-size:22px; border:3px solid rgba(255,255,255,.6); }
+  .nm { font-weight:800; } .big { font-size:28px; font-weight:900; margin:8px 0 2px; } .bar { height:8px; background:#f1f5f9; border-radius:99px; overflow:hidden; margin:6px 0; } .bar i { display:block; height:100%; border-radius:99px; }
+  .pc .acts { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .kp { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:8px; margin-bottom:12px; } .kp > div { background:#fff; border:1px solid var(--linha); border-radius:14px; padding:10px 12px; } .kp small { font-size:10.5px; letter-spacing:.7px; color:var(--cinza); font-weight:800; } .kp b { display:block; font-size:22px; font-weight:900; } .kp span { font-size:12px; color:var(--cinza); }
+  .kp .ok b { color:var(--ok); } .kp .fora b { color:var(--fora); } .kp .risco b { color:var(--risco); }
+  .tabs { display:flex; gap:6px; overflow-x:auto; margin-bottom:10px; padding-bottom:2px; } .tabs button { flex:0 0 auto; border:1px solid #cbd5e1; background:#fff; border-radius:999px; padding:7px 13px; font-weight:800; font-size:13px; cursor:pointer; color:#334155; } .tabs button.on { background:var(--azul); border-color:var(--azul); color:#fff; }
+  .ind { background:#fff; border:1px solid var(--linha); border-left:5px solid #9aa5b5; border-radius:14px; padding:12px; margin-bottom:10px; position:relative; } .ind.ok { border-left-color:var(--ok); } .ind.fora { border-left-color:var(--fora); }
+  .ind h3 { margin:0 0 2px; font-size:15.5px; padding-right:88px; } .ind .tag { position:absolute; right:10px; top:10px; font-size:11px; font-weight:800; border-radius:999px; padding:2px 8px; background:#f1f5f9; color:var(--cinza); } .tag.ok { background:#dcfce7; color:#166534; } .tag.fora { background:#fee2e2; color:#991b1b; }
+  .mr { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:8px; } .mr > div { background:#f8fafc; border-radius:8px; padding:6px; font-size:10.5px; color:var(--cinza); } .mr b { display:block; font-size:14.5px; color:var(--texto); }
+  .lanc { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; } .lanc input { font-size:18px; font-weight:800; text-align:right; } .lanc input.ok { background:#dcfce7; border-color:#86efac; } .lanc input.fora { background:#fee2e2; border-color:#fca5a5; }
+  .dots { display:flex; gap:3px; margin-top:8px; } .dots i { flex:1; text-align:center; font-style:normal; font-size:9.5px; font-weight:800; border-radius:4px; padding:3px 0; background:#f1f5f9; color:#94a3b8; } .dots i.ok { background:var(--ok); color:#fff; } .dots i.fora { background:var(--fora); color:#fff; }
+  .lig { margin-top:8px; font-size:12.5px; background:#fffbeb; border-radius:8px; padding:6px 8px; color:#78350f; } .rec { background:#eff6ff; color:#0f2747; }
+  .tw { overflow-x:auto; border:1px solid var(--linha); border-radius:12px; } table { border-collapse:collapse; width:100%; font-size:12.5px; } th, td { padding:5px 6px; border-bottom:1px solid #f1f5f9; white-space:nowrap; } th { background:var(--azul); color:#fff; font-weight:700; text-align:left; position:sticky; top:0; }
+  td input { width:64px; padding:4px 5px; font-size:12.5px; text-align:right; border-radius:6px; } td.ok input { background:#dcfce7; border-color:#86efac; } td.fora input { background:#fee2e2; border-color:#fca5a5; } td.nm2 { position:sticky; left:0; background:#fff; font-weight:700; white-space:normal; min-width:130px; }
+  .st { position:fixed; left:50%; bottom:16px; transform:translateX(-50%); background:#0f172a; color:#fff; padding:9px 16px; border-radius:12px; font-size:13.5px; font-weight:700; opacity:0; transition:opacity .2s; pointer-events:none; z-index:9; } .st.on { opacity:1; } .st.erro { background:#b91c1c; }
+  .vazio { text-align:center; color:var(--cinza); padding:18px; border:1px dashed #cbd5e1; border-radius:14px; background:#fff; }
+  .acs > div { border-bottom:1px solid #f1f5f9; padding:7px 0; font-size:13.5px; } .acs small { color:var(--cinza); }
+  .ao-vivo { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:800; background:rgba(255,255,255,.18); border-radius:999px; padding:3px 10px; margin-top:8px; } .ao-vivo i { width:8px; height:8px; border-radius:50%; background:#4ade80; animation:pul 1.6s infinite; } @keyframes pul { 50% { opacity:.3; } }
+  .hero-p { display:flex; gap:12px; align-items:center; }
+  @media (max-width:560px) { .mr { grid-template-columns:repeat(2,1fr); } .topo h1 { font-size:20px; } }
+</style>
+</head>
+<body>
+<div class="topo" id="topo"><div class="emp">IMPULSIONAR V4</div><h1>🎯 Metas Individuais</h1><p>Carregando…</p></div>
+<div class="wrap" id="app"></div>
+<div class="st" id="st"></div>
+<script>
+const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const [, TIPO, TOKEN] = location.pathname.match(/\/metas\/(a|p)\/([\w-]+)/) || [];
+const APP = document.getElementById('app'), TOPO = document.getElementById('topo');
+let D = null, V = { pessoa: null, aba: 'lancar', mes: null, editInd: null, novaPessoa: false };
+// ---------- cálculo (mesma regra da ferramenta: uma meta não compensa a outra) ----------
+const num = v => (v === '' || v === null || v === undefined || !isFinite(Number(v))) ? null : Number(v);
+function parseBr(t) { t = String(t || '').trim().replace(/[^\d,.\-]/g, ''); if (!t) return ''; if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.'); const n = Number(t); return isFinite(n) ? n : ''; }
+function fmtN(v, c) { return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c }); }
+function fmt(v, tipo) { if (v === null || v === undefined || !isFinite(v)) return '—'; if (tipo === 'pct') return fmtN(v, 1) + '%'; if (tipo === 'moeda') return 'R$ ' + fmtN(v, 2); return fmtN(v, Math.abs(v) < 100 && v % 1 ? 2 : 0); }
+const pct = v => v === null || v === undefined ? '—' : fmtN(v, 1) + '%', moeda = v => 'R$ ' + fmtN(v || 0, 0);
+const inp = v => v === null || v === undefined || v === '' ? '' : String(v).replace('.', ',');
+const metaM = (i, m) => { const v = num((i.metas || [])[m]); return v === null ? num(i.metaAno) : v; }, realM = (i, m) => num((i.reais || [])[m]);
+function at(meta, real, s) { if (meta === null || real === null) return null; if (s === 'menor') return real <= 0 ? (meta >= real ? 100 : 0) : meta / real * 100; return meta === 0 ? (real >= 0 ? 100 : 0) : real / meta * 100; }
+const bateu = a => a !== null && a >= 100 - 1e-9, stG = p => p === null ? 'neutro' : p >= 100 - 1e-9 ? 'ok' : p >= 75 ? 'risco' : 'fora';
+const COR = { ok: '#14a06f', risco: '#c98a00', fora: '#d43c3b', neutro: '#9aa5b5' };
+function inds(lid) { return D.indicadores.filter(i => i.lider === lid); }
+function resumo(lid, m) { let com = 0, bat = 0, pr = 0, prMax = 0; const ms = m === 'ano' ? MESES.map((_, k) => k) : [m]; inds(lid).forEach(i => ms.forEach(k => { const a = at(metaM(i, k), realM(i, k), i.sentido); if (a === null) return; com++; const v = num(i.valor) || 0; prMax += v; if (bateu(a)) { bat++; pr += v; } })); return { ating: com ? bat / com * 100 : null, com, bat, pr, prMax }; }
+function anoInd(i) { const ms = MESES.map((_, m) => num((i.metas || [])[m])).filter(v => v !== null), rs = MESES.map((_, m) => realM(i, m)).filter(v => v !== null); const meta = num(i.metaAno) !== null ? num(i.metaAno) : ms.length ? ms.reduce((a, b) => a + b, 0) / ms.length : null; return { meta, real: rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : null }; }
+function le(i) {
+  const com = MESES.map((_, m) => m).filter(m => realM(i, m) !== null), k = com.length, ult = k ? com[k - 1] : -1, resto = MESES.map((_, m) => m).filter(m => m > ult && realM(i, m) === null).length;
+  const soma = com.reduce((s, m) => s + realM(i, m), 0), u3 = com.slice(-3), tend = k ? u3.reduce((s, m) => s + realM(i, m), 0) / u3.length : null, mA = anoInd(i).meta, L = k ? (soma + tend * resto) / (k + resto) : null;
+  const precisa = mA !== null && resto ? (mA * (k + resto) - soma) / resto : null, aL = at(mA, L, i.sentido); let possivel = null;
+  if (precisa !== null) { possivel = i.sentido === 'menor' ? precisa >= 0 : true; if (i.tipo === 'pct' && i.sentido !== 'menor' && precisa > 100) possivel = false; }
+  return { metaAno: mA, le: L, atLe: aL, vai: L === null ? null : bateu(aL), resto, precisa, possivel, tend, realAte: k ? soma / k : null };
+}
+function recado(i, r) {
+  if (r.metaAno === null) return 'Sem meta do ano.'; if (!r.resto) return r.vai ? 'Ano fechado na meta. 👏' : 'Ano fechado abaixo da meta.';
+  if (r.vai) return `No ritmo atual você fecha o ano na meta. Mantenha ${fmt(r.tend, i.tipo)} por mês.`;
+  if (r.possivel === false) return 'A média do ano não fecha mais na meta — foque em bater cada mês que falta (vale prêmio).';
+  return `Para fechar o ano na meta: ${i.sentido === 'menor' ? 'no máximo' : 'pelo menos'} ${fmt(r.precisa, i.tipo)} em média nos ${r.resto} meses que faltam.`;
+}
+function mesPadrao() { let u = -1; D.indicadores.forEach(i => (i.reais || []).forEach((v, m) => { if (num(v) !== null && m > u) u = m; })); if (u >= 0) return u; const h = new Date(); return D.ano === h.getFullYear() ? h.getMonth() : 11; }
+function av(l, g) { const c = 'av' + (g ? ' g' : ''); return l.foto ? `<img class="${c}" src="${esc(l.foto)}" alt="">` : `<div class="${c}">${esc(String(l.nome || '?').trim().split(/\s+/).map(x => x[0]).slice(0, 2).join('').toUpperCase())}</div>`; }
+function aviso(t, erro) { const s = document.getElementById('st'); s.textContent = t; s.className = 'st on' + (erro ? ' erro' : ''); clearTimeout(aviso.t); aviso.t = setTimeout(() => s.className = 'st', 2200); }
+function topo(titulo, sub, extra) { TOPO.innerHTML = `<div class="emp">${D.empresa.logo ? `<img src="${esc(D.empresa.logo)}" alt="">` : ''}${esc(D.empresa.nome)}</div><h1>${titulo}</h1><p>${sub}</p>${extra || ''}`; }
+// ---------- carregar ----------
+async function carregar(silencioso) {
+  try {
+    const r = await fetch(`/api/public/metas/${TIPO}/${TOKEN}`, { cache: 'no-store' }), j = await r.json().catch(() => ({}));
+    if (!r.ok) { if (!silencioso) { TOPO.innerHTML = `<div class="emp">${esc((j.empresa || {}).nome || 'IMPULSIONAR V4')}</div><h1>🎯 Metas Individuais</h1><p>Link indisponível</p>`; APP.innerHTML = `<div class="card" style="margin-top:8px;"><h2>😕 Não consegui abrir</h2><p class="muted">${esc(j.error || 'Link inválido.')}</p></div>`; } return; }
+    D = j; if (V.mes === null) V.mes = mesPadrao();
+    TIPO === 'a' ? desenharArea() : desenharPessoa();
+  } catch (e) { if (!silencioso) APP.innerHTML = `<div class="card">Sem conexão. Tente de novo.</div>`; }
+}
+async function enviar(corpo) {
+  const r = await fetch(`/api/public/metas/a/${TOKEN}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }), j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Erro ao salvar.');
+  return j;
+}
+function urlPessoa(t) { return location.origin + '/metas/p/' + t; }
+function linkWhats(l) { const n = String(l.whats || '').replace(/\D/g, ''); return 'https://wa.me/' + (n ? (n.length <= 11 ? '55' + n : n) : '') + '?text=' + encodeURIComponent(`Olá ${String(l.nome).split(' ')[0]}! 🎯 Acompanhe as suas *metas individuais* em tempo real neste link: ${urlPessoa(l.token)}`); }
+async function copiar(t) { try { await navigator.clipboard.writeText(t); aviso('🔗 Link copiado!'); } catch (e) { prompt('Copie o link:', t); } }
+const selMes = () => `<select style="width:auto;" onchange="V.mes=Number(this.value); desenharArea();">${MESES.map((m, k) => `<option value="${k}" ${V.mes === k ? 'selected' : ''}>${m}/${D.ano}</option>`).join('')}</select>`;
+// ---------- ÁREA ----------
+function desenharArea() {
+  topo(`🎯 Metas — ${esc(D.area.nome)}`, `${D.area.responsavel ? 'Liderança: ' + esc(D.area.responsavel) + ' · ' : ''}${D.ano} · cadastre o time, os indicadores e lance o real`);
+  if (V.pessoa && D.lideres.some(l => l.id === V.pessoa)) return desenharPessoaArea(D.lideres.find(l => l.id === V.pessoa));
+  V.pessoa = null;
+  const R = D.lideres.map(l => ({ l, r: resumo(l.id, V.mes) })), bat = R.reduce((s, x) => s + x.r.bat, 0), com = R.reduce((s, x) => s + x.r.com, 0), g = com ? bat / com * 100 : null;
+  APP.innerHTML = `<div class="card"><div class="barra" style="justify-content:space-between;"><div><h2>Seu time</h2><div class="muted">Toque na pessoa para lançar o real, cadastrar indicadores e enviar o link dela.</div></div>${selMes()}</div></div>
+    <div class="kp"><div class="${stG(g)}"><small>METAS BATIDAS · ${MESES[V.mes]}</small><b>${pct(g)}</b><span>${bat} de ${com} lançadas</span></div><div><small>PESSOAS</small><b>${D.lideres.length}</b><span>${D.indicadores.length} indicador(es)</span></div><div><small>PRÊMIO DO MÊS</small><b>${moeda(R.reduce((s, x) => s + x.r.pr, 0))}</b><span>de ${moeda(R.reduce((s, x) => s + x.r.prMax, 0))}</span></div></div>
+    <div class="grid">${R.map(({ l, r }) => { const s = stG(r.ating); return `<div class="pc ${s}"><div class="pc-top" onclick="abrirPessoa('${l.id}')" style="cursor:pointer;">${av(l)}<div><div class="nm">${esc(l.nome)}</div><div class="muted">${esc(l.cargo || '')}</div></div></div>
+      <div class="big" onclick="abrirPessoa('${l.id}')" style="cursor:pointer;">${pct(r.ating)}</div><div class="muted">${r.com ? `${r.bat} de ${r.com} metas batidas em ${MESES[V.mes]}` : inds(l.id).length ? `sem real em ${MESES[V.mes]}` : 'sem indicadores ainda'}</div><div class="bar"><i style="width:${Math.min(100, r.ating || 0)}%;background:${COR[s]}"></i></div>
+      <div class="acts"><button class="bt pri sm" onclick="abrirPessoa('${l.id}')">✏️ Lançar</button>${l.token ? `<a class="bt verde sm" href="${linkWhats(l)}" target="_blank">📲 Enviar link</a><button class="bt sm" onclick="copiar('${urlPessoa(l.token)}')">🔗</button>` : ''}</div></div>`; }).join('')}</div>
+    ${!D.lideres.length ? '<div class="vazio">Nenhuma pessoa ainda. Cadastre quem tem meta individual no seu time 👇</div>' : ''}
+    <div class="card" style="margin-top:12px;">${V.novaPessoa ? formPessoa({}) : `<button class="bt pri" onclick="V.novaPessoa=true; desenharArea();">＋ Cadastrar pessoa</button>`}</div>`;
+}
+function formPessoa(l) {
+  return `<h2>${l.id ? 'Dados da pessoa' : '＋ Nova pessoa com meta'}</h2><label>Nome *</label><input id="fp-nome" value="${esc(l.nome || '')}" placeholder="Nome completo"><label>Cargo / função</label><input id="fp-cargo" value="${esc(l.cargo || '')}" placeholder="Ex.: Conferente"><label>WhatsApp (para enviar o link)</label><input id="fp-whats" inputmode="tel" value="${esc(l.whats || '')}" placeholder="(64) 9 9999-9999">
+    <div class="barra" style="margin-top:10px;"><button class="bt pri" onclick="salvarPessoa(${l.id ? `'${l.id}'` : ''})">💾 Salvar</button>${l.id ? `<button class="bt perigo" style="margin-left:auto;" onclick="excluirPessoa('${l.id}')">🗑️ Excluir pessoa</button>` : `<button class="bt" onclick="V.novaPessoa=false; desenharArea();">Cancelar</button>`}</div>`;
+}
+async function salvarPessoa(id) {
+  const v = k => document.getElementById(k).value;
+  try { const r = await enviar({ op: 'lider', id, nome: v('fp-nome'), cargo: v('fp-cargo'), whats: v('fp-whats') }); V.novaPessoa = false; await carregar(true); if (!id) { V.pessoa = r.lider.id; V.aba = 'inds'; V.editInd = 'novo'; desenharArea(); aviso('✅ Pessoa cadastrada — o link dela já está pronto. Agora cadastre os indicadores.'); } else aviso('✅ Salvo'); }
+  catch (e) { aviso(e.message, true); }
+}
+async function excluirPessoa(id) { if (!confirm('Excluir esta pessoa e os indicadores dela? O link dela para de funcionar.')) return; try { await enviar({ op: 'delLider', id }); V.pessoa = null; await carregar(true); aviso('Pessoa excluída.'); } catch (e) { aviso(e.message, true); } }
+function abrirPessoa(id) { V.pessoa = id; V.aba = inds(id).length ? 'lancar' : 'inds'; V.editInd = inds(id).length ? null : 'novo'; desenharArea(); scrollTo(0, 0); }
+function desenharPessoaArea(l) {
+  const r = resumo(l.id, V.mes), ano = resumo(l.id, 'ano'), I = inds(l.id);
+  const abas = [['lancar', '✏️ Lançar o mês'], ['ano', '📅 Ano todo'], ['inds', `⚙️ Indicadores (${I.length})`], ['dados', '👤 Dados e link']];
+  let corpo = '';
+  if (V.aba === 'lancar') corpo = !I.length ? '<div class="vazio">Cadastre os indicadores primeiro (aba ⚙️).</div>' : `<div class="card barra" style="justify-content:space-between;"><div class="muted">Digite o <b>real</b> de ${MESES[V.mes]}. A meta do mês em branco usa a meta do ano. Salva sozinho.</div>${selMes()}</div>` + I.map(i => { const m = V.mes, mt = metaM(i, m), rl = realM(i, m), a = at(mt, rl, i.sentido), s = a === null ? '' : bateu(a) ? 'ok' : 'fora'; return `<div class="ind ${s}"><span class="tag ${s}">${s === 'ok' ? '✔ bateu' : s === 'fora' ? '✖ não bateu' : 'sem real'}</span><h3>${esc(i.nome)}</h3><div class="muted">${i.sentido === 'menor' ? '⬇️ menor é melhor' : '⬆️ maior é melhor'}${num(i.valor) ? ' · 💰 ' + moeda(num(i.valor)) + '/mês' : ''}</div>
+      <div class="lanc"><div><label>Meta ${MESES[m]}</label><input inputmode="decimal" value="${inp((i.metas || [])[m])}" placeholder="${inp(i.metaAno)}" data-k="${i.id}-metas-${m}" onchange="salvarValor('${i.id}', 'metas', ${m}, this.value)"></div><div><label>Real ${MESES[m]}</label><input class="${s}" inputmode="decimal" value="${inp(rl)}" data-k="${i.id}-reais-${m}" onchange="salvarValor('${i.id}', 'reais', ${m}, this.value)"></div></div>
+      <div class="muted" style="margin-top:6px;">Atingimento: <b>${pct(a)}</b></div></div>`; }).join('');
+  if (V.aba === 'ano') corpo = !I.length ? '<div class="vazio">Cadastre os indicadores primeiro (aba ⚙️).</div>' : `<div class="tw"><table><thead><tr><th>Indicador</th><th></th>${MESES.map(m => `<th>${m}</th>`).join('')}</tr></thead><tbody>${I.map(i => `<tr><td class="nm2" rowspan="2">${esc(i.nome)}<br><span class="muted">meta ano ${fmt(num(i.metaAno), i.tipo)}</span></td><td class="muted">Meta</td>${MESES.map((_, m) => `<td><input inputmode="decimal" value="${inp((i.metas || [])[m])}" placeholder="${inp(i.metaAno)}" data-k="${i.id}-metas-${m}" onchange="salvarValor('${i.id}', 'metas', ${m}, this.value)"></td>`).join('')}</tr><tr><td class="muted">Real</td>${MESES.map((_, m) => { const a = at(metaM(i, m), realM(i, m), i.sentido); return `<td class="${a === null ? '' : bateu(a) ? 'ok' : 'fora'}"><input inputmode="decimal" value="${inp(realM(i, m))}" data-k="${i.id}-reais-${m}" onchange="salvarValor('${i.id}', 'reais', ${m}, this.value)"></td>`; }).join('')}</tr>`).join('')}</tbody></table></div>`;
+  if (V.aba === 'inds') corpo = I.map(i => V.editInd === i.id ? `<div class="card">${formInd(l, i)}</div>` : `<div class="ind"><h3>${esc(i.nome)}</h3><div class="muted">${{ pct: '%', moeda: 'R$', numero: 'Nº' }[i.tipo] || 'Nº'} · ${i.sentido === 'menor' ? '⬇️ menor é melhor' : '⬆️ maior é melhor'} · meta do ano <b>${fmt(num(i.metaAno), i.tipo)}</b>${num(i.valor) ? ' · 💰 ' + moeda(num(i.valor)) + '/mês' : ''}</div>${i.estrategia ? `<div class="lig">🌟 ${esc(i.estrategia)}</div>` : ''}<div class="barra" style="margin-top:8px;"><button class="bt sm" onclick="V.editInd='${i.id}'; desenharArea();">✏️ Editar</button></div></div>`).join('') + `<div class="card">${V.editInd === 'novo' ? formInd(l, {}) : `<button class="bt pri" onclick="V.editInd='novo'; desenharArea();">＋ Novo indicador</button>`}</div>`;
+  if (V.aba === 'dados') corpo = `<div class="card">${formPessoa(l)}</div><div class="card"><h2>🔗 Link de ${esc(String(l.nome).split(' ')[0])}</h2><p class="muted">Pelo link a pessoa acompanha os indicadores dela em tempo real (só visualização).</p>${l.token ? `<div class="barra"><a class="bt verde" href="${linkWhats(l)}" target="_blank">📲 Enviar no WhatsApp</a><button class="bt" onclick="copiar('${urlPessoa(l.token)}')">🔗 Copiar link</button><a class="bt" href="${urlPessoa(l.token)}" target="_blank">↗ Ver como a pessoa vê</a></div>` : '<p class="muted">Salve a pessoa para gerar o link.</p>'}</div>`;
+  APP.innerHTML = `<div class="card"><button class="bt sm" onclick="V.pessoa=null; desenharArea();">← Meu time</button><div class="hero-p" style="margin-top:10px;">${av(l)}<div style="flex:1;"><h2>${esc(l.nome)}</h2><div class="muted">${esc(l.cargo || '')} · ${MESES[V.mes]}: <b>${pct(r.ating)}</b> (${r.bat}/${r.com}) · ano: <b>${pct(ano.ating)}</b> · 💰 ${moeda(r.pr)}</div></div>${l.token ? `<a class="bt verde sm" href="${linkWhats(l)}" target="_blank">📲 Link</a>` : ''}</div></div>
+    <div class="tabs">${abas.map(([k, t]) => `<button class="${V.aba === k ? 'on' : ''}" onclick="V.aba='${k}'; V.editInd=null; desenharArea();">${t}</button>`).join('')}</div>${corpo}`;
+}
+function formInd(l, i) {
+  return `<h2>${i.id ? 'Editar indicador' : '＋ Novo indicador'}</h2><label>Indicador *</label><input id="fi-nome" value="${esc(i.nome || '')}" placeholder="Ex.: Avaria (%)">
+    <div class="lanc" style="margin-top:0;"><div><label>Tipo</label><select id="fi-tipo">${[['pct', '% (percentual)'], ['numero', 'Nº (número)'], ['moeda', 'R$ (valor)']].map(([k, t]) => `<option value="${k}" ${(i.tipo || 'pct') === k ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div><label>Sentido</label><select id="fi-sent"><option value="maior" ${i.sentido !== 'menor' ? 'selected' : ''}>⬆️ Maior é melhor</option><option value="menor" ${i.sentido === 'menor' ? 'selected' : ''}>⬇️ Menor é melhor</option></select></div></div>
+    <div class="lanc" style="margin-top:0;"><div><label>Meta do ano *</label><input id="fi-meta" inputmode="decimal" value="${inp(i.metaAno)}" style="font-size:15px;"></div><div><label>Prêmio R$/mês ao bater</label><input id="fi-valor" inputmode="decimal" value="${inp(i.valor)}" style="font-size:15px;"></div></div>
+    <label>Como esta meta se liga à estratégia / Sonho da unidade</label><input id="fi-est" value="${esc(i.estrategia || '')}" placeholder="Ex.: Sonho — ser referência em nível de serviço">
+    <div class="barra" style="margin-top:10px;"><button class="bt pri" onclick="salvarInd('${l.id}', ${i.id ? `'${i.id}'` : 'null'})">💾 Salvar indicador</button><button class="bt" onclick="V.editInd=null; desenharArea();">Cancelar</button>${i.id ? `<button class="bt perigo" style="margin-left:auto;" onclick="excluirInd('${i.id}')">🗑️ Excluir</button>` : ''}</div>`;
+}
+async function salvarInd(lid, id) {
+  const v = k => document.getElementById(k).value;
+  if (parseBr(v('fi-meta')) === '') return aviso('Informe a meta do ano.', true);
+  try { await enviar({ op: 'ind', lider: lid, id, nome: v('fi-nome'), tipo: v('fi-tipo'), sentido: v('fi-sent'), metaAno: parseBr(v('fi-meta')), valor: parseBr(v('fi-valor')), estrategia: v('fi-est') }); V.editInd = null; await carregar(true); aviso('✅ Indicador salvo'); }
+  catch (e) { aviso(e.message, true); }
+}
+async function excluirInd(id) { if (!confirm('Excluir este indicador e os valores lançados?')) return; try { await enviar({ op: 'delInd', id }); V.editInd = null; await carregar(true); aviso('Indicador excluído.'); } catch (e) { aviso(e.message, true); } }
+async function salvarValor(ind, campo, mes, valor) {
+  const n = parseBr(valor);
+  try { const r = await enviar({ op: 'valor', ind, campo, mes, valor: n }); const k = D.indicadores.findIndex(i => i.id === ind); if (k >= 0) D.indicadores[k] = r.indicador; aviso('✅ Salvo'); redesenharMantendoFoco(); }
+  catch (e) { aviso(e.message, true); }
+}
+function redesenharMantendoFoco() {
+  const a = document.activeElement, k = a && a.dataset ? a.dataset.k : null, y = scrollY;
+  desenharArea(); scrollTo(0, y);
+  if (k) { const e = document.querySelector(`[data-k="${k}"]`); if (e) { e.focus(); try { e.select(); } catch (x) {} } }
+}
+// ---------- PESSOA (só visualização, atualiza sozinho) ----------
+function desenharPessoa() {
+  const l = D.lider, I = D.indicadores, m = V.mes, r = resumo(l.id, m), ano = resumo(l.id, 'ano');
+  topo(`${esc(String(l.nome).split(' ')[0])}, suas metas 🎯`, `${esc([l.cargo, D.area && D.area.nome].filter(Boolean).join(' · '))}${D.area && D.area.responsavel ? ' · Liderança: ' + esc(D.area.responsavel) : ''}`, `<span class="ao-vivo"><i></i>ao vivo · atualizado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>`);
+  const evo = MESES.map((mm, k) => { const x = resumo(l.id, k); return `<i class="${x.ating === null ? '' : x.ating >= 100 - 1e-9 ? 'ok' : 'fora'}" title="${mm}: ${pct(x.ating)}">${mm[0]}</i>`; }).join('');
+  APP.innerHTML = `<div class="card"><div class="barra" style="justify-content:space-between;"><div class="hero-p">${av(l, true)}<div><h2>${esc(l.nome)}</h2><div class="muted">${D.ano}</div></div></div><select style="width:auto;" onchange="V.mes=Number(this.value); desenharPessoa();">${MESES.map((mm, k) => `<option value="${k}" ${m === k ? 'selected' : ''}>${mm}/${D.ano}</option>`).join('')}</select></div></div>
+    <div class="kp"><div class="${stG(r.ating)}"><small>METAS BATIDAS · ${MESES[m]}</small><b>${pct(r.ating)}</b><span>${r.bat} de ${r.com}</span></div><div class="ok"><small>PRÊMIO DE ${MESES[m].toUpperCase()}</small><b>${moeda(r.pr)}</b><span>de ${moeda(r.prMax)} possíveis</span></div><div class="${stG(ano.ating)}"><small>NO ANO</small><b>${pct(ano.ating)}</b><span>${ano.bat}/${ano.com} · 💰 ${moeda(ano.pr)}</span></div></div>
+    <div class="card"><div class="muted" style="font-weight:800;margin-bottom:4px;">Seus meses (verde = bateu todas as metas do mês)</div><div class="dots">${evo}</div></div>
+    ${I.map(i => { const mt = metaM(i, m), rl = realM(i, m), a = at(mt, rl, i.sentido), s = a === null ? '' : bateu(a) ? 'ok' : 'fora', L = le(i); return `<div class="ind ${s}"><span class="tag ${s}">${s === 'ok' ? '✔ bateu' : s === 'fora' ? '✖ não bateu' : 'sem real'}</span><h3>${esc(i.nome)}</h3><div class="muted">${i.sentido === 'menor' ? '⬇️ menor é melhor' : '⬆️ maior é melhor'}${num(i.valor) ? ' · 💰 ' + moeda(num(i.valor)) + ' por mês batido' : ''}</div>
+      <div class="mr"><div>Meta ${MESES[m]}<b>${fmt(mt, i.tipo)}</b></div><div>Real ${MESES[m]}<b>${fmt(rl, i.tipo)}</b></div><div>Atingimento<b>${pct(a)}</b></div><div>🔮 Ano (LE)<b>${fmt(L.le, i.tipo)}</b></div></div>
+      <div class="dots">${MESES.map((mm, x) => { const ax = at(metaM(i, x), realM(i, x), i.sentido); return `<i class="${ax === null ? '' : bateu(ax) ? 'ok' : 'fora'}" title="${mm}: ${pct(ax)}">${mm[0]}</i>`; }).join('')}</div>
+      <div class="lig rec">🛠️ ${esc(recado(i, L))}</div>${i.estrategia ? `<div class="lig">🌟 ${esc(i.estrategia)}</div>` : ''}</div>`; }).join('') || '<div class="vazio">Sua liderança ainda não cadastrou os seus indicadores.</div>'}
+    ${(D.acoes || []).length ? `<div class="card"><h2>📋 Plano de ação</h2><div class="acs">${D.acoes.map(a => `<div>${{ aberta: '⏳', andamento: '🔄', concluida: '✅', cancelada: '🚫' }[a.status] || '⏳'} ${esc(a.o_que)}<br><small>👤 ${esc(a.quem || '—')} · 📅 ${a.quando ? String(a.quando).split('-').reverse().join('/') : '—'}</small></div>`).join('')}</div></div>` : ''}
+    <p class="muted" style="text-align:center;">Esta página atualiza sozinha. Impulsionar V4</p>`;
+}
+carregar();
+if (TIPO === 'p') setInterval(() => carregar(true), 30000);
+</script>
+</body>
+</html>

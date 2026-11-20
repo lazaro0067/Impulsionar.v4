@@ -2281,7 +2281,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 20/11 (4)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 20/11 (5)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -13187,6 +13187,7 @@ async function fdSalvar() {
     if (FD.companyId) corpo.company_id = FD.companyId;
     const r = await api('/api/dpo/ferramentas-digitais/' + FD.chave, { method: 'PUT', body: JSON.stringify(corpo) });
     FD.validacao = acompEh() ? acompValidacao() : r.validacao;
+    if (FD.chave === 'metas' && r.metas) miMesclarServidor(r.metas);
     if (exEh()) { exValidar(); if (st) st.innerHTML = '✅ Salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); return; }
     if (gopEh() || c5Eh()) { const nota = document.getElementById('fd-nota'); if (nota) nota.innerHTML = c5Eh() ? c5Chip() : gopChip(); if (st) st.innerHTML = '✅ Salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); return; }
     if (DIM) DIM.validacao = r.validacao;
@@ -17276,7 +17277,7 @@ function exAbrirAcomp(a, cid) { const t = EXCL_POR_PERGUNTA[a.questionKey]; retu
 // entre a dona das metas e a liderança direta, reunião mensal e entrevistas de ligação alvo × Sonho.
 const MI_TIPOS = [['pct', '% (percentual)'], ['moeda', 'R$ (valor)'], ['numero', 'Nº (número)']];
 function miPreparar(d) {
-  ['lideres', 'indicadores', 'reunioes', 'entrevistas', 'acoes', 'gapas', 'follows'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
+  ['areas', 'removidos', 'lideres', 'indicadores', 'reunioes', 'entrevistas', 'acoes', 'gapas', 'follows'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
   d.lideres.forEach(l => { if (!l.id) l.id = fdId(); });
   d.indicadores.forEach(i => { if (!i.id) i.id = fdId(); ['metas', 'reais'].forEach(k => { i[k] = Array.isArray(i[k]) ? i[k] : []; }); });
   d.gapas.forEach(g => { g.causas = g.causas || {}; g.porques = Array.isArray(g.porques) ? g.porques : ['', '', '', '', '']; g.fatos = g.fatos || {}; });
@@ -17553,13 +17554,13 @@ function miHtmlLancar() {
         <tr><th class="mi-rl">Real</th>${MESES_FD.map((_, m) => { const a = miAt(miMeta(i, m), miReal(i, m), i.sentido); return `<td class="${a === null ? '' : miBateu(a) ? 'ok' : 'nok'}">${inp(idx, 'reais', m, (i.reais || [])[m], '')}</td>`; }).join('')}<td class="gr-ano">${miFmt(an.real, i.tipo)} · ${miPct(an.ating)}</td></tr>
 `; }).join('')}</tbody></table></div>`}</div>`;
 }
-function miLancar(idx, campo, m, v) { const i = FD.dados.indicadores[idx]; if (!i) return; i[campo] = Array.isArray(i[campo]) ? i[campo] : []; const n = fdParse(v); i[campo][m] = n === '' ? '' : n; fdAgendarSalvar(); exValidar(); clearTimeout(FD.miT); FD.miT = setTimeout(fdCorpoRender, 900); }
-function miEditInd(idx, campo, v, re) { const i = FD.dados.indicadores[idx]; if (!i) return; i[campo] = v; fdAgendarSalvar(); exValidar(); if (re) fdCorpoRender(); }
-function miEditLider(id, campo, v, re) { const l = FD.dados.lideres.find(x => x.id === id); if (!l) return; l[campo] = v; fdAgendarSalvar(); exValidar(); if (re) fdCorpoRender(); }
-function miNovoLider() { const l = { id: fdId(), nome: '', cargo: '', setor: '', gestor: '', foto: '' }; FD.dados.lideres.push(l); FD.mi.lid = l.id; fdAgendarSalvar(); fdCorpoRender(); setTimeout(() => { const e = document.getElementById('mi-ln-' + l.id); if (e) e.focus(); }, 60); }
-function miExcluirLider(id) { const l = FD.dados.lideres.find(x => x.id === id); if (!l || !confirm(`Excluir ${l.nome || 'esta liderança'} e os indicadores dela?`)) return; FD.dados.lideres = FD.dados.lideres.filter(x => x.id !== id); FD.dados.indicadores = FD.dados.indicadores.filter(i => i.lider !== id); if (FD.mi.aberto === id) FD.mi.aberto = null; fdAgendarSalvar(); exRedesenhar(); }
-function miNovoInd(lid) { FD.dados.indicadores.push({ id: fdId(), lider: lid, nome: '', tipo: 'pct', sentido: 'maior', peso: 1, valor: '', metaAno: '', metas: [], reais: [] }); fdAgendarSalvar(); fdCorpoRender(); }
-function miExcluirInd(idx) { if (!confirm('Remover este indicador (e os valores lançados)?')) return; FD.dados.indicadores.splice(idx, 1); fdAgendarSalvar(); exRedesenhar(); }
+function miLancar(idx, campo, m, v) { const i = FD.dados.indicadores[idx]; if (!i) return; i[campo] = Array.isArray(i[campo]) ? i[campo] : []; const n = fdParse(v); i[campo][m] = n === '' ? '' : n; i._m = Date.now(); fdAgendarSalvar(); exValidar(); clearTimeout(FD.miT); FD.miT = setTimeout(fdCorpoRender, 900); }
+function miEditInd(idx, campo, v, re) { const i = FD.dados.indicadores[idx]; if (!i) return; i[campo] = v; i._m = Date.now(); fdAgendarSalvar(); exValidar(); if (re) fdCorpoRender(); }
+function miEditLider(id, campo, v, re) { const l = FD.dados.lideres.find(x => x.id === id); if (!l) return; l[campo] = v; l._m = Date.now(); fdAgendarSalvar(); exValidar(); if (re) fdCorpoRender(); }
+function miNovoLider() { const l = { id: fdId(), nome: '', cargo: '', setor: '', gestor: '', foto: '', whats: '', area: '', _m: Date.now() }; FD.dados.lideres.push(l); FD.mi.lid = l.id; fdAgendarSalvar(); fdCorpoRender(); setTimeout(() => { const e = document.getElementById('mi-ln-' + l.id); if (e) e.focus(); }, 60); }
+function miExcluirLider(id) { const l = FD.dados.lideres.find(x => x.id === id); if (!l || !confirm(`Excluir ${l.nome || 'esta liderança'} e os indicadores dela?`)) return; FD.dados.removidos.push(id, ...FD.dados.indicadores.filter(i => i.lider === id).map(i => i.id)); FD.dados.lideres = FD.dados.lideres.filter(x => x.id !== id); FD.dados.indicadores = FD.dados.indicadores.filter(i => i.lider !== id); if (FD.mi.aberto === id) FD.mi.aberto = null; fdAgendarSalvar(); exRedesenhar(); }
+function miNovoInd(lid) { FD.dados.indicadores.push({ id: fdId(), lider: lid, nome: '', tipo: 'pct', sentido: 'maior', peso: 1, valor: '', metaAno: '', metas: [], reais: [], _m: Date.now() }); fdAgendarSalvar(); fdCorpoRender(); }
+function miExcluirInd(idx) { if (!confirm('Remover este indicador (e os valores lançados)?')) return; const fora = FD.dados.indicadores.splice(idx, 1)[0]; if (fora) FD.dados.removidos.push(fora.id); fdAgendarSalvar(); exRedesenhar(); }
 async function miFoto(id, inp) {
   const arq = inp.files && inp.files[0]; inp.value = ''; if (!arq) return; if (!/^image\//.test(arq.type)) return mostrarToast('Escolha uma imagem.', true);
   try { const fd = new FormData(); fd.append('file', arq); const r = await fetch('/api/dpo/material/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ESTADO.token }, body: fd }); const up = await r.json().catch(() => ({})); if (!r.ok) throw new Error(up.error || 'Erro ao enviar a foto.'); miEditLider(id, 'foto', up.url, true); mostrarToast('📸 Foto salva.'); }
@@ -17568,11 +17569,12 @@ async function miFoto(id, inp) {
 function miHtmlCadastro() {
   const L = FD.dados.lideres, nomes = miLideres().map(l => l.nome), sel = FD.mi.lid && L.some(l => l.id === FD.mi.lid) ? FD.mi.lid : (L[0] || {}).id;
   const t = (id, campo, v, ph, re) => `<input value="${escapeHtml(v || '')}" placeholder="${ph}" onchange="miEditLider('${id}', '${campo}', this.value, ${!!re})">`;
-  return `<div class="painel"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;"><h3 style="margin:0;">👥 Lideranças</h3><button class="btn-primario btn-sm" style="width:auto;" onclick="miNovoLider()">＋ Liderança</button></div>
-      <div class="plano-meta">Quem tem meta individual: foto, cargo, setor e gestor (o gestor acompanha as metas da equipe dele).</div>
-      <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th style="width:70px;">Foto</th><th style="min-width:180px;">Nome</th><th style="min-width:150px;">Cargo</th><th style="min-width:130px;">Setor</th><th style="min-width:160px;">Gestor</th><th style="width:90px;">Indicadores</th><th style="width:40px;"></th></tr></thead><tbody>
-      ${L.map(l => `<tr class="${l.id === sel ? 'mi-sel' : ''}"><td><label class="mi-fotobt" title="Trocar foto">${miAv(l)}<input type="file" accept="image/*" onchange="miFoto('${l.id}', this)"></label></td><td><input id="mi-ln-${l.id}" value="${escapeHtml(l.nome || '')}" placeholder="Nome" onchange="miEditLider('${l.id}', 'nome', this.value, true)"></td><td>${t(l.id, 'cargo', l.cargo, 'Ex.: Supervisor de armazém')}</td><td>${t(l.id, 'setor', l.setor, 'Ex.: Armazém', true)}</td>
-        <td><select onchange="miEditLider('${l.id}', 'gestor', this.value)"><option value=""></option>${nomes.filter(n => n !== l.nome).map(n => `<option ${l.gestor === n ? 'selected' : ''}>${escapeHtml(n)}</option>`).join('')}</select></td><td><button class="btn-secundario btn-sm" onclick="FD.mi.lid='${l.id}'; fdCorpoRender();">🎯 ${miInds(l.id).length}</button></td><td><button class="btn-icone" onclick="miExcluirLider('${l.id}')" title="Excluir">🗑️</button></td></tr>`).join('') || `<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:14px;">Nenhuma liderança ainda.</td></tr>`}</tbody></table></div></div>
+  const A = FD.dados.areas || [];
+  return `${miHtmlAreas()}<div class="painel"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;"><h3 style="margin:0;">👥 Lideranças e pessoas com meta</h3><button class="btn-primario btn-sm" style="width:auto;" onclick="miNovoLider()">＋ Liderança</button></div>
+      <div class="plano-meta">Quem tem meta individual: foto, cargo, área, gestor e WhatsApp. O botão 🔗 gera o link da pessoa — ela acompanha os próprios indicadores em tempo real, sem login. As pessoas cadastradas pelo link da área aparecem aqui também.</div>
+      <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th style="width:70px;">Foto</th><th style="min-width:180px;">Nome</th><th style="min-width:150px;">Cargo</th><th style="min-width:140px;">Área / setor</th><th style="min-width:160px;">Gestor</th><th style="min-width:130px;">WhatsApp</th><th style="width:90px;">Indicadores</th><th style="width:150px;">Link da pessoa</th><th style="width:40px;"></th></tr></thead><tbody>
+      ${L.map(l => `<tr class="${l.id === sel ? 'mi-sel' : ''}"><td><label class="mi-fotobt" title="Trocar foto">${miAv(l)}<input type="file" accept="image/*" onchange="miFoto('${l.id}', this)"></label></td><td><input id="mi-ln-${l.id}" value="${escapeHtml(l.nome || '')}" placeholder="Nome" onchange="miEditLider('${l.id}', 'nome', this.value, true)"></td><td>${t(l.id, 'cargo', l.cargo, 'Ex.: Supervisor de armazém')}</td><td>${A.length ? `<select onchange="miLiderArea('${l.id}', this.value)"><option value="">${escapeHtml(l.area ? '— sem área —' : (l.setor || '— sem área —'))}</option>${A.filter(a => dnTem(a.nome)).map(a => `<option value="${a.id}" ${l.area === a.id ? 'selected' : ''}>${escapeHtml(a.nome)}</option>`).join('')}</select>` : t(l.id, 'setor', l.setor, 'Ex.: Armazém', true)}</td>
+        <td><select onchange="miEditLider('${l.id}', 'gestor', this.value)"><option value=""></option>${[...new Set([...nomes.filter(n => n !== l.nome), ...(l.gestor && !nomes.includes(l.gestor) ? [l.gestor] : [])])].map(n => `<option ${l.gestor === n ? 'selected' : ''}>${escapeHtml(n)}</option>`).join('')}</select></td><td>${t(l.id, 'whats', l.whats, '(64) 9 9999-9999')}</td><td><button class="btn-secundario btn-sm" onclick="FD.mi.lid='${l.id}'; fdCorpoRender();">🎯 ${miInds(l.id).length}</button></td><td style="white-space:nowrap;">${miBotoesLink('pessoa', l.id, l.token)}</td><td><button class="btn-icone" onclick="miExcluirLider('${l.id}')" title="Excluir">🗑️</button></td></tr>`).join('') || `<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:14px;">Nenhuma liderança ainda.</td></tr>`}</tbody></table></div></div>
     ${sel ? (() => { const l = L.find(x => x.id === sel), inds = FD.dados.indicadores.map((i, idx) => [i, idx]).filter(([i]) => i.lider === sel); return `<div class="painel" style="margin-top:12px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;"><h3 style="margin:0;">🎯 Indicadores de ${escapeHtml(l.nome || 'liderança sem nome')} · ${FD.ano}</h3><button class="btn-primario btn-sm" style="width:auto;" onclick="miNovoInd('${sel}')">＋ Indicador</button></div>
       <div class="plano-meta"><b>Sentido</b>: maior ou menor é melhor (ex.: avaria = menor). <b>Prêmio</b>: o valor (R$) que a liderança recebe quando bate aquela meta no mês. <b>Ligação</b>: escreva como o alvo se conecta à estratégia da unidade / Sonho (V.4).</div>
       <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th style="min-width:190px;">Indicador</th><th style="min-width:120px;">Tipo</th><th style="min-width:130px;">Sentido</th><th style="width:70px;">Peso</th><th style="width:100px;">Prêmio R$/mês</th><th style="width:100px;">Meta do ano</th><th style="min-width:220px;">Ligação com a estratégia / Sonho</th><th style="width:40px;"></th></tr></thead><tbody>
@@ -17581,7 +17583,7 @@ function miHtmlCadastro() {
         <td><input value="${escapeHtml(i.estrategia || '')}" placeholder="Ex.: Sonho — ser referência em nível de serviço" onchange="miEditInd(${idx}, 'estrategia', this.value)"></td><td><button class="btn-icone" onclick="miExcluirInd(${idx})" title="Remover">🗑️</button></td></tr>`).join('') || `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:14px;">Nenhum indicador ainda.</td></tr>`}</tbody></table></div>
       ${miLideres().length > 1 ? `<div style="margin-top:8px;font-size:13px;">Copiar os indicadores de outra liderança: <select style="width:auto;display:inline-block;margin:0;" onchange="if(this.value) miCopiarInds(this.value, '${sel}'); this.value='';"><option value="">escolha…</option>${miLideres().filter(x => x.id !== sel).map(x => `<option value="${x.id}">${escapeHtml(x.nome)} (${miInds(x.id).length})</option>`).join('')}</select></div>` : ''}</div>`; })() : ''}`;
 }
-function miCopiarInds(de, para) { const n = miInds(de).map(i => ({ id: fdId(), lider: para, nome: i.nome, tipo: i.tipo, sentido: i.sentido, peso: i.peso, valor: i.valor, metaAno: i.metaAno, estrategia: i.estrategia, metas: (i.metas || []).slice(), reais: [] })); FD.dados.indicadores.push(...n); fdAgendarSalvar(); exRedesenhar(); mostrarToast(`📋 ${n.length} indicador(es) copiado(s) (sem os reais).`); }
+function miCopiarInds(de, para) { const n = miInds(de).map(i => ({ id: fdId(), lider: para, nome: i.nome, tipo: i.tipo, sentido: i.sentido, peso: i.peso, valor: i.valor, metaAno: i.metaAno, estrategia: i.estrategia, metas: (i.metas || []).slice(), reais: [], _m: Date.now() })); FD.dados.indicadores.push(...n); fdAgendarSalvar(); exRedesenhar(); mostrarToast(`📋 ${n.length} indicador(es) copiado(s) (sem os reais).`); }
 function miHtmlRotina() {
   const d = FD.dados, pa = d.planoAtingimento, inds = miLideres().flatMap(l => miInds(l.id));
   FD_PADRAO_LINHA.reunioes = { mes: MESES_FD[miLim()] };
@@ -17594,6 +17596,66 @@ function miHtmlRotina() {
       ${(() => { const le = miLideres().flatMap(l => miInds(l.id).map(miLeInd)), com = le.filter(r => r.vai !== null), f = com.filter(r => r.vai).length; return `<div class="mi-okmsg" style="background:${com.length && f === com.length ? '#dcfce7' : '#fef9c3'};">${f}/${com.length} indicador(es) fecham o ano na meta pela projeção · ${le.filter(r => r.sugere).length} com ${MI_MESES_GAPA}+ meses sem bater (GAPA sugerida).</div>`; })()}</div>
     <div class="painel" style="margin-top:12px;"><h3 style="margin-top:0;">🎙️ O time sabe a ligação do alvo com a estratégia e o Sonho? (V.4)</h3><div class="plano-meta">Entreviste colaboradores: qual é o seu alvo, que ações você faz para atingir e como ele se liga à estratégia da unidade / Sonho. Meta: 3+ pessoas, 70% explicando.</div>
       ${fdTabela('entrevistas', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'nome', rotulo: 'Pessoa', largura: 160, recarregar: true }, { campo: 'funcao', rotulo: 'Função', largura: 130 }, { campo: 'conhece', rotulo: 'Sabe o próprio alvo', tipo: 'select', opcoes: ['Sim', 'Parcial', 'Não'], largura: 110 }, { campo: 'liga', rotulo: 'Explicou a ligação com a estratégia / Sonho', tipo: 'select', opcoes: ['Sim', 'Parcial', 'Não'], largura: 150, recarregar: true }, { campo: 'obs', rotulo: 'Observação', largura: 220 }], { numerar: true, botao: 'Entrevista' })}</div>`;
+}
+
+// ---------- 🔗 Links: área (a liderança cadastra o time e lança) e pessoa (acompanha em tempo real) ----------
+function miMesclarServidor(m) {
+  const d = FD.dados; d.removidos = [...new Set([...(d.removidos || []), ...(m.removidos || [])])];
+  const rem = new Set(d.removidos); let mudou = false;
+  ['areas', 'lideres', 'indicadores'].forEach(k => {
+    const loc = new Map((d[k] || []).map(x => [x.id, x]));
+    (m[k] || []).forEach(x => { const a = loc.get(x.id); if (!a || (Number(x._m) || 0) > (Number(a._m) || 0)) { loc.set(x.id, x); mudou = true; } });
+    const novo = [...loc.values()].filter(x => !rem.has(x.id)); if (novo.length !== (d[k] || []).length) mudou = true;
+    d[k] = novo;
+  });
+  const foco = document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if (mudou && !foco) { exValidar(); fdCorpoRender(); }
+}
+function miUrl(tipo, token) { return location.origin + '/metas/' + (tipo === 'area' ? 'a' : 'p') + '/' + token; }
+function miBotoesLink(tipo, id, token) {
+  return `<button class="btn-secundario btn-sm" title="Copiar o link" onclick="miLink('${tipo}', '${id}', 'copiar')">🔗 ${token ? 'Copiar' : 'Gerar link'}</button>${token ? ` <button class="btn-secundario btn-sm" title="Enviar no WhatsApp" onclick="miLink('${tipo}', '${id}', 'whats')">📲</button> <button class="btn-secundario btn-sm" title="Abrir" onclick="miLink('${tipo}', '${id}', 'abrir')">↗</button>` : ''}`;
+}
+async function miLink(tipo, id, acao) {
+  const lista = tipo === 'area' ? FD.dados.areas : FD.dados.lideres, o = lista.find(x => x.id === id); if (!o) return;
+  if (!dnTem(o.nome)) return mostrarToast(tipo === 'area' ? 'Dê um nome para a área primeiro.' : 'Preencha o nome primeiro.', true);
+  try {
+    if (!o.token) {
+      o._m = Date.now(); await fdSalvar(); // a área/pessoa precisa estar gravada para o link abrir
+      const r = await api('/api/dpo/metas/link', { method: 'POST', body: JSON.stringify({ company_id: FD.companyId, ano: FD.ano, tipo, ref_id: id }) });
+      const o2 = lista.find(x => x.id === id) || o; o2.token = r.token; o2._m = Date.now(); fdAgendarSalvar(); fdCorpoRender();
+    }
+    const tok = (lista.find(x => x.id === id) || o).token, url = miUrl(tipo, tok);
+    const nomeResp = tipo === 'area' ? (o.responsavel || '') : o.nome;
+    const msg = tipo === 'area'
+      ? `Olá${nomeResp ? ' ' + nomeResp.split(' ')[0] : ''}! 🎯 Este é o link das *Metas Individuais da área ${o.nome}* (${FD.ano}). Por ele você cadastra o seu time, os indicadores e as metas, e lança o real todo mês: ${url}`
+      : `Olá ${String(o.nome).split(' ')[0]}! 🎯 Acompanhe as suas *metas individuais* em tempo real neste link: ${url}`;
+    if (acao === 'abrir') return window.open(url, '_blank');
+    if (acao === 'whats') { const n = String(o.whats || '').replace(/\D/g, ''); return window.open('https://wa.me/' + (n ? (n.length <= 11 ? '55' + n : n) : '') + '?text=' + encodeURIComponent(msg), '_blank'); }
+    try { await navigator.clipboard.writeText(url); mostrarToast('🔗 Link copiado!'); } catch (e) { prompt('Copie o link:', url); }
+  } catch (e) { mostrarToast(e.message, true); }
+}
+function miNovaArea() { FD.dados.areas.push({ id: fdId(), nome: '', responsavel: '', whats: '', _m: Date.now() }); fdAgendarSalvar(); fdCorpoRender(); setTimeout(() => { const e = document.querySelector('.mi-areas tbody tr:last-child input'); if (e) e.focus(); }, 60); }
+function miEditArea(id, campo, v) {
+  const a = FD.dados.areas.find(x => x.id === id); if (!a) return; const antigo = a[campo]; a[campo] = String(v).trim(); a._m = Date.now();
+  if (campo === 'nome') FD.dados.lideres.filter(l => l.area === id).forEach(l => { l.setor = a.nome; l._m = Date.now(); });
+  if (campo === 'responsavel') FD.dados.lideres.filter(l => l.area === id && (!l.gestor || l.gestor === antigo)).forEach(l => { l.gestor = a.responsavel; l._m = Date.now(); });
+  fdAgendarSalvar(); fdCorpoRender();
+}
+function miExcluirArea(id) {
+  const a = FD.dados.areas.find(x => x.id === id); if (!a) return;
+  const n = FD.dados.lideres.filter(l => l.area === id).length;
+  if (!confirm(`Excluir a área ${a.nome || ''}? O link dela para de funcionar.${n ? ` As ${n} pessoa(s) dela continuam cadastradas (sem área).` : ''}`)) return;
+  FD.dados.areas = FD.dados.areas.filter(x => x.id !== id); FD.dados.removidos.push(id);
+  FD.dados.lideres.filter(l => l.area === id).forEach(l => { l.area = ''; l._m = Date.now(); });
+  fdAgendarSalvar(); fdCorpoRender();
+}
+function miLiderArea(lid, areaId) { const l = FD.dados.lideres.find(x => x.id === lid), a = FD.dados.areas.find(x => x.id === areaId); if (!l) return; l.area = areaId || ''; if (a) { l.setor = a.nome; if (!l.gestor && a.responsavel) l.gestor = a.responsavel; } l._m = Date.now(); fdAgendarSalvar(); fdCorpoRender(); }
+function miHtmlAreas() {
+  const A = FD.dados.areas || [], t = (id, c, v, ph) => `<input value="${escapeHtml(v || '')}" placeholder="${ph}" onchange="miEditArea('${id}', '${c}', this.value)">`;
+  return `<div class="painel mi-areas" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;"><h3 style="margin:0;">🏢 Áreas e links das lideranças</h3><button class="btn-primario btn-sm" style="width:auto;" onclick="miNovaArea()">＋ Área</button></div>
+    <div class="plano-meta">Cadastre cada área (Armazém, Entrega, Vendas…) com o responsável e envie o <b>link da área</b>: por ele a liderança cadastra as pessoas do time, os indicadores e as metas, e lança o real todo mês — sem login, pelo celular. Cada pessoa que ela cadastrar já ganha o próprio link para acompanhar o indicador em tempo real (a liderança envia pelo WhatsApp).</div>
+    <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th style="min-width:160px;">Área</th><th style="min-width:180px;">Responsável (liderança)</th><th style="min-width:140px;">WhatsApp</th><th style="width:80px;">Pessoas</th><th style="width:170px;">Link da área</th><th style="width:40px;"></th></tr></thead><tbody>
+    ${A.map(a => `<tr><td>${t(a.id, 'nome', a.nome, 'Ex.: Armazém')}</td><td>${t(a.id, 'responsavel', a.responsavel, 'Ex.: Carlos Souza')}</td><td>${t(a.id, 'whats', a.whats, '(64) 9 9999-9999')}</td><td style="text-align:center;">${FD.dados.lideres.filter(l => l.area === a.id).length}</td><td style="white-space:nowrap;">${miBotoesLink('area', a.id, a.token)}</td><td><button class="btn-icone" onclick="miExcluirArea('${a.id}')" title="Excluir">🗑️</button></td></tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:14px;">Nenhuma área ainda — clique em ＋ Área.</td></tr>`}</tbody></table></div></div>`;
 }
 
 function exPreparar() {

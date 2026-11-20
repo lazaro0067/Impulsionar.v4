@@ -11495,6 +11495,150 @@ async function respostaFerramentaDigitalDpo(f, chave, ano, ctxReq) {
     };
 }
 
+// ======================= METAS INDIVIDUAIS (Gestão 3.4) — links das lideranças e dos funcionários =======================
+// A revenda cadastra as ÁREAS e manda o link para o responsável da área: por ele a liderança cadastra as pessoas do
+// time, os indicadores, as metas e lança o real todo mês (sem login). Cada pessoa cadastrada ganha o próprio link
+// (só leitura) para acompanhar o indicador dela em tempo real. Tudo grava no mesmo JSON da ferramenta 'metas'.
+db.run(`CREATE TABLE IF NOT EXISTS metas_links (token TEXT PRIMARY KEY, company_id INTEGER NOT NULL, ano INTEGER NOT NULL, tipo TEXT NOT NULL, ref_id TEXT NOT NULL, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+// Junta o que está gravado com o que chegou: registro a registro (áreas, lideranças, indicadores) vale o mais novo
+// (_m = quando foi mexido) e o que foi excluído (removidos) não volta — assim o link da área e a tela da revenda
+// podem gravar ao mesmo tempo sem uma apagar o que a outra fez.
+function mergeMetasDpo(atual, novo) {
+    atual = atual || {}; novo = novo || {};
+    const rem = new Set([...(atual.removidos || []), ...(novo.removidos || [])]);
+    const out = { ...novo, removidos: [...rem].slice(-3000) };
+    ['areas', 'lideres', 'indicadores'].forEach(k => {
+        const m = new Map();
+        (Array.isArray(atual[k]) ? atual[k] : []).forEach(x => { if (x && x.id) m.set(x.id, x); });
+        (Array.isArray(novo[k]) ? novo[k] : []).forEach(x => { if (!x || !x.id) return; const a = m.get(x.id); if (!a || (Number(x._m) || 0) >= (Number(a._m) || 0)) m.set(x.id, x); });
+        out[k] = [...m.values()].filter(x => !rem.has(x.id));
+    });
+    return out;
+}
+const FILA_METAS_DPO = new Map(); // uma gravação por vez em cada (empresa, ano)
+function filaMetasDpo(chaveFila, fn) {
+    const ant = FILA_METAS_DPO.get(chaveFila) || Promise.resolve();
+    const prox = ant.catch(() => {}).then(fn);
+    FILA_METAS_DPO.set(chaveFila, prox.catch(() => {}));
+    return prox;
+}
+async function gravarMetasDpo(companyId, ano, dados, userId) {
+    const json = JSON.stringify(dados);
+    if (json.length > 1500000) throw new Error('Dados grandes demais para salvar.');
+    await dbRun(`INSERT INTO dpo_ferramentas_digitais (company_id, chave, ano, dados, updated_by, updated_at) VALUES (?, 'metas', ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(company_id, chave, ano) DO UPDATE SET dados = excluded.dados, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP`, [companyId, ano, json, userId || null]);
+}
+function idMetasDpo() { return crypto.randomBytes(6).toString('base64url').replace(/[-_]/g, 'x').slice(0, 8); }
+async function linkMetasDpo(companyId, ano, tipo, refId) {
+    const ja = await dbGet(`SELECT token FROM metas_links WHERE company_id = ? AND ano = ? AND tipo = ? AND ref_id = ?`, [companyId, ano, tipo, String(refId)]);
+    if (ja) return ja.token;
+    const token = crypto.randomBytes(12).toString('base64url');
+    await dbRun(`INSERT INTO metas_links (token, company_id, ano, tipo, ref_id) VALUES (?, ?, ?, ?, ?)`, [token, companyId, ano, tipo, String(refId)]);
+    return token;
+}
+// A revenda (ou o Master) gera o link de uma área ou de uma pessoa
+app.post('/api/dpo/metas/link', requireRole('admin', 'client_admin'), async (req, res) => {
+    try {
+        const f = await resolverFerramentaDigitalDpo(req, res, 'metas', req.body.company_id);
+        if (!f) return;
+        const tipo = req.body.tipo === 'area' ? 'area' : 'pessoa', ref = String(req.body.ref_id || '').trim();
+        if (!ref) return res.status(400).json({ error: 'Informe a área ou a pessoa.' });
+        res.json({ token: await linkMetasDpo(f.companyId, anoValidoDpo(req.body.ano), tipo, ref), tipo });
+    } catch (e) { res.status(400).json({ error: 'Erro ao gerar o link.' }); }
+});
+async function abrirLinkMetasDpo(token, tipo) {
+    const l = await dbGet(`SELECT * FROM metas_links WHERE token = ? AND tipo = ?`, [String(token || ''), tipo]);
+    if (!l) return null;
+    const emp = await dbGet(`SELECT id, name, logo_url FROM companies WHERE id = ?`, [l.company_id]);
+    if (!emp) return null;
+    if (!(await acompLiberadoDpo(l.company_id, 'gestao:3.4'))) return { bloqueado: true, emp };
+    const dados = (await carregarFerramentaDigitalDpo(l.company_id, 'metas', l.ano)).dados || {};
+    ['areas', 'lideres', 'indicadores', 'acoes', 'gapas'].forEach(k => { if (!Array.isArray(dados[k])) dados[k] = []; });
+    return { link: l, emp, dados };
+}
+const limparIndMetasDpo = i => ({ id: i.id, lider: i.lider, nome: i.nome, tipo: i.tipo, sentido: i.sentido, peso: i.peso, valor: i.valor, metaAno: i.metaAno, metas: i.metas || [], reais: i.reais || [], estrategia: i.estrategia || '' });
+const limparLiderMetasDpo = l => ({ id: l.id, nome: l.nome, cargo: l.cargo || '', setor: l.setor || '', gestor: l.gestor || '', foto: l.foto || '', whats: l.whats || '', area: l.area || '' });
+app.get('/api/public/metas/:tipo/:token', async (req, res) => {
+    try {
+        const tipo = req.params.tipo === 'a' ? 'area' : req.params.tipo === 'p' ? 'pessoa' : null;
+        if (!tipo) return res.status(404).json({ error: 'Link inválido.' });
+        const r = await abrirLinkMetasDpo(req.params.token, tipo);
+        if (!r) return res.status(404).json({ error: 'Link não encontrado ou desativado. Peça um novo link para a sua liderança.' });
+        const empresa = { nome: r.emp.name, logo: r.emp.logo_url || '' };
+        if (r.bloqueado) return res.status(403).json({ error: 'O acompanhamento de metas ainda não está liberado para ' + r.emp.name + '.', empresa });
+        const d = r.dados, ano = r.link.ano;
+        if (tipo === 'area') {
+            const area = d.areas.find(a => a.id === r.link.ref_id);
+            if (!area) return res.status(404).json({ error: 'Esta área foi removida. Peça um novo link.' });
+            const lideres = d.lideres.filter(l => l.area === area.id || (!l.area && area.nome && l.setor === area.nome));
+            const ids = new Set(lideres.map(l => l.id));
+            const tok = {}; // toda pessoa da área já sai com o link dela pronto
+            for (const l of lideres) tok[l.id] = await linkMetasDpo(r.link.company_id, ano, 'pessoa', l.id);
+            return res.json({ tipo, ano, empresa, area: { id: area.id, nome: area.nome, responsavel: area.responsavel || '' }, lideres: lideres.map(l => ({ ...limparLiderMetasDpo(l), token: tok[l.id] || null })), indicadores: d.indicadores.filter(i => ids.has(i.lider)).map(limparIndMetasDpo), agora: Date.now() });
+        }
+        const l = d.lideres.find(x => x.id === r.link.ref_id);
+        if (!l) return res.status(404).json({ error: 'Seu cadastro de metas foi removido. Fale com a sua liderança.' });
+        const area = d.areas.find(a => a.id === l.area);
+        res.json({ tipo, ano, empresa, area: area ? { nome: area.nome, responsavel: area.responsavel || '' } : null, lider: limparLiderMetasDpo(l), indicadores: d.indicadores.filter(i => i.lider === l.id).map(limparIndMetasDpo),
+            acoes: d.acoes.filter(a => a.lider === l.id).map(a => ({ o_que: a.o_que, quem: a.quem, quando: a.quando, status: a.status })), gapas: d.gapas.filter(g => g.lider === l.id).length, agora: Date.now() });
+    } catch (e) { console.error('Link de metas:', e.message); res.status(500).json({ error: 'Erro ao abrir o link.' }); }
+});
+// O responsável da área grava pelo link: pessoas, indicadores, metas e o real do mês
+app.post('/api/public/metas/a/:token', async (req, res) => {
+    try {
+        const l0 = await dbGet(`SELECT * FROM metas_links WHERE token = ? AND tipo = 'area'`, [String(req.params.token || '')]);
+        if (!l0) return res.status(404).json({ error: 'Link não encontrado.' });
+        const out = await filaMetasDpo(l0.company_id + ':' + l0.ano, async () => {
+            const r = await abrirLinkMetasDpo(req.params.token, 'area');
+            if (!r || r.bloqueado) throw Object.assign(new Error('Link indisponível.'), { st: 403 });
+            const d = r.dados, area = d.areas.find(a => a.id === r.link.ref_id);
+            if (!area) throw Object.assign(new Error('Esta área foi removida.'), { st: 404 });
+            const meus = l => l && (l.area === area.id || (!l.area && area.nome && l.setor === area.nome));
+            const b = req.body || {}, agora = Date.now(), txt = (v, n) => String(v == null ? '' : v).trim().slice(0, n || 200);
+            const num = v => { if (v === '' || v === null || v === undefined) return ''; const n = Number(String(v).replace(/\./g, '').replace(',', '.')); return isFinite(n) ? n : ''; };
+            const numCru = v => { if (v === '' || v === null || v === undefined) return ''; const n = typeof v === 'number' ? v : Number(String(v).replace(',', '.')); return isFinite(n) ? n : ''; };
+            let resp = { ok: true };
+            d.removidos = Array.isArray(d.removidos) ? d.removidos : [];
+            if (b.op === 'lider') {
+                const nome = txt(b.nome, 120); if (!nome) throw Object.assign(new Error('Informe o nome.'), { st: 400 });
+                let l = b.id ? d.lideres.find(x => x.id === b.id) : null;
+                if (b.id && !meus(l)) throw Object.assign(new Error('Pessoa não encontrada nesta área.'), { st: 404 });
+                if (!l) { l = { id: idMetasDpo(), area: area.id, setor: area.nome, gestor: area.responsavel || '', foto: '' }; d.lideres.push(l); }
+                Object.assign(l, { nome, cargo: txt(b.cargo, 120), whats: txt(b.whats, 30).replace(/[^\d+]/g, ''), _m: agora });
+                resp.lider = { ...limparLiderMetasDpo(l), token: await linkMetasDpo(r.link.company_id, r.link.ano, 'pessoa', l.id) };
+            } else if (b.op === 'delLider') {
+                const l = d.lideres.find(x => x.id === b.id); if (!meus(l)) throw Object.assign(new Error('Pessoa não encontrada nesta área.'), { st: 404 });
+                const inds = d.indicadores.filter(i => i.lider === l.id).map(i => i.id);
+                d.lideres = d.lideres.filter(x => x.id !== l.id); d.indicadores = d.indicadores.filter(i => i.lider !== l.id); d.removidos.push(l.id, ...inds);
+            } else if (b.op === 'ind') {
+                const l = d.lideres.find(x => x.id === b.lider); if (!meus(l)) throw Object.assign(new Error('Pessoa não encontrada nesta área.'), { st: 404 });
+                const nome = txt(b.nome, 120); if (!nome) throw Object.assign(new Error('Informe o nome do indicador.'), { st: 400 });
+                let i = b.id ? d.indicadores.find(x => x.id === b.id) : null;
+                if (b.id && (!i || i.lider !== l.id)) throw Object.assign(new Error('Indicador não encontrado.'), { st: 404 });
+                if (!i) { i = { id: idMetasDpo(), lider: l.id, metas: [], reais: [], peso: 1 }; d.indicadores.push(i); }
+                Object.assign(i, { nome, tipo: ['pct', 'moeda', 'numero'].includes(b.tipo) ? b.tipo : 'numero', sentido: b.sentido === 'menor' ? 'menor' : 'maior', metaAno: numCru(b.metaAno), valor: numCru(b.valor), estrategia: txt(b.estrategia, 300), _m: agora });
+                resp.indicador = limparIndMetasDpo(i);
+            } else if (b.op === 'delInd') {
+                const i = d.indicadores.find(x => x.id === b.id), l = i && d.lideres.find(x => x.id === i.lider);
+                if (!i || !meus(l)) throw Object.assign(new Error('Indicador não encontrado.'), { st: 404 });
+                d.indicadores = d.indicadores.filter(x => x.id !== i.id); d.removidos.push(i.id);
+            } else if (b.op === 'valor') {
+                const i = d.indicadores.find(x => x.id === b.ind), l = i && d.lideres.find(x => x.id === i.lider);
+                if (!i || !meus(l)) throw Object.assign(new Error('Indicador não encontrado.'), { st: 404 });
+                const m = Number(b.mes), campo = b.campo === 'metas' ? 'metas' : 'reais';
+                if (!(m >= 0 && m <= 11)) throw Object.assign(new Error('Mês inválido.'), { st: 400 });
+                i[campo] = Array.isArray(i[campo]) ? i[campo] : []; while (i[campo].length < 12) i[campo].push('');
+                i[campo][m] = numCru(b.valor); i._m = agora;
+                resp.indicador = limparIndMetasDpo(i);
+            } else throw Object.assign(new Error('Operação inválida.'), { st: 400 });
+            await gravarMetasDpo(r.link.company_id, r.link.ano, d, null);
+            return resp;
+        });
+        res.json(out);
+    } catch (e) { res.status(e.st || 400).json({ error: e.st ? e.message : 'Erro ao salvar.' }); if (!e.st) console.error('Link de metas (gravar):', e.message); }
+});
+app.get(['/metas/a/:token', '/metas/p/:token'], (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'metas.html')));
+
 app.get('/api/dpo/ferramentas-digitais/:chave', requireRole('admin', 'client_admin'), async (req, res) => {
     try {
         const f = await resolverFerramentaDigitalDpo(req, res, req.params.chave, req.query.company_id);
@@ -11539,6 +11683,15 @@ app.put('/api/dpo/ferramentas-digitais/:chave', requireRole('admin', 'client_adm
         if (req.params.chave === 'gop') dados = garantirPlanosGopDpo(dados);
         if (req.params.chave === 'cinco_s') dados = garantirPlanos5sDpo(dados);
         if ((req.params.chave === 'p3a' || req.params.chave === 'capex') && req.user.role !== 'admin') dados = await protegerCamposDpo(req.params.chave, f.companyId, ano, dados, req.user);
+        if (req.params.chave === 'metas') {
+            // junta com o que os links das áreas gravaram enquanto a tela estava aberta
+            const final = await filaMetasDpo(f.companyId + ':' + ano, async () => {
+                const m = mergeMetasDpo((await carregarFerramentaDigitalDpo(f.companyId, 'metas', ano)).dados, dados);
+                await gravarMetasDpo(f.companyId, ano, m, req.user.userId);
+                return m;
+            });
+            return res.json({ message: 'Salvo!', validacao: null, metas: { areas: final.areas, lideres: final.lideres, indicadores: final.indicadores, removidos: final.removidos } });
+        }
         const json = JSON.stringify(dados);
         if (json.length > 1500000) return res.status(400).json({ error: 'Dados grandes demais para salvar.' });
         await new Promise((resolve, reject) => db.run(
