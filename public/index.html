@@ -1578,6 +1578,7 @@
   .mi-sel td { background:#eff6ff; } .mi-fotobt { cursor:pointer; display:inline-block; } .mi-fotobt input { display:none; }
   .mi-pend { background:#fff7ed; border:1px solid #fed7aa; border-radius:12px; padding:10px; margin-bottom:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; } .mi-pend b { width:100%; color:#9a3412; } .mi-pend button { border:1px solid #fdba74; background:#fff; border-radius:999px; padding:3px 10px; font-size:12px; cursor:pointer; }
   .mi-okmsg { background:#dcfce7; border-radius:10px; padding:8px 12px; margin-bottom:10px; font-size:13px; }
+  .acomp-fora { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:10px; background:#fff7ed; border:1px solid #fed7aa; } .acomp-fora-bts { display:flex; gap:6px; flex-wrap:wrap; }
   .gr-hero { background:linear-gradient(120deg,#3b5bdb,#5c7cfa); color:#fff; border-radius:16px; padding:16px 18px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:12px; } .gr-hero small { opacity:.8; letter-spacing:1px; font-size:11px; } .gr-hero h2 { margin:2px 0; font-size:26px; } .gr-hero span { font-size:12.5px; opacity:.9; }
   .gr-hero-bt { display:flex; gap:6px; flex-wrap:wrap; } .gr-hero-bt button { border:1px solid rgba(255,255,255,.55); background:rgba(255,255,255,.15); color:#fff; border-radius:10px; padding:8px 12px; font-weight:700; cursor:pointer; font-size:12.5px; }
   .gr-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; } .gr-cards > div { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; } .gr-cards small { color:#64748b; font-size:11px; font-weight:700; letter-spacing:.5px; display:block; } .gr-cards b { font-size:26px; display:block; } .gr-cards span { color:#94a3b8; font-size:12px; }
@@ -2272,7 +2273,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 20/11 (2)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 20/11 (3)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -16413,9 +16414,9 @@ async function renderDpoAcompanhamentosMaster() {
   cont.innerHTML = '<h1>🚀 Acompanhamentos Impulsionar</h1><p>Carregando...</p>';
   try {
     if (!ACOMP_MASTER.catalogo) ACOMP_MASTER.catalogo = await api('/api/admin/dpo/acompanhamentos/catalogo');
-    ACOMP_MASTER.empresas = await api('/api/admin/dpo/companies');
+    ACOMP_MASTER.empresas = await api('/api/admin/dpo/companies?all=1');
     if (ACOMP_MASTER.companyId && !ACOMP_MASTER.empresas.some(e => e.id === ACOMP_MASTER.companyId)) ACOMP_MASTER.companyId = null;
-    if (!ACOMP_MASTER.companyId && ACOMP_MASTER.empresas[0]) ACOMP_MASTER.companyId = ACOMP_MASTER.empresas[0].id;
+    if (!ACOMP_MASTER.companyId) { const c = ACOMP_MASTER.empresas.find(e => (e.pilaresAtivos || []).length) || ACOMP_MASTER.empresas[0]; if (c) ACOMP_MASTER.companyId = c.id; }
     if (ACOMP_MASTER.companyId) {
       const r = await api('/api/admin/dpo/acompanhamentos/liberacoes?company_id=' + ACOMP_MASTER.companyId);
       ACOMP_MASTER.libs = new Set(r.liberacoes.map(l => l.question_key)); ACOMP_MASTER.resumos = r.resumos; ACOMP_MASTER.ativos = r.pilaresAtivos;
@@ -16427,15 +16428,18 @@ function desenharAcompMaster() {
   const cont = document.getElementById('conteudo');
   const M = ACOMP_MASTER, busca = M.busca.toLowerCase();
   const catalogo = M.catalogo.filter(p => M.ativos.includes(p.key));
-  const total = catalogo.reduce((s, p) => s + p.perguntas.length, 0);
+  const total = catalogo.reduce((s, p) => s + p.perguntas.length, 0), libAtivas = catalogo.reduce((s, p) => s + p.perguntas.filter(q => M.libs.has(q.questionKey)).length, 0);
+  const emp = M.empresas.find(e => e.id === M.companyId) || {}, trials = emp.trialsAtivos || [];
+  const trialDe = k => trials.find(t => t.scope === 'completo' || t.pillarKey === k), dataBr = d => new Date(d).toLocaleDateString('pt-BR');
+  const fora = M.catalogo.filter(p => !M.ativos.includes(p.key));
   const cont3 = Object.values(M.resumos).filter(r => r.resumo && r.resumo.nota === '3').length;
   cont.innerHTML = `
     <h1>🚀 Acompanhamentos Impulsionar — liberações por revenda</h1>
-    <p style="color:#64748b;margin-top:-8px;">Cada pergunta do checklist tem um acompanhamento montado a partir da verificação (blocos 🗓️ reuniões, 📈 indicadores, 📄 padrões, 🎓 treinamentos, ⚙️ processos, 🚨 ocorrências, ⚠️ riscos, 🔍 inspeções, 🔁 plano de ação). Por enquanto eles ficam <strong>restritos por pergunta</strong>: libere aqui, revenda a revenda. Aparecem só as revendas e os pilares com pacote contratado.</p>
+    <p style="color:#64748b;margin-top:-8px;">Cada pergunta do checklist tem um acompanhamento montado a partir da verificação (blocos 🗓️ reuniões, 📈 indicadores, 📄 padrões, 🎓 treinamentos, ⚙️ processos, 🚨 ocorrências, ⚠️ riscos, 🔍 inspeções, 🔁 plano de ação). Por enquanto eles ficam <strong>restritos por pergunta</strong>: libere aqui, revenda a revenda. Aparecem todas as revendas cadastradas; os pilares que a revenda ainda não tem ficam no quadro 🔒 para você liberar.</p>
     <div class="painel" style="margin-bottom:14px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
       <div style="min-width:260px;"><label style="margin-top:0;">Revenda</label>
-        <select onchange="ACOMP_MASTER.companyId = Number(this.value); renderDpoAcompanhamentosMaster();">${M.empresas.map(e => `<option value="${e.id}" ${e.id === M.companyId ? 'selected' : ''}>${escapeHtml(e.name)}</option>`).join('')}</select></div>
-      <div class="kpi-card" style="padding:10px 14px;"><div class="valor" style="font-size:22px;">${M.libs.size}/${total}</div><div class="rotulo">perguntas liberadas</div></div>
+        <select onchange="ACOMP_MASTER.companyId = Number(this.value); renderDpoAcompanhamentosMaster();">${M.empresas.map(e => `<option value="${e.id}" ${e.id === M.companyId ? 'selected' : ''}>${escapeHtml(e.name)}${(e.pilaresAtivos || []).length ? ' · ' + e.pilaresAtivos.length + ' pilar(es)' : ' · sem pilar liberado'}</option>`).join('')}</select></div>
+      <div class="kpi-card" style="padding:10px 14px;"><div class="valor" style="font-size:22px;">${libAtivas}/${total}</div><div class="rotulo">perguntas liberadas</div></div>
       <div class="kpi-card" style="padding:10px 14px;"><div class="valor" style="font-size:22px;">${Object.keys(M.resumos).length}</div><div class="rotulo">em uso pela revenda</div></div>
       <div class="kpi-card" style="padding:10px 14px;"><div class="valor" style="font-size:22px;color:#16a34a;">${cont3}</div><div class="rotulo">com nota sugerida 3</div></div>
       <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">
@@ -16444,7 +16448,10 @@ function desenharAcompMaster() {
         <button class="btn-perigo btn-sm" onclick="acompMasterLiberarTodos(false)">Bloquear tudo</button>
       </div>
     </div>
-    ${!M.companyId ? '<div class="msg-vazio">Nenhuma revenda com pacote DPO contratado.</div>' : catalogo.map(p => {
+    ${M.companyId && fora.length ? `<div class="painel acomp-fora"><div style="flex:1;min-width:240px;"><strong>🔒 ${fora.length} pilar(es) ainda não liberado(s) para ${escapeHtml(emp.name || 'esta revenda')}</strong><div style="font-size:12.5px;color:#64748b;margin-top:2px;">Para a revenda usar os acompanhamentos e as ferramentas (ex.: 🎯 Metas Individuais na Gestão 3.4), o pilar precisa estar liberado. Libere aqui sem cobrança (cortesia/teste pelo prazo que você escolher) — a venda com valor continua em Agenda de Consultorias.</div></div>
+      <div class="acomp-fora-bts">${fora.map(p => `<button class="btn-secundario btn-sm" onclick="acompMasterLiberarPilar('pilar', '${p.key}', '${escapeHtml(p.label).replace(/'/g, '')}')">🎁 ${p.numero} - ${escapeHtml(p.label)}</button>`).join('')}${fora.length > 1 ? `<button class="btn-primario btn-sm" style="width:auto;" onclick="acompMasterLiberarPilar('completo', null, 'todos os pilares')">🎁 Liberar todos os pilares</button>` : ''}</div></div>` : ''}
+    ${trials.length ? `<div style="font-size:12.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 12px;margin-bottom:10px;">⏳ Liberação por prazo: ${trials.map(t => (t.scope === 'completo' ? 'todos os pilares' : ((M.catalogo.find(p => p.key === t.pillarKey) || {}).label || t.pillarKey)) + ' até ' + dataBr(t.expiraEm)).join(' · ')}</div>` : ''}
+    ${!M.companyId ? '<div class="msg-vazio">Nenhuma revenda cadastrada.</div>' : !catalogo.length ? '<div class="msg-vazio">Esta revenda ainda não tem nenhum pilar liberado — use os botões 🎁 acima.</div>' : catalogo.map(p => {
       const perguntas = p.perguntas.filter(q => !busca || (q.numero + ' ' + q.questao + ' ' + q.grupo).toLowerCase().includes(busca));
       if (!perguntas.length) return '';
       const lib = p.perguntas.filter(q => M.libs.has(q.questionKey)).length;
@@ -16465,6 +16472,17 @@ function desenharAcompMaster() {
         }).join('')}</div>
       </details>`;
     }).join('')}`;
+}
+async function acompMasterLiberarPilar(scope, pillarKey, rotulo) {
+  const M = ACOMP_MASTER, emp = M.empresas.find(e => e.id === M.companyId) || {};
+  const dias = prompt(`Liberar ${rotulo} para ${emp.name || 'a revenda'} sem cobrança.\n\nPor quantos dias? (365 = 1 ano)`, '365');
+  if (dias === null) return; const n = Number(String(dias).replace(',', '.'));
+  if (!n || n <= 0) { mostrarToast('Informe a quantidade de dias.', true); return; }
+  try {
+    const r = await api('/api/admin/dpo/grant-trial', { method: 'POST', body: JSON.stringify({ companyId: M.companyId, scope, pillarKey, days: Math.round(n) }) });
+    mostrarToast('🎁 ' + r.message);
+    await renderDpoAcompanhamentosMaster();
+  } catch (e) { mostrarToast(e.message, true); }
 }
 async function acompMasterToggle(keys, liberado) {
   try {
