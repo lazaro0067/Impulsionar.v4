@@ -7682,7 +7682,11 @@ app.get('/api/admin/dpo/companies', requireRole('admin'), async (req, res) => {
         // ?all=1 traz todas as empresas (usado na precificação negociada e na
         // agenda da Auditoria Oficial); sem o parâmetro, mantém o comportamento
         // original de só listar quem já tem algum pilar liberado (uso nos ciclos).
-        const empresas = await dbAll(`SELECT id, name, dpo_auditoria_oficial_data, dpo_auditoria_oficial_nota, dpo_primeira_auditoria FROM companies ORDER BY name ASC`);
+        const empresas = await dbAll(`SELECT c.id, c.name, c.dpo_auditoria_oficial_data, c.dpo_auditoria_oficial_nota, c.dpo_primeira_auditoria,
+                COALESCE(c.vaga_credito_dias, 0) AS creditoDias,
+                (SELECT COUNT(*) FROM vaga_creditos_log l WHERE l.company_id = c.id AND l.tipo = 'concedido') AS creditosConcedidos,
+                (SELECT COUNT(*) FROM contracts k WHERE k.company_id = c.id AND k.status = 'assinado') AS contratosAssinados
+            FROM companies c ORDER BY c.name ASC`);
         const resultado = [];
         for (const emp of empresas) {
             const ativos = await pilaresAtivosDaEmpresa(emp.id);
@@ -7690,6 +7694,8 @@ app.get('/api/admin/dpo/companies', requireRole('admin'), async (req, res) => {
                 const trials = await dbAll(`SELECT id, scope, pillar_key, trial_expires_at FROM dpo_purchases WHERE company_id = ? AND status = 'paid' AND is_trial = 1 AND trial_expires_at > datetime('now') ORDER BY trial_expires_at ASC`, [emp.id]);
                 resultado.push({
                     id: emp.id, name: emp.name, pilaresAtivos: ativos,
+                    // Contrato assinado ou crédito liberado pelo Master = revenda apta a receber os acompanhamentos/pilares
+                    contratoAtivo: emp.contratosAssinados > 0, comCredito: emp.creditoDias > 0 || emp.creditosConcedidos > 0,
                     compraCompleta: ativos.length === DPO_PILARES_ORDEM.length,
                     auditoriaOficialData: emp.dpo_auditoria_oficial_data || null,
                     auditoriaOficialNota: emp.dpo_auditoria_oficial_nota || null,
@@ -12090,9 +12096,14 @@ function exportarExclusivaDpo(chave, add, dados) {
         const inds = (d.indicadores || []).filter(i => i.nome && lid[i.lider]);
         add('Indicadores', [['Liderança', 'lider', 24], ['Indicador', 'nome', 30], ['Tipo', 'tipo', 8], ['Sentido', 'sentido', 14], ['Peso', 'peso', 7], ['Prêmio R$/mês', 'valor', 12], ['Meta do ano', 'metaAno', 11], ['Ligação estratégia / Sonho', 'estrategia', 40]], inds.map(i => ({ ...i, lider: lid[i.lider].nome, sentido: i.sentido === 'menor' ? 'menor melhor' : 'maior melhor' })));
         const lin = [];
-        inds.forEach(i => M.forEach((m, k) => { const meta = num((i.metas || [])[k]) ?? num(i.metaAno), real = num((i.reais || [])[k]), le = num((i.le || [])[k]); if (real === null && le === null && num((i.metas || [])[k]) === null) return; const a = at(meta, real, i.sentido); lin.push({ lider: lid[i.lider].nome, ind: i.nome, mes: m, meta, real, le, ating: a === null ? '' : Math.round(a * 10) / 10, bateu: a === null ? '' : a >= 100 - 1e-9 ? 'Sim' : 'Não', premio: a !== null && a >= 100 - 1e-9 ? (num(i.valor) || 0) : 0 }); }));
-        tabela('Meta x Real x LE', lin, [['Liderança', 'lider', 24], ['Indicador', 'ind', 30], ['Mês', 'mes', 7], ['Meta', 'meta', 10], ['Real', 'real', 10], ['LE', 'le', 10], ['Atingimento %', 'ating', 12], ['Bateu', 'bateu', 8], ['Prêmio R$', 'premio', 11]]);
-        tabela('GAPA', d.planos, [['Liderança — indicador', 'ind', 32], ['Mês', 'mes', 7], ['Gap', 'gap', 28], ['Causa raiz', 'causa', 32], ['Contramedida', 'acao', 32], ['Responsável', 'resp', 18], ['Prazo', 'prazo', 12], ['Status', 'status', 14], ['Revisado em', 'revisao', 12]]);
+        inds.forEach(i => M.forEach((m, k) => { const meta = num((i.metas || [])[k]) ?? num(i.metaAno), real = num((i.reais || [])[k]); if (real === null && num((i.metas || [])[k]) === null) return; const a = at(meta, real, i.sentido); lin.push({ lider: lid[i.lider].nome, ind: i.nome, mes: m, meta, real, ating: a === null ? '' : Math.round(a * 10) / 10, bateu: a === null ? '' : a >= 100 - 1e-9 ? 'Sim' : 'Não', premio: a !== null && a >= 100 - 1e-9 ? (num(i.valor) || 0) : 0 }); }));
+        tabela('Meta x Real', lin, [['Liderança', 'lider', 24], ['Indicador', 'ind', 30], ['Mês', 'mes', 7], ['Meta', 'meta', 10], ['Real', 'real', 10], ['Atingimento %', 'ating', 12], ['Bateu', 'bateu', 8], ['Prêmio R$', 'premio', 11]]);
+const nomeInd = id => { const i = (d.indicadores || []).find(x => x.id === id); return i ? i.nome : ''; }, nomeLid = id => (lid[id] || {}).nome || '';
+        const stA = { aberta: 'Aberta', andamento: 'Em andamento', concluida: 'Concluída', cancelada: 'Cancelada' };
+        tabela('Plano de ação 5W2H', (d.acoes || []).map(a => ({ ...a, lider: nomeLid(a.lider), ind: nomeInd(a.ind), status: stA[a.status] || a.status, gapa: a.gapa ? 'Sim' : '' })), [['Liderança', 'lider', 22], ['Indicador', 'ind', 24], ['O quê', 'o_que', 44], ['Por quê', 'por_que', 26], ['Quem', 'quem', 18], ['Onde', 'onde', 14], ['Quando', 'quando', 12], ['Como', 'como', 30], ['Quanto', 'quanto', 12], ['Status', 'status', 14], ['Da GAPA', 'gapa', 9]]);
+        const SEIS = { metodo: 'Método', mao_obra: 'Mão de obra', maquina: 'Máquina', material: 'Material', medida: 'Medida', meio: 'Meio ambiente' };
+        tabela('GAPA', (d.gapas || []).map(g => ({ lider: nomeLid(g.lider), ind: nomeInd(g.ind), status: stA[g.status] || g.status, problema: g.problema, causas: Object.entries(g.causas || {}).filter(([, v]) => v).map(([k, v]) => (SEIS[k] || k) + ': ' + v).join(' | '), porques: (g.porques || []).filter(Boolean).map((v, n) => (n + 1) + 'º ' + v).join(' | '), causaRaiz: g.causaRaiz, verificacao: g.verificacao, criadoEm: g.criadoEm })), [['Liderança', 'lider', 22], ['Indicador', 'ind', 24], ['Status', 'status', 14], ['Problema', 'problema', 50], ['Causas 6M', 'causas', 50], ['5 porquês', 'porques', 50], ['Causa raiz', 'causaRaiz', 34], ['Verificação', 'verificacao', 34], ['Aberta em', 'criadoEm', 12]]);
+        tabela('Follow e reuniões', (d.follows || []).map(f => ({ ...f, lider: nomeLid(f.lider), tipo: f.tipo === 'reuniao' ? 'Reunião' : 'Comentário', ref: f.acao ? 'Ação: ' + (((d.acoes || []).find(a => a.id === f.acao) || {}).o_que || '') : f.gapa ? 'GAPA' : '' })), [['Liderança', 'lider', 22], ['Tipo', 'tipo', 12], ['Data', 'data', 12], ['Sobre', 'ref', 30], ['Texto / pauta', 'texto', 50], ['Combinados', 'combinados', 36], ['Próxima', 'proxima', 12], ['Autor', 'autor', 18]]);
         tabela('Reuniões mensais', d.reunioes, [['Data', 'data', 12], ['Mês ref.', 'mes', 8], ['Participantes', 'participantes', 30], ['Decisões', 'decisoes', 50]]);
         tabela('Entrevistas', d.entrevistas, [['Data', 'data', 12], ['Pessoa', 'nome', 24], ['Função', 'funcao', 18], ['Sabe o alvo', 'conhece', 12], ['Explicou a ligação', 'liga', 14], ['Observação', 'obs', 40]]);
         if (d.planoAtingimento && d.planoAtingimento.texto) add('Plano de atingimento', [['Data', 'data', 12], ['Onde está', 'onde', 30], ['Resumo', 'texto', 90]], [d.planoAtingimento]);

@@ -1575,6 +1575,14 @@
   .mi-dots { display:flex; gap:3px; margin-top:8px; } .mi-dots i { flex:1; text-align:center; font-style:normal; font-size:9.5px; font-weight:700; border-radius:4px; padding:2px 0; background:#f1f5f9; color:#94a3b8; } .mi-dots i.ok { background:#14a06f; color:#fff; } .mi-dots i.fora { background:#d43c3b; color:#fff; }
   .mi-lig { margin-top:8px; font-size:12px; background:#fffbeb; border-radius:8px; padding:5px 8px; color:#78350f; }
   .mi-tab th.mi-rl { font-size:11px; color:#334155; background:#f1f5f9; text-align:right; position:static; } .mi-tab tr.mi-le td { border-bottom:2px solid #e2e8f0; } .mi-tab tr.mi-le .gr-inp { background:#eef2ff; border-color:#c7d2fe; }
+  .mi-sub { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 12px; } .mi-sub button { border:1px solid #cbd5e1; background:#fff; border-radius:999px; padding:6px 14px; font-weight:700; font-size:13px; cursor:pointer; color:#334155; } .mi-sub button.on { background:#0b3d91; border-color:#0b3d91; color:#fff; }
+  .mi-acs { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; } .mi-ac { display:flex; gap:10px; background:#fff; border:1px solid #e2e8f0; border-left:4px solid #94a3b8; border-radius:12px; padding:10px 12px; } .mi-ac.andamento { border-left-color:#2563eb; } .mi-ac.concluida { border-left-color:#14a06f; opacity:.85; } .mi-ac.cancelada { opacity:.55; } .mi-ac.atrasada { border-left-color:#d43c3b; background:#fff7f7; }
+  .mi-ac-l { flex:1; min-width:0; } .mi-ac-m { font-size:12px; color:#5b6577; margin-top:2px; } .mi-ac-r { display:flex; gap:4px; align-items:flex-start; } .mi-ac-r select { width:auto; margin:0; font-size:12.5px; padding:4px 6px; }
+  .mi-cm { margin-top:6px; font-size:12.5px; } .mi-cm summary { cursor:pointer; color:#475569; font-weight:600; } .mi-cm-it { position:relative; background:#f8fafc; border-radius:8px; padding:6px 30px 6px 8px; margin:5px 0; font-size:12.5px; } .mi-cm-it small { color:#6b7588; } .mi-cm-it .btn-icone { position:absolute; right:4px; top:3px; } .mi-cm-novo { display:flex; gap:6px; align-items:flex-end; } .mi-cm-novo textarea { margin:0; flex:1; }
+  .mi-nova summary { cursor:pointer; font-weight:700; } .mi-gsel { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; } .mi-gsel button { border:1px solid #cbd5e1; background:#fff; border-radius:10px; padding:5px 10px; font-size:12.5px; cursor:pointer; } .mi-gsel button.on { background:#fff7ed; border-color:#f59e0b; font-weight:700; }
+  .mi-gapa h4 { margin:16px 0 6px; font-size:14.5px; color:#0f2747; } .mi-gapa h4 small { font-weight:400; color:#64748b; } .mi-gh { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:baseline; } .mi-gh h3 { margin:0; } .mi-gh small { color:#64748b; }
+  .mi-6m { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:8px; } .mi-6m label { font-size:12px; margin:0 0 2px; } .mi-6m textarea { margin:0; } .mi-pq { display:flex; gap:8px; align-items:center; margin-bottom:5px; } .mi-pq span { width:90px; font-size:12px; color:#64748b; flex:0 0 auto; } .mi-pq input { margin:0; }
+  .mi-reu { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; margin-bottom:8px; font-size:13px; display:flex; flex-direction:column; gap:4px; }
   .mi-sel td { background:#eff6ff; } .mi-fotobt { cursor:pointer; display:inline-block; } .mi-fotobt input { display:none; }
   .mi-pend { background:#fff7ed; border:1px solid #fed7aa; border-radius:12px; padding:10px; margin-bottom:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; } .mi-pend b { width:100%; color:#9a3412; } .mi-pend button { border:1px solid #fdba74; background:#fff; border-radius:999px; padding:3px 10px; font-size:12px; cursor:pointer; }
   .mi-okmsg { background:#dcfce7; border-radius:10px; padding:8px 12px; margin-bottom:10px; font-size:13px; }
@@ -2273,7 +2281,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 20/11 (3)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 20/11 (4)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -16414,7 +16422,10 @@ async function renderDpoAcompanhamentosMaster() {
   cont.innerHTML = '<h1>🚀 Acompanhamentos Impulsionar</h1><p>Carregando...</p>';
   try {
     if (!ACOMP_MASTER.catalogo) ACOMP_MASTER.catalogo = await api('/api/admin/dpo/acompanhamentos/catalogo');
-    ACOMP_MASTER.empresas = await api('/api/admin/dpo/companies?all=1');
+    const todas = await api('/api/admin/dpo/companies?all=1');
+    // Só revendas aptas: pilar DPO ativo (contratado/teste), contrato assinado ou crédito liberado pelo Master.
+    ACOMP_MASTER.empresas = todas.filter(e => (e.pilaresAtivos || []).length || e.contratoAtivo || e.comCredito);
+    ACOMP_MASTER.ocultas = todas.length - ACOMP_MASTER.empresas.length;
     if (ACOMP_MASTER.companyId && !ACOMP_MASTER.empresas.some(e => e.id === ACOMP_MASTER.companyId)) ACOMP_MASTER.companyId = null;
     if (!ACOMP_MASTER.companyId) { const c = ACOMP_MASTER.empresas.find(e => (e.pilaresAtivos || []).length) || ACOMP_MASTER.empresas[0]; if (c) ACOMP_MASTER.companyId = c.id; }
     if (ACOMP_MASTER.companyId) {
@@ -16435,10 +16446,10 @@ function desenharAcompMaster() {
   const cont3 = Object.values(M.resumos).filter(r => r.resumo && r.resumo.nota === '3').length;
   cont.innerHTML = `
     <h1>🚀 Acompanhamentos Impulsionar — liberações por revenda</h1>
-    <p style="color:#64748b;margin-top:-8px;">Cada pergunta do checklist tem um acompanhamento montado a partir da verificação (blocos 🗓️ reuniões, 📈 indicadores, 📄 padrões, 🎓 treinamentos, ⚙️ processos, 🚨 ocorrências, ⚠️ riscos, 🔍 inspeções, 🔁 plano de ação). Por enquanto eles ficam <strong>restritos por pergunta</strong>: libere aqui, revenda a revenda. Aparecem todas as revendas cadastradas; os pilares que a revenda ainda não tem ficam no quadro 🔒 para você liberar.</p>
+    <p style="color:#64748b;margin-top:-8px;">Cada pergunta do checklist tem um acompanhamento montado a partir da verificação (blocos 🗓️ reuniões, 📈 indicadores, 📄 padrões, 🎓 treinamentos, ⚙️ processos, 🚨 ocorrências, ⚠️ riscos, 🔍 inspeções, 🔁 plano de ação). Por enquanto eles ficam <strong>restritos por pergunta</strong>: libere aqui, revenda a revenda. Aparecem as revendas com pacote DPO, contrato ativo ou crédito liberado; os pilares que a revenda ainda não tem ficam no quadro 🔒 para você liberar.</p>
     <div class="painel" style="margin-bottom:14px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
       <div style="min-width:260px;"><label style="margin-top:0;">Revenda</label>
-        <select onchange="ACOMP_MASTER.companyId = Number(this.value); renderDpoAcompanhamentosMaster();">${M.empresas.map(e => `<option value="${e.id}" ${e.id === M.companyId ? 'selected' : ''}>${escapeHtml(e.name)}${(e.pilaresAtivos || []).length ? ' · ' + e.pilaresAtivos.length + ' pilar(es)' : ' · sem pilar liberado'}</option>`).join('')}</select></div>
+        <select onchange="ACOMP_MASTER.companyId = Number(this.value); renderDpoAcompanhamentosMaster();">${M.empresas.map(e => `<option value="${e.id}" ${e.id === M.companyId ? 'selected' : ''}>${escapeHtml(e.name)}${(e.pilaresAtivos || []).length ? ' · ' + e.pilaresAtivos.length + ' pilar(es)' : e.contratoAtivo ? ' · contrato ativo' : ' · com crédito'}</option>`).join('')}</select>${M.ocultas ? `<div style="font-size:11px;color:#94a3b8;margin-top:3px;">${M.ocultas} revenda(s) sem contrato ativo nem crédito não aparecem.</div>` : ''}</div>
       <div class="kpi-card" style="padding:10px 14px;"><div class="valor" style="font-size:22px;">${libAtivas}/${total}</div><div class="rotulo">perguntas liberadas</div></div>
       <div class="kpi-card" style="padding:10px 14px;"><div class="valor" style="font-size:22px;">${Object.keys(M.resumos).length}</div><div class="rotulo">em uso pela revenda</div></div>
       <div class="kpi-card" style="padding:10px 14px;"><div class="valor" style="font-size:22px;color:#16a34a;">${cont3}</div><div class="rotulo">com nota sugerida 3</div></div>
@@ -16451,7 +16462,7 @@ function desenharAcompMaster() {
     ${M.companyId && fora.length ? `<div class="painel acomp-fora"><div style="flex:1;min-width:240px;"><strong>🔒 ${fora.length} pilar(es) ainda não liberado(s) para ${escapeHtml(emp.name || 'esta revenda')}</strong><div style="font-size:12.5px;color:#64748b;margin-top:2px;">Para a revenda usar os acompanhamentos e as ferramentas (ex.: 🎯 Metas Individuais na Gestão 3.4), o pilar precisa estar liberado. Libere aqui sem cobrança (cortesia/teste pelo prazo que você escolher) — a venda com valor continua em Agenda de Consultorias.</div></div>
       <div class="acomp-fora-bts">${fora.map(p => `<button class="btn-secundario btn-sm" onclick="acompMasterLiberarPilar('pilar', '${p.key}', '${escapeHtml(p.label).replace(/'/g, '')}')">🎁 ${p.numero} - ${escapeHtml(p.label)}</button>`).join('')}${fora.length > 1 ? `<button class="btn-primario btn-sm" style="width:auto;" onclick="acompMasterLiberarPilar('completo', null, 'todos os pilares')">🎁 Liberar todos os pilares</button>` : ''}</div></div>` : ''}
     ${trials.length ? `<div style="font-size:12.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 12px;margin-bottom:10px;">⏳ Liberação por prazo: ${trials.map(t => (t.scope === 'completo' ? 'todos os pilares' : ((M.catalogo.find(p => p.key === t.pillarKey) || {}).label || t.pillarKey)) + ' até ' + dataBr(t.expiraEm)).join(' · ')}</div>` : ''}
-    ${!M.companyId ? '<div class="msg-vazio">Nenhuma revenda cadastrada.</div>' : !catalogo.length ? '<div class="msg-vazio">Esta revenda ainda não tem nenhum pilar liberado — use os botões 🎁 acima.</div>' : catalogo.map(p => {
+    ${!M.companyId ? '<div class="msg-vazio">Nenhuma revenda com contrato ativo ou crédito liberado. Libere crédito em Empresas › 💳 Créditos ou assine o contrato.</div>' : !catalogo.length ? '<div class="msg-vazio">Esta revenda ainda não tem nenhum pilar liberado — use os botões 🎁 acima.</div>' : catalogo.map(p => {
       const perguntas = p.perguntas.filter(q => !busca || (q.numero + ' ' + q.questao + ' ' + q.grupo).toLowerCase().includes(busca));
       if (!perguntas.length) return '';
       const lib = p.perguntas.filter(q => M.libs.has(q.questionKey)).length;
@@ -17243,7 +17254,7 @@ const EXCL = {
     abas: [['painel', '📊 GEROT'], ['cadastro', '⚙️ Indicadores'], ['arvore', '🌳 Árvore KPI'], ['valida', '✅ Validação 2.3'], ['arquivos', '📎 Evidências']],
     tipos: [['book', 'Book KPI'], ['carta', 'Carta de controle'], ['ata', 'Ata de reunião de rotina'], ['outro', 'Outro']] },
   metas: { q: 'gestao:3.4', icone: '🎯', titulo: 'Metas Individuais — Monitoramento de Alvo', sub: 'Gestão Revenda · pergunta <strong>3.4 Monitoramento de Alvo</strong>', req1: ['V.1', 'V.4'],
-    abas: [['painel', '🎯 Painel'], ['lancar', '✏️ Lançar meta e real'], ['cadastro', '⚙️ Lideranças e indicadores'], ['gapa', '🔁 GAPA / planos'], ['rotina', '📅 Rotina, LE e entrevistas'], ['valida', '✅ Validação 3.4'], ['arquivos', '📎 Evidências']],
+    abas: [['painel', '🎯 Painel'], ['lancar', '✏️ Lançar meta e real'], ['cadastro', '⚙️ Lideranças e indicadores'], ['gapa', '🧭 GAPA e planos'], ['rotina', '📅 Rotina e entrevistas'], ['valida', '✅ Validação 3.4'], ['arquivos', '📎 Evidências']],
     tipos: [['plano', 'Plano de atingimento'], ['ata', 'Ata da reunião mensal'], ['gapa', 'GAPA / plano de ação'], ['outro', 'Outro']] }
 };
 const EXCL_POR_PERGUNTA = Object.fromEntries(Object.entries(EXCL).map(([k, v]) => [v.q, k]));
@@ -17259,17 +17270,18 @@ function exSt(ok, parcial) { return ok ? 'ok' : parcial ? 'parcial' : 'pendente'
 function exAbrirAcomp(a, cid) { const t = EXCL_POR_PERGUNTA[a.questionKey]; return t ? `abrirFerramentaDigitalDpo('${t}', ${cid || 'null'})` : `abrirFerramentaDigitalDpo('acomp:${a.questionKey}', ${cid || 'null'})`; }
 
 // ======================= MONITORAMENTO DE ALVO · METAS INDIVIDUAIS (Gestão 3.4) =======================
-// Lideranças com indicadores (tipo, sentido, peso e prêmio R$), Meta × Real × LE mês a mês, painel de atingimento
-// (metas batidas ÷ metas lançadas — uma meta não compensa a outra), GAPA para metas sem performance,
-// reunião mensal de rotina e entrevistas de consciência do alvo × estratégia / Sonho.
+// Lideranças com indicadores (tipo, sentido, peso e prêmio R$), Meta × Real mês a mês, painel de atingimento
+// (metas batidas ÷ metas lançadas — uma meta não compensa a outra), 🔮 LE do ano (projeção pela tendência),
+// 📋 plano de ação 5W2H, 🧭 GAPA (problema → fatos → 6M → 5 porquês → plano → verificação), 🤝 follow e reuniões
+// entre a dona das metas e a liderança direta, reunião mensal e entrevistas de ligação alvo × Sonho.
 const MI_TIPOS = [['pct', '% (percentual)'], ['moeda', 'R$ (valor)'], ['numero', 'Nº (número)']];
-const MI_STATUS = ['Não iniciado', 'Em andamento', 'Concluída', 'Atrasada'];
 function miPreparar(d) {
-  ['lideres', 'indicadores', 'planos', 'reunioes', 'entrevistas'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
+  ['lideres', 'indicadores', 'reunioes', 'entrevistas', 'acoes', 'gapas', 'follows'].forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
   d.lideres.forEach(l => { if (!l.id) l.id = fdId(); });
-  d.indicadores.forEach(i => { if (!i.id) i.id = fdId(); ['metas', 'reais', 'le'].forEach(k => { i[k] = Array.isArray(i[k]) ? i[k] : []; }); });
+  d.indicadores.forEach(i => { if (!i.id) i.id = fdId(); ['metas', 'reais'].forEach(k => { i[k] = Array.isArray(i[k]) ? i[k] : []; }); });
+  d.gapas.forEach(g => { g.causas = g.causas || {}; g.porques = Array.isArray(g.porques) ? g.porques : ['', '', '', '', '']; g.fatos = g.fatos || {}; });
   d.planoAtingimento = d.planoAtingimento || {};
-  FD.mi = FD.mi || { per: null, aberto: null, setor: '', lid: null };
+  FD.mi = FD.mi || { per: null, aberto: null, setor: '', lid: null, sub: 'metas', gapaSel: null };
   if (FD.mi.per === null) FD.mi.per = miPeriodoPadrao(d);
 }
 function miPeriodoPadrao(d) { let u = -1; (d.indicadores || []).forEach(i => (i.reais || []).forEach((v, m) => { if (exNum(v) !== null && m > u) u = m; })); return u >= 0 ? u : exMesAtual(); }
@@ -17304,34 +17316,186 @@ function miAv(l, g) { const cls = 'mi-av' + (g ? ' g' : ''); return l.foto ? `<i
 function miRot(i) { const l = (FD.dados.lideres || []).find(x => x.id === i.lider); return (l ? l.nome + ' — ' : '') + i.nome; }
 function miLim() { return Math.max(0, exMesAtual() - (FD.ano === new Date().getFullYear() ? 1 : 0)); }
 // metas não batidas até o último mês fechado
+// ---------- 🔮 LE — projeção do ano (meses lançados + tendência dos 3 últimos nos meses que faltam) ----------
+const MI_MESES_GAPA = 3; // 3+ meses sem bater no ano → sugere GAPA
+const MI_ST_ACAO = { aberta: '⏳ Aberta', andamento: '🔄 Em andamento', concluida: '✅ Concluída', cancelada: '🚫 Cancelada' };
+const MI_6M = [['metodo', 'Método (processo, procedimento, rotina)'], ['mao_obra', 'Mão de obra (pessoas, treino, escala)'], ['maquina', 'Máquina (equipamento, frota, sistema)'], ['material', 'Material (insumo, produto, estoque)'], ['medida', 'Medida (indicador, apuração, dado)'], ['meio', 'Meio ambiente (clima, mercado, cliente)']];
+function miHoje() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+function miMaisDias(n) { const d = new Date(); d.setDate(d.getDate() + n); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+function miDataBr(v) { return v ? String(v).slice(0, 10).split('-').reverse().join('/') : '—'; }
+function miAutor() { return (ESTADO.usuario && ESTADO.usuario.name) || 'Usuário'; }
+function miLider(lid) { return (FD.dados.lideres || []).find(l => l.id === lid) || {}; }
+function miLiderDireto(lid) { const g = miLider(lid).gestor; return g ? miLideres().find(l => l.nome === g) || { nome: g } : null; }
+function miLeInd(i) {
+  const com = MESES_FD.map((_, m) => m).filter(m => miReal(i, m) !== null), k = com.length, ult = k ? com[k - 1] : -1;
+  const resto = MESES_FD.map((_, m) => m).filter(m => m > ult && miReal(i, m) === null).length;
+  const soma = com.reduce((s, m) => s + miReal(i, m), 0), ult3 = com.slice(-3), tend = k ? ult3.reduce((s, m) => s + miReal(i, m), 0) / ult3.length : null;
+  const metaAno = miAnoInd(i).meta, le = k ? (soma + tend * resto) / (k + resto) : null;
+  const precisa = metaAno !== null && resto ? (metaAno * (k + resto) - soma) / resto : null, atLe = miAt(metaAno, le, i.sentido);
+  let possivel = null; if (precisa !== null) { possivel = i.sentido === 'menor' ? precisa >= 0 : true; if (i.tipo === 'pct' && i.sentido !== 'menor' && precisa > 100) possivel = false; }
+  const nao = MESES_FD.filter((_, m) => { const a = miAt(miMeta(i, m), miReal(i, m), i.sentido); return a !== null && !miBateu(a); }).length;
+  return { i, metaAno, realAte: k ? soma / k : null, tend, le, atLe, vai: le === null ? null : miBateu(atLe), k, resto, precisa, possivel, nao, sugere: nao >= MI_MESES_GAPA };
+}
+function miLeLider(lid) { const L = miInds(lid).map(miLeInd), com = L.filter(r => r.vai !== null), fecham = com.filter(r => r.vai).length; return { fecham, total: com.length, gapa: L.filter(r => r.sugere).length, pct: com.length ? fecham / com.length * 100 : null }; }
+function miRecado(r) {
+  if (r.metaAno === null) return 'Sem meta do ano.';
+  if (!r.resto) return r.vai ? 'Ano fechado na meta.' : 'Ano fechado abaixo da meta.';
+  const t = r.i.tipo, n = r.resto;
+  if (r.vai) return `No ritmo atual fecha o ano. Manter a tendência de ${miFmt(r.tend, t)} por mês.`;
+  if (r.possivel === false) return `Não dá mais para fechar a média do ano na meta (${r.i.sentido === 'menor' ? 'mesmo zerando' : 'precisaria de ' + miFmt(r.precisa, t) + ' por mês'} nos ${n} meses que faltam) — foque em bater cada mês que resta (vale prêmio) e trate a causa na GAPA.`;
+  return `Precisa fazer ${r.i.sentido === 'menor' ? 'no máximo' : 'pelo menos'} ${miFmt(r.precisa, t)} em média nos ${n} meses que faltam para fechar o ano na meta.`;
+}
+// ---------- 📋 Plano de ação 5W2H ----------
+function miAcoes(lid, gapaId) {
+  const ordem = { aberta: 1, andamento: 1, concluida: 2, cancelada: 3 }, h = miHoje();
+  return (FD.dados.acoes || []).filter(a => a.lider === lid && (gapaId === undefined || a.gapa === gapaId))
+    .map(a => ({ ...a, atrasada: ['aberta', 'andamento'].includes(a.status) && (a.quando || '9999') < h }))
+    .sort((a, b) => (ordem[a.status] || 1) - (ordem[b.status] || 1) || String(a.quando || '').localeCompare(String(b.quando || '')));
+}
+function miNovaAcao(lid, gapaId) {
+  const g = id => (document.getElementById(id) || {}).value || '', o = g('mi-na-oque').trim(), q = g('mi-na-quando');
+  if (!o) return mostrarToast('Descreva O QUE vai ser feito.', true);
+  if (!q) return mostrarToast('Toda ação precisa de PRAZO (quando).', true);
+  FD.dados.acoes.push({ id: fdId(), lider: lid, ind: g('mi-na-ind') || null, gapa: gapaId || null, o_que: o, quem: g('mi-na-quem'), quando: q, como: g('mi-na-como'), por_que: g('mi-na-porque'), onde: g('mi-na-onde'), quanto: g('mi-na-quanto'), status: 'aberta', criado: miHoje(), autor: miAutor() });
+  fdAgendarSalvar(); exValidar(); fdCorpoRender(); mostrarToast('📋 Ação salva.');
+}
+function miStatusAcao(id, st) { const a = FD.dados.acoes.find(x => x.id === id); if (!a) return; a.status = st; a.concluido = st === 'concluida' ? miHoje() : ''; fdAgendarSalvar(); exValidar(); fdCorpoRender(); }
+function miExcluirAcao(id) { if (!confirm('Excluir esta ação?')) return; FD.dados.acoes = FD.dados.acoes.filter(a => a.id !== id); FD.dados.follows = FD.dados.follows.filter(f => f.acao !== id); fdAgendarSalvar(); exValidar(); fdCorpoRender(); }
+function miComentar(lid, acaoId, gapaId, inpId) {
+  const el = document.getElementById(inpId), t = el ? el.value.trim() : ''; if (!t) return mostrarToast('Escreva o comentário.', true);
+  FD.dados.follows.push({ id: fdId(), lider: lid, acao: acaoId || null, gapa: gapaId || null, tipo: 'comentario', data: miHoje(), texto: t, autor: miAutor(), criado: new Date().toLocaleString('pt-BR') });
+  fdAgendarSalvar(); exValidar(); fdCorpoRender(); mostrarToast('💬 Comentário registrado.');
+}
+function miExcluirFollow(id) { if (!confirm('Excluir este registro?')) return; FD.dados.follows = FD.dados.follows.filter(f => f.id !== id); fdAgendarSalvar(); exValidar(); fdCorpoRender(); }
+function miHtmlComentarios(lid, acaoId, gapaId, aberto) {
+  const f = (FD.dados.follows || []).filter(x => x.lider === lid && x.tipo === 'comentario' && (acaoId ? x.acao === acaoId : !x.acao) && (gapaId ? x.gapa === gapaId : !x.gapa)).reverse(), k = 'mi-cm-' + (acaoId || gapaId || lid);
+  return `<details class="mi-cm" ${aberto ? 'open' : ''}><summary>💬 Follow (${f.length})</summary>${f.map(x => `<div class="mi-cm-it"><small>👤 ${escapeHtml(x.autor || '')} · ${escapeHtml(x.criado || miDataBr(x.data))}</small><button class="btn-icone" onclick="miExcluirFollow('${x.id}')" title="Excluir">🗑️</button><div>${escapeHtml(x.texto)}</div></div>`).join('')}
+    <div class="mi-cm-novo"><textarea id="${k}" rows="2" placeholder="Como está? O que foi feito, o que trava, próximo passo…"></textarea><button class="btn-secundario btn-sm" onclick="miComentar('${lid}', ${acaoId ? `'${acaoId}'` : 'null'}, ${gapaId ? `'${gapaId}'` : 'null'}, '${k}')">💬 Comentar</button></div></details>`;
+}
+function miHtmlAcoes(lid, gapaId) {
+  const a = miAcoes(lid, gapaId), inds = miInds(lid), ab = a.filter(x => ['aberta', 'andamento'].includes(x.status)), atr = a.filter(x => x.atrasada).length, conc = a.filter(x => x.status === 'concluida').length;
+  const nomeInd = id => (inds.find(i => i.id === id) || {}).nome;
+  return `${a.length ? `<div class="mi-kp"><div class="${ab.length ? 'risco' : 'ok'}"><small>AÇÕES EM ABERTO</small><b>${ab.length}</b><span>de ${a.length}</span></div><div class="${atr ? 'fora' : 'ok'}"><small>ATRASADAS</small><b>${atr}</b><span>prazo vencido e não concluída</span></div><div class="ok"><small>CONCLUÍDAS</small><b>${conc}</b><span>${Math.round(conc / a.length * 100)}%</span><i style="width:${conc / a.length * 100}%"></i></div></div>` : gapaId ? '' : '<div class="mi-vazio">Nenhuma ação ainda. Crie abaixo — ou abra uma 🧭 GAPA, que já traz o plano pronto.</div>'}
+    <div class="mi-acs">${a.map(x => `<div class="mi-ac ${x.status}${x.atrasada ? ' atrasada' : ''}"><div class="mi-ac-l"><b>${escapeHtml(x.o_que)}</b>
+        <div class="mi-ac-m">${x.ind && nomeInd(x.ind) ? '🎯 ' + escapeHtml(nomeInd(x.ind)) + ' · ' : ''}👤 ${escapeHtml(x.quem || '—')} · 📅 ${miDataBr(x.quando)}${x.atrasada ? ' · <b style="color:#b91c1c">⚠️ atrasada</b>' : ''}${x.como ? ' · 🛠️ ' + escapeHtml(x.como) : ''}${x.por_que ? ' · ❓ ' + escapeHtml(x.por_que) : ''}${x.onde ? ' · 📍 ' + escapeHtml(x.onde) : ''}${x.quanto ? ' · 💲 ' + escapeHtml(x.quanto) : ''}${x.gapa && !gapaId ? ' · 🧭 GAPA' : ''}</div>
+        ${miHtmlComentarios(lid, x.id, null)}</div>
+      <div class="mi-ac-r"><select onchange="miStatusAcao('${x.id}', this.value)">${Object.entries(MI_ST_ACAO).map(([k, r]) => `<option value="${k}" ${x.status === k ? 'selected' : ''}>${r}</option>`).join('')}</select><button class="btn-icone" onclick="miExcluirAcao('${x.id}')" title="Excluir">🗑️</button></div></div>`).join('')}</div>
+    <details class="painel mi-nova" ${!a.length && !gapaId ? 'open' : ''}><summary>➕ Nova ação (5W2H)</summary>
+      <label>O quê *</label><input id="mi-na-oque" placeholder="Ex.: Estratificar a avaria por turno e rota">
+      <div class="grid-3"><div><label>Indicador</label><select id="mi-na-ind"><option value="">— geral —</option>${inds.map(i => `<option value="${i.id}">${escapeHtml(i.nome)}</option>`).join('')}</select></div><div><label>Quem</label><input id="mi-na-quem" value="${escapeHtml(miLider(lid).nome || '')}"></div><div><label>Prazo (quando) *</label><input id="mi-na-quando" type="date" value="${miMaisDias(15)}"></div></div>
+      <div class="grid-3"><div><label>Como</label><input id="mi-na-como"></div><div><label>Por quê</label><input id="mi-na-porque"></div><div><label>Onde</label><input id="mi-na-onde"></div></div>
+      <div class="grid-3"><div><label>Quanto custa</label><input id="mi-na-quanto"></div></div>
+      <button class="btn-primario btn-sm" style="width:auto;margin-top:8px;" onclick="miNovaAcao('${lid}', ${gapaId ? `'${gapaId}'` : 'null'})">💾 Salvar ação</button></details>`;
+}
+// ---------- 🧭 GAPA — análise da anomalia já preenchida com problema, fatos e plano ----------
+function miCriarGapa(lid, iid) {
+  const i = FD.dados.indicadores.find(x => x.id === iid); if (!i) return;
+  const aberta = FD.dados.gapas.find(g => g.lider === lid && g.ind === iid && g.status !== 'concluida');
+  if (!aberta) {
+    const r = miLeInd(i), t = i.tipo, nao = MESES_FD.map((m, k) => ({ m, k, meta: miMeta(i, k), real: miReal(i, k), a: miAt(miMeta(i, k), miReal(i, k), i.sentido) })).filter(x => x.a !== null && !miBateu(x.a));
+    const problema = `${i.nome} ficou ${i.sentido === 'menor' ? 'acima da' : 'abaixo da'} meta em ${nao.length} mês(es) de ${FD.ano}: ${nao.map(x => `${x.m} (meta ${miFmt(x.meta, t)} × real ${miFmt(x.real, t)})`).join(', ')}. Projeção do ano (LE): ${miFmt(r.le, t)} contra meta ${miFmt(r.metaAno, t)}.`;
+    const fatos = { meses: MESES_FD.map((m, k) => ({ m, meta: miMeta(i, k), real: miReal(i, k), a: miAt(miMeta(i, k), miReal(i, k), i.sentido) })).filter(x => x.real !== null), le: r.le, metaAno: r.metaAno, tipo: t, recuperar: miRecado(r) };
+    const g = { id: fdId(), lider: lid, ind: iid, status: 'aberta', problema, fatos, causas: Object.fromEntries(MI_6M.map(([k]) => [k, ''])), porques: [`Por que ${i.nome} não bateu a meta?`, '', '', '', ''], causaRaiz: '', verificacao: '', criadoPor: miAutor(), criadoEm: miHoje() };
+    FD.dados.gapas.push(g);
+    const quem = miLider(lid).nome || '', n = i.nome, rec = miRecado(r);
+    [[`Reunião de análise de ${n} com o time: revisar os meses que não bateram`, 7, 'Levar os números mês a mês, ouvir o time e preencher as causas (6M) da GAPA', 'Entender a anomalia antes de agir'],
+     [`Estratificar ${n} (por dia, turno, rota, produto, pessoa) e achar onde está a perda`, 10, 'Pareto das perdas — atacar os 20% que causam 80%', 'Agir no ponto certo'],
+     ['Definir e aplicar a contramedida na causa raiz (5 porquês)', 20, 'Uma ação por causa raiz, com dono e prazo', 'Eliminar a causa, não o sintoma'],
+     [`Rotina semanal de acompanhamento de ${n} até 3 meses seguidos batendo`, 30, 'Quadro/indicador semanal na reunião de rotina; desvio = ação na hora', rec || 'Garantir a recuperação'],
+     ['Validar o resultado com o gestor no fechamento do mês e encerrar a GAPA', 35, 'Comparar meta × real depois das ações (verificação)', 'Fechar o ciclo (PDCA)'],
+     ['Padronizar o que funcionou (procedimento, treinamento, checklist)', 45, 'Atualizar o padrão e treinar o time', 'Não deixar a anomalia voltar']
+    ].forEach(([o, dias, como, pq]) => FD.dados.acoes.push({ id: fdId(), lider: lid, ind: iid, gapa: g.id, o_que: o, quem, quando: miMaisDias(dias), como, por_que: pq, status: 'aberta', criado: miHoje(), autor: miAutor() }));
+    FD.mi.gapaSel = g.id; mostrarToast('🧭 GAPA aberta — já vem com o problema, os fatos e o plano de ação.');
+  } else FD.mi.gapaSel = aberta.id;
+  fdAgendarSalvar(); exValidar();
+  FD.mi.aberto = lid; FD.mi.sub = 'gapa'; if (FD.aba !== 'painel') fdTrocarAba('painel'); else fdCorpoRender();
+}
+function miEditGapa(id, campo, v, re) { const g = FD.dados.gapas.find(x => x.id === id); if (!g) return; if (campo.startsWith('c:')) g.causas[campo.slice(2)] = v; else if (campo.startsWith('p:')) g.porques[Number(campo.slice(2))] = v; else { g[campo] = v; if (campo === 'status') g.concluidaEm = v === 'concluida' ? miHoje() : ''; } fdAgendarSalvar(); exValidar(); if (re) fdCorpoRender(); }
+function miExcluirGapa(id) { if (!confirm('Excluir a GAPA e as ações dela?')) return; FD.dados.gapas = FD.dados.gapas.filter(g => g.id !== id); FD.dados.acoes = FD.dados.acoes.filter(a => a.gapa !== id); FD.dados.follows = FD.dados.follows.filter(f => f.gapa !== id); FD.mi.gapaSel = null; fdAgendarSalvar(); exValidar(); fdCorpoRender(); }
+function miHtmlGapaLider(lid) {
+  const gs = FD.dados.gapas.filter(g => g.lider === lid), inds = miInds(lid), le = inds.map(miLeInd), direto = miLiderDireto(lid);
+  const abertas = new Set(gs.filter(g => g.status !== 'concluida').map(g => g.ind)), falta = le.filter(r => r.sugere && !abertas.has(r.i.id));
+  if (!gs.some(g => g.id === FD.mi.gapaSel)) FD.mi.gapaSel = (gs.find(g => g.status !== 'concluida') || gs[0] || {}).id || null;
+  const g = gs.find(x => x.id === FD.mi.gapaSel), ed = (c, v, re) => `onchange="miEditGapa('${g.id}', '${c}', this.value, ${!!re})"`;
+  const rotSt = { aberta: '⏳ aberta', andamento: '🔄 em andamento', concluida: '✅ concluída' };
+  return `<div class="plano-meta">🧭 <b>GAPA</b> = análise da anomalia: problema → fatos → causas 6M → 5 porquês → plano → verificação. Quem abre é a liderança direta${direto ? ` (<b>${escapeHtml(direto.nome)}</b>)` : ' (cadastre o gestor em ⚙️)'}; depois a dona das metas e a liderança preenchem e acompanham juntas.</div>
+    ${falta.length ? `<div class="mi-pend"><b>🧭 Sugerido abrir GAPA — ${MI_MESES_GAPA} ou mais meses sem bater no ano:</b>${falta.map(r => `<button onclick="miCriarGapa('${lid}', '${r.i.id}')">🧭 Abrir GAPA — ${escapeHtml(r.i.nome)} (${r.nao} meses)</button>`).join('')}</div>` : !gs.length ? '<div class="mi-okmsg">Nenhuma GAPA aberta e nenhum indicador com 3+ meses sem bater. 👏</div>' : ''}
+    ${inds.length ? `<div style="font-size:12.5px;margin-bottom:10px;">➕ Abrir GAPA para outro indicador: <select style="width:auto;display:inline-block;margin:0;" onchange="if(this.value) miCriarGapa('${lid}', this.value);"><option value="">escolha…</option>${inds.map(i => `<option value="${i.id}">${escapeHtml(i.nome)}</option>`).join('')}</select></div>` : ''}
+    ${gs.length ? `<div class="mi-gsel">${gs.map(x => `<button class="${x.id === FD.mi.gapaSel ? 'on' : ''}" onclick="FD.mi.gapaSel='${x.id}'; fdCorpoRender();">🧭 ${escapeHtml((inds.find(i => i.id === x.ind) || {}).nome || '—')} · ${rotSt[x.status] || x.status}</button>`).join('')}</div>` : ''}
+    ${g ? `<div class="painel mi-gapa"><div class="mi-gh"><h3>🧭 GAPA — ${escapeHtml((inds.find(i => i.id === g.ind) || {}).nome || '')}</h3><small>aberta por ${escapeHtml(g.criadoPor || '—')} em ${miDataBr(g.criadoEm)}</small></div>
+      <h4>1️⃣ Problema <small>(pré-preenchido com os meses que não bateram)</small></h4><textarea rows="3" ${ed('problema')}>${escapeHtml(g.problema || '')}</textarea>
+      <h4>2️⃣ Fatos e dados</h4>${(g.fatos.meses || []).length ? `<div class="gr-wrap"><table class="gr-tab"><thead><tr><th>Mês</th><th>Meta</th><th>Real</th><th>Atingimento</th><th></th></tr></thead><tbody>${g.fatos.meses.map(x => `<tr><td>${x.m}</td><td>${miFmt(x.meta, g.fatos.tipo)}</td><td>${miFmt(x.real, g.fatos.tipo)}</td><td>${miPct(x.a)}</td><td>${x.a === null ? '' : miBateu(x.a) ? '🟢' : '🔴'}</td></tr>`).join('')}</tbody></table></div>` : ''}${g.fatos.recuperar ? `<div class="mi-lig">🔮 ${escapeHtml(g.fatos.recuperar)}</div>` : ''}
+      <h4>3️⃣ Causas — 6M (Ishikawa) <small>o que, em cada M, pode estar causando o problema?</small></h4><div class="mi-6m">${MI_6M.map(([k, r]) => `<div><label>${r}</label><textarea rows="2" ${ed('c:' + k)}>${escapeHtml(g.causas[k] || '')}</textarea></div>`).join('')}</div>
+      <h4>4️⃣ 5 porquês <small>da causa mais provável até a causa raiz</small></h4>${[0, 1, 2, 3, 4].map(n => `<div class="mi-pq"><span>${n + 1}º por quê</span><input value="${escapeHtml(g.porques[n] || '')}" ${ed('p:' + n)}></div>`).join('')}
+      <label style="margin-top:8px;">🎯 Causa raiz</label><input value="${escapeHtml(g.causaRaiz || '')}" ${ed('causaRaiz', true)}>
+      <h4>5️⃣ Plano de ação <small>(já vem com o plano padrão — ajuste e siga)</small></h4>${miHtmlAcoes(lid, g.id)}
+      <h4>💬 Follow da GAPA <small>(comentários entre a dona e a liderança)</small></h4>${miHtmlComentarios(lid, null, g.id, true)}
+      <h4>6️⃣ Verificação <small>depois das ações, o indicador voltou a bater?</small></h4><textarea rows="2" placeholder="Ex.: out e nov batidos depois da contramedida — GAPA encerrada." ${ed('verificacao')}>${escapeHtml(g.verificacao || '')}</textarea>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;"><label style="margin:0;">Status da GAPA</label><select style="width:auto;margin:0;" ${ed('status', true)}>${Object.entries({ aberta: '⏳ Aberta', andamento: '🔄 Em andamento', concluida: '✅ Concluída' }).map(([k, r]) => `<option value="${k}" ${g.status === k ? 'selected' : ''}>${r}</option>`).join('')}</select><button class="btn-perigo btn-sm" style="width:auto;margin-left:auto;" onclick="miExcluirGapa('${g.id}')">🗑️ Excluir GAPA</button></div></div>` : ''}`;
+}
+// ---------- 🤝 Follow & reuniões entre a dona das metas e a liderança direta ----------
+function miRegistrarReuniao(lid) {
+  const v = id => (document.getElementById(id) || {}).value || '', pauta = v('mi-fr-pauta').trim();
+  if (!pauta) return mostrarToast('Escreva o que foi tratado (pauta).', true);
+  FD.dados.follows.push({ id: fdId(), lider: lid, tipo: 'reuniao', data: v('mi-fr-data') || miHoje(), texto: pauta, combinados: v('mi-fr-comb').trim(), proxima: v('mi-fr-prox'), autor: miAutor(), criado: new Date().toLocaleString('pt-BR') });
+  fdAgendarSalvar(); exValidar(); fdCorpoRender(); mostrarToast('🤝 Reunião registrada.');
+}
+function miHtmlFollow(lid) {
+  const l = miLider(lid), direto = miLiderDireto(lid), reun = (FD.dados.follows || []).filter(f => f.lider === lid && f.tipo === 'reuniao').sort((a, b) => String(b.data).localeCompare(String(a.data)));
+  const ult = reun[0], prox = ult && ult.proxima, atras = prox && prox < miHoje();
+  const com = (FD.dados.follows || []).filter(f => f.lider === lid && f.tipo === 'comentario').reverse().slice(0, 30), ac = Object.fromEntries((FD.dados.acoes || []).map(a => [a.id, a.o_que]));
+  return `<div class="mi-kp"><div><small>DONA DAS METAS</small><b style="font-size:17px;">${escapeHtml(l.nome || '')}</b><span>acompanha com a liderança direta</span></div><div class="${direto ? '' : 'fora'}"><small>LIDERANÇA DIRETA</small><b style="font-size:17px;">${escapeHtml(direto ? direto.nome : '—')}</b><span>${direto ? 'abre a GAPA e faz o follow' : 'cadastre o gestor em ⚙️'}</span></div><div class="${reun.length ? 'ok' : 'risco'}"><small>REUNIÕES DE FOLLOW</small><b>${reun.length}</b><span>${ult ? 'última: ' + miDataBr(ult.data) : 'nenhuma ainda'}</span></div><div class="${atras ? 'fora' : ''}"><small>PRÓXIMA REUNIÃO</small><b style="font-size:20px;">${prox ? miDataBr(prox) : '—'}</b><span>${atras ? '⚠️ passou da data' : 'combinada na última reunião'}</span></div></div>
+    <details class="painel mi-nova" ${reun.length ? '' : 'open'}><summary>➕ Registrar reunião de follow</summary>
+      <div class="grid-3"><div><label>Data da reunião</label><input id="mi-fr-data" type="date" value="${miHoje()}"></div><div><label>Próxima reunião</label><input id="mi-fr-prox" type="date" value="${miMaisDias(15)}"></div></div>
+      <label>O que foi tratado *</label><textarea id="mi-fr-pauta" rows="3" placeholder="Metas do mês, LE do ano, andamento das ações e da GAPA…"></textarea>
+      <label>Combinados / próximos passos</label><textarea id="mi-fr-comb" rows="2"></textarea>
+      <button class="btn-primario btn-sm" style="width:auto;margin-top:8px;" onclick="miRegistrarReuniao('${lid}')">💾 Registrar reunião</button></details>
+    <h4 style="margin:14px 0 6px;">🤝 Reuniões</h4>${reun.length ? reun.map(r => `<div class="mi-reu"><div><b>🤝 ${miDataBr(r.data)}</b> · registrada por ${escapeHtml(r.autor || '')}${r.proxima ? ` · próxima: <b>${miDataBr(r.proxima)}</b>` : ''}<button class="btn-icone" style="float:right;" onclick="miExcluirFollow('${r.id}')">🗑️</button></div><div><b>Tratado:</b> ${escapeHtml(r.texto)}</div>${r.combinados ? `<div><b>Combinados:</b> ${escapeHtml(r.combinados)}</div>` : ''}</div>`).join('') : '<div class="mi-vazio">Nenhuma reunião registrada ainda.</div>'}
+    ${com.length ? `<h4 style="margin:14px 0 6px;">💬 Linha do tempo dos comentários</h4>${com.map(c => `<div class="mi-cm-it"><small>${escapeHtml(c.criado || '')} · 👤 ${escapeHtml(c.autor || '')} · ${c.acao ? '📋 ' + escapeHtml(ac[c.acao] || 'ação') : c.gapa ? '🧭 GAPA' : 'geral'}</small><div>${escapeHtml(c.texto)}</div></div>`).join('')}` : ''}`;
+}
+function miHtmlLe(lid) {
+  const le = miInds(lid).map(miLeInd), x = miLeLider(lid); if (!le.length) return '<div class="mi-vazio">Sem indicadores.</div>';
+  const cor = { ok: '#14a06f', fora: '#d43c3b', neutro: '#9aa5b5' };
+  return `<div class="mi-kp"><div class="${miStGeral(x.pct)}"><small>FECHAM O ANO NA META (LE)</small><b>${x.fecham}/${x.total}</b><span>meses lançados + tendência dos 3 últimos nos meses que faltam</span><i style="width:${x.pct || 0}%"></i></div><div class="${x.total - x.fecham ? 'fora' : 'ok'}"><small>NÃO FECHAM</small><b>${x.total - x.fecham}</b><span>precisam de plano de recuperação</span></div><div class="${x.gapa ? 'fora' : 'ok'}"><small>🧭 GAPA SUGERIDA</small><b>${x.gapa}</b><span>${MI_MESES_GAPA}+ meses sem bater — abra a GAPA: já vem com o plano</span></div></div>
+    <div class="mi-inds">${le.map(r => { const s = r.vai === null ? 'neutro' : r.vai ? 'ok' : 'fora', t = r.i.tipo; return `<div class="mi-ic ${s === 'neutro' ? '' : s}"><span class="mi-tag ${s}">${{ ok: '✓ fecha o ano', fora: '✗ não fecha', neutro: 'sem real' }[s]}</span><h4>${r.i.sentido === 'menor' ? '⬇️' : '⬆️'} ${escapeHtml(r.i.nome)}</h4>
+      <div class="mi-mr"><div>Meta do ano<b>${miFmt(r.metaAno, t)}</b></div><div>Real até agora<b>${miFmt(r.realAte, t)}</b></div><div>🔮 LE<b>${miFmt(r.le, t)}</b></div><div>LE × meta<b>${miPct(r.atLe)}</b></div></div>
+      <div class="mi-bar" style="margin-top:8px;"><i style="width:${Math.max(0, Math.min(100, r.atLe || 0))}%;background:${cor[s]}"></i></div><div class="mi-lig" style="background:#eff6ff;color:#0f2747;">🛠️ ${escapeHtml(miRecado(r))}</div>
+      ${r.sugere ? `<button class="btn-secundario btn-sm" style="margin-top:8px;width:auto;color:#a32020;" onclick="miCriarGapa('${lid}', '${r.i.id}')">🧭 ${r.nao} meses sem bater — abrir GAPA</button>` : ''}</div>`; }).join('')}</div>`;
+}
+// metas (indicador × mês) não batidas até o mês atual
 function miForas() {
   const out = [], lim = FD.ano === new Date().getFullYear() ? exMesAtual() : 11;
   miLideres().forEach(l => miInds(l.id).forEach(i => { for (let m = 0; m <= lim; m++) { const a = miAt(miMeta(i, m), miReal(i, m), i.sentido); if (a !== null && !miBateu(a)) out.push({ i, l, m, a }); } }));
   return out;
 }
-function miPlanoDe(i, m) { const rot = miRot(i); return (FD.dados.planos || []).filter(p => p.ind === rot && String(p.mes) === MESES_FD[m]); }
 function miValidar(d) {
   const st = exSt, L = miLideres(), inds = L.flatMap(l => miInds(l.id)), lim = miLim();
   const comMeta = L.filter(l => miInds(l.id).some(i => exNum(i.metaAno) !== null || (i.metas || []).some(v => exNum(v) !== null)));
   const plano = dnTem((d.planoAtingimento || {}).texto) || (FD.arquivos || []).some(a => a.tipo === 'plano');
   const mesesDado = MESES_FD.map((_, m) => m).filter(m => m <= lim && inds.some(i => miReal(i, m) !== null));
-  const reunMes = new Set((d.reunioes || []).filter(r => r.data).map(r => r.mes ? MESES_FD.indexOf(r.mes) : new Date(r.data + 'T12:00:00').getMonth()));
+  const mesDe = dt => dt ? Number(String(dt).slice(5, 7)) - 1 : -1;
+  const reunMes = new Set([...(d.reunioes || []).filter(r => r.data).map(r => r.mes ? MESES_FD.indexOf(r.mes) : mesDe(r.data)), ...(d.follows || []).filter(f => f.tipo === 'reuniao' && String(f.data || '').startsWith(String(FD.ano))).map(f => mesDe(f.data))]);
   const comRealLim = inds.filter(i => miReal(i, lim) !== null).length;
-  const foras = miForas(), comPlano = foras.filter(f => miPlanoDe(f.i, f.m).length), revisados = foras.filter(f => miPlanoDe(f.i, f.m).some(p => dnTem(p.revisao) || p.status === 'Concluída' || p.status === 'Em andamento'));
+  // V.3: indicadores com meta fora têm ação, e as ações estão sendo revistas (status andando ou follow)
+  const indFora = [...new Set(miForas().map(f => f.i.id))], acoes = d.acoes || [], fol = d.follows || [];
+  const acoesDe = iid => acoes.filter(a => a.ind === iid), revista = a => a.status !== 'aberta' || fol.some(f => f.acao === a.id);
+  const comAcao = indFora.filter(iid => acoesDe(iid).length), revistos = indFora.filter(iid => acoesDe(iid).some(revista));
   const ligados = inds.filter(i => dnTem(i.estrategia)), ent = (d.entrevistas || []).filter(e => dnTem(e.nome)), entOk = ent.filter(e => e.liga === 'Sim').length;
-  const mAt = FD.ano === new Date().getFullYear() ? exMesAtual() : 11, comLe = inds.filter(i => exNum((i.le || [])[mAt]) !== null).length, algumLe = inds.some(i => (i.le || []).some(v => exNum(v) !== null));
-  const planos = (d.planos || []).filter(p => dnTem(p.ind)), gapaOk = planos.filter(p => dnTem(p.gap) && dnTem(p.causa) && dnTem(p.acao) && dnTem(p.resp) && p.prazo);
+  // V.5: LE do ano projetado para os indicadores com real e, para quem não fecha o ano, plano de recuperação (ação ou GAPA)
+  const le = inds.map(miLeInd), comLe = le.filter(r => r.le !== null), naoFecha = comLe.filter(r => r.vai === false), comRecup = naoFecha.filter(r => acoesDe(r.i.id).length || (d.gapas || []).some(g => g.ind === r.i.id));
+  // V.6: indicadores com 3+ meses sem bater têm GAPA com causa raiz e plano
+  const gapas = d.gapas || [], sug = le.filter(r => r.sugere), gapaOk = g => dnTem(g.causaRaiz) && acoes.some(a => a.gapa === g.id);
+  const sugOk = sug.filter(r => gapas.some(g => g.ind === r.i.id && gapaOk(g)));
   return [
-    { v: 'V.1', titulo: 'Plano de atingimento de metas elaborado (plano estratégico, abertura de KPIs)', st: st(L.length && comMeta.length === L.length && plano, comMeta.length > 0), txt: `${comMeta.length}/${L.length} liderança(s) com metas cadastradas · plano de atingimento ${plano ? 'registrado ✔' : 'não registrado (aba 📅 Rotina, LE e plano)'}.`, ir: 'cadastro' },
-    { v: 'V.2', titulo: 'Metas individuais acompanhadas todo mês em reunião de rotina mensal', st: st(inds.length && comRealLim === inds.length && mesesDado.length && mesesDado.every(m => reunMes.has(m)), mesesDado.length > 0 || reunMes.size > 0), txt: `${comRealLim}/${inds.length} indicador(es) com real em ${MESES_FD[lim]} · reunião mensal registrada em ${mesesDado.filter(m => reunMes.has(m)).length}/${mesesDado.length} mês(es) com resultado.`, ir: 'rotina' },
-    { v: 'V.3', titulo: 'Planos de ação dos KPIs de baixo desempenho revistos', st: st(!foras.length ? inds.length > 0 && mesesDado.length > 0 : revisados.length === foras.length, comPlano.length > 0), txt: foras.length ? `${comPlano.length}/${foras.length} meta(s) fora com plano · ${revisados.length} com revisão/andamento registrado.` : 'Nenhuma meta fora até agora.', ir: 'gapa' },
+    { v: 'V.1', titulo: 'Plano de atingimento de metas elaborado (plano estratégico, abertura de KPIs)', st: st(L.length && comMeta.length === L.length && plano, comMeta.length > 0), txt: `${comMeta.length}/${L.length} liderança(s) com metas cadastradas · plano de atingimento ${plano ? 'registrado ✔' : 'não registrado (aba 📅 Rotina)'}.`, ir: 'cadastro' },
+    { v: 'V.2', titulo: 'Metas individuais acompanhadas todo mês em reunião de rotina mensal', st: st(inds.length && comRealLim === inds.length && mesesDado.length && mesesDado.every(m => reunMes.has(m)), mesesDado.length > 0 || reunMes.size > 0), txt: `${comRealLim}/${inds.length} indicador(es) com real em ${MESES_FD[lim]} · reunião registrada em ${mesesDado.filter(m => reunMes.has(m)).length}/${mesesDado.length} mês(es) com resultado (reunião mensal da rotina ou 🤝 follow).`, ir: 'rotina' },
+    { v: 'V.3', titulo: 'Planos de ação dos KPIs de baixo desempenho revistos', st: st(indFora.length ? revistos.length === indFora.length : inds.length > 0 && mesesDado.length > 0, comAcao.length > 0), txt: indFora.length ? `${comAcao.length}/${indFora.length} indicador(es) com meta fora têm plano de ação 5W2H · ${revistos.length} com ação em andamento/concluída ou follow registrado.` : 'Nenhuma meta fora até agora.', ir: 'gapa' },
     { v: 'V.4', titulo: 'Colaboradores conscientes da ligação entre seus alvos, a estratégia e o Sonho', st: st(inds.length && ligados.length === inds.length && ent.length >= 3 && entOk / ent.length >= 0.7, ligados.length > 0 || ent.length > 0), txt: `${ligados.length}/${inds.length} indicador(es) com a ligação à estratégia/Sonho escrita · ${entOk}/${ent.length} entrevistado(s) explicaram a ligação${ent.length < 3 ? ' (registre pelo menos 3)' : ''}.`, ir: 'rotina' },
-    { v: 'V.5', titulo: 'Processo forte de LE (Latest Estimate) para trazer previsibilidade', st: st(inds.length && comLe / inds.length >= 0.8, algumLe), txt: `${comLe}/${inds.length} indicador(es) com LE de ${MESES_FD[mAt]} (a projeção de fechamento, lançada em ✏️ Lançar).`, ir: 'lancar' },
-    { v: 'V.6', titulo: 'GAPA como ferramenta de solução para metas sem performance', st: st(foras.length ? gapaOk.length >= 1 && foras.every(f => miPlanoDe(f.i, f.m).some(p => gapaOk.includes(p))) : planos.length > 0 || (inds.length > 0 && mesesDado.length > 0), gapaOk.length > 0 || planos.length > 0), txt: foras.length ? `${foras.filter(f => miPlanoDe(f.i, f.m).some(p => gapaOk.includes(p))).length}/${foras.length} meta(s) fora com GAPA completo (gap, causa raiz, contramedida, responsável e prazo).` : `${gapaOk.length} GAPA(s) completo(s) · nenhuma meta fora até agora.`, ir: 'gapa' }
+    { v: 'V.5', titulo: 'Processo forte de LE (Latest Estimate) para trazer previsibilidade', st: st(inds.length && comLe.length / inds.length >= 0.8 && comRecup.length === naoFecha.length, comLe.length > 0), txt: `🔮 LE do ano projetado para ${comLe.length}/${inds.length} indicador(es) · ${naoFecha.length} não fecham o ano${naoFecha.length ? `, ${comRecup.length} com plano de recuperação (ação ou GAPA)` : ''}.`, ir: 'painel' },
+    { v: 'V.6', titulo: 'GAPA como ferramenta de solução para metas sem performance', st: st(sug.length ? sugOk.length === sug.length : gapas.some(gapaOk) || (inds.length > 0 && mesesDado.length > 0), gapas.length > 0), txt: sug.length ? `${sugOk.length}/${sug.length} indicador(es) com ${MI_MESES_GAPA}+ meses sem bater têm GAPA com causa raiz e plano.` : `${gapas.length} GAPA(s) · nenhum indicador com ${MI_MESES_GAPA}+ meses sem bater.`, ir: 'gapa' }
   ];
 }
-// ---------- abas ----------
-function miHtmlAba(a) { if (!FD.mi.perUser) FD.mi.per = miPeriodoPadrao(FD.dados); return a === 'lancar' ? miHtmlLancar() : a === 'cadastro' ? miHtmlCadastro() : a === 'gapa' ? miHtmlGapa() : a === 'rotina' ? miHtmlRotina() : miHtmlPainel(); }
+function miHtmlAba(a) { if (!FD.mi.perUser) FD.mi.per = miPeriodoPadrao(FD.dados); return a === 'lancar' ? miHtmlLancar() : a === 'cadastro' ? miHtmlCadastro() : a === 'gapa' ? miHtmlGapaGeral() : a === 'rotina' ? miHtmlRotina() : miHtmlPainel(); }
 function miSelPer() { return `<select onchange="FD.mi.per = this.value === 'ano' ? 'ano' : Number(this.value); FD.mi.perUser = true; fdCorpoRender();"><option value="ano" ${FD.mi.per === 'ano' ? 'selected' : ''}>📅 Ano inteiro</option>${MESES_FD.map((m, k) => `<option value="${k}" ${FD.mi.per === k ? 'selected' : ''}>${m}/${FD.ano}</option>`).join('')}</select>`; }
 function miHtmlPainel() {
   const f = FD.mi, todos = miLideres(); if (f.aberto && todos.some(l => l.id === f.aberto)) return miHtmlLider(todos.find(l => l.id === f.aberto));
@@ -17340,11 +17504,11 @@ function miHtmlPainel() {
   const sg = miStGeral(geral);
   return `<div class="mi-hero"><div><small>🎯 MONITORAMENTO DE ALVO · GESTÃO 3.4</small><h2>Metas individuais — ${miRotPer()}</h2><span>Atingimento = metas batidas ÷ metas lançadas (uma meta que passou não compensa a outra)</span></div>
       <div class="mi-hero-f">${miSelPer()}${setores.length > 1 ? `<select onchange="FD.mi.setor=this.value; fdCorpoRender();"><option value="">Todos os setores</option>${setores.map(s => `<option ${f.setor === s ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}</select>` : ''}<button onclick="baixarArquivoDpo('/api/dpo/ferramentas-digitais/metas/export?ano=${FD.ano}${FD.companyId ? '&company_id=' + FD.companyId : ''}', 'metas-individuais-${FD.ano}.xlsx')">📊 Excel</button></div></div>
-    <div class="mi-kp"><div class="${sg}"><small>METAS BATIDAS</small><b>${miPct(geral)}</b><span>${bat} de ${com} metas lançadas</span><i style="width:${Math.min(100, geral || 0)}%"></i></div><div><small>LIDERANÇAS</small><b>${L.length}</b><span>${L.reduce((s, l) => s + R[l.id].inds, 0)} indicador(es)</span></div><div><small>PRÊMIO DO PERÍODO</small><b>${miMoeda(premio)}</b><span>de ${miMoeda(premioMax)} possíveis</span></div><div class="${miForas().length ? 'fora' : 'ok'}"><small>METAS FORA NO ANO</small><b>${miForas().length}</b><span>${miForas().filter(x => miPlanoDe(x.i, x.m).length).length} com GAPA</span></div></div>
+    <div class="mi-kp"><div class="${sg}"><small>METAS BATIDAS</small><b>${miPct(geral)}</b><span>${bat} de ${com} metas lançadas</span><i style="width:${Math.min(100, geral || 0)}%"></i></div><div><small>LIDERANÇAS</small><b>${L.length}</b><span>${L.reduce((s, l) => s + R[l.id].inds, 0)} indicador(es)</span></div><div><small>PRÊMIO DO PERÍODO</small><b>${miMoeda(premio)}</b><span>de ${miMoeda(premioMax)} possíveis</span></div>${(() => { const g = L.reduce((s, l) => s + miLeLider(l.id).gapa, 0); return `<div class="${g ? 'fora' : 'ok'}"><small>🧭 GAPA SUGERIDA</small><b>${g}</b><span>indicadores com ${MI_MESES_GAPA}+ meses sem bater no ano</span></div>`; })()}</div>
     ${!L.length ? `<div class="mi-vazio"><b>Comece pelas lideranças</b><p>Em ⚙️ Lideranças e indicadores cadastre cada liderança (foto, cargo, setor, gestor) e os indicadores dela: tipo, sentido (maior ou menor é melhor), peso e o prêmio (R$) ao bater a meta no mês. Depois lance Meta × Real × LE em ✏️ Lançar.</p><button class="btn-primario" style="width:auto;" onclick="fdTrocarAba('cadastro')">⚙️ Cadastrar lideranças</button></div>` : `
-    <div class="mi-grid">${L.map(l => { const r = R[l.id], s = miStGeral(r.ating); return `<button class="mi-lc ${s}" onclick="FD.mi.aberto='${l.id}'; fdCorpoRender();"><div class="mi-top">${miAv(l)}<div><div class="mi-nm">${escapeHtml(l.nome)}</div><div class="mi-sb">${escapeHtml([l.cargo, l.setor].filter(Boolean).join(' · '))}</div>${l.gestor ? `<span class="mi-chip">Gestor: ${escapeHtml(l.gestor)}</span>` : ''}</div></div>
+    <div class="mi-grid">${L.map(l => { const r = R[l.id], s = miStGeral(r.ating); return `<button class="mi-lc ${s}" onclick="FD.mi.aberto='${l.id}'; FD.mi.sub='metas'; fdCorpoRender();"><div class="mi-top">${miAv(l)}<div><div class="mi-nm">${escapeHtml(l.nome)}</div><div class="mi-sb">${escapeHtml([l.cargo, l.setor].filter(Boolean).join(' · '))}</div>${l.gestor ? `<span class="mi-chip">Gestor: ${escapeHtml(l.gestor)}</span>` : ''}</div></div>
         <div class="mi-big"><b>${miPct(r.ating)}</b><span>${r.com ? `${r.bat} de ${r.com} metas batidas` : 'sem real lançado'}</span></div><div class="mi-bar"><i style="width:${Math.min(100, r.ating || 0)}%;background:${{ ok: '#14a06f', risco: '#c98a00', fora: '#d43c3b', neutro: '#9aa5b5' }[s]}"></i></div>
-        <div class="mi-ft"><span>🎯 <b>${r.inds}</b> indicador(es)</span><span>💰 <b>${miMoeda(r.premio)}</b> / ${miMoeda(r.premioMax)}</span></div></button>`; }).join('')}</div>`}`;
+        <div class="mi-ft"><span>🎯 <b>${r.inds}</b> indicador(es)</span><span>💰 <b>${miMoeda(r.premio)}</b> / ${miMoeda(r.premioMax)}</span></div>${(() => { const x = miLeLider(l.id); return x.total ? `<div class="mi-ft" style="margin-top:6px;border-top:1px dashed #e3e7ee;padding-top:6px;"><span>🔮 LE: <b style="color:${x.fecham === x.total ? '#0b7a52' : '#a32020'}">${x.fecham}/${x.total}</b> fecham o ano${x.gapa ? ` · <b style="color:#a32020">🧭 ${x.gapa} GAPA</b>` : ''}</span></div>` : ''; })()}</button>`; }).join('')}</div>`}`;
 }
 function miHtmlLider(l) {
   const f = FD.mi, r = miResumo(l.id, f.per), inds = miInds(l.id), ano = miResumo(l.id, 'ano');
@@ -17352,14 +17516,30 @@ function miHtmlLider(l) {
   return `<button class="btn-secundario btn-sm" onclick="FD.mi.aberto=null; fdCorpoRender();">← Todas as lideranças</button>
     <div class="mi-hero mi-hero-l">${miAv(l, true)}<div><h2>${escapeHtml(l.nome)}</h2><span>${escapeHtml([l.cargo, l.setor].filter(Boolean).join(' · '))}${l.gestor ? ' · Gestor: ' + escapeHtml(l.gestor) : ''}</span><div class="mi-hero-f" style="margin-top:8px;">${miSelPer()}<button onclick="FD.mi.lid='${l.id}'; fdTrocarAba('lancar');">✏️ Lançar</button></div></div>
       <div class="mi-hero-kp"><div><b>${miPct(r.ating)}</b><span>metas batidas · ${miRotPer()}</span></div><div><b>${miMoeda(r.premio)}</b><span>prêmio de ${miMoeda(r.premioMax)}</span></div><div><b>${miPct(ano.ating)}</b><span>no ano (${ano.bat}/${ano.com})</span></div></div></div>
+    ${(() => { const nAc = miAcoes(l.id).filter(a => ['aberta', 'andamento'].includes(a.status)).length, nG = miInds(l.id).map(miLeInd).filter(r => r.sugere && !(FD.dados.gapas || []).some(g => g.ind === r.i.id && g.status !== 'concluida')).length, nR = (FD.dados.follows || []).filter(x => x.lider === l.id && x.tipo === 'reuniao').length, sub = f.sub || 'metas';
+      const ab = [['metas', '📊 Metas'], ['le', '🔮 LE — projeção do ano'], ['acoes', `📋 Plano de ação (${nAc})`], ['gapa', '🧭 GAPA' + (nG ? ` ⚠️ ${nG}` : '')], ['follow', `🤝 Follow & reuniões (${nR})`]];
+      const corpo = sub === 'le' ? miHtmlLe(l.id) : sub === 'acoes' ? miHtmlAcoes(l.id) : sub === 'gapa' ? miHtmlGapaLider(l.id) : sub === 'follow' ? miHtmlFollow(l.id) : null;
+      return `<div class="mi-sub">${ab.map(([k, r]) => `<button class="${sub === k ? 'on' : ''}" onclick="FD.mi.sub='${k}'; fdCorpoRender();">${r}</button>`).join('')}</div>` + (corpo !== null ? corpo : `
     <div class="mi-evo">${evo}</div>
-    <div class="mi-inds">${inds.map(i => { const k = f.per, meta = k === 'ano' ? miAnoInd(i).meta : miMeta(i, k), real = k === 'ano' ? miAnoInd(i).real : miReal(i, k), a = miAt(meta, real, i.sentido), s = a === null ? 'neutro' : miBateu(a) ? 'ok' : 'fora', mAt = FD.ano === new Date().getFullYear() ? exMesAtual() : 11, le = exNum((i.le || [])[mAt]);
-      const sem = k !== 'ano' && s === 'fora' && !miPlanoDe(i, k).length;
+    <div class="mi-inds">${inds.map(i => { const k = f.per, meta = k === 'ano' ? miAnoInd(i).meta : miMeta(i, k), real = k === 'ano' ? miAnoInd(i).real : miReal(i, k), a = miAt(meta, real, i.sentido), s = a === null ? 'neutro' : miBateu(a) ? 'ok' : 'fora', rl = miLeInd(i);
       return `<div class="mi-ic ${s}"><span class="mi-tag ${s}">${s === 'ok' ? '✔ bateu' : s === 'fora' ? '✖ não bateu' : 'sem real'}</span><h4>${escapeHtml(i.nome)} <small>${i.sentido === 'menor' ? '⬇️ menor é melhor' : '⬆️ maior é melhor'}${exNum(i.valor) ? ' · 💰 ' + miMoeda(exNum(i.valor)) + '/mês' : ''}</small></h4>
-        <div class="mi-mr"><div>Meta<b>${miFmt(meta, i.tipo)}</b></div><div>Real<b>${miFmt(real, i.tipo)}</b></div><div>Atingimento<b>${miPct(a)}</b></div><div>LE ${MESES_FD[mAt]}<b>${miFmt(le, i.tipo)}</b></div></div>
+        <div class="mi-mr"><div>Meta<b>${miFmt(meta, i.tipo)}</b></div><div>Real<b>${miFmt(real, i.tipo)}</b></div><div>Atingimento<b>${miPct(a)}</b></div><div>🔮 LE ano<b>${miFmt(rl.le, i.tipo)}</b></div></div>
         <div class="mi-dots">${MESES_FD.map((m, x) => { const ax = miAt(miMeta(i, x), miReal(i, x), i.sentido); return `<i class="${ax === null ? '' : miBateu(ax) ? 'ok' : 'fora'}" title="${m}: ${miPct(ax)}">${m[0]}</i>`; }).join('')}</div>
         ${i.estrategia ? `<div class="mi-lig">🌟 ${escapeHtml(i.estrategia)}</div>` : ''}
-        ${sem ? `<button class="btn-secundario btn-sm" style="margin-top:8px;width:auto;" onclick="miNovoGapa('${i.id}', ${k})">＋ Abrir GAPA desta meta</button>` : k !== 'ano' && miPlanoDe(i, k).length ? `<div class="mi-lig">🔁 GAPA: ${escapeHtml(miPlanoDe(i, k)[0].acao || miPlanoDe(i, k)[0].causa || 'registrado')}</div>` : ''}</div>`; }).join('') || '<div class="mi-vazio">Esta liderança ainda não tem indicadores. Cadastre em ⚙️ Lideranças e indicadores.</div>'}</div>`;
+        ${rl.sugere ? `<button class="btn-secundario btn-sm" style="margin-top:8px;width:auto;color:#a32020;" onclick="miCriarGapa('${l.id}', '${i.id}')">🧭 ${rl.nao} meses sem bater — ${(FD.dados.gapas || []).some(g => g.ind === i.id && g.status !== 'concluida') ? 'ver GAPA' : 'abrir GAPA'}</button>` : ''}</div>`; }).join('') || '<div class="mi-vazio">Esta liderança ainda não tem indicadores. Cadastre em ⚙️ Lideranças e indicadores.</div>'}</div>`); })()}`;
+}
+// visão geral de GAPA e planos de todas as lideranças (cada uma abre no detalhe)
+function miHtmlGapaGeral() {
+  const L = miLideres(); if (!L.length) return '<div class="mi-vazio">Cadastre as lideranças e os indicadores primeiro (aba ⚙️).</div>';
+  const h = miHoje(), linhas = L.map(l => { const le = miLeLider(l.id), ac = miAcoes(l.id), gs = FD.dados.gapas.filter(g => g.lider === l.id), abertasInd = new Set(gs.filter(g => g.status !== 'concluida').map(g => g.ind)), falta = miInds(l.id).map(miLeInd).filter(r => r.sugere && !abertasInd.has(r.i.id)); return { l, le, ac, gs, falta, ab: ac.filter(a => ['aberta', 'andamento'].includes(a.status)).length, atr: ac.filter(a => a.atrasada).length }; });
+  const tot = k => linhas.reduce((s, x) => s + (typeof x[k] === 'number' ? x[k] : x[k].length), 0);
+  const ir = (lid, sub) => `FD.mi.aberto='${lid}'; FD.mi.sub='${sub}'; fdTrocarAba('painel');`;
+  return `<div class="painel"><h3 style="margin-top:0;">🧭 GAPA e planos de ação — todas as lideranças</h3><div class="plano-meta">Indicador com <b>${MI_MESES_GAPA} ou mais meses sem bater</b> no ano pede GAPA (análise da anomalia que já vem com problema, fatos e plano 5W2H). Cada meta fora precisa de plano de ação revisto no follow (V.3 e V.6).</div>
+      <div class="mi-kp"><div class="${tot('falta') ? 'fora' : 'ok'}"><small>GAPA SUGERIDA SEM ABRIR</small><b>${tot('falta')}</b><span>${MI_MESES_GAPA}+ meses sem bater</span></div><div><small>GAPAS</small><b>${tot('gs')}</b><span>${FD.dados.gapas.filter(g => g.status === 'concluida').length} concluída(s)</span></div><div class="${tot('ab') ? 'risco' : 'ok'}"><small>AÇÕES EM ABERTO</small><b>${tot('ab')}</b><span>de ${tot('ac')}</span></div><div class="${tot('atr') ? 'fora' : 'ok'}"><small>ATRASADAS</small><b>${tot('atr')}</b><span>prazo vencido</span></div></div>
+      <div class="fd-tabela-wrap"><table class="fd-tabela"><thead><tr><th>Liderança</th><th>🔮 LE fecham o ano</th><th>🧭 GAPA</th><th>📋 Ações</th><th>⚠️ Atrasadas</th><th></th></tr></thead><tbody>
+      ${linhas.map(x => `<tr><td><div style="display:flex;gap:8px;align-items:center;">${miAv(x.l)}<div><b>${escapeHtml(x.l.nome)}</b><br><small style="color:#64748b;">${escapeHtml(x.l.cargo || '')}</small></div></div></td><td>${x.le.total ? `<b style="color:${x.le.fecham === x.le.total ? '#0b7a52' : '#a32020'}">${x.le.fecham}/${x.le.total}</b>` : '—'}</td>
+        <td>${x.gs.length} ${x.falta.length ? `<br>${x.falta.map(r => `<button class="btn-secundario btn-sm" style="color:#a32020;margin-top:3px;" onclick="miCriarGapa('${x.l.id}', '${r.i.id}')">🧭 Abrir — ${escapeHtml(r.i.nome)}</button>`).join(' ')}` : ''}</td><td>${x.ab} aberta(s) / ${x.ac.length}</td><td style="color:${x.atr ? '#b91c1c' : 'inherit'};font-weight:${x.atr ? 700 : 400};">${x.atr}</td>
+        <td><button class="btn-secundario btn-sm" onclick="${ir(x.l.id, 'gapa')}">🧭 GAPA</button> <button class="btn-secundario btn-sm" onclick="${ir(x.l.id, 'acoes')}">📋 Ações</button> <button class="btn-secundario btn-sm" onclick="${ir(x.l.id, 'follow')}">🤝 Follow</button></td></tr>`).join('')}</tbody></table></div></div>`;
 }
 function miHtmlLancar() {
   const L = miLideres(); if (!L.length) return '<div class="mi-vazio">Cadastre as lideranças e os indicadores primeiro (aba ⚙️).</div>';
@@ -17369,16 +17549,16 @@ function miHtmlLancar() {
   return `<div class="painel"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><h3 style="margin:0;">✏️ Meta × Real × LE — ${FD.ano}</h3><select style="width:auto;margin:0;" onchange="FD.mi.lid=this.value; fdCorpoRender();">${L.map(x => `<option value="${x.id}" ${x.id === l.id ? 'selected' : ''}>${escapeHtml(x.nome)}</option>`).join('')}</select></div>
     <div class="plano-meta">Meta do mês em branco = usa a <b>meta do ano</b>. <b>LE</b> (Latest Estimate) = a projeção de fechamento do mês, atualizada na rotina — é o que dá previsibilidade (V.5). Verde = bateu, vermelho = não bateu.</div>
     ${!inds.length ? '<div class="msg-vazio">Esta liderança ainda não tem indicadores.</div>' : `<div class="gr-wrap"><table class="gr-tab mi-tab"><thead><tr><th class="gr-nome">Indicador</th><th>Meta ano</th><th></th>${MESES_FD.map(m => `<th>${m}</th>`).join('')}<th>Ano</th></tr></thead><tbody>
-      ${inds.map(([i, idx]) => { const an = miAnoInd(i); return `<tr class="mi-t1"><td class="gr-nome" rowspan="3"><b>${escapeHtml(i.nome)}</b><br><small>${i.sentido === 'menor' ? '⬇️ menor melhor' : '⬆️ maior melhor'} · ${escapeHtml((MI_TIPOS.find(t => t[0] === i.tipo) || MI_TIPOS[2])[1])}</small></td><td rowspan="3">${`<input class="gr-inp" inputmode="decimal" value="${escapeHtml(fdFmtInput(i.metaAno))}" onchange="miEditInd(${idx}, 'metaAno', fdParse(this.value), true)">`}</td><th class="mi-rl">Meta</th>${MESES_FD.map((_, m) => `<td>${inp(idx, 'metas', m, (i.metas || [])[m], fdFmtInput(i.metaAno))}</td>`).join('')}<td class="gr-ano">${miFmt(an.meta, i.tipo)}</td></tr>
+      ${inds.map(([i, idx]) => { const an = miAnoInd(i); return `<tr class="mi-t1"><td class="gr-nome" rowspan="2"><b>${escapeHtml(i.nome)}</b><br><small>${i.sentido === 'menor' ? '⬇️ menor melhor' : '⬆️ maior melhor'} · ${escapeHtml((MI_TIPOS.find(t => t[0] === i.tipo) || MI_TIPOS[2])[1])}</small></td><td rowspan="2">${`<input class="gr-inp" inputmode="decimal" value="${escapeHtml(fdFmtInput(i.metaAno))}" onchange="miEditInd(${idx}, 'metaAno', fdParse(this.value), true)">`}</td><th class="mi-rl">Meta</th>${MESES_FD.map((_, m) => `<td>${inp(idx, 'metas', m, (i.metas || [])[m], fdFmtInput(i.metaAno))}</td>`).join('')}<td class="gr-ano">${miFmt(an.meta, i.tipo)}</td></tr>
         <tr><th class="mi-rl">Real</th>${MESES_FD.map((_, m) => { const a = miAt(miMeta(i, m), miReal(i, m), i.sentido); return `<td class="${a === null ? '' : miBateu(a) ? 'ok' : 'nok'}">${inp(idx, 'reais', m, (i.reais || [])[m], '')}</td>`; }).join('')}<td class="gr-ano">${miFmt(an.real, i.tipo)} · ${miPct(an.ating)}</td></tr>
-        <tr class="mi-le"><th class="mi-rl">LE</th>${MESES_FD.map((_, m) => `<td>${inp(idx, 'le', m, (i.le || [])[m], '')}</td>`).join('')}<td></td></tr>`; }).join('')}</tbody></table></div>`}</div>`;
+`; }).join('')}</tbody></table></div>`}</div>`;
 }
 function miLancar(idx, campo, m, v) { const i = FD.dados.indicadores[idx]; if (!i) return; i[campo] = Array.isArray(i[campo]) ? i[campo] : []; const n = fdParse(v); i[campo][m] = n === '' ? '' : n; fdAgendarSalvar(); exValidar(); clearTimeout(FD.miT); FD.miT = setTimeout(fdCorpoRender, 900); }
 function miEditInd(idx, campo, v, re) { const i = FD.dados.indicadores[idx]; if (!i) return; i[campo] = v; fdAgendarSalvar(); exValidar(); if (re) fdCorpoRender(); }
 function miEditLider(id, campo, v, re) { const l = FD.dados.lideres.find(x => x.id === id); if (!l) return; l[campo] = v; fdAgendarSalvar(); exValidar(); if (re) fdCorpoRender(); }
 function miNovoLider() { const l = { id: fdId(), nome: '', cargo: '', setor: '', gestor: '', foto: '' }; FD.dados.lideres.push(l); FD.mi.lid = l.id; fdAgendarSalvar(); fdCorpoRender(); setTimeout(() => { const e = document.getElementById('mi-ln-' + l.id); if (e) e.focus(); }, 60); }
 function miExcluirLider(id) { const l = FD.dados.lideres.find(x => x.id === id); if (!l || !confirm(`Excluir ${l.nome || 'esta liderança'} e os indicadores dela?`)) return; FD.dados.lideres = FD.dados.lideres.filter(x => x.id !== id); FD.dados.indicadores = FD.dados.indicadores.filter(i => i.lider !== id); if (FD.mi.aberto === id) FD.mi.aberto = null; fdAgendarSalvar(); exRedesenhar(); }
-function miNovoInd(lid) { FD.dados.indicadores.push({ id: fdId(), lider: lid, nome: '', tipo: 'pct', sentido: 'maior', peso: 1, valor: '', metaAno: '', metas: [], reais: [], le: [] }); fdAgendarSalvar(); fdCorpoRender(); }
+function miNovoInd(lid) { FD.dados.indicadores.push({ id: fdId(), lider: lid, nome: '', tipo: 'pct', sentido: 'maior', peso: 1, valor: '', metaAno: '', metas: [], reais: [] }); fdAgendarSalvar(); fdCorpoRender(); }
 function miExcluirInd(idx) { if (!confirm('Remover este indicador (e os valores lançados)?')) return; FD.dados.indicadores.splice(idx, 1); fdAgendarSalvar(); exRedesenhar(); }
 async function miFoto(id, inp) {
   const arq = inp.files && inp.files[0]; inp.value = ''; if (!arq) return; if (!/^image\//.test(arq.type)) return mostrarToast('Escolha uma imagem.', true);
@@ -17401,25 +17581,17 @@ function miHtmlCadastro() {
         <td><input value="${escapeHtml(i.estrategia || '')}" placeholder="Ex.: Sonho — ser referência em nível de serviço" onchange="miEditInd(${idx}, 'estrategia', this.value)"></td><td><button class="btn-icone" onclick="miExcluirInd(${idx})" title="Remover">🗑️</button></td></tr>`).join('') || `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:14px;">Nenhum indicador ainda.</td></tr>`}</tbody></table></div>
       ${miLideres().length > 1 ? `<div style="margin-top:8px;font-size:13px;">Copiar os indicadores de outra liderança: <select style="width:auto;display:inline-block;margin:0;" onchange="if(this.value) miCopiarInds(this.value, '${sel}'); this.value='';"><option value="">escolha…</option>${miLideres().filter(x => x.id !== sel).map(x => `<option value="${x.id}">${escapeHtml(x.nome)} (${miInds(x.id).length})</option>`).join('')}</select></div>` : ''}</div>`; })() : ''}`;
 }
-function miCopiarInds(de, para) { const n = miInds(de).map(i => ({ id: fdId(), lider: para, nome: i.nome, tipo: i.tipo, sentido: i.sentido, peso: i.peso, valor: i.valor, metaAno: i.metaAno, estrategia: i.estrategia, metas: (i.metas || []).slice(), reais: [], le: [] })); FD.dados.indicadores.push(...n); fdAgendarSalvar(); exRedesenhar(); mostrarToast(`📋 ${n.length} indicador(es) copiado(s) (sem os reais).`); }
-function miNovoGapa(iid, m) { const i = FD.dados.indicadores.find(x => x.id === iid); if (!i) return; const a = miAt(miMeta(i, m), miReal(i, m), i.sentido); FD.dados.planos.push({ id: fdId(), ind: miRot(i), mes: MESES_FD[m], gap: `Meta ${miFmt(miMeta(i, m), i.tipo)} × real ${miFmt(miReal(i, m), i.tipo)} (${miPct(a)})`, causa: '', acao: '', resp: ((FD.dados.lideres || []).find(l => l.id === i.lider) || {}).nome || '', prazo: '', status: 'Não iniciado', revisao: '' }); fdAgendarSalvar(); FD.aba = 'gapa'; fdTrocarAba('gapa'); }
-function miHtmlGapa() {
-  const foras = miForas(), sem = foras.filter(f => !miPlanoDe(f.i, f.m).length), rots = [...new Set(miLideres().flatMap(l => miInds(l.id).map(miRot)))];
-  FD_PADRAO_LINHA.planos = { status: 'Não iniciado' };
-  return `<div class="painel"><h3 style="margin-top:0;">🔁 GAPA — metas sem performance</h3><div class="plano-meta"><b>GAPA</b> (Gap Analysis & Plan of Action): para cada meta que não bateu, quantifique o <b>gap</b>, encontre a <b>causa raiz</b> (5 porquês), defina a <b>contramedida</b> com responsável e prazo e <b>revise</b> na reunião mensal (V.3 e V.6).</div>
-      ${sem.length ? `<div class="mi-pend"><b>⚠️ ${sem.length} meta(s) fora sem GAPA</b>${sem.slice(0, 30).map(f => `<button onclick="miNovoGapa('${f.i.id}', ${f.m})">＋ ${escapeHtml(f.l.nome)} · ${escapeHtml(f.i.nome)} · ${MESES_FD[f.m]} (${miPct(f.a)})</button>`).join('')}</div>` : foras.length ? '<div class="mi-okmsg">✔ Toda meta fora já tem GAPA.</div>' : ''}
-      ${fdTabela('planos', [{ campo: 'ind', rotulo: 'Liderança — indicador', tipo: 'select', opcoes: rots, largura: 220, recarregar: true }, { campo: 'mes', rotulo: 'Mês', tipo: 'select', opcoes: MESES_FD, largura: 90, recarregar: true }, { campo: 'gap', rotulo: 'Gap (meta × real)', tipo: 'textarea', largura: 160 }, { campo: 'causa', rotulo: 'Causa raiz (5 porquês)', tipo: 'textarea', largura: 200, recarregar: true }, { campo: 'acao', rotulo: 'Contramedida / ação', tipo: 'textarea', largura: 200, recarregar: true }, { campo: 'resp', rotulo: 'Responsável', largura: 130 }, { campo: 'prazo', rotulo: 'Prazo', tipo: 'date', largura: 130 }, { campo: 'status', rotulo: 'Status', tipo: 'select', opcoes: MI_STATUS, largura: 120, recarregar: true }, { campo: 'revisao', rotulo: 'Revisado na reunião de', tipo: 'date', largura: 130, recarregar: true }], { numerar: true, botao: 'GAPA' })}</div>`;
-}
+function miCopiarInds(de, para) { const n = miInds(de).map(i => ({ id: fdId(), lider: para, nome: i.nome, tipo: i.tipo, sentido: i.sentido, peso: i.peso, valor: i.valor, metaAno: i.metaAno, estrategia: i.estrategia, metas: (i.metas || []).slice(), reais: [] })); FD.dados.indicadores.push(...n); fdAgendarSalvar(); exRedesenhar(); mostrarToast(`📋 ${n.length} indicador(es) copiado(s) (sem os reais).`); }
 function miHtmlRotina() {
-  const d = FD.dados, pa = d.planoAtingimento, inds = miLideres().flatMap(l => miInds(l.id)), mAt = FD.ano === new Date().getFullYear() ? exMesAtual() : 11, comLe = inds.filter(i => exNum((i.le || [])[mAt]) !== null).length;
+  const d = FD.dados, pa = d.planoAtingimento, inds = miLideres().flatMap(l => miInds(l.id));
   FD_PADRAO_LINHA.reunioes = { mes: MESES_FD[miLim()] };
   return `<div class="painel"><h3 style="margin-top:0;">🗺️ Plano de atingimento das metas (V.1)</h3><div class="plano-meta">Como as metas foram definidas e cascateadas a partir do plano estratégico / Sonho (abertura de KPIs). Anexe o plano em 📎 Evidências com o tipo "Plano de atingimento".</div>
       <div class="grid-3"><div><label>Data do plano / revisão</label><input type="date" value="${escapeHtml(pa.data || '')}" onchange="FD.dados.planoAtingimento.data=this.value; fdAgendarSalvar(); exValidar();"></div><div style="grid-column:span 2;"><label>Onde está (link, pasta, quadro)</label><input value="${escapeHtml(pa.onde || '')}" onchange="FD.dados.planoAtingimento.onde=this.value; fdAgendarSalvar();"></div></div>
       <label>Resumo do plano: drivers, iniciativas estratégicas e como cada meta individual foi desdobrada</label><textarea rows="4" onchange="FD.dados.planoAtingimento.texto=this.value; fdAgendarSalvar(); exValidar();">${escapeHtml(pa.texto || '')}</textarea></div>
-    <div class="painel" style="margin-top:12px;"><h3 style="margin-top:0;">📅 Reunião mensal de rotina das metas (V.2)</h3><div class="plano-meta">Registre a reunião de cada mês em que as metas individuais foram acompanhadas (quem participou, decisões, GAPAs revistos).</div>
+    <div class="painel" style="margin-top:12px;"><h3 style="margin-top:0;">📅 Reunião mensal de rotina das metas (V.2)</h3><div class="plano-meta">Registre a reunião de cada mês em que as metas individuais foram acompanhadas (quem participou, decisões, GAPAs revistos). As 🤝 reuniões de follow de cada liderança também contam.</div>
       ${fdTabela('reunioes', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130, recarregar: true }, { campo: 'mes', rotulo: 'Mês de referência', tipo: 'select', opcoes: MESES_FD, largura: 90, recarregar: true }, { campo: 'participantes', rotulo: 'Participantes', largura: 200 }, { campo: 'decisoes', rotulo: 'Decisões / GAPAs revistos', tipo: 'textarea', largura: 300 }], { numerar: true, botao: 'Reunião' })}</div>
-    <div class="painel" style="margin-top:12px;"><h3 style="margin-top:0;">🔮 LE — Latest Estimate (V.5)</h3><div class="plano-meta">Na rotina semanal, cada liderança atualiza a projeção de fechamento do mês (linha <b>LE</b> em ✏️ Lançar). Quando o LE mostra que a meta não vai bater, o GAPA começa antes do mês fechar.</div>
-      <div class="mi-okmsg" style="background:${comLe === inds.length && inds.length ? '#dcfce7' : '#fef9c3'};">${comLe}/${inds.length} indicador(es) com LE de ${MESES_FD[mAt]}. <a href="#" onclick="fdTrocarAba('lancar'); return false;">Lançar LE</a></div></div>
+    <div class="painel" style="margin-top:12px;"><h3 style="margin-top:0;">🔮 LE — projeção do ano (V.5)</h3><div class="plano-meta">O LE é calculado sozinho para cada indicador: média dos meses lançados + a tendência dos 3 últimos meses nos meses que faltam. Ele mostra quem fecha o ano na meta e quanto precisa fazer por mês para recuperar — quem não fecha precisa de plano de ação ou GAPA. Veja no 🎯 Painel › liderança › 🔮 LE.</div>
+      ${(() => { const le = miLideres().flatMap(l => miInds(l.id).map(miLeInd)), com = le.filter(r => r.vai !== null), f = com.filter(r => r.vai).length; return `<div class="mi-okmsg" style="background:${com.length && f === com.length ? '#dcfce7' : '#fef9c3'};">${f}/${com.length} indicador(es) fecham o ano na meta pela projeção · ${le.filter(r => r.sugere).length} com ${MI_MESES_GAPA}+ meses sem bater (GAPA sugerida).</div>`; })()}</div>
     <div class="painel" style="margin-top:12px;"><h3 style="margin-top:0;">🎙️ O time sabe a ligação do alvo com a estratégia e o Sonho? (V.4)</h3><div class="plano-meta">Entreviste colaboradores: qual é o seu alvo, que ações você faz para atingir e como ele se liga à estratégia da unidade / Sonho. Meta: 3+ pessoas, 70% explicando.</div>
       ${fdTabela('entrevistas', [{ campo: 'data', rotulo: 'Data', tipo: 'date', largura: 130 }, { campo: 'nome', rotulo: 'Pessoa', largura: 160, recarregar: true }, { campo: 'funcao', rotulo: 'Função', largura: 130 }, { campo: 'conhece', rotulo: 'Sabe o próprio alvo', tipo: 'select', opcoes: ['Sim', 'Parcial', 'Não'], largura: 110 }, { campo: 'liga', rotulo: 'Explicou a ligação com a estratégia / Sonho', tipo: 'select', opcoes: ['Sim', 'Parcial', 'Não'], largura: 150, recarregar: true }, { campo: 'obs', rotulo: 'Observação', largura: 220 }], { numerar: true, botao: 'Entrevista' })}</div>`;
 }
