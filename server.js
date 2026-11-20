@@ -1770,6 +1770,11 @@ function dbGet(query, params = []) {
         db.get(query, params, (err, row) => (err ? reject(err) : resolve(row)));
     });
 }
+function dbRun(query, params = []) {
+    return new Promise((resolve, reject) => {
+        db.run(query, params, function (err) { if (err) reject(err); else resolve({ changes: this.changes, lastID: this.lastID }); });
+    });
+}
 
 // Gamificação: registra pontos para o usuário. Nunca deixa uma falha aqui
 // derrubar a ação principal (ex: concluir um PDI não pode falhar por causa
@@ -2590,46 +2595,35 @@ app.put('/api/companies/:id', requireRole('admin', 'client_admin'), async (req, 
             db.run(`UPDATE companies SET enabled_modules = ? WHERE id = ?`, [Array.isArray(enabled_modules) ? JSON.stringify(enabled_modules) : null, id], () => {});
         }
 
-        // Atualiza nome/e-mail do Gestor (client_admin) junto com os dados da empresa,
-        // já que "Nome do Gestor" e "E-mail do Gestor" fazem parte do mesmo cadastro.
-        const atualizarGestorEDepoisSenha = () => {
-            if (newPassword && newPassword.trim() !== '') {
-                bcrypt.hash(newPassword, 10).then(hash => {
-                    db.run(`UPDATE users SET password = ? WHERE company_id = ? AND role = 'client_admin'`, [hash, id], () => res.json({ message: 'Atualizado!' }));
-                });
-            } else {
-                res.json({ message: 'Atualizado!' });
+        // Atualiza nome/e-mail/senha do Gestor principal (o 1º client_admin da empresa — o mesmo que
+        // aparece na listagem). A empresa pode ter vários acessos (Membros): antes o UPDATE pegava TODOS
+        // eles e tentava gravar o mesmo e-mail em todos (o banco recusa e-mail repetido → "e-mail já está
+        // em uso") e a nova senha também ia para todos. Agora só o gestor principal é alterado.
+        try {
+            const gestor = await dbGet(`SELECT id, email FROM users WHERE company_id = ? AND role = 'client_admin' ORDER BY id ASC LIMIT 1`, [id]);
+            const emailNovo = adminEmail !== undefined ? String(adminEmail || '').trim() : '';
+            if (emailNovo) {
+                const dono = await dbGet(`SELECT u.id, u.name, u.role, c.name AS empresa FROM users u LEFT JOIN companies c ON c.id = u.company_id WHERE lower(u.email) = lower(?) AND u.id != ?`, [emailNovo, gestor ? gestor.id : 0]);
+                if (dono) return res.status(400).json({ error: `Dados da empresa salvos, mas o e-mail do gestor não foi trocado: ${emailNovo} já é o login de ${dono.name || 'outra conta'}${dono.empresa ? ' (' + dono.empresa + ')' : dono.role === 'admin' ? ' (Master)' : ''}. Use outro e-mail ou deixe o atual.` });
             }
-        };
-
-        if (adminName !== undefined || adminEmail !== undefined) {
-            const camposGestor = [];
-            const paramsGestor = [];
-            if (adminName !== undefined) { camposGestor.push('name = ?'); paramsGestor.push(adminName); }
-            if (adminEmail !== undefined && adminEmail.trim() !== '') { camposGestor.push('email = ?'); paramsGestor.push(adminEmail.trim()); }
-            if (camposGestor.length) {
-                paramsGestor.push(id);
-                db.run(`UPDATE users SET ${camposGestor.join(', ')} WHERE company_id = ? AND role = 'client_admin'`, paramsGestor, async function(errGestor) {
-                    if (errGestor) return res.status(400).json({ error: 'Não foi possível atualizar o gestor: e-mail já está em uso por outra conta.' });
-                    // Nenhum Gestor existia ainda para esta empresa — se veio nome, e-mail
-                    // e senha, cria o acesso dele agora em vez de só tentar atualizar.
-                    if (this.changes === 0 && adminName && adminEmail && adminPassword) {
-                        try {
-                            const hash = await bcrypt.hash(adminPassword, 10);
-                            db.run(`INSERT INTO users (name, email, password, company_id, role) VALUES (?, ?, ?, ?, 'client_admin')`,
-                                [adminName, adminEmail.trim(), hash, id], (errCriar) => {
-                                    if (errCriar) return res.status(400).json({ error: 'Não foi possível criar o gestor: e-mail já está em uso por outra conta.' });
-                                    res.json({ message: 'Atualizado! Acesso do Gestor criado.' });
-                                });
-                        } catch (e) { res.status(500).json({ error: 'Erro ao criar o acesso do gestor.' }); }
-                        return;
-                    }
-                    atualizarGestorEDepoisSenha();
-                });
-                return;
+            if (gestor) {
+                const campos = [], vals = [];
+                if (adminName !== undefined && String(adminName).trim()) { campos.push('name = ?'); vals.push(String(adminName).trim()); }
+                if (emailNovo && emailNovo.toLowerCase() !== String(gestor.email || '').toLowerCase()) { campos.push('email = ?'); vals.push(emailNovo); }
+                if (newPassword && newPassword.trim() !== '') { campos.push('password = ?'); vals.push(await bcrypt.hash(newPassword, 10)); }
+                if (campos.length) await dbRun(`UPDATE users SET ${campos.join(', ')} WHERE id = ?`, [...vals, gestor.id]);
+                return res.json({ message: 'Atualizado!' });
             }
+            if (adminName && emailNovo && adminPassword) {
+                const hash = await bcrypt.hash(adminPassword, 10);
+                await dbRun(`INSERT INTO users (name, email, password, company_id, role) VALUES (?, ?, ?, ?, 'client_admin')`, [adminName, emailNovo, hash, id]);
+                return res.json({ message: 'Atualizado! Acesso do Gestor criado.' });
+            }
+            res.json({ message: 'Atualizado!' });
+        } catch (e) {
+            console.error('Erro ao atualizar o gestor da empresa:', e.message);
+            res.status(400).json({ error: 'Dados da empresa salvos, mas não foi possível atualizar o gestor: ' + e.message });
         }
-        atualizarGestorEDepoisSenha();
     });
 });
 
