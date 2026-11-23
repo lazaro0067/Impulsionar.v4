@@ -2074,6 +2074,11 @@
   .mtn-lib-op { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:10px 0; } @media (max-width:560px) { .mtn-lib-op { grid-template-columns:1fr; } } .mtn-lib-op label { border:2px solid #e2e8f0; border-radius:12px; padding:10px; cursor:pointer; display:flex; flex-direction:column; gap:2px; } .mtn-lib-op label.on { border-color:#2563eb; background:#eff6ff; } .mtn-lib-op input { display:none; } .mtn-lib-op small { color:#64748b; font-size:12px; }
   .mtn-lib-al { border:1px solid #e2e8f0; border-radius:12px; padding:10px; max-height:46vh; overflow:auto; } .mtn-lib-al-t { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; } .mtn-lib-al-t span { display:flex; gap:6px; } .mtn-lib-it { display:flex; align-items:center; gap:8px; padding:7px 4px; border-top:1px solid #f1f5f9; cursor:pointer; } .mtn-lib-it input { width:auto !important; margin:0 !important; } .mtn-lib-it span { flex:1; font-weight:600; } .mtn-lib-it small { font-size:11px; color:#94a3b8; } .mtn-lib-it small.ok { color:#16a34a; font-weight:700; }
   .mtc-abas { display:flex; gap:6px; margin-bottom:12px; } .mtc-abas button { font:inherit; font-weight:700; border:1px solid #cbd5e1; background:#fff; border-radius:999px; padding:6px 14px; cursor:pointer; } .mtc-abas button.on { background:#0b1329; color:#fff; border-color:#0b1329; }
+  .mtfb { min-width:0; } .mtfb-form { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:12px; } .mtfb-g { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:8px; } .mtfb-g label, .mtfb-form > label { font-size:12.5px; font-weight:700; color:#334155; } .mtfb-g select, .mtfb-g input { margin-top:3px; }
+  .mtfb-it { background:#fff; border:1px solid #e2e8f0; border-left:4px solid #f59e0b; border-radius:12px; padding:10px 12px; margin-bottom:8px; } .mtfb-it p { margin:6px 0; font-size:14px; line-height:1.45; } .mtfb-cab { display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .mtfb-cab small { color:#64748b; font-size:11.5px; }
+  .mtfb-ass { background:#fef3c7; color:#92400e; font-size:11.5px; font-weight:800; border-radius:999px; padding:2px 9px; } .mtfb-mat button { background:none; border:none; color:#1d4ed8; font-weight:700; cursor:pointer; padding:0; font:inherit; font-size:13px; }
+  .mtfb-resp { background:#eef2ff; border-radius:10px; padding:6px 9px; margin:5px 0 5px 18px; font-size:13.5px; } .mtfb-resp.eu { background:#fff7ed; } .mtfb-resp small { display:block; color:#64748b; font-size:11px; }
+  .mtfb-rbox { display:flex; gap:6px; margin-top:6px; } .mtfb-rbox input { margin:0; } .mtfb-avisar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; background:#dcfce7; border-radius:10px; padding:8px 10px; margin-bottom:10px; font-weight:700; font-size:13px; }
   .mtc-grade { display:grid; grid-template-columns:220px 1fr; gap:12px; min-height:340px; } @media (max-width:700px) { .mtc-grade { grid-template-columns:1fr; } }
   .mtc-lista { display:grid; gap:4px; align-content:start; max-height:420px; overflow:auto; } .mtc-lista button { display:flex; gap:8px; align-items:center; text-align:left; font:inherit; border:1px solid #e2e8f0; background:#fff; border-radius:10px; padding:7px; cursor:pointer; } .mtc-lista button.on { border-color:#7c3aed; background:#f5f3ff; }
   .mtc-lista img, .mtc-lista i { width:32px; height:32px; border-radius:50%; object-fit:cover; flex:none; background:#e2e8f0; display:grid; place-items:center; font-style:normal; font-weight:800; } .mtc-lista span { flex:1; font-weight:700; font-size:13px; } .mtc-lista small { display:block; font-weight:500; color:#64748b; font-size:11px; }
@@ -2281,7 +2286,7 @@
       <div class="link-esqueci"><a href="#" onclick="mostrarEsqueciSenha(); return false;">Esqueci minha senha</a></div>
       <div class="link-esqueci"><a href="#" onclick="mostrarCadastroCandidato(); return false;">Sou candidato — cadastrar meu currículo</a></div>
       <button type="button" class="lg-app" id="btn-app-login" onclick="appInstalar()"><span>📲</span><div><b>Baixar o app Impulsionar</b><small>Instale no celular: ícone na tela inicial, abre em tela cheia</small></div></button>
-      <div class="lg-versao">Impulsionar V4 · atualização 20/11 (5)</div>
+      <div class="lg-versao">Impulsionar V4 · atualização 23/11 (1)</div>
     </form>
     <form id="form-esqueci-senha" class="oculto">
       <p style="font-size:13px; color:var(--cinza-500); margin:-8px 0 16px;">Informe o e-mail cadastrado. Vamos enviar um link para redefinir sua senha.</p>
@@ -15617,12 +15622,13 @@ const MTCV = { tid: 0, d: null, aba: 'msg', aluno: 0 };
 async function mtnConversas(tid, aba) { MTCV.tid = tid; MTCV.aba = aba || 'msg'; try { MTCV.d = await api('/api/admin/mentoria/turmas/' + tid + '/conversas'); } catch (e) { return mostrarToast(e.message, true); } if (!MTCV.aluno || !MTCV.d.alunos.some(a => a.id === MTCV.aluno)) MTCV.aluno = ((MTCV.d.alunos.find(a => a.naoLidas) || MTCV.d.alunos[0]) || {}).id || 0; mtnConversasDesenhar(); }
 function mtnConversasDesenhar() {
   const d = MTCV.d, r = d.resumo, t = MTN.turmas.find(x => x.id === MTCV.tid) || {}, quando = s => s ? new Date(String(s).replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-  const abas = `<div class="mtc-abas"><button class="${MTCV.aba === 'msg' ? 'on' : ''}" onclick="MTCV.aba='msg'; mtnConversasDesenhar()">💬 Dúvidas e materiais${r.naoLidas ? ` (${r.naoLidas})` : ''}</button><button class="${MTCV.aba === 'av' ? 'on' : ''}" onclick="MTCV.aba='av'; mtnConversasDesenhar()">⭐ Avaliações (${r.total})</button></div>`;
+  const abas = `<div class="mtc-abas"><button class="${MTCV.aba === 'msg' ? 'on' : ''}" onclick="MTCV.aba='msg'; mtnConversasDesenhar()">💬 Dúvidas e materiais${r.naoLidas ? ` (${r.naoLidas})` : ''}</button><button class="${MTCV.aba === 'fb' ? 'on' : ''}" onclick="MTCV.aba='fb'; mtnConversasDesenhar()">📝 Feedbacks por aula</button><button class="${MTCV.aba === 'av' ? 'on' : ''}" onclick="MTCV.aba='av'; mtnConversasDesenhar()">⭐ Avaliações (${r.total})</button></div>`;
   let corpo = '';
-  if (MTCV.aba === 'msg') {
+  if (MTCV.aba === 'fb') corpo = mtnFeedbackHtml(quando);
+  else if (MTCV.aba === 'msg') {
     const al = d.alunos.find(a => a.id === MTCV.aluno);
     corpo = !d.alunos.length ? '<p class="plano-meta">Nenhum aluno nesta turma.</p>' : `<div class="mtc-grade"><div class="mtc-lista">${d.alunos.map(a => `<button class="${a.id === MTCV.aluno ? 'on' : ''}" onclick="mtnConversaAluno(${a.id})">${a.foto ? `<img src="${escapeHtml(a.foto)}" alt="">` : `<i>${escapeHtml((a.nome || '?')[0])}</i>`}<span>${escapeHtml(a.nome)}<small>${a.mensagens.length} mensagem(ns)</small></span>${a.naoLidas ? `<b class="mtn-badge">${a.naoLidas}</b>` : ''}</button>`).join('')}</div>
-      <div class="mtc-chat"><div class="mtc-msgs" id="mtc-msgs">${al && al.mensagens.length ? al.mensagens.map(m => `<div class="mtc-m ${m.de === 'mentor' ? 'eu' : ''}"><small>${m.de === 'mentor' ? 'Você' : escapeHtml(al.nome)}${m.encontro ? ' · encontro ' + m.encontro : ''} · ${quando(m.criado_em)}</small>${m.texto ? `<p>${escapeHtml(m.texto).replace(/\n/g, '<br>')}</p>` : ''}${m.anexo_url ? `<a href="${escapeHtml(m.anexo_url)}" target="_blank" rel="noopener">📎 ${escapeHtml(m.anexo_nome || 'material')}</a>` : ''}</div>`).join('') : '<p class="plano-meta" style="text-align:center;margin-top:30px;">Sem mensagens deste aluno ainda.</p>'}</div>
+      <div class="mtc-chat"><div class="mtc-msgs" id="mtc-msgs">${al && al.mensagens.length ? al.mensagens.map(m => `<div class="mtc-m ${m.de === 'mentor' ? 'eu' : ''}"><small>${m.tipo === 'feedback' ? '📝 FEEDBACK · ' + escapeHtml(m.assunto || '') + ' · ' : m.resposta_de ? '↪ sobre o feedback · ' : ''}${m.de === 'mentor' ? 'Você' : escapeHtml(al.nome)}${m.encontro ? ' · encontro ' + m.encontro : ''} · ${quando(m.criado_em)}</small>${m.texto ? `<p>${escapeHtml(m.texto).replace(/\n/g, '<br>')}</p>` : ''}${m.anexo_url ? `<a href="${escapeHtml(m.anexo_url)}" target="_blank" rel="noopener">📎 ${escapeHtml(m.anexo_nome || 'material')}</a>` : ''}</div>`).join('') : '<p class="plano-meta" style="text-align:center;margin-top:30px;">Sem mensagens deste aluno ainda.</p>'}</div>
       ${al ? `<div class="mtc-resp"><textarea id="mtc-txt" rows="2" placeholder="Responder ${escapeHtml(al.nome.split(' ')[0])}… (aparece na Área do Aluno)"></textarea><button class="btn-primario btn-sm" style="width:auto;" onclick="mtnResponder()">Enviar</button></div>` : ''}</div></div>`;
   } else {
     const nomeEnc = n => n ? 'Encontro ' + n : 'Treinamento geral';
@@ -15630,8 +15636,74 @@ function mtnConversasDesenhar() {
       ${d.avaliacoes.length ? d.avaliacoes.map(v => `<div class="mtc-av"><div class="mtc-av-cab"><b class="mtc-nota n${v.nota >= 9 ? 'a' : v.nota >= 7 ? 'b' : 'c'}">${v.nota}</b><span><b>${escapeHtml(v.aluno)}</b><small>${nomeEnc(v.encontro)} · ${quando(v.criado_em)}</small></span></div>${d.perguntas.map(q => (v.respostas || {})[q.id] ? `<p><small>${escapeHtml(q.texto)}</small>${escapeHtml(v.respostas[q.id])}</p>` : '').join('')}${v.comentario ? `<p><small>Comentário</small>${escapeHtml(v.comentario)}</p>` : ''}</div>`).join('') : '<p class="plano-meta">Ainda não chegou nenhuma avaliação. Os alunos avaliam pela Área do Aluno (nota de 0 a 10, perguntas e comentário).</p>'}`;
   }
   mtnModal(`<h3 style="margin-top:0;">${escapeHtml(t.nome || 'Turma')} · Área do Aluno</h3>${abas}${corpo}<div class="acoes-form"><button class="btn-secundario" onclick="mtnModal(''); mtnRecarregarTurmas()">Fechar</button></div>`);
+  const cx = document.querySelector('#modal-area .modal-caixa'); if (cx) cx.style.maxWidth = '1040px';
   const box = document.getElementById('mtc-msgs'); if (box) box.scrollTop = box.scrollHeight;
 }
+// ---------- 📝 Feedback do mentor por aula / material (aparece na Área do Aluno, dentro do encontro) ----------
+const MT_ASSUNTOS_FB = ['Material enviado', 'Desafio do encontro', 'Participação na aula', 'Aplicação no time', 'Sugestão de melhoria', 'Reconhecimento 👏'];
+async function mtnFeedbackDe(tid, aid, enc, url, nome) {
+  MTCV.fb = { enc: enc || 0, ref_url: url || '', ref_nome: nome || '', assunto: url ? 'Material enviado' : '', id: 0, texto: '' }; MTCV.aluno = aid;
+  await mtnConversas(tid, 'fb');
+}
+function mtnFeedbackHtml(quando) {
+  const d = MTCV.d, t = MTN.turmas.find(x => x.id === MTCV.tid) || { alunos: [] }, pg = mtnProgT(t), al = d.alunos.find(a => a.id === MTCV.aluno);
+  if (!d.alunos.length) return '<p class="plano-meta">Nenhum aluno nesta turma.</p>';
+  const F = MTCV.fb = MTCV.fb || { enc: 0, ref_url: '', ref_nome: '', assunto: '', id: 0, texto: '' };
+  const fbsDe = a => a.mensagens.filter(m => m.tipo === 'feedback'), respDe = id => (al ? al.mensagens : []).filter(m => Number(m.resposta_de) === Number(id));
+  const mats = al ? ((t.alunos.find(x => x.id === al.id) || {}).materiais || []) : [], matsEnc = mats.filter(m => !F.enc || Number(m.encontro) === Number(F.enc));
+  const encNome = n => { const s = pg.encontros.find(x => Number(x.n) === Number(n)); return n ? `Encontro ${n}${s ? ' · ' + (s.modulo || s.tema || '') : ''}` : 'Geral (todo o programa)'; };
+  const lista = `<div class="mtc-lista">${d.alunos.map(a => { const n = fbsDe(a).length, nr = a.mensagens.filter(m => m.resposta_de && m.de === 'aluno' && !m.lida).length; return `<button class="${a.id === MTCV.aluno ? 'on' : ''}" onclick="MTCV.aluno=${a.id}; MTCV.fb=null; mtnConversasDesenhar()">${a.foto ? `<img src="${escapeHtml(a.foto)}" alt="">` : `<i>${escapeHtml((a.nome || '?')[0])}</i>`}<span>${escapeHtml(a.nome)}<small>${n} feedback(s)${nr ? ` · <b style="color:#b45309">${nr} resposta(s) nova(s)</b>` : ''}</small></span></button>`; }).join('')}</div>`;
+  if (!al) return `<div class="mtc-grade">${lista}<div></div></div>`;
+  const assuntoLivre = F.assunto && !MT_ASSUNTOS_FB.includes(F.assunto);
+  const form = `<div class="mtfb-form"><h4 style="margin:0 0 6px;">${F.id ? '✏️ Editar feedback' : '📝 Novo feedback para ' + escapeHtml(al.nome.split(' ')[0])}</h4>
+    <div class="mtfb-g"><label>Aula<select id="mtfb-enc" onchange="mtnFbCampo('enc', Number(this.value)); MTCV.fb.ref_url=''; mtnConversasDesenhar()"><option value="0">Geral (todo o programa)</option>${pg.encontros.map(s => `<option value="${s.n}" ${Number(F.enc) === Number(s.n) ? 'selected' : ''}>${escapeHtml(encNome(s.n))}</option>`).join('')}</select></label>
+      <label>Assunto<select id="mtfb-ass" onchange="mtnFbCampo('assunto', this.value === '__outro' ? ' ' : this.value); mtnConversasDesenhar()"><option value="">Escolha…</option>${MT_ASSUNTOS_FB.map(x => `<option ${F.assunto === x ? 'selected' : ''}>${escapeHtml(x)}</option>`).join('')}<option value="__outro" ${assuntoLivre ? 'selected' : ''}>Outro (escrever)…</option></select></label>
+      ${assuntoLivre ? `<label>Qual assunto?<input id="mtfb-ass2" value="${escapeHtml(F.assunto.trim())}" oninput="mtnFbCampo('assunto', this.value || ' ')" placeholder="Ex.: Postura na reunião de rotina"></label>` : ''}
+      <label>Material comentado<select id="mtfb-mat" onchange="const o=this.selectedOptions[0]; mtnFbCampo('ref_url', this.value); mtnFbCampo('ref_nome', o ? o.dataset.nome || '' : '')"><option value="">— nenhum —</option>${matsEnc.map(m => `<option value="${escapeHtml(m.url)}" data-nome="${escapeHtml(m.nome)}" ${F.ref_url === m.url ? 'selected' : ''}>${escapeHtml(m.nome)}${!F.enc && m.encontro ? ' (enc. ' + m.encontro + ')' : ''}</option>`).join('')}${F.ref_url && !matsEnc.some(m => m.url === F.ref_url) ? `<option value="${escapeHtml(F.ref_url)}" data-nome="${escapeHtml(F.ref_nome)}" selected>${escapeHtml(F.ref_nome || 'material')}</option>` : ''}</select></label></div>
+    ${F.ref_url ? `<div style="margin:2px 0 6px;"><button class="btn-secundario btn-sm mtn-ver" style="width:auto;" data-url="${escapeHtml(F.ref_url)}" data-nome="${escapeHtml(F.ref_nome)}" data-aluno="${escapeHtml(al.nome)}" onclick="mtnVerArq(this)">👁️ Abrir o material enquanto escreve</button></div>` : ''}
+    <label style="display:block;">Seu feedback / sugestão<textarea id="mtfb-txt" rows="6" oninput="mtnFbCampo('texto', this.value)" placeholder="Ex.: Isaura, o seu mapa do time ficou muito claro. Sugestão: inclua a matriz de habilidades e marque quem precisa de treinamento até o próximo encontro.">${escapeHtml(F.texto || '')}</textarea></label>
+    <div class="acoes-form" style="margin-top:6px;"><button class="btn-primario" style="width:auto;" onclick="mtnFbEnviar(this)">${F.id ? '💾 Salvar alteração' : '📤 Enviar para a Área do Aluno'}</button>${F.id ? `<button class="btn-secundario" style="width:auto;" onclick="MTCV.fb=null; mtnConversasDesenhar()">Cancelar</button>` : ''}</div>
+    <p class="plano-meta" style="margin:4px 0 0;">Ao enviar, aparece na hora para ${escapeHtml(al.nome.split(' ')[0])} na Área do Aluno, dentro da aula escolhida — ele pode responder por lá.</p></div>`;
+  const fbs = fbsDe(al).slice().sort((x, y) => (Number(y.encontro) || 0) - (Number(x.encontro) || 0) || y.id - x.id);
+  const hist = fbs.length ? fbs.map(f => { const rs = respDe(f.id); return `<div class="mtfb-it"><div class="mtfb-cab"><b>${escapeHtml(encNome(f.encontro))}</b><span class="mtfb-ass">${escapeHtml(f.assunto || 'Feedback')}</span><small>${quando(f.criado_em)} · ${f.lida_aluno ? '👁️ visto pelo aluno' : '🕓 ainda não visto'}</small>
+      <span style="margin-left:auto;display:flex;gap:4px;"><button class="btn-icone" title="Editar" onclick='MTCV.fb = { id: ${f.id}, enc: ${Number(f.encontro) || 0}, assunto: ${escapeHtml(JSON.stringify(f.assunto || ""))}, ref_url: ${escapeHtml(JSON.stringify(f.ref_url || ""))}, ref_nome: ${escapeHtml(JSON.stringify(f.ref_nome || ""))}, texto: ${escapeHtml(JSON.stringify(f.texto || ""))} }; mtnConversasDesenhar()'>✏️</button><button class="btn-icone" title="Excluir" onclick="mtnFbExcluir(${f.id})">🗑️</button></span></div>
+    ${f.ref_url ? `<div class="mtfb-mat">📎 <button class="mtn-ver" data-url="${escapeHtml(f.ref_url)}" data-nome="${escapeHtml(f.ref_nome || '')}" data-aluno="${escapeHtml(al.nome)}" onclick="mtnVerArq(this)">${escapeHtml(f.ref_nome || 'material')}</button></div>` : ''}
+    <p>${escapeHtml(f.texto || '').replace(/\n/g, '<br>')}</p>
+    ${rs.map(r => `<div class="mtfb-resp ${r.de === 'mentor' ? 'eu' : ''}"><small>${r.de === 'mentor' ? 'Você' : escapeHtml(al.nome.split(' ')[0])} · ${quando(r.criado_em)}</small>${escapeHtml(r.texto || '').replace(/\n/g, '<br>')}</div>`).join('')}
+    <div class="mtfb-rbox"><input id="mtfb-r-${f.id}" placeholder="Responder nesta conversa…" onkeydown="if(event.key==='Enter') mtnFbResponder(${f.id})"><button class="btn-secundario btn-sm" style="width:auto;" onclick="mtnFbResponder(${f.id})">Enviar</button></div></div>`; }).join('') : '<p class="plano-meta">Nenhum feedback enviado para este aluno ainda.</p>';
+  return `<div class="mtc-grade">${lista}<div class="mtfb">${form}<h4 style="margin:14px 0 6px;">Feedbacks enviados para ${escapeHtml(al.nome)}</h4>${hist}</div></div>`;
+}
+function mtnFbCampo(k, v) { MTCV.fb = MTCV.fb || {}; MTCV.fb[k] = v; }
+async function mtnFbEnviar(bt) {
+  const F = MTCV.fb || {}, al = MTCV.d.alunos.find(a => a.id === MTCV.aluno), texto = (document.getElementById('mtfb-txt') || {}).value || '';
+  if (!String(F.assunto || '').trim()) return mostrarToast('Escolha o assunto do feedback.', true);
+  if (!texto.trim()) return mostrarToast('Escreva o feedback.', true);
+  bt.disabled = true;
+  try {
+    await api('/api/admin/mentoria/alunos/' + MTCV.aluno + '/feedback', { method: 'POST', body: JSON.stringify({ id: F.id || 0, encontro: F.enc || 0, assunto: String(F.assunto).trim(), texto, ref_url: F.ref_url || '', ref_nome: F.ref_nome || '' }) });
+    const editou = !!F.id; MTCV.fb = null; await mtnConversas(MTCV.tid, 'fb');
+    mostrarToast(editou ? '✅ Feedback atualizado.' : '✅ Feedback enviado — já aparece na Área do Aluno.');
+    if (!editou) mtnFbAvisar(al, F);
+  } catch (e) { bt.disabled = false; mostrarToast(e.message, true); }
+}
+// oferece avisar o aluno no WhatsApp com o link da Área do Aluno
+async function mtnFbAvisar(al, F) {
+  const t = MTN.turmas.find(x => x.id === MTCV.tid), a = t && t.alunos.find(x => x.id === (al || {}).id); if (!a || !mtnZap(a.whatsapp)) return;
+  try {
+    const tk = await mtnGarantirAcesso(a), link = `${mtnBase()}/aluno/${tk}`;
+    const msg = `Olá, ${String(a.nome).split(' ')[0]}! 📝 Deixei um feedback${F.enc ? ' sobre o encontro ' + F.enc : ''}${F.ref_nome ? ' (' + F.ref_nome + ')' : ''} na sua Área do Aluno. Dá uma olhada e me responde por lá: ${link}`;
+    const box = document.querySelector('.mtfb-form'); if (!box) return;
+    const div = document.createElement('div'); div.className = 'mtfb-avisar';
+    div.innerHTML = `<span>📲 Quer avisar ${escapeHtml(String(a.nome).split(' ')[0])} no WhatsApp?</span><a class="btn-primario btn-sm" style="width:auto;background:#16a34a;" target="_blank" rel="noopener" href="https://wa.me/${mtnZap(a.whatsapp)}?text=${encodeURIComponent(msg)}" onclick="this.parentElement.remove()">Avisar no WhatsApp</a><button class="btn-secundario btn-sm" style="width:auto;" onclick="this.parentElement.remove()">Agora não</button>`;
+    box.prepend(div);
+  } catch (e) {}
+}
+async function mtnFbResponder(id) {
+  const el = document.getElementById('mtfb-r-' + id), texto = el ? el.value.trim() : ''; if (!texto) return;
+  try { await api('/api/admin/mentoria/alunos/' + MTCV.aluno + '/mensagem', { method: 'POST', body: JSON.stringify({ texto, resposta_de: id }) }); await mtnConversas(MTCV.tid, 'fb'); mostrarToast('✅ Resposta enviada.'); }
+  catch (e) { mostrarToast(e.message, true); }
+}
+async function mtnFbExcluir(id) { if (!confirm('Excluir este feedback? Ele some da Área do Aluno.')) return; try { await api('/api/admin/mentoria/mensagens/' + id, { method: 'DELETE' }); await mtnConversas(MTCV.tid, 'fb'); mostrarToast('Feedback excluído.'); } catch (e) { mostrarToast(e.message, true); } }
 async function mtnConversaAluno(id) { MTCV.aluno = id; const a = MTCV.d.alunos.find(x => x.id === id); if (a && a.naoLidas) { await api('/api/admin/mentoria/alunos/' + id + '/lidas', { method: 'POST', body: '{}' }).catch(() => {}); MTCV.d.resumo.naoLidas -= a.naoLidas; a.naoLidas = 0; } mtnConversasDesenhar(); }
 async function mtnResponder() { const el = document.getElementById('mtc-txt'), texto = (el.value || '').trim(); if (!texto) return; try { await api('/api/admin/mentoria/alunos/' + MTCV.aluno + '/mensagem', { method: 'POST', body: JSON.stringify({ texto }) }); await mtnConversas(MTCV.tid, 'msg'); mostrarToast('✅ Resposta enviada para a Área do Aluno.'); } catch (e) { mostrarToast(e.message, true); } }
 async function mtnEncontro(tid, n, on) { const t = MTN.turmas.find(x => x.id === tid); const dd = Object.assign({}, t.dados || {}); dd.feitos = Object.assign({}, dd.feitos || {}); if (on) dd.feitos[n] = true; else delete dd.feitos[n]; t.dados = dd; await api('/api/admin/mentoria/turmas/' + tid, { method: 'PUT', body: JSON.stringify({ dados: dd }) }).catch(e => mostrarToast(e.message, true)); mtnDesenhar(); }
@@ -15657,13 +15729,13 @@ async function mtnSalvarEdicaoAluno(id) {
 async function mtnAluno(id, campos) { try { await api('/api/admin/mentoria/alunos/' + id, { method: 'PUT', body: JSON.stringify(campos) }); await mtnRecarregarTurmas(); } catch (e) { mostrarToast(e.message, true); } }
 async function mtnAlunoProg(tid, id, k, v) { const a = (MTN.turmas.find(t => t.id === tid) || { alunos: [] }).alunos.find(x => x.id === id); if (!a) return; const pr = Object.assign({}, a.progresso || {}, { [k]: v }); a.progresso = pr; await api('/api/admin/mentoria/alunos/' + id, { method: 'PUT', body: JSON.stringify({ progresso: pr }) }).catch(e => mostrarToast(e.message, true)); }
 function mtnEntregues(a) { const ent = (a.progresso || {}).entregas || {}, s = new Set(Object.keys(ent).filter(k => ent[k]).map(Number)); (a.materiais || []).forEach(m => { if (m.encontro) s.add(m.encontro); }); return [...s]; }
-function mtnArqHtml(m) { const q = m.em ? new Date(String(m.em).replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''; return `<div class="mtn-arq${m.novo ? ' novo' : ''}"><span>📄</span><div><b>${escapeHtml(m.nome)}</b>${m.novo ? ' <i>novo</i>' : ''}<small>${q}${m.texto ? ' · ' + escapeHtml(m.texto) : ''}</small></div><button class="btn-primario btn-sm mtn-ver" style="width:auto;" data-url="${escapeHtml(m.url)}" data-nome="${escapeHtml(m.nome)}" onclick="mtnVerArq(this)">👁️ Ver aqui</button><a class="btn-secundario btn-sm" href="${escapeHtml(m.url)}" download="${escapeHtml(m.nome)}">⬇️ Baixar</a></div>`; }
+function mtnArqHtml(m, fb) { const q = m.em ? new Date(String(m.em).replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''; return `<div class="mtn-arq${m.novo ? ' novo' : ''}"><span>📄</span><div><b>${escapeHtml(m.nome)}</b>${m.novo ? ' <i>novo</i>' : ''}<small>${q}${m.texto ? ' · ' + escapeHtml(m.texto) : ''}</small></div><button class="btn-primario btn-sm mtn-ver" style="width:auto;" data-url="${escapeHtml(m.url)}" data-nome="${escapeHtml(m.nome)}" onclick="mtnVerArq(this)">👁️ Ver aqui</button><a class="btn-secundario btn-sm" href="${escapeHtml(m.url)}" download="${escapeHtml(m.nome)}">⬇️ Baixar</a>${fb ? `<button class="btn-secundario btn-sm" style="width:auto;" onclick='mtnFeedbackDe(${fb.tid}, ${fb.aid}, ${Number(m.encontro) || 0}, ${JSON.stringify(m.url)}, ${escapeHtml(JSON.stringify(m.nome))})'>📝 Feedback</button>` : ''}</div>`; }
 function mtnEntregas(tid, id) {
   const a = (MTN.turmas.find(t => t.id === tid) || { alunos: [] }).alunos.find(x => x.id === id); if (!a) return; const ent = (a.progresso || {}).entregas || {}, pg = mtnProgT(MTN.turmas.find(t => t.id === tid)), mats = a.materiais || [];
   const semEnc = mats.filter(m => !m.encontro || !pg.encontros.some(s => Number(s.n) === m.encontro));
   mtnModal(`<h3 style="margin-top:0;">📎 Entregas de ${escapeHtml(a.nome)}</h3><p class="plano-meta" style="margin-top:-6px;">Os arquivos que o aluno enviou pela Área do Aluno aparecem em cada encontro. Marque a entrega quando ele mandar por outro meio (WhatsApp, impresso).</p>
-    ${pg.encontros.map(s => { const fs = mats.filter(m => m.encontro === Number(s.n)), ok = ent[s.n] || fs.length; return `<div class="mtn-ent ${ok ? 'ok' : ''}"><label class="mtn-tarefa" style="margin:0;"><input type="checkbox" ${ent[s.n] || fs.length ? 'checked' : ''} ${fs.length ? 'disabled title="Entregue pela Área do Aluno"' : ''} onchange="mtnEntrega(${tid}, ${id}, ${s.n}, this.checked)"> <span><b style="white-space:nowrap;">Encontro ${s.n}</b> · ${escapeHtml(s.tarefa ? [].concat(s.tarefa)[0] : (s.modulo || s.tema || ''))}</span></label>${fs.length ? fs.map(mtnArqHtml).join('') : '<small class="plano-meta" style="display:block;margin:4px 0 0 26px;">Nenhum arquivo enviado.</small>'}</div>`; }).join('')}
-    ${semEnc.length ? `<div class="mtn-ent"><b>Outros arquivos</b>${semEnc.map(mtnArqHtml).join('')}</div>` : ''}
+    ${pg.encontros.map(s => { const fs = mats.filter(m => m.encontro === Number(s.n)), ok = ent[s.n] || fs.length; return `<div class="mtn-ent ${ok ? 'ok' : ''}"><label class="mtn-tarefa" style="margin:0;"><input type="checkbox" ${ent[s.n] || fs.length ? 'checked' : ''} ${fs.length ? 'disabled title="Entregue pela Área do Aluno"' : ''} onchange="mtnEntrega(${tid}, ${id}, ${s.n}, this.checked)"> <span><b style="white-space:nowrap;">Encontro ${s.n}</b> · ${escapeHtml(s.tarefa ? [].concat(s.tarefa)[0] : (s.modulo || s.tema || ''))}</span></label>${fs.length ? fs.map(m => mtnArqHtml(m, { tid, aid: id })).join('') : '<small class="plano-meta" style="display:block;margin:4px 0 0 26px;">Nenhum arquivo enviado.</small>'}</div>`; }).join('')}
+    ${semEnc.length ? `<div class="mtn-ent"><b>Outros arquivos</b>${semEnc.map(m => mtnArqHtml(m, { tid, aid: id })).join('')}</div>` : ''}
     <div class="acoes-form"><button class="btn-secundario" onclick="mtnModal(''); mtnLerMateriais([${mats.filter(m => m.novo).map(m => a.id).slice(0, 1).join(',')}]); mtnDesenhar()">Fechar</button></div>`);
 }
 const MTVIS = { lista: [], atual: null, tid: 0, f: -1, t: null };
@@ -15776,7 +15848,7 @@ function mtnMateriais(tid, filtro) {
   const total = t.alunos.reduce((s, a) => s + (a.materiais || []).length, 0);
   const blocos = encs.map(s => { const n = Number(s.n), com = t.alunos.filter(a => (a.materiais || []).some(m => m.encontro === n)), sem = t.alunos.filter(a => !com.includes(a));
     return `<div class="mtn-mat-enc"><h4>Encontro ${n} · ${escapeHtml(s.modulo || s.tema || '')} <small>${com.length}/${t.alunos.length} enviaram</small></h4>
-      ${com.map(a => `<div class="mtn-mat-al"><b>${escapeHtml(a.nome)}</b>${a.materiais.filter(m => m.encontro === n).map(mtnArqHtml).join('')}</div>`).join('') || '<p class="plano-meta">Ninguém enviou arquivo ainda.</p>'}
+      ${com.map(a => `<div class="mtn-mat-al"><b>${escapeHtml(a.nome)}</b>${a.materiais.filter(m => m.encontro === n).map(m => mtnArqHtml(m, { tid, aid: a.id })).join('')}</div>`).join('') || '<p class="plano-meta">Ninguém enviou arquivo ainda.</p>'}
       ${sem.length && com.length ? `<p class="plano-meta" style="margin:6px 0 0;">Faltam: ${sem.map(a => escapeHtml(a.nome.split(' ')[0])).join(', ')}</p>` : ''}</div>`; }).join('');
   const outros = t.alunos.map(a => ({ a, fs: (a.materiais || []).filter(m => !m.encontro) })).filter(x => x.fs.length);
   mtnModal(`<div class="mtn-arqs-raiz"><h3 style="margin-top:0;">📎 Materiais dos alunos · ${escapeHtml(t.nome)}</h3>

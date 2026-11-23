@@ -13982,6 +13982,12 @@ async function mtAlunoPorToken(token) {
     if (!/^[a-f0-9]{32}$/.test(String(token || ''))) return null;
     return dbGet(`SELECT * FROM mentoria_alunos WHERE acesso_token = ?`, [token]).catch(() => null);
 }
+// feedbacks do mentor (com as respostas do aluno penduradas em cada um)
+function mtFeedbacksDe(msgs) {
+    return msgs.filter(m => m.tipo === 'feedback' && m.de === 'mentor').map(f => ({ id: f.id, encontro: f.encontro, assunto: f.assunto || 'Feedback', texto: f.texto, em: f.criado_em, novo: !f.lida_aluno,
+        material: f.ref_url ? { url: f.ref_url, nome: f.ref_nome || 'material' } : null,
+        respostas: msgs.filter(r => Number(r.resposta_de) === Number(f.id)).map(r => ({ id: r.id, de: r.de, texto: r.texto, em: r.criado_em })) }));
+}
 async function mtPainelAluno(a) {
     const d = await mtLer(), t = a.turma_id ? await dbGet(`SELECT * FROM mentoria_turmas WHERE id = ?`, [a.turma_id]).catch(() => null) : null;
     const pres = new Set((await dbAll(`SELECT encontro FROM mentoria_presencas WHERE aluno_id = ?`, [a.id]).catch(() => [])).map(r => Number(r.encontro)));
@@ -13989,9 +13995,11 @@ async function mtPainelAluno(a) {
     const encontros = prog.encontros.map((s, i) => { const data = t ? mtDataEncontro(t, i, prog) : ''; return { n: s.n, modulo: s.modulo, tema: s.tema, entregavel: s.entregavel, data, realizado: !!feitos[s.n] || !!(data && data < hoje) || pres.has(Number(s.n)), presente: pres.has(Number(s.n)), entregue: !!(pr.entregas || {})[s.n], nota: (pr.notas || {})[s.n] || '' }; });
     // área do aluno: slides liberados pelo mentor, prazo do desafio, materiais enviados, avaliações e dúvidas
     const td = t ? mtJson(t.dados) : {}, lib = mtLiberadosAluno(td, a.id), prazos = td.prazos || {}, temSlides = prog.id === MT_PRINCIPAL ? !!DC_ROT[1] : (d.programas || []).some(x => x.id === prog.id);
-    const msgs = await dbAll(`SELECT id, de, texto, anexo_url, anexo_nome, encontro, criado_em FROM mentoria_mensagens WHERE aluno_id = ? ORDER BY id`, [a.id]).catch(() => []);
+    const msgs = await dbAll(`SELECT id, de, texto, anexo_url, anexo_nome, encontro, criado_em, tipo, assunto, ref_url, ref_nome, resposta_de, lida_aluno FROM mentoria_mensagens WHERE aluno_id = ? ORDER BY id`, [a.id]).catch(() => []);
+    const fbs = mtFeedbacksDe(msgs);
     const avs = await dbAll(`SELECT encontro, nota, respostas, comentario, criado_em FROM mentoria_avaliacoes WHERE aluno_id = ?`, [a.id]).catch(() => []);
     encontros.forEach(e => { e.liberado = temSlides && !!lib[e.n]; e.prazo = prazos[e.n] || ''; e.materiais = msgs.filter(m => m.de === 'aluno' && m.anexo_url && Number(m.encontro) === Number(e.n)).map(m => ({ nome: m.anexo_nome, url: m.anexo_url, em: m.criado_em })); const av = avs.find(x => Number(x.encontro) === Number(e.n)); e.avaliacao = av ? { nota: av.nota, comentario: av.comentario, respostas: mtJson(av.respostas) } : null; });
+    encontros.forEach(e => { e.feedbacks = fbs.filter(f => Number(f.encontro) === Number(e.n)); });
     const proximo = encontros.find(e => e.data && e.data >= hoje && !feitos[e.n] && !e.presente) || null;
     const realizados = encontros.filter(e => e.realizado);
     return {
@@ -14002,7 +14010,8 @@ async function mtPainelAluno(a) {
         indicador: { nome: pr.indicadorNome || '', antes: pr.antes || '', depois: pr.depois || '' },
         kit: prog.kit || d.kit, regraOuro: prog.regraOuro || d.regraOuro, metodo: d.metodo.map(m => ({ letra: m.letra, nome: m.nome })),
         programa: { id: prog.id, nome: prog.nome, unidade: prog.unidade, principal: prog.id === MT_PRINCIPAL, indicador: prog.indicador || null },
-        mensagens: msgs.map(m => ({ id: m.id, de: m.de, texto: m.texto, anexo: m.anexo_url ? { url: m.anexo_url, nome: m.anexo_nome } : null, encontro: m.encontro, em: m.criado_em })),
+        mensagens: msgs.map(m => ({ id: m.id, de: m.de, texto: m.texto, anexo: m.anexo_url ? { url: m.anexo_url, nome: m.anexo_nome } : null, encontro: m.encontro, em: m.criado_em, tipo: m.tipo || '', assunto: m.assunto || '', resposta_de: m.resposta_de || null })),
+        feedbacks: fbs, feedbacksNovos: fbs.filter(f => f.novo).length,
         avaliacaoGeral: (() => { const av = avs.find(x => Number(x.encontro) === 0); return av ? { nota: av.nota, comentario: av.comentario, respostas: mtJson(av.respostas) } : null; })(),
         perguntasAvaliacao: MT_PERGUNTAS_AVALIACAO,
         mentor: { nome: d.marca.mentor, empresa: d.marca.empresa, foto: d.marca.fotoUrl, whatsapp: d.marca.whatsapp, instagram: d.marca.instagram, instagramEmpresa: d.marca.instagramEmpresa, mentoria: prog.nome }
@@ -14065,6 +14074,8 @@ app.post('/api/public/aluno/:token/progresso', async (req, res) => {
 // ======== Área do aluno: dúvidas, materiais, foto, avaliação e slides liberados pelo mentor ========
 db.run(`ALTER TABLE mentoria_alunos ADD COLUMN foto TEXT`, () => {});
 db.run(`CREATE TABLE IF NOT EXISTS mentoria_mensagens (id INTEGER PRIMARY KEY AUTOINCREMENT, aluno_id INTEGER NOT NULL, turma_id INTEGER, de TEXT NOT NULL, texto TEXT, anexo_url TEXT, anexo_nome TEXT, encontro INTEGER, lida INTEGER DEFAULT 0, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+// feedback do mentor por aula/material: tipo 'feedback', assunto, material comentado (ref), resposta_de = conversa do feedback
+['tipo TEXT', 'assunto TEXT', 'ref_url TEXT', 'ref_nome TEXT', 'resposta_de INTEGER', 'lida_aluno INTEGER DEFAULT 0'].forEach(c => db.run(`ALTER TABLE mentoria_mensagens ADD COLUMN ${c}`, () => {}));
 db.run(`CREATE TABLE IF NOT EXISTS mentoria_avaliacoes (id INTEGER PRIMARY KEY AUTOINCREMENT, aluno_id INTEGER NOT NULL, turma_id INTEGER, encontro INTEGER NOT NULL DEFAULT 0, nota INTEGER, respostas TEXT, comentario TEXT, criado_em DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(aluno_id, encontro))`);
 const MT_PERGUNTAS_AVALIACAO = [
     { id: 'aplicar', texto: 'O que você vai aplicar primeiro no seu trabalho?' },
@@ -14121,9 +14132,10 @@ async function salvarArquivoAlunoMt(req, prefixo, nomeOrig) {
 }
 app.post('/api/public/aluno/:token/mensagem', async (req, res) => {
     const a = await mtAlunoPorToken(req.params.token); if (!a) return res.status(404).json({ error: 'Acesso inválido.' });
-    const texto = mtTxt((req.body || {}).texto, 3000), enc = Number((req.body || {}).encontro) || null; if (!texto) return res.status(400).json({ error: 'Escreva a sua dúvida.' });
-    await mtRun(`INSERT INTO mentoria_mensagens (aluno_id, turma_id, de, texto, encontro) VALUES (?,?, 'aluno', ?, ?)`, [a.id, a.turma_id, texto, enc]);
-    mtNotificar('💬 Dúvida de ' + String(a.nome || '').split(' ')[0], texto.slice(0, 140));
+    let texto = mtTxt((req.body || {}).texto, 3000), enc = Number((req.body || {}).encontro) || null, resp = Number((req.body || {}).resposta_de) || null; if (!texto) return res.status(400).json({ error: 'Escreva a sua mensagem.' });
+    if (resp) { const f = await dbGet(`SELECT id, encontro FROM mentoria_mensagens WHERE id = ? AND aluno_id = ? AND tipo = 'feedback'`, [resp, a.id]).catch(() => null); if (!f) resp = null; else enc = f.encontro; }
+    await mtRun(`INSERT INTO mentoria_mensagens (aluno_id, turma_id, de, texto, encontro, resposta_de) VALUES (?,?, 'aluno', ?, ?, ?)`, [a.id, a.turma_id, texto, enc, resp]);
+    mtNotificar((resp ? '📝 Resposta ao feedback · ' : '💬 Dúvida de ') + String(a.nome || '').split(' ')[0], texto.slice(0, 140));
     res.json({ ok: true });
 });
 app.post('/api/public/aluno/:token/material', express.raw({ type: () => true, limit: '40mb' }), async (req, res) => {
@@ -14171,7 +14183,8 @@ app.get('/api/public/aluno/:token/encontro/:n/slides', async (req, res) => {
         const base = baseUrlPublicaDpo(req), mods = deckMentoriaMt(p, n, null, base) || await fotosDosSlidesMt(deckEncontroProgramaMt(p, n, null, base));
         const slides = []; mods.forEach(m => (m.slides || []).forEach(s => slides.push({ titulo: s.titulo || '', texto: s.texto || '', imagem: s.imagem || '', layout: s.layout || 'padrao', secao: String(m.titulo || '').replace(/\s·\s\d.*$/, '') })));
         const e = p.encontros[n - 1];
-        res.json({ programa: p.nome, encontro: n, modulo: e.modulo, tema: e.tema, slides });
+        const fbs = mtFeedbacksDe(await dbAll(`SELECT * FROM mentoria_mensagens WHERE aluno_id = ? ORDER BY id`, [a.id]).catch(() => [])).filter(f => Number(f.encontro) === n);
+        res.json({ programa: p.nome, encontro: n, modulo: e.modulo, tema: e.tema, slides, feedbacks: fbs });
     } catch (e) { res.status(500).json({ error: 'Não consegui abrir os slides: ' + e.message }); }
 });
 app.get('/aluno/:token/encontro/:n', (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'aluno-slides.html')));
@@ -14188,8 +14201,36 @@ app.get('/api/admin/mentoria/turmas/:id/conversas', requireRole('admin'), async 
 app.post('/api/admin/mentoria/alunos/:id/mensagem', requireRole('admin'), async (req, res) => {
     const a = await dbGet(`SELECT id, turma_id FROM mentoria_alunos WHERE id = ?`, [req.params.id]).catch(() => null); if (!a) return res.status(404).json({ error: 'Aluno não encontrado.' });
     const texto = mtTxt((req.body || {}).texto, 3000); if (!texto) return res.status(400).json({ error: 'Escreva a resposta.' });
-    await mtRun(`INSERT INTO mentoria_mensagens (aluno_id, turma_id, de, texto, lida) VALUES (?,?, 'mentor', ?, 1)`, [a.id, a.turma_id, texto]);
+    let resp = Number((req.body || {}).resposta_de) || null, enc = null;
+    if (resp) { const f = await dbGet(`SELECT id, encontro FROM mentoria_mensagens WHERE id = ? AND aluno_id = ? AND tipo = 'feedback'`, [resp, a.id]).catch(() => null); if (f) enc = f.encontro; else resp = null; }
+    await mtRun(`INSERT INTO mentoria_mensagens (aluno_id, turma_id, de, texto, lida, encontro, resposta_de) VALUES (?,?, 'mentor', ?, 1, ?, ?)`, [a.id, a.turma_id, texto, enc, resp]);
+    if (resp) await mtRun(`UPDATE mentoria_mensagens SET lida_aluno = 0 WHERE id = ?`, [resp]).catch(() => {});
     await mtRun(`UPDATE mentoria_mensagens SET lida = 1 WHERE aluno_id = ? AND de = 'aluno'`, [a.id]).catch(() => {});
+    res.json({ ok: true });
+});
+// Mentor: feedback de uma aula / material para o aluno (aparece na hora na Área do Aluno, dentro do encontro)
+app.post('/api/admin/mentoria/alunos/:id/feedback', requireRole('admin'), async (req, res) => {
+    const a = await dbGet(`SELECT id, turma_id, nome FROM mentoria_alunos WHERE id = ?`, [req.params.id]).catch(() => null); if (!a) return res.status(404).json({ error: 'Aluno não encontrado.' });
+    const b = req.body || {}, texto = mtTxt(b.texto, 6000), enc = Number(b.encontro) || null, assunto = mtTxt(b.assunto, 120) || 'Feedback';
+    if (!texto) return res.status(400).json({ error: 'Escreva o feedback.' });
+    const refUrl = /^\/uploads\/[\w.\-]+$/.test(String(b.ref_url || '')) ? String(b.ref_url) : null;
+    if (Number(b.id)) { // editar um feedback já enviado
+        await mtRun(`UPDATE mentoria_mensagens SET texto = ?, assunto = ?, encontro = ?, ref_url = ?, ref_nome = ?, lida_aluno = 0 WHERE id = ? AND aluno_id = ? AND tipo = 'feedback'`, [texto, assunto, enc, refUrl, refUrl ? mtTxt(b.ref_nome, 160) : null, Number(b.id), a.id]);
+        return res.json({ ok: true, id: Number(b.id) });
+    }
+    const r = await mtRun(`INSERT INTO mentoria_mensagens (aluno_id, turma_id, de, texto, encontro, tipo, assunto, ref_url, ref_nome, lida, lida_aluno) VALUES (?,?, 'mentor', ?, ?, 'feedback', ?, ?, ?, 1, 0)`, [a.id, a.turma_id, texto, enc, assunto, refUrl, refUrl ? mtTxt(b.ref_nome, 160) : null]);
+    await mtRun(`UPDATE mentoria_mensagens SET lida = 1 WHERE aluno_id = ? AND de = 'aluno'`, [a.id]).catch(() => {});
+    res.json({ ok: true, id: r.lastID });
+});
+app.delete('/api/admin/mentoria/mensagens/:id', requireRole('admin'), async (req, res) => {
+    await mtRun(`DELETE FROM mentoria_mensagens WHERE id = ? AND de = 'mentor'`, [req.params.id]).catch(() => {});
+    await mtRun(`UPDATE mentoria_mensagens SET resposta_de = NULL WHERE resposta_de = ?`, [req.params.id]).catch(() => {});
+    res.json({ ok: true });
+});
+app.post('/api/public/aluno/:token/feedbacks-lidos', async (req, res) => {
+    const a = await mtAlunoPorToken(req.params.token); if (!a) return res.status(404).json({ error: 'Acesso inválido.' });
+    const n = Number((req.body || {}).encontro) || null;
+    await mtRun(`UPDATE mentoria_mensagens SET lida_aluno = 1 WHERE aluno_id = ? AND tipo = 'feedback'${n ? ' AND encontro = ?' : ''}`, n ? [a.id, n] : [a.id]).catch(() => {});
     res.json({ ok: true });
 });
 app.post('/api/admin/mentoria/alunos/:id/lidas', requireRole('admin'), async (req, res) => { await mtRun(`UPDATE mentoria_mensagens SET lida = 1 WHERE aluno_id = ? AND de = 'aluno'`, [req.params.id]).catch(() => {}); res.json({ ok: true }); });

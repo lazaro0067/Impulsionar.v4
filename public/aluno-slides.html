@@ -24,6 +24,7 @@
   .nav { display:flex; gap:10px; align-items:center; justify-content:center; margin-top:14px; } .nav button { font:inherit; font-weight:800; border:none; border-radius:999px; padding:12px 22px; cursor:pointer; background:#1e293b; color:#fff; font-size:16px; } .nav button.pri { background:#f59e0b; color:#0b1329; } .nav button:disabled { opacity:.35; }
   .nav span { color:#94a3b8; font-weight:700; min-width:70px; text-align:center; }
   .secao { text-align:center; color:#fbbf24; font-size:12px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-top:10px; }
+  .topo a.fbbt { background:#fbbf24; color:#0b1329; border-radius:999px; padding:7px 12px; font-size:13px; } .fbbt i { font-style:normal; background:#0b1329; color:#fbbf24; border-radius:999px; padding:1px 7px; font-size:11px; margin-left:4px; }
   .msg { max-width:520px; margin:80px auto; text-align:center; padding:20px; color:#cbd5e1; }
   @media (max-width:640px) { .sl .txt { grid-template-columns:1fr; } .sl figure { display:none; } .palco { padding:10px; } }
 </style>
@@ -46,7 +47,7 @@ function slideHtml(s) {
 }
 function desenhar() {
   const s = D.slides[I];
-  document.getElementById('app').innerHTML = `<div class="topo"><a href="/aluno/${TOKEN}">← Minha área</a><div><b>Encontro ${D.encontro} · ${esc(D.modulo)}</b><small>${esc(D.programa)}</small></div></div>
+  document.getElementById('app').innerHTML = `<div class="topo"><a href="/aluno/${TOKEN}">← Minha área</a><div><b>Encontro ${D.encontro} · ${esc(D.modulo)}</b><small>${esc(D.programa)}</small></div>${(D.feedbacks || []).length ? `<a href="/aluno/${TOKEN}#enc-${D.encontro}" class="fbbt">📝 Feedback do mentor${D.feedbacks.some(f => f.novo) ? ' <i>novo</i>' : ''}</a>` : ''}</div>
     <div class="palco">${slideHtml(s)}<div class="secao">${esc(s.secao || '')}</div>
       <div class="nav"><button onclick="ir(-1)" ${I === 0 ? 'disabled' : ''}>◀</button><span>${I + 1} / ${D.slides.length}</span><button class="pri" onclick="ir(1)" ${I === D.slides.length - 1 ? 'disabled' : ''}>Próximo ▶</button></div></div>`;
   history.replaceState(null, '', '#' + (I + 1));

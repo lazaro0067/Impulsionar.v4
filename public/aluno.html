@@ -41,6 +41,14 @@
   .ola { display:flex; gap:16px; align-items:center; margin:14px 0 8px; } .ola h1 { margin:0 !important; }
   .acoes-enc { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; } .acoes-enc .bt { font-size:13px; padding:8px 14px; }
   .prazo { display:inline-flex; gap:6px; align-items:center; font-size:12.5px; font-weight:800; border-radius:999px; padding:3px 10px; background:#e0f2fe; color:#075985; margin-top:6px; } .prazo.atrasado { background:#fee2e2; color:#991b1b; } .prazo.ok { background:#dcfce7; color:#166534; }
+  .fbaviso { display:flex; gap:12px; align-items:center; background:linear-gradient(120deg,#fef3c7,#fde68a); border:1.5px solid var(--ambar); border-radius:16px; padding:12px 16px; margin-top:14px; color:#422006; text-decoration:none; animation:fbpulse 2s 3; } .fbaviso span { font-size:28px; } .fbaviso b { display:block; } .fbaviso small { color:#78350f; }
+  @keyframes fbpulse { 50% { box-shadow:0 0 0 6px rgba(245,158,11,.25); } }
+  .fb { background:#fffbeb; border:1.5px solid #fcd34d; border-radius:14px; padding:12px 14px; margin-top:10px; } .fb.novo { box-shadow:0 0 0 3px rgba(245,158,11,.25); } .fb p { margin:6px 0; color:#422006; font-size:14.5px; line-height:1.5; white-space:pre-wrap; }
+  .fb-cab { display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .fb-cab span { font-size:12px; font-weight:900; letter-spacing:.5px; color:#b45309; text-transform:uppercase; } .fb-cab b { font-size:14.5px; } .fb-cab i { font-style:normal; background:var(--ambar); color:var(--navy); font-size:11px; font-weight:900; border-radius:999px; padding:2px 8px; } .fb-cab small { margin-left:auto; color:#92400e; font-size:11.5px; }
+  .fb-mat { font-size:13px; margin-top:4px; } .fb-mat a { color:var(--navy); font-weight:800; }
+  .fb-r { border-radius:12px; padding:7px 10px; margin:6px 0; font-size:14px; white-space:pre-wrap; } .fb-r.fb-ra { background:var(--navy); color:#fff; margin-left:24px; } .fb-r.fb-rm { background:#fef3c7; margin-right:24px; } .fb-r small { display:block; font-size:11px; opacity:.7; }
+  @media (max-width:560px) { .fb-env { grid-template-columns:1fr !important; } .fb-env .bt { justify-self:end; } }
+  .fb-env { display:grid; grid-template-columns:1fr auto; gap:6px; margin-top:8px; } .fb-env textarea { font:inherit; font-size:14px; border:1.5px solid #fcd34d; border-radius:10px; padding:8px 10px; resize:vertical; min-height:40px; background:#fff; margin:0; }
   .mats { margin:8px 0 0; padding:0; list-style:none; font-size:13px; } .mats li { margin:4px 0; } .mats a { color:var(--navy); font-weight:700; }
   .chat { background:#fff; border:1px solid var(--linha); border-radius:18px; padding:14px; max-height:440px; overflow:auto; display:flex; flex-direction:column; gap:8px; }
   .msg { max-width:82%; border-radius:16px; padding:10px 13px; font-size:14.5px; line-height:1.4; white-space:pre-wrap; } .msg small { display:block; font-size:11px; opacity:.65; margin-top:4px; }
@@ -67,7 +75,7 @@ async function carregar() {
   if (!TOKEN) return semAcesso('Para entrar na sua área, use o link pessoal que o mentor enviou no seu WhatsApp.');
   const r = await fetch('/api/public/aluno/' + TOKEN, { cache: 'no-store' }), j = await r.json().catch(() => ({}));
   if (!r.ok) { try { localStorage.removeItem('mt_aluno_token'); } catch (e) {} return semAcesso(j.error || 'Não consegui abrir sua área.'); }
-  P = j; desenhar();
+  P = j; desenhar(); marcarFeedbacksLidos(); if (location.hash) setTimeout(() => { const e = document.querySelector(location.hash); if (e) e.scrollIntoView({ block: 'start' }); }, 150);
 }
 function semAcesso(msg) {
   document.getElementById('app').innerHTML = `<header class="topo"><div class="cx"><a class="marca" href="/mentoria"><i>V4</i>Área do Aluno</a></div></header>
@@ -91,21 +99,24 @@ function desenhar() {
         <div><small style="color:var(--ambar);font-weight:800;letter-spacing:1px;">${px.data === hoje ? '🔴 ENCONTRO HOJE' : 'PRÓXIMO ENCONTRO'} · ${U.toUpperCase()} ${px.n}</small><h3>${esc(px.modulo)}</h3><p>${esc(px.tema)}${t.horario ? ` · ⏰ ${esc(t.horario)}` : ''}</p>
         <div class="bts">${t.sala ? `<a class="bt ambar peq" href="${esc(t.sala)}" target="_blank" rel="noopener">🎥 Entrar na sala</a>` : ''}${t.grupo ? `<a class="bt claro peq" href="${esc(t.grupo)}" target="_blank" rel="noopener">💬 Grupo</a>` : ''}</div></div></div>`; })()
         : `<div class="prox"><div class="dia"><b>🏁</b></div><div><h3>${R.realizados >= R.total ? 'Jornada concluída! Parabéns.' : 'Datas dos encontros em breve'}</h3><p>${R.realizados >= R.total ? `Você completou ${ENC ? 'os' : 'as'} ${R.total} ${Us}. Continue aplicando o método no seu time.` : 'Assim que a turma tiver a data de início, os encontros aparecem aqui.'}</p></div></div>`}
+      ${(() => { const novos = (P.feedbacks || []).filter(f => f.novo); if (!novos.length) return ''; const f = novos[novos.length - 1]; return `<a class="fbaviso" href="#${f.encontro ? 'enc-' + f.encontro : 'fb-geral'}"><span>📝</span><div><b>${novos.length === 1 ? 'Você tem um feedback novo do mentor' : 'Você tem ' + novos.length + ' feedbacks novos do mentor'}</b><small>${f.encontro ? U + ' ' + f.encontro + ' · ' : ''}${esc(f.assunto)} — toque para ver</small></div></a>`; })()}
       <div class="qrdica"><span>📷</span><p><b>Presença:</b> no fim de cada encontro o mentor mostra um <b>QR code</b>. Aponte a câmera do celular para ele e sua presença é registrada na hora.</p></div>
     </div>
     <section id="jornada"><div class="cx"><div class="titulo"><small>Minha jornada</small><h2>${ENC ? 'Os' : 'As'} ${R.total} ${Us}</h2><p>${esc(P.regraOuro)}</p></div>
       <div class="jornada">${P.encontros.map(e => { const st = e.presente ? 'presente' : e.realizado ? 'falta' : px && px.n === e.n ? 'proximo' : 'futuro', x = e.data ? dt(e.data) : null;
-        return `<div class="enc ${st}"><div class="num">${e.presente ? '✓' : e.n}</div><div>
+        return `<div class="enc ${st}" id="enc-${e.n}"><div class="num">${e.presente ? '✓' : e.n}</div><div>
           <div class="top"><b>${U} ${e.n} · ${esc(e.modulo)}</b>${e.presente ? '<span class="tag ok">✅ Presente</span>' : e.realizado ? '<span class="tag no">Faltou</span>' : st === 'proximo' ? '<span class="tag prox">Próximo</span>' : ''}${x ? `<span class="tag">${x.br}</span>` : ''}</div>
           <p>${esc(e.tema)}</p>
           <div class="tarefa"><label><input type="checkbox" ${e.entregue ? 'checked' : ''} onchange="salvarTarefa(${e.n}, this.checked)"><span>🎯 Desafio: ${esc(e.entregavel)}</span></label>
             ${e.prazo ? (() => { const atr = !e.entregue && e.prazo < hoje; return `<span class="prazo ${e.entregue ? 'ok' : atr ? 'atrasado' : ''}">📅 ${e.entregue ? 'Entregue' : atr ? 'Prazo vencido' : 'Enviar até'} ${dt(e.prazo).br}</span>`; })() : ''}
             ${(e.materiais || []).length ? `<ul class="mats">${e.materiais.map(m => `<li>📎 <a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.nome)}</a></li>`).join('')}</ul>` : ''}
             <div class="acoes-enc">${e.liberado ? `<a class="bt escuro" href="/aluno/${TOKEN}/encontro/${e.n}">📖 Ver os slides</a>` : ''}<button class="bt ambar" onclick="escolherMaterial(${e.n})">📤 Enviar material ao mentor</button>${e.realizado || e.liberado ? `<button class="bt claro" onclick="avaliar(${e.n})">${e.avaliacao ? '⭐ ' + e.avaliacao.nota + '/10 · editar' : '⭐ Avaliar'}</button>` : ''}</div>
+            ${fbHtml(e.feedbacks)}
             <small class="salvo" id="env-${e.n}"></small>
             <textarea placeholder="Como foi aplicar no seu time? (o mentor lê antes do próximo encontro)" onchange="salvarNota(${e.n}, this.value, this)">${esc(e.nota)}</textarea><small class="salvo" id="salvo-${e.n}"></small></div>
         </div></div>`; }).join('')}</div>
     </div></section>
+    ${(P.feedbacks || []).some(f => !f.encontro) ? `<section id="fb-geral"><div class="cx"><div class="titulo"><small>Do mentor para você</small><h2>📝 Feedbacks gerais</h2></div>${fbHtml(P.feedbacks.filter(f => !f.encontro))}</div></section>` : ''}
     <section id="duvidas"><div class="cx"><div class="titulo"><small>Durante o programa</small><h2>💬 Dúvidas com o mentor</h2><p>Escreva aqui a sua dúvida sobre o conteúdo, o desafio ou uma situação com o time. O mentor responde por aqui mesmo.</p></div>
       <div class="chat" id="chat">${(P.mensagens || []).length ? P.mensagens.map(msgHtml).join('') : '<p style="color:var(--cinza);margin:6px;">Nenhuma mensagem ainda. Mande a sua primeira dúvida! 👇</p>'}</div>
       <div class="envio"><textarea id="duvida" placeholder="Escreva a sua dúvida…"></textarea><button class="bt ambar" onclick="enviarDuvida(this)">Enviar</button></div>
@@ -131,7 +142,23 @@ async function enviar(corpo) { const r = await fetch('/api/public/aluno/' + TOKE
 async function salvarTarefa(n, ok) { try { await enviar({ encontro: n, entregue: ok }); const e = P.encontros.find(x => x.n === n); e.entregue = ok; P.resumo.entregas += ok ? 1 : -1; const s = document.getElementById('salvo-' + n); if (s) s.textContent = ok ? '✓ Tarefa marcada como entregue' : 'Tarefa desmarcada'; } catch (e) { alert('Não consegui salvar. Confira a internet.'); } }
 async function salvarNota(n, txt, el) { try { await enviar({ encontro: n, nota: txt }); const s = document.getElementById('salvo-' + n); if (s) s.textContent = '✓ Anotação salva'; } catch (e) { alert('Não consegui salvar. Confira a internet.'); } }
 async function salvarIndicador(bt) { try { await enviar({ indicadorNome: document.getElementById('i-nome').value, antes: document.getElementById('i-antes').value, depois: document.getElementById('i-depois').value }); document.getElementById('i-ok').textContent = '✓ Salvo'; } catch (e) { alert('Não consegui salvar.'); } }
-function msgHtml(m) { const q = new Date(String(m.em).replace(' ', 'T') + 'Z'); return `<div class="msg ${m.de}">${m.de === 'mentor' ? '<b>🎓 Mentor</b><br>' : ''}${esc(m.texto || '')}${m.anexo ? `<br>📎 <a href="${esc(m.anexo.url)}" target="_blank" rel="noopener">${esc(m.anexo.nome)}</a>` : ''}<small>${m.encontro ? 'Encontro ' + m.encontro + ' · ' : ''}${isNaN(q) ? '' : q.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</small></div>`; }
+function fbHtml(fs) {
+  if (!fs || !fs.length) return '';
+  const q = s => { const d = new Date(String(s).replace(' ', 'T') + 'Z'); return isNaN(d) ? '' : d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+  return fs.map(f => `<div class="fb ${f.novo ? 'novo' : ''}" id="fb-${f.id}"><div class="fb-cab"><span>📝 Feedback do mentor</span><b>${esc(f.assunto)}</b>${f.novo ? '<i>novo</i>' : ''}<small>${q(f.em)}</small></div>
+    ${f.material ? `<div class="fb-mat">📎 Sobre o seu material: <a href="${esc(f.material.url)}" target="_blank" rel="noopener">${esc(f.material.nome)}</a></div>` : ''}
+    <p>${esc(f.texto)}</p>
+    ${(f.respostas || []).map(r => `<div class="fb-r ${r.de === 'mentor' ? 'fb-rm' : 'fb-ra'}"><small>${r.de === 'mentor' ? '🎓 Mentor' : 'Você'} · ${q(r.em)}</small>${esc(r.texto)}</div>`).join('')}
+    <div class="fb-env"><textarea id="fbr-${f.id}" rows="1" placeholder="Responder ao mentor…"></textarea><button class="bt escuro peq" onclick="responderFb(${f.id}, this)">Responder</button></div></div>`).join('');
+}
+async function responderFb(id, bt) {
+  const t = document.getElementById('fbr-' + id); if (!t || !t.value.trim()) return t && t.focus();
+  bt.disabled = true;
+  try { const r = await fetch('/api/public/aluno/' + TOKEN + '/mensagem', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texto: t.value, resposta_de: id }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Não enviou'); await recarregar('fb-' + id); }
+  catch (e) { alert(e.message); bt.disabled = false; }
+}
+function marcarFeedbacksLidos() { if (!(P.feedbacks || []).some(f => f.novo)) return; clearTimeout(marcarFeedbacksLidos.t); marcarFeedbacksLidos.t = setTimeout(() => fetch('/api/public/aluno/' + TOKEN + '/feedbacks-lidos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {}), 4000); }
+function msgHtml(m) { const q = new Date(String(m.em).replace(' ', 'T') + 'Z'); return `<div class="msg ${m.de}">${m.tipo === 'feedback' ? `<b>📝 Feedback · ${esc(m.assunto)}</b><br>` : m.de === 'mentor' ? '<b>🎓 Mentor</b><br>' : ''}${m.resposta_de && m.tipo !== 'feedback' ? '<i style="opacity:.7">↪ sobre o feedback</i><br>' : ''}${esc(m.texto || '')}${m.anexo ? `<br>📎 <a href="${esc(m.anexo.url)}" target="_blank" rel="noopener">${esc(m.anexo.nome)}</a>` : ''}<small>${m.encontro ? 'Encontro ' + m.encontro + ' · ' : ''}${isNaN(q) ? '' : q.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</small></div>`; }
 async function enviarDuvida(bt) {
   const t = document.getElementById('duvida'); if (!t.value.trim()) return t.focus();
   bt.disabled = true;
@@ -152,7 +179,7 @@ async function enviarFoto(f) {
   try { const r = await fetch(`/api/public/aluno/${TOKEN}/foto`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'X-Nome': encodeURIComponent(f.name) }, body: f }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Não enviou'); await recarregar(); }
   catch (e) { alert(e.message); }
 }
-async function recarregar(ancora) { const y = window.scrollY; const r = await fetch('/api/public/aluno/' + TOKEN, { cache: 'no-store' }); if (r.ok) { P = await r.json(); desenhar(); window.scrollTo(0, y); if (ancora === 'duvidas') { const c = document.getElementById('chat'); if (c) c.scrollTop = c.scrollHeight; } } }
+async function recarregar(ancora) { const y = window.scrollY; const r = await fetch('/api/public/aluno/' + TOKEN, { cache: 'no-store' }); if (r.ok) { P = await r.json(); desenhar(); marcarFeedbacksLidos(); window.scrollTo(0, y); if (ancora === 'duvidas') { const c = document.getElementById('chat'); if (c) c.scrollTop = c.scrollHeight; } } }
 let AV = { nota: null };
 function avaliar(n) {
   const e = n ? P.encontros.find(x => x.n === n) : null, atual = n ? e.avaliacao : P.avaliacaoGeral; AV = { n, nota: atual ? atual.nota : null };
