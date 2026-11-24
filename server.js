@@ -11507,7 +11507,7 @@ function mergeMetasDpo(atual, novo) {
     atual = atual || {}; novo = novo || {};
     const rem = new Set([...(atual.removidos || []), ...(novo.removidos || [])]);
     const out = { ...novo, removidos: [...rem].slice(-3000) };
-    ['areas', 'lideres', 'indicadores'].forEach(k => {
+    ['areas', 'lideres', 'indicadores', 'acoes', 'gapas', 'follows'].forEach(k => {
         const m = new Map();
         (Array.isArray(atual[k]) ? atual[k] : []).forEach(x => { if (x && x.id) m.set(x.id, x); });
         (Array.isArray(novo[k]) ? novo[k] : []).forEach(x => { if (!x || !x.id) return; const a = m.get(x.id); if (!a || (Number(x._m) || 0) >= (Number(a._m) || 0)) m.set(x.id, x); });
@@ -11553,10 +11553,15 @@ async function abrirLinkMetasDpo(token, tipo) {
     if (!emp) return null;
     if (!(await acompLiberadoDpo(l.company_id, 'gestao:3.4'))) return { bloqueado: true, emp };
     const dados = (await carregarFerramentaDigitalDpo(l.company_id, 'metas', l.ano)).dados || {};
-    ['areas', 'lideres', 'indicadores', 'acoes', 'gapas'].forEach(k => { if (!Array.isArray(dados[k])) dados[k] = []; });
-    return { link: l, emp, dados };
+    ['areas', 'lideres', 'indicadores', 'acoes', 'gapas', 'follows'].forEach(k => { if (!Array.isArray(dados[k])) dados[k] = []; });
+    // Sonho da revenda: o da ferramenta DPO Sonho (Gestão 1.2); se não tiver, o escrito na própria ferramenta de metas
+    let sonho = '';
+    try { sonho = String(((await carregarFerramentaDigitalDpo(l.company_id, 'sonho', l.ano)).dados || {}).frase || '').trim(); } catch (e) {}
+    if (!sonho) sonho = String((dados.planoAtingimento || {}).sonho || '').trim();
+    return { link: l, emp, dados, sonho };
 }
-const limparIndMetasDpo = i => ({ id: i.id, lider: i.lider, nome: i.nome, tipo: i.tipo, sentido: i.sentido, peso: i.peso, valor: i.valor, metaAno: i.metaAno, metas: i.metas || [], reais: i.reais || [], estrategia: i.estrategia || '' });
+const limparIndMetasDpo = i => ({ id: i.id, lider: i.lider, nome: i.nome, tipo: i.tipo, sentido: i.sentido, peso: i.peso, valor: i.valor, metaAno: i.metaAno, metas: i.metas || [], reais: i.reais || [], estrategia: i.estrategia || '', valid: i.valid || {} });
+const limparAcaoMetasDpo = a => ({ id: a.id, lider: a.lider, ind: a.ind || null, gapa: a.gapa || null, o_que: a.o_que, por_que: a.por_que || '', quem: a.quem || '', onde: a.onde || '', quando: a.quando || '', como: a.como || '', quanto: a.quanto || '', status: a.status || 'aberta', criado: a.criado || '' });
 const limparLiderMetasDpo = l => ({ id: l.id, nome: l.nome, cargo: l.cargo || '', setor: l.setor || '', gestor: l.gestor || '', foto: l.foto || '', whats: l.whats || '', area: l.area || '' });
 app.get('/api/public/metas/:tipo/:token', async (req, res) => {
     try {
@@ -11574,12 +11579,13 @@ app.get('/api/public/metas/:tipo/:token', async (req, res) => {
             const ids = new Set(lideres.map(l => l.id));
             const tok = {}; // toda pessoa da área já sai com o link dela pronto
             for (const l of lideres) tok[l.id] = await linkMetasDpo(r.link.company_id, ano, 'pessoa', l.id);
-            return res.json({ tipo, ano, empresa, area: { id: area.id, nome: area.nome, responsavel: area.responsavel || '' }, lideres: lideres.map(l => ({ ...limparLiderMetasDpo(l), token: tok[l.id] || null })), indicadores: d.indicadores.filter(i => ids.has(i.lider)).map(limparIndMetasDpo), agora: Date.now() });
+            return res.json({ tipo, ano, empresa, sonho: r.sonho, area: { id: area.id, nome: area.nome, responsavel: area.responsavel || '' }, lideres: lideres.map(l => ({ ...limparLiderMetasDpo(l), token: tok[l.id] || null })), indicadores: d.indicadores.filter(i => ids.has(i.lider)).map(limparIndMetasDpo),
+                acoes: d.acoes.filter(a => ids.has(a.lider)).map(limparAcaoMetasDpo), gapas: d.gapas.filter(g => ids.has(g.lider)), follows: d.follows.filter(f => ids.has(f.lider) && f.tipo === 'comentario'), agora: Date.now() });
         }
         const l = d.lideres.find(x => x.id === r.link.ref_id);
         if (!l) return res.status(404).json({ error: 'Seu cadastro de metas foi removido. Fale com a sua liderança.' });
         const area = d.areas.find(a => a.id === l.area);
-        res.json({ tipo, ano, empresa, area: area ? { nome: area.nome, responsavel: area.responsavel || '' } : null, lider: limparLiderMetasDpo(l), indicadores: d.indicadores.filter(i => i.lider === l.id).map(limparIndMetasDpo),
+        res.json({ tipo, ano, empresa, sonho: r.sonho, area: area ? { nome: area.nome, responsavel: area.responsavel || '' } : null, lider: limparLiderMetasDpo(l), indicadores: d.indicadores.filter(i => i.lider === l.id).map(limparIndMetasDpo),
             acoes: d.acoes.filter(a => a.lider === l.id).map(a => ({ o_que: a.o_que, quem: a.quem, quando: a.quando, status: a.status })), gapas: d.gapas.filter(g => g.lider === l.id).length, agora: Date.now() });
     } catch (e) { console.error('Link de metas:', e.message); res.status(500).json({ error: 'Erro ao abrir o link.' }); }
 });
@@ -11630,6 +11636,69 @@ app.post('/api/public/metas/a/:token', async (req, res) => {
                 i[campo] = Array.isArray(i[campo]) ? i[campo] : []; while (i[campo].length < 12) i[campo].push('');
                 i[campo][m] = numCru(b.valor); i._m = agora;
                 resp.indicador = limparIndMetasDpo(i);
+            } else if (b.op === 'validar') {
+                // a liderança valida o mês do indicador para pagamento; se não bateu e vai pagar, precisa justificar
+                const i = d.indicadores.find(x => x.id === b.ind), l = i && d.lideres.find(x => x.id === i.lider);
+                if (!i || !meus(l)) throw Object.assign(new Error('Indicador não encontrado.'), { st: 404 });
+                const m = Number(b.mes); if (!(m >= 0 && m <= 11)) throw Object.assign(new Error('Mês inválido.'), { st: 400 });
+                i.valid = i.valid && typeof i.valid === 'object' ? i.valid : {};
+                if (b.desfazer) delete i.valid[m];
+                else {
+                    const just = txt(b.just, 600), pagar = !!b.pagar;
+                    if (b.bateu === false && pagar && !just) throw Object.assign(new Error('Escreva a justificativa para pagar uma meta que não bateu.'), { st: 400 });
+                    i.valid[m] = { pagar, just, bateu: b.bateu !== false, por: txt(b.por, 80) || area.responsavel || 'Liderança', em: new Date().toISOString().slice(0, 10) };
+                }
+                i._m = agora; resp.indicador = limparIndMetasDpo(i);
+            } else if (b.op === 'acao') {
+                const l = d.lideres.find(x => x.id === b.lider); if (!meus(l)) throw Object.assign(new Error('Pessoa não encontrada nesta área.'), { st: 404 });
+                const o = txt(b.o_que, 300); if (!o) throw Object.assign(new Error('Descreva O QUE vai ser feito.'), { st: 400 });
+                if (!b.quando) throw Object.assign(new Error('Toda ação precisa de prazo.'), { st: 400 });
+                let a = b.id ? d.acoes.find(x => x.id === b.id) : null;
+                if (b.id && (!a || a.lider !== l.id)) throw Object.assign(new Error('Ação não encontrada.'), { st: 404 });
+                if (!a) { a = { id: idMetasDpo(), lider: l.id, criado: new Date().toISOString().slice(0, 10), autor: area.responsavel || 'Liderança', status: 'aberta' }; d.acoes.push(a); }
+                const g = b.gapa && d.gapas.find(x => x.id === b.gapa && x.lider === l.id);
+                Object.assign(a, { ind: d.indicadores.some(x => x.id === b.ind && x.lider === l.id) ? b.ind : null, gapa: g ? g.id : (a.gapa || null), o_que: o, por_que: txt(b.por_que, 300), quem: txt(b.quem, 120), onde: txt(b.onde, 120), quando: txt(b.quando, 10), como: txt(b.como, 300), quanto: txt(b.quanto, 60), _m: agora });
+                if (b.status && ['aberta', 'andamento', 'concluida', 'cancelada'].includes(b.status)) { a.status = b.status; a.concluido = b.status === 'concluida' ? new Date().toISOString().slice(0, 10) : ''; }
+                resp.acao = limparAcaoMetasDpo(a);
+            } else if (b.op === 'statusAcao') {
+                const a = d.acoes.find(x => x.id === b.id), l = a && d.lideres.find(x => x.id === a.lider);
+                if (!a || !meus(l) || !['aberta', 'andamento', 'concluida', 'cancelada'].includes(b.status)) throw Object.assign(new Error('Ação não encontrada.'), { st: 404 });
+                a.status = b.status; a.concluido = b.status === 'concluida' ? new Date().toISOString().slice(0, 10) : ''; a._m = agora;
+            } else if (b.op === 'delAcao') {
+                const a = d.acoes.find(x => x.id === b.id), l = a && d.lideres.find(x => x.id === a.lider);
+                if (!a || !meus(l)) throw Object.assign(new Error('Ação não encontrada.'), { st: 404 });
+                d.acoes = d.acoes.filter(x => x.id !== a.id); d.removidos.push(a.id);
+            } else if (b.op === 'comentario') {
+                const l = d.lideres.find(x => x.id === b.lider); if (!meus(l)) throw Object.assign(new Error('Pessoa não encontrada nesta área.'), { st: 404 });
+                const t = txt(b.texto, 1500); if (!t) throw Object.assign(new Error('Escreva o comentário.'), { st: 400 });
+                d.follows.push({ id: idMetasDpo(), lider: l.id, acao: b.acao && d.acoes.some(a => a.id === b.acao && a.lider === l.id) ? b.acao : null, gapa: b.gapa && d.gapas.some(g => g.id === b.gapa && g.lider === l.id) ? b.gapa : null, tipo: 'comentario', data: new Date().toISOString().slice(0, 10), texto: t, autor: txt(b.autor, 80) || area.responsavel || 'Liderança', criado: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }), _m: agora });
+            } else if (b.op === 'gapaNova') {
+                // a página monta a GAPA (problema, fatos e o plano padrão de 6 ações) e o servidor só confere e grava
+                const l = d.lideres.find(x => x.id === b.lider), i = d.indicadores.find(x => x.id === b.ind);
+                if (!meus(l) || !i || i.lider !== l.id) throw Object.assign(new Error('Indicador não encontrado.'), { st: 404 });
+                const aberta = d.gapas.find(g => g.lider === l.id && g.ind === i.id && g.status !== 'concluida');
+                if (aberta) resp.gapa = aberta;
+                else {
+                    const g0 = b.gapa || {}, g = { id: idMetasDpo(), lider: l.id, ind: i.id, status: 'aberta', problema: txt(g0.problema, 2000), fatos: g0.fatos && typeof g0.fatos === 'object' ? g0.fatos : {}, causas: {}, porques: [`Por que ${i.nome} não bateu a meta?`, '', '', '', ''], causaRaiz: '', verificacao: '', criadoPor: area.responsavel || 'Liderança', criadoEm: new Date().toISOString().slice(0, 10), _m: agora };
+                    d.gapas.push(g);
+                    (Array.isArray(b.acoes) ? b.acoes : []).slice(0, 12).forEach(a => d.acoes.push({ id: idMetasDpo(), lider: l.id, ind: i.id, gapa: g.id, o_que: txt(a.o_que, 300), quem: txt(a.quem, 120), quando: txt(a.quando, 10), como: txt(a.como, 300), por_que: txt(a.por_que, 300), status: 'aberta', criado: g.criadoEm, autor: g.criadoPor, _m: agora }));
+                    resp.gapa = g;
+                }
+            } else if (b.op === 'gapaCampo') {
+                const g = d.gapas.find(x => x.id === b.id), l = g && d.lideres.find(x => x.id === g.lider);
+                if (!g || !meus(l)) throw Object.assign(new Error('GAPA não encontrada.'), { st: 404 });
+                const c = String(b.campo || ''), v = txt(b.valor, 2000);
+                if (c.startsWith('c:')) { g.causas = g.causas || {}; g.causas[c.slice(2)] = v; }
+                else if (c.startsWith('p:')) { g.porques = Array.isArray(g.porques) ? g.porques : ['', '', '', '', '']; g.porques[Math.min(4, Math.max(0, Number(c.slice(2)) || 0))] = v; }
+                else if (['problema', 'causaRaiz', 'verificacao'].includes(c)) g[c] = v;
+                else if (c === 'status' && ['aberta', 'andamento', 'concluida'].includes(v)) { g.status = v; g.concluidaEm = v === 'concluida' ? new Date().toISOString().slice(0, 10) : ''; }
+                else throw Object.assign(new Error('Campo inválido.'), { st: 400 });
+                g._m = agora;
+            } else if (b.op === 'delGapa') {
+                const g = d.gapas.find(x => x.id === b.id), l = g && d.lideres.find(x => x.id === g.lider);
+                if (!g || !meus(l)) throw Object.assign(new Error('GAPA não encontrada.'), { st: 404 });
+                const acs = d.acoes.filter(a => a.gapa === g.id).map(a => a.id);
+                d.gapas = d.gapas.filter(x => x.id !== g.id); d.acoes = d.acoes.filter(a => a.gapa !== g.id); d.removidos.push(g.id, ...acs);
             } else throw Object.assign(new Error('Operação inválida.'), { st: 400 });
             await gravarMetasDpo(r.link.company_id, r.link.ano, d, null);
             return resp;
@@ -11690,7 +11759,7 @@ app.put('/api/dpo/ferramentas-digitais/:chave', requireRole('admin', 'client_adm
                 await gravarMetasDpo(f.companyId, ano, m, req.user.userId);
                 return m;
             });
-            return res.json({ message: 'Salvo!', validacao: null, metas: { areas: final.areas, lideres: final.lideres, indicadores: final.indicadores, removidos: final.removidos } });
+            return res.json({ message: 'Salvo!', validacao: null, metas: { areas: final.areas, lideres: final.lideres, indicadores: final.indicadores, acoes: final.acoes, gapas: final.gapas, follows: final.follows, removidos: final.removidos } });
         }
         const json = JSON.stringify(dados);
         if (json.length > 1500000) return res.status(400).json({ error: 'Dados grandes demais para salvar.' });
@@ -12249,8 +12318,8 @@ function exportarExclusivaDpo(chave, add, dados) {
         const inds = (d.indicadores || []).filter(i => i.nome && lid[i.lider]);
         add('Indicadores', [['Liderança', 'lider', 24], ['Indicador', 'nome', 30], ['Tipo', 'tipo', 8], ['Sentido', 'sentido', 14], ['Peso', 'peso', 7], ['Prêmio R$/mês', 'valor', 12], ['Meta do ano', 'metaAno', 11], ['Ligação estratégia / Sonho', 'estrategia', 40]], inds.map(i => ({ ...i, lider: lid[i.lider].nome, sentido: i.sentido === 'menor' ? 'menor melhor' : 'maior melhor' })));
         const lin = [];
-        inds.forEach(i => M.forEach((m, k) => { const meta = num((i.metas || [])[k]) ?? num(i.metaAno), real = num((i.reais || [])[k]); if (real === null && num((i.metas || [])[k]) === null) return; const a = at(meta, real, i.sentido); lin.push({ lider: lid[i.lider].nome, ind: i.nome, mes: m, meta, real, ating: a === null ? '' : Math.round(a * 10) / 10, bateu: a === null ? '' : a >= 100 - 1e-9 ? 'Sim' : 'Não', premio: a !== null && a >= 100 - 1e-9 ? (num(i.valor) || 0) : 0 }); }));
-        tabela('Meta x Real', lin, [['Liderança', 'lider', 24], ['Indicador', 'ind', 30], ['Mês', 'mes', 7], ['Meta', 'meta', 10], ['Real', 'real', 10], ['Atingimento %', 'ating', 12], ['Bateu', 'bateu', 8], ['Prêmio R$', 'premio', 11]]);
+        inds.forEach(i => M.forEach((m, k) => { const meta = num((i.metas || [])[k]) ?? num(i.metaAno), real = num((i.reais || [])[k]); if (real === null && num((i.metas || [])[k]) === null) return; const a = at(meta, real, i.sentido); const vl = (i.valid || {})[k]; lin.push({ validado: vl ? (vl.pagar ? (vl.bateu === false ? 'Pagar (exceção)' : 'Validado — pagar') : 'Validado — não pagar') : '', just: vl ? vl.just || '' : '', aPagar: vl && vl.pagar ? (num(i.valor) || 0) : 0, lider: lid[i.lider].nome, ind: i.nome, mes: m, meta, real, ating: a === null ? '' : Math.round(a * 10) / 10, bateu: a === null ? '' : a >= 100 - 1e-9 ? 'Sim' : 'Não', premio: a !== null && a >= 100 - 1e-9 ? (num(i.valor) || 0) : 0 }); }));
+        tabela('Meta x Real', lin, [['Liderança', 'lider', 24], ['Indicador', 'ind', 30], ['Mês', 'mes', 7], ['Meta', 'meta', 10], ['Real', 'real', 10], ['Atingimento %', 'ating', 12], ['Bateu', 'bateu', 8], ['Prêmio R$', 'premio', 11], ['Validação da liderança', 'validado', 22], ['Justificativa', 'just', 40], ['A pagar R$', 'aPagar', 11]]);
 const nomeInd = id => { const i = (d.indicadores || []).find(x => x.id === id); return i ? i.nome : ''; }, nomeLid = id => (lid[id] || {}).nome || '';
         const stA = { aberta: 'Aberta', andamento: 'Em andamento', concluida: 'Concluída', cancelada: 'Cancelada' };
         tabela('Plano de ação 5W2H', (d.acoes || []).map(a => ({ ...a, lider: nomeLid(a.lider), ind: nomeInd(a.ind), status: stA[a.status] || a.status, gapa: a.gapa ? 'Sim' : '' })), [['Liderança', 'lider', 22], ['Indicador', 'ind', 24], ['O quê', 'o_que', 44], ['Por quê', 'por_que', 26], ['Quem', 'quem', 18], ['Onde', 'onde', 14], ['Quando', 'quando', 12], ['Como', 'como', 30], ['Quanto', 'quanto', 12], ['Status', 'status', 14], ['Da GAPA', 'gapa', 9]]);
