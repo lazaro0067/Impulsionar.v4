@@ -11560,7 +11560,7 @@ async function abrirLinkMetasDpo(token, tipo) {
     if (!sonho) sonho = String((dados.planoAtingimento || {}).sonho || '').trim();
     return { link: l, emp, dados, sonho };
 }
-const limparIndMetasDpo = i => ({ id: i.id, lider: i.lider, nome: i.nome, tipo: i.tipo, sentido: i.sentido, peso: i.peso, valor: i.valor, metaAno: i.metaAno, metas: i.metas || [], reais: i.reais || [], estrategia: i.estrategia || '', valid: i.valid || {} });
+const limparIndMetasDpo = i => ({ id: i.id, lider: i.lider, nome: i.nome, tipo: i.tipo, sentido: i.sentido, peso: i.peso, valor: i.valor, metaAno: i.metaAno, metas: i.metas || [], reais: i.reais || [], estrategia: i.estrategia || '', premissas: i.premissas || '', valid: i.valid || {} });
 const limparAcaoMetasDpo = a => ({ id: a.id, lider: a.lider, ind: a.ind || null, gapa: a.gapa || null, o_que: a.o_que, por_que: a.por_que || '', quem: a.quem || '', onde: a.onde || '', quando: a.quando || '', como: a.como || '', quanto: a.quanto || '', status: a.status || 'aberta', criado: a.criado || '' });
 const limparLiderMetasDpo = l => ({ id: l.id, nome: l.nome, cargo: l.cargo || '', setor: l.setor || '', gestor: l.gestor || '', foto: l.foto || '', whats: l.whats || '', area: l.area || '' });
 app.get('/api/public/metas/:tipo/:token', async (req, res) => {
@@ -11575,7 +11575,7 @@ app.get('/api/public/metas/:tipo/:token', async (req, res) => {
         if (tipo === 'area') {
             const area = d.areas.find(a => a.id === r.link.ref_id);
             if (!area) return res.status(404).json({ error: 'Esta área foi removida. Peça um novo link.' });
-            const lideres = d.lideres.filter(l => l.area === area.id || (!l.area && area.nome && l.setor === area.nome));
+            const lideres = d.lideres.filter(l => String(l.nome || '').trim() && (l.area === area.id || (!l.area && area.nome && l.setor === area.nome)));
             const ids = new Set(lideres.map(l => l.id));
             const tok = {}; // toda pessoa da área já sai com o link dela pronto
             for (const l of lideres) tok[l.id] = await linkMetasDpo(r.link.company_id, ano, 'pessoa', l.id);
@@ -11586,7 +11586,8 @@ app.get('/api/public/metas/:tipo/:token', async (req, res) => {
         if (!l) return res.status(404).json({ error: 'Seu cadastro de metas foi removido. Fale com a sua liderança.' });
         const area = d.areas.find(a => a.id === l.area);
         res.json({ tipo, ano, empresa, sonho: r.sonho, area: area ? { nome: area.nome, responsavel: area.responsavel || '' } : null, lider: limparLiderMetasDpo(l), indicadores: d.indicadores.filter(i => i.lider === l.id).map(limparIndMetasDpo),
-            acoes: d.acoes.filter(a => a.lider === l.id).map(a => ({ o_que: a.o_que, quem: a.quem, quando: a.quando, status: a.status })), gapas: d.gapas.filter(g => g.lider === l.id).length, agora: Date.now() });
+            acoes: d.acoes.filter(a => a.lider === l.id).map(limparAcaoMetasDpo), gapas: d.gapas.filter(g => g.lider === l.id).map(g => ({ id: g.id, ind: g.ind, status: g.status, problema: g.problema || '', causaRaiz: g.causaRaiz || '', criadoEm: g.criadoEm || '' })),
+            follows: d.follows.filter(f => f.lider === l.id && f.tipo === 'comentario'), agora: Date.now() });
     } catch (e) { console.error('Link de metas:', e.message); res.status(500).json({ error: 'Erro ao abrir o link.' }); }
 });
 // O responsável da área grava pelo link: pessoas, indicadores, metas e o real do mês
@@ -11622,7 +11623,7 @@ app.post('/api/public/metas/a/:token', async (req, res) => {
                 let i = b.id ? d.indicadores.find(x => x.id === b.id) : null;
                 if (b.id && (!i || i.lider !== l.id)) throw Object.assign(new Error('Indicador não encontrado.'), { st: 404 });
                 if (!i) { i = { id: idMetasDpo(), lider: l.id, metas: [], reais: [], peso: 1 }; d.indicadores.push(i); }
-                Object.assign(i, { nome, tipo: ['pct', 'moeda', 'numero'].includes(b.tipo) ? b.tipo : 'numero', sentido: b.sentido === 'menor' ? 'menor' : 'maior', metaAno: numCru(b.metaAno), valor: numCru(b.valor), estrategia: txt(b.estrategia, 300), _m: agora });
+                Object.assign(i, { nome, tipo: ['pct', 'moeda', 'numero'].includes(b.tipo) ? b.tipo : 'numero', sentido: b.sentido === 'menor' ? 'menor' : 'maior', metaAno: numCru(b.metaAno), valor: numCru(b.valor), estrategia: txt(b.estrategia, 300), premissas: txt(b.premissas, 2000), _m: agora });
                 resp.indicador = limparIndMetasDpo(i);
             } else if (b.op === 'delInd') {
                 const i = d.indicadores.find(x => x.id === b.id), l = i && d.lideres.find(x => x.id === i.lider);
@@ -11705,6 +11706,26 @@ app.post('/api/public/metas/a/:token', async (req, res) => {
         });
         res.json(out);
     } catch (e) { res.status(e.st || 400).json({ error: e.st ? e.message : 'Erro ao salvar.' }); if (!e.st) console.error('Link de metas (gravar):', e.message); }
+});
+// O liderado comenta (follow) nas ações e na GAPA dele pelo próprio link
+app.post('/api/public/metas/p/:token', async (req, res) => {
+    try {
+        const l0 = await dbGet(`SELECT * FROM metas_links WHERE token = ? AND tipo = 'pessoa'`, [String(req.params.token || '')]);
+        if (!l0) return res.status(404).json({ error: 'Link não encontrado.' });
+        const out = await filaMetasDpo(l0.company_id + ':' + l0.ano, async () => {
+            const r = await abrirLinkMetasDpo(req.params.token, 'pessoa');
+            if (!r || r.bloqueado) throw Object.assign(new Error('Link indisponível.'), { st: 403 });
+            const d = r.dados, l = d.lideres.find(x => x.id === r.link.ref_id), b = req.body || {};
+            if (!l) throw Object.assign(new Error('Cadastro não encontrado.'), { st: 404 });
+            if (b.op !== 'comentario') throw Object.assign(new Error('Operação inválida.'), { st: 400 });
+            const t = String(b.texto || '').trim().slice(0, 1500); if (!t) throw Object.assign(new Error('Escreva o comentário.'), { st: 400 });
+            const acao = b.acao && d.acoes.some(a => a.id === b.acao && a.lider === l.id) ? b.acao : null, gapa = b.gapa && d.gapas.some(g => g.id === b.gapa && g.lider === l.id) ? b.gapa : null;
+            d.follows.push({ id: idMetasDpo(), lider: l.id, acao, gapa, tipo: 'comentario', data: new Date().toISOString().slice(0, 10), texto: t, autor: l.nome, deLiderado: true, criado: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }), _m: Date.now() });
+            await gravarMetasDpo(r.link.company_id, r.link.ano, d, null);
+            return { ok: true };
+        });
+        res.json(out);
+    } catch (e) { res.status(e.st || 400).json({ error: e.st ? e.message : 'Erro ao salvar.' }); }
 });
 app.get(['/metas/a/:token', '/metas/p/:token'], (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'metas.html')));
 
