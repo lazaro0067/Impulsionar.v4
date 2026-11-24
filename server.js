@@ -11579,13 +11579,13 @@ app.get('/api/public/metas/:tipo/:token', async (req, res) => {
             const ids = new Set(lideres.map(l => l.id));
             const tok = {}; // toda pessoa da área já sai com o link dela pronto
             for (const l of lideres) tok[l.id] = await linkMetasDpo(r.link.company_id, ano, 'pessoa', l.id);
-            return res.json({ tipo, ano, empresa, sonho: r.sonho, area: { id: area.id, nome: area.nome, responsavel: area.responsavel || '' }, lideres: lideres.map(l => ({ ...limparLiderMetasDpo(l), token: tok[l.id] || null })), indicadores: d.indicadores.filter(i => ids.has(i.lider)).map(limparIndMetasDpo),
+            return res.json({ tipo, ano, empresa, sonho: r.sonho, area: { id: area.id, nome: area.nome, responsavel: area.responsavel || '', foto: area.foto || '' }, lideres: lideres.map(l => ({ ...limparLiderMetasDpo(l), token: tok[l.id] || null })), indicadores: d.indicadores.filter(i => ids.has(i.lider)).map(limparIndMetasDpo),
                 acoes: d.acoes.filter(a => ids.has(a.lider)).map(limparAcaoMetasDpo), gapas: d.gapas.filter(g => ids.has(g.lider)), follows: d.follows.filter(f => ids.has(f.lider) && f.tipo === 'comentario'), agora: Date.now() });
         }
         const l = d.lideres.find(x => x.id === r.link.ref_id);
         if (!l) return res.status(404).json({ error: 'Seu cadastro de metas foi removido. Fale com a sua liderança.' });
         const area = d.areas.find(a => a.id === l.area);
-        res.json({ tipo, ano, empresa, sonho: r.sonho, area: area ? { nome: area.nome, responsavel: area.responsavel || '' } : null, lider: limparLiderMetasDpo(l), indicadores: d.indicadores.filter(i => i.lider === l.id).map(limparIndMetasDpo),
+        res.json({ tipo, ano, empresa, sonho: r.sonho, area: area ? { nome: area.nome, responsavel: area.responsavel || '', foto: area.foto || '' } : null, lider: limparLiderMetasDpo(l), indicadores: d.indicadores.filter(i => i.lider === l.id).map(limparIndMetasDpo),
             acoes: d.acoes.filter(a => a.lider === l.id).map(limparAcaoMetasDpo), gapas: d.gapas.filter(g => g.lider === l.id).map(g => ({ id: g.id, ind: g.ind, status: g.status, problema: g.problema || '', causaRaiz: g.causaRaiz || '', criadoEm: g.criadoEm || '' })),
             follows: d.follows.filter(f => f.lider === l.id && f.tipo === 'comentario'), agora: Date.now() });
     } catch (e) { console.error('Link de metas:', e.message); res.status(500).json({ error: 'Erro ao abrir o link.' }); }
@@ -11726,6 +11726,36 @@ app.post('/api/public/metas/p/:token', async (req, res) => {
         });
         res.json(out);
     } catch (e) { res.status(e.st || 400).json({ error: e.st ? e.message : 'Erro ao salvar.' }); }
+});
+// Foto do colaborador pelos links: a liderança troca a foto dela (área) e a das pessoas do time; o liderado troca a dele
+app.post('/api/public/metas/:tipo/:token/foto', express.raw({ type: () => true, limit: '12mb' }), async (req, res) => {
+    try {
+        const tipo = req.params.tipo === 'a' ? 'area' : req.params.tipo === 'p' ? 'pessoa' : null;
+        const l0 = tipo && await dbGet(`SELECT * FROM metas_links WHERE token = ? AND tipo = ?`, [String(req.params.token || ''), tipo]);
+        if (!l0) return res.status(404).json({ error: 'Link não encontrado.' });
+        const nomeOrig = decodeURIComponent(String(req.headers['x-nome'] || 'foto.jpg'));
+        if (!/\.(jpe?g|png|webp|heic|heif|gif|bmp)$/i.test(nomeOrig)) return res.status(400).json({ error: 'Envie uma imagem (JPG ou PNG).' });
+        const alvo = String(req.query.alvo || ''); // 'area' | id da pessoa
+        const out = await filaMetasDpo(l0.company_id + ':' + l0.ano, async () => {
+            const r = await abrirLinkMetasDpo(req.params.token, tipo);
+            if (!r || r.bloqueado) throw Object.assign(new Error('Link indisponível.'), { st: 403 });
+            const d = r.dados; let obj = null;
+            if (tipo === 'pessoa') obj = d.lideres.find(x => x.id === r.link.ref_id);
+            else {
+                const area = d.areas.find(a => a.id === r.link.ref_id);
+                if (alvo === 'area') obj = area;
+                else { const l = d.lideres.find(x => x.id === alvo); if (l && area && (l.area === area.id || (!l.area && l.setor === area.nome))) obj = l; }
+            }
+            if (!obj) throw Object.assign(new Error('Pessoa não encontrada.'), { st: 404 });
+            const f = await salvarArquivoAlunoMt(req, 'tmp-foto-meta', nomeOrig);
+            let url = f.url;
+            try { const nome = `foto-meta-${obj.id}-${Date.now()}.jpg`; await rodarFfmpegJa(['-y', '-hide_banner', '-loglevel', 'error', '-i', path.join(PASTA_UPLOADS, f.nome), '-frames:v', '1', '-vf', "scale='if(gt(iw,ih),-2,480)':'if(gt(iw,ih),480,-2)',crop='min(iw,ih)':'min(iw,ih)'", '-q:v', '3', path.join(PASTA_UPLOADS, nome)], 30000); fs.unlink(path.join(PASTA_UPLOADS, f.nome), () => {}); url = '/uploads/' + nome; copiarUploadParaBanco({ filename: nome, path: path.join(PASTA_UPLOADS, nome), size: fs.statSync(path.join(PASTA_UPLOADS, nome)).size, mimetype: 'image/jpeg' }); } catch (e) {}
+            obj.foto = url; obj._m = Date.now();
+            await gravarMetasDpo(r.link.company_id, r.link.ano, d, null);
+            return { ok: true, foto: url };
+        });
+        res.json(out);
+    } catch (e) { res.status(e.st || e.status || 400).json({ error: e.message || 'Erro ao enviar a foto.' }); }
 });
 app.get(['/metas/a/:token', '/metas/p/:token'], (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'metas.html')));
 
