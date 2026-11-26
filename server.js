@@ -14139,6 +14139,7 @@ async function mtPainelAluno(a) {
         programa: { id: prog.id, nome: prog.nome, unidade: prog.unidade, principal: prog.id === MT_PRINCIPAL, indicador: prog.indicador || null },
         mensagens: msgs.map(m => ({ id: m.id, de: m.de, texto: m.texto, anexo: m.anexo_url ? { url: m.anexo_url, nome: m.anexo_nome } : null, encontro: m.encontro, em: m.criado_em, tipo: m.tipo || '', assunto: m.assunto || '', resposta_de: m.resposta_de || null })),
         feedbacks: fbs, feedbacksNovos: fbs.filter(f => f.novo).length,
+        certificado: await (async () => { const c = await mtCertificadoDoAluno(a.id); return c ? { codigo: c.codigo, emitido_em: c.emitido_em } : null; })(), certificadoMinimo: MT_CERT_PRESENCA_MIN,
         avaliacaoGeral: (() => { const av = avs.find(x => Number(x.encontro) === 0); return av ? { nota: av.nota, comentario: av.comentario, respostas: mtJson(av.respostas) } : null; })(),
         perguntasAvaliacao: MT_PERGUNTAS_AVALIACAO,
         mentor: { nome: d.marca.mentor, empresa: d.marca.empresa, foto: d.marca.fotoUrl, whatsapp: d.marca.whatsapp, instagram: d.marca.instagram, instagramEmpresa: d.marca.instagramEmpresa, mentoria: prog.nome }
@@ -14387,6 +14388,72 @@ app.post('/api/public/presenca/:codigo', async (req, res) => {
     res.json({ ok: true, jaRegistrada: !r.changes, nome: String(a.nome || '').split(' ')[0], encontro: c.encontro, token });
 });
 app.get('/aula/:slug', (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'aula.html')));
+// ======================= 🎓 CERTIFICADO DA MENTORIA =======================
+// Emitido pelo mentor no fim da mentoria (presença mínima 75%, ou liberação manual). Cada certificado tem um código
+// único: a página /certificado/<código> mostra o certificado (com a marca Impulsionar V4), imprime/salva em PDF e
+// serve de validação pública (QR code). O nome, o programa, a carga horária e o período ficam congelados na emissão.
+db.run(`CREATE TABLE IF NOT EXISTS mentoria_certificados (codigo TEXT PRIMARY KEY, aluno_id INTEGER NOT NULL, turma_id INTEGER, dados TEXT, emitido_em DATETIME DEFAULT CURRENT_TIMESTAMP, revogado INTEGER DEFAULT 0, UNIQUE(aluno_id, turma_id))`);
+const MT_CERT_PRESENCA_MIN = 75;
+function mtHorasEncontro(prog) { const m = String((prog && prog.duracaoEncontro) || '2 h').replace(',', '.').match(/(\d+(?:\.\d+)?)\s*h(?:\s*(\d+))?/i); return m ? Number(m[1]) + (m[2] ? Number(m[2]) / 60 : 0) : 2; }
+async function mtDadosCertificado(a) {
+    const d = await mtLer(), t = a.turma_id ? await dbGet(`SELECT * FROM mentoria_turmas WHERE id = ?`, [a.turma_id]).catch(() => null) : null, prog = mtProgramaDe(d, t);
+    const pres = new Set((await dbAll(`SELECT encontro FROM mentoria_presencas WHERE aluno_id = ?`, [a.id]).catch(() => [])).map(r => Number(r.encontro)));
+    const datas = prog.encontros.map((_, i) => t ? mtDataEncontro(t, i, prog) : '').filter(Boolean).sort();
+    const total = prog.encontros.length, presentes = prog.encontros.filter(e => pres.has(Number(e.n))).length, horas = mtHorasEncontro(prog) * total;
+    return {
+        nome: String(a.nome || '').trim(), cargo: a.cargo || '', empresa: a.empresa || '',
+        programa: prog.nome, programaId: prog.id, turma: t ? t.nome : '', encontros: total, presentes, presencaPct: total ? Math.round(presentes / total * 100) : 0,
+        cargaHoraria: Math.round(horas * 10) / 10, inicio: datas[0] || (t && t.inicio) || '', fim: datas[datas.length - 1] || '',
+        conteudo: prog.encontros.map(e => e.modulo || e.tema || '').filter(Boolean).slice(0, 8),
+        mentor: d.marca.mentor || 'Lázaro Neto', mentorCargo: 'Mentor · ' + (d.marca.empresa || 'Impulsionar V4'), empresaEmissora: d.marca.empresa || 'Impulsionar V4', cidade: d.marca.cidade || 'Rio Verde · GO'
+    };
+}
+async function mtCertificadoDoAluno(alunoId) { return dbGet(`SELECT * FROM mentoria_certificados WHERE aluno_id = ? AND revogado = 0 ORDER BY emitido_em DESC LIMIT 1`, [alunoId]).catch(() => null); }
+app.get('/api/admin/mentoria/turmas/:id/certificados', requireRole('admin'), async (req, res) => {
+    try {
+        const al = await dbAll(`SELECT * FROM mentoria_alunos WHERE turma_id = ? ORDER BY nome`, [req.params.id]);
+        const out = [];
+        for (const a of al) { const c = await mtCertificadoDoAluno(a.id), x = await mtDadosCertificado(a); out.push({ id: a.id, nome: a.nome, whatsapp: a.whatsapp || '', ...x, apto: x.presencaPct >= MT_CERT_PRESENCA_MIN, certificado: c ? { codigo: c.codigo, emitido_em: c.emitido_em, dados: mtJson(c.dados) } : null }); }
+        res.json({ minimo: MT_CERT_PRESENCA_MIN, alunos: out });
+    } catch (e) { res.status(500).json({ error: 'Erro ao carregar os certificados.' }); }
+});
+app.post('/api/admin/mentoria/turmas/:id/certificados', requireRole('admin'), async (req, res) => {
+    try {
+        const ids = (Array.isArray((req.body || {}).alunos) ? req.body.alunos : []).map(Number).filter(Boolean), forcar = !!(req.body || {}).forcar, emitidos = [], pulados = [];
+        for (const id of ids) {
+            const a = await dbGet(`SELECT * FROM mentoria_alunos WHERE id = ? AND turma_id = ?`, [id, req.params.id]); if (!a) continue;
+            const x = await mtDadosCertificado(a);
+            if (x.presencaPct < MT_CERT_PRESENCA_MIN && !forcar) { pulados.push(a.nome); continue; }
+            const ja = await mtCertificadoDoAluno(a.id);
+            if (ja) { await mtRun(`UPDATE mentoria_certificados SET dados = ? WHERE codigo = ?`, [JSON.stringify(x), ja.codigo]); emitidos.push(ja.codigo); continue; }
+            const codigo = 'IV4-' + new Date().getFullYear() + '-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+            await mtRun(`DELETE FROM mentoria_certificados WHERE aluno_id = ? AND turma_id IS ? AND revogado = 1`, [a.id, a.turma_id]).catch(() => {});
+            await mtRun(`INSERT INTO mentoria_certificados (codigo, aluno_id, turma_id, dados) VALUES (?,?,?,?)`, [codigo, a.id, a.turma_id, JSON.stringify(x)]);
+            emitidos.push(codigo);
+        }
+        res.json({ ok: true, emitidos: emitidos.length, pulados });
+    } catch (e) { console.error('Certificado:', e.message); res.status(500).json({ error: 'Erro ao emitir o certificado.' }); }
+});
+app.delete('/api/admin/mentoria/certificados/:codigo', requireRole('admin'), async (req, res) => {
+    await mtRun(`UPDATE mentoria_certificados SET revogado = 1 WHERE codigo = ?`, [req.params.codigo]).catch(() => {});
+    res.json({ ok: true });
+});
+// prévia (não grava nada): o Master vê como vai ficar antes de emitir
+app.get('/api/admin/mentoria/alunos/:id/certificado-previa', requireRole('admin'), async (req, res) => {
+    const a = await dbGet(`SELECT * FROM mentoria_alunos WHERE id = ?`, [req.params.id]).catch(() => null); if (!a) return res.status(404).json({ error: 'Aluno não encontrado.' });
+    res.json({ previa: true, codigo: 'IV4-PREVIA', emitido_em: new Date().toISOString(), dados: await mtDadosCertificado(a) });
+});
+app.get('/api/public/certificado/:codigo', async (req, res) => {
+    const c = await dbGet(`SELECT * FROM mentoria_certificados WHERE codigo = ?`, [String(req.params.codigo || '').toUpperCase()]).catch(() => null);
+    if (!c) return res.status(404).json({ error: 'Certificado não encontrado. Confira o código.' });
+    res.json({ codigo: c.codigo, emitido_em: c.emitido_em, revogado: !!c.revogado, dados: mtJson(c.dados) });
+});
+app.get('/api/public/aluno/:token/certificado', async (req, res) => {
+    const a = await mtAlunoPorToken(req.params.token); if (!a) return res.status(404).json({ error: 'Acesso inválido.' });
+    const c = await mtCertificadoDoAluno(a.id), x = await mtDadosCertificado(a);
+    res.json({ certificado: c ? { codigo: c.codigo, emitido_em: c.emitido_em } : null, presencaPct: x.presencaPct, presentes: x.presentes, encontros: x.encontros, minimo: MT_CERT_PRESENCA_MIN });
+});
+app.get(['/certificado/:codigo', '/certificado'], (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'certificado.html')));
 app.get(['/aluno', '/aluno/:token'], (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'aluno.html')));
 app.get('/presenca/:codigo', (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'presenca.html')));
 // páginas públicas com endereço curto

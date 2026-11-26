@@ -41,6 +41,13 @@
   .ola { display:flex; gap:16px; align-items:center; margin:14px 0 8px; } .ola h1 { margin:0 !important; }
   .acoes-enc { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; } .acoes-enc .bt { font-size:13px; padding:8px 14px; }
   .prazo { display:inline-flex; gap:6px; align-items:center; font-size:12.5px; font-weight:800; border-radius:999px; padding:3px 10px; background:#e0f2fe; color:#075985; margin-top:6px; } .prazo.atrasado { background:#fee2e2; color:#991b1b; } .prazo.ok { background:#dcfce7; color:#166534; }
+  .certbox { display:flex; gap:18px; align-items:center; flex-wrap:wrap; background:linear-gradient(120deg,#0b1a33,#13294b 60%,#0f6e50); color:#fff; border-radius:22px; padding:24px 26px; box-shadow:0 16px 40px rgba(11,26,51,.25); position:relative; overflow:hidden; }
+  .certbox::after { content:'V4'; position:absolute; right:-10px; bottom:-60px; font-size:220px; font-weight:900; opacity:.06; }
+  .certbox small { font-size:11.5px; letter-spacing:2px; font-weight:900; color:#facc15; } .certbox h2 { margin:4px 0 6px; font-size:24px; color:#fff; } .certbox p { margin:0; opacity:.85; }
+  .cert-ic { font-size:54px; width:86px; height:86px; display:grid; place-items:center; background:rgba(255,255,255,.1); border:2px solid #b08d3c; border-radius:50%; flex:0 0 auto; }
+  .cert-bts { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; position:relative; z-index:1; } .cert-bts .li { background:#0a66c2; color:#fff; }
+  .certbox.bloq { background:linear-gradient(120deg,#1e293b,#334155); } .certbox.bloq .cert-ic { border-color:#64748b; }
+  .cert-prog { height:10px; background:rgba(255,255,255,.15); border-radius:99px; overflow:hidden; margin-top:12px; max-width:420px; } .cert-prog i { display:block; height:100%; background:#22c55e; border-radius:99px; } .cert-leg { display:block; margin-top:6px; letter-spacing:0 !important; color:#cbd5e1 !important; font-weight:600 !important; }
   .fbaviso { display:flex; gap:12px; align-items:center; background:linear-gradient(120deg,#fef3c7,#fde68a); border:1.5px solid var(--ambar); border-radius:16px; padding:12px 16px; margin-top:14px; color:#422006; text-decoration:none; animation:fbpulse 2s 3; } .fbaviso span { font-size:28px; } .fbaviso b { display:block; } .fbaviso small { color:#78350f; }
   @keyframes fbpulse { 50% { box-shadow:0 0 0 6px rgba(245,158,11,.25); } }
   .fb { background:#fffbeb; border:1.5px solid #fcd34d; border-radius:14px; padding:12px 14px; margin-top:10px; } .fb.novo { box-shadow:0 0 0 3px rgba(245,158,11,.25); } .fb p { margin:6px 0; color:#422006; font-size:14.5px; line-height:1.5; white-space:pre-wrap; }
@@ -116,6 +123,7 @@ function desenhar() {
             <textarea placeholder="Como foi aplicar no seu time? (o mentor lê antes do próximo encontro)" onchange="salvarNota(${e.n}, this.value, this)">${esc(e.nota)}</textarea><small class="salvo" id="salvo-${e.n}"></small></div>
         </div></div>`; }).join('')}</div>
     </div></section>
+    ${certHtml()}
     ${(P.feedbacks || []).some(f => !f.encontro) ? `<section id="fb-geral"><div class="cx"><div class="titulo"><small>Do mentor para você</small><h2>📝 Feedbacks gerais</h2></div>${fbHtml(P.feedbacks.filter(f => !f.encontro))}</div></section>` : ''}
     <section id="duvidas"><div class="cx"><div class="titulo"><small>Durante o programa</small><h2>💬 Dúvidas com o mentor</h2><p>Escreva aqui a sua dúvida sobre o conteúdo, o desafio ou uma situação com o time. O mentor responde por aqui mesmo.</p></div>
       <div class="chat" id="chat">${(P.mensagens || []).length ? P.mensagens.map(msgHtml).join('') : '<p style="color:var(--cinza);margin:6px;">Nenhuma mensagem ainda. Mande a sua primeira dúvida! 👇</p>'}</div>
@@ -142,6 +150,15 @@ async function enviar(corpo) { const r = await fetch('/api/public/aluno/' + TOKE
 async function salvarTarefa(n, ok) { try { await enviar({ encontro: n, entregue: ok }); const e = P.encontros.find(x => x.n === n); e.entregue = ok; P.resumo.entregas += ok ? 1 : -1; const s = document.getElementById('salvo-' + n); if (s) s.textContent = ok ? '✓ Tarefa marcada como entregue' : 'Tarefa desmarcada'; } catch (e) { alert('Não consegui salvar. Confira a internet.'); } }
 async function salvarNota(n, txt, el) { try { await enviar({ encontro: n, nota: txt }); const s = document.getElementById('salvo-' + n); if (s) s.textContent = '✓ Anotação salva'; } catch (e) { alert('Não consegui salvar. Confira a internet.'); } }
 async function salvarIndicador(bt) { try { await enviar({ indicadorNome: document.getElementById('i-nome').value, antes: document.getElementById('i-antes').value, depois: document.getElementById('i-depois').value }); document.getElementById('i-ok').textContent = '✓ Salvo'; } catch (e) { alert('Não consegui salvar.'); } }
+// 🎓 certificado no fim da jornada: bloqueado até o mentor emitir
+function certHtml() {
+  const c = P.certificado, R = P.resumo || {}, min = P.certificadoMinimo || 75, total = (P.encontros || []).length, pres = (P.encontros || []).filter(e => e.presente).length, pct = total ? Math.round(pres / total * 100) : 0;
+  if (c) { const url = location.origin + '/certificado/' + c.codigo, emit = String(c.emitido_em || '').slice(0, 10); const li = 'https://www.linkedin.com/profile/add?' + new URLSearchParams({ startTask: 'CERTIFICATION_NAME', name: 'Mentoria ' + (P.programa || {}).nome, organizationName: 'Impulsionar V4', issueYear: emit.slice(0, 4), issueMonth: String(Number(emit.slice(5, 7)) || ''), certUrl: url, certId: c.codigo }).toString();
+    return `<section id="certificado"><div class="cx"><div class="certbox"><div class="cert-ic">🎓</div><div style="flex:1;min-width:220px;"><small>MENTORIA CONCLUÍDA</small><h2>Parabéns, ${esc(P.aluno.primeiroNome)}! Seu certificado está pronto.</h2><p>${esc((P.programa || {}).nome || '')} · código ${esc(c.codigo)}</p>
+      <div class="cert-bts"><a class="bt ambar" href="${url}" target="_blank" rel="noopener">🎓 Ver e baixar o certificado</a><a class="bt li" href="${li}" target="_blank" rel="noopener">in Adicionar ao LinkedIn</a></div></div></div></div></section>`; }
+  return `<section id="certificado"><div class="cx"><div class="certbox bloq"><div class="cert-ic">🔒</div><div style="flex:1;min-width:220px;"><small>NO FIM DA MENTORIA</small><h2>Seu certificado Impulsionar V4</h2><p>Liberado pelo mentor ao concluir ${total ? 'os ' + total + ' ' + (P.programa && P.programa.unidade === 'semana' ? 'semanas' : 'encontros') : 'o programa'}, com presença mínima de ${min}%.</p>
+    <div class="cert-prog"><i style="width:${Math.min(100, pct)}%"></i></div><small class="cert-leg">Sua presença até agora: <b>${pct}%</b> (${pres} de ${total})</small></div></div></div></section>`;
+}
 function fbHtml(fs) {
   if (!fs || !fs.length) return '';
   const q = s => { const d = new Date(String(s).replace(' ', 'T') + 'Z'); return isNaN(d) ? '' : d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };
