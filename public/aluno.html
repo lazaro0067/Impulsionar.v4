@@ -30,6 +30,11 @@
   .enc p { margin:4px 0 8px; color:var(--cinza); font-size:14px; }
   .tarefa { background:var(--creme); border-radius:12px; padding:10px 12px; } .tarefa label { display:flex; gap:10px; align-items:flex-start; cursor:pointer; font-weight:700; font-size:14px; } .tarefa input[type=checkbox] { width:20px; height:20px; accent-color:var(--verde); margin-top:1px; flex:0 0 auto; }
   .tarefa textarea { width:100%; margin-top:8px; font:inherit; font-size:14px; border:1.5px solid var(--linha); border-radius:10px; padding:9px 10px; resize:vertical; min-height:54px; background:#fff; }
+  .rot-top { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; } .rot-top label, .rot-b label { display:block; font-weight:800; font-size:13px; } .rot-top input { width:100%; margin-top:4px; font:inherit; font-size:14px; border:1.5px solid var(--linha); border-radius:10px; padding:9px 10px; }
+  .rot-barra { display:flex; height:14px; border-radius:8px; overflow:hidden; margin:4px 0 14px; } .rot-barra i { display:block; height:100%; border-right:2px solid #fff; }
+  .rot-b { border-left:5px solid var(--ambar); background:var(--creme); border-radius:10px; padding:10px 12px; margin:8px 0; } .rot-b .tm { float:right; font-weight:800; color:var(--cinza); font-size:12px; } .rot-b small { display:block; color:var(--cinza); font-size:12.5px; margin:2px 0 6px; }
+  .rot-b textarea { width:100%; font:inherit; font-size:14px; border:1.5px solid var(--linha); border-radius:10px; padding:8px 10px; resize:vertical; min-height:48px; background:#fff; }
+  @media (max-width:600px){ .rot-top { grid-template-columns:1fr; } }
   .tarefa .salvo { font-size:12px; color:var(--verde); font-weight:700; height:14px; display:block; }
   .ind { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; } .ind input { font:inherit; padding:12px; border:1.5px solid var(--linha); border-radius:12px; width:100%; } .ind label { font-size:13px; font-weight:700; display:grid; gap:6px; }
   @media (max-width:600px) { .ind { grid-template-columns:1fr; } .kpis b { font-size:19px; } }
@@ -93,7 +98,7 @@ function desenhar() {
   const pct = Math.round(((R.realizados ? R.realizados : 0) / R.total) * 100), pg = P.programa || { unidade: 'semana', principal: true }, ENC = pg.unidade === 'encontro', U = ENC ? 'Encontro' : 'Semana', Us = ENC ? 'encontros' : 'semanas', ind = pg.indicador || {};
   document.title = `Área do Aluno · ${a.primeiroNome}`;
   document.getElementById('app').innerHTML = `<header class="topo"><div class="cx"><a class="marca" href="#"><i>V4</i>Área do Aluno</a>
-      <nav><a href="#jornada">Minha jornada</a><a href="#duvidas">Dúvidas</a><a href="#indicador">Meu indicador</a><a href="#avaliar">Avaliar</a></nav>${t.grupo ? `<a class="bt ambar peq" href="${esc(t.grupo)}" target="_blank" rel="noopener">💬 Grupo da turma</a>` : ''}</div></header>
+      <nav><a href="#jornada">Minha jornada</a>${Array.isArray(P.roteiroFinal) && P.roteiroFinal.length ? '<a href="#roteiro">Roteiro final</a>' : ''}<a href="#duvidas">Dúvidas</a><a href="#indicador">Meu indicador</a><a href="#avaliar">Avaliar</a></nav>${t.grupo ? `<a class="bt ambar peq" href="${esc(t.grupo)}" target="_blank" rel="noopener">💬 Grupo da turma</a>` : ''}</div></header>
     <section class="hero"><div class="cx"><div>
       <span class="selo">🎓 ${esc(m.mentoria)} · ${esc(t.nome || 'Mentoria')}</span>
       <div class="ola"><div class="foto-perfil" onclick="document.getElementById('in-foto').click()" title="Trocar foto">${a.foto ? `<img src="${esc(a.foto)}" alt="">` : '🙂'}<i>${a.foto ? 'trocar' : 'colocar foto'}</i></div><h1>Olá, ${esc(a.primeiroNome)}! 👋</h1></div>
@@ -123,6 +128,7 @@ function desenhar() {
             <textarea placeholder="Como foi aplicar no seu time? (o mentor lê antes do próximo encontro)" onchange="salvarNota(${e.n}, this.value, this)">${esc(e.nota)}</textarea><small class="salvo" id="salvo-${e.n}"></small></div>
         </div></div>`; }).join('')}</div>
     </div></section>
+    ${roteiroHtml()}
     ${certHtml()}
     ${(P.feedbacks || []).some(f => !f.encontro) ? `<section id="fb-geral"><div class="cx"><div class="titulo"><small>Do mentor para você</small><h2>📝 Feedbacks gerais</h2></div>${fbHtml(P.feedbacks.filter(f => !f.encontro))}</div></section>` : ''}
     <section id="duvidas"><div class="cx"><div class="titulo"><small>Durante o programa</small><h2>💬 Dúvidas com o mentor</h2><p>Escreva aqui a sua dúvida sobre o conteúdo, o desafio ou uma situação com o time. O mentor responde por aqui mesmo.</p></div>
@@ -150,6 +156,26 @@ async function enviar(corpo) { const r = await fetch('/api/public/aluno/' + TOKE
 async function salvarTarefa(n, ok) { try { await enviar({ encontro: n, entregue: ok }); const e = P.encontros.find(x => x.n === n); e.entregue = ok; P.resumo.entregas += ok ? 1 : -1; const s = document.getElementById('salvo-' + n); if (s) s.textContent = ok ? '✓ Tarefa marcada como entregue' : 'Tarefa desmarcada'; } catch (e) { alert('Não consegui salvar. Confira a internet.'); } }
 async function salvarNota(n, txt, el) { try { await enviar({ encontro: n, nota: txt }); const s = document.getElementById('salvo-' + n); if (s) s.textContent = '✓ Anotação salva'; } catch (e) { alert('Não consegui salvar. Confira a internet.'); } }
 async function salvarIndicador(bt) { try { await enviar({ indicadorNome: document.getElementById('i-nome').value, antes: document.getElementById('i-antes').value, depois: document.getElementById('i-depois').value }); document.getElementById('i-ok').textContent = '✓ Salvo'; } catch (e) { alert('Não consegui salvar.'); } }
+// 🎤 roteiro da apresentação final (7 blocos · 10 min · em dupla)
+const ROT_COR = ['#f59e0b', '#f59e0b', '#6366f1', '#6366f1', '#22c55e', '#22c55e', '#a78bfa'];
+function rotSeg(t) { const m = String(t).match(/(\d+)\s*min(?:\s*(\d+))?/), s = String(t).match(/^(\d+)\s*s/); return m ? Number(m[1]) * 60 + Number(m[2] || 0) : s ? Number(s[1]) : 60; }
+function roteiroHtml() {
+  const B = P.roteiroFinal; if (!Array.isArray(B) || !B.length) return '';
+  const r = P.roteiro || [], tot = B.reduce((a, b) => a + rotSeg(b[1]), 0) || 1;
+  return `<section id="roteiro"><div class="cx"><div class="titulo"><small>Projeto final · em dupla</small><h2>🎤 Roteiro da apresentação final</h2><p>10 minutos em 7 blocos, construídos do zero a partir de 1 indicador e 1 frase. Comece no Encontro 3 (indicador e frase), complete até o Encontro 4 e apresente no Encontro 5.</p></div>
+    <div class="card"><div class="rot-top"><label>Dupla (o seu nome e o do colega)<input id="rot-0" value="${esc(r[0] || '')}" placeholder="Ex.: Ana e João"></label><label>Indicador<input id="rot-1" value="${esc(r[1] || '')}" placeholder="Ex.: On time · meta 97% · real 94%"></label></div>
+      <div class="rot-barra">${B.map((b, i) => `<i style="width:${rotSeg(b[1]) / tot * 100}%;background:${ROT_COR[i % 7]}" title="${esc(b[0])}"></i>`).join('')}</div>
+      ${B.map((b, i) => `<div class="rot-b" style="border-left-color:${ROT_COR[i % 7]}"><span class="tm">⏱️ ${esc(b[1])}</span><label>${i + 1} · ${esc(b[0])}</label><small>${esc(b[2])}</small><textarea id="rot-${i + 2}" placeholder="O que a dupla vai dizer · quem fala">${esc(r[i + 2] || '')}</textarea></div>`).join('')}
+      <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><button class="bt escuro peq" onclick="salvarRoteiro(this)">Salvar roteiro</button><button class="bt claro peq" onclick="imprimirRoteiro()">🖨️ Imprimir</button><small id="rot-ok" style="color:var(--verde);font-weight:700;"></small></div></div>
+  </div></section>`;
+}
+function lerRoteiro() { const n = (P.roteiroFinal || []).length + 2, v = []; for (let i = 0; i < n; i++) { const el = document.getElementById('rot-' + i); v.push(el ? el.value : ''); } return v; }
+async function salvarRoteiro(bt) { try { const v = lerRoteiro(); await enviar({ roteiro: v }); P.roteiro = v; document.getElementById('rot-ok').textContent = '✓ Roteiro salvo'; } catch (e) { alert('Não consegui salvar. Confira a internet.'); } }
+function imprimirRoteiro() {
+  const v = lerRoteiro(), B = P.roteiroFinal || [], w = window.open('', '_blank'); if (!w) return;
+  w.document.write(`<!doctype html><meta charset="utf-8"><title>Roteiro da apresentação final</title><style>body{font-family:Arial,sans-serif;margin:28px;color:#0b1329}h1{font-size:22px;margin:0 0 4px}p{margin:0 0 14px;color:#555}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ccc;padding:8px;vertical-align:top;text-align:left;font-size:13px}th{background:#f3f4f6}td.t{white-space:nowrap;font-weight:700}td.x{white-space:pre-wrap;height:58px}</style><h1>🎤 Roteiro da apresentação final · 10 minutos</h1><p>Dupla: <b>${esc(v[0] || '________________')}</b> · Indicador: <b>${esc(v[1] || '________________')}</b></p><table><tr><th>Bloco</th><th>Tempo</th><th>O que dizer · quem fala</th></tr>${B.map((b, i) => `<tr><td><b>${i + 1} · ${esc(b[0])}</b><br><small>${esc(b[2])}</small></td><td class="t">${esc(b[1])}</td><td class="x">${esc(v[i + 2] || '')}</td></tr>`).join('')}</table><script>setTimeout(()=>print(),300)<\/script>`);
+  w.document.close();
+}
 // 🎓 certificado no fim da jornada: bloqueado até o mentor emitir
 function certHtml() {
   const c = P.certificado, R = P.resumo || {}, min = P.certificadoMinimo || 75, total = (P.encontros || []).length, pres = (P.encontros || []).filter(e => e.presente).length, pct = total ? Math.round(pres / total * 100) : 0;
